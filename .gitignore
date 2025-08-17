@@ -1,0 +1,23 @@
+# Logs
+Logs/
+*.log
+
+# Reports
+Reports/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build results
+bin/
+obj/
+
+# Visual Studio Code
+.vscode/
+
+# Others
+*.DS_Store
+Thumbs.db

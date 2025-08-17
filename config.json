@@ -1,0 +1,14 @@
+{
+  "IgnoredExtensions": [".pdb", ".log", ".cache", ".DS_Store"],
+  "TextFileExtensions": [".cs", ".json", ".config", "xml", "bat", "ps1", "yml", "xaml", ".txt"],
+  "MaxLogGenerations": 5,
+  "ShouldIncludeUnchangedFiles": true,
+  "ShouldOutputILText": true,
+  "ShouldSkipPromptOnExit": false,
+  "MaxParallelism": 0,
+  "EnableILCache": true,
+	"ILCacheDirectoryAbsolutePath": "",
+	"ILCacheStatsLogIntervalSeconds": 60,
+	"ILCacheMaxDiskFileCount": 0,
+	"ILCacheMaxDiskMegabytes": 0
+}
