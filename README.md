@@ -63,8 +63,8 @@ dotnet tool install -g ilspycmd
 
 ```json
 {
-	"IgnoredExtensions": [".pdb", ".log", ".cache", ".DS_Store"],
-	"TextFileExtensions": [".cs", ".json", ".config", ".xml", ".bat", ".ps1", ".yml", ".xaml", ".txt"],
+	"IgnoredExtensions": [".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"],
+  	"TextFileExtensions": [".config", ".cs", ".go", ".htm", ".html", ".http", ".ini", ".js", ".json", ".manifest", ".md", ".mod", ".plist", ".ps1", ".py", ".sln", ".sql", ".sum", ".ts", ".txt", ".vb", "bat", "xaml", "xml", "yml"],
 	"MaxLogGenerations": 5,
 	"ShouldIncludeUnchangedFiles": true,
 	"ShouldOutputILText": true,
