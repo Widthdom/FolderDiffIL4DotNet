@@ -122,18 +122,11 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 出力完了後、以下の生成物は読み取り専用（ReadOnly 属性）に変更されます（失敗時は警告を出し処理は継続）。
 - `diff_report.md`
-- `IL/ILlog.md`
-- `IL/ILlog.html`
 - `IL/old/*_IL.txt`（`config.json`のShouldOutputILText が true の場合）
 - `IL/new/*_IL.txt`（`config.json`のShouldOutputILText が true の場合）
 
 ## 副生成物
 
-- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/ILlog.md` … ファイルごとに逆アセンブルに使用したツールおよびそのバージョン、ビルド固有情報を含むIL全文を出力
-- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/ILlog.html` … 上記の HTML 版（IL 全文をクリップボードにコピーするボタン付き、左右2カラム表示）
-	- 比較結果は「`// MVID:`」で始まる行があった場合にこれを無視したものですが、出力されるIL 全文は「`// MVID:`」で始まる行を除外していません。
-	- 逆アセンブルに使用したツールのバージョンは`--version`や`-v`の結果を基に表示します。取得できない環境では省略される場合があります。
-	- フッタに IL キャッシュ統計 (hits / stores / evicted / expired) を表示します（EnableILCache=true の場合、ILlog.md にも同統計を追記）。
 - `Logs/log_YYYYMMDD.log` … アプリケーションログ（`config.json`のMaxLogGenerationsを超えるアプリケーションログがあった場合、古いものから順に削除されます。）
 - 以下は`config.json`のShouldOutputILTextがtrueの場合のみ生成されます。
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old/*.txt` … 旧バージョン側（比較元）ファイルのビルド固有情報を除く IL 全文を出力（ファイル名称は相対パスの区切り文字を.に置換したもの）
@@ -150,7 +143,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 | IL キャッシュ先読み | 既存ディスク IL キャッシュをメモリへ昇格 | 初回以降の逆アセンブル起動を更に削減 |
 | 並列テキスト差分 | 512KB 以上のテキストを 64KB チャンクで並列バイト比較 | 完全一致判定のみ（差分位置抽出なし） |
 | ツール失敗ブラックリスト | 同一ツール連続失敗 (既定 3 回) で 10 分間スキップ | 起動オーバーヘッド削減 |
-| 統計出力 | ILlog.md / ILlog.html にキャッシュ統計追記 + 一定間隔でログにヒット率出力 | 解析・チューニング指標 |
+| 統計出力 | 一定間隔でログにヒット率出力 | 解析・チューニング指標 |
 
 ### IL キャッシュ補足
 

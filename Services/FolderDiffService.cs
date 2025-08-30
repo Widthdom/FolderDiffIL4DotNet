@@ -100,15 +100,13 @@ namespace FolderDiffIL4DotNet.Services
         /// 主な処理の流れ:
         /// 1) old/new のファイル一覧取得（IgnoredExtensions を除外）
         /// 2) 進捗の母数を old∪new の相対パス件数で算出し、1 件処理ごとに ProgressReporter に通知
-        /// 3) IL 出力先（Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL）を初期化し、ILlog.md（空）と ILlog.html（ヘッダのみ）を作成
-        /// 4) old 側を基準に走査し、各相対パスについて以下の順で比較:
+        /// 3) old 側を基準に走査し、各相対パスについて以下の順で比較:
         ///    - MD5 ハッシュ一致なら Unchanged
-        ///    - .NET 実行可能なら IL を逆アセンブルして比較（MVID 行は除外）。結果は ILlog.md / ILlog.html に追記。
+        ///    - .NET 実行可能なら IL を逆アセンブルして比較（MVID 行は除外）。
         ///    - TextFileExtensions に含まれる拡張子ならテキスト差分で比較
         ///    - いずれも一致しなければ Modified と判定
         ///    new 側に存在しない場合は Removed として記録
-        /// 5) old 側に存在せず new 側のみに残ったパスは Added として記録
-        /// 6) 処理の最後に ILlog.html にフッタ（</body></html>）を追記してクローズし、ILlog.md / ILlog.html を読み取り専用に変更します（失敗しても継続）。
+        /// 4) old 側に存在せず new 側のみに残ったパスは Added として記録
         ///
         /// 補足:
         /// - ShouldOutputILText が true の場合、各側の IL テキストを
@@ -179,9 +177,6 @@ namespace FolderDiffIL4DotNet.Services
                     Directory.CreateDirectory(_ilOldFolderAbsolutePath);
                     Directory.CreateDirectory(_ilNewFolderAbsolutePath);
                 }
-
-                // IL ログ初期化
-                await _ilOutputService.InitializeAsync();
                 
                 int processedFileCount = 0;
                 // new 側の全ファイル絶対パスを入れた集合（大文字小文字無視）。
@@ -209,10 +204,6 @@ namespace FolderDiffIL4DotNet.Services
             {
                 LoggerService.LogMessage($"[ERROR] An error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.", shouldOutputMessageToConsole: true);
                 throw;
-            }
-            finally
-            {
-                await _ilOutputService.FinalizeAsync();
             }
         }
 

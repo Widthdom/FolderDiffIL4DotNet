@@ -6,7 +6,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
 {
     /// <summary>
     /// ファイルの最終更新日時（文字列表現）をメモリ内にキャッシュするヘルパー。
-    /// 一度取得した値を、同一プロセス内の複数出力箇所（diff_report、ILlog など）で再利用して I/O を削減します。
+    /// 一度取得した値を、同一プロセス内の複数出力箇所で再利用して I/O を削減します。
     /// 値は実行中のみ保持され、プロセス終了時に破棄されます。
     /// </summary>
     public static class TimestampCache

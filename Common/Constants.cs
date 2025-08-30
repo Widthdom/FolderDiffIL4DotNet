@@ -32,16 +32,6 @@ namespace FolderDiffIL4DotNet.Common
         public const string IL_FOLDER_NAME = "IL";
 
         /// <summary>
-        /// IL 比較の Markdown ログファイル名（追記形式）。
-        /// </summary>
-        public const string ILLOG_MARKDOWN = "ILlog.md";
-
-        /// <summary>
-        /// IL 比較の HTML ログファイル名（サイドバイサイド表示）。
-        /// </summary>
-        public const string ILLOG_HTML = "ILlog.html";
-
-        /// <summary>
         /// 旧バージョン側（比較元）の IL 出力サブディレクトリ名
         /// </summary>
         public const string IL_OLD_SUB_DIR = "old";

@@ -13,7 +13,6 @@ namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// 逆アセンブル（DotNetDisassembleService）・キャッシュ制御（ILCache）と出力サービスへの委譲を担うファサード。
-    /// ILlog.md / ILlog.html は ILlogOutputService、*_IL.txt は ILTextOutputService が担当する。
     /// </summary>
     public sealed class ILOutputService
     {
@@ -29,11 +28,6 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILCache _ilCache;
 
         /// <summary>
-        /// ILlog/HTML/IL テキスト出力のルート出力フォルダ（絶対パス）。
-        /// </summary>
-        private readonly string _ilOutputFolderAbsolutePath;
-
-        /// <summary>
         /// old 側 *_IL.txt を出力するフォルダ（絶対パス）。
         /// </summary>
         private readonly string _ilOldFolderAbsolutePath;
@@ -42,11 +36,6 @@ namespace FolderDiffIL4DotNet.Services
         /// new 側 *_IL.txt を出力するフォルダ（絶対パス）。
         /// </summary>
         private readonly string _ilNewFolderAbsolutePath;
-
-        /// <summary>
-        /// ILlog.md / ILlog.html の生成・追記・クローズを担当するサービス。
-        /// </summary>
-        private readonly ILlogOutputService _illogOutputService;
 
         /// <summary>
         /// *_IL.txt の生成を担当するサービス。
@@ -59,18 +48,6 @@ namespace FolderDiffIL4DotNet.Services
         private readonly DotNetDisassembleService _dotNetDisassembleService;
         #endregion
 
-        #region private writable member variables
-        /// <summary>
-        /// 有効期限切れで削除されたキャッシュ数（Finalize 時に Snapshot 取得）。
-        /// </summary>
-        private int _ilCacheExpired;
-
-        /// <summary>
-        /// 容量超過などで追い出しが発生したキャッシュ数（Finalize 時に Snapshot 取得）。
-        /// </summary>
-        private int _ilCacheEvicted;
-        #endregion
-
         /// <summary>
         /// コンストラクタ。パスおよび設定値を受け取り必要に応じて IL キャッシュを構築する。
         /// </summary>
@@ -81,10 +58,8 @@ namespace FolderDiffIL4DotNet.Services
         public ILOutputService(ConfigSettings config, string ilOutputFolderAbsolutePath, string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath)
         {
             _config = config;
-            _ilOutputFolderAbsolutePath = ilOutputFolderAbsolutePath;
             _ilOldFolderAbsolutePath = ilOldFolderAbsolutePath;
             _ilNewFolderAbsolutePath = ilNewFolderAbsolutePath;
-            _illogOutputService = new ILlogOutputService(_ilOutputFolderAbsolutePath);
             _ilTextOutputService = new ILTextOutputService(_ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
             if (_config.EnableILCache)
             {
@@ -98,31 +73,6 @@ namespace FolderDiffIL4DotNet.Services
                 );
             }
             _dotNetDisassembleService = new DotNetDisassembleService(_config, _ilCache);
-        }
-
-        /// <summary>
-        /// ILlog.md 空ファイル作成と ILlog.html ヘッダ初期化を行う。
-        /// </summary>
-        public Task InitializeAsync() => _illogOutputService.InitializeAsync();
-
-        /// <summary>
-        /// HTML フッタとキャッシュ統計、md への統計追記、md/html の読み取り専用化を行う（内部統計値を利用）。
-        /// </summary>
-        public Task FinalizeAsync()
-        {
-            if (_config.EnableILCache && _ilCache != null)
-            {
-                var ilCacheStats = _ilCache.Stats;
-                _ilCacheEvicted = (int)ilCacheStats.Evicted;
-                _ilCacheExpired = (int)ilCacheStats.Expired;
-            }
-
-            return _illogOutputService.FinalizeAsync(
-                _config.EnableILCache,
-                _dotNetDisassembleService.IlCacheHits,
-                _dotNetDisassembleService.IlCacheStores,
-                _ilCacheEvicted,
-                _ilCacheExpired);
         }
 
         /// <summary>
@@ -202,7 +152,6 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesMvidExcluded, il2LinesMvidExcluded);
                 }
-                _illogOutputService.AppendILDiff(fileRelativePath, areILsEqual, il1Lines, il2Lines, commandString1, commandString2, file1AbsolutePath, file2AbsolutePath);
             }
             catch (Exception)
             {
