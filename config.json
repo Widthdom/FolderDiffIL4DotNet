@@ -4,7 +4,6 @@
   "MaxLogGenerations": 5,
   "ShouldIncludeUnchangedFiles": true,
   "ShouldOutputILText": true,
-  "ShouldSkipPromptOnExit": false,
   "MaxParallelism": 0,
   "EnableILCache": true,
 	"ILCacheDirectoryAbsolutePath": "",
