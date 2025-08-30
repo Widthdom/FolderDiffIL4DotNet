@@ -130,11 +130,14 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
             try
             {
+                // IgnoredExtensions を大文字小文字を無視して評価するために HashSet を用意
+                var ignoredExtensions = new HashSet<string>(_config.IgnoredExtensions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+
                 FileDiffResultLists.OldFilesAbsolutePath = Directory.GetFiles(_oldFolderAbsolutePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !_config.IgnoredExtensions.Contains(Path.GetExtension(f))).ToList();
+                    .Where(f => !ignoredExtensions.Contains(Path.GetExtension(f))).ToList();
 
                 FileDiffResultLists.NewFilesAbsolutePath = Directory.GetFiles(_newFolderAbsolutePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !_config.IgnoredExtensions.Contains(Path.GetExtension(f))).ToList();
+                    .Where(f => !ignoredExtensions.Contains(Path.GetExtension(f))).ToList();
 
                 // OldFilesの相対パス群とNewFilesの相対パス群の和（重複除外）を取得し、個数0なら処理を終了。
                 var totalFilesRelativePathCount = 0;
@@ -347,4 +350,3 @@ namespace FolderDiffIL4DotNet.Services
         }
     }
 }
-
