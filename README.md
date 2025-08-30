@@ -143,7 +143,6 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 | IL キャッシュ先読み | 既存ディスク IL キャッシュをメモリへ昇格 | 初回以降の逆アセンブル起動を更に削減 |
 | 並列テキスト差分 | 512KB 以上のテキストを 64KB チャンクで並列バイト比較 | 完全一致判定のみ（差分位置抽出なし） |
 | ツール失敗ブラックリスト | 同一ツール連続失敗 (既定 3 回) で 10 分間スキップ | 起動オーバーヘッド削減 |
-| 統計出力 | 一定間隔でログにヒット率出力 | 解析・チューニング指標 |
 
 ### IL キャッシュ補足
 
@@ -155,7 +154,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 このプロジェクトは [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) を用いてSemVerを自動付与します。
 - `version.json`の設定に基づき、`main`ブランチや`v1.2.3`のようなタグでパブリックリリースとして扱われます。
-- 生成される`AssemblyInformationalVersion`は`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に記録されます（コンソール出力は省略）。
+- 生成される`AssemblyInformationalVersion`は`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に記録されます。
 - 手動で上書きしたい場合は`dotnet build /p:Version=1.2.3`のようにプロパティ指定も可能です。
 
 タグ付け例:
