@@ -200,7 +200,17 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 // 対象ファイル群に対し、MD5 の計算だけを先に並列実行しておきます。
                 // こうすることで、後続の TryGet/Set でキャッシュキー生成にかかる I/O 待ちを平準化できます。
-                Parallel.ForEach(fileAbsolutePaths, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, fileAbsolutePath =>
+                var files = fileAbsolutePaths as ICollection<string> ?? fileAbsolutePaths.ToList();
+                if (files.Count == 0)
+                {
+                    return Task.CompletedTask;
+                }
+                LoggerService.LogMessage($"[INFO] Precompute MD5: starting for {files.Count} files (maxParallel={maxParallel})", shouldOutputMessageToConsole: true);
+
+                int processed = 0;
+                long lastLogTicks = DateTime.UtcNow.Ticks;
+
+                Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, fileAbsolutePath =>
                 {
                     try
                     {
@@ -211,7 +221,26 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     {
                         LoggerService.LogMessage($"[WARNING] Failed to precompute MD5 for file '{fileAbsolutePath}'. This file will be skipped in the cache.", shouldOutputMessageToConsole: true, ex);
                     }
+                    finally
+                    {
+                        var done = Interlocked.Increment(ref processed);
+                        // 2秒に1回、または500件ごとに進捗ログを出す（初回は直ちに出力）
+                        var nowTicks = DateTime.UtcNow.Ticks;
+                        var prev = Interlocked.Read(ref lastLogTicks);
+                        bool timeElapsed = new TimeSpan(nowTicks - prev).TotalSeconds >= 2;
+                        bool countStep = done % 500 == 0 || done == files.Count;
+                        if (timeElapsed || countStep)
+                        {
+                            if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) == prev)
+                            {
+                                int percent = (int)(done * 100.0 / files.Count);
+                                LoggerService.LogMessage($"[INFO] Precompute MD5: {done}/{files.Count} ({percent}%)", shouldOutputMessageToConsole: true);
+                            }
+                        }
+                    }
                 });
+
+                LoggerService.LogMessage($"[INFO] Precompute MD5: completed for {files.Count} files", shouldOutputMessageToConsole: true);
             }
             catch
             {

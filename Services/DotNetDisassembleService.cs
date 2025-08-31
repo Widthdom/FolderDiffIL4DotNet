@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
@@ -145,6 +147,8 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// 指定された .NET アセンブリ群に対して代表的な逆アセンブラコマンド × 引数パターンのキャッシュ有無を事前確認し、
         /// 既存キャッシュヒット時はヒットカウンタを加算するプリフェッチ的処理。
+        /// 最適化: 入力列挙を <see cref="ICollection{T}"/> に引き上げ（必要なら ToList）、件数 0 の場合は早期 return して
+        /// 以降の前処理・並列ループをスキップします（無駄な初期化/ログ/ループを避けるための微小最適化）。
         /// </summary>
         public async Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel)
         {
@@ -156,6 +160,14 @@ namespace FolderDiffIL4DotNet.Services
             {
                 throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, "The maximum degree of parallelism must be 1 or greater.");
             }
+
+            var assemblies = dotNetAssemblyFilesAbsolutePaths as ICollection<string> ?? dotNetAssemblyFilesAbsolutePaths.ToList();
+            if (assemblies.Count == 0)
+            {
+                return;
+            }
+
+            LoggerService.LogMessage($"[INFO] Prefetch IL cache: starting for {assemblies.Count} .NET assemblies (maxParallel={maxParallel})", shouldOutputMessageToConsole: true);
 
             var disassembleCommandAndItsVersionList = new List<(string DisassembleCommand, string DisassemblerVersion)>();
             foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
@@ -181,7 +193,10 @@ namespace FolderDiffIL4DotNet.Services
                 return;
             }
 
-            await Parallel.ForEachAsync(dotNetAssemblyFilesAbsolutePaths, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (dotNetAssemblyFileAbsolutePath, _) =>
+            int processed = 0;
+            long lastLogTicks = DateTime.UtcNow.Ticks;
+
+            await Parallel.ForEachAsync(assemblies, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (dotNetAssemblyFileAbsolutePath, _) =>
             {
                 try
                 {
@@ -220,7 +235,25 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     LoggerService.LogMessage($"[WARNING] Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }
+                finally
+                {
+                    var done = Interlocked.Increment(ref processed);
+                    var nowTicks = DateTime.UtcNow.Ticks;
+                    var prev = Interlocked.Read(ref lastLogTicks);
+                    bool timeElapsed = new TimeSpan(nowTicks - prev).TotalSeconds >= 2;
+                    bool countStep = done % 100 == 0 || done == assemblies.Count;
+                    if (timeElapsed || countStep)
+                    {
+                        if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) == prev)
+                        {
+                            int percent = (int)(done * 100.0 / assemblies.Count);
+                            LoggerService.LogMessage($"[INFO] Prefetch IL cache: {done}/{assemblies.Count} ({percent}%), hits={IlCacheHits}", shouldOutputMessageToConsole: true);
+                        }
+                    }
+                }
             });
+
+            LoggerService.LogMessage($"[INFO] Prefetch IL cache: completed. hits={IlCacheHits}, stores={IlCacheStores}", shouldOutputMessageToConsole: true);
         }
 
         #region private methods

@@ -167,6 +167,29 @@ namespace FolderDiffIL4DotNet.Services
                 int maxParallel = _config.MaxParallelism <= 0 ? Environment.ProcessorCount : _config.MaxParallelism;
                 LoggerService.LogMessage($"[INFO] Parallel diff processing: maxParallel={maxParallel} (configured={_config.MaxParallelism}, logical processors={Environment.ProcessorCount})", shouldOutputMessageToConsole: true);
 
+                // 事前情報を詳細に出力（大量ファイル時の無音区間対策）
+                {
+                    int oldCount = FileDiffResultLists.OldFilesAbsolutePath.Count;
+                    int newCount = FileDiffResultLists.NewFilesAbsolutePath.Count;
+                    LoggerService.LogMessage($"[INFO] Discovery complete: old={oldCount}, new={newCount}, union(relative)={totalFilesRelativePathCount}", shouldOutputMessageToConsole: true);
+
+                    // .NET アセンブリ候補数も概算表示
+                    var allFilesForLog = FileDiffResultLists.OldFilesAbsolutePath
+                        .Concat(FileDiffResultLists.NewFilesAbsolutePath)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    int dotNetAssemblyCandidates = 0;
+                    try
+                    {
+                        dotNetAssemblyCandidates = allFilesForLog.Count(Utility.IsDotNetExecutable);
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+                    LoggerService.LogMessage($"[INFO] Precompute targets: totalFiles={allFilesForLog.Count}, dotnetAssemblyCandidates={dotNetAssemblyCandidates}", shouldOutputMessageToConsole: true);
+                }
+
                 // 新旧全ファイルに対してIL キャッシュ用の事前計算を実行
                 await PrecomputeIlCachesAsync(maxParallel);
 
@@ -179,6 +202,7 @@ namespace FolderDiffIL4DotNet.Services
                     Utility.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
                     Directory.CreateDirectory(_ilOldFolderAbsolutePath);
                     Directory.CreateDirectory(_ilNewFolderAbsolutePath);
+                    LoggerService.LogMessage($"[INFO] Prepared IL output directories: old='{_ilOldFolderAbsolutePath}', new='{_ilNewFolderAbsolutePath}'", shouldOutputMessageToConsole: true);
                 }
                 
                 int processedFileCount = 0;
