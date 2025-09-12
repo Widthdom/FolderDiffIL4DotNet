@@ -95,6 +95,12 @@ namespace FolderDiffIL4DotNet.Services
         /// <seealso cref="ILCache"/>
         public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
         {
+            if (_config.OptimizeForNetworkShares)
+            {
+                // ネットワーク共有最適化時は、MD5 プリウォームおよび IL キャッシュ先読みをスキップ
+                LoggerService.LogMessage("[INFO] OptimizeForNetworkShares=true: Skip IL precompute/prefetch to reduce network I/O.", shouldOutputMessageToConsole: true);
+                return;
+            }
             if (maxParallel <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, "The maximum degree of parallelism must be 1 or greater.");

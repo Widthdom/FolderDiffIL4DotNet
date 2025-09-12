@@ -32,14 +32,20 @@ namespace FolderDiffIL4DotNet.Services
         private readonly string _newFolderAbsolutePath;
 
         /// <summary>
+        /// ネットワーク共有向け最適化を行うか（実行時決定の統合フラグ）。
+        /// </summary>
+        private readonly bool _optimizeForNetworkShares;
+
+        /// <summary>
         /// 依存関係を受け取り初期化します。
         /// </summary>
-        public FileDiffService(ConfigSettings config, ILOutputService ilOutputService, string oldFolderAbsolutePath, string newFolderAbsolutePath)
+        public FileDiffService(ConfigSettings config, ILOutputService ilOutputService, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool optimizeForNetworkShares)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _ilOutputService = ilOutputService ?? throw new ArgumentNullException(nameof(ilOutputService));
             _oldFolderAbsolutePath = oldFolderAbsolutePath ?? throw new ArgumentNullException(nameof(oldFolderAbsolutePath));
             _newFolderAbsolutePath = newFolderAbsolutePath ?? throw new ArgumentNullException(nameof(newFolderAbsolutePath));
+            _optimizeForNetworkShares = optimizeForNetworkShares;
         }
 
         /// <summary>
@@ -89,11 +95,19 @@ namespace FolderDiffIL4DotNet.Services
                     bool areTextFilesEqual;
                     try
                     {
-                        var file1Info = new FileInfo(file1AbsolutePath);
-                        areTextFilesEqual = await Utility.DiffTextFilesParallelAsync(file1AbsolutePath, file2AbsolutePath, largeFileSizeThresholdBytes: 512 * 1024, maxParallel);
-                        if (file1Info.Length < 512 * 1024)
+                        if (_optimizeForNetworkShares)
                         {
+                            // ネットワーク共有最適化時は、チャンク毎のOpen/Closeを伴う並列比較は避け、逐次読みで比較
                             areTextFilesEqual = await Utility.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                        }
+                        else
+                        {
+                            var file1Info = new FileInfo(file1AbsolutePath);
+                            areTextFilesEqual = await Utility.DiffTextFilesParallelAsync(file1AbsolutePath, file2AbsolutePath, largeFileSizeThresholdBytes: 512 * 1024, maxParallel);
+                            if (file1Info.Length < 512 * 1024)
+                            {
+                                areTextFilesEqual = await Utility.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                            }
                         }
                     }
                     catch

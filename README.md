@@ -173,6 +173,19 @@ dotnet tool install -g ilspycmd
 	- ディスク IL キャッシュの最大ファイル数。0 以下で無制限。超過時は最終アクセスの古い順に削除。
  - ILCacheMaxDiskMegabytes
 	- ディスク IL キャッシュのサイズ上限（MB）。0 以下で無制限。超過時はサイズが下回るまで古い順に削除。
+ - OptimizeForNetworkShares
+	- ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化します。
+	- true の場合:
+		- 事前MD5プリウォーム（ILCacheのPrecompute）とILキャッシュ先読み（Prefetch）をスキップし、ネットワークI/Oの二重読みを回避
+		- 既定の最大並列度を上限8に抑制（`MaxParallelism`が0以下の場合）
+		- 大きなテキストのチャンク並列比較を使わず逐次比較に統一
+	- 1回限りの比較や大規模フォルダの共有ドライブ比較で有効です。
+ - AutoDetectNetworkShares
+	- 旧/新フォルダのパスからネットワーク共有を自動検出して、上記「ネットワーク最適化」を自動有効化します。
+	- Windows: UNC パス (`\\\\server\share` / `\\?\UNC\...`) とネットワークドライブを検出。
+	- Linux/Unix: `/proc/mounts` または `/etc/mtab` を解析し、`nfs`/`nfs4`/`cifs`/`smbfs`/`sshfs`/`fuse.sshfs`/`fuse.gvfsd-fuse`/`davfs`/`afpfs`/`ceph`/`glusterfs`/`9p` 等のネットワーク系 FS を検出。
+ - macOS: `statfs` の P/Invoke で `f_flags`（`MNT_LOCAL`）や `f_fstypename`（例: `smbfs`/`afpfs`/`webdav`/`nfs`/`sshfs`/`fusefs` 等）を確認し、ネットワークFSを検出します。
+	- 優先度: 自動検出で true になるか、手動 `OptimizeForNetworkShares` が true のいずれかで最適化を有効化します。
 
 補足:
 - 拡張子がないファイルも比較対象です。テキスト扱いにしたい場合はTextFileExtensionsに空文字（""）を含める運用を検討してください。

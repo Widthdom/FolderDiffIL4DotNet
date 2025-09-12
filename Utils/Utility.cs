@@ -34,7 +34,226 @@ namespace FolderDiffIL4DotNet.Utils
         ];
         #endregion
 
+        #region private interop (macOS)
+        /// <summary>
+        /// macOS の <c>statfs</c> におけるフラグ。<c>MNT_LOCAL</c> が立っている場合はローカルファイルシステム。
+        /// 本値が未セットの場合はネットワークファイルシステムの可能性が高いとみなします。
+        /// </summary>
+        private const uint MNT_LOCAL = 0x00001000; // ローカルファイルシステムならセット
+
+        /// <summary>
+        /// Darwin (macOS) の <c>fsid_t</c> 構造体。
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        private struct fsid_t
+        {
+            public int val1;
+            public int val2;
+        }
+
+        /// <summary>
+        /// Darwin (macOS) の <c>struct statfs</c> 定義（必要フィールドのみを抜粋）。
+        /// 参考: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/mount.h
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+        private struct statfs_darwin
+        {
+            public uint f_bsize;
+            public int f_iosize;
+            public ulong f_blocks;
+            public ulong f_bfree;
+            public ulong f_bavail;
+            public ulong f_files;
+            public ulong f_ffree;
+            public fsid_t f_fsid;
+            public uint f_owner;
+            public uint f_type;
+            public uint f_flags;
+            public uint f_fssubtype;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+            public string f_fstypename; // e.g., "apfs", "smbfs", "nfs"
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 1024)]
+            public string f_mntonname;
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 1024)]
+            public string f_mntfromname;
+            // 予約領域（実レイアウトとサイズを揃えるため8要素）
+            public uint f_reserved0;
+            public uint f_reserved1;
+            public uint f_reserved2;
+            public uint f_reserved3;
+            public uint f_reserved4;
+            public uint f_reserved5;
+            public uint f_reserved6;
+            public uint f_reserved7;
+        }
+
+        /// <summary>
+        /// macOS の <c>statfs</c> 関数。指定パスのファイルシステム情報を取得します。
+        /// </summary>
+        [DllImport("libc", SetLastError = true, CharSet = CharSet.Ansi)]
+        private static extern int statfs(string path, out statfs_darwin buf);
+
+        /// <summary>
+        /// macOS で指定パスのファイルシステム種別およびフラグを取得します。
+        /// </summary>
+        /// <param name="path">判定対象の絶対パス。</param>
+        /// <param name="fsType">取得されたファイルシステム種別（例: apfs, smbfs）。取得失敗時は null。</param>
+        /// <param name="flags">取得されたフラグ（<c>MNT_LOCAL</c> など）。取得失敗時は 0。</param>
+        /// <returns>取得できた場合 true。それ以外は false。</returns>
+        private static bool TryGetFileSystemInfoOnMac(string path, out string fsType, out uint flags)
+        {
+            fsType = null;
+            flags = 0;
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    return false;
+                }
+                var rc = statfs(path, out var info);
+                if (rc == 0)
+                {
+                    fsType = info.f_fstypename;
+                    flags = info.f_flags;
+                    return true;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+            return false;
+        }
+        #endregion
+
         #region public methods
+        /// <summary>
+        /// 指定パスがネットワーク共有（UNC/NFS/CIFS/SSHFS など）の可能性が高いかを判定します。
+        /// - Windows: UNC (\\\\ / \\?\UNC\) とネットワークドライブを検出。
+        /// - macOS: <c>statfs</c> の <c>f_flags</c>（<c>MNT_LOCAL</c>）および <c>f_fstypename</c>（smbfs/afpfs/webdav/nfs/sshfs 等）で判定。
+        /// - Linux/Unix: /proc/mounts または /etc/mtab を解析し、nfs/cifs/smbfs/sshfs 等のFSタイプを検出。
+        /// </summary>
+        public static bool IsLikelyNetworkPath(string absolutePath)
+        {
+            if (string.IsNullOrWhiteSpace(absolutePath))
+            {
+                return false;
+            }
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // UNC: \\server\share or \\?\UNC\server\share
+                    if (absolutePath.StartsWith(@"\\\\", StringComparison.Ordinal) || absolutePath.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    // ネットワークドライブ（マップドドライブ）
+                    var root = Path.GetPathRoot(absolutePath);
+                    if (!string.IsNullOrEmpty(root))
+                    {
+                        try
+                        {
+                            var di = new DriveInfo(root);
+                            if (di.DriveType == DriveType.Network)
+                            {
+                                return true;
+                            }
+                        }
+                        catch
+                        {
+                            // ignore and fallthrough
+                        }
+                    }
+                    return false;
+                }
+
+                // macOS: statfs による判定
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    if (TryGetFileSystemInfoOnMac(absolutePath, out var fsTypeMac, out var flagsMac))
+                    {
+                        // MNT_LOCAL が立っていなければネットワーク FS とみなす
+                        if ((flagsMac & MNT_LOCAL) == 0)
+                        {
+                            return true;
+                        }
+                        // 代表的なネットワークFS名のヒューリスティクス
+                        var macNetworkTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            "smbfs","afpfs","webdav","nfs","autofs","fusefs","osxfuse","sshfs"
+                        };
+                        if (!string.IsNullOrEmpty(fsTypeMac) && macNetworkTypes.Contains(fsTypeMac))
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                // Linux/Unix: /proc/mounts または /etc/mtab を解析
+                string mountsFile = null;
+                if (File.Exists("/proc/mounts"))
+                {
+                    mountsFile = "/proc/mounts";
+                }
+                else if (File.Exists("/etc/mtab"))
+                {
+                    mountsFile = "/etc/mtab";
+                }
+                if (mountsFile == null)
+                {
+                    return false; // 判定材料がない
+                }
+
+                var networkFsTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "nfs","nfs4","cifs","smbfs","sshfs","fuse.sshfs","fuse.gvfsd-fuse","davfs","fuse.davfs","afpfs","fuse.afpfs","ceph","fuse.ceph","glusterfs","9p"
+                };
+
+                string fullPath = Path.GetFullPath(absolutePath);
+                string bestMountPoint = null;
+                string bestFsType = null;
+
+                foreach (var line in File.ReadLines(mountsFile))
+                {
+                    // フォーマット: device mountpoint fstype options ...
+                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                    {
+                        continue;
+                    }
+                    // mtab/proc/mounts ではスペースが \040 としてエスケープされる
+                    var parts = line.Split(' ');
+                    if (parts.Length < 3)
+                    {
+                        continue;
+                    }
+                    string mountPointRaw = parts[1];
+                    string fsType = parts[2];
+                    string mountPoint = mountPointRaw.Replace("\\040", " ");
+
+                    // 最長一致のマウントポイントを選ぶ
+                    if (fullPath.StartsWith(mountPoint.EndsWith("/") ? mountPoint : mountPoint + "/", StringComparison.Ordinal) || string.Equals(fullPath, mountPoint, StringComparison.Ordinal))
+                    {
+                        if (bestMountPoint == null || mountPoint.Length > bestMountPoint.Length)
+                        {
+                            bestMountPoint = mountPoint;
+                            bestFsType = fsType;
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(bestFsType) && networkFsTypes.Contains(bestFsType))
+                {
+                    return true;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+            return false;
+        }
         /// <summary>
         /// 実行アセンブリの「ユーザ向け表示用バージョン文字列」を取得します。
         /// 取得順序: <see cref="System.Reflection.AssemblyInformationalVersionAttribute.InformationalVersion"/> が非空ならそれを返し、
@@ -120,17 +339,21 @@ namespace FolderDiffIL4DotNet.Utils
         {
             try
             {
-                using (var md5 = MD5.Create())
+                // まずサイズが異なれば不一致（I/O を最小化）
+                var file1Info = new FileInfo(file1AbsolutePath);
+                var file2Info = new FileInfo(file2AbsolutePath);
+                if (file1Info.Length != file2Info.Length)
                 {
-                    using (var file1stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (var file2stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        var hash1 = await md5.ComputeHashAsync(file1stream);
-                        var hash2 = await md5.ComputeHashAsync(file2stream);
-
-                        return hash1.SequenceEqual(hash2);
-                    }
+                    return false;
                 }
+
+                using var md5 = MD5.Create();
+                // ネットワークI/O最適化: 逐次読みヒントを与える
+                using var file1stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64, options: FileOptions.SequentialScan);
+                using var file2stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64, options: FileOptions.SequentialScan);
+                var hash1 = await md5.ComputeHashAsync(file1stream);
+                var hash2 = await md5.ComputeHashAsync(file2stream);
+                return hash1.SequenceEqual(hash2);
             }
             catch (FileNotFoundException ex)
             {
@@ -177,23 +400,25 @@ namespace FolderDiffIL4DotNet.Utils
         /// <exception cref="IOException">ファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
         public static async Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
         {
-            using (var file1StreamReader = new StreamReader(file1AbsolutePath))
-            using (var file2StreamReader = new StreamReader(file2AbsolutePath))
+            // 逐次読みのヒントを与える（ネットワーク共有でも効率的）
+            using var fs1 = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64, options: FileOptions.SequentialScan);
+            using var fs2 = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64, options: FileOptions.SequentialScan);
+            using var file1StreamReader = new StreamReader(fs1);
+            using var file2StreamReader = new StreamReader(fs2);
+
+            string file1Line;
+            string file2Line;
+
+            do
             {
-                string file1Line;
-                string file2Line;
+                file1Line = await file1StreamReader.ReadLineAsync();
+                file2Line = await file2StreamReader.ReadLineAsync();
 
-                do
+                if (file1Line != file2Line)
                 {
-                    file1Line = await file1StreamReader.ReadLineAsync();
-                    file2Line = await file2StreamReader.ReadLineAsync();
-
-                    if (file1Line != file2Line)
-                    {
-                        return false;
-                    }
-                } while (file1Line != null && file2Line != null);
-            }
+                    return false;
+                }
+            } while (file1Line != null && file2Line != null);
 
             return true;
         }

@@ -65,6 +65,23 @@ namespace FolderDiffIL4DotNet.Services
         /// ファイル比較サービス
         /// </summary>
         private readonly FileDiffService _fileDiffService;
+
+        /// <summary>
+        /// 実行時に決定されるネットワーク最適化フラグ（Auto検知 + 手動フラグ を統合）。
+        /// </summary>
+        private readonly bool _optimizeForNetworkShares;
+
+        /// <summary>
+        /// AutoDetectNetworkShares に基づく「旧フォルダ」側の自動検出結果。
+        /// true の場合、この実行では旧フォルダパスがネットワーク共有（UNC/NFS/SMB/SSHFS 等）と判定されています。
+        /// </summary>
+        private readonly bool _detectedNetworkOld;
+
+        /// <summary>
+        /// AutoDetectNetworkShares に基づく「新フォルダ」側の自動検出結果。
+        /// true の場合、この実行では新フォルダパスがネットワーク共有（UNC/NFS/SMB/SSHFS 等）と判定されています。
+        /// </summary>
+        private readonly bool _detectedNetworkNew;
         #endregion
 
         /// <summary>
@@ -88,7 +105,13 @@ namespace FolderDiffIL4DotNet.Services
             _ilOldFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, Constants.IL_OLD_SUB_DIR);
             _ilNewFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, Constants.IL_NEW_SUB_DIR);
             _ilOutputService = new ILOutputService(_config, _ilOutputFolderAbsolutePath, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
-            _fileDiffService = new FileDiffService(_config, _ilOutputService, _oldFolderAbsolutePath, _newFolderAbsolutePath);
+
+            // Auto検知（UNC/NFS/SSHFS等） + 手動指定のORで最終判定
+            _detectedNetworkOld = _config.AutoDetectNetworkShares && Utility.IsLikelyNetworkPath(_oldFolderAbsolutePath);
+            _detectedNetworkNew = _config.AutoDetectNetworkShares && Utility.IsLikelyNetworkPath(_newFolderAbsolutePath);
+            _optimizeForNetworkShares = _config.OptimizeForNetworkShares || _detectedNetworkOld || _detectedNetworkNew;
+
+            _fileDiffService = new FileDiffService(_config, _ilOutputService, _oldFolderAbsolutePath, _newFolderAbsolutePath, _optimizeForNetworkShares);
         }
 
         /// <summary>
@@ -123,6 +146,11 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="Exception">ログの初期化/クローズなど、その他の予期しないエラーが発生した場合。</exception>
         public async Task ExecuteFolderDiffAsync()
         {
+            // 実行モードを最初に出力
+            var mode = _optimizeForNetworkShares ? "Server/NAS-optimized" : "Local-optimized";
+            var reason = $"manual={_config.OptimizeForNetworkShares}, auto={_config.AutoDetectNetworkShares}, oldIsNetwork={_detectedNetworkOld}, newIsNetwork={_detectedNetworkNew}";
+            LoggerService.LogMessage($"[INFO] Execution mode: {mode} ({reason})", shouldOutputMessageToConsole: true);
+
             FileDiffResultLists.UnchangedFilesRelativePath.Clear();
             FileDiffResultLists.AddedFilesAbsolutePath.Clear();
             FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
@@ -164,8 +192,19 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 // 並列度を決定
-                int maxParallel = _config.MaxParallelism <= 0 ? Environment.ProcessorCount : _config.MaxParallelism;
-                LoggerService.LogMessage($"[INFO] Parallel diff processing: maxParallel={maxParallel} (configured={_config.MaxParallelism}, logical processors={Environment.ProcessorCount})", shouldOutputMessageToConsole: true);
+                int maxParallel;
+                if (_config.MaxParallelism <= 0)
+                {
+                    // 既定の並列度を、ローカルはCPU論理コア数、ネットワーク共有最適化時は上限8に抑制
+                    maxParallel = _optimizeForNetworkShares
+                        ? Math.Min(Environment.ProcessorCount, 8)
+                        : Environment.ProcessorCount;
+                }
+                else
+                {
+                    maxParallel = _config.MaxParallelism;
+                }
+                LoggerService.LogMessage($"[INFO] Parallel diff processing: maxParallel={maxParallel} (configured={_config.MaxParallelism}, OptimizeForNetworkShares={_optimizeForNetworkShares}, logical processors={Environment.ProcessorCount})", shouldOutputMessageToConsole: true);
 
                 // 事前情報を詳細に出力（大量ファイル時の無音区間対策）
                 {
@@ -241,6 +280,11 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="maxParallel">最大並列度</param>
         private async Task PrecomputeIlCachesAsync(int maxParallel)
         {
+            if (_optimizeForNetworkShares)
+            {
+                LoggerService.LogMessage("[INFO] Network-optimized mode: skip IL precompute to reduce network I/O.", shouldOutputMessageToConsole: true);
+                return;
+            }
             var allFilesAbsolutePath = FileDiffResultLists
                 .OldFilesAbsolutePath
                 .Concat(FileDiffResultLists.NewFilesAbsolutePath)

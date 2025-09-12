@@ -62,6 +62,20 @@ namespace FolderDiffIL4DotNet.Models
         /// ディスク IL キャッシュのサイズ上限（MB 単位, 0 以下で無制限）。超過時はサイズが下回るまで古いものを削除。
         /// </summary>
         public int ILCacheMaxDiskMegabytes { get; set; }
+
+        /// <summary>
+        /// ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化するかどうか。
+        /// true の場合、事前MD5プリウォーム/ILキャッシュ先読みをスキップし、
+        /// 既定の並列度を抑制するなど、ネットワークI/O過多を避ける挙動になります。
+        /// </summary>
+        public bool OptimizeForNetworkShares { get; set; }
+
+        /// <summary>
+        /// 旧/新フォルダの場所から自動でネットワーク共有（UNC/ネットワークドライブなど）を検出し、
+        /// ネットワーク最適化を有効化します。Windows で有効（UNC/NetworkDrive 判定）。
+        /// 非Windowsでは判定精度の制約があるため既定は手動フラグと併用を推奨します。
+        /// </summary>
+        public bool AutoDetectNetworkShares { get; set; }
         #endregion
     }
 }
