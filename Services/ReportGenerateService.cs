@@ -57,20 +57,29 @@ namespace FolderDiffIL4DotNet.Services
                     streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}`: Text match / mismatch");
 
                     // ボディ - Unchanged Files -
-                    // Unchanged Filesはアプリケーション設定次第で出力し、比較結果判定根拠がILMatchのときは新旧両方の最終更新日時を出力し、
-                    // そうでない場合は、新の最終更新日時を出力する。
+                    // Unchanged Files はアプリ設定で出力可否を制御。
+                    // ShouldOutputFileTimestamps が true の場合のみ、
+                    // 判定根拠が ILMatch のときは新旧両方の最終更新日時を、
+                    // それ以外は新の最終更新日時を併記します。
                     if (config.ShouldIncludeUnchangedFiles)
                     {
                         streamWriter.WriteLine("\n## [ = ] Unchanged Files");
                         foreach (var fileRelativePath in FileDiffResultLists.UnchangedFilesRelativePath)
                         {
-                            string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
-                            string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
                             var diffDetail = FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
-                            string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
-                                ? $"(updated_old: {oldFileTimestamp}, updated_new: {newFileTimestamp})"
-                                : $"(updated: {newFileTimestamp})";
-                            streamWriter.WriteLine($"- [ = ] {fileRelativePath} <u>{updateInfo}</u> `{diffDetail}`");
+                            if (config.ShouldOutputFileTimestamps)
+                            {
+                                string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
+                                string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
+                                string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
+                                    ? $"(updated_old: {oldFileTimestamp}, updated_new: {newFileTimestamp})"
+                                    : $"(updated: {newFileTimestamp})";
+                                streamWriter.WriteLine($"- [ = ] {fileRelativePath} <u>{updateInfo}</u> `{diffDetail}`");
+                            }
+                            else
+                            {
+                                streamWriter.WriteLine($"- [ = ] {fileRelativePath} `{diffDetail}`");
+                            }
                         }
                     }
 
@@ -78,14 +87,28 @@ namespace FolderDiffIL4DotNet.Services
                     streamWriter.WriteLine("\n## [ + ] Added Files");
                     foreach (var newFileAbsolutePath in FileDiffResultLists.AddedFilesAbsolutePath)
                     {
-                        streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)})</u>");
+                        if (config.ShouldOutputFileTimestamps)
+                        {
+                            streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)})</u>");
+                        }
+                        else
+                        {
+                            streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath}");
+                        }
                     }
 
                     // ボディ - Removed Files -
                     streamWriter.WriteLine("\n## [ - ] Removed Files");
                     foreach (var oldFileAbsolutePath in FileDiffResultLists.RemovedFilesAbsolutePath)
                     {
-                        streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)})</u>");
+                        if (config.ShouldOutputFileTimestamps)
+                        {
+                            streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)})</u>");
+                        }
+                        else
+                        {
+                            streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath}");
+                        }
                     }
 
                     // ボディ - Modified Files -
@@ -93,7 +116,14 @@ namespace FolderDiffIL4DotNet.Services
                     foreach (var fileRelativePath in FileDiffResultLists.ModifiedFilesRelativePath)
                     {
                         var diffDetail = FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
-                        streamWriter.WriteLine($"- [ * ] {fileRelativePath} <u>(updated_old: {Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath))}, updated_new: {Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath))})</u> `{diffDetail}`");
+                        if (config.ShouldOutputFileTimestamps)
+                        {
+                            streamWriter.WriteLine($"- [ * ] {fileRelativePath} <u>(updated_old: {Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath))}, updated_new: {Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath))})</u> `{diffDetail}`");
+                        }
+                        else
+                        {
+                            streamWriter.WriteLine($"- [ * ] {fileRelativePath} `{diffDetail}`");
+                        }
                     }
 
                     // フッタ

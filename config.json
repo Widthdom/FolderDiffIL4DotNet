@@ -77,6 +77,7 @@
   "MaxLogGenerations": 5,
   "ShouldIncludeUnchangedFiles": true,
   "ShouldOutputILText": true,
+  "ShouldOutputFileTimestamps": true,
   "MaxParallelism": 0,
   "EnableILCache": true,
 	"ILCacheDirectoryAbsolutePath": "",

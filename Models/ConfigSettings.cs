@@ -34,6 +34,11 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldOutputILText { get; set; }
 
         /// <summary>
+        /// ファイルごとの更新日時をレポートに出力するか否か
+        /// </summary>
+        public bool ShouldOutputFileTimestamps { get; set; }
+
+        /// <summary>
         /// ファイル比較処理の最大並列度（0 以下または未指定で CPU 論理コア数、自動判定）。1 の場合は従来通り逐次実行。
         /// </summary>
         public int MaxParallelism { get; set; }

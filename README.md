@@ -35,7 +35,7 @@ dotnet tool install -g ilspycmd
     - TextMatch: テキストベースで一致
     - TextMismatch: テキストベースで不一致
 - 比較結果区分ごと（Unchanged/Added/Removed/Modified）にファイルを分類
-- 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時、判定根拠）
+- 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時［`config.json`のShouldOutputFileTimestampsがtrueの場合］、判定根拠）
     - Unchanged/Modified は相対パスで記載されます。
     - Added/Removed は絶対パスで記載されます。
 - 比較結果区分ごとのファイル数を集計し`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力
@@ -141,6 +141,7 @@ dotnet tool install -g ilspycmd
 	"MaxLogGenerations": 5,
 	"ShouldIncludeUnchangedFiles": true,
 	"ShouldOutputILText": true,
+	"ShouldOutputFileTimestamps": true,
 	"MaxParallelism": 0,
 	"EnableILCache": true,
 	"ILCacheDirectoryAbsolutePath": "",
@@ -161,6 +162,8 @@ dotnet tool install -g ilspycmd
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にUnchangedのファイル一覧を含めるか否か
 - ShouldOutputILText
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old, new`にIL全文を出力するか否か
+- ShouldOutputFileTimestamps
+	- `diff_report.md` の各ファイル行に最終更新日時を併記するか否か（true で併記）。
 - MaxParallelism
 	- ファイル比較の並列度。0 または未指定で論理コア数、自動判定。1 で逐次実行。
 - EnableILCache
