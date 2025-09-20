@@ -158,14 +158,19 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
             try
             {
+                // 長時間の事前処理が続く場合でも利用者に動作中であることを知らせる。
+                _progressReporter.ReportProgress(0.0);
+
                 // IgnoredExtensions を大文字小文字を無視して評価するために HashSet を用意
                 var ignoredExtensions = new HashSet<string>(_config.IgnoredExtensions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 
                 FileDiffResultLists.OldFilesAbsolutePath = Directory.GetFiles(_oldFolderAbsolutePath, "*", SearchOption.AllDirectories)
                     .Where(f => !ignoredExtensions.Contains(Path.GetExtension(f))).ToList();
+                _progressReporter.ReportProgress(0.0);
 
                 FileDiffResultLists.NewFilesAbsolutePath = Directory.GetFiles(_newFolderAbsolutePath, "*", SearchOption.AllDirectories)
                     .Where(f => !ignoredExtensions.Contains(Path.GetExtension(f))).ToList();
+                _progressReporter.ReportProgress(0.0);
 
                 // OldFilesの相対パス群とNewFilesの相対パス群の和（重複除外）を取得し、個数0なら処理を終了。
                 var totalFilesRelativePathCount = 0;
@@ -190,6 +195,7 @@ namespace FolderDiffIL4DotNet.Services
                         return;
                     }
                 }
+                _progressReporter.ReportProgress(0.0);
 
                 // 並列度を決定
                 int maxParallel;
@@ -205,6 +211,7 @@ namespace FolderDiffIL4DotNet.Services
                     maxParallel = _config.MaxParallelism;
                 }
                 LoggerService.LogMessage($"[INFO] Parallel diff processing: maxParallel={maxParallel} (configured={_config.MaxParallelism}, OptimizeForNetworkShares={_optimizeForNetworkShares}, logical processors={Environment.ProcessorCount})", shouldOutputMessageToConsole: true);
+                _progressReporter.ReportProgress(0.0);
 
                 // 事前情報を詳細に出力（大量ファイル時の無音区間対策）
                 {
@@ -228,9 +235,11 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     LoggerService.LogMessage($"[INFO] Precompute targets: totalFiles={allFilesForLog.Count}, dotnetAssemblyCandidates={dotNetAssemblyCandidates}", shouldOutputMessageToConsole: true);
                 }
+                _progressReporter.ReportProgress(0.0);
 
                 // 新旧全ファイルに対してIL キャッシュ用の事前計算を実行
                 await PrecomputeIlCachesAsync(maxParallel);
+                _progressReporter.ReportProgress(0.0);
 
                 //IL出力先フォルダの作成
                 Utility.ValidateAbsolutePathLengthOrThrow(_ilOutputFolderAbsolutePath);
@@ -283,6 +292,7 @@ namespace FolderDiffIL4DotNet.Services
             if (_optimizeForNetworkShares)
             {
                 LoggerService.LogMessage("[INFO] Network-optimized mode: skip IL precompute to reduce network I/O.", shouldOutputMessageToConsole: true);
+                _progressReporter.ReportProgress(0.0);
                 return;
             }
             var allFilesAbsolutePath = FileDiffResultLists
@@ -290,13 +300,46 @@ namespace FolderDiffIL4DotNet.Services
                 .Concat(FileDiffResultLists.NewFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            using var keepAliveCts = new CancellationTokenSource();
+            var keepAliveTask = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!keepAliveCts.Token.IsCancellationRequested)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(5), keepAliveCts.Token);
+                        _progressReporter.ReportProgress(0.0);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // expected when the keep-alive loop is stopped
+                }
+            });
+
             try
             {
-                await _fileDiffService.PrecomputeAsync(allFilesAbsolutePath, maxParallel);
+                try
+                {
+                    await _fileDiffService.PrecomputeAsync(allFilesAbsolutePath, maxParallel);
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogMessage($"[WARNING] Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                LoggerService.LogMessage($"[WARNING] Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                keepAliveCts.Cancel();
+                try
+                {
+                    await keepAliveTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    // ignore cancellation
+                }
+                _progressReporter.ReportProgress(0.0);
             }
         }
 

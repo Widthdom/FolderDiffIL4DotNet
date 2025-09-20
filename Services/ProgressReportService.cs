@@ -9,7 +9,7 @@ namespace FolderDiffIL4DotNet.Services
     {
         #region private member variables
         /// <summary>
-        /// 直前に出力したF2フォーマットの文字列（重複出力抑止用） 
+        /// 直前に出力したF2フォーマットの文字列（重複出力抑止用）
         /// </summary>
         private string _lastFormattedPercentage = null;
 
@@ -17,6 +17,15 @@ namespace FolderDiffIL4DotNet.Services
         /// 直前に出力した実数値（単調増加保証用）。未出力時は NegativeInfinity。
         /// </summary>
         private double _lastPercentage = double.NegativeInfinity;
+
+        /// <summary>
+        /// Keep-alive 出力のために直近で標準出力へ書き込んだ時刻（UTC）。
+        /// </summary>
+        private DateTime _lastConsoleWriteUtc = DateTime.MinValue;
+        /// <summary>
+        /// 進捗値が変わらない場合にも間隔ごとに動作中であることを知らせる。
+        /// </summary>
+        private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(5);
 
         /// <summary>
         /// スレッドセーフに出力制御するためのロック。
@@ -45,17 +54,31 @@ namespace FolderDiffIL4DotNet.Services
             // 単調増加と重複出力の抑止をスレッドセーフに実施
             lock (_lock)
             {
-                // 逆行は出力しない（並列時の遅延到着を抑止）。
-                if (percentage <= _lastPercentage)
+                // 逆行（前回値より小さい進捗）は出力しない（並列時の遅延到着を抑止）。
+                if (percentage < _lastPercentage)
                 {
                     return;
                 }
 
+                var nowUtc = DateTime.UtcNow;
                 var formattedPercentage = percentage.ToString("F2");
                 if (!string.Equals(formattedPercentage, _lastFormattedPercentage, StringComparison.Ordinal))
                 {
                     Console.WriteLine($"Progress: {formattedPercentage}%");
                     _lastFormattedPercentage = formattedPercentage;
+                    _lastPercentage = percentage;
+                    _lastConsoleWriteUtc = nowUtc;
+                    Console.Out.Flush();
+                }
+                else if (nowUtc - _lastConsoleWriteUtc >= KeepAliveInterval)
+                {
+                    Console.WriteLine($"Progress: {formattedPercentage}% (processing...)");
+                    _lastPercentage = percentage;
+                    _lastConsoleWriteUtc = nowUtc;
+                    Console.Out.Flush();
+                }
+                else
+                {
                     _lastPercentage = percentage;
                 }
             }
