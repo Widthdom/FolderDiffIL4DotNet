@@ -80,10 +80,10 @@
   "ShouldOutputFileTimestamps": true,
   "MaxParallelism": 0,
   "EnableILCache": true,
-	"ILCacheDirectoryAbsolutePath": "",
-	"ILCacheStatsLogIntervalSeconds": 60,
-	"ILCacheMaxDiskFileCount": 0,
-	"ILCacheMaxDiskMegabytes": 0,
+  "ILCacheDirectoryAbsolutePath": "",
+  "ILCacheStatsLogIntervalSeconds": 60,
+  "ILCacheMaxDiskFileCount": 0,
+  "ILCacheMaxDiskMegabytes": 0,
   "OptimizeForNetworkShares": false,
   "AutoDetectNetworkShares": true
 }

@@ -147,7 +147,9 @@ dotnet tool install -g ilspycmd
 	"ILCacheDirectoryAbsolutePath": "",
 	"ILCacheStatsLogIntervalSeconds": 60,
 	"ILCacheMaxDiskFileCount": 0,
-	"ILCacheMaxDiskMegabytes": 0
+	"ILCacheMaxDiskMegabytes": 0,
+	"OptimizeForNetworkShares": false,
+	"AutoDetectNetworkShares": true
 }
 ```
 
