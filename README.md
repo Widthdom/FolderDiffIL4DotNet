@@ -40,6 +40,7 @@ dotnet tool install -g ilspycmd
     - Added/Removed は絶対パスで記載されます。
 - 比較結果区分ごとのファイル数を集計し`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力
     - 比較結果区分Unchangedのファイル一覧は、`config.json`のShouldIncludeUnchangedFilesがtrueの場合のみ出力されます。
+    - `MD5Mismatch` が 1 件以上存在する場合は、標準出力と `diff_report.md` の Summary 直下に警告を表示し、MD5 ハッシュ比較しか行えず、かつ不一致と判定されたファイルがある旨を明確に示します。
 
 ## ファイル比較フロー
 

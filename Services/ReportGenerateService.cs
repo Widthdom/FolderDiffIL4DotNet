@@ -30,6 +30,13 @@ namespace FolderDiffIL4DotNet.Services
             ConfigSettings config)
         {
             string diffReportAbsolutePath = Path.Combine(reportsFolderAbsolutePath, Constants.DIFF_REPORT_FILE_NAME);
+            bool hasMd5Mismatch = FileDiffResultLists.HasAnyMd5Mismatch;
+            const string md5MismatchWarningDescription = "One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.";
+
+            if (hasMd5Mismatch)
+            {
+                LoggerService.LogMessage($"[WARNING] {md5MismatchWarningDescription}", shouldOutputMessageToConsole: true);
+            }
             try
             {
                 Utility.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
@@ -133,6 +140,11 @@ namespace FolderDiffIL4DotNet.Services
                     streamWriter.WriteLine($"- Removed   : {FileDiffResultLists.RemovedFilesAbsolutePath.Count}");
                     streamWriter.WriteLine($"- Modified  : {FileDiffResultLists.ModifiedFilesRelativePath.Count}");
                     streamWriter.WriteLine($"- Compared  : {FileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {FileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
+                    streamWriter.WriteLine();
+                    if (hasMd5Mismatch)
+                    {
+                        streamWriter.WriteLine($"**WARNING:** {md5MismatchWarningDescription}");
+                    }
                 }
             }
             catch (Exception)

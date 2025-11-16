@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace FolderDiffIL4DotNet.Models
 {
@@ -56,6 +57,11 @@ namespace FolderDiffIL4DotNet.Models
         /// ファイル間の比較結果を保持する辞書 (並列比較で安全に書き込みできるよう ConcurrentDictionary)。
         /// </summary>
         public static ConcurrentDictionary<string, DiffDetailResult> FileRelativePathToDiffDetailDictionary { get; } = new ConcurrentDictionary<string, DiffDetailResult>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// 1 件以上のファイルが <see cref="DiffDetailResult.MD5Mismatch"/> と判定されているかどうか。
+        /// </summary>
+        public static bool HasAnyMd5Mismatch => FileRelativePathToDiffDetailDictionary.Values.Any(result => result == DiffDetailResult.MD5Mismatch);
         #endregion
 
         /// <summary>
