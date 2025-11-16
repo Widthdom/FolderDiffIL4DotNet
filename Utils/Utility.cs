@@ -500,6 +500,7 @@ namespace FolderDiffIL4DotNet.Utils
         }
         /// <summary>
         /// 指定されたファイルが .NET 実行可能ファイル（PE かつ CLR ヘッダを持つ）かを判定します。
+        /// PE32（32bit）とPE32+（64bit）の両方に対応し、DnSpyで逆アセンブル可能な全ての.NETアセンブリを正しく判定します。
         /// エラーが発生した場合や判定不能な場合は false を返します（例外は送出しません）。
         /// </summary>
         /// <param name="fileAbsolutePath">判定するファイルの絶対パス</param>
@@ -511,29 +512,65 @@ namespace FolderDiffIL4DotNet.Utils
                 using (var fileStream = new FileStream(fileAbsolutePath, FileMode.Open, FileAccess.Read))
                 using (var binaryReader = new BinaryReader(fileStream))
                 {
-                    // PEファイルのマジックナンバーを確認 (0x4D, 0x5A は "MZ" ヘッダ)
+                    // DOSヘッダのマジックナンバーを確認 ("MZ")
                     if (binaryReader.ReadUInt16() != 0x5A4D) // "MZ" in little-endian
                     {
                         return false;
                     }
 
-                    // PEヘッダの位置を取得
+                    // PEヘッダの位置を取得（DOSヘッダの0x3C位置）
                     fileStream.Seek(offset: 0x3C, SeekOrigin.Begin);
                     int peHeaderOffset = binaryReader.ReadInt32();
 
-                    // PEヘッダを確認
+                    // ファイルサイズチェック（PEヘッダが範囲内か）
+                    if (peHeaderOffset < 0 || peHeaderOffset >= fileStream.Length - 24)
+                    {
+                        return false;
+                    }
+
+                    // PEシグネチャを確認 ("PE\0\0")
                     fileStream.Seek(offset: peHeaderOffset, SeekOrigin.Begin);
                     if (binaryReader.ReadUInt32() != 0x00004550) // "PE\0\0"
                     {
                         return false;
                     }
 
-                    // CLRヘッダの存在を確認
-                    fileStream.Seek(offset: peHeaderOffset + 0x18 + 0x70, SeekOrigin.Begin); // Optional Header の CLR Runtime Header の位置
-                    int clrHeaderRva = binaryReader.ReadInt32();
+                    // COFFヘッダをスキップ（20バイト）
+                    fileStream.Seek(offset: peHeaderOffset + 4 + 20, SeekOrigin.Begin);
 
-                    // CLRヘッダが存在する場合は .NET 実行可能ファイルと判定
-                    return clrHeaderRva != 0;
+                    // OptionalHeaderのMagicを読んで32bit/64bitを判定
+                    ushort magic = binaryReader.ReadUInt16();
+                    int clrHeaderOffset;
+
+                    if (magic == 0x010B) // PE32（32bit）
+                    {
+                        // PE32の場合、CLR Runtime HeaderはData Directory[14]
+                        // OptionalHeaderの先頭から96バイト後（0x60）+ 14*8 = 0x70
+                        clrHeaderOffset = peHeaderOffset + 24 + 0x70;
+                    }
+                    else if (magic == 0x020B) // PE32+（64bit）
+                    {
+                        // PE32+の場合、CLR Runtime HeaderはData Directory[14]
+                        // OptionalHeaderの先頭から112バイト後（0x70）+ 14*8 = 0x80
+                        clrHeaderOffset = peHeaderOffset + 24 + 0x80;
+                    }
+                    else
+                    {
+                        return false; // 不明なPE形式
+                    }
+
+                    // CLRヘッダのRVAとサイズを確認
+                    if (clrHeaderOffset + 8 > fileStream.Length)
+                    {
+                        return false;
+                    }
+
+                    fileStream.Seek(offset: clrHeaderOffset, SeekOrigin.Begin);
+                    uint clrHeaderRva = binaryReader.ReadUInt32();
+                    uint clrHeaderSize = binaryReader.ReadUInt32();
+
+                    // CLRヘッダが存在し、サイズが妥当な場合は .NET アセンブリと判定
+                    return clrHeaderRva != 0 && clrHeaderSize > 0;
                 }
             }
             catch
