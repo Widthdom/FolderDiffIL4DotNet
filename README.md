@@ -40,6 +40,7 @@ dotnet tool install -g ilspycmd
     - Added/Removed は絶対パスで記載されます。
 - 比較結果区分ごとのファイル数を集計し`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力
     - 比較結果区分Unchangedのファイル一覧は、`config.json`のShouldIncludeUnchangedFilesがtrueの場合のみ出力されます。
+    - IgnoredExtensions対象のファイル一覧は、`config.json`のShouldIncludeIgnoredFilesがtrueの場合に `## [ x ] Ignored Files` として Unchanged の直前に出力されます。
     - `MD5Mismatch` が 1 件以上存在する場合は、標準出力と `diff_report.md` の Summary 直下に警告を表示し、MD5 ハッシュ比較しか行えず、かつ不一致と判定されたファイルがある旨を明確に示します。
 
 ## ファイル比較フロー
@@ -142,6 +143,7 @@ dotnet tool install -g ilspycmd
 	],
 	"MaxLogGenerations": 5,
 	"ShouldIncludeUnchangedFiles": true,
+	"ShouldIncludeIgnoredFiles": true,
 	"ShouldOutputILText": true,
 	"ShouldOutputFileTimestamps": true,
 	"MaxParallelism": 0,
@@ -164,6 +166,8 @@ dotnet tool install -g ilspycmd
 	- アプリケーションログのローテーション世代数
 - ShouldIncludeUnchangedFiles
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にUnchangedのファイル一覧を含めるか否か
+- ShouldIncludeIgnoredFiles
+	- IgnoredExtensions に該当して比較対象から除外されたファイルを `diff_report.md` の `## [ x ] Ignored Files` セクション（Unchanged の直前）に出力するか否か
 - ShouldOutputILText
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old, new`にIL全文を出力するか否か
 - ShouldOutputFileTimestamps

@@ -29,6 +29,11 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldIncludeUnchangedFiles { get; set; }
 
         /// <summary>
+        /// IgnoredExtensions に該当し比較対象から除外されたファイルもレポートへ出力するか否か。
+        /// </summary>
+        public bool ShouldIncludeIgnoredFiles { get; set; }
+
+        /// <summary>
         /// IL全文を出力するか否か
         /// </summary>
         public bool ShouldOutputILText { get; set; }

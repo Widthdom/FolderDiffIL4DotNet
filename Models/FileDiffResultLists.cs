@@ -22,6 +22,17 @@ namespace FolderDiffIL4DotNet.Models
             TextMatch, // テキストベースで一致
             TextMismatch // テキストベースで不一致
         }
+
+        /// <summary>
+        /// IgnoredExtensions により比較対象から除外されたファイルがどのフォルダに存在したかを示すフラグ。
+        /// </summary>
+        [Flags]
+        public enum IgnoredFileLocation
+        {
+            None = 0,
+            Old = 1,
+            New = 2
+        }
         #region public properties
         /// <summary>
         /// 旧バージョン側（比較元）ファイルの絶対パスのリスト
@@ -62,6 +73,11 @@ namespace FolderDiffIL4DotNet.Models
         /// 1 件以上のファイルが <see cref="DiffDetailResult.MD5Mismatch"/> と判定されているかどうか。
         /// </summary>
         public static bool HasAnyMd5Mismatch => FileRelativePathToDiffDetailDictionary.Values.Any(result => result == DiffDetailResult.MD5Mismatch);
+
+        /// <summary>
+        /// IgnoredExtensions 対象ファイルの相対パスと所在（旧/新フォルダ）情報。
+        /// </summary>
+        public static ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(StringComparer.OrdinalIgnoreCase);
         #endregion
 
         /// <summary>
@@ -75,6 +91,21 @@ namespace FolderDiffIL4DotNet.Models
         {
             // 既に存在する場合は上書き、存在しなければ追加 (スレッドセーフ)
             FileRelativePathToDiffDetailDictionary[fileRelativePath] = diffDetailResult;
+        }
+
+        /// <summary>
+        /// IgnoredExtensions に該当したファイルの所在情報を記録します。
+        /// </summary>
+        /// <param name="fileRelativePath">フォルダ基準の相対パス。</param>
+        /// <param name="location">旧/新のどちらに存在したかを示すフラグ。</param>
+        /// <exception cref="ArgumentException">fileRelativePath が null または空白の場合。</exception>
+        public static void RecordIgnoredFile(string fileRelativePath, IgnoredFileLocation location)
+        {
+            if (string.IsNullOrWhiteSpace(fileRelativePath))
+            {
+                throw new ArgumentException("fileRelativePath cannot be null or whitespace.", nameof(fileRelativePath));
+            }
+            IgnoredFilesRelativePathToLocation.AddOrUpdate(fileRelativePath, location, (_, existing) => existing | location);
         }
     }
 }

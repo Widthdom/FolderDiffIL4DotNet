@@ -151,6 +151,7 @@ namespace FolderDiffIL4DotNet.Services
             var reason = $"manual={_config.OptimizeForNetworkShares}, auto={_config.AutoDetectNetworkShares}, oldIsNetwork={_detectedNetworkOld}, newIsNetwork={_detectedNetworkNew}";
             LoggerService.LogMessage($"[INFO] Execution mode: {mode} ({reason})", shouldOutputMessageToConsole: true);
 
+            FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
             FileDiffResultLists.UnchangedFilesRelativePath.Clear();
             FileDiffResultLists.AddedFilesAbsolutePath.Clear();
             FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
@@ -164,12 +165,10 @@ namespace FolderDiffIL4DotNet.Services
                 // IgnoredExtensions を大文字小文字を無視して評価するために HashSet を用意
                 var ignoredExtensions = new HashSet<string>(_config.IgnoredExtensions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
 
-                FileDiffResultLists.OldFilesAbsolutePath = Directory.GetFiles(_oldFolderAbsolutePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !ignoredExtensions.Contains(Path.GetExtension(f))).ToList();
+                FileDiffResultLists.OldFilesAbsolutePath = EnumerateIncludedFiles(_oldFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.Old);
                 _progressReporter.ReportProgress(0.0);
 
-                FileDiffResultLists.NewFilesAbsolutePath = Directory.GetFiles(_newFolderAbsolutePath, "*", SearchOption.AllDirectories)
-                    .Where(f => !ignoredExtensions.Contains(Path.GetExtension(f))).ToList();
+                FileDiffResultLists.NewFilesAbsolutePath = EnumerateIncludedFiles(_newFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.New);
                 _progressReporter.ReportProgress(0.0);
 
                 // OldFilesの相対パス群とNewFilesの相対パス群の和（重複除外）を取得し、個数0なら処理を終了。
@@ -252,7 +251,6 @@ namespace FolderDiffIL4DotNet.Services
                     Directory.CreateDirectory(_ilNewFolderAbsolutePath);
                     LoggerService.LogMessage($"[INFO] Prepared IL output directories: old='{_ilOldFolderAbsolutePath}', new='{_ilNewFolderAbsolutePath}'", shouldOutputMessageToConsole: true);
                 }
-                
                 int processedFileCount = 0;
                 // new 側の全ファイル絶対パスを入れた集合（大文字小文字無視）。
                 // old 側を走査しながら一致したパスを削除していき、最後に残ったものを Added 判定に利用する。
@@ -458,6 +456,28 @@ namespace FolderDiffIL4DotNet.Services
             });
 
             return processedFileCount;
+        }
+
+        /// <summary>
+        /// IgnoredExtensions を適用して比較対象へ含めるファイル一覧を取得します。必要に応じて無視対象のレポート用情報も記録します。
+        /// </summary>
+        private List<string> EnumerateIncludedFiles(string rootFolderAbsolutePath, HashSet<string> ignoredExtensions, FileDiffResultLists.IgnoredFileLocation locationFlag)
+        {
+            var includedFiles = new List<string>();
+            foreach (var fileAbsolutePath in Directory.GetFiles(rootFolderAbsolutePath, "*", SearchOption.AllDirectories))
+            {
+                if (ignoredExtensions.Contains(Path.GetExtension(fileAbsolutePath)))
+                {
+                    if (_config.ShouldIncludeIgnoredFiles)
+                    {
+                        var relativePath = Path.GetRelativePath(rootFolderAbsolutePath, fileAbsolutePath);
+                        FileDiffResultLists.RecordIgnoredFile(relativePath, locationFlag);
+                    }
+                    continue;
+                }
+                includedFiles.Add(fileAbsolutePath);
+            }
+            return includedFiles;
         }
     }
 }

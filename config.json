@@ -76,6 +76,7 @@
   ],
   "MaxLogGenerations": 5,
   "ShouldIncludeUnchangedFiles": true,
+  "ShouldIncludeIgnoredFiles": true,
   "ShouldOutputILText": true,
   "ShouldOutputFileTimestamps": true,
   "MaxParallelism": 0,

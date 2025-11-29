@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Utils;
@@ -62,6 +64,51 @@ namespace FolderDiffIL4DotNet.Services
                     streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}`: MD5 hash match / mismatch");
                     streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}`: IL(Intermediate Language) match / mismatch");
                     streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}`: Text match / mismatch");
+
+                    // ボディ - Ignored Files -
+                    // Ignored Files はアプリ設定（ShouldIncludeIgnoredFiles）が true の場合のみ出力。
+                    // ShouldOutputFileTimestamps が true なら旧/新それぞれの存在箇所に応じた最終更新日時を併記し、
+                    // 旧/新のどちらに存在したかもラベル（(old)/(new)/(old/new)）で明示します。
+                    if (config.ShouldIncludeIgnoredFiles && FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count > 0)
+                    {
+                        streamWriter.WriteLine("\n## [ x ] Ignored Files");
+                        foreach (var entry in FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
+                        {
+                            var locationLabel = entry.Value switch
+                            {
+                                FileDiffResultLists.IgnoredFileLocation.Old => "(old)",
+                                FileDiffResultLists.IgnoredFileLocation.New => "(new)",
+                                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New => "(old/new)",
+                                _ => string.Empty
+                            };
+
+                            string timestampInfo = null;
+                            if (config.ShouldOutputFileTimestamps)
+                            {
+                                var timestampParts = new List<string>();
+                                if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0)
+                                {
+                                    timestampParts.Add($"updated_old: {Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))}");
+                                }
+                                if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0)
+                                {
+                                    timestampParts.Add($"updated_new: {Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key))}");
+                                }
+                                timestampInfo = timestampParts.Count > 0 ? string.Join(", ", timestampParts) : null;
+                            }
+
+                            var line = $"- [ x ] {entry.Key}";
+                            if (!string.IsNullOrEmpty(locationLabel))
+                            {
+                                line += $" {locationLabel}";
+                            }
+                            if (config.ShouldOutputFileTimestamps && !string.IsNullOrEmpty(timestampInfo))
+                            {
+                                line += $" <u>({timestampInfo})</u>";
+                            }
+                            streamWriter.WriteLine(line);
+                        }
+                    }
 
                     // ボディ - Unchanged Files -
                     // Unchanged Files はアプリ設定で出力可否を制御。
@@ -135,6 +182,10 @@ namespace FolderDiffIL4DotNet.Services
 
                     // フッタ
                     streamWriter.WriteLine("\n## Summary");
+                    if (config.ShouldIncludeIgnoredFiles)
+                    {
+                        streamWriter.WriteLine($"- Ignored   : {FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count}");
+                    }
                     streamWriter.WriteLine($"- Unchanged : {FileDiffResultLists.UnchangedFilesRelativePath.Count}");
                     streamWriter.WriteLine($"- Added     : {FileDiffResultLists.AddedFilesAbsolutePath.Count}");
                     streamWriter.WriteLine($"- Removed   : {FileDiffResultLists.RemovedFilesAbsolutePath.Count}");
