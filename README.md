@@ -5,7 +5,7 @@
 ## 必要環境
 
 - .NET SDK 8.x
-- macOS/Windows/Linuxで動作
+- macOS/Windows/Linux/Unix系（例: FreeBSD）で動作
  - IL 逆アセンブラ（自動で候補順に試行します）
 	- 優先: `dotnet-ildasm` または `dotnet ildasm`
 	- 代替: `ilspycmd`
@@ -14,13 +14,13 @@
 ```bash
 dotnet tool install --global dotnet-ildasm
 # 必要に応じて PATH に追加
-# macOS/Linux:  $HOME/.dotnet/tools を PATH に追加
+# macOS/Linux/Unix:  $HOME/.dotnet/tools を PATH に追加
 # Windows:      %USERPROFILE%\.dotnet\tools を PATH に追加
 ```
 ```bash
 dotnet tool install -g ilspycmd
 # 必要に応じて PATH に追加
-# macOS/Linux:  $HOME/.dotnet/tools を PATH に追加
+# macOS/Linux/Unix:  $HOME/.dotnet/tools を PATH に追加
 # Windows:      %USERPROFILE%\.dotnet\tools を PATH に追加
 ```
 
@@ -52,12 +52,12 @@ dotnet tool install -g ilspycmd
     - TextMatch: テキストベースで一致
     - TextMismatch: テキストベースで不一致
 - 比較結果区分ごと（Unchanged/Added/Removed/Modified）にファイルを分類
-- 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時［`config.json`のShouldOutputFileTimestampsがtrueの場合］、判定根拠）
+- 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時［`config.json`のShouldOutputFileTimestampsが `true` の場合］、判定根拠）
     - Unchanged/Modified は相対パスで記載されます。
     - Added/Removed は絶対パスで記載されます。
 - 比較結果区分ごとのファイル数を集計し`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力
-    - 比較結果区分Unchangedのファイル一覧は、`config.json`のShouldIncludeUnchangedFilesがtrueの場合のみ出力されます。
-    - IgnoredExtensions対象のファイル一覧は、`config.json`のShouldIncludeIgnoredFilesがtrueの場合に `## [ x ] Ignored Files` として Unchanged の直前に出力されます。
+    - 比較結果区分Unchangedのファイル一覧は、`config.json`のShouldIncludeUnchangedFilesが `true` の場合のみ出力されます。
+    - IgnoredExtensions対象のファイル一覧は、`config.json`のShouldIncludeIgnoredFilesが `true` の場合に `## [ x ] Ignored Files` として Unchanged の直前に出力されます。
     - `MD5Mismatch` が 1 件以上存在する場合は、標準出力と `diff_report.md` の Summary 直下に警告を表示し、MD5 ハッシュ比較しか行えず、かつ不一致と判定されたファイルがある旨を明確に示します。
 
 ## ファイル比較フロー
@@ -174,46 +174,23 @@ dotnet tool install -g ilspycmd
 }
 ```
 
-- IgnoredExtensions
-	- 指定拡張子は比較対象から除外します（例: .pdb）。
-- TextFileExtensions
-	- 指定拡張子のファイルはテキストとして行単位で比較します。
-	- ピリオド（`.`）付きの拡張子で指定してください（例: `.cs`, `.json`, `.xml`）。
-- MaxLogGenerations
-	- アプリケーションログのローテーション世代数
-- ShouldIncludeUnchangedFiles
-	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にUnchangedのファイル一覧を含めるか否か
-- ShouldIncludeIgnoredFiles
-	- IgnoredExtensions に該当して比較対象から除外されたファイルを `diff_report.md` の `## [ x ] Ignored Files` セクション（Unchanged の直前）に出力するか否か
-- ShouldOutputILText
-	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old, new`にIL全文を出力するか否か
-- ShouldOutputFileTimestamps
-	- `diff_report.md` の各ファイル行に最終更新日時を併記するか否か（true で併記）。
-- MaxParallelism
-	- ファイル比較の並列度。0 または未指定で論理コア数、自動判定。1 で逐次実行。
-- EnableILCache
-	- IL 逆アセンブル結果（MD5 + ツール / バージョン単位）をメモリ & 任意ディスクにキャッシュし再実行時の逆アセンブルをスキップ。
-- ILCacheDirectoryAbsolutePath
-	- キャッシュ格納ディレクトリ。空 / 未指定で実行ディレクトリ配下 `ILCache`。容量制御 (LRU) と TTL（現在 12h）あり。
- - ILCacheStatsLogIntervalSeconds
-	- IL キャッシュの内部統計（ヒット率など）をログへ出力する間隔（秒）。0 以下で 60 秒既定。
- - ILCacheMaxDiskFileCount
-	- ディスク IL キャッシュの最大ファイル数。0 以下で無制限。超過時は最終アクセスの古い順に削除。
- - ILCacheMaxDiskMegabytes
-	- ディスク IL キャッシュのサイズ上限（MB）。0 以下で無制限。超過時はサイズが下回るまで古い順に削除。
- - OptimizeForNetworkShares
-	- ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化します。
-	- true の場合:
-		- 事前MD5プリウォーム（ILCacheのPrecompute）とILキャッシュ先読み（Prefetch）をスキップし、ネットワークI/Oの二重読みを回避
-		- 既定の最大並列度を上限8に抑制（`MaxParallelism`が0以下の場合）
-		- 大きなテキストのチャンク並列比較を使わず逐次比較に統一
-	- 1回限りの比較や大規模フォルダの共有ドライブ比較で有効です。
- - AutoDetectNetworkShares
-	- 旧/新フォルダのパスからネットワーク共有を自動検出して、上記「ネットワーク最適化」を自動有効化します。
-	- Windows: UNC パス (`\\\\server\share` / `\\?\UNC\...`) とネットワークドライブを検出。
-	- Linux/Unix: `/proc/mounts` または `/etc/mtab` を解析し、`nfs`/`nfs4`/`cifs`/`smbfs`/`sshfs`/`fuse.sshfs`/`fuse.gvfsd-fuse`/`davfs`/`afpfs`/`ceph`/`glusterfs`/`9p` 等のネットワーク系 FS を検出。
- - macOS: `statfs` の P/Invoke で `f_flags`（`MNT_LOCAL`）や `f_fstypename`（例: `smbfs`/`afpfs`/`webdav`/`nfs`/`sshfs`/`fusefs` 等）を確認し、ネットワークFSを検出します。
-	- 優先度: 自動検出で true になるか、手動 `OptimizeForNetworkShares` が true のいずれかで最適化を有効化します。
+| 項目 | 説明 |
+| --- | --- |
+| IgnoredExtensions | 指定拡張子は比較対象から除外する（例: `.pdb`）。 |
+| TextFileExtensions | 指定拡張子のファイルはテキストとして行単位で比較する。ピリオド（`.`）付きで指定すること（例: `.cs`, `.json`, `.xml`）。 |
+| MaxLogGenerations | アプリケーションログのローテーション世代数。 |
+| ShouldIncludeUnchangedFiles | `Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にUnchangedのファイル一覧を含めるか否か。 |
+| ShouldIncludeIgnoredFiles | IgnoredExtensions に該当して比較対象から除外されたファイルを `diff_report.md` の `## [ x ] Ignored Files` セクション（Unchanged の直前）に出力するか否か。 |
+| ShouldOutputILText | `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old, new`にIL全文を出力するか否か。 |
+| ShouldOutputFileTimestamps | `diff_report.md` の各ファイル行に最終更新日時を併記するか否か（ `true`  で併記）。 |
+| MaxParallelism | ファイル比較の並列度。0 または未指定で論理コア数、自動判定。1 で逐次実行。 |
+| EnableILCache | IL 逆アセンブル結果（MD5 + ツール / バージョン単位）をメモリ & 任意ディスクにキャッシュし再実行時の逆アセンブルをスキップ。 |
+| ILCacheDirectoryAbsolutePath | キャッシュ格納ディレクトリ。空 / 未指定で実行ディレクトリ配下 `ILCache`。容量制御 (LRU) と TTL（現在 12h）あり。 |
+| ILCacheStatsLogIntervalSeconds | IL キャッシュの内部統計（ヒット率など）をログへ出力する間隔（秒）。0 以下で 60 秒が既定。 |
+| ILCacheMaxDiskFileCount | ディスク IL キャッシュの最大ファイル数。0 以下で無制限。超過時は最終アクセスの古い順に削除。 |
+| ILCacheMaxDiskMegabytes | ディスク IL キャッシュのサイズ上限（MB）。0 以下で無制限。超過時はサイズが下回るまで古い順に削除。 |
+| OptimizeForNetworkShares | ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化。<br>`true` の場合:<br>- 事前MD5プリウォーム（ILCacheのPrecompute）とILキャッシュ先読み（Prefetch）をスキップし、ネットワークI/Oの二重読みを回避<br>- 既定の最大並列度を上限8に抑制（`MaxParallelism`が0以下の場合） <br>- 大きなテキストのチャンク並列比較を使わず逐次比較に統一。<br>1回限りや大規模フォルダの共有ドライブ比較で有効。 |
+| AutoDetectNetworkShares | 旧/新フォルダのパスからネットワーク共有を自動検出して「ネットワーク最適化」を自動有効化。<br>macOS:<br>- `statfs` の P/Invoke で `f_flags`（`MNT_LOCAL`）や `f_fstypename`（例: `smbfs`/`afpfs`/`webdav`/`nfs`/`sshfs`/`fusefs` 等）を確認し、ネットワークFSを検出。<br>Linux/Unix:<br>- `/proc/mounts` または `/etc/mtab` を解析し、`nfs`/`nfs4`/`cifs`/`smbfs`/`sshfs`/`fuse.sshfs`/`fuse.gvfsd-fuse`/`davfs`/`afpfs`/`ceph`/`glusterfs`/`9p` 等のネットワーク系 FS を検出。<br>Windows:<br>- UNC パス (`\\server\\share` / `\\?\\UNC\\...`) とネットワークドライブを検出。<br>※自動検出で `true` になった場合は `OptimizeForNetworkShares` が `false` のままでも最適化が有効になります。自動検出が `false` となった場合でも `OptimizeForNetworkShares` を `true` に設定すれば手動で最適化を強制できます。 |
 
 補足:
 - 拡張子がないファイルも比較対象です。テキスト扱いにしたい場合はTextFileExtensionsに空文字（""）を含める運用を検討してください。
@@ -223,7 +200,7 @@ dotnet tool install -g ilspycmd
 
 1) `config.json`（実行ファイルと同じフォルダに配置されています）の内容を確認・修正します。
 2) コマンドライン第1引数に「旧バージョン側（比較元）フォルダの絶対パス」、第2引数に「新バージョン側（比較先）フォルダの絶対パス」、第3引数に「レポートのラベル」を指定して実行します。
-3) --no-pauseオプションをつけることで、終了時のキー入力待ちをスキップすることができます。
+3) `--no-pause` オプションをつけることで、終了時のキー入力待ちをスキップすることができます。
 	- オプションをつけていなくても、非対話（リダイレクトされている）の場合はスキップされます。
 
 ビルド・実行（例）:
@@ -236,13 +213,13 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 出力完了後、以下の生成物は読み取り専用（ReadOnly 属性）に変更されます（失敗時は警告を出し処理は継続）。
 - `diff_report.md`
-- `IL/old/*_IL.txt`（`config.json`のShouldOutputILText が true の場合）
-- `IL/new/*_IL.txt`（`config.json`のShouldOutputILText が true の場合）
+- `IL/old/*_IL.txt`（`config.json`のShouldOutputILText が `true` の場合）
+- `IL/new/*_IL.txt`（`config.json`のShouldOutputILText が `true` の場合）
 
 ## 副生成物
 
 - `Logs/log_YYYYMMDD.log` … アプリケーションログ（`config.json`のMaxLogGenerationsを超えるアプリケーションログがあった場合、古いものから順に削除されます。）
-- 以下は`config.json`のShouldOutputILTextがtrueの場合のみ生成されます。
+- 以下は`config.json`のShouldOutputILTextが `true` の場合のみ生成されます。
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old/*.txt` … 旧バージョン側（比較元）ファイルのビルド固有情報を除く IL 全文を出力（ファイル名称は相対パスの区切り文字を.に置換したもの）
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/new/*.txt` … 新バージョン側（比較先）ファイルのビルド固有情報を除く IL 全文を出力（ファイル名称は相対パスの区切り文字を.に置換したもの）
 		- 出力されるIL 全文は「`// MVID:`」で始まる行を除外しています。
