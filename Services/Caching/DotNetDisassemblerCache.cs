@@ -13,6 +13,9 @@ namespace FolderDiffIL4DotNet.Services.Caching
     /// </summary>
     public static class DotNetDisassemblerCache
     {
+        /// <summary>
+        /// 対応する逆アセンブラ種別（Unknown/dotnet-ildasm/ildasm/ilspy）。
+        /// </summary>
         private enum DisassemblerKind
         {
             Unknown = 0,
@@ -21,16 +24,20 @@ namespace FolderDiffIL4DotNet.Services.Caching
             Ilspy
         }
 
+        /// <summary>
+        /// コマンドラベルをキーにした逆アセンブラのバージョン文字列キャッシュ。
+        /// </summary>
         private static readonly ConcurrentDictionary<string, string> disassemblerVersionCache = new(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// コマンドラベル（例: "dotnet ildasm file.dll"）から逆アセンブラ種別を判定し、バージョン文字列を取得して返す（キャッシュあり）。
         /// </summary>
+        /// <exception cref="InvalidOperationException">コマンドラベルが無効、またはバージョン取得に失敗した場合。</exception>
         public static async Task<string> GetDisassemblerVersionAsync(string disassembleCommandWithArguments)
         {
             if (string.IsNullOrWhiteSpace(disassembleCommandWithArguments))
             {
-                throw new InvalidOperationException("Failed to determine disassembler version: empty command label.");
+                throw new InvalidOperationException(Constants.ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_EMPTY);
             }
 
             var (disassemblerKind, disassemblerVersionCacheKey, disassemblerExe) = GetDisassemblerInfo(disassembleCommandWithArguments);
@@ -39,7 +46,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 DisassemblerKind.DotnetIldasm => await GetVersionForDotnetIldasmAsync(disassemblerVersionCacheKey, disassemblerExe),
                 DisassemblerKind.Ildasm => await GetVersionForIldasmAsync(disassemblerVersionCacheKey, disassemblerExe),
                 DisassemblerKind.Ilspy => await GetVersionForIlspyAsync(disassemblerVersionCacheKey, disassemblerExe),
-                _ => throw new InvalidOperationException($"Failed to determine disassembler version for label: '{disassembleCommandWithArguments}'.")
+                _ => throw new InvalidOperationException($"{Constants.ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_FOR_LABEL} '{disassembleCommandWithArguments}'.")
             };
         }
 
@@ -51,7 +58,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var tokens = Utility.TokenizeCommand(disassembleCommandWithArguments);
             if (tokens.Count == 0)
             {
-                throw new InvalidOperationException($"Failed to determine disassembler version: invalid command label '{disassembleCommandWithArguments}'.");
+                throw new InvalidOperationException(string.Format(Constants.ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_INVALID, disassembleCommandWithArguments));
             }
 
             if (string.Equals(tokens[0], Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
@@ -95,7 +102,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 return cachedDisassemblerVersion;
             }
 
-            throw new InvalidOperationException($"Failed to obtain version string for '{Constants.DOTNET_ILDASM}' (disassemblerVersionCacheKey='{disassemblerVersionCacheKey}').");
+            throw new InvalidOperationException($"{Constants.ERROR_FAILED_TO_GET_VERSION} '{Constants.DOTNET_ILDASM}' ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}').");
         }
 
         /// <summary>
@@ -122,11 +129,15 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 return cachedDisassemblerVersion;
             }
 
-            throw new InvalidOperationException($"Failed to obtain version string for '{Constants.DOTNET_ILDASM}' (disassemblerVersionCacheKey='{disassemblerVersionCacheKey}').");
+            throw new InvalidOperationException($"{Constants.ERROR_FAILED_TO_GET_VERSION} '{Constants.DOTNET_ILDASM}' ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}').");
         }
 
+        /// <summary>
+        /// ilspycmd のバージョン文字列を取得してキャッシュします（--version/-v/-h の順に試行）。
+        /// </summary>
         private static async Task<string> GetVersionForIlspyAsync(string disassemblerVersionCacheKey, string disassemblerExe)
         {
+            // まずは --version で取得を試みる（成功すればそのままキャッシュ）。
             var disassemblerVersion = await TryGetDisassemblerVersionAsync(disassemblerVersionCacheKey, disassemblerExe, [Constants.FLAG_VERSION_LONG]);
             if (!string.IsNullOrWhiteSpace(disassemblerVersion))
             {
@@ -134,6 +145,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 return disassemblerVersion;
             }
 
+            // 続いて -v（短縮記法）を試す。
             disassemblerVersion = await TryGetDisassemblerVersionAsync(disassemblerVersionCacheKey, disassemblerExe, [Constants.FLAG_VERSION_SHORT]);
             if (!string.IsNullOrWhiteSpace(disassemblerVersion))
             {
@@ -141,6 +153,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 return disassemblerVersion;
             }
 
+            // --version/-v が失敗するケースでは -h 出力の1行目にバージョンが含まれるため fallback する。
             disassemblerVersion = await TryGetDisassemblerVersionAsync(disassemblerVersionCacheKey, disassemblerExe, [Constants.FLAG_HELP_SHORT]);
             if (!string.IsNullOrWhiteSpace(disassemblerVersion))
             {
@@ -154,7 +167,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 return cachedDisassemblerVersion;
             }
 
-            throw new InvalidOperationException($"Failed to obtain version string for '{Constants.ILSPY}' (disassemblerVersionCacheKey='{disassemblerVersionCacheKey}').");
+            // いずれの方法でも取得できない場合はエラーとして扱う。
+            throw new InvalidOperationException($"{Constants.ERROR_FAILED_TO_GET_VERSION} '{Constants.ILSPY}' ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}').");
         }
 
         /// <summary>
@@ -168,7 +182,17 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage($"[WARNING] Failed to get version (disassemblerVersionCacheKey='{disassemblerVersionCacheKey}', disassemblerExe='{disassemblerExe}'): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                LoggerService.LogMessage(
+                    LoggerService.LogLevel.Warning,
+                    string.Format(
+                        Constants.LOG_FAILED_TO_GET_VERSION_DETAIL,
+                        nameof(disassemblerVersionCacheKey),
+                        disassemblerVersionCacheKey,
+                        nameof(disassemblerExe),
+                        disassemblerExe,
+                        ex.Message),
+                    shouldOutputMessageToConsole: true,
+                    ex);
             }
             return null;
         }

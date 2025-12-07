@@ -15,9 +15,9 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// config.jsonファイルから設定情報を非同期で読み込みます。
         /// このメソッドは、アプリケーションのベースディレクトリにあるJSONファイルを読み取り、
-        /// その内容をConfigSettingsオブジェクトにデシリアライズして返します。
+        /// その内容を<see cref="ConfigSettings"/>オブジェクトにデシリアライズして返します。
         /// </summary>
-        /// <returns>設定データを含むConfigSettingsオブジェクト</returns>
+        /// <returns>設定データを含む<see cref="ConfigSettings"/>オブジェクト</returns>
         /// <exception cref="FileNotFoundException">config.jsonファイルが指定された場所に存在しない場合にスローされます。</exception>
         /// <exception cref="InvalidDataException">config.jsonファイルが無効なJSON形式のため解析できない場合にスローされます。</exception>
         /// <exception cref="IOException">config.jsonファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
@@ -28,7 +28,7 @@ namespace FolderDiffIL4DotNet.Services
                 string configFileAbsolutePath = Path.Combine(AppContext.BaseDirectory, Constants.CONFIG_FILE_NAME);
                 if (!File.Exists(configFileAbsolutePath))
                 {
-                    throw new FileNotFoundException($"Config file not found: {configFileAbsolutePath}");
+                    throw new FileNotFoundException(string.Format(Constants.ERROR_CONFIG_NOT_FOUND, configFileAbsolutePath));
                 }
 
                 string json = await File.ReadAllTextAsync(configFileAbsolutePath);
@@ -36,7 +36,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (JsonException ex)
             {
-                throw new InvalidDataException("Failed to parse the config file.", ex);
+                throw new InvalidDataException(Constants.ERROR_CONFIG_PARSE_FAILED, ex);
             }
         }
     }

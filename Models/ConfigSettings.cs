@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using FolderDiffIL4DotNet.Common;
 
 namespace FolderDiffIL4DotNet.Models
 {
@@ -54,7 +55,7 @@ namespace FolderDiffIL4DotNet.Models
         public bool EnableILCache { get; set; }
 
         /// <summary>
-        /// IL キャッシュ格納ディレクトリ（null/空の場合は実行ディレクトリ配下 "ILCache" を既定使用）
+        /// IL キャッシュ格納ディレクトリ（null/空の場合は実行ディレクトリ配下 <see cref="Constants.DEFAULT_IL_CACHE_DIR_NAME"/> を既定使用）
         /// </summary>
         public string ILCacheDirectoryAbsolutePath { get; set; }
 

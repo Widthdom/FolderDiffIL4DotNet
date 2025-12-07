@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using FolderDiffIL4DotNet.Common;
 
 namespace FolderDiffIL4DotNet.Models
 {
@@ -33,6 +34,7 @@ namespace FolderDiffIL4DotNet.Models
             Old = 1,
             New = 2
         }
+
         #region public properties
         /// <summary>
         /// 旧バージョン側（比較元）ファイルの絶対パスのリスト
@@ -103,7 +105,7 @@ namespace FolderDiffIL4DotNet.Models
         {
             if (string.IsNullOrWhiteSpace(fileRelativePath))
             {
-                throw new ArgumentException("fileRelativePath cannot be null or whitespace.", nameof(fileRelativePath));
+                throw new ArgumentException(string.Format(Constants.ERROR_FILE_RELATIVE_PATH_EMPTY, nameof(fileRelativePath)));
             }
             IgnoredFilesRelativePathToLocation.AddOrUpdate(fileRelativePath, location, (_, existing) => existing | location);
         }

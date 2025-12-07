@@ -5,9 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace FolderDiffIL4DotNet.Utils
 {
@@ -32,17 +31,235 @@ namespace FolderDiffIL4DotNet.Utils
             "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
             "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
         ];
+
+        /// <summary>
+        /// macOS でネットワークドライブとみなすファイルシステム種別。
+        /// </summary>
+        private static readonly HashSet<string> s_macNetworkFsTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "smbfs","afpfs","webdav","nfs","autofs","fusefs","osxfuse","sshfs"
+        };
+
+        /// <summary>
+        /// Linux/Unix でネットワークドライブとみなすファイルシステム種別。
+        /// </summary>
+        private static readonly HashSet<string> s_unixNetworkFsTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "nfs","nfs4","cifs","smbfs","sshfs","fuse.sshfs","fuse.gvfsd-fuse","davfs","fuse.davfs","afpfs","fuse.afpfs","ceph","fuse.ceph","glusterfs","9p"
+        };
+        #endregion
+
+        #region private constants
+        /// <summary>
+        /// UNC パス判定に用いる接頭辞（\\server\share）。
+        /// </summary>
+        private const string WINDOWS_UNC_PREFIX = @"\\";
+
+        /// <summary>
+        /// UNC デバイスパス判定に用いる接頭辞（\\?\UNC\server\share）。
+        /// </summary>
+        private const string WINDOWS_UNC_DEVICE_PREFIX = @"\\?\UNC\";
+
+        /// <summary>
+        /// Linux 系でマウント情報を取得する際の優先パス。
+        /// </summary>
+        private const string PROC_MOUNTS_PATH = "/proc/mounts";
+
+        /// <summary>
+        /// Linux 系でマウント情報を取得する際のフォールバックパス。
+        /// </summary>
+        private const string ETC_MTAB_PATH = "/etc/mtab";
+
+        /// <summary>
+        /// /proc/mounts などでスペースを表すエスケープシーケンス。
+        /// </summary>
+        private const string ESCAPED_SPACE = "\\040";
+
+        /// <summary>
+        /// スペース文字の定数。
+        /// </summary>
+        private const string SPACE = " ";
+
+        /// <summary>
+        /// 逐次読み取りで利用する既定の FileStream バッファサイズ（64KiB）。
+        /// </summary>
+        private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 1024 * 64;
+
+        /// <summary>
+        /// DOS ヘッダのマジックナンバー ("MZ")。
+        /// </summary>
+        private const ushort DOS_HEADER_MAGIC = 0x5A4D;
+
+        /// <summary>
+        /// DOS ヘッダ内の PE ヘッダ先頭位置を示すオフセット。
+        /// </summary>
+        private const int DOS_HEADER_PE_POINTER_OFFSET = 0x3C;
+
+        /// <summary>
+        /// PE シグネチャ値 ("PE\0\0")。
+        /// </summary>
+        private const uint PE_SIGNATURE = 0x00004550;
+
+        /// <summary>
+        /// PE シグネチャのバイト数。
+        /// </summary>
+        private const int PE_SIGNATURE_SIZE = 4;
+
+        /// <summary>
+        /// COFF ヘッダのサイズ（20 バイト）。
+        /// </summary>
+        private const int COFF_HEADER_SIZE = 20;
+
+        /// <summary>
+        /// Optional Header 先頭までの総オフセット（PE シグネチャ + COFF ヘッダ）。
+        /// </summary>
+        private const int OPTIONAL_HEADER_START_OFFSET = PE_SIGNATURE_SIZE + COFF_HEADER_SIZE;
+
+        /// <summary>
+        /// Optional Header のマジック (PE32)。
+        /// </summary>
+        private const ushort OPTIONAL_HEADER_MAGIC_PE32 = 0x010B;
+
+        /// <summary>
+        /// Optional Header のマジック (PE32+)。
+        /// </summary>
+        private const ushort OPTIONAL_HEADER_MAGIC_PE32_PLUS = 0x020B;
+
+        /// <summary>
+        /// PE32 時の CLR Runtime Header へのオフセット。
+        /// </summary>
+        private const int CLR_RUNTIME_HEADER_OFFSET_PE32 = 0x70;
+
+        /// <summary>
+        /// PE32+ 時の CLR Runtime Header へのオフセット。
+        /// </summary>
+        private const int CLR_RUNTIME_HEADER_OFFSET_PE32_PLUS = 0x80;
+
+        /// <summary>
+        /// CLR Runtime Header の最小必要バイト数。
+        /// </summary>
+        private const int CLR_RUNTIME_HEADER_MINIMUM_BYTES = 8;
+
+        /// <summary>
+        /// Windows の通常パス長上限。
+        /// </summary>
+        private const int WINDOWS_DEFAULT_PATH_LIMIT = 260;
+
+        /// <summary>
+        /// Windows 拡張パス (\\?\) 使用時の最大長。
+        /// </summary>
+        private const int WINDOWS_EXTENDED_PATH_LIMIT = 32767;
+
+        /// <summary>
+        /// macOS の推奨最大パス長。
+        /// </summary>
+        private const int MACOS_PATH_LIMIT = 1024;
+
+        /// <summary>
+        /// Linux/Unix 系の一般的なパス長上限。
+        /// </summary>
+        private const int POSIX_PATH_LIMIT = 4096;
+
+        /// <summary>
+        /// ASCII 判定で使用する最大コードポイント。
+        /// </summary>
+        private const int MAX_ASCII_CODE_POINT = 0x7F;
+
+        /// <summary>
+        /// バージョン文字列が取得できなかった場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_VERSION_STRING_EMPTY = "Version string is empty.";
+
+        /// <summary>
+        /// フォルダ名が空/空白だった場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_FOLDER_NAME_EMPTY = "Folder name cannot be empty or whitespace.";
+
+        /// <summary>
+        /// フォルダ名が "." / ".." の場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_FOLDER_NAME_DOT = "Folder name cannot be '.' or '..'.";
+
+        /// <summary>
+        /// フォルダ名に禁止文字が含まれる場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_FOLDER_NAME_INVALID_CHAR = "Folder name contains invalid character: '{0}'.";
+
+        /// <summary>
+        /// フォルダ名がスペース/ドットで終わる場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_FOLDER_NAME_END_SPACE = "Folder name cannot end with a space or a dot.";
+
+        /// <summary>
+        /// フォルダ名が Windows 予約語だった場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_FOLDER_NAME_RESERVED = "Folder name '{0}' is a reserved name on Windows.";
+
+        /// <summary>
+        /// ハッシュ比較時にファイルが見つからなかった場合のメッセージ。
+        /// </summary>
+        private const string ERROR_HASH_DIFF_FILE_NOT_FOUND = "File not found during hash diff: {0}";
+
+        /// <summary>
+        /// ハッシュ比較時にアクセス拒否となった場合のメッセージ。
+        /// </summary>
+        private const string ERROR_HASH_DIFF_ACCESS_DENIED = "Access denied during hash diff for file: {0}";
+
+        /// <summary>
+        /// ハッシュ比較時の I/O エラーメッセージ。
+        /// </summary>
+        private const string ERROR_HASH_DIFF_IO = "I/O error during hash diff: {0}";
+
+        /// <summary>
+        /// 絶対パスが null/空白の場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_ABSOLUTE_PATH_NULL = "Absolute path cannot be null or whitespace.";
+
+        /// <summary>
+        /// 絶対パスが OS 上限を超えた場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_ABSOLUTE_PATH_TOO_LONG = "Absolute path is too long for this OS (length {0} > limit {1}).";
+
+        /// <summary>
+        /// 最終更新日時取得に失敗した場合のメッセージ。
+        /// </summary>
+        private const string ERROR_LAST_MODIFIED_TIME = "Failed to retrieve the last modified time of '{0}'.";
+
+        /// <summary>
+        /// <see cref="GetTimestamp"/> で利用する日時フォーマット。
+        /// </summary>
+        private const string TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.fff zzz";
+
+        /// <summary>
+        /// ファイルパスが null/空白の場合のエラーメッセージ。
+        /// </summary>
+        private const string ERROR_FILE_PATH_NULL = "File path cannot be null or whitespace.";
+
+        /// <summary>
+        /// ファイルが見つからない場合の汎用メッセージ。
+        /// </summary>
+        private const string ERROR_FILE_NOT_FOUND = "File not found.";
+
+        /// <summary>
+        /// 読み取り専用属性の設定に失敗した場合のメッセージ。
+        /// </summary>
+        private const string ERROR_SET_READONLY = "Failed to set read-only attribute for '{0}'.";
+
+        /// <summary>
+        /// <see cref="ToSafeFileName"/> の既定最大長。
+        /// </summary>
+        private const int SAFE_FILENAME_DEFAULT_MAX_LENGTH = 180;
         #endregion
 
         #region private interop (macOS)
         /// <summary>
-        /// macOS の <c>statfs</c> におけるフラグ。<c>MNT_LOCAL</c> が立っている場合はローカルファイルシステム。
+        /// macOS の <c><see cref="statfs"/></c> におけるフラグ。<c>MNT_LOCAL</c> が立っている場合はローカルファイルシステム。
         /// 本値が未セットの場合はネットワークファイルシステムの可能性が高いとみなします。
         /// </summary>
         private const uint MNT_LOCAL = 0x00001000; // ローカルファイルシステムならセット
 
         /// <summary>
-        /// Darwin (macOS) の <c>fsid_t</c> 構造体。
+        /// Darwin (macOS) の <c><see cref="fsid_t"/></c> 構造体。
         /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         private struct fsid_t
@@ -52,7 +269,7 @@ namespace FolderDiffIL4DotNet.Utils
         }
 
         /// <summary>
-        /// Darwin (macOS) の <c>struct statfs</c> 定義（必要フィールドのみを抜粋）。
+        /// Darwin (macOS) の <c>struct <see cref="statfs"/></c> 定義（必要フィールドのみを抜粋）。
         /// 参考: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/mount.h
         /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
@@ -88,7 +305,7 @@ namespace FolderDiffIL4DotNet.Utils
         }
 
         /// <summary>
-        /// macOS の <c>statfs</c> 関数。指定パスのファイルシステム情報を取得します。
+        /// macOS の <c><see cref="statfs"/></c> 関数。指定パスのファイルシステム情報を取得します。
         /// </summary>
         [DllImport("libc", SetLastError = true, CharSet = CharSet.Ansi)]
         private static extern int statfs(string path, out statfs_darwin buf);
@@ -130,9 +347,10 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// 指定パスがネットワーク共有（UNC/NFS/CIFS/SSHFS など）の可能性が高いかを判定します。
         /// - Windows: UNC (\\\\ / \\?\UNC\) とネットワークドライブを検出。
-        /// - macOS: <c>statfs</c> の <c>f_flags</c>（<c>MNT_LOCAL</c>）および <c>f_fstypename</c>（smbfs/afpfs/webdav/nfs/sshfs 等）で判定。
+        /// - macOS: <c><see cref="statfs"/></c> の <c>f_flags</c>（<c>MNT_LOCAL</c>）および <c>f_fstypename</c>（smbfs/afpfs/webdav/nfs/sshfs 等）で判定。
         /// - Linux/Unix: /proc/mounts または /etc/mtab を解析し、nfs/cifs/smbfs/sshfs 等のFSタイプを検出。
         /// </summary>
+        /// <exception cref="Exception">内部で発生した例外は捕捉されるため、呼び出し元へは送出されません。</exception>
         public static bool IsLikelyNetworkPath(string absolutePath)
         {
             if (string.IsNullOrWhiteSpace(absolutePath))
@@ -144,7 +362,7 @@ namespace FolderDiffIL4DotNet.Utils
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // UNC: \\server\share or \\?\UNC\server\share
-                    if (absolutePath.StartsWith(@"\\\\", StringComparison.Ordinal) || absolutePath.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+                    if (absolutePath.StartsWith(WINDOWS_UNC_PREFIX, StringComparison.Ordinal) || absolutePath.StartsWith(WINDOWS_UNC_DEVICE_PREFIX, StringComparison.OrdinalIgnoreCase))
                     {
                         return true;
                     }
@@ -179,11 +397,7 @@ namespace FolderDiffIL4DotNet.Utils
                             return true;
                         }
                         // 代表的なネットワークFS名のヒューリスティクス
-                        var macNetworkTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                        {
-                            "smbfs","afpfs","webdav","nfs","autofs","fusefs","osxfuse","sshfs"
-                        };
-                        if (!string.IsNullOrEmpty(fsTypeMac) && macNetworkTypes.Contains(fsTypeMac))
+                        if (!string.IsNullOrEmpty(fsTypeMac) && s_macNetworkFsTypes.Contains(fsTypeMac))
                         {
                             return true;
                         }
@@ -193,23 +407,18 @@ namespace FolderDiffIL4DotNet.Utils
 
                 // Linux/Unix: /proc/mounts または /etc/mtab を解析
                 string mountsFile = null;
-                if (File.Exists("/proc/mounts"))
+                if (File.Exists(PROC_MOUNTS_PATH))
                 {
-                    mountsFile = "/proc/mounts";
+                    mountsFile = PROC_MOUNTS_PATH;
                 }
-                else if (File.Exists("/etc/mtab"))
+                else if (File.Exists(ETC_MTAB_PATH))
                 {
-                    mountsFile = "/etc/mtab";
+                    mountsFile = ETC_MTAB_PATH;
                 }
                 if (mountsFile == null)
                 {
                     return false; // 判定材料がない
                 }
-
-                var networkFsTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "nfs","nfs4","cifs","smbfs","sshfs","fuse.sshfs","fuse.gvfsd-fuse","davfs","fuse.davfs","afpfs","fuse.afpfs","ceph","fuse.ceph","glusterfs","9p"
-                };
 
                 string fullPath = Path.GetFullPath(absolutePath);
                 string bestMountPoint = null;
@@ -230,7 +439,7 @@ namespace FolderDiffIL4DotNet.Utils
                     }
                     string mountPointRaw = parts[1];
                     string fsType = parts[2];
-                    string mountPoint = mountPointRaw.Replace("\\040", " ");
+                    string mountPoint = mountPointRaw.Replace(ESCAPED_SPACE, SPACE);
 
                     // 最長一致のマウントポイントを選ぶ
                     if (fullPath.StartsWith(mountPoint.EndsWith("/") ? mountPoint : mountPoint + "/", StringComparison.Ordinal) || string.Equals(fullPath, mountPoint, StringComparison.Ordinal))
@@ -243,7 +452,7 @@ namespace FolderDiffIL4DotNet.Utils
                     }
                 }
 
-                if (!string.IsNullOrEmpty(bestFsType) && networkFsTypes.Contains(bestFsType))
+                if (!string.IsNullOrEmpty(bestFsType) && s_unixNetworkFsTypes.Contains(bestFsType))
                 {
                     return true;
                 }
@@ -254,6 +463,7 @@ namespace FolderDiffIL4DotNet.Utils
             }
             return false;
         }
+
         /// <summary>
         /// 実行アセンブリの「ユーザ向け表示用バージョン文字列」を取得します。
         /// 取得順序: <see cref="System.Reflection.AssemblyInformationalVersionAttribute.InformationalVersion"/> が非空ならそれを返し、
@@ -261,7 +471,7 @@ namespace FolderDiffIL4DotNet.Utils
         /// いずれの情報も有効でない（null / 空白）場合は <see cref="InvalidOperationException"/> を送出します。
         /// 文字列の加工（SemVer 正規化 / プレリリース除去 等）は行わず、そのまま返します。
         /// </summary>
-        /// <param name="programType">バージョンを取得したいアセンブリを含む型（通常は Program クラス型）。</param>
+        /// <param name="programType">バージョンを取得したいアセンブリを含む型（通常は <see cref="Program"/> クラス型）。</param>
         /// <returns>表示用途に利用できるバージョン文字列。</returns>
         /// <exception cref="InvalidOperationException">どのバージョン情報も取得できなかった場合。</exception>
         public static string GetAppVersion(Type programType)
@@ -274,10 +484,11 @@ namespace FolderDiffIL4DotNet.Utils
             var verToShow = string.IsNullOrWhiteSpace(infoVer) ? fileVer : infoVer;
             if (string.IsNullOrWhiteSpace(verToShow))
             {
-                throw new InvalidOperationException("Version string is empty.");
+                throw new InvalidOperationException(ERROR_VERSION_STRING_EMPTY);
             }
             return verToShow;
         }
+
         /// <summary>
         /// フォルダ名として妥当か（macOS/Linux/Windowsの禁止事項を包括）検証し、問題があれば例外を投げます。
         /// - 空白や空、"."/".." は不可
@@ -292,13 +503,13 @@ namespace FolderDiffIL4DotNet.Utils
         {
             if (string.IsNullOrWhiteSpace(folderName))
             {
-                throw new ArgumentException("Folder name cannot be empty or whitespace.", paramName ?? nameof(folderName));
+                throw new ArgumentException(ERROR_FOLDER_NAME_EMPTY, paramName ?? nameof(folderName));
             }
 
             // "." と ".." は不可
             if (folderName == "." || folderName == "..")
             {
-                throw new ArgumentException("Folder name cannot be '.' or '..'.", paramName ?? nameof(folderName));
+                throw new ArgumentException(ERROR_FOLDER_NAME_DOT, paramName ?? nameof(folderName));
             }
 
             // 制御文字 / 禁則文字のチェック
@@ -306,14 +517,14 @@ namespace FolderDiffIL4DotNet.Utils
             {
                 if (ch <= 0x1F || s_windowsInvalidFileNameChars.Contains(ch))
                 {
-                    throw new ArgumentException($"Folder name contains invalid character: '{ch}'.", paramName ?? nameof(folderName));
+                    throw new ArgumentException(string.Format(ERROR_FOLDER_NAME_INVALID_CHAR, ch), paramName ?? nameof(folderName));
                 }
             }
 
             // 末尾スペース/ドット不可（Windows仕様に合わせて厳格化）
             if (folderName.EndsWith(" ") || folderName.EndsWith("."))
             {
-                throw new ArgumentException("Folder name cannot end with a space or a dot.", paramName ?? nameof(folderName));
+                throw new ArgumentException(ERROR_FOLDER_NAME_END_SPACE, paramName ?? nameof(folderName));
             }
 
             // Windows予約名チェック（拡張子が付いていてもNG）
@@ -322,7 +533,7 @@ namespace FolderDiffIL4DotNet.Utils
             var upper = basePart.ToUpperInvariant();
             if (s_windowsReservedNames.Contains(upper))
             {
-                throw new ArgumentException($"Folder name '{folderName}' is a reserved name on Windows.", paramName ?? nameof(folderName));
+                throw new ArgumentException(string.Format(ERROR_FOLDER_NAME_RESERVED, folderName), paramName ?? nameof(folderName));
             }
         }
 
@@ -348,24 +559,24 @@ namespace FolderDiffIL4DotNet.Utils
                 }
 
                 using var md5 = MD5.Create();
-                // ネットワークI/O最適化: 逐次読みヒントを与える
-                using var file1stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64, options: FileOptions.SequentialScan);
-                using var file2stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64, options: FileOptions.SequentialScan);
+                // ネットワークI/O最適化: 共通の逐次読み用バッファサイズを指定
+                using var file1stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
+                using var file2stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
                 var hash1 = await md5.ComputeHashAsync(file1stream);
                 var hash2 = await md5.ComputeHashAsync(file2stream);
                 return hash1.SequenceEqual(hash2);
             }
             catch (FileNotFoundException ex)
             {
-                throw new FileNotFoundException($"File not found during hash diff: {ex.FileName}", ex);
+                throw new FileNotFoundException(string.Format(ERROR_HASH_DIFF_FILE_NOT_FOUND, ex.FileName), ex);
             }
             catch (UnauthorizedAccessException ex)
             {
-                throw new UnauthorizedAccessException($"Access denied during hash diff for file: {ex.Message}", ex);
+                throw new UnauthorizedAccessException(string.Format(ERROR_HASH_DIFF_ACCESS_DENIED, ex.Message), ex);
             }
             catch (IOException ex)
             {
-                throw new IOException($"I/O error during hash diff: {ex.Message}", ex);
+                throw new IOException(string.Format(ERROR_HASH_DIFF_IO, ex.Message), ex);
             }
         }
 
@@ -400,9 +611,9 @@ namespace FolderDiffIL4DotNet.Utils
         /// <exception cref="IOException">ファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
         public static async Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
         {
-            // 逐次読みのヒントを与える（ネットワーク共有でも効率的）
-            using var fs1 = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64, options: FileOptions.SequentialScan);
-            using var fs2 = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 64, options: FileOptions.SequentialScan);
+            // 共通の逐次読み用バッファサイズを付与し、ネットワーク共有でも効率的に比較
+            using var fs1 = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
+            using var fs2 = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
             using var file1StreamReader = new StreamReader(fs1);
             using var file2StreamReader = new StreamReader(fs2);
 
@@ -424,87 +635,13 @@ namespace FolderDiffIL4DotNet.Utils
         }
 
         /// <summary>
-        /// サイズが閾値を超えるテキストファイルに対して高速化を目的に並列チャンク比較を行う実験的メソッド。
-        /// 完全一致判定のみを行い、差分箇所の特定は行いません。
-        /// なお、本メソッドはエラーや引数不正が発生した場合でも例外を呼出し側へ送出せず、false を返します。
-        /// </summary>
-        /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
-        /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
-        /// <param name="largeFileSizeThresholdBytes">並列化閾値（バイト）。これ未満は逐次比較。</param>
-        /// <param name="maxParallel">最大並列度</param>
-        /// <returns>一致すれば true。エラーや引数不正時は false。</returns>
-        public static async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes = 512 * 1024, int maxParallel = 1)
-        {
-            try
-            {
-                var file1Info = new FileInfo(file1AbsolutePath);
-                var file2Info = new FileInfo(file2AbsolutePath);
-                if (!file1Info.Exists || !file2Info.Exists)
-                {
-                    return false;
-                }
-                if (file1Info.Length != file2Info.Length)
-                {
-                    return false;
-                }
-                if (file1Info.Length < largeFileSizeThresholdBytes)
-                {
-                    // 小さい場合は既存逐次ロジックを再利用
-                    return await DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                }
-                if (maxParallel <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, "The maximum degree of parallelism must be 1 or greater.");
-                }
-
-                int chunkSize = 64 * 1024; // 64KB
-                int chunkCount = (int)((file1Info.Length + chunkSize - 1) / chunkSize);
-                var differences = 0;
-                await Parallel.ForEachAsync(Enumerable.Range(start: 0, chunkCount), new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (index, cancellationToken) =>
-                {
-                    if (Volatile.Read(ref differences) != 0)
-                    {
-                        return; // 早期終了
-                    }
-                    var buffer1 = new byte[chunkSize];
-                    var buffer2 = new byte[chunkSize];
-                    int read1, read2;
-                    using (var file1Stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (var file2Stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        file1Stream.Seek((long)index * chunkSize, SeekOrigin.Begin);
-                        file2Stream.Seek((long)index * chunkSize, SeekOrigin.Begin);
-                        read1 = await file1Stream.ReadAsync(buffer1, offset: 0, chunkSize, cancellationToken);
-                        read2 = await file2Stream.ReadAsync(buffer2, offset: 0, chunkSize, cancellationToken);
-                    }
-                    if (read1 != read2)
-                    {
-                        Interlocked.Exchange(location1: ref differences, value: 1);
-                        return;
-                    }
-                    for (int i = 0; i < read1; i++)
-                    {
-                        if (buffer1[i] != buffer2[i])
-                        {
-                            Interlocked.Exchange(location1: ref differences, value: 1);
-                            break;
-                        }
-                    }
-                });
-                return differences == 0;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-        /// <summary>
         /// 指定されたファイルが .NET 実行可能ファイル（PE かつ CLR ヘッダを持つ）かを判定します。
         /// PE32（32bit）とPE32+（64bit）の両方に対応し、DnSpyで逆アセンブル可能な全ての.NETアセンブリを正しく判定します。
         /// エラーが発生した場合や判定不能な場合は false を返します（例外は送出しません）。
         /// </summary>
         /// <param name="fileAbsolutePath">判定するファイルの絶対パス</param>
         /// <returns>.NET 実行可能ファイルと判定できた場合は true、それ以外（非 PE/CLR、読み取り失敗含む）の場合は false。</returns>
+        /// <exception cref="Exception">内部で発生した例外は捕捉されるため、呼び出し元へは送出されません。</exception>
         public static bool IsDotNetExecutable(string fileAbsolutePath)
         {
             try
@@ -512,55 +649,54 @@ namespace FolderDiffIL4DotNet.Utils
                 using (var fileStream = new FileStream(fileAbsolutePath, FileMode.Open, FileAccess.Read))
                 using (var binaryReader = new BinaryReader(fileStream))
                 {
-                    // DOSヘッダのマジックナンバーを確認 ("MZ")
-                    if (binaryReader.ReadUInt16() != 0x5A4D) // "MZ" in little-endian
+                    // DOSヘッダのマジックナンバー (DOS_HEADER_MAGIC: "MZ") を確認
+                    if (binaryReader.ReadUInt16() != DOS_HEADER_MAGIC)
                     {
                         return false;
                     }
 
-                    // PEヘッダの位置を取得（DOSヘッダの0x3C位置）
-                    fileStream.Seek(offset: 0x3C, SeekOrigin.Begin);
+                    // DOSヘッダ内のオフセット（DOS_HEADER_PE_POINTER_OFFSET）から PE ヘッダの位置を取得
+                    fileStream.Seek(offset: DOS_HEADER_PE_POINTER_OFFSET, SeekOrigin.Begin);
                     int peHeaderOffset = binaryReader.ReadInt32();
 
                     // ファイルサイズチェック（PEヘッダが範囲内か）
-                    if (peHeaderOffset < 0 || peHeaderOffset >= fileStream.Length - 24)
+                    if (peHeaderOffset < 0 || peHeaderOffset >= fileStream.Length - OPTIONAL_HEADER_START_OFFSET)
                     {
                         return false;
                     }
 
-                    // PEシグネチャを確認 ("PE\0\0")
+                    // PEシグネチャ (PE_SIGNATURE: "PE\0\0") を確認
                     fileStream.Seek(offset: peHeaderOffset, SeekOrigin.Begin);
-                    if (binaryReader.ReadUInt32() != 0x00004550) // "PE\0\0"
+                    if (binaryReader.ReadUInt32() != PE_SIGNATURE)
                     {
                         return false;
                     }
 
-                    // COFFヘッダをスキップ（20バイト）
-                    fileStream.Seek(offset: peHeaderOffset + 4 + 20, SeekOrigin.Begin);
+                    // COFFヘッダ（COFF_HEADER_SIZE バイト）をスキップし Optional Header の先頭へ
+                    fileStream.Seek(offset: peHeaderOffset + OPTIONAL_HEADER_START_OFFSET, SeekOrigin.Begin);
 
                     // OptionalHeaderのMagicを読んで32bit/64bitを判定
                     ushort magic = binaryReader.ReadUInt16();
                     int clrHeaderOffset;
+                    var optionalHeaderStart = peHeaderOffset + OPTIONAL_HEADER_START_OFFSET;
 
-                    if (magic == 0x010B) // PE32（32bit）
+                    if (magic == OPTIONAL_HEADER_MAGIC_PE32)
                     {
-                        // PE32の場合、CLR Runtime HeaderはData Directory[14]
-                        // OptionalHeaderの先頭から96バイト後（0x60）+ 14*8 = 0x70
-                        clrHeaderOffset = peHeaderOffset + 24 + 0x70;
+                        // PE32の場合、CLR Runtime Header は Data Directory[14]（CLR_RUNTIME_HEADER_OFFSET_PE32）に配置
+                        clrHeaderOffset = optionalHeaderStart + CLR_RUNTIME_HEADER_OFFSET_PE32;
                     }
-                    else if (magic == 0x020B) // PE32+（64bit）
+                    else if (magic == OPTIONAL_HEADER_MAGIC_PE32_PLUS)
                     {
-                        // PE32+の場合、CLR Runtime HeaderはData Directory[14]
-                        // OptionalHeaderの先頭から112バイト後（0x70）+ 14*8 = 0x80
-                        clrHeaderOffset = peHeaderOffset + 24 + 0x80;
+                        // PE32+の場合、CLR Runtime Header は Data Directory[14]（CLR_RUNTIME_HEADER_OFFSET_PE32_PLUS）に配置
+                        clrHeaderOffset = optionalHeaderStart + CLR_RUNTIME_HEADER_OFFSET_PE32_PLUS;
                     }
                     else
                     {
                         return false; // 不明なPE形式
                     }
 
-                    // CLRヘッダのRVAとサイズを確認
-                    if (clrHeaderOffset + 8 > fileStream.Length)
+                    // CLRヘッダのRVAとサイズを確認（CLR_RUNTIME_HEADER_MINIMUM_BYTES を読めるかチェック）
+                    if (clrHeaderOffset + CLR_RUNTIME_HEADER_MINIMUM_BYTES > fileStream.Length)
                     {
                         return false;
                     }
@@ -582,9 +718,9 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// 絶対パスの長さがOSの上限を超えていないかを検証し、超過時は例外を投げます。
         /// 目安の上限値:
-        /// - Windows: 260（拡張パスプレフィックス \\?\ 使用時は 32767）
-        /// - macOS:   1024
-        /// - Linux:   4096
+        /// - Windows: <see cref="WINDOWS_DEFAULT_PATH_LIMIT"/>（標準）/<see cref="WINDOWS_EXTENDED_PATH_LIMIT"/>（\\?\ プレフィックス利用時）
+        /// - macOS:   <see cref="MACOS_PATH_LIMIT"/>
+        /// - Linux:   <see cref="POSIX_PATH_LIMIT"/>
         /// 注意: 実際の制限は環境やAPIによって差異があります。本メソッドは一般的な安全域で検証します。
         /// また、与えられた文字列が「絶対パスかどうか」の検証は行いません（長さのみを検査）。
         /// </summary>
@@ -595,28 +731,28 @@ namespace FolderDiffIL4DotNet.Utils
         {
             if (string.IsNullOrWhiteSpace(absolutePath))
             {
-                throw new ArgumentException("Absolute path cannot be null or whitespace.", paramName ?? nameof(absolutePath));
+                throw new ArgumentException(ERROR_ABSOLUTE_PATH_NULL, paramName ?? nameof(absolutePath));
             }
 
             int limit;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // 拡張長パス（\\?\ または \\?\UNC\）は理論上 32,767 文字まで
+                // 拡張長パス（\\?\ または \\?\UNC\）は WINDOWS_EXTENDED_PATH_LIMIT 文字まで許容される
                 bool isExtended = absolutePath.StartsWith(@"\\?\", StringComparison.Ordinal);
-                limit = isExtended ? 32767 : 260;
+                limit = isExtended ? WINDOWS_EXTENDED_PATH_LIMIT : WINDOWS_DEFAULT_PATH_LIMIT;
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                limit = 1024;
+                limit = MACOS_PATH_LIMIT;
             }
             else // Linux その他POSIX想定
             {
-                limit = 4096;
+                limit = POSIX_PATH_LIMIT;
             }
 
             if (absolutePath.Length > limit)
             {
-                throw new ArgumentException($"Absolute path is too long for this OS (length {absolutePath.Length} > limit {limit}).", paramName ?? nameof(absolutePath));
+                throw new ArgumentException(string.Format(ERROR_ABSOLUTE_PATH_TOO_LONG, absolutePath.Length, limit), paramName ?? nameof(absolutePath));
             }
         }
 
@@ -635,11 +771,11 @@ namespace FolderDiffIL4DotNet.Utils
         {
             try
             {
-                return new DateTimeOffset(File.GetLastWriteTime(fileAbsolutepath)).ToString("yyyy-MM-dd HH:mm:ss.fff zzz");
+                return new DateTimeOffset(File.GetLastWriteTime(fileAbsolutepath)).ToString(TIMESTAMP_FORMAT);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to retrieve the last modified time of '{fileAbsolutepath}'.", ex);
+                throw new Exception(string.Format(ERROR_LAST_MODIFIED_TIME, fileAbsolutepath), ex);
             }
         }
 
@@ -655,11 +791,11 @@ namespace FolderDiffIL4DotNet.Utils
         {
             if (string.IsNullOrWhiteSpace(fileAbsolutePath))
             {
-                throw new ArgumentException("File path cannot be null or whitespace.", nameof(fileAbsolutePath));
+                throw new ArgumentException(ERROR_FILE_PATH_NULL, nameof(fileAbsolutePath));
             }
             if (!File.Exists(fileAbsolutePath))
             {
-                throw new FileNotFoundException("File not found.", fileAbsolutePath);
+                throw new FileNotFoundException(ERROR_FILE_NOT_FOUND, fileAbsolutePath);
             }
             try
             {
@@ -671,13 +807,14 @@ namespace FolderDiffIL4DotNet.Utils
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to set read-only attribute for '{fileAbsolutePath}'.", ex);
+                throw new Exception(string.Format(ERROR_SET_READONLY, fileAbsolutePath), ex);
             }
         }
 
         /// <summary>
         /// サニタイズ(\\, /, :, ..を.に置換)返します。
         /// </summary>
+        /// <exception cref="Exception">例外は発生せず、常に呼び出し元へ文字列を返します。</exception>
         public static string Sanitize(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -700,7 +837,8 @@ namespace FolderDiffIL4DotNet.Utils
         /// <param name="fileNameExcludeExtention">変換対象の文字列（拡張子は含めない想定）。</param>
         /// <param name="maxLength">短縮判定の閾値（既定: 180）。これ以上なら短縮します。</param>
         /// <returns>ファイル名として使用可能な安全な文字列。</returns>
-        public static string ToSafeFileName(string fileNameExcludeExtention, int maxLength = 180)
+        /// <exception cref="Exception">例外は発生せず、常に入力を安全な形式へ変換します。</exception>
+        public static string ToSafeFileName(string fileNameExcludeExtention, int maxLength = SAFE_FILENAME_DEFAULT_MAX_LENGTH)
         {
             if (string.IsNullOrEmpty(fileNameExcludeExtention))
             {
@@ -739,6 +877,7 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// シェルコマンド文字列を簡易にトークン分割（空白区切り・クォート対応）。
         /// </summary>
+        /// <exception cref="Exception">例外は発生せず、常に分割結果を返します。</exception>
         public static List<string> TokenizeCommand(string str)
         {
             var list = new List<string>();
@@ -794,9 +933,10 @@ namespace FolderDiffIL4DotNet.Utils
         }
 
         /// <summary>
-        /// 与えられた文字列に非ASCII文字（0x80以上）が含まれているかどうかを判定します。
+        /// 与えられた文字列に非ASCII文字（MAX_ASCII_CODE_POINT より大きいコードポイント）が含まれているかどうかを判定します。
         /// null/空文字列は false を返します。
         /// </summary>
+        /// <exception cref="Exception">例外は発生せず、常に true/false を返します。</exception>
         public static bool ContainsNonAscii(string str)
         {
             if (string.IsNullOrEmpty(str))
@@ -805,7 +945,7 @@ namespace FolderDiffIL4DotNet.Utils
             }
             foreach (var ch in str)
             {
-                if (ch > 0x7F)
+                if (ch > MAX_ASCII_CODE_POINT)
                 {
                     return true;
                 }
@@ -816,6 +956,7 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// ファイルを例外を無視して削除します。
         /// </summary>
+        /// <exception cref="Exception">削除時の例外はすべて内部で無視され、呼び出し元に送出されません。</exception>
         public static void DeleteFileSilent(string fileAbsolutePath)
         {
             if (string.IsNullOrEmpty(fileAbsolutePath))
@@ -841,6 +982,8 @@ namespace FolderDiffIL4DotNet.Utils
         /// <param name="exe">実行ファイルパス</param>
         /// <param name="args">引数列</param>
         /// <returns>成功時の出力文字列（Trim 済み）。それ以外は null。</returns>
+        /// <exception cref="InvalidOperationException">プロセス起動に失敗した場合。</exception>
+        /// <exception cref="System.ComponentModel.Win32Exception">実行ファイルが見つからないなど OS 依存のエラーが発生した場合。</exception>
         public static async Task<string> TryGetProcessOutputAsync(string exe, IEnumerable<string> args)
         {
             var processStartInfo = new ProcessStartInfo
@@ -878,6 +1021,7 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// コマンドと引数を連結してベースラベルを返却します。
         /// </summary>
+        /// <exception cref="Exception">例外は発生せず、常に文字列を返します。</exception>
         public static string BuildBaseLabel(string command, string[] args)
         {
             var usedArgs = GetUsedArgs(args);
@@ -889,6 +1033,7 @@ namespace FolderDiffIL4DotNet.Utils
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
+        /// <exception cref="Exception">例外は発生せず、常に結合済み文字列を返します。</exception>
         public static string GetUsedArgs(string[] args) => string.Join(" ", args.Select(x => x.Contains(' ') ? $"\"{x}\"" : x));
         #endregion
     }

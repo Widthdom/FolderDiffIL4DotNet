@@ -1,4 +1,5 @@
 using System;
+using FolderDiffIL4DotNet.Common;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -48,7 +49,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             if (percentage < 0 || percentage > 100)
             {
-                throw new ArgumentOutOfRangeException(nameof(percentage), $"Progress must be between 0.00 and 100.00. Actual: {percentage:F2}");
+                throw new ArgumentOutOfRangeException(nameof(percentage), string.Format(Constants.ERROR_PROGRESS_OUT_OF_RANGE, percentage));
             }
 
             // 単調増加と重複出力の抑止をスレッドセーフに実施
@@ -60,28 +61,34 @@ namespace FolderDiffIL4DotNet.Services
                     return;
                 }
 
-                var nowUtc = DateTime.UtcNow;
                 var formattedPercentage = percentage.ToString("F2");
-                if (!string.Equals(formattedPercentage, _lastFormattedPercentage, StringComparison.Ordinal))
+                bool hasChanged = !string.Equals(formattedPercentage, _lastFormattedPercentage, StringComparison.Ordinal);
+                bool shouldEmitKeepAlive = !hasChanged && DateTime.UtcNow - _lastConsoleWriteUtc >= KeepAliveInterval;
+
+                if (hasChanged)
                 {
-                    Console.WriteLine($"Progress: {formattedPercentage}%");
-                    _lastFormattedPercentage = formattedPercentage;
-                    _lastPercentage = percentage;
-                    _lastConsoleWriteUtc = nowUtc;
-                    Console.Out.Flush();
+                    WriteProgress(Constants.LOG_PROGRESS, formattedPercentage);
                 }
-                else if (nowUtc - _lastConsoleWriteUtc >= KeepAliveInterval)
+                else if (shouldEmitKeepAlive)
                 {
-                    Console.WriteLine($"Progress: {formattedPercentage}% (processing...)");
-                    _lastPercentage = percentage;
-                    _lastConsoleWriteUtc = nowUtc;
-                    Console.Out.Flush();
+                    WriteProgress(Constants.LOG_PROGRESS_KEEPALIVE, formattedPercentage);
                 }
-                else
-                {
-                    _lastPercentage = percentage;
-                }
+
+                _lastPercentage = percentage;
             }
+        }
+
+        /// <summary>
+        /// フォーマット済みの進捗メッセージをコンソールへ出力し、内部状態を更新します。
+        /// </summary>
+        /// <param name="format"><see cref="Constants"/> に定義されたメッセージテンプレート。</param>
+        /// <param name="formattedPercentage">F2 形式でフォーマット済みの進捗文字列。</param>
+        private void WriteProgress(string format, string formattedPercentage)
+        {
+            Console.WriteLine(string.Format(format, formattedPercentage));
+            _lastFormattedPercentage = formattedPercentage;
+            _lastConsoleWriteUtc = DateTime.UtcNow;
+            Console.Out.Flush();
         }
     }
 }

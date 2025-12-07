@@ -35,6 +35,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         /// <summary>
         /// old/new 両側 IL 全文テキストを *_IL.txt に出力 (MVID 除外後) し読み取り専用化。
         /// </summary>
+        /// <exception cref="Exception">IL テキストの書き出しに失敗した場合。</exception>
         public async Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
         {
             try
@@ -62,12 +63,12 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage($"[WARNING] {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
                 }
             }
             catch (Exception)
             {
-                LoggerService.LogMessage("[ERROR] Failed to output IL Text.", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Error, Constants.ERROR_FAILED_TO_OUTPUT_IL_TEXT, shouldOutputMessageToConsole: true);
                 throw;
             }
         }

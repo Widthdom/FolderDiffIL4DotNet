@@ -108,12 +108,12 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private long _expiredCount = 0;
 
         /// <summary>
-        /// 統計ログのためのアクセスヒットカウンタ（FolderDiffService 側でも集計しているが内部周期ログ用）
+        /// 統計ログのためのアクセスヒットカウンタ（<see cref="FolderDiffService"/> 側でも集計しているが内部周期ログ用）
         /// </summary>
         private long _internalHits = 0;
 
         /// <summary>
-        /// 統計ログのためのアクセス保存カウンタ（FolderDiffService 側でも集計しているが内部周期ログ用）
+        /// 統計ログのためのアクセス保存カウンタ（<see cref="FolderDiffService"/> 側でも集計しているが内部周期ログ用）
         /// </summary>
         private long _internalStores = 0;
 
@@ -157,7 +157,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 statsLogIntervalSeconds = 60;
             }
             StatsLogInterval = TimeSpan.FromSeconds(statsLogIntervalSeconds);
-    
+
             _ilCacheMaxDiskFileCount = ilCacheMaxDiskFileCount;
             _ilCacheMaxDiskBytes = ilCacheMaxDiskMegabytes > 0 ? ilCacheMaxDiskMegabytes * 1024L * 1024L : 0;
             // ディスクキャッシュ用ディレクトリの初期化（作成成功時のみ有効化）
@@ -173,7 +173,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 catch (Exception ex)
                 {
                     _isDiskCacheEnabled = false;
-                    LoggerService.LogMessage($"[WARNING] Failed to create IL cache directory '{_ilCacheDirectoryAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(
+                        LoggerService.LogLevel.Warning,
+                        string.Format(Constants.LOG_FAILED_CREATE_IL_CACHE_DIR, _ilCacheDirectoryAbsolutePath, ex.Message),
+                        shouldOutputMessageToConsole: true,
+                        ex);
                 }
             }
         }
@@ -193,7 +197,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
             if (maxParallel <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, "The maximum degree of parallelism must be 1 or greater.");
+                throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, Constants.ERROR_MAX_PARALLEL);
             }
 
             try
@@ -205,7 +209,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     return Task.CompletedTask;
                 }
-                LoggerService.LogMessage($"[INFO] Precompute MD5: starting for {files.Count} files (maxParallel={maxParallel})", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(
+                    LoggerService.LogLevel.Info,
+                    string.Format(Constants.LOG_PRECOMPUTE_MD5_START, files.Count, nameof(maxParallel), maxParallel),
+                    shouldOutputMessageToConsole: true);
 
                 int processed = 0;
                 long lastLogTicks = DateTime.UtcNow.Ticks;
@@ -219,7 +226,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     }
                     catch (Exception ex)
                     {
-                        LoggerService.LogMessage($"[WARNING] Failed to precompute MD5 for file '{fileAbsolutePath}'. This file will be skipped in the cache.", shouldOutputMessageToConsole: true, ex);
+                        LoggerService.LogMessage(
+                            LoggerService.LogLevel.Warning,
+                            string.Format(Constants.LOG_FAILED_PRECOMPUTE_MD5_FILE, fileAbsolutePath),
+                            shouldOutputMessageToConsole: true,
+                            ex);
                     }
                     finally
                     {
@@ -234,13 +245,19 @@ namespace FolderDiffIL4DotNet.Services.Caching
                             if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) == prev)
                             {
                                 int percent = (int)(done * 100.0 / files.Count);
-                                LoggerService.LogMessage($"[INFO] Precompute MD5: {done}/{files.Count} ({percent}%)", shouldOutputMessageToConsole: true);
+                                LoggerService.LogMessage(
+                                    LoggerService.LogLevel.Info,
+                                    string.Format(Constants.LOG_PRECOMPUTE_MD5_PROGRESS, done, files.Count, percent),
+                                    shouldOutputMessageToConsole: true);
                             }
                         }
                     }
                 });
 
-                LoggerService.LogMessage($"[INFO] Precompute MD5: completed for {files.Count} files", shouldOutputMessageToConsole: true);
+                    LoggerService.LogMessage(
+                        LoggerService.LogLevel.Info,
+                        string.Format(Constants.LOG_PRECOMPUTE_MD5_COMPLETE, files.Count),
+                        shouldOutputMessageToConsole: true);
             }
             catch
             {
@@ -256,6 +273,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// <param name="fileAbsolutePath">ファイルパス</param>
         /// <param name="toolLabel">ツールラベル</param>
         /// <returns>IL 文字列（未ヒット時 null）</returns>
+        /// <exception cref="IOException">キャッシュキー生成時のハッシュ計算で I/O エラーが発生した場合。</exception>
+        /// <exception cref="UnauthorizedAccessException">キャッシュ対象ファイルにアクセスできない場合。</exception>
         public async Task<string> TryGetILAsync(string fileAbsolutePath, string toolLabel)
         {
             // 1) キーを生成（MD5 + toolLabel）
@@ -297,7 +316,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     }
                     catch (Exception ex)
                     {
-                        LoggerService.LogMessage($"[WARNING] Failed to read IL cache file '{diskILCacheFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                        LoggerService.LogMessage(
+                            LoggerService.LogLevel.Warning,
+                            string.Format(Constants.LOG_FAILED_IL_CACHE_FILE_FORMAT, "read", diskILCacheFileAbsolutePath, ex.Message),
+                            shouldOutputMessageToConsole: true,
+                            ex);
                     }
                 }
             }
@@ -312,6 +335,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// <param name="toolLabel">ツールラベル</param>
         /// <param name="ilText">IL 文字列</param>
         /// <returns>Task</returns>
+        /// <exception cref="IOException">キャッシュキー生成時のハッシュ計算で I/O エラーが発生した場合。</exception>
+        /// <exception cref="UnauthorizedAccessException">キャッシュ対象ファイルにアクセスできない場合。</exception>
         public async Task SetILAsync(string fileAbsolutePath, string toolLabel, string ilText)
         {
             if (string.IsNullOrEmpty(ilText))
@@ -355,7 +380,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
                             }
                             catch (Exception ex)
                             {
-                                LoggerService.LogMessage($"[WARNING] Failed to remove disk cache file '{BuildILCacheFileAbsolutePath(oldestILCacheKey)}' during LRU eviction.", shouldOutputMessageToConsole: true, ex);
+                                LoggerService.LogMessage(
+                                    LoggerService.LogLevel.Warning,
+                                    string.Format(Constants.LOG_FAILED_REMOVE_DISK_CACHE_FILE, BuildILCacheFileAbsolutePath(oldestILCacheKey)),
+                                    shouldOutputMessageToConsole: true,
+                                    ex);
                             }
                         }
                     }
@@ -375,7 +404,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage($"[WARNING] Failed to write IL cache file '{diskILCacheFileToWriteAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(
+                        LoggerService.LogLevel.Warning,
+                        string.Format(Constants.LOG_FAILED_IL_CACHE_FILE_FORMAT, "write", diskILCacheFileToWriteAbsolutePath, ex.Message),
+                        shouldOutputMessageToConsole: true,
+                        ex);
                 }
             }
             // ストア統計を加算
@@ -467,7 +500,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
                         }
                         catch (Exception ex)
                         {
-                            LoggerService.LogMessage($"[WARNING] Failed to delete cache file: {ilCacheFile.File.FullName}", true, ex);
+                            LoggerService.LogMessage(
+                                LoggerService.LogLevel.Warning,
+                                string.Format(Constants.LOG_FAILED_DELETE_CACHE_FILE, ilCacheFile.File.FullName),
+                                shouldOutputMessageToConsole: true,
+                                ex);
                         }
                     }
                     else
@@ -478,7 +515,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 if (changed && removed > 0)
                 {
                     // どれだけ削除され、残数・残容量がいくつかをコンソール・ログ出力
-                    LoggerService.LogMessage($"[INFO] Disk quota trim: removed={removed}, remain={ilCacheFilesCount}, bytes={ilCacheFilesTotalBytes}", true);
+                    LoggerService.LogMessage(
+                        LoggerService.LogLevel.Info,
+                        string.Format(Constants.LOG_DISK_QUOTA_TRIM, removed, ilCacheFilesCount, ilCacheFilesTotalBytes),
+                        shouldOutputMessageToConsole: true);
                 }
             }
         }

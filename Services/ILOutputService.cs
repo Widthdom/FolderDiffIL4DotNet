@@ -12,7 +12,7 @@ using FolderDiffIL4DotNet.Utils;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// 逆アセンブル（DotNetDisassembleService）・キャッシュ制御（ILCache）と出力サービスへの委譲を担うファサード。
+    /// 逆アセンブル（<see cref="DotNetDisassembleService"/>）・キャッシュ制御（<see cref="ILCache"/>）と出力サービスへの委譲を担うファサード。
     /// </summary>
     public sealed class ILOutputService
     {
@@ -52,10 +52,9 @@ namespace FolderDiffIL4DotNet.Services
         /// コンストラクタ。パスおよび設定値を受け取り必要に応じて IL キャッシュを構築する。
         /// </summary>
         /// <param name="config">設定。</param>
-        /// <param name="ilOutputFolderAbsolutePath">IL ログ出力ルート。</param>
         /// <param name="ilOldFolderAbsolutePath">old 側 IL テキスト出力フォルダ。</param>
         /// <param name="ilNewFolderAbsolutePath">new 側 IL テキスト出力フォルダ。</param>
-        public ILOutputService(ConfigSettings config, string ilOutputFolderAbsolutePath, string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath)
+        public ILOutputService(ConfigSettings config, string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath)
         {
             _config = config;
             _ilOldFolderAbsolutePath = ilOldFolderAbsolutePath;
@@ -65,7 +64,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _ilCache = new ILCache(
                     string.IsNullOrWhiteSpace(_config.ILCacheDirectoryAbsolutePath) ? Path.Combine(AppContext.BaseDirectory, Constants.DEFAULT_IL_CACHE_DIR_NAME) : _config.ILCacheDirectoryAbsolutePath,
-                    ilCacheMaxMemoryEntries: 2000,
+                    ilCacheMaxMemoryEntries: Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
                     timeToLive: TimeSpan.FromHours(12),
                     statsLogIntervalSeconds: _config.ILCacheStatsLogIntervalSeconds <= 0 ? 60 : _config.ILCacheStatsLogIntervalSeconds,
                     ilCacheMaxDiskFileCount: _config.ILCacheMaxDiskFileCount,
@@ -98,12 +97,12 @@ namespace FolderDiffIL4DotNet.Services
             if (_config.OptimizeForNetworkShares)
             {
                 // ネットワーク共有最適化時は、MD5 プリウォームおよび IL キャッシュ先読みをスキップ
-                LoggerService.LogMessage("[INFO] OptimizeForNetworkShares=true: Skip IL precompute/prefetch to reduce network I/O.", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP, shouldOutputMessageToConsole: true);
                 return;
             }
             if (maxParallel <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, "The maximum degree of parallelism must be 1 or greater.");
+                throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, Constants.ERROR_MAX_PARALLEL);
             }
             if (!_config.EnableILCache || _ilCache == null)
             {
@@ -117,36 +116,23 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage($"[WARNING] Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_PRECOMPUTE_MD5_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
             }
         }
 
-        /// <summary>
-        /// 指定した相対パスの .NET アセンブリについて、old 側と new 側を逆アセンブルし、
-        /// MVID 行を除外した IL テキスト同士を比較して差分結果を出力します。
-        /// </summary>
-        /// <param name="fileRelativePath">比較対象アセンブリの相対パス（old/new 双方で同一相対パスを指すことを想定）。</param>
-        /// <param name="oldFolderAbsolutePath">旧バージョン側（比較元）フォルダの絶対パス。</param>
-        /// <param name="newFolderAbsolutePath">新バージョン側（比較先）フォルダの絶対パス。</param>
-        /// <param name="shouldOutputIlText">
-        /// true の場合、MVID を除外した両側の IL 全文を *_IL.txt（old/new 配下）にも出力します。
-        /// </param>
-        /// <returns>
-        /// IL（MVID 行を除外後）が一致すれば true、相違があれば false。
-        /// </returns>
-        /// <exception cref="InvalidOperationException">逆アセンブラの実行に失敗した場合、またはバージョン判定に失敗した場合。</exception>
-        /// <exception cref="IOException">IL テキストやログの書き込みに失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">ファイル出力先へのアクセス権限が不足している場合。</exception>
         public async Task<bool> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
         {
+            // IL 比較時はビルド毎に異なる MVID 行を除外するためのフィルタをローカルに定義。
             static bool IsNotMvidLine(string line) => line is null || !line.StartsWith(Constants.MVID_PREFIX, StringComparison.Ordinal);
 
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
 
+            // それぞれのアセンブリを逆アセンブルし、IL テキストと実行コマンドを受け取る。
             var (ilText1, commandString1) = await _dotNetDisassembleService.DisassembleAsync(file1AbsolutePath);
             var (ilText2, commandString2) = await _dotNetDisassembleService.DisassembleAsync(file2AbsolutePath);
 
+            // 行単位に分割して MVID 行を除外し、純粋な IL のみを比較する。
             var il1Lines = ilText1.Split('\n').ToList();
             var il2Lines = ilText2.Split('\n').ToList();
             var il1LinesMvidExcluded = il1Lines.Where(IsNotMvidLine).ToList();
@@ -156,12 +142,14 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (shouldOutputIlText)
                 {
+                    // 要求されている場合は、比較用に除外した IL テキストを *_IL.txt として保存する。
                     await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesMvidExcluded, il2LinesMvidExcluded);
                 }
             }
             catch (Exception)
             {
-                LoggerService.LogMessage("[ERROR] Failed to output IL.", shouldOutputMessageToConsole: true);
+                // IL テキスト出力に失敗した場合はエラーログを出しつつ再スロー。
+                LoggerService.LogMessage(LoggerService.LogLevel.Error, Constants.ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
                 throw;
             }
             return areILsEqual;

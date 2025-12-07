@@ -10,11 +10,21 @@ namespace FolderDiffIL4DotNet.Services
     /// ファイルおよびコンソールへログを出力する簡易ロガー。
     /// <para>
     /// 先に <see cref="Initialize"/> を呼び出してログファイルの出力先を確定してください。
-    /// 未初期化の場合、<see cref="LogMessage(string, bool, Exception)"/> はコンソール出力のみを行い、ファイルには書き込みません。
+    /// 未初期化の場合、<see cref="LogMessage(LogLevel, string, bool, Exception)"/> はコンソール出力のみを行い、ファイルには書き込みません。
     /// </para>
     /// </summary>
     public static class LoggerService
     {
+        /// <summary>
+        /// ログレベル
+        /// </summary>
+        public enum LogLevel
+        {
+            Info,
+            Warning,
+            Error
+        }
+
         #region public member variables
         /// <summary>
         /// ログディレクトリの絶対パス
@@ -58,17 +68,20 @@ namespace FolderDiffIL4DotNet.Services
         /// まだ <see cref="Initialize"/> が呼ばれていない場合は、コンソール出力（指定時）のみ行い、ファイル出力はスキップします。
         /// </para>
         /// </summary>
+        /// <param name="logLevel">ログレベル。</param>
         /// <param name="message">出力するメッセージ（null 可）。</param>
         /// <param name="shouldOutputMessageToConsole">true の場合、メッセージをコンソールにも出力します。</param>
         /// <param name="exception">例外情報（省略可）。指定した場合、スタックトレースをログファイルに追記します。</param>
         /// <exception cref="UnauthorizedAccessException">ログファイルへの書き込み権限がない場合。</exception>
         /// <exception cref="DirectoryNotFoundException">ログディレクトリが存在しない、またはパスが無効な場合。</exception>
         /// <exception cref="IOException">ファイル書き込み時に I/O エラーが発生した場合。</exception>
-        public static void LogMessage(string message, bool shouldOutputMessageToConsole, Exception exception = null)
+        public static void LogMessage(LogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
         {
+            string formattedMessage = FormatMessage(message, logLevel);
+
             if (shouldOutputMessageToConsole)
             {
-                Console.WriteLine(message);
+                Console.WriteLine(formattedMessage);
             }
 
             // 初期化前の場合はコンソール出力のみで終了。
@@ -79,7 +92,7 @@ namespace FolderDiffIL4DotNet.Services
 
             using (var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true))
             {
-                streamWriter.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}");
+                streamWriter.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {formattedMessage}");
                 if (exception != null)
                 {
                     streamWriter.WriteLine(exception.StackTrace);
@@ -102,6 +115,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </para>
         /// </summary>
         /// <param name="maxLogGenerations">保持したいログ世代数。0 で全削除。負値は無効 (警告ログ出力のみ)。</param>
+        /// <exception cref="Exception">本メソッド内で発生した例外は捕捉され、呼び出し元には送出されません。</exception>
         public static void CleanupOldLogFiles(int maxLogGenerations)
         {
             try
@@ -117,18 +131,43 @@ namespace FolderDiffIL4DotNet.Services
                     foreach (var oldLogfileAbsolutePath in oldLogFilesToDeleteAbsolutePaths)
                     {
                         File.Delete(oldLogfileAbsolutePath);
-                        LogMessage($"[INFO] Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
+                        LogMessage(LogLevel.Info, string.Format(Constants.LOG_DELETED_OLD_LOG_FILE, oldLogfileAbsolutePath), shouldOutputMessageToConsole: true);
                     }
                 }
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                LogMessage($"[WARNING] {ex.Message}.", shouldOutputMessageToConsole: true, ex);
+                LogMessage(LogLevel.Warning, ex.Message + ".", shouldOutputMessageToConsole: true, ex);
             }
             catch (Exception ex)
             {
-                LogMessage($"[WARNING] Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
+                LogMessage(LogLevel.Warning, string.Format(Constants.LOG_FAILED_CLEANUP_OLD_LOGS, _logDirectoryAbsolutePath), shouldOutputMessageToConsole: true, ex);
             }
         }
+
+        /// <summary>
+        /// メッセージにログレベルのプレフィックスを付与し、空文字の場合はプレフィックスのみを返します。
+        /// </summary>
+        private static string FormatMessage(string message, LogLevel logLevel)
+        {
+            string prefix = GetLogLevelPrefix(logLevel);
+
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return prefix;
+            }
+
+            return $"{prefix} {message}";
+        }
+
+        /// <summary>
+        /// ログレベルに応じたプレフィックス（[INFO] など）を取得します。
+        /// </summary>
+        private static string GetLogLevelPrefix(LogLevel logLevel) => logLevel switch
+        {
+            LogLevel.Warning => Constants.LOG_PREFIX_WARNING,
+            LogLevel.Error => Constants.LOG_PREFIX_ERROR,
+            _ => Constants.LOG_PREFIX_INFO
+        };
     }
 }

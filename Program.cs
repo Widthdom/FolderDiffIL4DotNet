@@ -56,32 +56,32 @@ namespace FolderDiffIL4DotNet
             try
             {
                 #region Loggerの初期化（以降Loggerを使ったログ出力が可能）
-                Console.WriteLine("[INFO] Initializing logger...");
+                Console.WriteLine(Constants.INFO_INITIALIZING_LOGGER);
                 LoggerService.Initialize();
-                LoggerService.LogMessage("[INFO] Logger initialized.", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
                 #endregion
 
                 // アプリケーションのバージョンを取得
                 _thisAppVersion = Utility.GetAppVersion(typeof(Program));
-                LoggerService.LogMessage("[INFO] Application version: " + _thisAppVersion, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
 
-                LoggerService.LogMessage("[INFO] Validating command line arguments...", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_VALIDATING_ARGS, shouldOutputMessageToConsole: true);
 
                 #region コマンドライン引数の過不足およびnull, 空文字, 空白文字チェック
                 try
                 {
                     if (args == null || args.Length < 3)
                     {
-                        throw new ArgumentException("Insufficient arguments.");
+                        throw new ArgumentException(Constants.ERROR_INSUFFICIENT_ARGUMENTS);
                     }
                     if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]) || string.IsNullOrWhiteSpace(args[2]))
                     {
-                        throw new ArgumentException("One or more required arguments are null or empty.");
+                        throw new ArgumentException(Constants.ERROR_ARGUMENTS_NULL_OR_EMPTY);
                     }
                 }
                 catch (ArgumentException ex)
                 {
-                    throw new ArgumentException("Invalid arguments. Usage: FolderDiffIL4DotNet <oldFolderAbsolutePath> <newFolderAbsolutePath> <reportLabel> [--no-pause]", ex);
+                    throw new ArgumentException(Constants.ERROR_INVALID_ARGUMENTS_USAGE, ex);
                 }
                 #endregion
 
@@ -97,7 +97,7 @@ namespace FolderDiffIL4DotNet
                     }
                     catch (ArgumentException)
                     {
-                        LoggerService.LogMessage($"[ERROR] The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name.", shouldOutputMessageToConsole: true);
+                        LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(Constants.ERROR_INVALID_REPORT_LABEL, reportLabel), shouldOutputMessageToConsole: true);
                         throw;
                     }
                     // レポート出力先の準備
@@ -112,27 +112,27 @@ namespace FolderDiffIL4DotNet
                 #region コマンドライン引数に指定されたフォルダの存在確認
                 if (!Directory.Exists(_oldFolderAbsolutePath))
                 {
-                    throw new DirectoryNotFoundException($"The old folder path does not exist: {_oldFolderAbsolutePath}");
+                    throw new DirectoryNotFoundException(string.Format(Constants.ERROR_OLD_FOLDER_NOT_FOUND, _oldFolderAbsolutePath));
                 }
                 if (!Directory.Exists(_newFolderAbsolutePath))
                 {
-                    throw new DirectoryNotFoundException($"The new folder path does not exist: {_newFolderAbsolutePath}");
+                    throw new DirectoryNotFoundException(string.Format(Constants.ERROR_NEW_FOLDER_NOT_FOUND, _newFolderAbsolutePath));
                 }
                 if (Directory.Exists(_reportsFolderAbsolutePath))
                 {
-                    throw new ArgumentException($"The report folder already exists: {_reportsFolderAbsolutePath}. Provide a different report label.");
+                    throw new ArgumentException(string.Format(Constants.ERROR_REPORT_FOLDER_EXISTS, _reportsFolderAbsolutePath));
                 }
                 #endregion
 
-                LoggerService.LogMessage("[INFO] Command line arguments validation completed.", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
 
                 // 今回作成するレポートの出力先の新規作成
                 Directory.CreateDirectory(_reportsFolderAbsolutePath);
 
                 #region アプリケーション設定の読み込み
-                LoggerService.LogMessage("[INFO] Loading configuration...", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
                 _config = await new ConfigService().LoadConfigAsync();
-                LoggerService.LogMessage("[INFO] Configuration loaded successfully.", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
                 #endregion
 
                 // 古いログファイルの削除（失敗しても警告出力のみで処理継続）
@@ -142,7 +142,7 @@ namespace FolderDiffIL4DotNet
                 Services.Caching.TimestampCache.Clear();
 
                 // 処理開始宣言
-                LoggerService.LogMessage("[INFO] Starting FolderDiffIL4DotNet...", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_APP_STARTING, shouldOutputMessageToConsole: true);
 
                 #region フォルダ差分比較処理の実行
                 {
@@ -163,7 +163,7 @@ namespace FolderDiffIL4DotNet
                             string secondString = $"{lastRunDuration.Value.Seconds:00}";
                             string millisecondString = $"{lastRunDuration.Value.Milliseconds:000}";
                             _elapsedTimeString = $"{hourString}:{minuteString}:{secondString}.{millisecondString}";
-                            LoggerService.LogMessage($"[INFO] Elapsed Time: {_elapsedTimeString}", shouldOutputMessageToConsole: true);
+                            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_ELAPSED_TIME, _elapsedTimeString), shouldOutputMessageToConsole: true);
                         }
                     }
                 }
@@ -179,13 +179,13 @@ namespace FolderDiffIL4DotNet
                     _config);
 
                 // 正常終了メッセージ出力
-                LoggerService.LogMessage("[INFO] FolderDiffIL4DotNet finished without errors. See Reports folder for details.", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_APP_FINISHED, shouldOutputMessageToConsole: true);
             }
             catch (Exception ex)
             {
                 // 例外を補足した場合は、stacktraceをログに出力して終了
-                LoggerService.LogMessage($"[ERROR] {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                LoggerService.LogMessage($"[INFO] Error details logged to: {LoggerService._logFileAbsolutePath}", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ex);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_ERROR_DETAILS_PATH, LoggerService._logFileAbsolutePath), shouldOutputMessageToConsole: true);
             }
             finally
             {
@@ -202,12 +202,12 @@ namespace FolderDiffIL4DotNet
                 {
                     try
                     {
-                        Console.WriteLine("[INFO] Press any key to exit...");
+                        Console.WriteLine(Constants.INFO_PRESS_ANY_KEY);
                         Console.ReadKey(true);
                     }
                     catch (Exception ex)
                     {
-                        LoggerService.LogMessage($"[ERROR] An error occurred during key prompt.", shouldOutputMessageToConsole: false, ex);
+                        LoggerService.LogMessage(LoggerService.LogLevel.Error, Constants.ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
                     }
 
                 }

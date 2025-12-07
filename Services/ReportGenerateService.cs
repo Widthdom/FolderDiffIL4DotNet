@@ -33,11 +33,9 @@ namespace FolderDiffIL4DotNet.Services
         {
             string diffReportAbsolutePath = Path.Combine(reportsFolderAbsolutePath, Constants.DIFF_REPORT_FILE_NAME);
             bool hasMd5Mismatch = FileDiffResultLists.HasAnyMd5Mismatch;
-            const string md5MismatchWarningDescription = "One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.";
-
             if (hasMd5Mismatch)
             {
-                LoggerService.LogMessage($"[WARNING] {md5MismatchWarningDescription}", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Warning, Constants.WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true);
             }
             try
             {
@@ -47,23 +45,23 @@ namespace FolderDiffIL4DotNet.Services
                 using (var streamWriter = new StreamWriter(diffReportAbsolutePath))
                 {
                     // ヘッダ
-                    streamWriter.WriteLine("# Folder Diff Report");
-                    streamWriter.WriteLine($"- App Version: FolderDiffIL4DotNet {appVersion}");
-                    streamWriter.WriteLine($"- Old: {oldFolderAbsolutePath}");
-                    streamWriter.WriteLine($"- New: {newFolderAbsolutePath}");
-                    streamWriter.WriteLine($"- Ignored Extensions: {string.Join(", ", config.IgnoredExtensions)}");
-                    streamWriter.WriteLine($"- Text File Extensions: {string.Join(", ", config.TextFileExtensions)}");
+                    streamWriter.WriteLine(Constants.REPORT_TITLE);
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_HEADER_APP_VERSION, appVersion));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_HEADER_OLD, oldFolderAbsolutePath));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_HEADER_NEW, newFolderAbsolutePath));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_HEADER_IGNORED_EXTENSIONS, string.Join(Constants.REPORT_LIST_SEPARATOR, config.IgnoredExtensions)));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_HEADER_TEXT_EXTENSIONS, string.Join(Constants.REPORT_LIST_SEPARATOR, config.TextFileExtensions)));
                     if (!string.IsNullOrWhiteSpace(elapsedTimeString))
                     {
-                        streamWriter.WriteLine($"- Elapsed Time: {elapsedTimeString}");
+                        streamWriter.WriteLine(string.Format(Constants.REPORT_HEADER_ELAPSED_TIME, elapsedTimeString));
                     }
-                    streamWriter.WriteLine($"- {Constants.NOTE_MVID_SKIP}");
+                    streamWriter.WriteLine("- " + Constants.NOTE_MVID_SKIP);
 
                     // Legend
-                    streamWriter.WriteLine("- Legend:");
-                    streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}`: MD5 hash match / mismatch");
-                    streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}`: IL(Intermediate Language) match / mismatch");
-                    streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}`: Text match / mismatch");
+                    streamWriter.WriteLine(Constants.REPORT_LEGEND_HEADER);
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_LEGEND_MD5, FileDiffResultLists.DiffDetailResult.MD5Match, FileDiffResultLists.DiffDetailResult.MD5Mismatch));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_LEGEND_IL, FileDiffResultLists.DiffDetailResult.ILMatch, FileDiffResultLists.DiffDetailResult.ILMismatch));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_LEGEND_TEXT, FileDiffResultLists.DiffDetailResult.TextMatch, FileDiffResultLists.DiffDetailResult.TextMismatch));
 
                     // ボディ - Ignored Files -
                     // Ignored Files はアプリ設定（ShouldIncludeIgnoredFiles）が true の場合のみ出力。
@@ -71,14 +69,14 @@ namespace FolderDiffIL4DotNet.Services
                     // 旧/新のどちらに存在したかもラベル（(old)/(new)/(old/new)）で明示します。
                     if (config.ShouldIncludeIgnoredFiles && FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count > 0)
                     {
-                        streamWriter.WriteLine("\n## [ x ] Ignored Files");
+                        streamWriter.WriteLine(Constants.REPORT_SECTION_IGNORED_FILES);
                         foreach (var entry in FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
                         {
                             var locationLabel = entry.Value switch
                             {
-                                FileDiffResultLists.IgnoredFileLocation.Old => "(old)",
-                                FileDiffResultLists.IgnoredFileLocation.New => "(new)",
-                                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New => "(old/new)",
+                                FileDiffResultLists.IgnoredFileLocation.Old => Constants.REPORT_LOCATION_OLD,
+                                FileDiffResultLists.IgnoredFileLocation.New => Constants.REPORT_LOCATION_NEW,
+                                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New => Constants.REPORT_LOCATION_BOTH,
                                 _ => string.Empty
                             };
 
@@ -88,23 +86,23 @@ namespace FolderDiffIL4DotNet.Services
                                 var timestampParts = new List<string>();
                                 if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0)
                                 {
-                                    timestampParts.Add($"updated_old: {Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))}");
+                                    timestampParts.Add(string.Format(Constants.REPORT_TIMESTAMP_UPDATED_OLD, Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))));
                                 }
                                 if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0)
                                 {
-                                    timestampParts.Add($"updated_new: {Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key))}");
+                                    timestampParts.Add(string.Format(Constants.REPORT_TIMESTAMP_UPDATED_NEW, Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key))));
                                 }
-                                timestampInfo = timestampParts.Count > 0 ? string.Join(", ", timestampParts) : null;
+                                timestampInfo = timestampParts.Count > 0 ? string.Join(Constants.REPORT_TIMESTAMP_SEPARATOR, timestampParts) : null;
                             }
 
-                            var line = $"- [ x ] {entry.Key}";
+                            var line = string.Format(Constants.REPORT_IGNORED_FILE_ITEM, entry.Key);
                             if (!string.IsNullOrEmpty(locationLabel))
                             {
-                                line += $" {locationLabel}";
+                                line += " " + locationLabel;
                             }
                             if (config.ShouldOutputFileTimestamps && !string.IsNullOrEmpty(timestampInfo))
                             {
-                                line += $" <u>({timestampInfo})</u>";
+                                line += string.Format(Constants.REPORT_TIMESTAMP_HTML_WRAPPER, timestampInfo);
                             }
                             streamWriter.WriteLine(line);
                         }
@@ -117,7 +115,7 @@ namespace FolderDiffIL4DotNet.Services
                     // それ以外は新の最終更新日時を併記します。
                     if (config.ShouldIncludeUnchangedFiles)
                     {
-                        streamWriter.WriteLine("\n## [ = ] Unchanged Files");
+                        streamWriter.WriteLine(Constants.REPORT_SECTION_UNCHANGED_FILES);
                         foreach (var fileRelativePath in FileDiffResultLists.UnchangedFilesRelativePath)
                         {
                             var diffDetail = FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
@@ -126,81 +124,83 @@ namespace FolderDiffIL4DotNet.Services
                                 string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
                                 string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
                                 string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
-                                    ? $"(updated_old: {oldFileTimestamp}, updated_new: {newFileTimestamp})"
-                                    : $"(updated: {newFileTimestamp})";
-                                streamWriter.WriteLine($"- [ = ] {fileRelativePath} <u>{updateInfo}</u> `{diffDetail}`");
+                                    ? string.Format(Constants.REPORT_UNCHANGED_TIMESTAMP_BOTH, oldFileTimestamp, newFileTimestamp)
+                                    : string.Format(Constants.REPORT_UNCHANGED_TIMESTAMP_NEW, newFileTimestamp);
+                                streamWriter.WriteLine(string.Format(Constants.REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP, fileRelativePath, updateInfo, diffDetail));
                             }
                             else
                             {
-                                streamWriter.WriteLine($"- [ = ] {fileRelativePath} `{diffDetail}`");
+                                streamWriter.WriteLine(string.Format(Constants.REPORT_UNCHANGED_ITEM, fileRelativePath, diffDetail));
                             }
                         }
                     }
 
                     // ボディ - Added Files -
-                    streamWriter.WriteLine("\n## [ + ] Added Files");
+                    streamWriter.WriteLine(Constants.REPORT_SECTION_ADDED_FILES);
                     foreach (var newFileAbsolutePath in FileDiffResultLists.AddedFilesAbsolutePath)
                     {
                         if (config.ShouldOutputFileTimestamps)
                         {
-                            streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)})</u>");
+                            streamWriter.WriteLine(string.Format(Constants.REPORT_ADDED_ITEM_WITH_TIMESTAMP, newFileAbsolutePath, Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)));
                         }
                         else
                         {
-                            streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath}");
+                            streamWriter.WriteLine(string.Format(Constants.REPORT_ADDED_ITEM, newFileAbsolutePath));
                         }
                     }
 
                     // ボディ - Removed Files -
-                    streamWriter.WriteLine("\n## [ - ] Removed Files");
+                    streamWriter.WriteLine(Constants.REPORT_SECTION_REMOVED_FILES);
                     foreach (var oldFileAbsolutePath in FileDiffResultLists.RemovedFilesAbsolutePath)
                     {
                         if (config.ShouldOutputFileTimestamps)
                         {
-                            streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)})</u>");
+                            streamWriter.WriteLine(string.Format(Constants.REPORT_REMOVED_ITEM_WITH_TIMESTAMP, oldFileAbsolutePath, Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)));
                         }
                         else
                         {
-                            streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath}");
+                            streamWriter.WriteLine(string.Format(Constants.REPORT_REMOVED_ITEM, oldFileAbsolutePath));
                         }
                     }
 
                     // ボディ - Modified Files -
-                    streamWriter.WriteLine("\n## [ * ] Modified Files");
+                    streamWriter.WriteLine(Constants.REPORT_SECTION_MODIFIED_FILES);
                     foreach (var fileRelativePath in FileDiffResultLists.ModifiedFilesRelativePath)
                     {
                         var diffDetail = FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                         if (config.ShouldOutputFileTimestamps)
                         {
-                            streamWriter.WriteLine($"- [ * ] {fileRelativePath} <u>(updated_old: {Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath))}, updated_new: {Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath))})</u> `{diffDetail}`");
+                            string oldTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
+                            string newTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
+                            streamWriter.WriteLine(string.Format(Constants.REPORT_MODIFIED_ITEM_WITH_TIMESTAMP, fileRelativePath, oldTimestamp, newTimestamp, diffDetail));
                         }
                         else
                         {
-                            streamWriter.WriteLine($"- [ * ] {fileRelativePath} `{diffDetail}`");
+                            streamWriter.WriteLine(string.Format(Constants.REPORT_MODIFIED_ITEM, fileRelativePath, diffDetail));
                         }
                     }
 
                     // フッタ
-                    streamWriter.WriteLine("\n## Summary");
+                    streamWriter.WriteLine(Constants.REPORT_SECTION_SUMMARY);
                     if (config.ShouldIncludeIgnoredFiles)
                     {
-                        streamWriter.WriteLine($"- Ignored   : {FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count}");
+                        streamWriter.WriteLine(string.Format(Constants.REPORT_SUMMARY_ITEM_FORMAT, Constants.REPORT_LABEL_IGNORED, FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count));
                     }
-                    streamWriter.WriteLine($"- Unchanged : {FileDiffResultLists.UnchangedFilesRelativePath.Count}");
-                    streamWriter.WriteLine($"- Added     : {FileDiffResultLists.AddedFilesAbsolutePath.Count}");
-                    streamWriter.WriteLine($"- Removed   : {FileDiffResultLists.RemovedFilesAbsolutePath.Count}");
-                    streamWriter.WriteLine($"- Modified  : {FileDiffResultLists.ModifiedFilesRelativePath.Count}");
-                    streamWriter.WriteLine($"- Compared  : {FileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {FileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_SUMMARY_ITEM_FORMAT, Constants.REPORT_LABEL_UNCHANGED, FileDiffResultLists.UnchangedFilesRelativePath.Count));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_SUMMARY_ITEM_FORMAT, Constants.REPORT_LABEL_ADDED, FileDiffResultLists.AddedFilesAbsolutePath.Count));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_SUMMARY_ITEM_FORMAT, Constants.REPORT_LABEL_REMOVED, FileDiffResultLists.RemovedFilesAbsolutePath.Count));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_SUMMARY_ITEM_FORMAT, Constants.REPORT_LABEL_MODIFIED, FileDiffResultLists.ModifiedFilesRelativePath.Count));
+                    streamWriter.WriteLine(string.Format(Constants.REPORT_SUMMARY_COMPARED, Constants.REPORT_LABEL_COMPARED, FileDiffResultLists.OldFilesAbsolutePath.Count, FileDiffResultLists.NewFilesAbsolutePath.Count));
                     streamWriter.WriteLine();
                     if (hasMd5Mismatch)
                     {
-                        streamWriter.WriteLine($"**WARNING:** {md5MismatchWarningDescription}");
+                        streamWriter.WriteLine(string.Format(Constants.REPORT_WARNING_LINE, Constants.WARNING_MD5_MISMATCH));
                     }
                 }
             }
             catch (Exception)
             {
-                LoggerService.LogMessage($"[ERROR] Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(Constants.ERROR_FAILED_TO_OUTPUT_REPORT, diffReportAbsolutePath), shouldOutputMessageToConsole: true);
                 throw;
             }
             finally
@@ -212,7 +212,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage($"[WARNING] {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
                 }
             }
         }
