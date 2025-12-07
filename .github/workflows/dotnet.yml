@@ -1,0 +1,57 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore FolderDiffIL4DotNet.sln
+
+      - name: Build
+        run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
+
+      - name: Test
+        if: ${{ hashFiles('**/*Tests.csproj', '**/*.Tests.csproj') != '' }}
+        run: dotnet test FolderDiffIL4DotNet.sln --configuration Release --no-build --nologo
+
+      - name: Publish
+        run: dotnet publish FolderDiffIL4DotNet.csproj --configuration Release --no-build --output publish
+
+      - name: Remove debugging symbols
+        run: find publish -name '*.pdb' -delete
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FolderDiffIL4DotNet
+          path: publish/**

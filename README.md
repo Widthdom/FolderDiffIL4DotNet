@@ -24,6 +24,23 @@ dotnet tool install -g ilspycmd
 # Windows:      %USERPROFILE%\.dotnet\tools を PATH に追加
 ```
 
+## CI (GitHub Actions)
+
+リポジトリには GitHub Actions 用のワークフロー（`.github/workflows/dotnet.yml`）を用意しています。`main` ブランチへの push / pull request で自動実行され、`workflow_dispatch` から手動でも起動できます。
+
+- `actions/checkout` は `fetch-depth: 0` で完全な履歴を取得し、Nerdbank.GitVersioning がコミット履歴を参照できるようにしています。
+- `actions/setup-dotnet` が `global.json` を読み取り、ローカルと同じ .NET SDK (例: 8.0.413) をインストールしたうえで `dotnet restore` と Release ビルドを実行します。
+- `**/*Tests.csproj` または `**/*.Tests.csproj` が存在する場合のみ `dotnet test` を動かします（現時点でテスト プロジェクトがないリポジトリでも失敗しません）。
+- `actions/cache` で NuGet（`~/.nuget/packages`）をキャッシュし、2 回目以降のビルドを高速化します。
+- Release ビルドの成果物は `dotnet publish FolderDiffIL4DotNet.csproj --output publish` で生成し、アップロード前に `*.pdb` などのデバッグシンボルを削除したうえで、`actions/upload-artifact` により `FolderDiffIL4DotNet` という名前でアップロードされます（Actions 実行ページの「Artifacts」からダウンロードできます）。
+
+利用手順:
+
+1. このリポジトリを GitHub に push するだけでワークフローが動きます。
+2. デフォルトブランチ名が `main` 以外の場合は、`.github/workflows/dotnet.yml` 内の `on.push.branches` と `on.pull_request.branches` を目的のブランチ名に変更してください。
+3. テスト プロジェクトを追加したらファイル名に `Tests` を含めるか、必要に応じて `Test` ステップの条件式を調整してください。
+4. 作成された成果物は Actions 実行ページの `Artifacts > FolderDiffIL4DotNet` から取得できます。アーカイブ内には Release ビルド済みのファイル一式が含まれます。
+
 ## 処理概要
 
 - 旧バージョン側（比較元）と新バージョン側（比較先）のフォルダ（コマンドライン第1引数と第2引数に指定）の内容を再帰的に比較
