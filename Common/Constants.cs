@@ -759,6 +759,26 @@ namespace FolderDiffIL4DotNet.Common
         public const string LOG_FAILED_CLEANUP_OLD_LOGS = "Failed to clean up old log files in '{0}'.";
 
         /// <summary>
+        /// レポート生成スピナーのラベル。
+        /// </summary>
+        public const string SPINNER_LABEL_GENERATING_REPORT = "Generating report";
+
+        /// <summary>
+        /// レポート生成完了ログ。
+        /// </summary>
+        public const string LOG_REPORT_GENERATION_COMPLETED = "Report generation completed.";
+
+        /// <summary>
+        /// フォルダ比較スピナーのラベル。
+        /// </summary>
+        public const string SPINNER_LABEL_FOLDER_DIFF = "Diffing folders";
+
+        /// <summary>
+        /// フォルダ比較完了ログ。
+        /// </summary>
+        public const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
+
+        /// <summary>
         /// IL diff 失敗ログ
         /// </summary>
         public const string LOG_IL_DIFF_FAILED = LABEL_IL + " diff failed for '{0}'.";

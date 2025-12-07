@@ -157,6 +157,8 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
             FileDiffResultLists.ModifiedFilesRelativePath.Clear();
             FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
+            using var spinner = new ConsoleSpinner(Constants.SPINNER_LABEL_FOLDER_DIFF);
+            var folderDiffCompleted = false;
             try
             {
                 // 長時間の事前処理が続く場合でも利用者に動作中であることを知らせる。
@@ -191,6 +193,7 @@ namespace FolderDiffIL4DotNet.Services
                     if (totalFilesRelativePathCount == 0)
                     {
                         _progressReporter.ReportProgress(100);
+                        folderDiffCompleted = true;
                         return;
                     }
                 }
@@ -287,11 +290,16 @@ namespace FolderDiffIL4DotNet.Services
                     processedFileCount++;
                     _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
                 }
+                folderDiffCompleted = true;
             }
             catch (Exception)
             {
                 LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(Constants.ERROR_DIFFING, _oldFolderAbsolutePath, _newFolderAbsolutePath), shouldOutputMessageToConsole: true);
                 throw;
+            }
+            finally
+            {
+                spinner.Complete(folderDiffCompleted ? Constants.LOG_FOLDER_DIFF_COMPLETED : null);
             }
         }
 

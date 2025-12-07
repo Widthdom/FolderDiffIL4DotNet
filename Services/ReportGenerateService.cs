@@ -37,6 +37,8 @@ namespace FolderDiffIL4DotNet.Services
             {
                 LoggerService.LogMessage(LoggerService.LogLevel.Warning, Constants.WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true);
             }
+            using var spinner = new ConsoleSpinner(Constants.SPINNER_LABEL_GENERATING_REPORT);
+            var reportGenerated = false;
             try
             {
                 Utility.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
@@ -197,6 +199,7 @@ namespace FolderDiffIL4DotNet.Services
                         streamWriter.WriteLine(string.Format(Constants.REPORT_WARNING_LINE, Constants.WARNING_MD5_MISMATCH));
                     }
                 }
+                reportGenerated = true;
             }
             catch (Exception)
             {
@@ -214,6 +217,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     LoggerService.LogMessage(LoggerService.LogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
                 }
+                spinner.Complete(reportGenerated ? Constants.LOG_REPORT_GENERATION_COMPLETED : null);
             }
         }
     }
