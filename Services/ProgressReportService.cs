@@ -8,6 +8,23 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ProgressReportService
     {
+        #region constants
+        /// <summary>
+        /// 進捗範囲エラー
+        /// </summary>
+        private const string ERROR_PROGRESS_OUT_OF_RANGE = "Progress must be between 0.00 and 100.00. Actual: {0:F2}";
+
+        /// <summary>
+        /// 進捗表示
+        /// </summary>
+        private const string LOG_PROGRESS = "Progress: {0}%";
+
+        /// <summary>
+        /// 進捗処理中表示
+        /// </summary>
+        private const string LOG_PROGRESS_KEEPALIVE = LOG_PROGRESS + " (processing...)";
+        #endregion
+
         #region private member variables
         /// <summary>
         /// 直前に出力したF2フォーマットの文字列（重複出力抑止用）
@@ -49,7 +66,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             if (percentage < 0 || percentage > 100)
             {
-                throw new ArgumentOutOfRangeException(nameof(percentage), string.Format(Constants.ERROR_PROGRESS_OUT_OF_RANGE, percentage));
+                throw new ArgumentOutOfRangeException(nameof(percentage), string.Format(ERROR_PROGRESS_OUT_OF_RANGE, percentage));
             }
 
             // 単調増加と重複出力の抑止をスレッドセーフに実施
@@ -67,11 +84,11 @@ namespace FolderDiffIL4DotNet.Services
 
                 if (hasChanged)
                 {
-                    WriteProgress(Constants.LOG_PROGRESS, formattedPercentage);
+                    WriteProgress(LOG_PROGRESS, formattedPercentage);
                 }
                 else if (shouldEmitKeepAlive)
                 {
-                    WriteProgress(Constants.LOG_PROGRESS_KEEPALIVE, formattedPercentage);
+                    WriteProgress(LOG_PROGRESS_KEEPALIVE, formattedPercentage);
                 }
 
                 _lastPercentage = percentage;

@@ -16,6 +16,113 @@ namespace FolderDiffIL4DotNet
     /// </summary>
     class Program
     {
+        #region constants
+        /// <summary>
+        /// レポートを出力するルートディレクトリ名
+        /// </summary>
+        private const string REPORTS_ROOT_DIR_NAME = "Reports";
+
+        /// <summary>
+        /// ロガー初期化メッセージ
+        /// </summary>
+        private const string INFO_INITIALIZING_LOGGER = "[INFO] Initializing logger...";
+
+        /// <summary>
+        /// Logger initialized
+        /// </summary>
+        private const string LOG_LOGGER_INITIALIZED = "Logger initialized.";
+
+        /// <summary>
+        /// アプリバージョン
+        /// </summary>
+        private const string LOG_APPLICATION_VERSION = "Application version: {0}";
+
+        /// <summary>
+        /// 引数検証開始
+        /// </summary>
+        private const string LOG_VALIDATING_ARGS = "Validating command line arguments...";
+
+        /// <summary>
+        /// 引数不足
+        /// </summary>
+        private const string ERROR_INSUFFICIENT_ARGUMENTS = "Insufficient arguments.";
+
+        /// <summary>
+        /// 引数null/空
+        /// </summary>
+        private const string ERROR_ARGUMENTS_NULL_OR_EMPTY = "One or more required arguments are null or empty.";
+
+        /// <summary>
+        /// コマンドラインの使用例
+        /// </summary>
+        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + $" <oldFolderAbsolutePath> <newFolderAbsolutePath> <reportLabel> [{NO_PAUSE}]";
+
+        /// <summary>
+        /// reportLabelエラー
+        /// </summary>
+        private const string ERROR_INVALID_REPORT_LABEL = "The value '{0}', provided as the third argument (reportLabel), is invalid as a folder name.";
+
+        /// <summary>
+        /// 旧フォルダ存在せず
+        /// </summary>
+        private const string ERROR_OLD_FOLDER_NOT_FOUND = "The old folder path does not exist: {0}";
+
+        /// <summary>
+        /// 新フォルダ存在せず
+        /// </summary>
+        private const string ERROR_NEW_FOLDER_NOT_FOUND = "The new folder path does not exist: {0}";
+
+        /// <summary>
+        /// レポートフォルダ既存
+        /// </summary>
+        private const string ERROR_REPORT_FOLDER_EXISTS = "The report folder already exists: {0}. Provide a different report label.";
+
+        /// <summary>
+        /// 引数検証完了
+        /// </summary>
+        private const string LOG_ARGS_VALIDATION_COMPLETED = "Command line arguments validation completed.";
+
+        /// <summary>
+        /// 設定読み込み開始
+        /// </summary>
+        private const string LOG_LOADING_CONFIGURATION = "Loading configuration...";
+
+        /// <summary>
+        /// 設定読み込み完了
+        /// </summary>
+        private const string LOG_CONFIGURATION_LOADED = "Configuration loaded successfully.";
+
+        /// <summary>
+        /// アプリ開始ログ
+        /// </summary>
+        private const string LOG_APP_STARTING = "Starting " + Constants.APP_NAME + "...";
+
+        /// <summary>
+        /// アプリ正常終了
+        /// </summary>
+        private const string LOG_APP_FINISHED = Constants.APP_NAME + " finished without errors. See Reports folder for details.";
+
+        /// <summary>
+        /// エラーログパス
+        /// </summary>
+        private const string LOG_ERROR_DETAILS_PATH = "Error details logged to: {0}";
+
+        /// <summary>
+        /// CI 等向けスイッチ
+        /// </summary>
+        private const string NO_PAUSE = "--no-pause";
+
+        /// <summary>
+        /// 終了キープロンプト
+        /// </summary>
+        private const string INFO_PRESS_ANY_KEY = "[INFO] Press any key to exit...";
+
+        /// <summary>
+        /// キープロンプトエラー
+        /// </summary>
+        private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
+        #endregion
+
         #region private member variables
         /// <summary>
         /// 旧バージョン側（比較元）フォルダの絶対パス
@@ -41,7 +148,7 @@ namespace FolderDiffIL4DotNet
         /// このアプリケーションのバージョン
         /// </summary>
         private static string _thisAppVersion;
-        
+
         /// <summary>
         /// 処理時間（文字列）
         /// </summary>
@@ -56,32 +163,32 @@ namespace FolderDiffIL4DotNet
             try
             {
                 #region Loggerの初期化（以降Loggerを使ったログ出力が可能）
-                Console.WriteLine(Constants.INFO_INITIALIZING_LOGGER);
+                Console.WriteLine(INFO_INITIALIZING_LOGGER);
                 LoggerService.Initialize();
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
                 #endregion
 
                 // アプリケーションのバージョンを取得
                 _thisAppVersion = Utility.GetAppVersion(typeof(Program));
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
 
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_VALIDATING_ARGS, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_VALIDATING_ARGS, shouldOutputMessageToConsole: true);
 
                 #region コマンドライン引数の過不足およびnull, 空文字, 空白文字チェック
                 try
                 {
                     if (args == null || args.Length < 3)
                     {
-                        throw new ArgumentException(Constants.ERROR_INSUFFICIENT_ARGUMENTS);
+                        throw new ArgumentException(ERROR_INSUFFICIENT_ARGUMENTS);
                     }
                     if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]) || string.IsNullOrWhiteSpace(args[2]))
                     {
-                        throw new ArgumentException(Constants.ERROR_ARGUMENTS_NULL_OR_EMPTY);
+                        throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
                     }
                 }
                 catch (ArgumentException ex)
                 {
-                    throw new ArgumentException(Constants.ERROR_INVALID_ARGUMENTS_USAGE, ex);
+                    throw new ArgumentException(ERROR_INVALID_ARGUMENTS_USAGE, ex);
                 }
                 #endregion
 
@@ -97,12 +204,12 @@ namespace FolderDiffIL4DotNet
                     }
                     catch (ArgumentException)
                     {
-                        LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(Constants.ERROR_INVALID_REPORT_LABEL, reportLabel), shouldOutputMessageToConsole: true);
+                        LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(ERROR_INVALID_REPORT_LABEL, reportLabel), shouldOutputMessageToConsole: true);
                         throw;
                     }
                     // レポート出力先の準備
                     {
-                        string reportsRootDirAbsolutePath = Path.Combine(AppContext.BaseDirectory, Constants.REPORTS_ROOT_DIR_NAME);
+                        string reportsRootDirAbsolutePath = Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
                         Directory.CreateDirectory(reportsRootDirAbsolutePath);
                         _reportsFolderAbsolutePath = Path.Combine(reportsRootDirAbsolutePath, reportLabel);
                     }
@@ -112,27 +219,27 @@ namespace FolderDiffIL4DotNet
                 #region コマンドライン引数に指定されたフォルダの存在確認
                 if (!Directory.Exists(_oldFolderAbsolutePath))
                 {
-                    throw new DirectoryNotFoundException(string.Format(Constants.ERROR_OLD_FOLDER_NOT_FOUND, _oldFolderAbsolutePath));
+                    throw new DirectoryNotFoundException(string.Format(ERROR_OLD_FOLDER_NOT_FOUND, _oldFolderAbsolutePath));
                 }
                 if (!Directory.Exists(_newFolderAbsolutePath))
                 {
-                    throw new DirectoryNotFoundException(string.Format(Constants.ERROR_NEW_FOLDER_NOT_FOUND, _newFolderAbsolutePath));
+                    throw new DirectoryNotFoundException(string.Format(ERROR_NEW_FOLDER_NOT_FOUND, _newFolderAbsolutePath));
                 }
                 if (Directory.Exists(_reportsFolderAbsolutePath))
                 {
-                    throw new ArgumentException(string.Format(Constants.ERROR_REPORT_FOLDER_EXISTS, _reportsFolderAbsolutePath));
+                    throw new ArgumentException(string.Format(ERROR_REPORT_FOLDER_EXISTS, _reportsFolderAbsolutePath));
                 }
                 #endregion
 
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
 
                 // 今回作成するレポートの出力先の新規作成
                 Directory.CreateDirectory(_reportsFolderAbsolutePath);
 
                 #region アプリケーション設定の読み込み
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
                 _config = await new ConfigService().LoadConfigAsync();
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
                 #endregion
 
                 // 古いログファイルの削除（失敗しても警告出力のみで処理継続）
@@ -142,7 +249,7 @@ namespace FolderDiffIL4DotNet
                 Services.Caching.TimestampCache.Clear();
 
                 // 処理開始宣言
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_APP_STARTING, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_APP_STARTING, shouldOutputMessageToConsole: true);
 
                 #region フォルダ差分比較処理の実行
                 {
@@ -179,19 +286,19 @@ namespace FolderDiffIL4DotNet
                     _config);
 
                 // 正常終了メッセージ出力
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_APP_FINISHED, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true);
             }
             catch (Exception ex)
             {
-                // 例外を補足した場合は、stacktraceをログに出力して終了
+                // 例外を捕捉した場合は、stacktraceをログに出力して終了
                 LoggerService.LogMessage(LoggerService.LogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ex);
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_ERROR_DETAILS_PATH, LoggerService._logFileAbsolutePath), shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_ERROR_DETAILS_PATH, LoggerService._logFileAbsolutePath), shouldOutputMessageToConsole: true);
             }
             finally
             {
-                /// <see cref="Constants.NO_PAUSE">オプション指定でアプリケーションが起動された場合、または
+                /// <see cref="NO_PAUSE">オプション指定でアプリケーションが起動された場合、または
                 // 非対話（リダイレクトされている）の場合は、終了時にキー入力待ちを行わない
-                if (args.Any(a => string.Equals(a, Constants.NO_PAUSE, StringComparison.OrdinalIgnoreCase))
+                if (args.Any(a => string.Equals(a, NO_PAUSE, StringComparison.OrdinalIgnoreCase))
                     || Console.IsInputRedirected
                     || Console.IsOutputRedirected
                     || Console.IsErrorRedirected)
@@ -202,12 +309,12 @@ namespace FolderDiffIL4DotNet
                 {
                     try
                     {
-                        Console.WriteLine(Constants.INFO_PRESS_ANY_KEY);
+                        Console.WriteLine(INFO_PRESS_ANY_KEY);
                         Console.ReadKey(true);
                     }
                     catch (Exception ex)
                     {
-                        LoggerService.LogMessage(LoggerService.LogLevel.Error, Constants.ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
+                        LoggerService.LogMessage(LoggerService.LogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
                     }
 
                 }

@@ -15,6 +15,68 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class FolderDiffService
     {
+        #region constants
+        /// <summary>
+        /// IL テキスト出力用のサブフォルダ名
+        /// </summary>
+        private const string IL_FOLDER_NAME = Constants.LABEL_IL;
+
+        /// <summary>
+        /// 旧バージョン側（比較元）の IL 出力サブディレクトリ名
+        /// </summary>
+        private const string IL_OLD_SUB_DIR = "old";
+
+        /// <summary>
+        /// 新バージョン側（比較先）の IL 出力サブディレクトリ名
+        /// </summary>
+        private const string IL_NEW_SUB_DIR = "new";
+
+        /// <summary>
+        /// 実行モードログ
+        /// </summary>
+        private const string LOG_EXECUTION_MODE = "Execution mode: {0} ({1})";
+
+        /// <summary>
+        /// フォルダ比較スピナーのラベル。
+        /// </summary>
+        private const string SPINNER_LABEL_FOLDER_DIFF = "Diffing folders";
+
+        /// <summary>
+        /// 並列度ログ
+        /// </summary>
+        private const string LOG_PARALLEL_DIFF_PROCESSING = "Parallel diff processing: maxParallel={0} (configured={1}, OptimizeForNetworkShares={2}, logical processors={3})";
+
+        /// <summary>
+        /// ファイル発見ログ
+        /// </summary>
+        private const string LOG_DISCOVERY_COMPLETE = "Discovery complete: old={0}, new={1}, union(relative)={2}";
+
+        /// <summary>
+        /// 事前計算対象ログ
+        /// </summary>
+        private const string LOG_PRECOMPUTE_TARGETS = "Precompute targets: totalFiles={0}, {1}={2}";
+
+        /// <summary>
+        /// IL出力フォルダ準備ログ
+        /// </summary>
+        private const string LOG_PREPARED_IL_OUTPUT_DIRS = "Prepared " + Constants.LABEL_IL + " output directories: old='{0}', new='{1}'";
+
+        /// <summary>
+        /// IL関連ハッシュ失敗ログ
+        /// </summary>
+        private const string LOG_FAILED_PRECOMPUTE_IL_HASHES = "Failed to precompute " + Constants.LABEL_IL + " related hashes: {0}";
+
+        /// <summary>
+        /// ネットワーク最適化ログ (<see cref="FolderDiffService"/>)
+        /// </summary>
+        private const string LOG_NETWORK_OPTIMIZED_SKIP_IL = $"Network-optimized mode: skip {Constants.LABEL_IL} precompute to reduce network I/O.";
+
+        /// <summary>
+        /// フォルダ比較完了ログ。
+        /// </summary>
+        private const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
+        #endregion
+
         #region private read only member variables
         /// <summary>
         /// アプリケーションの設定情報
@@ -101,9 +163,9 @@ namespace FolderDiffIL4DotNet.Services
             _oldFolderAbsolutePath = oldFolderAbsolutePath ?? throw new ArgumentNullException(nameof(oldFolderAbsolutePath));
             _newFolderAbsolutePath = newFolderAbsolutePath ?? throw new ArgumentNullException(nameof(newFolderAbsolutePath));
             _reportsFolderAbsolutePath = reportsFolderAbsolutePath ?? throw new ArgumentNullException(nameof(reportsFolderAbsolutePath));
-            _ilOutputFolderAbsolutePath = Path.Combine(_reportsFolderAbsolutePath, Constants.IL_FOLDER_NAME);
-            _ilOldFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, Constants.IL_OLD_SUB_DIR);
-            _ilNewFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, Constants.IL_NEW_SUB_DIR);
+            _ilOutputFolderAbsolutePath = Path.Combine(_reportsFolderAbsolutePath, IL_FOLDER_NAME);
+            _ilOldFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, IL_OLD_SUB_DIR);
+            _ilNewFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, IL_NEW_SUB_DIR);
             _ilOutputService = new ILOutputService(_config, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
 
             // Auto検知（UNC/NFS/SSHFS等） + 手動指定のORで最終判定
@@ -149,7 +211,7 @@ namespace FolderDiffIL4DotNet.Services
             // 実行モードを最初に出力
             var mode = _optimizeForNetworkShares ? "Server/NAS-optimized" : "Local-optimized";
             var reason = $"manual={_config.OptimizeForNetworkShares}, auto={_config.AutoDetectNetworkShares}, oldIsNetwork={_detectedNetworkOld}, newIsNetwork={_detectedNetworkNew}";
-            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_EXECUTION_MODE, mode, reason), shouldOutputMessageToConsole: true);
+            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_EXECUTION_MODE, mode, reason), shouldOutputMessageToConsole: true);
 
             FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
             FileDiffResultLists.UnchangedFilesRelativePath.Clear();
@@ -157,7 +219,7 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
             FileDiffResultLists.ModifiedFilesRelativePath.Clear();
             FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
-            using var spinner = new ConsoleSpinner(Constants.SPINNER_LABEL_FOLDER_DIFF);
+            using var spinner = new ConsoleSpinner(SPINNER_LABEL_FOLDER_DIFF);
             var folderDiffCompleted = false;
             try
             {
@@ -215,7 +277,7 @@ namespace FolderDiffIL4DotNet.Services
                 LoggerService.LogMessage(
                     LoggerService.LogLevel.Info,
                     string.Format(
-                        Constants.LOG_PARALLEL_DIFF_PROCESSING,
+                        LOG_PARALLEL_DIFF_PROCESSING,
                         maxParallel,
                         _config.MaxParallelism,
                         _optimizeForNetworkShares,
@@ -227,7 +289,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     int oldCount = FileDiffResultLists.OldFilesAbsolutePath.Count;
                     int newCount = FileDiffResultLists.NewFilesAbsolutePath.Count;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_DISCOVERY_COMPLETE, oldCount, newCount, totalFilesRelativePathCount), shouldOutputMessageToConsole: true);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_DISCOVERY_COMPLETE, oldCount, newCount, totalFilesRelativePathCount), shouldOutputMessageToConsole: true);
 
                     // .NET アセンブリ候補数も概算表示
                     var allFilesForLog = FileDiffResultLists.OldFilesAbsolutePath
@@ -246,7 +308,7 @@ namespace FolderDiffIL4DotNet.Services
                     LoggerService.LogMessage(
                         LoggerService.LogLevel.Info,
                         string.Format(
-                            Constants.LOG_PRECOMPUTE_TARGETS,
+                            LOG_PRECOMPUTE_TARGETS,
                             allFilesForLog.Count,
                             nameof(dotNetAssemblyCandidates),
                             dotNetAssemblyCandidates),
@@ -267,7 +329,7 @@ namespace FolderDiffIL4DotNet.Services
                     Utility.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
                     Directory.CreateDirectory(_ilOldFolderAbsolutePath);
                     Directory.CreateDirectory(_ilNewFolderAbsolutePath);
-                    LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_PREPARED_IL_OUTPUT_DIRS, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath), shouldOutputMessageToConsole: true);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREPARED_IL_OUTPUT_DIRS, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath), shouldOutputMessageToConsole: true);
                 }
                 int processedFileCount = 0;
                 // new 側の全ファイル絶対パスを入れた集合（大文字小文字無視）。
@@ -299,7 +361,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
-                spinner.Complete(folderDiffCompleted ? Constants.LOG_FOLDER_DIFF_COMPLETED : null);
+                spinner.Complete(folderDiffCompleted ? LOG_FOLDER_DIFF_COMPLETED : null);
             }
         }
 
@@ -313,7 +375,7 @@ namespace FolderDiffIL4DotNet.Services
             // ネットワーク最適化モードでは MD5/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
             if (_optimizeForNetworkShares)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_NETWORK_OPTIMIZED_SKIP_IL, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_NETWORK_OPTIMIZED_SKIP_IL, shouldOutputMessageToConsole: true);
                 _progressReporter.ReportProgress(0.0);
                 return;
             }
@@ -350,7 +412,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_PRECOMPUTE_IL_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_PRECOMPUTE_IL_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
                 }
             }
             finally

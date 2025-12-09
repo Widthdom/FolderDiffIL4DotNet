@@ -14,6 +14,28 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class FileDiffService
     {
+        #region constants
+        /// <summary>
+        /// IL diff 失敗ログ
+        /// </summary>
+        private const string LOG_IL_DIFF_FAILED = Constants.LABEL_IL + " diff failed for '{0}'.";
+
+        /// <summary>
+        /// 1 KiB (2^10) を表すバイト数。
+        /// </summary>
+        private const int BYTES_PER_KILOBYTE = 1024;
+
+        /// <summary>
+        /// テキスト差分の高速化を検討するサイズ閾値（バイト）
+        /// </summary>
+        private const int TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * BYTES_PER_KILOBYTE;
+
+        /// <summary>
+        /// テキスト差分比較時のチャンクサイズ（バイト）
+        /// </summary>
+        private const int TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * BYTES_PER_KILOBYTE;
+        #endregion
+
         /// <summary>
         /// アプリケーションの設定情報
         /// </summary>
@@ -89,7 +111,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (InvalidOperationException ex)
                     {
-                        LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(Constants.LOG_IL_DIFF_FAILED, fileRelativePath), shouldOutputMessageToConsole: true, ex);
+                        LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(LOG_IL_DIFF_FAILED, fileRelativePath), shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
@@ -108,8 +130,8 @@ namespace FolderDiffIL4DotNet.Services
                         else
                         {
                             var file1Info = new FileInfo(file1AbsolutePath);
-                            areTextFilesEqual = await DiffTextFilesParallelAsync(file1AbsolutePath, file2AbsolutePath, largeFileSizeThresholdBytes: Constants.TEXT_DIFF_PARALLEL_THRESHOLD_BYTES, maxParallel);
-                            if (file1Info.Length < Constants.TEXT_DIFF_PARALLEL_THRESHOLD_BYTES)
+                            areTextFilesEqual = await DiffTextFilesParallelAsync(file1AbsolutePath, file2AbsolutePath, largeFileSizeThresholdBytes: TEXT_DIFF_PARALLEL_THRESHOLD_BYTES, maxParallel);
+                            if (file1Info.Length < TEXT_DIFF_PARALLEL_THRESHOLD_BYTES)
                             {
                                 areTextFilesEqual = await Utility.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                             }
@@ -170,7 +192,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 // 大きなファイルは固定サイズのチャンクに分割し、読み取り→比較を並列実行する。
-                int chunkCount = (int)((file1Info.Length + Constants.TEXT_DIFF_CHUNK_SIZE_BYTES - 1) / Constants.TEXT_DIFF_CHUNK_SIZE_BYTES);
+                int chunkCount = (int)((file1Info.Length + TEXT_DIFF_CHUNK_SIZE_BYTES - 1) / TEXT_DIFF_CHUNK_SIZE_BYTES);
                 var differences = 0;
                 await Parallel.ForEachAsync(Enumerable.Range(0, chunkCount), new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (index, cancellationToken) =>
                 {
@@ -179,16 +201,16 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         return;
                     }
-                    var buffer1 = new byte[Constants.TEXT_DIFF_CHUNK_SIZE_BYTES];
-                    var buffer2 = new byte[Constants.TEXT_DIFF_CHUNK_SIZE_BYTES];
+                    var buffer1 = new byte[TEXT_DIFF_CHUNK_SIZE_BYTES];
+                    var buffer2 = new byte[TEXT_DIFF_CHUNK_SIZE_BYTES];
                     int read1, read2;
                     using (var file1Stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (var file2Stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        file1Stream.Seek((long)index * Constants.TEXT_DIFF_CHUNK_SIZE_BYTES, SeekOrigin.Begin);
-                        file2Stream.Seek((long)index * Constants.TEXT_DIFF_CHUNK_SIZE_BYTES, SeekOrigin.Begin);
-                        read1 = await file1Stream.ReadAsync(buffer1.AsMemory(0, Constants.TEXT_DIFF_CHUNK_SIZE_BYTES), cancellationToken);
-                        read2 = await file2Stream.ReadAsync(buffer2.AsMemory(0, Constants.TEXT_DIFF_CHUNK_SIZE_BYTES), cancellationToken);
+                        file1Stream.Seek((long)index * TEXT_DIFF_CHUNK_SIZE_BYTES, SeekOrigin.Begin);
+                        file2Stream.Seek((long)index * TEXT_DIFF_CHUNK_SIZE_BYTES, SeekOrigin.Begin);
+                        read1 = await file1Stream.ReadAsync(buffer1.AsMemory(0, TEXT_DIFF_CHUNK_SIZE_BYTES), cancellationToken);
+                        read2 = await file2Stream.ReadAsync(buffer2.AsMemory(0, TEXT_DIFF_CHUNK_SIZE_BYTES), cancellationToken);
                     }
                     // 同じオフセットのチャンクでも読み取りバイト数が異なれば即時不一致。
                     if (read1 != read2)

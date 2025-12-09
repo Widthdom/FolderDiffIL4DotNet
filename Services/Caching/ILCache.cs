@@ -38,6 +38,86 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// キャッシュキーの区切り
         /// </summary>
         private const string KEY_SEPARATOR = "_";
+
+        /// <summary>
+        /// MD5 プリコンピュート共通プレフィックス
+        /// </summary>
+        private const string LOG_PRECOMPUTE_MD5_PREFIX = $"Precompute {Constants.LABEL_MD5}";
+
+        /// <summary>
+        /// MD5 プリコンピュート開始ログ
+        /// </summary>
+        private const string LOG_PRECOMPUTE_MD5_START = LOG_PRECOMPUTE_MD5_PREFIX + ": starting for {0} files ({1}={2})";
+
+        /// <summary>
+        /// MD5 プリコンピュート進捗ログ
+        /// </summary>
+        private const string LOG_PRECOMPUTE_MD5_PROGRESS = LOG_PRECOMPUTE_MD5_PREFIX + ": {0}/{1} ({2}%)";
+
+        /// <summary>
+        /// MD5 プリコンピュート完了ログ
+        /// </summary>
+        private const string LOG_PRECOMPUTE_MD5_COMPLETE = LOG_PRECOMPUTE_MD5_PREFIX + ": completed for {0} files";
+
+        /// <summary>
+        /// MD5 プリコンピュート失敗ログ
+        /// </summary>
+        private const string LOG_FAILED_PRECOMPUTE_MD5_FILE = "Failed to " + LOG_PRECOMPUTE_MD5_PREFIX + " for file '{0}'. This file will be skipped in the cache.";
+
+        /// <summary>
+        /// IL キャッシュディレクトリ作成失敗
+        /// </summary>
+        private const string LOG_FAILED_CREATE_IL_CACHE_DIR = "Failed to create " + Constants.LABEL_IL_CACHE + " directory '{0}': {1}";
+
+        /// <summary>
+        /// IL キャッシュファイル操作失敗フォーマット
+        /// </summary>
+        private const string LOG_FAILED_IL_CACHE_FILE_FORMAT = "Failed to {0} " + Constants.LABEL_IL_CACHE + " file '{1}': {2}";
+
+        /// <summary>
+        /// IL キャッシュ拡張子
+        /// </summary>
+        private const string IL_CACHE_EXTENSION = ".ilcache";
+
+        /// <summary>
+        /// キャッシュファイル削除失敗ログ
+        /// </summary>
+        private const string LOG_FAILED_DELETE_CACHE_FILE = "Failed to delete cache file: {0}";
+
+        /// <summary>
+        /// LRU 除外時のディスクキャッシュ削除失敗ログ
+        /// </summary>
+        private const string LOG_FAILED_REMOVE_DISK_CACHE_FILE = "Failed to remove disk cache file '{0}' during LRU eviction.";
+
+        /// <summary>
+        /// ディスククォータ調整ログ
+        /// </summary>
+        private const string LOG_DISK_QUOTA_TRIM = "Disk quota trim: removed={0}, remain={1}, bytes={2}";
+
+        /// <summary>
+        /// 1 KiB (2^10) をlong 型で扱う値。
+        /// </summary>
+        private const long BYTES_PER_KILOBYTE_LONG = 1024L;
+
+        /// <summary>
+        /// メモリキャッシュの既定最大件数。
+        /// </summary>
+        private const int DEFAULT_MAX_MEMORY_ENTRIES = 1000;
+
+        /// <summary>
+        /// 統計ログの既定出力間隔（秒）。
+        /// </summary>
+        private const int DEFAULT_STATS_LOG_INTERVAL_SECONDS = 60;
+
+        /// <summary>
+        /// プリフェッチ進捗ログを出力する最小間隔（秒）。
+        /// </summary>
+        private const int PREFETCH_PROGRESS_LOG_INTERVAL_SECONDS = 2;
+
+        /// <summary>
+        /// プリフェッチ進捗ログのステップ件数。
+        /// </summary>
+        private const int PREFETCH_PROGRESS_LOG_STEP_COUNT = 500;
         #endregion
 
         #region private read-only variables
@@ -135,9 +215,9 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// コンストラクタ。
         /// </summary>
         /// <param name="ilCacheDirectoryAbsolutePath">ディスクキャッシュ格納ディレクトリ（null/空で無効。作成に失敗した場合も無効）</param>
-        /// <param name="ilCacheMaxMemoryEntries">メモリキャッシュ最大件数（0 以下は既定 1000 を採用。超過時は LRU で削除）</param>
+        /// <param name="ilCacheMaxMemoryEntries">メモリキャッシュ最大件数（0 以下は既定 DEFAULT_MAX_MEMORY_ENTRIES を採用。超過時は LRU で削除）</param>
         /// <param name="timeToLive">各エントリのTime-To-Live（有効期間）（null で無期限。期限切れは参照時にパージ）</param>
-        /// <param name="statsLogIntervalSeconds">内部統計ログ（ヒット率など）の出力間隔（秒）。0 以下で既定の 60 秒。</param>
+        /// <param name="statsLogIntervalSeconds">内部統計ログ（ヒット率など）の出力間隔（秒）。0 以下で既定の DEFAULT_STATS_LOG_INTERVAL_SECONDS 秒。</param>
         /// <param name="ilCacheMaxDiskFileCount">ディスクキャッシュの最大ファイル数（0 以下で無制限。超過時は古い順に削除）</param>
         /// <param name="ilCacheMaxDiskMegabytes">ディスクキャッシュのサイズ上限（MB）。0 以下で無制限。超過時は古い順に削除</param>
         /// <remarks>
@@ -145,21 +225,23 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// - 統計ログの出力間隔は静的フィールド（全インスタンス共通）の <see cref="StatsLogInterval"/> に反映されます。
         /// - ディスクキャッシュの件数／サイズ制御は書き込み後に <see cref="EnforceDiskQuota"/> で適用されます。
         /// </remarks>
-        public ILCache(string ilCacheDirectoryAbsolutePath, int ilCacheMaxMemoryEntries = 1000, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = 60, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0)
+        public ILCache(string ilCacheDirectoryAbsolutePath, int ilCacheMaxMemoryEntries = DEFAULT_MAX_MEMORY_ENTRIES, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0)
         {
-            // メモリキャッシュ容量（0 以下なら既定の 1000 件）
-            _ilCacheMaxMemoryEntries = ilCacheMaxMemoryEntries <= 0 ? 1000 : ilCacheMaxMemoryEntries;
+            // メモリキャッシュ容量（0 以下なら既定の DEFAULT_MAX_MEMORY_ENTRIES 件）
+            _ilCacheMaxMemoryEntries = ilCacheMaxMemoryEntries <= 0 ? DEFAULT_MAX_MEMORY_ENTRIES : ilCacheMaxMemoryEntries;
             // TTL（null で無期限。失効チェックは参照時に実施）
             _timeToLive = timeToLive;
-            // 統計ログの出力間隔（0 以下は 60 秒に補正）
+            // 統計ログの出力間隔（0 以下は DEFAULT_STATS_LOG_INTERVAL_SECONDS 秒に補正）
             if (statsLogIntervalSeconds <= 0)
             {
-                statsLogIntervalSeconds = 60;
+                statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS;
             }
             StatsLogInterval = TimeSpan.FromSeconds(statsLogIntervalSeconds);
 
             _ilCacheMaxDiskFileCount = ilCacheMaxDiskFileCount;
-            _ilCacheMaxDiskBytes = ilCacheMaxDiskMegabytes > 0 ? ilCacheMaxDiskMegabytes * 1024L * 1024L : 0;
+            _ilCacheMaxDiskBytes = ilCacheMaxDiskMegabytes > 0
+                ? ilCacheMaxDiskMegabytes * BYTES_PER_KILOBYTE_LONG * BYTES_PER_KILOBYTE_LONG
+                : 0;
             // ディスクキャッシュ用ディレクトリの初期化（作成成功時のみ有効化）
             if (!string.IsNullOrWhiteSpace(ilCacheDirectoryAbsolutePath))
             {
@@ -175,7 +257,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     _isDiskCacheEnabled = false;
                     LoggerService.LogMessage(
                         LoggerService.LogLevel.Warning,
-                        string.Format(Constants.LOG_FAILED_CREATE_IL_CACHE_DIR, _ilCacheDirectoryAbsolutePath, ex.Message),
+                        string.Format(LOG_FAILED_CREATE_IL_CACHE_DIR, _ilCacheDirectoryAbsolutePath, ex.Message),
                         shouldOutputMessageToConsole: true,
                         ex);
                 }
@@ -211,7 +293,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 }
                 LoggerService.LogMessage(
                     LoggerService.LogLevel.Info,
-                    string.Format(Constants.LOG_PRECOMPUTE_MD5_START, files.Count, nameof(maxParallel), maxParallel),
+                    string.Format(LOG_PRECOMPUTE_MD5_START, files.Count, nameof(maxParallel), maxParallel),
                     shouldOutputMessageToConsole: true);
 
                 int processed = 0;
@@ -228,27 +310,27 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     {
                         LoggerService.LogMessage(
                             LoggerService.LogLevel.Warning,
-                            string.Format(Constants.LOG_FAILED_PRECOMPUTE_MD5_FILE, fileAbsolutePath),
+                            string.Format(LOG_FAILED_PRECOMPUTE_MD5_FILE, fileAbsolutePath),
                             shouldOutputMessageToConsole: true,
                             ex);
                     }
                     finally
                     {
                         var done = Interlocked.Increment(ref processed);
-                        // 2秒に1回、または500件ごとに進捗ログを出す（初回は直ちに出力）
+                        // 一定秒数間隔または一定件数ごとに進捗ログを出す（初回は直ちに出力）
                         var nowTicks = DateTime.UtcNow.Ticks;
                         var prev = Interlocked.Read(ref lastLogTicks);
-                        bool timeElapsed = new TimeSpan(nowTicks - prev).TotalSeconds >= 2;
-                        bool countStep = done % 500 == 0 || done == files.Count;
+                        bool timeElapsed = new TimeSpan(nowTicks - prev).TotalSeconds >= PREFETCH_PROGRESS_LOG_INTERVAL_SECONDS;
+                        bool countStep = done % PREFETCH_PROGRESS_LOG_STEP_COUNT == 0 || done == files.Count;
                         if (timeElapsed || countStep)
                         {
                             if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) == prev)
                             {
                                 int percent = (int)(done * 100.0 / files.Count);
                                 LoggerService.LogMessage(
-                                    LoggerService.LogLevel.Info,
-                                    string.Format(Constants.LOG_PRECOMPUTE_MD5_PROGRESS, done, files.Count, percent),
-                                    shouldOutputMessageToConsole: true);
+                                LoggerService.LogLevel.Info,
+                                string.Format(LOG_PRECOMPUTE_MD5_PROGRESS, done, files.Count, percent),
+                                shouldOutputMessageToConsole: true);
                             }
                         }
                     }
@@ -256,7 +338,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
                     LoggerService.LogMessage(
                         LoggerService.LogLevel.Info,
-                        string.Format(Constants.LOG_PRECOMPUTE_MD5_COMPLETE, files.Count),
+                        string.Format(LOG_PRECOMPUTE_MD5_COMPLETE, files.Count),
                         shouldOutputMessageToConsole: true);
             }
             catch
@@ -318,7 +400,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     {
                         LoggerService.LogMessage(
                             LoggerService.LogLevel.Warning,
-                            string.Format(Constants.LOG_FAILED_IL_CACHE_FILE_FORMAT, "read", diskILCacheFileAbsolutePath, ex.Message),
+                            string.Format(LOG_FAILED_IL_CACHE_FILE_FORMAT, "read", diskILCacheFileAbsolutePath, ex.Message),
                             shouldOutputMessageToConsole: true,
                             ex);
                     }
@@ -382,7 +464,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                             {
                                 LoggerService.LogMessage(
                                     LoggerService.LogLevel.Warning,
-                                    string.Format(Constants.LOG_FAILED_REMOVE_DISK_CACHE_FILE, BuildILCacheFileAbsolutePath(oldestILCacheKey)),
+                                    string.Format(LOG_FAILED_REMOVE_DISK_CACHE_FILE, BuildILCacheFileAbsolutePath(oldestILCacheKey)),
                                     shouldOutputMessageToConsole: true,
                                     ex);
                             }
@@ -406,7 +488,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     LoggerService.LogMessage(
                         LoggerService.LogLevel.Warning,
-                        string.Format(Constants.LOG_FAILED_IL_CACHE_FILE_FORMAT, "write", diskILCacheFileToWriteAbsolutePath, ex.Message),
+                        string.Format(LOG_FAILED_IL_CACHE_FILE_FORMAT, "write", diskILCacheFileToWriteAbsolutePath, ex.Message),
                         shouldOutputMessageToConsole: true,
                         ex);
                 }
@@ -452,7 +534,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 return null;
             }
             // キャッシュキーをそのままファイル名に使用できない可能性が高いため、変換（サニタイズあるいは短縮）したうえで、拡張子を付けて返却します。
-            return Path.Combine(_ilCacheDirectoryAbsolutePath, Utility.ToSafeFileName(ilCacheKey) + Constants.IL_CACHE_EXTENSION);
+            return Path.Combine(_ilCacheDirectoryAbsolutePath, Utility.ToSafeFileName(ilCacheKey) + IL_CACHE_EXTENSION);
         }
 
         /// <summary>
@@ -476,7 +558,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     return;
                 }
                 // ディレクトリ内のキャッシュファイルを最終更新時刻が古い順に並べ替えて列挙
-                var ilCacheFiles = ilCacheDirectoryInfo.GetFiles($"*{Constants.IL_CACHE_EXTENSION}", SearchOption.TopDirectoryOnly)
+                var ilCacheFiles = ilCacheDirectoryInfo.GetFiles($"*{IL_CACHE_EXTENSION}", SearchOption.TopDirectoryOnly)
                     .Select(f => new { File = f, LastAccess = f.LastWriteTimeUtc })
                     .OrderBy(f => f.LastAccess)
                     .ToList();
@@ -502,7 +584,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                         {
                             LoggerService.LogMessage(
                                 LoggerService.LogLevel.Warning,
-                                string.Format(Constants.LOG_FAILED_DELETE_CACHE_FILE, ilCacheFile.File.FullName),
+                                string.Format(LOG_FAILED_DELETE_CACHE_FILE, ilCacheFile.File.FullName),
                                 shouldOutputMessageToConsole: true,
                                 ex);
                         }
@@ -517,7 +599,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     // どれだけ削除され、残数・残容量がいくつかをコンソール・ログ出力
                     LoggerService.LogMessage(
                         LoggerService.LogLevel.Info,
-                        string.Format(Constants.LOG_DISK_QUOTA_TRIM, removed, ilCacheFilesCount, ilCacheFilesTotalBytes),
+                        string.Format(LOG_DISK_QUOTA_TRIM, removed, ilCacheFilesCount, ilCacheFilesTotalBytes),
                         shouldOutputMessageToConsole: true);
                 }
             }

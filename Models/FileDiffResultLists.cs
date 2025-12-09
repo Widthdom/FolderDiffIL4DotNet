@@ -11,6 +11,13 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public static class FileDiffResultLists
     {
+        #region constants
+        /// <summary>
+        /// null/空白の場合のメッセージ
+        /// </summary>
+        private const string ERROR_FILE_RELATIVE_PATH_EMPTY = "{0} cannot be null or whitespace.";
+        #endregion
+
         /// <summary>
         /// ファイルごとの一致/不一致の判定根拠を表す列挙型。
         /// </summary>
@@ -105,7 +112,7 @@ namespace FolderDiffIL4DotNet.Models
         {
             if (string.IsNullOrWhiteSpace(fileRelativePath))
             {
-                throw new ArgumentException(string.Format(Constants.ERROR_FILE_RELATIVE_PATH_EMPTY, nameof(fileRelativePath)));
+                throw new ArgumentException(string.Format(ERROR_FILE_RELATIVE_PATH_EMPTY, nameof(fileRelativePath)));
             }
             IgnoredFilesRelativePathToLocation.AddOrUpdate(fileRelativePath, location, (_, existing) => existing | location);
         }

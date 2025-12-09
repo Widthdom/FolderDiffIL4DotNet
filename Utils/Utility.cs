@@ -49,7 +49,7 @@ namespace FolderDiffIL4DotNet.Utils
         };
         #endregion
 
-        #region private constants
+        #region constants
         /// <summary>
         /// UNC パス判定に用いる接頭辞（\\server\share）。
         /// </summary>
@@ -81,9 +81,14 @@ namespace FolderDiffIL4DotNet.Utils
         private const string SPACE = " ";
 
         /// <summary>
+        /// 1 KiB (2^10) を表すバイト数。
+        /// </summary>
+        private const int BYTES_PER_KILOBYTE = 1024;
+
+        /// <summary>
         /// 逐次読み取りで利用する既定の FileStream バッファサイズ（64KiB）。
         /// </summary>
-        private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 1024 * 64;
+        private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 64 * BYTES_PER_KILOBYTE;
 
         /// <summary>
         /// DOS ヘッダのマジックナンバー ("MZ")。
@@ -161,9 +166,19 @@ namespace FolderDiffIL4DotNet.Utils
         private const int POSIX_PATH_LIMIT = 4096;
 
         /// <summary>
+        /// statfs構造体のファイルシステム名フィールド長。
+        /// </summary>
+        private const int FILE_SYSTEM_NAME_FIELD_LENGTH = 16;
+
+        /// <summary>
         /// ASCII 判定で使用する最大コードポイント。
         /// </summary>
         private const int MAX_ASCII_CODE_POINT = 0x7F;
+
+        /// <summary>
+        /// 許容される制御文字上限コードポイント。
+        /// </summary>
+        private const int MAX_CONTROL_CODE_POINT = 0x1F;
 
         /// <summary>
         /// バージョン文字列が取得できなかった場合のエラーメッセージ。
@@ -287,11 +302,11 @@ namespace FolderDiffIL4DotNet.Utils
             public uint f_type;
             public uint f_flags;
             public uint f_fssubtype;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 16)]
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = FILE_SYSTEM_NAME_FIELD_LENGTH)]
             public string f_fstypename; // e.g., "apfs", "smbfs", "nfs"
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 1024)]
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MACOS_PATH_LIMIT)]
             public string f_mntonname;
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 1024)]
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MACOS_PATH_LIMIT)]
             public string f_mntfromname;
             // 予約領域（実レイアウトとサイズを揃えるため8要素）
             public uint f_reserved0;
@@ -492,9 +507,9 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// フォルダ名として妥当か（macOS/Linux/Windowsの禁止事項を包括）検証し、問題があれば例外を投げます。
         /// - 空白や空、"."/".." は不可
-        /// - 制御文字(0x00-0x1F)や \ / : * ? " < > | を含むと不可
+        /// - 制御文字(0x00～0x1F、<see cref="MAX_CONTROL_CODE_POINT"/> 以下) や \ / : * ? " < > | を含むと不可
         /// - 末尾のスペースやドット不可
-        /// - Windows予約名（CON, PRN, AUX, NUL, COM1..9, LPT1..9）は拡張子の有無に関わらず不可
+        /// - Windows予約名（<see cref="s_windowsReservedNames"/>: CON, PRN, AUX, NUL, COM1～COM9, LPT1～LPT9）は拡張子の有無に関わらず不可
         /// </summary>
         /// <param name="folderName">検証するフォルダ名</param>
         /// <param name="paramName">例外に含めるパラメータ名（省略可）</param>
@@ -515,7 +530,7 @@ namespace FolderDiffIL4DotNet.Utils
             // 制御文字 / 禁則文字のチェック
             foreach (var ch in folderName)
             {
-                if (ch <= 0x1F || s_windowsInvalidFileNameChars.Contains(ch))
+                if (ch <= MAX_CONTROL_CODE_POINT || s_windowsInvalidFileNameChars.Contains(ch))
                 {
                     throw new ArgumentException(string.Format(ERROR_FOLDER_NAME_INVALID_CHAR, ch), paramName ?? nameof(folderName));
                 }

@@ -20,6 +20,118 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class DotNetDisassembleService
     {
+        #region constants
+        /// <summary>
+        /// ブラックリスト化判定に用いる連続失敗閾値。
+        /// </summary>
+        private const int DISASSEMBLE_FAIL_THRESHOLD = 3;
+
+        /// <summary>
+        /// ユーザープロファイル直下の .NET ホームディレクトリ名。
+        /// </summary>
+        private const string DOTNET_HOME_DIRNAME = ".dotnet";
+
+        /// <summary>
+        /// .NET グローバルツールのサブディレクトリ名。
+        /// </summary>
+        private const string DOTNET_TOOLS_DIRNAME = "tools";
+
+        /// <summary>
+        /// ildasmラベル
+        /// </summary>
+        private const string ILDASM_LABEL = "ildasm";
+
+        /// <summary>
+        /// ilspycmd の IL 出力を有効にするスイッチ（例: -il）
+        /// </summary>
+        private const string ILSPY_FLAG_IL = "-il";
+
+        /// <summary>
+        /// ilspycmd の出力ファイル指定スイッチ（例: -o &lt;path&gt;）
+        /// </summary>
+        private const string ILSPY_FLAG_OUTPUT = "-o";
+
+        /// <summary>
+        /// 例外のルート原因フォーマット
+        /// </summary>
+        private const string INFO_ROOT_CAUSE_FORMAT = " RootCause: {0}";
+
+        /// <summary>
+        /// 逆アセンブラ起動失敗ログ
+        /// </summary>
+        private const string LOG_FAILED_TO_START_DISASSEMBLER = "Failed to start disassembler tool '{0}': {1}";
+
+        /// <summary>
+        /// 逆アセンブラ準備時の予期せぬエラー
+        /// </summary>
+        private const string LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER = "Unexpected error while preparing to run '{0}': {1}";
+
+        /// <summary>
+        /// ildasm実行失敗時の例外フォーマット
+        /// </summary>
+        private const string ERROR_EXECUTE_ILDASM = "Failed to execute " + ILDASM_LABEL + " for file: {0}. {1}{2}";
+
+        /// <summary>
+        /// ASCII一時コピー作成失敗
+        /// </summary>
+        private const string LOG_FAILED_CREATE_ASCII_TEMP_COPY = "Failed to create ASCII temp copy for '{0}': {1}";
+
+        /// <summary>
+        /// 逆アセンブラバージョン取得失敗ログ (prefetch)
+        /// </summary>
+        private const string LOG_FAILED_TO_GET_VERSION_FOR_COMMAND = "Failed to get version for disassemble command '{0}' (candidate: '{1}'). Skipping.";
+
+        /// <summary>
+        /// ILキャッシュプリフェッチ共通プレフィックス
+        /// </summary>
+        private const string LOG_PREFETCH_IL_CACHE_PREFIX = "Prefetch " + Constants.LABEL_IL_CACHE;
+
+        /// <summary>
+        /// ILキャッシュプリフェッチ開始
+        /// </summary>
+        private const string LOG_PREFETCH_IL_CACHE_START = LOG_PREFETCH_IL_CACHE_PREFIX + ": starting for {0} .NET assemblies ({1}={2})";
+
+        /// <summary>
+        /// ILキャッシュプリフェッチ進捗
+        /// </summary>
+        private const string LOG_PREFETCH_IL_CACHE_PROGRESS = LOG_PREFETCH_IL_CACHE_PREFIX + ": {0}/{1} ({2}%), hits={3}";
+
+        /// <summary>
+        /// ILキャッシュプリフェッチ完了
+        /// </summary>
+        private const string LOG_PREFETCH_IL_CACHE_COMPLETE = LOG_PREFETCH_IL_CACHE_PREFIX + ": completed. hits={0}, stores={1}";
+
+        /// <summary>
+        /// ILキャッシュプリフェッチ失敗
+        /// </summary>
+        private const string LOG_FAILED_PREFETCH_IL_CACHE = "Failed to prefetch " + Constants.LABEL_IL_CACHE + " for assembly '{0}': {1}";
+
+        /// <summary>
+        /// ILキャッシュ取得失敗
+        /// </summary>
+        private const string LOG_FAILED_GET_IL_FROM_CACHE = "Failed to get " + Constants.LABEL_IL + " from cache for {0} with command {1}: {2}";
+
+        /// <summary>
+        /// ILキャッシュ設定失敗
+        /// </summary>
+        private const string LOG_FAILED_SET_IL_CACHE = "Failed to set " + Constants.LABEL_IL_CACHE + " for {0} with command {1}: {2}";
+
+        /// <summary>
+        /// ildasm失敗エラー
+        /// </summary>
+        private const string ERROR_ILDASM_FAILED = ILDASM_LABEL + " failed (exit {0}) with command: {1} {2} in {3}\nFile: {4}\nStderr: {5}";
+
+        /// <summary>
+        /// ildasm/ilspyインストールガイダンス
+        /// </summary>
+        private const string GUIDANCE_INSTALL_DISASSEMBLER =
+            Constants.DOTNET_ILDASM + " was not found or failed to run.\n" +
+            "If it's not installed, install it with:\n" +
+            "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.DOTNET_ILDASM + "\n" +
+            "Also ensure that ~/" + DOTNET_HOME_DIRNAME + "/" + DOTNET_TOOLS_DIRNAME + " is included in your PATH.\n" +
+            "Alternatively, you can install " + Constants.ILSPY + " and we will use it automatically:\n" +
+            "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY;
+        #endregion
         private enum DisassemblerKind
         {
             Unknown = 0,
@@ -124,21 +236,21 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
             }
 
-            var innerMsg = lastError != null ? string.Format(Constants.INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
-            throw new InvalidOperationException(string.Format(Constants.ERROR_EXECUTE_ILDASM, dotNetAssemblyfileAbsolutePath, Constants.GUIDANCE_INSTALL_DISASSEMBLER, innerMsg), lastError);
+            var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
+            throw new InvalidOperationException(string.Format(ERROR_EXECUTE_ILDASM, dotNetAssemblyfileAbsolutePath, GUIDANCE_INSTALL_DISASSEMBLER, innerMsg), lastError);
         }
 
         /// <summary>
@@ -170,7 +282,7 @@ namespace FolderDiffIL4DotNet.Services
             // 対象件数と並列度をログに出し、プリフェッチの開始を明示。
             LoggerService.LogMessage(
                 LoggerService.LogLevel.Info,
-                string.Format(Constants.LOG_PREFETCH_IL_CACHE_START, assemblies.Count, nameof(maxParallel), maxParallel),
+                string.Format(LOG_PREFETCH_IL_CACHE_START, assemblies.Count, nameof(maxParallel), maxParallel),
                 shouldOutputMessageToConsole: true);
 
             var disassembleCommandAndItsVersionList = new List<(string DisassembleCommand, string DisassemblerVersion)>();
@@ -193,7 +305,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (Exception ex)
                 {
                     // バージョン取得に失敗した場合は警告のみ出し、そのコマンドはスキップ。
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_TO_GET_VERSION_FOR_COMMAND, disassembleCommand, candidateDisassembleCommand), shouldOutputMessageToConsole: false, ex);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_GET_VERSION_FOR_COMMAND, disassembleCommand, candidateDisassembleCommand), shouldOutputMessageToConsole: false, ex);
                 }
             }
             if (disassembleCommandAndItsVersionList.Count == 0)
@@ -225,7 +337,7 @@ namespace FolderDiffIL4DotNet.Services
                         else if (string.Equals(disassemblerFileName, Constants.ILSPY, StringComparison.OrdinalIgnoreCase))
                         {
                             // ilspycmd は /il スイッチを付与する必要があるため、これも付けた状態で 2 パターン生成。
-                            disassembleCommandsWithArguments = [$"{disassemblerFileName} {Constants.ILSPY_FLAG_IL} {dotNetAssemblyNameOnly}", $"{disassemblerFileName} {Constants.ILSPY_FLAG_IL} {dotNetAssemblyFileAbsolutePath}"];
+                            disassembleCommandsWithArguments = [$"{disassemblerFileName} {ILSPY_FLAG_IL} {dotNetAssemblyNameOnly}", $"{disassemblerFileName} {ILSPY_FLAG_IL} {dotNetAssemblyFileAbsolutePath}"];
                         }
                         else
                         {
@@ -248,7 +360,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_PREFETCH_IL_CACHE, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_PREFETCH_IL_CACHE, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
                 }
                 finally
                 {
@@ -263,14 +375,14 @@ namespace FolderDiffIL4DotNet.Services
                         if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) == prev)
                         {
                             int percent = (int)(done * 100.0 / assemblies.Count);
-                            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_PREFETCH_IL_CACHE_PROGRESS, done, assemblies.Count, percent, IlCacheHits), shouldOutputMessageToConsole: true);
+                            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREFETCH_IL_CACHE_PROGRESS, done, assemblies.Count, percent, IlCacheHits), shouldOutputMessageToConsole: true);
                         }
                     }
                 }
             });
 
             // 最終的なヒット/格納カウントをログに出し、プリフェッチ完了を通知。
-            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_PREFETCH_IL_CACHE_COMPLETE, IlCacheHits, IlCacheStores), shouldOutputMessageToConsole: true);
+            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREFETCH_IL_CACHE_COMPLETE, IlCacheHits, IlCacheStores), shouldOutputMessageToConsole: true);
         }
 
         #region private methods
@@ -339,7 +451,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_GET_IL_FROM_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_GET_IL_FROM_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                 }
             }
 
@@ -386,7 +498,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (Exception ex)
                     {
-                        LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_SET_IL_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                        LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_SET_IL_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                     }
                 }
 
@@ -395,7 +507,7 @@ namespace FolderDiffIL4DotNet.Services
             else
             {
                 // exit code が非 0 の場合は詳細付き例外に包んで失敗扱いとし、ブラックリストに登録。
-                var lastError = new InvalidOperationException(string.Format(Constants.ERROR_ILDASM_FAILED, exitCode, disassembleCommand, Utility.GetUsedArgs(argset.args), argset.workingDirectory, dotNetAssemblyFileAbsolutePath, stderr));
+                var lastError = new InvalidOperationException(string.Format(ERROR_ILDASM_FAILED, exitCode, disassembleCommand, Utility.GetUsedArgs(argset.args), argset.workingDirectory, dotNetAssemblyFileAbsolutePath, stderr));
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
             }
@@ -427,7 +539,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_CREATE_ASCII_TEMP_COPY, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
+                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_CREATE_ASCII_TEMP_COPY, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
             }
             return null;
         }
@@ -446,31 +558,31 @@ namespace FolderDiffIL4DotNet.Services
             if (!isIlspy)
             {
                 // ildasm 系
-                argSets.Add((disassemblerFileDirectoryAbsolutePath, isDotnetMuxer ? [Constants.ILDASM_LABEL, disassemblerFileNameOnly] : [disassemblerFileNameOnly], null));
-                argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [Constants.ILDASM_LABEL, disassemblerFileAbsolutePath] : [disassemblerFileAbsolutePath], null));
+                argSets.Add((disassemblerFileDirectoryAbsolutePath, isDotnetMuxer ? [ILDASM_LABEL, disassemblerFileNameOnly] : [disassemblerFileNameOnly], null));
+                argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [ILDASM_LABEL, disassemblerFileAbsolutePath] : [disassemblerFileAbsolutePath], null));
                 if (!string.IsNullOrEmpty(tempAsciiPath))
                 {
-                    argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [Constants.ILDASM_LABEL, tempAsciiPath] : [tempAsciiPath], null));
+                    argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [ILDASM_LABEL, tempAsciiPath] : [tempAsciiPath], null));
                 }
             }
             else
             {
                 // ilspycmd
-                argSets.Add((disassemblerFileDirectoryAbsolutePath, [Constants.ILSPY_FLAG_IL, disassemblerFileNameOnly], null));
-                argSets.Add((Environment.CurrentDirectory, [Constants.ILSPY_FLAG_IL, disassemblerFileAbsolutePath], null));
+                argSets.Add((disassemblerFileDirectoryAbsolutePath, [ILSPY_FLAG_IL, disassemblerFileNameOnly], null));
+                argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, disassemblerFileAbsolutePath], null));
                 if (!string.IsNullOrEmpty(tempAsciiPath))
                 {
-                    argSets.Add((Environment.CurrentDirectory, [Constants.ILSPY_FLAG_IL, tempAsciiPath], null));
+                    argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, tempAsciiPath], null));
                 }
                 string MakeTempOut() => Path.Combine(Path.GetTempPath(), $"ilspy_out_{Guid.NewGuid():N}.il");
                 var out1 = MakeTempOut();
-                argSets.Add((disassemblerFileDirectoryAbsolutePath, [Constants.ILSPY_FLAG_IL, Constants.ILSPY_FLAG_OUTPUT, out1, disassemblerFileNameOnly], out1));
+                argSets.Add((disassemblerFileDirectoryAbsolutePath, [ILSPY_FLAG_IL, ILSPY_FLAG_OUTPUT, out1, disassemblerFileNameOnly], out1));
                 var out2 = MakeTempOut();
-                argSets.Add((Environment.CurrentDirectory, [Constants.ILSPY_FLAG_IL, Constants.ILSPY_FLAG_OUTPUT, out2, disassemblerFileAbsolutePath], out2));
+                argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, ILSPY_FLAG_OUTPUT, out2, disassemblerFileAbsolutePath], out2));
                 if (!string.IsNullOrEmpty(tempAsciiPath))
                 {
                     var out3 = MakeTempOut();
-                    argSets.Add((Environment.CurrentDirectory, [Constants.ILSPY_FLAG_IL, Constants.ILSPY_FLAG_OUTPUT, out3, tempAsciiPath], out3));
+                    argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, ILSPY_FLAG_OUTPUT, out3, tempAsciiPath], out3));
                 }
             }
             return argSets;
@@ -578,7 +690,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return false;
             }
-            if (info.FailCount < Constants.DISASSEMBLE_FAIL_THRESHOLD)
+            if (info.FailCount < DISASSEMBLE_FAIL_THRESHOLD)
             {
                 return false;
             }
@@ -623,7 +735,7 @@ namespace FolderDiffIL4DotNet.Services
         /// ユーザーの .NET グローバルツールディレクトリ（例: C:\Users\<name>\.dotnet\tools）。
         /// </summary>
         private static string UserDotnetToolsDirectory =>
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), Constants.DOTNET_HOME_DIRNAME, Constants.DOTNET_TOOLS_DIRNAME);
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), DOTNET_HOME_DIRNAME, DOTNET_TOOLS_DIRNAME);
 
         /// <summary>
         /// 逆アセンブラ候補コマンドを優先順で列挙します。

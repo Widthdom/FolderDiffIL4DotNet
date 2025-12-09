@@ -15,6 +15,43 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public static class LoggerService
     {
+        #region constants
+        /// <summary>
+        /// ログディレクトリ名
+        /// </summary>
+        private const string LOGS_DIRECTORY_NAME = "Logs";
+
+        /// <summary>
+        /// ログファイル名のプレフィックス
+        /// </summary>
+        private const string LOG_FILE_PREFIX = "log_";
+
+        /// <summary>
+        /// 古いログファイル削除ログ
+        /// </summary>
+        private const string LOG_DELETED_OLD_LOG_FILE = "Deleted old log file: {0}.";
+
+        /// <summary>
+        /// 古いログファイルクリーンアップ失敗
+        /// </summary>
+        private const string LOG_FAILED_CLEANUP_OLD_LOGS = "Failed to clean up old log files in '{0}'.";
+
+        /// <summary>
+        /// ログプレフィックス: INFO
+        /// </summary>
+        private const string LOG_PREFIX_INFO = "[INFO]";
+
+        /// <summary>
+        /// ログプレフィックス: WARNING
+        /// </summary>
+        private const string LOG_PREFIX_WARNING = "[WARNING]";
+
+        /// <summary>
+        /// ログプレフィックス: ERROR
+        /// </summary>
+        private const string LOG_PREFIX_ERROR = "[ERROR]";
+        #endregion
+
         /// <summary>
         /// ログレベル
         /// </summary>
@@ -40,7 +77,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// ログディレクトリと当日付のログファイル（パスのみ）を設定します。
         /// <para>
-        /// ログディレクトリは <c>AppContext.BaseDirectory/<see cref="Constants.LOGS_DIRECTORY_NAME"/></c> に作成され、
+        /// ログディレクトリは <c>AppContext.BaseDirectory/<see cref="LOGS_DIRECTORY_NAME"/></c> に作成され、
         /// ログファイルパスは <c>log_yyyyMMdd.log</c> 形式で構成されます（本メソッドではファイル自体は作成しません）。
         /// パス長は <see cref="Utility.ValidateAbsolutePathLengthOrThrow(string, string)"/> により検証されます。
         /// </para>
@@ -51,13 +88,13 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="PathTooLongException">パスが長すぎる場合（環境による）。</exception>
         public static void Initialize()
         {
-            _logDirectoryAbsolutePath = Path.Combine(AppContext.BaseDirectory, Constants.LOGS_DIRECTORY_NAME);
+            _logDirectoryAbsolutePath = Path.Combine(AppContext.BaseDirectory, LOGS_DIRECTORY_NAME);
 
             Utility.ValidateAbsolutePathLengthOrThrow(_logDirectoryAbsolutePath);
 
             Directory.CreateDirectory(_logDirectoryAbsolutePath);
 
-            _logFileAbsolutePath = Path.Combine(_logDirectoryAbsolutePath, $"{Constants.LOG_FILE_PREFIX}{DateTime.Now:yyyyMMdd}.log");
+            _logFileAbsolutePath = Path.Combine(_logDirectoryAbsolutePath, $"{LOG_FILE_PREFIX}{DateTime.Now:yyyyMMdd}.log");
 
             Utility.ValidateAbsolutePathLengthOrThrow(_logFileAbsolutePath);
         }
@@ -124,14 +161,14 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     throw new ArgumentOutOfRangeException($"MaxLogGenerations must be a non-negative integer, but was {maxLogGenerations}.");
                 }
-                var logFilesAbsolutePaths = Directory.GetFiles(_logDirectoryAbsolutePath, $"{Constants.LOG_FILE_PREFIX}*.log");
+                var logFilesAbsolutePaths = Directory.GetFiles(_logDirectoryAbsolutePath, $"{LOG_FILE_PREFIX}*.log");
                 if (logFilesAbsolutePaths.Length > maxLogGenerations)
                 {
                     var oldLogFilesToDeleteAbsolutePaths = logFilesAbsolutePaths.OrderBy(f => f).Take(logFilesAbsolutePaths.Length - maxLogGenerations);
                     foreach (var oldLogfileAbsolutePath in oldLogFilesToDeleteAbsolutePaths)
                     {
                         File.Delete(oldLogfileAbsolutePath);
-                        LogMessage(LogLevel.Info, string.Format(Constants.LOG_DELETED_OLD_LOG_FILE, oldLogfileAbsolutePath), shouldOutputMessageToConsole: true);
+                        LogMessage(LogLevel.Info, string.Format(LOG_DELETED_OLD_LOG_FILE, oldLogfileAbsolutePath), shouldOutputMessageToConsole: true);
                     }
                 }
             }
@@ -141,7 +178,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LogMessage(LogLevel.Warning, string.Format(Constants.LOG_FAILED_CLEANUP_OLD_LOGS, _logDirectoryAbsolutePath), shouldOutputMessageToConsole: true, ex);
+                LogMessage(LogLevel.Warning, string.Format(LOG_FAILED_CLEANUP_OLD_LOGS, _logDirectoryAbsolutePath), shouldOutputMessageToConsole: true, ex);
             }
         }
 
@@ -165,9 +202,9 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static string GetLogLevelPrefix(LogLevel logLevel) => logLevel switch
         {
-            LogLevel.Warning => Constants.LOG_PREFIX_WARNING,
-            LogLevel.Error => Constants.LOG_PREFIX_ERROR,
-            _ => Constants.LOG_PREFIX_INFO
+            LogLevel.Warning => LOG_PREFIX_WARNING,
+            LogLevel.Error => LOG_PREFIX_ERROR,
+            _ => LOG_PREFIX_INFO
         };
     }
 }

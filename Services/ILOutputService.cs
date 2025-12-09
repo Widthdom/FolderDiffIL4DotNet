@@ -16,6 +16,33 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ILOutputService
     {
+        #region constants
+        /// <summary>
+        /// IL キャッシュのメモリ最大エントリ数（既定値）
+        /// </summary>
+        private const int IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT = 2000;
+
+        /// <summary>
+        /// ネットワーク共有最適化ログ (<see cref="ILOutputService"/>)
+        /// </summary>
+        private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
+
+        /// <summary>
+        /// MD5ハッシュ計算失敗ログ
+        /// </summary>
+        private const string LOG_FAILED_PRECOMPUTE_MD5_HASHES = "Failed to precompute " + Constants.LABEL_MD5 + " hashes: {0}";
+
+        /// <summary>
+        /// IL 出力から比較時に除外する MVID 行の接頭辞
+        /// </summary>
+        private const string MVID_PREFIX = "// MVID:";
+
+        /// <summary>
+        /// IL出力失敗ログ
+        /// </summary>
+        private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
+        #endregion
+
         #region private read only member variables
         /// <summary>
         /// 設定値。IL 出力やキャッシュ利用可否、キャッシュパラメータ等を保持する <see cref="ConfigSettings"/>。
@@ -64,7 +91,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _ilCache = new ILCache(
                     string.IsNullOrWhiteSpace(_config.ILCacheDirectoryAbsolutePath) ? Path.Combine(AppContext.BaseDirectory, Constants.DEFAULT_IL_CACHE_DIR_NAME) : _config.ILCacheDirectoryAbsolutePath,
-                    ilCacheMaxMemoryEntries: Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
+                    ilCacheMaxMemoryEntries: IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
                     timeToLive: TimeSpan.FromHours(12),
                     statsLogIntervalSeconds: _config.ILCacheStatsLogIntervalSeconds <= 0 ? 60 : _config.ILCacheStatsLogIntervalSeconds,
                     ilCacheMaxDiskFileCount: _config.ILCacheMaxDiskFileCount,
@@ -97,7 +124,7 @@ namespace FolderDiffIL4DotNet.Services
             if (_config.OptimizeForNetworkShares)
             {
                 // ネットワーク共有最適化時は、MD5 プリウォームおよび IL キャッシュ先読みをスキップ
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, Constants.LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP, shouldOutputMessageToConsole: true);
                 return;
             }
             if (maxParallel <= 0)
@@ -116,14 +143,14 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(Constants.LOG_FAILED_PRECOMPUTE_MD5_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
+                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_PRECOMPUTE_MD5_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
             }
         }
 
         public async Task<bool> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
         {
             // IL 比較時はビルド毎に異なる MVID 行を除外するためのフィルタをローカルに定義。
-            static bool IsNotMvidLine(string line) => line is null || !line.StartsWith(Constants.MVID_PREFIX, StringComparison.Ordinal);
+            static bool IsNotMvidLine(string line) => line is null || !line.StartsWith(MVID_PREFIX, StringComparison.Ordinal);
 
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
@@ -149,7 +176,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception)
             {
                 // IL テキスト出力に失敗した場合はエラーログを出しつつ再スロー。
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, Constants.ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
                 throw;
             }
             return areILsEqual;

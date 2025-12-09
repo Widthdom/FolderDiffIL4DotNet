@@ -12,6 +12,18 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
     /// </summary>
     public sealed class ILTextOutputService
     {
+        #region constants
+        /// <summary>
+        /// IL 比較の HTML ログファイル名（サイドバイサイド表示）。
+        /// </summary>
+        private const string ILTEXT_SUFFIX = "_" + Constants.LABEL_IL + ".txt";
+
+        /// <summary>
+        /// IL テキスト出力失敗時のメッセージ
+        /// </summary>
+        private const string ERROR_FAILED_TO_OUTPUT_IL_TEXT = $"Failed to output {Constants.LABEL_IL} Text.";
+        #endregion
+
         /// <summary>
         /// 旧 IL フォルダの絶対パス
         /// </summary>
@@ -41,7 +53,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             try
             {
                 // 相対パスのサニタイズを実施した後、_IL.txt を付与してファイル名を決定
-                string ilTextFileName = Utility.Sanitize(fileRelativePath) + Constants.ILTEXT_SUFFIX;
+                string ilTextFileName = Utility.Sanitize(fileRelativePath) + ILTEXT_SUFFIX;
 
                 // 出力先ファイルの絶対パスを決定・妥当性を検証
                 string oldILFileAbsolutePath = Path.Combine(_ilOldFolderAbsolutePath, ilTextFileName);
@@ -68,7 +80,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             }
             catch (Exception)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, Constants.ERROR_FAILED_TO_OUTPUT_IL_TEXT, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL_TEXT, shouldOutputMessageToConsole: true);
                 throw;
             }
         }
