@@ -25,22 +25,22 @@ namespace FolderDiffIL4DotNet
         /// <summary>
         /// ロガー初期化メッセージ
         /// </summary>
-        private const string INFO_INITIALIZING_LOGGER = "[INFO] Initializing logger...";
+        private const string INITIALIZING_LOGGER = "Initializing logger...";
 
         /// <summary>
         /// Logger initialized
         /// </summary>
-        private const string LOG_LOGGER_INITIALIZED = "Logger initialized.";
+        private const string LOGGER_INITIALIZED = "Logger initialized.";
 
         /// <summary>
         /// アプリバージョン
         /// </summary>
-        private const string LOG_APPLICATION_VERSION = "Application version: {0}";
+        private const string APPLICATION_VERSION = "Application version: {0}";
 
         /// <summary>
         /// 引数検証開始
         /// </summary>
-        private const string LOG_VALIDATING_ARGS = "Validating command line arguments...";
+        private const string VALIDATING_ARGS = "Validating command line arguments...";
 
         /// <summary>
         /// 引数不足
@@ -115,7 +115,7 @@ namespace FolderDiffIL4DotNet
         /// <summary>
         /// 終了キープロンプト
         /// </summary>
-        private const string INFO_PRESS_ANY_KEY = "[INFO] Press any key to exit...";
+        private const string PRESS_ANY_KEY = "Press any key to exit...";
 
         /// <summary>
         /// キープロンプトエラー
@@ -163,16 +163,16 @@ namespace FolderDiffIL4DotNet
             try
             {
                 #region Loggerの初期化（以降Loggerを使ったログ出力が可能）
-                Console.WriteLine(INFO_INITIALIZING_LOGGER);
+                Console.WriteLine(INITIALIZING_LOGGER);
                 LoggerService.Initialize();
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
                 #endregion
 
                 // アプリケーションのバージョンを取得
                 _thisAppVersion = Utility.GetAppVersion(typeof(Program));
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
 
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_VALIDATING_ARGS, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
 
                 #region コマンドライン引数の過不足およびnull, 空文字, 空白文字チェック
                 try
@@ -298,7 +298,7 @@ namespace FolderDiffIL4DotNet
             {
                 /// <see cref="NO_PAUSE">オプション指定でアプリケーションが起動された場合、または
                 // 非対話（リダイレクトされている）の場合は、終了時にキー入力待ちを行わない
-                if (args.Any(a => string.Equals(a, NO_PAUSE, StringComparison.OrdinalIgnoreCase))
+                if (args.Any(arg => string.Equals(arg, NO_PAUSE, StringComparison.OrdinalIgnoreCase))
                     || Console.IsInputRedirected
                     || Console.IsOutputRedirected
                     || Console.IsErrorRedirected)
@@ -309,7 +309,7 @@ namespace FolderDiffIL4DotNet
                 {
                     try
                     {
-                        Console.WriteLine(INFO_PRESS_ANY_KEY);
+                        Console.WriteLine(PRESS_ANY_KEY);
                         Console.ReadKey(true);
                     }
                     catch (Exception ex)

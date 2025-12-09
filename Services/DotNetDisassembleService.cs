@@ -129,8 +129,8 @@ namespace FolderDiffIL4DotNet.Services
             "If it's not installed, install it with:\n" +
             "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.DOTNET_ILDASM + "\n" +
             "Also ensure that ~/" + DOTNET_HOME_DIRNAME + "/" + DOTNET_TOOLS_DIRNAME + " is included in your PATH.\n" +
-            "Alternatively, you can install " + Constants.ILSPY + " and we will use it automatically:\n" +
-            "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY;
+            "Alternatively, you can install " + Constants.ILSPY_CMD + " and we will use it automatically:\n" +
+            "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY_CMD;
         #endregion
         private enum DisassemblerKind
         {
@@ -223,14 +223,14 @@ namespace FolderDiffIL4DotNet.Services
                 try
                 {
                     // キャッシュ確認とプロセス起動を内包した TryDisassembleAsync を実行。
-                    var attempt = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath);
-                    if (attempt.Success)
+                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath);
+                    if (success)
                     {
-                        return (attempt.IlText, attempt.DisassembleCommandAndItsVersionWithArguments);
+                        return (ilText, disassembleCommandAndItsVersionWithArguments);
                     }
-                    if (attempt.Error != null)
+                    if (error != null)
                     {
-                        lastError = attempt.Error;
+                        lastError = error;
                     }
                 }
                 catch (System.ComponentModel.Win32Exception ex)
@@ -272,8 +272,8 @@ namespace FolderDiffIL4DotNet.Services
                 throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, Constants.ERROR_MAX_PARALLEL);
             }
 
-            // 入力列を ICollection に引き上げ（必要なら ToList）て、件数ゼロなら処理をスキップ。
-            var assemblies = dotNetAssemblyFilesAbsolutePaths as ICollection<string> ?? dotNetAssemblyFilesAbsolutePaths.ToList();
+            // 入力列を ICollection に引き上げ（必要なら List を生成）て、件数ゼロなら処理をスキップ。
+            var assemblies = dotNetAssemblyFilesAbsolutePaths as ICollection<string> ?? [.. dotNetAssemblyFilesAbsolutePaths];
             if (assemblies.Count == 0)
             {
                 return;
@@ -334,7 +334,7 @@ namespace FolderDiffIL4DotNet.Services
                             // dotnet muxer は "dotnet dotnet-ildasm" の形で実行されるため、相対パス・絶対パスの双方を試す。
                             disassembleCommandsWithArguments = [$"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {dotNetAssemblyNameOnly}", $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {dotNetAssemblyFileAbsolutePath}"];
                         }
-                        else if (string.Equals(disassemblerFileName, Constants.ILSPY, StringComparison.OrdinalIgnoreCase))
+                        else if (string.Equals(disassemblerFileName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase))
                         {
                             // ilspycmd は /il スイッチを付与する必要があるため、これも付けた状態で 2 パターン生成。
                             disassembleCommandsWithArguments = [$"{disassemblerFileName} {ILSPY_FLAG_IL} {dotNetAssemblyNameOnly}", $"{disassemblerFileName} {ILSPY_FLAG_IL} {dotNetAssemblyFileAbsolutePath}"];
@@ -402,14 +402,14 @@ namespace FolderDiffIL4DotNet.Services
             {
                 foreach (var argset in BuildArgSets(disassembleCommand, dotNetAssemblyFileAbsolutePath, tempAsciiPath))
                 {
-                    var result = await TryDisassembleWithArguments(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset);
-                    if (result.Success)
+                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleWithArguments(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset);
+                    if (success)
                     {
-                        return result;
+                        return (success, ilText, disassembleCommandAndItsVersionWithArguments, error);
                     }
-                    if (result.Error != null)
+                    if (error != null)
                     {
-                        lastError = result.Error;
+                        lastError = error;
                     }
                 }
             }
@@ -521,7 +521,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// 指定コマンドが ilspycmd かを判定します。
         /// </summary>
-        private static bool IsIlspyCommand(string command) => string.Equals(Path.GetFileName(command), Constants.ILSPY, StringComparison.OrdinalIgnoreCase);
+        private static bool IsIlspyCommand(string command) => string.Equals(Path.GetFileName(command), Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase);
 
         /// <summary>
         /// パスに非ASCII文字がある場合に、ASCII の一時パスへコピーしたファイルのパスを返します。該当しなければ null。
@@ -574,7 +574,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, tempAsciiPath], null));
                 }
-                string MakeTempOut() => Path.Combine(Path.GetTempPath(), $"ilspy_out_{Guid.NewGuid():N}.il");
+                static string MakeTempOut() => Path.Combine(Path.GetTempPath(), $"ilspy_out_{Guid.NewGuid():N}.il");
                 var out1 = MakeTempOut();
                 argSets.Add((disassemblerFileDirectoryAbsolutePath, [ILSPY_FLAG_IL, ILSPY_FLAG_OUTPUT, out1, disassemblerFileNameOnly], out1));
                 var out2 = MakeTempOut();
@@ -591,7 +591,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// ベースラベルにツールバージョンを付加して返します。取得失敗時はベースラベルをそのまま返します。
         /// </summary>
-        private async Task<string> GetDisassembleCommandAndItsVersionWithArgumentsAsync(string disassembleCommandWithArguments)
+        private static async Task<string> GetDisassembleCommandAndItsVersionWithArgumentsAsync(string disassembleCommandWithArguments)
         {
             try
             {
@@ -644,35 +644,6 @@ namespace FolderDiffIL4DotNet.Services
                 // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
                 return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
             }
-        }
-
-        /// <summary>
-        /// コマンドラベルから逆アセンブラの種類・キャッシュキー・実行ファイル名を解決します。
-        /// Dotnet muxer 経由のケースや ilspycmd 単体起動など、既知のパターンを判定して適切なキーへ正規化します。
-        /// </summary>
-        private static (DisassemblerKind kind, string toolKey, string disassemblerExe) ResolveDisassembler(string commandLabel)
-        {
-            var tokens = Utility.TokenizeCommand(commandLabel);
-            if (tokens.Count == 0)
-            {
-                throw new InvalidOperationException($"Failed to determine disassembler version: invalid command label '{commandLabel}'.");
-            }
-
-            if (string.Equals(tokens[0], Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
-            {
-                if (tokens.Count >= 2 && string.Equals(tokens[1], Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase))
-                {
-                    return (kind: DisassemblerKind.DotnetIldasm, toolKey: $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM}", disassemblerExe: Constants.DOTNET_MUXER);
-                }
-            }
-
-            var exe = tokens[0];
-            return Path.GetFileName(exe)?.ToLowerInvariant() switch
-            {
-                Constants.DOTNET_ILDASM => (kind: DisassemblerKind.Ildasm, toolKey: Constants.DOTNET_ILDASM, disassemblerExe: exe),
-                Constants.ILSPY => (kind: DisassemblerKind.Ilspy, toolKey: Constants.ILSPY, disassemblerExe: exe),
-                _ => (kind: DisassemblerKind.Unknown, toolKey: null, disassemblerExe: null)
-            };
         }
 
         /// <summary>
@@ -745,8 +716,8 @@ namespace FolderDiffIL4DotNet.Services
             yield return Constants.DOTNET_ILDASM;
             yield return Path.Combine(UserDotnetToolsDirectory, Constants.DOTNET_ILDASM);
             yield return Constants.DOTNET_MUXER;
-            yield return Constants.ILSPY;
-            yield return Path.Combine(UserDotnetToolsDirectory, Constants.ILSPY);
+            yield return Constants.ILSPY_CMD;
+            yield return Path.Combine(UserDotnetToolsDirectory, Constants.ILSPY_CMD);
         }
         #endregion
     }

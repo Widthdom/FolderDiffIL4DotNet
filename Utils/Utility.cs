@@ -181,6 +181,21 @@ namespace FolderDiffIL4DotNet.Utils
         private const int MAX_CONTROL_CODE_POINT = 0x1F;
 
         /// <summary>
+        /// ファイル名短縮時に保持する先頭部分の最大長。
+        /// </summary>
+        private const int SAFE_FILENAME_HEAD_LENGTH = 40;
+
+        /// <summary>
+        /// ファイル名短縮時に保持する末尾部分の最大長。
+        /// </summary>
+        private const int SAFE_FILENAME_TAIL_LENGTH = 8;
+
+        /// <summary>
+        /// ファイル名短縮時に使用する SHA1 バイト数。
+        /// </summary>
+        private const int SAFE_FILENAME_HASH_BYTES = 6;
+
+        /// <summary>
         /// バージョン文字列が取得できなかった場合のエラーメッセージ。
         /// </summary>
         private const string ERROR_VERSION_STRING_EMPTY = "Version string is empty.";
@@ -847,10 +862,10 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// 任意の文字列を「ファイル名として安全に使える文字列」へ変換します。
         /// 無効文字およびコロン(:)は '_' に置換し、長すぎる場合は
-        /// 「先頭40 + "_.._" + 末尾8 + '_' + 短縮ハッシュ(SHA1の先頭6バイト=12hex)」で短縮します。
+        /// 「先頭<see cref="SAFE_FILENAME_HEAD_LENGTH"/> + "_.._" + 末尾<see cref="SAFE_FILENAME_TAIL_LENGTH"/> + '_' + 短縮ハッシュ(SHA1の先頭<see cref="SAFE_FILENAME_HASH_BYTES"/>バイト)」で短縮します。
         /// </summary>
         /// <param name="fileNameExcludeExtention">変換対象の文字列（拡張子は含めない想定）。</param>
-        /// <param name="maxLength">短縮判定の閾値（既定: 180）。これ以上なら短縮します。</param>
+        /// <param name="maxLength">短縮判定の閾値（既定: <see cref="SAFE_FILENAME_DEFAULT_MAX_LENGTH"/>）。これ以上なら短縮します。</param>
         /// <returns>ファイル名として使用可能な安全な文字列。</returns>
         /// <exception cref="Exception">例外は発生せず、常に入力を安全な形式へ変換します。</exception>
         public static string ToSafeFileName(string fileNameExcludeExtention, int maxLength = SAFE_FILENAME_DEFAULT_MAX_LENGTH)
@@ -876,14 +891,13 @@ namespace FolderDiffIL4DotNet.Utils
             }
             var sanitizedFileNameExcludeExtention = stringBuilder.ToString();
 
-            // 2) 長すぎる場合は短縮（先頭40 + '..' + 末尾8 + '_' + 短縮ハッシュ）
+            // 2) 長すぎる場合は短縮（先頭 SAFE_FILENAME_HEAD_LENGTH + '..' + 末尾 SAFE_FILENAME_TAIL_LENGTH + '_' + 短縮ハッシュ）
             if (sanitizedFileNameExcludeExtention.Length >= maxLength)
             {
-                using var sha1 = SHA1.Create();
-                var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(sanitizedFileNameExcludeExtention));
-                var hashHex = BitConverter.ToString(hash, 0, 6).Replace("-", "").ToLowerInvariant();
-                var head = sanitizedFileNameExcludeExtention[..Math.Min(40, sanitizedFileNameExcludeExtention.Length)];
-                var tail = sanitizedFileNameExcludeExtention[^Math.Min(8, sanitizedFileNameExcludeExtention.Length)..];
+                var hash = SHA1.HashData(Encoding.UTF8.GetBytes(sanitizedFileNameExcludeExtention));
+                var hashHex = BitConverter.ToString(hash, 0, SAFE_FILENAME_HASH_BYTES).Replace("-", "").ToLowerInvariant();
+                var head = sanitizedFileNameExcludeExtention[..Math.Min(SAFE_FILENAME_HEAD_LENGTH, sanitizedFileNameExcludeExtention.Length)];
+                var tail = sanitizedFileNameExcludeExtention[^Math.Min(SAFE_FILENAME_TAIL_LENGTH, sanitizedFileNameExcludeExtention.Length)..];
                 sanitizedFileNameExcludeExtention = head + "_.._" + tail + "_" + hashHex;
             }
             return sanitizedFileNameExcludeExtention;

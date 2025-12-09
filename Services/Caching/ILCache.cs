@@ -286,7 +286,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 // 対象ファイル群に対し、MD5 の計算だけを先に並列実行しておきます。
                 // こうすることで、後続の TryGet/Set でキャッシュキー生成にかかる I/O 待ちを平準化できます。
-                var files = fileAbsolutePaths as ICollection<string> ?? fileAbsolutePaths.ToList();
+                var files = fileAbsolutePaths as ICollection<string> ?? [.. fileAbsolutePaths];
                 if (files.Count == 0)
                 {
                     return Task.CompletedTask;
@@ -336,10 +336,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     }
                 });
 
-                    LoggerService.LogMessage(
-                        LoggerService.LogLevel.Info,
-                        string.Format(LOG_PRECOMPUTE_MD5_COMPLETE, files.Count),
-                        shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(
+                    LoggerService.LogLevel.Info,
+                    string.Format(LOG_PRECOMPUTE_MD5_COMPLETE, files.Count),
+                    shouldOutputMessageToConsole: true);
             }
             catch
             {

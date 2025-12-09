@@ -120,7 +120,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             return Path.GetFileName(exe)?.ToLowerInvariant() switch
             {
                 Constants.DOTNET_ILDASM => (disassemblerKind: DisassemblerKind.Ildasm, disassemblerVersionCacheKey: Constants.DOTNET_ILDASM, disassemblerExe: exe),
-                Constants.ILSPY => (disassemblerKind: DisassemblerKind.Ilspy, disassemblerVersionCacheKey: Constants.ILSPY, disassemblerExe: exe),
+                Constants.ILSPY_CMD => (disassemblerKind: DisassemblerKind.Ilspy, disassemblerVersionCacheKey: Constants.ILSPY_CMD, disassemblerExe: exe),
                 _ => (disassemblerKind: DisassemblerKind.Unknown, disassemblerVersionCacheKey: null, disassemblerExe: null)
             };
         }
@@ -215,7 +215,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
 
             // いずれの方法でも取得できない場合はエラーとして扱う。
-            throw new InvalidOperationException($"{ERROR_FAILED_TO_GET_VERSION} '{Constants.ILSPY}' ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}').");
+            throw new InvalidOperationException($"{ERROR_FAILED_TO_GET_VERSION} '{Constants.ILSPY_CMD}' ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}').");
         }
 
         /// <summary>

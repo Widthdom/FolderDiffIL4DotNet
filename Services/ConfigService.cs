@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
-using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 
 namespace FolderDiffIL4DotNet.Services

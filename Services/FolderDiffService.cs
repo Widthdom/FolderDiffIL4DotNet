@@ -75,6 +75,31 @@ namespace FolderDiffIL4DotNet.Services
         /// フォルダ比較完了ログ。
         /// </summary>
         private const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
+
+        /// <summary>
+        /// ローカルモードの表示名。
+        /// </summary>
+        private const string MODE_LOCAL_OPTIMIZED = "Local-optimized";
+
+        /// <summary>
+        /// NAS/サーバーモードの表示名。
+        /// </summary>
+        private const string MODE_SERVER_NAS_OPTIMIZED = "Server/NAS-optimized";
+
+        /// <summary>
+        /// 実行モード理由のフォーマット。
+        /// </summary>
+        private const string EXECUTION_MODE_REASON_FORMAT = "manual={0}, auto={1}, oldIsNetwork={2}, newIsNetwork={3}";
+
+        /// <summary>
+        /// ネットワーク最適化時の最大並列度上限。
+        /// </summary>
+        private const int MAX_PARALLEL_NETWORK_LIMIT = 8;
+
+        /// <summary>
+        /// キープアライブの出力間隔（秒）。
+        /// </summary>
+        private const int KEEP_ALIVE_INTERVAL_SECONDS = 5;
         #endregion
 
         #region private read only member variables
@@ -209,8 +234,8 @@ namespace FolderDiffIL4DotNet.Services
         public async Task ExecuteFolderDiffAsync()
         {
             // 実行モードを最初に出力
-            var mode = _optimizeForNetworkShares ? "Server/NAS-optimized" : "Local-optimized";
-            var reason = $"manual={_config.OptimizeForNetworkShares}, auto={_config.AutoDetectNetworkShares}, oldIsNetwork={_detectedNetworkOld}, newIsNetwork={_detectedNetworkNew}";
+            var mode = _optimizeForNetworkShares ? MODE_SERVER_NAS_OPTIMIZED : MODE_LOCAL_OPTIMIZED;
+            var reason = string.Format(EXECUTION_MODE_REASON_FORMAT, _config.OptimizeForNetworkShares, _config.AutoDetectNetworkShares, _detectedNetworkOld, _detectedNetworkNew);
             LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_EXECUTION_MODE, mode, reason), shouldOutputMessageToConsole: true);
 
             FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
@@ -265,9 +290,9 @@ namespace FolderDiffIL4DotNet.Services
                 int maxParallel;
                 if (_config.MaxParallelism <= 0)
                 {
-                    // 既定の並列度を、ローカルはCPU論理コア数、ネットワーク共有最適化時は上限8に抑制
+                    // 既定の並列度を、ローカルはCPU論理コア数、ネットワーク共有最適化時は上限MAX_PARALLEL_NETWORK_LIMITに抑制
                     maxParallel = _optimizeForNetworkShares
-                        ? Math.Min(Environment.ProcessorCount, 8)
+                        ? Math.Min(Environment.ProcessorCount, MAX_PARALLEL_NETWORK_LIMIT)
                         : Environment.ProcessorCount;
                 }
                 else
@@ -385,7 +410,7 @@ namespace FolderDiffIL4DotNet.Services
                 .Concat(FileDiffResultLists.NewFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            // 事前計算が長引いても進捗が止まって見えないよう、5秒おきに 0% を流すキープアライブを起動。
+            // 事前計算が長引いても進捗が止まって見えないよう、定期的に 0% を流すキープアライブを起動。
             using var keepAliveCts = new CancellationTokenSource();
             var keepAliveTask = Task.Run(async () =>
             {
@@ -393,7 +418,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     while (!keepAliveCts.Token.IsCancellationRequested)
                     {
-                        await Task.Delay(TimeSpan.FromSeconds(5), keepAliveCts.Token);
+                        await Task.Delay(TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL_SECONDS), keepAliveCts.Token);
                         _progressReporter.ReportProgress(0.0);
                     }
                 }

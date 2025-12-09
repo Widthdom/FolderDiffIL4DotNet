@@ -45,7 +45,7 @@ namespace FolderDiffIL4DotNet.Common
         /// <summary>
         /// ilspyコマンド
         /// </summary>
-        public const string ILSPY = "ilspycmd";
+        public const string ILSPY_CMD = "ilspycmd";
 
         /// <summary>
         /// 経過時間表示

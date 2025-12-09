@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services.Caching

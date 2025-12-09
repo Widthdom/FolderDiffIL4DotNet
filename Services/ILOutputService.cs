@@ -23,6 +23,16 @@ namespace FolderDiffIL4DotNet.Services
         private const int IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT = 2000;
 
         /// <summary>
+        /// IL キャッシュ統計ログの既定出力間隔（秒）。
+        /// </summary>
+        private const int IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS = 60;
+
+        /// <summary>
+        /// IL キャッシュの既定TTL（時間単位）。
+        /// </summary>
+        private const int IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS = 12;
+
+        /// <summary>
         /// ネットワーク共有最適化ログ (<see cref="ILOutputService"/>)
         /// </summary>
         private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
@@ -92,8 +102,8 @@ namespace FolderDiffIL4DotNet.Services
                 _ilCache = new ILCache(
                     string.IsNullOrWhiteSpace(_config.ILCacheDirectoryAbsolutePath) ? Path.Combine(AppContext.BaseDirectory, Constants.DEFAULT_IL_CACHE_DIR_NAME) : _config.ILCacheDirectoryAbsolutePath,
                     ilCacheMaxMemoryEntries: IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
-                    timeToLive: TimeSpan.FromHours(12),
-                    statsLogIntervalSeconds: _config.ILCacheStatsLogIntervalSeconds <= 0 ? 60 : _config.ILCacheStatsLogIntervalSeconds,
+                    timeToLive: TimeSpan.FromHours(IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS),
+                    statsLogIntervalSeconds: _config.ILCacheStatsLogIntervalSeconds <= 0 ? IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS : _config.ILCacheStatsLogIntervalSeconds,
                     ilCacheMaxDiskFileCount: _config.ILCacheMaxDiskFileCount,
                     ilCacheMaxDiskMegabytes: _config.ILCacheMaxDiskMegabytes
                 );

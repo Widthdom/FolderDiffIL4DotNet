@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services
@@ -140,7 +139,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// ログディレクトリ内のローテーション済みログ (<c>log_*.log</c>) を世代保持数に従い整理します。
         /// <para>
-        /// 振る舞い: 
+        /// 振る舞い:
         /// <list type="bullet">
         /// <item><description><paramref name="maxLogGenerations"/> &lt; 0 : 例外を捕捉して警告ログを出力 (削除処理は行わない)</description></item>
         /// <item><description><paramref name="maxLogGenerations"/> == 0 : すべて削除</description></item>
@@ -187,14 +186,10 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static string FormatMessage(string message, LogLevel logLevel)
         {
-            string prefix = GetLogLevelPrefix(logLevel);
-
-            if (string.IsNullOrWhiteSpace(message))
-            {
-                return prefix;
-            }
-
-            return $"{prefix} {message}";
+            var prefix = GetLogLevelPrefix(logLevel);
+            return string.IsNullOrWhiteSpace(message)
+                ? prefix
+                : $"{prefix} {message}";
         }
 
         /// <summary>
