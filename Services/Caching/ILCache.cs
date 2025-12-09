@@ -95,6 +95,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private const string LOG_DISK_QUOTA_TRIM = "Disk quota trim: removed={0}, remain={1}, bytes={2}";
 
         /// <summary>
+        /// IL キャッシュ統計ログ
+        /// </summary>
+        private const string LOG_IL_CACHE_STATS = Constants.LABEL_IL_CACHE + " stats: hits={0}, stores={1}, evicted={2}, expired={3}";
+
+        /// <summary>
         /// 1 KiB (2^10) をlong 型で扱う値。
         /// </summary>
         private const long BYTES_PER_KILOBYTE_LONG = 1024L;
@@ -198,6 +203,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private long _internalStores = 0;
 
         /// <summary>
+        /// 統計ログの最終出力時刻（Ticks）
+        /// </summary>
+        private long _lastStatsLogTicks = 0;
+
+        /// <summary>
         /// 内部キャッシュ統計ログ（ヒット率など）を出力する最小間隔。
         /// コンストラクタの statsLogIntervalSeconds で上書きされ、既定は 60 秒です。
         /// </summary>
@@ -284,57 +294,18 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             try
             {
-                // 対象ファイル群に対し、MD5 の計算だけを先に並列実行しておきます。
-                // こうすることで、後続の TryGet/Set でキャッシュキー生成にかかる I/O 待ちを平準化できます。
                 var files = fileAbsolutePaths as ICollection<string> ?? [.. fileAbsolutePaths];
                 if (files.Count == 0)
                 {
                     return Task.CompletedTask;
                 }
+
                 LoggerService.LogMessage(
                     LoggerService.LogLevel.Info,
                     string.Format(LOG_PRECOMPUTE_MD5_START, files.Count, nameof(maxParallel), maxParallel),
                     shouldOutputMessageToConsole: true);
 
-                int processed = 0;
-                long lastLogTicks = DateTime.UtcNow.Ticks;
-
-                Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, fileAbsolutePath =>
-                {
-                    try
-                    {
-                        // 個々のファイルの MD5 を計算し、内部キャッシュに投入（GetOrAdd）
-                        GetFileHash(fileAbsolutePath);
-                    }
-                    catch (Exception ex)
-                    {
-                        LoggerService.LogMessage(
-                            LoggerService.LogLevel.Warning,
-                            string.Format(LOG_FAILED_PRECOMPUTE_MD5_FILE, fileAbsolutePath),
-                            shouldOutputMessageToConsole: true,
-                            ex);
-                    }
-                    finally
-                    {
-                        var done = Interlocked.Increment(ref processed);
-                        // 一定秒数間隔または一定件数ごとに進捗ログを出す（初回は直ちに出力）
-                        var nowTicks = DateTime.UtcNow.Ticks;
-                        var prev = Interlocked.Read(ref lastLogTicks);
-                        bool timeElapsed = new TimeSpan(nowTicks - prev).TotalSeconds >= PREFETCH_PROGRESS_LOG_INTERVAL_SECONDS;
-                        bool countStep = done % PREFETCH_PROGRESS_LOG_STEP_COUNT == 0 || done == files.Count;
-                        if (timeElapsed || countStep)
-                        {
-                            if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) == prev)
-                            {
-                                int percent = (int)(done * 100.0 / files.Count);
-                                LoggerService.LogMessage(
-                                LoggerService.LogLevel.Info,
-                                string.Format(LOG_PRECOMPUTE_MD5_PROGRESS, done, files.Count, percent),
-                                shouldOutputMessageToConsole: true);
-                            }
-                        }
-                    }
-                });
+                RunMd5Precompute(files, maxParallel);
 
                 LoggerService.LogMessage(
                     LoggerService.LogLevel.Info,
@@ -370,6 +341,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     _memoryILCacheDictionary.TryRemove(ilCacheKey, out _);
 
                     Interlocked.Increment(ref _expiredCount);
+                    LogStatsIfIntervalElapsed();
                 }
                 else
                 {
@@ -377,6 +349,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     _memoryILCacheDictionary[ilCacheKey] = (ilCache.ILText, DateTime.UtcNow, ilCache.CreatedUtc);
 
                     Interlocked.Increment(ref _internalHits);
+                    LogStatsIfIntervalElapsed();
                     return ilCache.ILText;
                 }
             }
@@ -394,6 +367,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                         _memoryILCacheDictionary[ilCacheKey] = (ilText, DateTime.UtcNow, DateTime.UtcNow);
 
                         Interlocked.Increment(ref _internalHits);
+                        LogStatsIfIntervalElapsed();
                         return ilText;
                     }
                     catch (Exception ex)
@@ -426,75 +400,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 return;
             }
             var ilCacheKey = BuildILCacheKey(fileAbsolutePath, toolLabel);
-            // 挿入前に容量超過なら最古アクセスを削除
-            if (_memoryILCacheDictionary.Count >= _ilCacheMaxMemoryEntries)
-            {
-                lock (_lruLock)
-                {
-                    if (_memoryILCacheDictionary.Count >= _ilCacheMaxMemoryEntries)
-                    {
-                        // メモリ上のエントリを全走査して、最終アクセスが最も古いものを 1 件見つける（O(n)）
-                        string oldestILCacheKey = null;
-                        DateTime oldestLastAccessUtc = DateTime.MaxValue;
-                        foreach (var keyAndValue in _memoryILCacheDictionary)
-                        {
-                            if (keyAndValue.Value.LastAccessUtc < oldestLastAccessUtc)
-                            {
-                                oldestLastAccessUtc = keyAndValue.Value.LastAccessUtc;
-                                oldestILCacheKey = keyAndValue.Key;
-                            }
-                        }
-                        if (oldestILCacheKey != null && _memoryILCacheDictionary.TryRemove(oldestILCacheKey, out _))
-                        {
-                            // LRU（Least Recently Used）方式でメモリから退避。統計カウントを加算
-                            Interlocked.Increment(ref _evictedCount);
-                            try
-                            {
-                                if (_isDiskCacheEnabled)
-                                {
-                                    // 可能ならディスク側の対応ファイルも削除（容量抑制）
-                                    var diskILCacheFileToRemoveAbsolutePath = BuildILCacheFileAbsolutePath(oldestILCacheKey);
-                                    if (File.Exists(diskILCacheFileToRemoveAbsolutePath))
-                                    {
-                                        File.Delete(diskILCacheFileToRemoveAbsolutePath);
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                LoggerService.LogMessage(
-                                    LoggerService.LogLevel.Warning,
-                                    string.Format(LOG_FAILED_REMOVE_DISK_CACHE_FILE, BuildILCacheFileAbsolutePath(oldestILCacheKey)),
-                                    shouldOutputMessageToConsole: true,
-                                    ex);
-                            }
-                        }
-                    }
-                }
-            }
-            // メモリへ格納（最終アクセス日時（協定世界時）と生成日時（協定世界時）をシステム日時とする）
-            _memoryILCacheDictionary[ilCacheKey] = (ilText, DateTime.UtcNow, DateTime.UtcNow);
-            if (_isDiskCacheEnabled)
-            {
-                var diskILCacheFileToWriteAbsolutePath = BuildILCacheFileAbsolutePath(ilCacheKey);
-                try
-                {
-                    // ディスクへも書き込み（プロセスをまたいだ再利用を可能に）
-                    await File.WriteAllTextAsync(diskILCacheFileToWriteAbsolutePath, ilText);
-                    // 書き込み後にディスククォータ（件数・サイズ）を適用
-                    EnforceDiskQuota();
-                }
-                catch (Exception ex)
-                {
-                    LoggerService.LogMessage(
-                        LoggerService.LogLevel.Warning,
-                        string.Format(LOG_FAILED_IL_CACHE_FILE_FORMAT, "write", diskILCacheFileToWriteAbsolutePath, ex.Message),
-                        shouldOutputMessageToConsole: true,
-                        ex);
-                }
-            }
-            // ストア統計を加算
+            StoreInMemoryCache(ilCacheKey, ilText);
+            await PersistCacheIfNeeded(ilCacheKey, ilText);
             Interlocked.Increment(ref _internalStores);
+            LogStatsIfIntervalElapsed();
         }
 
         #region private methods
@@ -538,71 +447,346 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// ディスクキャッシュ容量制御（サイズと件数）。SetAsync で新規書き込み後に実行。
+        /// 指定されたファイル群に対して MD5 プリコンピュート処理を並列実行します。
         /// </summary>
-        private void EnforceDiskQuota()
+        /// <param name="files">MD5 を計算する対象ファイルの一覧。</param>
+        /// <param name="maxParallel">平行実行時の最大並列度。</param>
+        private void RunMd5Precompute(ICollection<string> files, int maxParallel)
         {
+            int processed = 0;
+            long lastLogTicks = DateTime.UtcNow.Ticks;
+
+            Parallel.ForEach(files, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, fileAbsolutePath =>
+            {
+                try
+                {
+                    // 個々のファイルの MD5 を計算し、内部キャッシュに投入（GetOrAdd）
+                    GetFileHash(fileAbsolutePath);
+                }
+                catch (Exception ex)
+                {
+                    LoggerService.LogMessage(
+                        LoggerService.LogLevel.Warning,
+                        string.Format(LOG_FAILED_PRECOMPUTE_MD5_FILE, fileAbsolutePath),
+                        shouldOutputMessageToConsole: true,
+                        ex);
+                }
+                finally
+                {
+                    var done = Interlocked.Increment(ref processed);
+                    LogPrecomputeProgress(files.Count, done, ref lastLogTicks);
+                }
+            });
+        }
+
+        /// <summary>
+        /// プリコンピュート処理の進捗を一定間隔でログ出力します。
+        /// </summary>
+        /// <param name="totalFiles">対象ファイルの総数。</param>
+        /// <param name="processed">現在までに処理済みの件数。</param>
+        /// <param name="lastLogTicks">最後にログした時刻（Tick）。</param>
+        private static void LogPrecomputeProgress(int totalFiles, int processed, ref long lastLogTicks)
+        {
+            // 一定秒数間隔または一定件数ごとに進捗ログを出す（初回は直ちに出力）
+            var nowTicks = DateTime.UtcNow.Ticks;
+            var prev = Interlocked.Read(ref lastLogTicks);
+            bool timeElapsed = new TimeSpan(nowTicks - prev).TotalSeconds >= PREFETCH_PROGRESS_LOG_INTERVAL_SECONDS;
+            bool countStep = processed % PREFETCH_PROGRESS_LOG_STEP_COUNT == 0 || processed == totalFiles;
+            if (!timeElapsed && !countStep)
+            {
+                return;
+            }
+
+            // 他スレッドが既にログを出していたらスキップ
+            if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) != prev)
+            {
+                return;
+            }
+
+            int percent = (int)(processed * 100.0 / totalFiles);
+
+            LoggerService.LogMessage(
+                LoggerService.LogLevel.Info,
+                string.Format(LOG_PRECOMPUTE_MD5_PROGRESS, processed, totalFiles, percent),
+                shouldOutputMessageToConsole: true);
+        }
+
+        /// <summary>
+        /// メモリキャッシュへ指定キーの IL テキストを格納します。
+        /// </summary>
+        /// <param name="ilCacheKey">格納対象のキャッシュキー。</param>
+        /// <param name="ilText">保存する IL テキスト。</param>
+        /// <exception cref="ArgumentNullException"><paramref name="ilCacheKey"/> が null の場合。</exception>
+        private void StoreInMemoryCache(string ilCacheKey, string ilText)
+        {
+            if (ilCacheKey == null)
+            {
+                throw new ArgumentNullException(nameof(ilCacheKey));
+            }
+            EnsureMemoryCapacity();
+            _memoryILCacheDictionary[ilCacheKey] = (ilText, DateTime.UtcNow, DateTime.UtcNow);
+        }
+
+        /// <summary>
+        /// メモリキャッシュの上限を超えないようにし、必要であれば最終アクセスが最も古いエントリを削除します。
+        /// </summary>
+        private void EnsureMemoryCapacity()
+        {
+            // まだ上限に達していなければ何もしない
+            if (_memoryILCacheDictionary.Count < _ilCacheMaxMemoryEntries)
+            {
+                return;
+            }
+
+            lock (_lruLock)
+            {
+                // ロック獲得後も上限に余裕があれば抜ける
+                if (_memoryILCacheDictionary.Count < _ilCacheMaxMemoryEntries)
+                {
+                    return;
+                }
+
+                // LRU を探し出し、削除に失敗したらそのまま終了
+                var oldestEntryKey = FindOldestEntryKey();
+                if (oldestEntryKey == null || !_memoryILCacheDictionary.TryRemove(oldestEntryKey, out _))
+                {
+                    return;
+                }
+
+                Interlocked.Increment(ref _evictedCount);
+                RemoveDiskEntryIfNeeded(oldestEntryKey);
+                LogStatsIfIntervalElapsed();
+            }
+        }
+
+        /// <summary>
+        /// 最終アクセス時刻が最も古いエントリのキャッシュキーを探します。
+        /// </summary>
+        /// <returns>削除対象のキー。キャッシュが空なら null。</returns>
+        private string FindOldestEntryKey()
+        {
+            string oldestILCacheKey = null;
+            DateTime oldestLastAccessUtc = DateTime.MaxValue;
+            // すべてのエントリを走査し、最も古い最終アクセス時刻を持つキーを覚えておく
+            foreach (var keyAndValue in _memoryILCacheDictionary)
+            {
+                if (keyAndValue.Value.LastAccessUtc < oldestLastAccessUtc)
+                {
+                    oldestLastAccessUtc = keyAndValue.Value.LastAccessUtc;
+                    oldestILCacheKey = keyAndValue.Key;
+                }
+            }
+            return oldestILCacheKey;
+        }
+
+        /// <summary>
+        /// ディスクキャッシュが有効であれば、指定されたキーに対応するファイルを削除します。
+        /// </summary>
+        /// <param name="oldestILCacheKey">削除対象となるキャッシュキー。</param>
+        private void RemoveDiskEntryIfNeeded(string oldestILCacheKey)
+        {
+            // ディスクキャッシュ無効時は処理不要
             if (!_isDiskCacheEnabled)
             {
                 return;
             }
-            if (_ilCacheMaxDiskFileCount <= 0 && _ilCacheMaxDiskBytes <= 0)
+            try
+            {
+                // ファイルが存在する場合のみ削除
+                var diskILCacheFileToRemoveAbsolutePath = BuildILCacheFileAbsolutePath(oldestILCacheKey);
+                if (File.Exists(diskILCacheFileToRemoveAbsolutePath))
+                {
+                    File.Delete(diskILCacheFileToRemoveAbsolutePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                // 削除に失敗した場合は警告ログを吐く
+                LoggerService.LogMessage(
+                    LoggerService.LogLevel.Warning,
+                    string.Format(LOG_FAILED_REMOVE_DISK_CACHE_FILE, BuildILCacheFileAbsolutePath(oldestILCacheKey)),
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+        }
+
+        /// <summary>
+        /// ディスクキャッシュ有効時に、指定キーの内容をディスクへ書き込みます。
+        /// </summary>
+        /// <param name="ilCacheKey">書き込み対象のキャッシュキー。</param>
+        /// <param name="ilText">ディスクへ保存する IL テキスト。</param>
+        /// <returns>書き込みとディスククォータ確認が完了すると完了状態になるタスク。</returns>
+        private async Task PersistCacheIfNeeded(string ilCacheKey, string ilText)
+        {
+            // ディスクキャッシュが無効なら保存不要
+            if (!_isDiskCacheEnabled)
             {
                 return;
             }
+            var diskILCacheFileToWriteAbsolutePath = BuildILCacheFileAbsolutePath(ilCacheKey);
+            try
+            {
+                // テキストを書き込み、上限超過をチェック
+                await File.WriteAllTextAsync(diskILCacheFileToWriteAbsolutePath, ilText);
+                EnforceDiskQuota();
+            }
+            catch (Exception ex)
+            {
+                // 例外は握りつぶさず警告ログに残す
+                LoggerService.LogMessage(
+                    LoggerService.LogLevel.Warning,
+                    string.Format(LOG_FAILED_IL_CACHE_FILE_FORMAT, "write", diskILCacheFileToWriteAbsolutePath, ex.Message),
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+        }
+
+        /// <summary>
+        /// ディスクキャッシュ容量制御（サイズと件数）。SetAsync で新規書き込み後に実行。
+        /// </summary>
+        private void EnforceDiskQuota()
+        {
+            if (!ShouldEnforceDiskQuota())
+            {
+                return;
+            }
+
             lock (_diskQuotaLock)
             {
-                var ilCacheDirectoryInfo = new DirectoryInfo(_ilCacheDirectoryAbsolutePath);
-                if (!ilCacheDirectoryInfo.Exists)
+                var directoryInfo = new DirectoryInfo(_ilCacheDirectoryAbsolutePath);
+                if (!directoryInfo.Exists)
                 {
                     return;
                 }
-                // ディレクトリ内のキャッシュファイルを最終更新時刻が古い順に並べ替えて列挙
-                var ilCacheFiles = ilCacheDirectoryInfo.GetFiles($"*{IL_CACHE_EXTENSION}", SearchOption.TopDirectoryOnly)
-                    .Select(f => new { File = f, LastAccess = f.LastWriteTimeUtc })
-                    .OrderBy(f => f.LastAccess)
-                    .ToList();
-                long ilCacheFilesTotalBytes = ilCacheFiles.Sum(f => f.File.Length);
-                int ilCacheFilesCount = ilCacheFiles.Count;
-                bool changed = false;
-                int removed = 0;
-                foreach (var ilCacheFile in ilCacheFiles)
+                var (files, totalBytes) = GetCacheFilesSnapshot(directoryInfo);
+                TrimCacheFiles(files, totalBytes);
+            }
+        }
+
+        /// <summary>
+        /// ディスククォータ監視が必要かどうかを判定します。
+        /// </summary>
+        /// <returns>監視が必要であれば true。</returns>
+        private bool ShouldEnforceDiskQuota() =>
+            _isDiskCacheEnabled && (_ilCacheMaxDiskFileCount > 0 || _ilCacheMaxDiskBytes > 0);
+
+        /// <summary>
+        /// キャッシュディレクトリ内のファイル一覧を取得し、最終更新日時の古い順に整列したスナップショットを返します。
+        /// </summary>
+        /// <param name="directoryInfo">キャッシュディレクトリの情報。</param>
+        /// <returns>ファイル一覧と総バイト数のタプル。</returns>
+        private static (List<FileInfo> Files, long TotalBytes) GetCacheFilesSnapshot(DirectoryInfo directoryInfo)
+        {
+            var files = directoryInfo
+                .GetFiles($"*{IL_CACHE_EXTENSION}", SearchOption.TopDirectoryOnly)
+                .OrderBy(f => f.LastWriteTimeUtc)
+                .ToList();
+            long totalBytes = files.Sum(f => f.Length);
+            return (files, totalBytes);
+        }
+
+        /// <summary>
+        /// 上限を超えている場合に古いファイルから削除し、削除結果をログ出力します。
+        /// </summary>
+        /// <param name="orderedFiles">最終更新日時の古い順に並んだキャッシュファイル群。</param>
+        /// <param name="initialTotalBytes">削除前の総バイト数。</param>
+        private void TrimCacheFiles(List<FileInfo> orderedFiles, long initialTotalBytes)
+        {
+            long totalBytes = initialTotalBytes;
+            int fileCount = orderedFiles.Count;
+            int removed = 0;
+            foreach (var file in orderedFiles)
+            {
+                if (!IsQuotaExceeded(fileCount, totalBytes))
                 {
-                    // 件数または総容量の上限を超えている間は、古いものから削除
-                    if ((_ilCacheMaxDiskFileCount > 0 && ilCacheFilesCount > _ilCacheMaxDiskFileCount) || (_ilCacheMaxDiskBytes > 0 && ilCacheFilesTotalBytes > _ilCacheMaxDiskBytes))
-                    {
-                        try
-                        {
-                            long ilCacheFileBytes = ilCacheFile.File.Length;
-                            ilCacheFile.File.Delete();
-                            ilCacheFilesTotalBytes -= ilCacheFileBytes;
-                            ilCacheFilesCount--;
-                            removed++;
-                            changed = true;
-                        }
-                        catch (Exception ex)
-                        {
-                            LoggerService.LogMessage(
-                                LoggerService.LogLevel.Warning,
-                                string.Format(LOG_FAILED_DELETE_CACHE_FILE, ilCacheFile.File.FullName),
-                                shouldOutputMessageToConsole: true,
-                                ex);
-                        }
-                    }
-                    else
-                    {
-                        break; // 条件を満たさなくなったら終了
-                    }
+                    break;
                 }
-                if (changed && removed > 0)
+                if (TryDeleteCacheFile(file))
                 {
-                    // どれだけ削除され、残数・残容量がいくつかをコンソール・ログ出力
-                    LoggerService.LogMessage(
-                        LoggerService.LogLevel.Info,
-                        string.Format(LOG_DISK_QUOTA_TRIM, removed, ilCacheFilesCount, ilCacheFilesTotalBytes),
-                        shouldOutputMessageToConsole: true);
+                    totalBytes -= file.Length;
+                    fileCount--;
+                    removed++;
                 }
             }
+            LogDiskQuotaTrim(removed, fileCount, totalBytes);
+        }
+
+        /// <summary>
+        /// ファイル数または総サイズがディスククォータを超過しているかを判定します。
+        /// </summary>
+        /// <param name="fileCount">現在のファイル件数。</param>
+        /// <param name="totalBytes">現在の総バイト数。</param>
+        /// <returns>超過していれば true。</returns>
+        private bool IsQuotaExceeded(int fileCount, long totalBytes) =>
+            (_ilCacheMaxDiskFileCount > 0 && fileCount > _ilCacheMaxDiskFileCount) ||
+            (_ilCacheMaxDiskBytes > 0 && totalBytes > _ilCacheMaxDiskBytes);
+
+        /// <summary>
+        /// 指定ファイルの削除を試み、失敗した場合は警告ログを出します。
+        /// </summary>
+        /// <param name="file">削除対象のファイル。</param>
+        /// <returns>削除に成功した場合 true。</returns>
+        private static bool TryDeleteCacheFile(FileInfo file)
+        {
+            try
+            {
+                file.Delete();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogMessage(
+                    LoggerService.LogLevel.Warning,
+                    string.Format(LOG_FAILED_DELETE_CACHE_FILE, file.FullName),
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// ディスククォータ削減の結果をログ出力します。
+        /// </summary>
+        /// <param name="removed">削除したファイル件数。</param>
+        /// <param name="remainingCount">削除後のファイル件数。</param>
+        /// <param name="remainingBytes">削除後の総バイト数。</param>
+        private static void LogDiskQuotaTrim(int removed, int remainingCount, long remainingBytes)
+        {
+            if (removed <= 0)
+            {
+                return;
+            }
+            // どれだけ削除され、残数・残容量がいくつかをコンソール・ログ出力
+            LoggerService.LogMessage(
+                LoggerService.LogLevel.Info,
+                string.Format(LOG_DISK_QUOTA_TRIM, removed, remainingCount, remainingBytes),
+                shouldOutputMessageToConsole: true);
+        }
+
+        /// <summary>
+        /// IL キャッシュの統計情報を設定された間隔でログします。
+        /// </summary>
+        /// <returns>なし。</returns>
+        private void LogStatsIfIntervalElapsed()
+        {
+            if (StatsLogInterval <= TimeSpan.Zero)
+            {
+                return;
+            }
+            long nowTicks = DateTime.UtcNow.Ticks;
+            long lastTicks = Interlocked.Read(ref _lastStatsLogTicks);
+            if (lastTicks != 0 && (nowTicks - lastTicks) < StatsLogInterval.Ticks)
+            {
+                return;
+            }
+            if (Interlocked.CompareExchange(ref _lastStatsLogTicks, nowTicks, lastTicks) != lastTicks)
+            {
+                return;
+            }
+            LoggerService.LogMessage(
+                LoggerService.LogLevel.Info,
+                string.Format(LOG_IL_CACHE_STATS, _internalHits, _internalStores, _evictedCount, _expiredCount),
+                shouldOutputMessageToConsole: true);
         }
         #endregion
     }
