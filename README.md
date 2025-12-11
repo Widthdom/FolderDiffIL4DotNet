@@ -2,6 +2,8 @@
 
 2つのフォルダの差分をレポート出力するコンソールアプリケーションです。.NET アセンブリに関してはビルド固有情報（例: MVID）が存在する場合はこれを除外して IL 比較するため、ビルド日時が異なっていても実質同じ挙動であれば同一と判定します。
 
+> Need this document in English? See [README.en.md](README.en.md).
+
 ## 必要環境
 
 - .NET SDK 8.x
