@@ -45,6 +45,11 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_HEADER_APP_VERSION = "- App Version: " + Constants.APP_NAME + " {0}";
 
         /// <summary>
+        /// レポートヘッダ: コンピュータ名
+        /// </summary>
+        private const string REPORT_HEADER_COMPUTER = "- Computer: {0}";
+
+        /// <summary>
         /// レポートヘッダ: 旧フォルダパス
         /// </summary>
         private const string REPORT_HEADER_OLD = "- Old: {0}";
@@ -337,6 +342,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="reportsFolderAbsolutePath">出力先レポートフォルダの絶対パス</param>
         /// <param name="appVersion">アプリケーションバージョン</param>
         /// <param name="elapsedTimeString">経過時間文字列 (null 可)</param>
+        /// <param name="computerName">実行コンピュータ名</param>
         /// <param name="config">設定オブジェクト</param>
         /// <exception cref="Exception">入出力エラーなど予期しない例外</exception>
         public void GenerateDiffReport(
@@ -345,6 +351,7 @@ namespace FolderDiffIL4DotNet.Services
             string reportsFolderAbsolutePath,
             string appVersion,
             string elapsedTimeString,
+            string computerName,
             ConfigSettings config)
         {
             string diffReportAbsolutePath = Path.Combine(reportsFolderAbsolutePath, DIFF_REPORT_FILE_NAME);
@@ -365,6 +372,7 @@ namespace FolderDiffIL4DotNet.Services
                     // ヘッダ
                     streamWriter.WriteLine(REPORT_TITLE);
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_APP_VERSION, appVersion));
+                    streamWriter.WriteLine(string.Format(REPORT_HEADER_COMPUTER, computerName));
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_OLD, oldFolderAbsolutePath));
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_NEW, newFolderAbsolutePath));
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_IGNORED_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)));

@@ -150,6 +150,11 @@ namespace FolderDiffIL4DotNet
         private static string _thisAppVersion;
 
         /// <summary>
+        /// このアプリを実行したコンピュータ名
+        /// </summary>
+        private static string _computerName;
+
+        /// <summary>
         /// 処理時間（文字列）
         /// </summary>
         private static string _elapsedTimeString;
@@ -171,6 +176,8 @@ namespace FolderDiffIL4DotNet
                 // アプリケーションのバージョンを取得
                 _thisAppVersion = Utility.GetAppVersion(typeof(Program));
                 LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
+
+                _computerName = Utility.GetComputerName();
 
                 LoggerService.LogMessage(LoggerService.LogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
 
@@ -283,6 +290,7 @@ namespace FolderDiffIL4DotNet
                     _reportsFolderAbsolutePath,
                     _thisAppVersion,
                     _elapsedTimeString,
+                    _computerName,
                     _config);
 
                 // 正常終了メッセージ出力

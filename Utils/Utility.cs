@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -279,6 +280,11 @@ namespace FolderDiffIL4DotNet.Utils
         /// <see cref="ToSafeFileName"/> の既定最大長。
         /// </summary>
         private const int SAFE_FILENAME_DEFAULT_MAX_LENGTH = 180;
+
+        /// <summary>
+        /// コンピュータ名が取得できなかった場合のフォールバック文字列。
+        /// </summary>
+        private const string UNKNOWN_COMPUTER_NAME = "Unknown Computer";
         #endregion
 
         #region private interop (macOS)
@@ -374,6 +380,39 @@ namespace FolderDiffIL4DotNet.Utils
         #endregion
 
         #region public methods
+        /// <summary>
+        /// 実行中のコンピュータ名をベストエフォートで取得します。
+        /// </summary>
+        /// <returns>取得できたコンピュータ名。取得できない場合は <see cref="UNKNOWN_COMPUTER_NAME"/>。</returns>
+        public static string GetComputerName()
+        {
+            var machineName = TryGetEnvironmentMachineName();
+            if (!string.IsNullOrWhiteSpace(machineName))
+            {
+                return machineName;
+            }
+
+            var hostName = TryGetDnsHostName();
+            if (!string.IsNullOrWhiteSpace(hostName))
+            {
+                return hostName;
+            }
+
+            var envHost = Environment.GetEnvironmentVariable("HOSTNAME");
+            if (!string.IsNullOrWhiteSpace(envHost))
+            {
+                return envHost;
+            }
+
+            var envComputer = Environment.GetEnvironmentVariable("COMPUTERNAME");
+            if (!string.IsNullOrWhiteSpace(envComputer))
+            {
+                return envComputer;
+            }
+
+            return UNKNOWN_COMPUTER_NAME;
+        }
+
         /// <summary>
         /// 指定パスがネットワーク共有（UNC/NFS/CIFS/SSHFS など）の可能性が高いかを判定します。
         /// - Windows: UNC (\\\\ / \\?\UNC\) とネットワークドライブを検出。
@@ -1064,6 +1103,38 @@ namespace FolderDiffIL4DotNet.Utils
         /// <returns></returns>
         /// <exception cref="Exception">例外は発生せず、常に結合済み文字列を返します。</exception>
         public static string GetUsedArgs(string[] args) => string.Join(" ", args.Select(x => x.Contains(' ') ? $"\"{x}\"" : x));
+        #endregion
+
+        #region private helper methods
+        /// <summary>
+        /// <see cref="Environment.MachineName"/> にアクセスし、取得できない場合は null を返します。
+        /// </summary>
+        private static string TryGetEnvironmentMachineName()
+        {
+            try
+            {
+                return Environment.MachineName;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// <see cref="Dns.GetHostName"/> にアクセスし、取得できない場合は null を返します。
+        /// </summary>
+        private static string TryGetDnsHostName()
+        {
+            try
+            {
+                return Dns.GetHostName();
+            }
+            catch
+            {
+                return null;
+            }
+        }
         #endregion
     }
 }
