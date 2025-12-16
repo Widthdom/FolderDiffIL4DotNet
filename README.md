@@ -255,3 +255,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 git tag v1.0.0
 git push origin v1.0.0
 ```
+
+## ライセンス
+
+このプロジェクトは [MIT License](LICENSE) の下で公開されています。

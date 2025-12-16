@@ -240,3 +240,7 @@ Tagging example:
 git tag v1.0.0
 git push origin v1.0.0
 ```
+
+## License
+
+This project is distributed under the [MIT License](LICENSE).
