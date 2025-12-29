@@ -1,5 +1,6 @@
 using System;
-using FolderDiffIL4DotNet.Common;
+using System.IO;
+using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -23,6 +24,21 @@ namespace FolderDiffIL4DotNet.Services
         /// 進捗処理中表示
         /// </summary>
         private const string LOG_PROGRESS_KEEPALIVE = LOG_PROGRESS + " (processing...)";
+
+        /// <summary>
+        /// 進捗バーの固定幅。
+        /// </summary>
+        private const int FIXED_BAR_WIDTH = 32;
+
+        /// <summary>
+        /// 進捗停滞時の簡易スピナーフレーム。
+        /// </summary>
+        private static readonly char[] KeepAliveFrames = ['|', '/', '-', '\\'];
+
+        /// <summary>
+        /// スピナーまで含めた進捗バー以外の最大文字数。
+        /// </summary>
+        private const int BAR_SUFFIX_MAX_LENGTH = 12;
         #endregion
 
         #region private member variables
@@ -49,6 +65,21 @@ namespace FolderDiffIL4DotNet.Services
         /// スレッドセーフに出力制御するためのロック。
         /// </summary>
         private readonly object _lock = new object();
+
+        /// <summary>
+        /// 直近に描画した進捗バーの文字数。
+        /// </summary>
+        private int _lastRenderLength;
+
+        /// <summary>
+        /// 進捗バーのスピナーフレームインデックス。
+        /// </summary>
+        private int _keepAliveFrameIndex;
+
+        /// <summary>
+        /// 進捗バーの幅（初回計算後に固定）。
+        /// </summary>
+        private int _barWidth = -1;
         #endregion
 
         /// <summary>
@@ -84,11 +115,12 @@ namespace FolderDiffIL4DotNet.Services
 
                 if (hasChanged)
                 {
-                    WriteProgress(LOG_PROGRESS, formattedPercentage);
+                    RenderProgressBar(formattedPercentage, percentage, showKeepAlive: false);
+                    _lastFormattedPercentage = formattedPercentage;
                 }
                 else if (shouldEmitKeepAlive)
                 {
-                    WriteProgress(LOG_PROGRESS_KEEPALIVE, formattedPercentage);
+                    RenderProgressBar(formattedPercentage, percentage, showKeepAlive: true);
                 }
 
                 _lastPercentage = percentage;
@@ -96,16 +128,107 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// フォーマット済みの進捗メッセージをコンソールへ出力し、内部状態を更新します。
+        /// 進捗バーをコンソールへ描画し、内部状態を更新します。
         /// </summary>
-        /// <param name="format"><see cref="Constants"/> に定義されたメッセージテンプレート。</param>
         /// <param name="formattedPercentage">F2 形式でフォーマット済みの進捗文字列。</param>
-        private void WriteProgress(string format, string formattedPercentage)
+        /// <param name="percentage">進捗率（0.00～100.00）。</param>
+        /// <param name="showKeepAlive">停滞中のスピナー表示を有効にするか。</param>
+        private void RenderProgressBar(string formattedPercentage, double percentage, bool showKeepAlive)
         {
-            Console.WriteLine(string.Format(format, formattedPercentage));
-            _lastFormattedPercentage = formattedPercentage;
-            _lastConsoleWriteUtc = DateTime.UtcNow;
+            if (Console.IsOutputRedirected)
+            {
+                var format = showKeepAlive ? LOG_PROGRESS_KEEPALIVE : LOG_PROGRESS;
+                WriteProgressLine(string.Format(format, formattedPercentage));
+                _lastConsoleWriteUtc = DateTime.UtcNow;
+                return;
+            }
+
+            string line = BuildProgressBarLine(formattedPercentage, percentage, showKeepAlive);
+            bool finalizeLine = percentage >= 100.0;
+            WriteInlineProgressLine(line, finalizeLine);
+        }
+
+        /// <summary>
+        /// 進捗バーの 1 行表示を組み立てます。
+        /// </summary>
+        private string BuildProgressBarLine(string formattedPercentage, double percentage, bool showKeepAlive)
+        {
+            int barWidth = GetBarWidth();
+            int filled = (int)Math.Floor(percentage / 100.0 * barWidth);
+            if (filled < 0)
+            {
+                filled = 0;
+            }
+            else if (filled > barWidth)
+            {
+                filled = barWidth;
+            }
+
+            var barChars = new char[barWidth];
+            for (int i = 0; i < barWidth; i++)
+            {
+                barChars[i] = i < filled ? '=' : '-';
+            }
+
+            var bar = new string(barChars);
+            var percentText = $"{formattedPercentage}%";
+            if (showKeepAlive)
+            {
+                char frame = KeepAliveFrames[_keepAliveFrameIndex++ % KeepAliveFrames.Length];
+                return $"[{bar}] {percentText} {frame}";
+            }
+            return $"[{bar}] {percentText}";
+        }
+
+        /// <summary>
+        /// 進捗バーの幅をコンソール幅から算出します。
+        /// </summary>
+        private int GetBarWidth()
+        {
+            if (_barWidth > 0)
+            {
+                return _barWidth;
+            }
+
+            _barWidth = FIXED_BAR_WIDTH;
+            return _barWidth;
+        }
+
+        /// <summary>
+        /// 進捗メッセージを1行で出力します（リダイレクト時のフォールバック）。
+        /// </summary>
+        private void WriteProgressLine(string message)
+        {
+            Console.WriteLine(message);
             Console.Out.Flush();
+        }
+
+        /// <summary>
+        /// 進捗バーを同一行で更新します。
+        /// </summary>
+        private void WriteInlineProgressLine(string message, bool finalizeLine)
+        {
+            lock (ConsoleRenderCoordinator.RenderSyncRoot)
+            {
+                Console.Write("\r" + message);
+                int padding = Math.Max(0, _lastRenderLength - message.Length);
+                if (padding > 0)
+                {
+                    Console.Write(new string(' ', padding));
+                }
+                if (finalizeLine)
+                {
+                    Console.WriteLine();
+                    _lastRenderLength = 0;
+                }
+                else
+                {
+                    _lastRenderLength = message.Length;
+                }
+                Console.Out.Flush();
+            }
+            _lastConsoleWriteUtc = DateTime.UtcNow;
+            ConsoleRenderCoordinator.MarkProgressRendered();
         }
     }
 }

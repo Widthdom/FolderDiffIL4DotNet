@@ -117,6 +117,24 @@ namespace FolderDiffIL4DotNet.Services
 
             if (shouldOutputMessageToConsole)
             {
+                if (!Console.IsOutputRedirected)
+                {
+                    try
+                    {
+                        if (Console.CursorLeft != 0)
+                        {
+                            Console.WriteLine();
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        // ignore console position errors
+                    }
+                    catch (ArgumentOutOfRangeException)
+                    {
+                        // ignore console position errors
+                    }
+                }
                 Console.WriteLine(formattedMessage);
             }
 

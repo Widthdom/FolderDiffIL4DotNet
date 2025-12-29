@@ -15,6 +15,11 @@ namespace FolderDiffIL4DotNet.Utils
         /// 既定のフレーム更新間隔（ミリ秒）。
         /// </summary>
         private const int DEFAULT_INTERVAL_MILLISECONDS = 120;
+
+        /// <summary>
+        /// 進捗バー描画直後はスピナーを抑止する時間。
+        /// </summary>
+        private static readonly TimeSpan SpinnerSuppressionInterval = TimeSpan.FromMilliseconds(800);
         #endregion
 
         #region private readonly member variables
@@ -85,14 +90,35 @@ namespace FolderDiffIL4DotNet.Utils
         /// </summary>
         private async Task SpinAsync()
         {
+            if (Console.IsOutputRedirected)
+            {
+                return;
+            }
+
             while (!_cts.IsCancellationRequested)
             {
+                if (!ConsoleRenderCoordinator.ShouldRenderSpinner(SpinnerSuppressionInterval))
+                {
+                    try
+                    {
+                        await Task.Delay(_interval, _cts.Token);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
+                    continue;
+                }
+
                 var prefix = string.IsNullOrEmpty(_label) ? string.Empty : _label + " ";
                 var frame = _frames[_frameIndex++ % _frames.Length];
                 var text = $"{prefix}{frame}";
                 _lastRenderLength = text.Length;
-                Console.Write($"\r{text}");
-                Console.Out.Flush();
+                lock (ConsoleRenderCoordinator.RenderSyncRoot)
+                {
+                    Console.Write($"\r{text}");
+                    Console.Out.Flush();
+                }
                 try
                 {
                     await Task.Delay(_interval, _cts.Token);
@@ -113,8 +139,11 @@ namespace FolderDiffIL4DotNet.Utils
             {
                 return;
             }
-            Console.Write("\r" + new string(' ', _lastRenderLength) + "\r");
-            Console.Out.Flush();
+            lock (ConsoleRenderCoordinator.RenderSyncRoot)
+            {
+                Console.Write("\r" + new string(' ', _lastRenderLength) + "\r");
+                Console.Out.Flush();
+            }
         }
 
         /// <summary>
