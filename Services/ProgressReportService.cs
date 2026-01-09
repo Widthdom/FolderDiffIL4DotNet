@@ -21,9 +21,19 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_PROGRESS = "Progress: {0}%";
 
         /// <summary>
+        /// 進捗表示（ラベル付き）
+        /// </summary>
+        private const string LOG_PROGRESS_LABELED = "{0}: {1}%";
+
+        /// <summary>
         /// 進捗処理中表示
         /// </summary>
         private const string LOG_PROGRESS_KEEPALIVE = LOG_PROGRESS + " (processing...)";
+
+        /// <summary>
+        /// 進捗処理中表示（ラベル付き）
+        /// </summary>
+        private const string LOG_PROGRESS_KEEPALIVE_LABELED = LOG_PROGRESS_LABELED + " (processing...)";
 
         /// <summary>
         /// 進捗バーの固定幅。
@@ -46,6 +56,11 @@ namespace FolderDiffIL4DotNet.Services
         /// 直前に出力したF2フォーマットの文字列（重複出力抑止用）
         /// </summary>
         private string _lastFormattedPercentage = null;
+
+        /// <summary>
+        /// 進捗バー前に表示するラベル。
+        /// </summary>
+        private string _labelPrefix;
 
         /// <summary>
         /// 直前に出力した実数値（単調増加保証用）。未出力時は NegativeInfinity。
@@ -128,6 +143,18 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// 進捗表示のラベルを設定します。
+        /// </summary>
+        /// <param name="label">ラベル文字列（null/空白なら未設定）。</param>
+        public void SetLabel(string label)
+        {
+            lock (_lock)
+            {
+                _labelPrefix = string.IsNullOrWhiteSpace(label) ? null : label.Trim();
+            }
+        }
+
+        /// <summary>
         /// 進捗バーをコンソールへ描画し、内部状態を更新します。
         /// </summary>
         /// <param name="formattedPercentage">F2 形式でフォーマット済みの進捗文字列。</param>
@@ -137,8 +164,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             if (Console.IsOutputRedirected)
             {
-                var format = showKeepAlive ? LOG_PROGRESS_KEEPALIVE : LOG_PROGRESS;
-                WriteProgressLine(string.Format(format, formattedPercentage));
+                WriteProgressLine(BuildRedirectedProgressLine(formattedPercentage, showKeepAlive));
                 _lastConsoleWriteUtc = DateTime.UtcNow;
                 return;
             }
@@ -172,12 +198,33 @@ namespace FolderDiffIL4DotNet.Services
 
             var bar = new string(barChars);
             var percentText = $"{formattedPercentage}%";
+            var prefix = string.IsNullOrEmpty(_labelPrefix) ? string.Empty : _labelPrefix + " ";
+            if (!string.IsNullOrEmpty(_labelPrefix))
+            {
+                var spinnerSegment = $"{KeepAliveFrames[_keepAliveFrameIndex++ % KeepAliveFrames.Length]} ";
+                return $"{prefix}{spinnerSegment}[{bar}] {percentText}";
+            }
             if (showKeepAlive)
             {
                 char frame = KeepAliveFrames[_keepAliveFrameIndex++ % KeepAliveFrames.Length];
                 return $"[{bar}] {percentText} {frame}";
             }
             return $"[{bar}] {percentText}";
+        }
+
+        /// <summary>
+        /// リダイレクト時の進捗表示文字列を組み立てます。
+        /// </summary>
+        private string BuildRedirectedProgressLine(string formattedPercentage, bool showKeepAlive)
+        {
+            if (string.IsNullOrEmpty(_labelPrefix))
+            {
+                var format = showKeepAlive ? LOG_PROGRESS_KEEPALIVE : LOG_PROGRESS;
+                return string.Format(format, formattedPercentage);
+            }
+
+            var labeledFormat = showKeepAlive ? LOG_PROGRESS_KEEPALIVE_LABELED : LOG_PROGRESS_LABELED;
+            return string.Format(labeledFormat, _labelPrefix, formattedPercentage);
         }
 
         /// <summary>

@@ -185,6 +185,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _progressReporter = progressReporter ?? throw new ArgumentNullException(nameof(progressReporter));
+            _progressReporter.SetLabel(SPINNER_LABEL_FOLDER_DIFF);
             _oldFolderAbsolutePath = oldFolderAbsolutePath ?? throw new ArgumentNullException(nameof(oldFolderAbsolutePath));
             _newFolderAbsolutePath = newFolderAbsolutePath ?? throw new ArgumentNullException(nameof(newFolderAbsolutePath));
             _reportsFolderAbsolutePath = reportsFolderAbsolutePath ?? throw new ArgumentNullException(nameof(reportsFolderAbsolutePath));
@@ -244,7 +245,6 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
             FileDiffResultLists.ModifiedFilesRelativePath.Clear();
             FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
-            using var spinner = new ConsoleSpinner(SPINNER_LABEL_FOLDER_DIFF);
             var folderDiffCompleted = false;
             try
             {
@@ -386,7 +386,14 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
-                spinner.Complete(folderDiffCompleted ? LOG_FOLDER_DIFF_COMPLETED : null);
+                if (folderDiffCompleted)
+                {
+                    lock (ConsoleRenderCoordinator.RenderSyncRoot)
+                    {
+                        Console.WriteLine(LOG_FOLDER_DIFF_COMPLETED);
+                        Console.Out.Flush();
+                    }
+                }
             }
         }
 
