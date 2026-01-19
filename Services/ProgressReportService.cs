@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services
@@ -77,6 +78,16 @@ namespace FolderDiffIL4DotNet.Services
         private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(5);
 
         /// <summary>
+        /// 進捗停滞時のスピナー更新間隔。
+        /// </summary>
+        private static readonly TimeSpan IdleSpinnerInterval = TimeSpan.FromSeconds(1);
+
+        /// <summary>
+        /// 進捗値が変化した直近時刻（UTC）。
+        /// </summary>
+        private DateTime _lastProgressChangeUtc = DateTime.MinValue;
+
+        /// <summary>
         /// スレッドセーフに出力制御するためのロック。
         /// </summary>
         private readonly object _lock = new object();
@@ -95,6 +106,16 @@ namespace FolderDiffIL4DotNet.Services
         /// 進捗バーの幅（初回計算後に固定）。
         /// </summary>
         private int _barWidth = -1;
+
+        /// <summary>
+        /// 進捗停滞時にスピナーを動かすためのタイマー。
+        /// </summary>
+        private Timer _keepAliveTimer;
+
+        /// <summary>
+        /// タイマーの初期化済みフラグ。
+        /// </summary>
+        private bool _keepAliveTimerStarted;
         #endregion
 
         /// <summary>
@@ -118,6 +139,8 @@ namespace FolderDiffIL4DotNet.Services
             // 単調増加と重複出力の抑止をスレッドセーフに実施
             lock (_lock)
             {
+                EnsureKeepAliveTimerStarted();
+
                 // 逆行（前回値より小さい進捗）は出力しない（並列時の遅延到着を抑止）。
                 if (percentage < _lastPercentage)
                 {
@@ -126,12 +149,14 @@ namespace FolderDiffIL4DotNet.Services
 
                 var formattedPercentage = percentage.ToString("F2");
                 bool hasChanged = !string.Equals(formattedPercentage, _lastFormattedPercentage, StringComparison.Ordinal);
-                bool shouldEmitKeepAlive = !hasChanged && DateTime.UtcNow - _lastConsoleWriteUtc >= KeepAliveInterval;
+                var nowUtc = DateTime.UtcNow;
+                bool shouldEmitKeepAlive = !hasChanged && nowUtc - _lastConsoleWriteUtc >= KeepAliveInterval;
 
                 if (hasChanged)
                 {
                     RenderProgressBar(formattedPercentage, percentage, showKeepAlive: false);
                     _lastFormattedPercentage = formattedPercentage;
+                    _lastProgressChangeUtc = nowUtc;
                 }
                 else if (shouldEmitKeepAlive)
                 {
@@ -172,6 +197,36 @@ namespace FolderDiffIL4DotNet.Services
             string line = BuildProgressBarLine(formattedPercentage, percentage, showKeepAlive);
             bool finalizeLine = percentage >= 100.0;
             WriteInlineProgressLine(line, finalizeLine);
+        }
+
+        /// <summary>
+        /// 進捗の更新が止まっている間もスピナーを動かすタイマーを起動します。
+        /// </summary>
+        private void EnsureKeepAliveTimerStarted()
+        {
+            if (_keepAliveTimerStarted || Console.IsOutputRedirected)
+            {
+                return;
+            }
+
+            _keepAliveTimerStarted = true;
+            _keepAliveTimer = new Timer(_ =>
+            {
+                lock (_lock)
+                {
+                    if (_lastFormattedPercentage == null || _lastPercentage >= 100.0)
+                    {
+                        return;
+                    }
+
+                    if (DateTime.UtcNow - _lastProgressChangeUtc < KeepAliveInterval)
+                    {
+                        return;
+                    }
+
+                    RenderProgressBar(_lastFormattedPercentage, _lastPercentage, showKeepAlive: true);
+                }
+            }, null, KeepAliveInterval, IdleSpinnerInterval);
         }
 
         /// <summary>
