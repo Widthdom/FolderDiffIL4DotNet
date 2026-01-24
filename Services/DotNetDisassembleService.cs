@@ -131,6 +131,11 @@ namespace FolderDiffIL4DotNet.Services
             "Also ensure that ~/" + DOTNET_HOME_DIRNAME + "/" + DOTNET_TOOLS_DIRNAME + " is included in your PATH.\n" +
             "Alternatively, you can install " + Constants.ILSPY_CMD + " and we will use it automatically:\n" +
             "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY_CMD;
+
+        /// <summary>
+        /// バージョン付与ラベルの接頭辞。
+        /// </summary>
+        private const string VERSION_LABEL_PREFIX = " (version: ";
         #endregion
         private enum DisassemblerKind
         {
@@ -446,6 +451,7 @@ namespace FolderDiffIL4DotNet.Services
                     if (cachedIL != null)
                     {
                         Interlocked.Increment(ref _ilCacheHits);
+                        RecordDisassemblerUsage(disassembleCommand, disassembleCommandAndItsVersionWithArguments);
                         return (Success: true, IlText: cachedIL, DisassembleCommandAndItsVersionWithArguments: disassembleCommandAndItsVersionWithArguments, Error: null);
                     }
                 }
@@ -502,6 +508,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                 }
 
+                RecordDisassemblerUsage(disassembleCommand, disassembleCommandAndItsVersionWithArguments);
                 return (Success: true, IlText: ilText, DisassembleCommandAndItsVersionWithArguments: disassembleCommandAndItsVersionWithArguments, Error: null);
             }
             else
@@ -718,6 +725,82 @@ namespace FolderDiffIL4DotNet.Services
             yield return Constants.DOTNET_MUXER;
             yield return Constants.ILSPY_CMD;
             yield return Path.Combine(UserDotnetToolsDirectory, Constants.ILSPY_CMD);
+        }
+
+        /// <summary>
+        /// 使用した逆アセンブラ名/バージョンを集計します。
+        /// </summary>
+        private static void RecordDisassemblerUsage(string disassembleCommand, string disassembleCommandAndItsVersionWithArguments)
+        {
+            if (string.IsNullOrWhiteSpace(disassembleCommandAndItsVersionWithArguments))
+            {
+                return;
+            }
+
+            var toolName = NormalizeDisassemblerName(disassembleCommand);
+            var version = ExtractVersionFromLabel(disassembleCommandAndItsVersionWithArguments);
+            FileDiffResultLists.RecordDisassemblerToolVersion(toolName, version);
+        }
+
+        /// <summary>
+        /// コマンドからツール名を正規化します。
+        /// </summary>
+        private static string NormalizeDisassemblerName(string disassembleCommand)
+        {
+            if (string.IsNullOrWhiteSpace(disassembleCommand))
+            {
+                return disassembleCommand;
+            }
+
+            var fileName = Path.GetFileName(disassembleCommand);
+            if (string.Equals(fileName, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
+            {
+                return Constants.DOTNET_ILDASM;
+            }
+            if (string.Equals(fileName, Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase))
+            {
+                return Constants.DOTNET_ILDASM;
+            }
+            if (string.Equals(fileName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase))
+            {
+                return Constants.ILSPY_CMD;
+            }
+            if (string.Equals(fileName, ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
+            {
+                return ILDASM_LABEL;
+            }
+            return fileName ?? disassembleCommand;
+        }
+
+        /// <summary>
+        /// " (version: ...)" 形式からバージョン文字列を抽出します。
+        /// </summary>
+        private static string ExtractVersionFromLabel(string disassembleCommandAndItsVersionWithArguments)
+        {
+            if (string.IsNullOrWhiteSpace(disassembleCommandAndItsVersionWithArguments))
+            {
+                return null;
+            }
+
+            if (!disassembleCommandAndItsVersionWithArguments.EndsWith(")", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            var prefixIndex = disassembleCommandAndItsVersionWithArguments.LastIndexOf(VERSION_LABEL_PREFIX, StringComparison.Ordinal);
+            if (prefixIndex < 0)
+            {
+                return null;
+            }
+
+            var start = prefixIndex + VERSION_LABEL_PREFIX.Length;
+            var end = disassembleCommandAndItsVersionWithArguments.Length - 1;
+            if (start >= end)
+            {
+                return null;
+            }
+
+            return disassembleCommandAndItsVersionWithArguments.Substring(start, end - start).Trim();
         }
         #endregion
     }

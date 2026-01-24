@@ -245,6 +245,7 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
             FileDiffResultLists.ModifiedFilesRelativePath.Clear();
             FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
+            FileDiffResultLists.DisassemblerToolVersions.Clear();
             var folderDiffCompleted = false;
             try
             {

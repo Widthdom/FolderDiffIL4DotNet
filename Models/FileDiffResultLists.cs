@@ -86,6 +86,11 @@ namespace FolderDiffIL4DotNet.Models
         /// IgnoredExtensions 対象ファイルの相対パスと所在（旧/新フォルダ）情報。
         /// </summary>
         public static ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 実行中に使用された逆アセンブラの名称とバージョン。
+        /// </summary>
+        public static ConcurrentDictionary<string, byte> DisassemblerToolVersions { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         #endregion
 
         /// <summary>
@@ -114,6 +119,21 @@ namespace FolderDiffIL4DotNet.Models
                 throw new ArgumentException(string.Format(ERROR_FILE_RELATIVE_PATH_EMPTY, nameof(fileRelativePath)));
             }
             IgnoredFilesRelativePathToLocation.AddOrUpdate(fileRelativePath, location, (_, existing) => existing | location);
+        }
+
+        /// <summary>
+        /// 使用した逆アセンブラ名とバージョンを記録します。
+        /// </summary>
+        /// <param name="toolName">ツール名。</param>
+        /// <param name="version">バージョン文字列（省略可）。</param>
+        public static void RecordDisassemblerToolVersion(string toolName, string version)
+        {
+            if (string.IsNullOrWhiteSpace(toolName))
+            {
+                return;
+            }
+            var label = string.IsNullOrWhiteSpace(version) ? toolName : $"{toolName} (version: {version})";
+            DisassemblerToolVersions[label] = 0;
         }
     }
 }

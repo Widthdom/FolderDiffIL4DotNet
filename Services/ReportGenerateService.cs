@@ -70,6 +70,16 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_HEADER_TEXT_EXTENSIONS = "- Text File Extensions: {0}";
 
         /// <summary>
+        /// レポートヘッダ: 使用した逆アセンブラ
+        /// </summary>
+        private const string REPORT_HEADER_IL_DISASSEMBLERS = "- IL Disassembler: {0}";
+
+        /// <summary>
+        /// レポートヘッダ: 逆アセンブラ未使用時の表示
+        /// </summary>
+        private const string REPORT_HEADER_IL_DISASSEMBLERS_NONE = "N/A";
+
+        /// <summary>
         /// レポートヘッダ: 経過時間
         /// </summary>
         private const string REPORT_HEADER_ELAPSED_TIME = "- " + Constants.LOG_ELAPSED_TIME;
@@ -377,6 +387,9 @@ namespace FolderDiffIL4DotNet.Services
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_NEW, newFolderAbsolutePath));
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_IGNORED_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)));
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_TEXT_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.TextFileExtensions)));
+                    var disassemblerLabels = FileDiffResultLists.DisassemblerToolVersions.Keys.OrderBy(label => label, StringComparer.OrdinalIgnoreCase).ToList();
+                    var disassemblerText = disassemblerLabels.Count > 0 ? string.Join(REPORT_LIST_SEPARATOR, disassemblerLabels) : REPORT_HEADER_IL_DISASSEMBLERS_NONE;
+                    streamWriter.WriteLine(string.Format(REPORT_HEADER_IL_DISASSEMBLERS, disassemblerText));
                     if (!string.IsNullOrWhiteSpace(elapsedTimeString))
                     {
                         streamWriter.WriteLine(string.Format(REPORT_HEADER_ELAPSED_TIME, elapsedTimeString));
