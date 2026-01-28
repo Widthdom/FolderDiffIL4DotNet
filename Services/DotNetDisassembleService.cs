@@ -451,7 +451,7 @@ namespace FolderDiffIL4DotNet.Services
                     if (cachedIL != null)
                     {
                         Interlocked.Increment(ref _ilCacheHits);
-                        RecordDisassemblerUsage(disassembleCommand, disassembleCommandAndItsVersionWithArguments);
+                        RecordDisassemblerUsage(disassembleCommand, disassembleCommandAndItsVersionWithArguments, fromCache: true);
                         return (Success: true, IlText: cachedIL, DisassembleCommandAndItsVersionWithArguments: disassembleCommandAndItsVersionWithArguments, Error: null);
                     }
                 }
@@ -730,7 +730,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// 使用した逆アセンブラ名/バージョンを集計します。
         /// </summary>
-        private static void RecordDisassemblerUsage(string disassembleCommand, string disassembleCommandAndItsVersionWithArguments)
+        private static void RecordDisassemblerUsage(string disassembleCommand, string disassembleCommandAndItsVersionWithArguments, bool fromCache = false)
         {
             if (string.IsNullOrWhiteSpace(disassembleCommandAndItsVersionWithArguments))
             {
@@ -739,7 +739,7 @@ namespace FolderDiffIL4DotNet.Services
 
             var toolName = NormalizeDisassemblerName(disassembleCommand);
             var version = ExtractVersionFromLabel(disassembleCommandAndItsVersionWithArguments);
-            FileDiffResultLists.RecordDisassemblerToolVersion(toolName, version);
+            FileDiffResultLists.RecordDisassemblerToolVersion(toolName, version, fromCache);
         }
 
         /// <summary>

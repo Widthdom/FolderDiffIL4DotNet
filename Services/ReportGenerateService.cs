@@ -388,7 +388,18 @@ namespace FolderDiffIL4DotNet.Services
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_IGNORED_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)));
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_TEXT_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.TextFileExtensions)));
                     var disassemblerLabels = FileDiffResultLists.DisassemblerToolVersions.Keys.OrderBy(label => label, StringComparer.OrdinalIgnoreCase).ToList();
-                    var disassemblerText = disassemblerLabels.Count > 0 ? string.Join(REPORT_LIST_SEPARATOR, disassemblerLabels) : REPORT_HEADER_IL_DISASSEMBLERS_NONE;
+                    var disassemblerText = REPORT_HEADER_IL_DISASSEMBLERS_NONE;
+                    if (disassemblerLabels.Count > 0)
+                    {
+                        disassemblerText = string.Join(REPORT_LIST_SEPARATOR, disassemblerLabels);
+                    }
+                    else if (FileDiffResultLists.DisassemblerToolVersionsFromCache.Count > 0)
+                    {
+                        var cachedLabels = FileDiffResultLists.DisassemblerToolVersionsFromCache.Keys
+                            .OrderBy(label => label, StringComparer.OrdinalIgnoreCase)
+                            .ToList();
+                        disassemblerText = string.Join(REPORT_LIST_SEPARATOR, cachedLabels) + " (cache)";
+                    }
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_IL_DISASSEMBLERS, disassemblerText));
                     if (!string.IsNullOrWhiteSpace(elapsedTimeString))
                     {

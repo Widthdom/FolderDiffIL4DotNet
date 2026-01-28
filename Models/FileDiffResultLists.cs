@@ -88,9 +88,14 @@ namespace FolderDiffIL4DotNet.Models
         public static ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// 実行中に使用された逆アセンブラの名称とバージョン。
+        /// 実行中に使用された逆アセンブラの名称とバージョン（実ツール実行）。
         /// </summary>
         public static ConcurrentDictionary<string, byte> DisassemblerToolVersions { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// キャッシュ経由で利用された逆アセンブラの名称とバージョン。
+        /// </summary>
+        public static ConcurrentDictionary<string, byte> DisassemblerToolVersionsFromCache { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         #endregion
 
         /// <summary>
@@ -126,14 +131,15 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         /// <param name="toolName">ツール名。</param>
         /// <param name="version">バージョン文字列（省略可）。</param>
-        public static void RecordDisassemblerToolVersion(string toolName, string version)
+        public static void RecordDisassemblerToolVersion(string toolName, string version, bool fromCache = false)
         {
             if (string.IsNullOrWhiteSpace(toolName))
             {
                 return;
             }
             var label = string.IsNullOrWhiteSpace(version) ? toolName : $"{toolName} (version: {version})";
-            DisassemblerToolVersions[label] = 0;
+            var target = fromCache ? DisassemblerToolVersionsFromCache : DisassemblerToolVersions;
+            target[label] = 0;
         }
     }
 }
