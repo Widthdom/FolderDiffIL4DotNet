@@ -165,6 +165,16 @@ namespace FolderDiffIL4DotNet.Services
         /// ツール毎の連続失敗回数と最終失敗時刻(協定世界時刻)。閾値超過で一定時間ブラックリスト化するために利用。
         /// </summary>
         private static readonly ConcurrentDictionary<string, (int FailCount, DateTime LastFailUtc)> _disassembleFailCountAndTime = new();
+
+        /// <summary>
+        /// 実行中に固定された逆アセンブラコマンド（混在防止）。
+        /// </summary>
+        private string _fixedDisassembleCommand;
+
+        /// <summary>
+        /// 逆アセンブラの初回選択を直列化するためのロック。
+        /// </summary>
+        private readonly SemaphoreSlim _disassemblerSelectionLock = new(1, 1);
         #endregion
 
         #region private writable member variables
@@ -215,43 +225,98 @@ namespace FolderDiffIL4DotNet.Services
         /// <returns>逆アセンブル済み IL テキストと、人間が読めるコマンド表示（バージョン付き）をタプルで返します。</returns>
         public async Task<(string ilText, string commandString)> DisassembleAsync(string dotNetAssemblyfileAbsolutePath)
         {
-            Exception lastError = null;
-
-            foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
+            var fixedCommand = Volatile.Read(ref _fixedDisassembleCommand);
+            if (!string.IsNullOrWhiteSpace(fixedCommand))
             {
-                // 直近で連続失敗したコマンドは一時的にブラックリスト化しているためスキップ。
-                if (IsDisassemblerBlacklisted(candidateDisassembleCommand))
+                return await DisassembleWithFixedCommandAsync(fixedCommand, dotNetAssemblyfileAbsolutePath);
+            }
+
+            await _disassemblerSelectionLock.WaitAsync().ConfigureAwait(false);
+            try
+            {
+                fixedCommand = _fixedDisassembleCommand;
+                if (!string.IsNullOrWhiteSpace(fixedCommand))
                 {
-                    continue;
+                    return await DisassembleWithFixedCommandAsync(fixedCommand, dotNetAssemblyfileAbsolutePath);
                 }
 
-                try
+                Exception lastError = null;
+                foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
                 {
-                    // キャッシュ確認とプロセス起動を内包した TryDisassembleAsync を実行。
-                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath);
-                    if (success)
+                    // 直近で連続失敗したコマンドは一時的にブラックリスト化しているためスキップ。
+                    if (IsDisassemblerBlacklisted(candidateDisassembleCommand))
                     {
-                        return (ilText, disassembleCommandAndItsVersionWithArguments);
+                        continue;
                     }
-                    if (error != null)
+
+                    try
                     {
-                        lastError = error;
+                        // キャッシュ確認とプロセス起動を内包した TryDisassembleAsync を実行。
+                        var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: false);
+                        if (success)
+                        {
+                            Volatile.Write(ref _fixedDisassembleCommand, candidateDisassembleCommand);
+                            return (ilText, disassembleCommandAndItsVersionWithArguments);
+                        }
+                        if (error != null)
+                        {
+                            lastError = error;
+                        }
+                    }
+                    catch (System.ComponentModel.Win32Exception ex)
+                    {
+                        lastError = ex;
+                        LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                        RegisterDisassembleFailure(candidateDisassembleCommand);
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastError = ex;
+                        LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                        RegisterDisassembleFailure(candidateDisassembleCommand);
+                        continue;
                     }
                 }
-                catch (System.ComponentModel.Win32Exception ex)
+
+                var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
+                throw new InvalidOperationException(string.Format(ERROR_EXECUTE_ILDASM, dotNetAssemblyfileAbsolutePath, GUIDANCE_INSTALL_DISASSEMBLER, innerMsg), lastError);
+            }
+            finally
+            {
+                _disassemblerSelectionLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// 固定済みの逆アセンブラのみで実行します（混在防止）。
+        /// </summary>
+        private async Task<(string ilText, string commandString)> DisassembleWithFixedCommandAsync(string disassembleCommand, string dotNetAssemblyfileAbsolutePath)
+        {
+            Exception lastError = null;
+            try
+            {
+                var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(disassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: true);
+                if (success)
                 {
-                    lastError = ex;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
-                    RegisterDisassembleFailure(candidateDisassembleCommand);
-                    continue;
+                    return (ilText, disassembleCommandAndItsVersionWithArguments);
                 }
-                catch (Exception ex)
+                if (error != null)
                 {
-                    lastError = ex;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
-                    RegisterDisassembleFailure(candidateDisassembleCommand);
-                    continue;
+                    lastError = error;
                 }
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                lastError = ex;
+                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                RegisterDisassembleFailure(disassembleCommand);
+            }
+            catch (Exception ex)
+            {
+                lastError = ex;
+                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                RegisterDisassembleFailure(disassembleCommand);
             }
 
             var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
@@ -398,7 +463,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="disassembleCommand">使用するコマンド（ildasm / dotnet / ilspycmd など）</param>
         /// <param name="dotNetAssemblyFileAbsolutePath">対象アセンブリの絶対パス</param>
         /// <returns>成功可否、IL テキスト、ツールラベル、発生した例外</returns>
-        private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleAsync(string disassembleCommand, string dotNetAssemblyFileAbsolutePath)
+        private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleAsync(
+            string disassembleCommand,
+            string dotNetAssemblyFileAbsolutePath,
+            bool allowCache)
         {
             Exception lastError = null;
             string tempAsciiPath = CreateAsciiTempCopyIfNeeded(dotNetAssemblyFileAbsolutePath);
@@ -407,7 +475,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 foreach (var argset in BuildArgSets(disassembleCommand, dotNetAssemblyFileAbsolutePath, tempAsciiPath))
                 {
-                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleWithArguments(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset);
+                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleWithArguments(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, allowCache);
                     if (success)
                     {
                         return (success, ilText, disassembleCommandAndItsVersionWithArguments, error);
@@ -435,13 +503,14 @@ namespace FolderDiffIL4DotNet.Services
         private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleWithArguments(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
-            (string workingDirectory, string[] args, string tempOut) argset)
+            (string workingDirectory, string[] args, string tempOut) argset,
+            bool allowCache)
         {
             string disassembleCommandAndItsVersionWithArguments = null;
             string ilText = null;
 
             // 逆アセンブル結果の取得前に IL キャッシュを確認してヒットすればプロセス起動を省略する。
-            if (_config.EnableILCache && _ilCache != null)
+            if (allowCache && _config.EnableILCache && _ilCache != null)
             {
                 try
                 {

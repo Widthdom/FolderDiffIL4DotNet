@@ -11,6 +11,7 @@ This repository hosts a .NET console application that compares two folders, clas
 - IL disassembler (the app automatically probes candidates in this order)
   - Preferred: `dotnet-ildasm` or `dotnet ildasm`
   - Fallback: `ilspycmd`
+- The app **locks to a single disassembler per run**. The first disassembly is executed without using cache, and the tool that succeeds is fixed for the rest of the run (only that tool's cache is used afterward). No mixing occurs.
 
 Installation example:
 
