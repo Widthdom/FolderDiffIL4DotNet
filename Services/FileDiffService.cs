@@ -130,9 +130,14 @@ namespace FolderDiffIL4DotNet.Services
                         else
                         {
                             var file1Info = new FileInfo(file1AbsolutePath);
-                            areTextFilesEqual = await DiffTextFilesParallelAsync(file1AbsolutePath, file2AbsolutePath, largeFileSizeThresholdBytes: TEXT_DIFF_PARALLEL_THRESHOLD_BYTES, maxParallel);
-                            if (file1Info.Length < TEXT_DIFF_PARALLEL_THRESHOLD_BYTES)
+                            if (file1Info.Length >= TEXT_DIFF_PARALLEL_THRESHOLD_BYTES)
                             {
+                                // 大きいファイルは並列チャンク比較で高速化
+                                areTextFilesEqual = await DiffTextFilesParallelAsync(file1AbsolutePath, file2AbsolutePath, largeFileSizeThresholdBytes: TEXT_DIFF_PARALLEL_THRESHOLD_BYTES, maxParallel);
+                            }
+                            else
+                            {
+                                // 小さいファイルは逐次行比較（並列化のオーバーヘッドを避ける）
                                 areTextFilesEqual = await Utility.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                             }
                         }
