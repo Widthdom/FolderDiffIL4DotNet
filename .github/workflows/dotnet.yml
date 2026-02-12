@@ -41,8 +41,8 @@ jobs:
         run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 
       - name: Test
-        if: ${{ hashFiles('**/*Tests.csproj', '**/*.Tests.csproj') != '' }}
-        run: dotnet test FolderDiffIL4DotNet.sln --configuration Release --no-build --nologo
+        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo
 
       - name: Publish
         run: dotnet publish FolderDiffIL4DotNet.csproj --configuration Release --no-build --output publish

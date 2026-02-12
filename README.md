@@ -33,7 +33,7 @@ dotnet tool install -g ilspycmd
 
 - `actions/checkout` は `fetch-depth: 0` で完全な履歴を取得し、Nerdbank.GitVersioning がコミット履歴を参照できるようにしています。
 - `actions/setup-dotnet` が `global.json` を読み取り、ローカルと同じ .NET SDK (例: 8.0.413) をインストールしたうえで `dotnet restore` と Release ビルドを実行します。
-- `**/*Tests.csproj` または `**/*.Tests.csproj` が存在する場合のみ `dotnet test` を動かします（現時点でテスト プロジェクトがないリポジトリでも失敗しません）。
+- `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` が存在する場合のみ `dotnet test` を動かします（テストプロジェクトが未導入の状態でも失敗しません）。
 - `actions/cache` で NuGet（`~/.nuget/packages`）をキャッシュし、2 回目以降のビルドを高速化します。
 - Release ビルドの成果物は `dotnet publish FolderDiffIL4DotNet.csproj --output publish` で生成し、アップロード前に `*.pdb` などのデバッグシンボルを削除したうえで、`actions/upload-artifact` により `FolderDiffIL4DotNet` という名前でアップロードされます（Actions 実行ページの「Artifacts」からダウンロードできます）。
 
@@ -41,8 +41,28 @@ dotnet tool install -g ilspycmd
 
 1. このリポジトリを GitHub に push するだけでワークフローが動きます。
 2. デフォルトブランチ名が `main` 以外の場合は、`.github/workflows/dotnet.yml` 内の `on.push.branches` と `on.pull_request.branches` を目的のブランチ名に変更してください。
-3. テスト プロジェクトを追加したらファイル名に `Tests` を含めるか、必要に応じて `Test` ステップの条件式を調整してください。
+3. テストプロジェクトの場所や名前を変更した場合は、`.github/workflows/dotnet.yml` の `Test` ステップ（`if` と `dotnet test` の `csproj` パス）を合わせて更新してください。
 4. 作成された成果物は Actions 実行ページの `Artifacts > FolderDiffIL4DotNet` から取得できます。アーカイブ内には Release ビルド済みのファイル一式が含まれます。
+
+## テスト実行
+
+ローカルでテストだけを実行する場合は、次のコマンドを使用します。
+
+```bash
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
+```
+
+前提:
+
+- .NET SDK 8.x がインストールされていること。
+- 単体テストの実行に `dotnet-ildasm` / `ilspycmd` は不要（アプリ本体の IL 比較時のみ必要）。
+- リポジトリルートでコマンドを実行することを想定。
+
+CI との関係:
+
+- GitHub Actions の `Test` ステップは `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo` を実行します。
+- 現在のソリューション内テストプロジェクトは `FolderDiffIL4DotNet.Tests` のみのため、ローカルの上記 `csproj` 指定コマンドと実行対象は同一です。
+- 将来テストプロジェクトを追加した場合は、CI 側の `Test` ステップを必要に応じて `sln` 実行へ戻すか、対象 `csproj` を追加してください。
 
 ## 処理概要
 

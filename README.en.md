@@ -31,7 +31,7 @@ The repository includes `.github/workflows/dotnet.yml`. The workflow runs for pu
 
 - `actions/checkout` uses `fetch-depth: 0` so Nerdbank.GitVersioning can traverse the full commit history.
 - `actions/setup-dotnet` honors `global.json`, installing the same SDK (e.g., 8.0.413) that you use locally before running `dotnet restore` and a Release build.
-- `dotnet test` runs only when a project file matching `**/*Tests.csproj` or `**/*.Tests.csproj` exists, so repositories without tests still succeed.
+- `dotnet test` runs only when `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` exists, so repositories still succeed even before the test project is introduced.
 - NuGet packages inside `~/.nuget/packages` are cached via `actions/cache` to accelerate subsequent builds.
 - Release artifacts are produced with `dotnet publish FolderDiffIL4DotNet.csproj --output publish`, stripped of debug symbols (`*.pdb`), and uploaded as `FolderDiffIL4DotNet` via `actions/upload-artifact`.
 
@@ -39,8 +39,28 @@ How to use it:
 
 1. Push this repo to GitHub—no additional configuration required.
 2. If your default branch is not `main`, edit `on.push.branches` and `on.pull_request.branches` in the workflow.
-3. When you add test projects, ensure their file names contain `Tests`, or adjust the job condition accordingly.
+3. If you rename or move the test project, update the `Test` step in `.github/workflows/dotnet.yml` (both the `if` expression and the `dotnet test` `csproj` path).
 4. Download the Release build from "Artifacts > FolderDiffIL4DotNet" on the workflow run page.
+
+## Running tests
+
+To run only unit tests locally, use:
+
+```bash
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
+```
+
+Prerequisites:
+
+- .NET SDK 8.x is installed.
+- `dotnet-ildasm` / `ilspycmd` are not required for unit tests (they are only needed for IL comparison in the application runtime path).
+- The command is intended to be run from the repository root.
+
+Relation to CI:
+
+- The GitHub Actions `Test` step runs `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo`.
+- At the moment, `FolderDiffIL4DotNet.Tests` is the only test project in the solution, so the local `csproj` command above targets the same tests.
+- If more test projects are added later, either switch CI back to solution-level testing or add the additional target `csproj` as needed.
 
 ## What the app does
 
