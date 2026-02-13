@@ -94,14 +94,14 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 // 1) MD5: ファイルサイズや内容が完全一致する場合はここで終了。
-                if (await Utility.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
+                if (await FileComparer.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
                 {
                     FileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Match);
                     return true;
                 }
 
                 // 2) .NET アセンブリなら IL: IL 比較は MVID 行の除外などアセンブリ固有処理を伴うため別サービスに委譲。
-                if (Utility.IsDotNetExecutable(file1AbsolutePath))
+                if (DotNetDetector.IsDotNetExecutable(file1AbsolutePath))
                 {
                     try
                     {
@@ -125,7 +125,7 @@ namespace FolderDiffIL4DotNet.Services
                         if (_optimizeForNetworkShares)
                         {
                             // ネットワーク共有最適化時は、チャンク毎のOpen/Closeを伴う並列比較は避け、逐次読みで比較
-                            areTextFilesEqual = await Utility.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                            areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                         }
                         else
                         {
@@ -138,13 +138,13 @@ namespace FolderDiffIL4DotNet.Services
                             else
                             {
                                 // 小さいファイルは逐次行比較（並列化のオーバーヘッドを避ける）
-                                areTextFilesEqual = await Utility.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                                areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                             }
                         }
                     }
                     catch
                     {
-                        areTextFilesEqual = await Utility.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                        areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                     }
                     FileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
                     return areTextFilesEqual;
@@ -189,7 +189,7 @@ namespace FolderDiffIL4DotNet.Services
                 // 小さいファイルは既存の逐次比較に委譲して余計なオーバーヘッドを避ける。
                 if (file1Info.Length < largeFileSizeThresholdBytes)
                 {
-                    return await Utility.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                    return await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                 }
                 if (maxParallel <= 0)
                 {

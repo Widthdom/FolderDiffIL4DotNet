@@ -78,7 +78,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <para>
         /// ログディレクトリは <c>AppContext.BaseDirectory/<see cref="LOGS_DIRECTORY_NAME"/></c> に作成され、
         /// ログファイルパスは <c>log_yyyyMMdd.log</c> 形式で構成されます（本メソッドではファイル自体は作成しません）。
-        /// パス長は <see cref="Utility.ValidateAbsolutePathLengthOrThrow(string, string)"/> により検証されます。
+        /// パス長は <see cref="PathValidator.ValidateAbsolutePathLengthOrThrow(string, string)"/> により検証されます。
         /// </para>
         /// </summary>
         /// <exception cref="ArgumentException">ログディレクトリまたはログファイルのパス長がOSの上限を超えるなどで不正な場合。</exception>
@@ -89,13 +89,13 @@ namespace FolderDiffIL4DotNet.Services
         {
             _logDirectoryAbsolutePath = Path.Combine(AppContext.BaseDirectory, LOGS_DIRECTORY_NAME);
 
-            Utility.ValidateAbsolutePathLengthOrThrow(_logDirectoryAbsolutePath);
+            PathValidator.ValidateAbsolutePathLengthOrThrow(_logDirectoryAbsolutePath);
 
             Directory.CreateDirectory(_logDirectoryAbsolutePath);
 
             _logFileAbsolutePath = Path.Combine(_logDirectoryAbsolutePath, $"{LOG_FILE_PREFIX}{DateTime.Now:yyyyMMdd}.log");
 
-            Utility.ValidateAbsolutePathLengthOrThrow(_logFileAbsolutePath);
+            PathValidator.ValidateAbsolutePathLengthOrThrow(_logFileAbsolutePath);
         }
 
         /// <summary>

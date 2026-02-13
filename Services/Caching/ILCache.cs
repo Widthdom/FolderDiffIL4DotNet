@@ -258,7 +258,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 _ilCacheDirectoryAbsolutePath = ilCacheDirectoryAbsolutePath;
                 try
                 {
-                    Utility.ValidateAbsolutePathLengthOrThrow(_ilCacheDirectoryAbsolutePath);
+                    PathValidator.ValidateAbsolutePathLengthOrThrow(_ilCacheDirectoryAbsolutePath);
                     Directory.CreateDirectory(_ilCacheDirectoryAbsolutePath);
                     _isDiskCacheEnabled = true;
                 }
@@ -417,7 +417,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             // 同じパスに対しては MD5 を再計算しないよう、ConcurrentDictionary でキャッシュします。
             // 注意: ファイル内容が後から変更された場合でも、ここでは自動で無効化されません。
             //       呼び出し側では通常「比較対象のスナップショット」を処理する想定です。
-            return _md5HashCacheDictionary.GetOrAdd(fileAbsolutePath, static path => Utility.ComputeFileMd5Hex(path));
+            return _md5HashCacheDictionary.GetOrAdd(fileAbsolutePath, static path => FileComparer.ComputeFileMd5Hex(path));
         }
 
         /// <summary>
@@ -443,7 +443,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 return null;
             }
             // キャッシュキーをそのままファイル名に使用できない可能性が高いため、変換（サニタイズあるいは短縮）したうえで、拡張子を付けて返却します。
-            return Path.Combine(_ilCacheDirectoryAbsolutePath, Utility.ToSafeFileName(ilCacheKey) + IL_CACHE_EXTENSION);
+            return Path.Combine(_ilCacheDirectoryAbsolutePath, TextSanitizer.ToSafeFileName(ilCacheKey) + IL_CACHE_EXTENSION);
         }
 
         /// <summary>

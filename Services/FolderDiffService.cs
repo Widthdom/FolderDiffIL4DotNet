@@ -195,8 +195,8 @@ namespace FolderDiffIL4DotNet.Services
             _ilOutputService = new ILOutputService(_config, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
 
             // Auto検知（UNC/NFS/SSHFS等） + 手動指定のORで最終判定
-            _detectedNetworkOld = _config.AutoDetectNetworkShares && Utility.IsLikelyNetworkPath(_oldFolderAbsolutePath);
-            _detectedNetworkNew = _config.AutoDetectNetworkShares && Utility.IsLikelyNetworkPath(_newFolderAbsolutePath);
+            _detectedNetworkOld = _config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(_oldFolderAbsolutePath);
+            _detectedNetworkNew = _config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(_newFolderAbsolutePath);
             _optimizeForNetworkShares = _config.OptimizeForNetworkShares || _detectedNetworkOld || _detectedNetworkNew;
 
             _fileDiffService = new FileDiffService(_config, _ilOutputService, _oldFolderAbsolutePath, _newFolderAbsolutePath, _optimizeForNetworkShares);
@@ -326,7 +326,7 @@ namespace FolderDiffIL4DotNet.Services
                     int dotNetAssemblyCandidates = 0;
                     try
                     {
-                        dotNetAssemblyCandidates = allFilesForLog.Count(Utility.IsDotNetExecutable);
+                        dotNetAssemblyCandidates = allFilesForLog.Count(DotNetDetector.IsDotNetExecutable);
                     }
                     catch
                     {
@@ -348,12 +348,12 @@ namespace FolderDiffIL4DotNet.Services
                 _progressReporter.ReportProgress(0.0);
 
                 //IL出力先フォルダの作成
-                Utility.ValidateAbsolutePathLengthOrThrow(_ilOutputFolderAbsolutePath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOutputFolderAbsolutePath);
                 Directory.CreateDirectory(_ilOutputFolderAbsolutePath);
                 if (_config.ShouldOutputILText)
                 {
-                    Utility.ValidateAbsolutePathLengthOrThrow(_ilOldFolderAbsolutePath);
-                    Utility.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
+                    PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOldFolderAbsolutePath);
+                    PathValidator.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
                     Directory.CreateDirectory(_ilOldFolderAbsolutePath);
                     Directory.CreateDirectory(_ilNewFolderAbsolutePath);
                     LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREPARED_IL_OUTPUT_DIRS, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath), shouldOutputMessageToConsole: true);

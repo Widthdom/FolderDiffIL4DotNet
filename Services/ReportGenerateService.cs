@@ -374,7 +374,7 @@ namespace FolderDiffIL4DotNet.Services
             var reportGenerated = false;
             try
             {
-                Utility.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
                 File.Delete(diffReportAbsolutePath);
 
                 using (var streamWriter = new StreamWriter(diffReportAbsolutePath))
@@ -559,7 +559,7 @@ namespace FolderDiffIL4DotNet.Services
                 // レポートファイルの読み取り専用属性を設定（失敗した場合は警告を出力し、処理は継続）
                 try
                 {
-                    Utility.TrySetReadOnly(diffReportAbsolutePath);
+                    FileSystemUtility.TrySetReadOnly(diffReportAbsolutePath);
                 }
                 catch (Exception ex)
                 {

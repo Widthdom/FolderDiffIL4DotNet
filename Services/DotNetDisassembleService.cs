@@ -481,7 +481,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
-                Utility.DeleteFileSilent(tempAsciiPath);
+                FileSystemUtility.DeleteFileSilent(tempAsciiPath);
             }
 
             return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
@@ -508,7 +508,7 @@ namespace FolderDiffIL4DotNet.Services
                 try
                 {
                     // コマンド＋引数を正規化（バージョン取得のキーにも使う）し、キャッシュのキーにする。
-                    disassembleCommandAndItsVersionWithArguments = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(Utility.BuildBaseLabel(disassembleCommand, argset.args));
+                    disassembleCommandAndItsVersionWithArguments = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, argset.args));
                     var cachedIL = await _ilCache.TryGetILAsync(dotNetAssemblyFileAbsolutePath, disassembleCommandAndItsVersionWithArguments);
                     if (cachedIL != null)
                     {
@@ -542,7 +542,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     // ilspycmd は一時ファイルに IL を出力するため、ファイルから読み込む。
                     ilText = await File.ReadAllTextAsync(argset.tempOut);
-                    Utility.DeleteFileSilent(argset.tempOut);
+                    FileSystemUtility.DeleteFileSilent(argset.tempOut);
                 }
                 else
                 {
@@ -553,7 +553,7 @@ namespace FolderDiffIL4DotNet.Services
                 if (string.IsNullOrEmpty(disassembleCommandAndItsVersionWithArguments))
                 {
                     // キャッシュ miss → プロセス実行の経路ではラベルが未取得の場合があるためここで確保。
-                    disassembleCommandAndItsVersionWithArguments = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(Utility.BuildBaseLabel(disassembleCommand, argset.args));
+                    disassembleCommandAndItsVersionWithArguments = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, argset.args));
                 }
 
                 if (_config.EnableILCache && _ilCache != null)
@@ -576,7 +576,7 @@ namespace FolderDiffIL4DotNet.Services
             else
             {
                 // exit code が非 0 の場合は詳細付き例外に包んで失敗扱いとし、ブラックリストに登録。
-                var lastError = new InvalidOperationException(string.Format(ERROR_ILDASM_FAILED, exitCode, disassembleCommand, Utility.GetUsedArgs(argset.args), argset.workingDirectory, dotNetAssemblyFileAbsolutePath, stderr));
+                var lastError = new InvalidOperationException(string.Format(ERROR_ILDASM_FAILED, exitCode, disassembleCommand, ProcessHelper.GetUsedArgs(argset.args), argset.workingDirectory, dotNetAssemblyFileAbsolutePath, stderr));
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
             }
@@ -599,7 +599,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             try
             {
-                if (!string.IsNullOrEmpty(dotNetAssemblyFileAbsolutePath) && Utility.ContainsNonAscii(dotNetAssemblyFileAbsolutePath))
+                if (!string.IsNullOrEmpty(dotNetAssemblyFileAbsolutePath) && TextSanitizer.ContainsNonAscii(dotNetAssemblyFileAbsolutePath))
                 {
                     var tempAsciiPath = Path.Combine(Path.GetTempPath(), $"ildasm_input_{Guid.NewGuid():N}.dll");
                     File.Copy(dotNetAssemblyFileAbsolutePath, tempAsciiPath, overwrite: true);

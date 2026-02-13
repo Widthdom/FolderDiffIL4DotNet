@@ -107,7 +107,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private static (DisassemblerKind disassemblerKind, string disassemblerVersionCacheKey, string disassemblerExe) GetDisassemblerInfo(string disassembleCommandWithArguments)
         {
             // コマンド文字列をトークン化し、先頭のコマンド名やラベルを抽出する。
-            var tokens = Utility.TokenizeCommand(disassembleCommandWithArguments);
+            var tokens = ProcessHelper.TokenizeCommand(disassembleCommandWithArguments);
             if (tokens.Count == 0)
             {
                 throw new InvalidOperationException(string.Format(ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_INVALID, disassembleCommandWithArguments));
@@ -221,7 +221,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             try
             {
-                return await Utility.TryGetProcessOutputAsync(disassemblerExe, args);
+                return await ProcessHelper.TryGetProcessOutputAsync(disassemblerExe, args);
             }
             catch (Exception ex)
             {

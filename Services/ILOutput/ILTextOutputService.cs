@@ -53,13 +53,13 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             try
             {
                 // 相対パスのサニタイズを実施した後、_IL.txt を付与してファイル名を決定
-                string ilTextFileName = Utility.Sanitize(fileRelativePath) + ILTEXT_SUFFIX;
+                string ilTextFileName = TextSanitizer.Sanitize(fileRelativePath) + ILTEXT_SUFFIX;
 
                 // 出力先ファイルの絶対パスを決定・妥当性を検証
                 string oldILFileAbsolutePath = Path.Combine(_ilOldFolderAbsolutePath, ilTextFileName);
                 string newILFileAbsolutePath = Path.Combine(_ilNewFolderAbsolutePath, ilTextFileName);
-                Utility.ValidateAbsolutePathLengthOrThrow(oldILFileAbsolutePath);
-                Utility.ValidateAbsolutePathLengthOrThrow(newILFileAbsolutePath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(oldILFileAbsolutePath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(newILFileAbsolutePath);
                 File.Delete(oldILFileAbsolutePath);
                 File.Delete(newILFileAbsolutePath);
 
@@ -70,8 +70,8 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
                 // 読み取り専用属性の設定
                 try
                 {
-                    Utility.TrySetReadOnly(oldILFileAbsolutePath);
-                    Utility.TrySetReadOnly(newILFileAbsolutePath);
+                    FileSystemUtility.TrySetReadOnly(oldILFileAbsolutePath);
+                    FileSystemUtility.TrySetReadOnly(newILFileAbsolutePath);
                 }
                 catch (Exception ex)
                 {

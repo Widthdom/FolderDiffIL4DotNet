@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         public static void Clear() => cache.Clear();
 
         /// <summary>
-        /// 指定ファイルの最終更新日時（文字列表現）を取得します。未取得の場合は <see cref="Utility.GetTimestamp"/>
+        /// 指定ファイルの最終更新日時（文字列表現）を取得します。未取得の場合は <see cref="FileSystemUtility.GetTimestamp"/>
         /// を呼び出して取得し、内部キャッシュに保存した上で返します。
         /// </summary>
         /// <param name="absolutePath">対象ファイルの絶対パス。null/空は不可。</param>
@@ -47,7 +47,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 return timestamp;
             }
-            timestamp = Utility.GetTimestamp(absolutePath);
+            timestamp = FileSystemUtility.GetTimestamp(absolutePath);
             cache[absolutePath] = timestamp;
             return timestamp;
         }

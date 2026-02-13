@@ -174,10 +174,10 @@ namespace FolderDiffIL4DotNet
                 #endregion
 
                 // アプリケーションのバージョンを取得
-                _thisAppVersion = Utility.GetAppVersion(typeof(Program));
+                _thisAppVersion = SystemInfo.GetAppVersion(typeof(Program));
                 LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
 
-                _computerName = Utility.GetComputerName();
+                _computerName = SystemInfo.GetComputerName();
 
                 LoggerService.LogMessage(LoggerService.LogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
 
@@ -207,7 +207,7 @@ namespace FolderDiffIL4DotNet
                     // コマンドライン第3引数「reportLabel」の値がフォルダ名として正しいか検証
                     try
                     {
-                        Utility.ValidateFolderNameOrThrow(reportLabel, nameof(reportLabel));
+                        PathValidator.ValidateFolderNameOrThrow(reportLabel, nameof(reportLabel));
                     }
                     catch (ArgumentException)
                     {

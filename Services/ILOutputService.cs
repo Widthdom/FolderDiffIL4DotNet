@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <list type="number">
         /// <item><description>IL キャッシュが無効 (<c>EnableILCache == false</c>) またはキャッシュインスタンス未生成の場合は即 return。</description></item>
         /// <item><description><see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> を呼び出し、対象ファイル（物理ファイル）ごとの MD5 など内部キー計算を先行実行し I/O コストを平準化。</description></item>
-        /// <item><description><see cref="Utility.IsDotNetExecutable(string)"/> で .NET 実行可能と判定されたファイル群のみを対象に <see cref="PrefetchIlCacheAsync(IEnumerable{string}, int)"/> を呼び出し、使用候補の逆アセンブラー（ildasm / dotnet ildasm / ilspycmd）× 代表的な引数パターンのキャッシュヒットを事前確認（既存エントリがあればヒット数を加算）。</description></item>
+        /// <item><description><see cref="DotNetDetector.IsDotNetExecutable(string)"/> で .NET 実行可能と判定されたファイル群のみを対象に <see cref="PrefetchIlCacheAsync(IEnumerable{string}, int)"/> を呼び出し、使用候補の逆アセンブラー（ildasm / dotnet ildasm / ilspycmd）× 代表的な引数パターンのキャッシュヒットを事前確認（既存エントリがあればヒット数を加算）。</description></item>
         /// </list>
         /// 例外は内部で catch され WARNING ログ出力後に握りつぶします（差分処理本体の継続性を優先）。
         /// </remarks>
@@ -149,7 +149,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 await _ilCache.PrecomputeAsync(filesAbsolutePaths, maxParallel);
                 // .NET 実行可能のみを対象に、逆アセンブル用キャッシュをプリフェッチ
-                await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(Utility.IsDotNetExecutable), maxParallel);
+                await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel);
             }
             catch (Exception ex)
             {
