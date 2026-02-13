@@ -137,13 +137,6 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private const string VERSION_LABEL_PREFIX = " (version: ";
         #endregion
-        private enum DisassemblerKind
-        {
-            Unknown = 0,
-            DotnetIldasm,
-            Ildasm,
-            Ilspy
-        }
 
         #region private read only member variables
         /// <summary>
