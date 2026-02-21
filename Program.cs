@@ -240,6 +240,8 @@ namespace FolderDiffIL4DotNet
 
                 LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
 
+                ConsoleBanner.Print();
+
                 // 今回作成するレポートの出力先の新規作成
                 Directory.CreateDirectory(_reportsFolderAbsolutePath);
 
