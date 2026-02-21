@@ -234,134 +234,36 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="Exception">ログの初期化/クローズなど、その他の予期しないエラーが発生した場合。</exception>
         public async Task ExecuteFolderDiffAsync()
         {
-            // 実行モードを最初に出力
-            var mode = _optimizeForNetworkShares ? MODE_SERVER_NAS_OPTIMIZED : MODE_LOCAL_OPTIMIZED;
-            var reason = string.Format(EXECUTION_MODE_REASON_FORMAT, _config.OptimizeForNetworkShares, _config.AutoDetectNetworkShares, _detectedNetworkOld, _detectedNetworkNew);
-            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_EXECUTION_MODE, mode, reason), shouldOutputMessageToConsole: true);
+            LogExecutionMode();
+            ClearResultCollections();
 
-            FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
-            FileDiffResultLists.UnchangedFilesRelativePath.Clear();
-            FileDiffResultLists.AddedFilesAbsolutePath.Clear();
-            FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
-            FileDiffResultLists.ModifiedFilesRelativePath.Clear();
-            FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
-            FileDiffResultLists.DisassemblerToolVersions.Clear();
-            FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
             var folderDiffCompleted = false;
             try
             {
-                // 長時間の事前処理が続く場合でも利用者に動作中であることを知らせる。
                 _progressReporter.ReportProgress(0.0);
 
-                // IgnoredExtensions を大文字小文字を無視して評価するために HashSet を用意
                 var ignoredExtensions = new HashSet<string>(_config.IgnoredExtensions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+                EnumerateAllFiles(ignoredExtensions);
 
-                FileDiffResultLists.OldFilesAbsolutePath = EnumerateIncludedFiles(_oldFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.Old);
-                _progressReporter.ReportProgress(0.0);
-
-                FileDiffResultLists.NewFilesAbsolutePath = EnumerateIncludedFiles(_newFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.New);
-                _progressReporter.ReportProgress(0.0);
-
-                // OldFilesの相対パス群とNewFilesの相対パス群の和（重複除外）を取得し、個数0なら処理を終了。
-                var totalFilesRelativePathCount = 0;
+                var totalFilesRelativePathCount = ComputeUnionFileCount();
+                if (totalFilesRelativePathCount == 0)
                 {
-                    var oldFilesRelativePathHashSet = new HashSet<string>(
-                        FileDiffResultLists.OldFilesAbsolutePath.Select(fileAbsolutePath => Path.GetRelativePath(_oldFolderAbsolutePath, fileAbsolutePath)),
-                        StringComparer.OrdinalIgnoreCase);
-                    var newFilesRelativePathHashSet = new HashSet<string>(
-                        FileDiffResultLists.NewFilesAbsolutePath.Select(fileAbsolutePath => Path.GetRelativePath(_newFolderAbsolutePath, fileAbsolutePath)),
-                        StringComparer.OrdinalIgnoreCase);
-
-                    var unionOldAndNewFilesRelativePathHashSet = new HashSet<string>(oldFilesRelativePathHashSet, StringComparer.OrdinalIgnoreCase);
-                    foreach (var fileRelativePath in newFilesRelativePathHashSet)
-                    {
-                        unionOldAndNewFilesRelativePathHashSet.Add(fileRelativePath);
-                    }
-                    totalFilesRelativePathCount = unionOldAndNewFilesRelativePathHashSet.Count;
-
-                    if (totalFilesRelativePathCount == 0)
-                    {
-                        _progressReporter.ReportProgress(100);
-                        folderDiffCompleted = true;
-                        return;
-                    }
+                    _progressReporter.ReportProgress(100);
+                    folderDiffCompleted = true;
+                    return;
                 }
                 _progressReporter.ReportProgress(0.0);
 
-                // 並列度を決定
-                int maxParallel;
-                if (_config.MaxParallelism <= 0)
-                {
-                    // 既定の並列度を、ローカルはCPU論理コア数、ネットワーク共有最適化時は上限MAX_PARALLEL_NETWORK_LIMITに抑制
-                    maxParallel = _optimizeForNetworkShares
-                        ? Math.Min(Environment.ProcessorCount, MAX_PARALLEL_NETWORK_LIMIT)
-                        : Environment.ProcessorCount;
-                }
-                else
-                {
-                    maxParallel = _config.MaxParallelism;
-                }
-                LoggerService.LogMessage(
-                    LoggerService.LogLevel.Info,
-                    string.Format(
-                        LOG_PARALLEL_DIFF_PROCESSING,
-                        maxParallel,
-                        _config.MaxParallelism,
-                        _optimizeForNetworkShares,
-                        Environment.ProcessorCount),
-                    shouldOutputMessageToConsole: true);
-                _progressReporter.ReportProgress(0.0);
+                var maxParallel = DetermineMaxParallel();
+                LogDiscoveryAndParallelStats(totalFilesRelativePathCount, maxParallel);
 
-                // 事前情報を詳細に出力（大量ファイル時の無音区間対策）
-                {
-                    int oldCount = FileDiffResultLists.OldFilesAbsolutePath.Count;
-                    int newCount = FileDiffResultLists.NewFilesAbsolutePath.Count;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_DISCOVERY_COMPLETE, oldCount, newCount, totalFilesRelativePathCount), shouldOutputMessageToConsole: true);
-
-                    // .NET アセンブリ候補数も概算表示
-                    var allFilesForLog = FileDiffResultLists.OldFilesAbsolutePath
-                        .Concat(FileDiffResultLists.NewFilesAbsolutePath)
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
-                        .ToList();
-                    int dotNetAssemblyCandidates = 0;
-                    try
-                    {
-                        dotNetAssemblyCandidates = allFilesForLog.Count(DotNetDetector.IsDotNetExecutable);
-                    }
-                    catch
-                    {
-                        // ignore
-                    }
-                    LoggerService.LogMessage(
-                        LoggerService.LogLevel.Info,
-                        string.Format(
-                            LOG_PRECOMPUTE_TARGETS,
-                            allFilesForLog.Count,
-                            nameof(dotNetAssemblyCandidates),
-                            dotNetAssemblyCandidates),
-                        shouldOutputMessageToConsole: true);
-                }
-                _progressReporter.ReportProgress(0.0);
-
-                // 新旧全ファイルに対してIL キャッシュ用の事前計算を実行
                 await PrecomputeIlCachesAsync(maxParallel);
                 _progressReporter.ReportProgress(0.0);
 
-                //IL出力先フォルダの作成
-                PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOutputFolderAbsolutePath);
-                Directory.CreateDirectory(_ilOutputFolderAbsolutePath);
-                if (_config.ShouldOutputILText)
-                {
-                    PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOldFolderAbsolutePath);
-                    PathValidator.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
-                    Directory.CreateDirectory(_ilOldFolderAbsolutePath);
-                    Directory.CreateDirectory(_ilNewFolderAbsolutePath);
-                    LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREPARED_IL_OUTPUT_DIRS, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath), shouldOutputMessageToConsole: true);
-                }
-                int processedFileCount = 0;
-                // new 側の全ファイル絶対パスを入れた集合（大文字小文字無視）。
-                // old 側を走査しながら一致したパスを削除していき、最後に残ったものを Added 判定に利用する。
+                CreateIlOutputDirectoriesIfNeeded();
+
                 var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(FileDiffResultLists.NewFilesAbsolutePath, StringComparer.OrdinalIgnoreCase);
+                int processedFileCount = 0;
                 if (maxParallel <= 1)
                 {
                     processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount);
@@ -371,14 +273,7 @@ namespace FolderDiffIL4DotNet.Services
                     processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, maxParallel);
                 }
 
-                // 残ったnew側ファイルが「追加」
-                foreach (var newFileAbsolutePath in remainingNewFilesAbsolutePathHashSet)
-                {
-                    // 追加されたファイル
-                    FileDiffResultLists.AddedFilesAbsolutePath.Add(newFileAbsolutePath);
-                    processedFileCount++;
-                    _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
-                }
+                ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);
                 folderDiffCompleted = true;
             }
             catch (Exception)
@@ -603,6 +498,144 @@ namespace FolderDiffIL4DotNet.Services
                 includedFiles.Add(fileAbsolutePath);
             }
             return includedFiles;
+        }
+
+        /// <summary>
+        /// 実行モード（ローカル最適化 / サーバー・NAS 最適化）とその判定理由をログに出力します。
+        /// </summary>
+        private void LogExecutionMode()
+        {
+            var mode = _optimizeForNetworkShares ? MODE_SERVER_NAS_OPTIMIZED : MODE_LOCAL_OPTIMIZED;
+            var reason = string.Format(EXECUTION_MODE_REASON_FORMAT, _config.OptimizeForNetworkShares, _config.AutoDetectNetworkShares, _detectedNetworkOld, _detectedNetworkNew);
+            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_EXECUTION_MODE, mode, reason), shouldOutputMessageToConsole: true);
+        }
+
+        /// <summary>
+        /// 前回実行の分類結果をすべてクリアします。
+        /// </summary>
+        private static void ClearResultCollections()
+        {
+            FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
+            FileDiffResultLists.UnchangedFilesRelativePath.Clear();
+            FileDiffResultLists.AddedFilesAbsolutePath.Clear();
+            FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
+            FileDiffResultLists.ModifiedFilesRelativePath.Clear();
+            FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
+            FileDiffResultLists.DisassemblerToolVersions.Clear();
+            FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
+        }
+
+        /// <summary>
+        /// 無視拡張子を除いた旧・新フォルダのファイル一覧を <see cref="FileDiffResultLists"/> に格納します。
+        /// </summary>
+        private void EnumerateAllFiles(HashSet<string> ignoredExtensions)
+        {
+            FileDiffResultLists.OldFilesAbsolutePath = EnumerateIncludedFiles(_oldFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.Old);
+            _progressReporter.ReportProgress(0.0);
+            FileDiffResultLists.NewFilesAbsolutePath = EnumerateIncludedFiles(_newFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.New);
+            _progressReporter.ReportProgress(0.0);
+        }
+
+        /// <summary>
+        /// 旧・新フォルダのファイル相対パスの和集合の件数を返します。
+        /// </summary>
+        private int ComputeUnionFileCount()
+        {
+            var oldRelativePathSet = new HashSet<string>(
+                FileDiffResultLists.OldFilesAbsolutePath.Select(p => Path.GetRelativePath(_oldFolderAbsolutePath, p)),
+                StringComparer.OrdinalIgnoreCase);
+            var newRelativePathSet = new HashSet<string>(
+                FileDiffResultLists.NewFilesAbsolutePath.Select(p => Path.GetRelativePath(_newFolderAbsolutePath, p)),
+                StringComparer.OrdinalIgnoreCase);
+
+            var unionSet = new HashSet<string>(oldRelativePathSet, StringComparer.OrdinalIgnoreCase);
+            foreach (var path in newRelativePathSet)
+            {
+                unionSet.Add(path);
+            }
+            return unionSet.Count;
+        }
+
+        /// <summary>
+        /// 設定とモードに基づいて最大並列度を決定します。
+        /// </summary>
+        private int DetermineMaxParallel()
+        {
+            if (_config.MaxParallelism <= 0)
+            {
+                // 既定の並列度を、ローカルはCPU論理コア数、ネットワーク共有最適化時は上限MAX_PARALLEL_NETWORK_LIMITに抑制
+                return _optimizeForNetworkShares
+                    ? Math.Min(Environment.ProcessorCount, MAX_PARALLEL_NETWORK_LIMIT)
+                    : Environment.ProcessorCount;
+            }
+            return _config.MaxParallelism;
+        }
+
+        /// <summary>
+        /// 並列度・ファイル件数・.NET アセンブリ候補数をログに出力します。
+        /// </summary>
+        private void LogDiscoveryAndParallelStats(int totalFilesRelativePathCount, int maxParallel)
+        {
+            LoggerService.LogMessage(
+                LoggerService.LogLevel.Info,
+                string.Format(LOG_PARALLEL_DIFF_PROCESSING, maxParallel, _config.MaxParallelism, _optimizeForNetworkShares, Environment.ProcessorCount),
+                shouldOutputMessageToConsole: true);
+            _progressReporter.ReportProgress(0.0);
+
+            int oldCount = FileDiffResultLists.OldFilesAbsolutePath.Count;
+            int newCount = FileDiffResultLists.NewFilesAbsolutePath.Count;
+            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_DISCOVERY_COMPLETE, oldCount, newCount, totalFilesRelativePathCount), shouldOutputMessageToConsole: true);
+
+            // .NET アセンブリ候補数も概算表示
+            var allFilesForLog = FileDiffResultLists.OldFilesAbsolutePath
+                .Concat(FileDiffResultLists.NewFilesAbsolutePath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            int dotNetAssemblyCandidates = 0;
+            try
+            {
+                dotNetAssemblyCandidates = allFilesForLog.Count(DotNetDetector.IsDotNetExecutable);
+            }
+            catch
+            {
+                // ignore
+            }
+            LoggerService.LogMessage(
+                LoggerService.LogLevel.Info,
+                string.Format(LOG_PRECOMPUTE_TARGETS, allFilesForLog.Count, nameof(dotNetAssemblyCandidates), dotNetAssemblyCandidates),
+                shouldOutputMessageToConsole: true);
+            _progressReporter.ReportProgress(0.0);
+        }
+
+        /// <summary>
+        /// IL 出力先ディレクトリを必要に応じて作成します。
+        /// <see cref="ConfigSettings.ShouldOutputILText"/> が true の場合は old/new サブディレクトリも作成します。
+        /// </summary>
+        private void CreateIlOutputDirectoriesIfNeeded()
+        {
+            PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOutputFolderAbsolutePath);
+            Directory.CreateDirectory(_ilOutputFolderAbsolutePath);
+            if (_config.ShouldOutputILText)
+            {
+                PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOldFolderAbsolutePath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
+                Directory.CreateDirectory(_ilOldFolderAbsolutePath);
+                Directory.CreateDirectory(_ilNewFolderAbsolutePath);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREPARED_IL_OUTPUT_DIRS, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath), shouldOutputMessageToConsole: true);
+            }
+        }
+
+        /// <summary>
+        /// new 側に残っているファイル（old 側に存在しないもの）を Added として記録し、進捗を更新します。
+        /// </summary>
+        private void ProcessAddedFiles(IEnumerable<string> remainingNewFiles, int processedFileCount, int totalFilesRelativePathCount)
+        {
+            foreach (var newFileAbsolutePath in remainingNewFiles)
+            {
+                FileDiffResultLists.AddedFilesAbsolutePath.Add(newFileAbsolutePath);
+                processedFileCount++;
+                _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
+            }
         }
     }
 }

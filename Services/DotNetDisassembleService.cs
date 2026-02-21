@@ -348,32 +348,10 @@ namespace FolderDiffIL4DotNet.Services
                 string.Format(LOG_PREFETCH_IL_CACHE_START, assemblies.Count, nameof(maxParallel), maxParallel),
                 shouldOutputMessageToConsole: true);
 
-            var disassembleCommandAndItsVersionList = new List<(string DisassembleCommand, string DisassemblerVersion)>();
-            foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
-            {
-                // dotnet-ildasm の場合は `dotnet dotnet-ildasm` に正規化、それ以外はファイル名を抽出して扱いやすくする。
-                string disassembleCommand = string.Equals(candidateDisassembleCommand, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase)
-                    ? $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM}"
-                    : (Path.GetFileName(candidateDisassembleCommand) ?? candidateDisassembleCommand);
-                try
-                {
-                    // コマンドごとのバージョンを取得して正規化した文字列を保持。
-                    var disassemblerVersion = await DotNetDisassemblerCache.GetDisassemblerVersionAsync(disassembleCommand);
-                    if (!string.IsNullOrWhiteSpace(disassemblerVersion))
-                    {
-                        // バージョン表記に改行等が含まれるケースがあるためホワイトスペースを潰して 1 行にそろえる。
-                        disassembleCommandAndItsVersionList.Add((candidateDisassembleCommand, disassemblerVersion.Replace("\r", " ").Replace("\n", " ").Trim()));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // バージョン取得に失敗した場合は警告のみ出し、そのコマンドはスキップ。
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_GET_VERSION_FOR_COMMAND, disassembleCommand, candidateDisassembleCommand), shouldOutputMessageToConsole: false, ex);
-                }
-            }
+            // 候補コマンドのバージョンリストを構築。どのコマンドのバージョンも取得できなければプリフェッチ不可。
+            var disassembleCommandAndItsVersionList = await BuildDisassemblerVersionListAsync();
             if (disassembleCommandAndItsVersionList.Count == 0)
             {
-                // どのコマンドのバージョンも取得できなかった場合はプリフェッチ継続不可なので終了。
                 return;
             }
 
@@ -384,42 +362,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 try
                 {
-                    // 絶対パス版とファイル名版の両キャッシュキーで代表的な引数パターンを総当たりし、
-                    // 「バージョン付きラベル × 引数」の形でキャッシュにヒットするかを検証する。
-                    var dotNetAssemblyNameOnly = Path.GetFileName(dotNetAssemblyFileAbsolutePath);
-                    foreach (var (disassembleCommand, disassemblerVersion) in disassembleCommandAndItsVersionList)
-                    {
-                        // コマンド種別 dotnet-ildasm / ilspy / ildasm でそれぞれ異なるデフォルト引数を組む。
-                        IEnumerable<string> disassembleCommandsWithArguments;
-                        var disassemblerFileName = Path.GetFileName(disassembleCommand);
-                        if (string.Equals(disassembleCommand, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // dotnet muxer は "dotnet dotnet-ildasm" の形で実行されるため、相対パス・絶対パスの双方を試す。
-                            disassembleCommandsWithArguments = [$"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {dotNetAssemblyNameOnly}", $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {dotNetAssemblyFileAbsolutePath}"];
-                        }
-                        else if (string.Equals(disassemblerFileName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // ilspycmd は /il スイッチを付与する必要があるため、これも付けた状態で 2 パターン生成。
-                            disassembleCommandsWithArguments = [$"{disassemblerFileName} {ILSPY_FLAG_IL} {dotNetAssemblyNameOnly}", $"{disassemblerFileName} {ILSPY_FLAG_IL} {dotNetAssemblyFileAbsolutePath}"];
-                        }
-                        else
-                        {
-                            // それ以外（ildasm 等）はコマンド + ターゲットだけで十分なので同様に 2 パターン。
-                            disassembleCommandsWithArguments = [$"{disassemblerFileName} {dotNetAssemblyNameOnly}", $"{disassemblerFileName} {dotNetAssemblyFileAbsolutePath}"];
-                        }
-
-                        foreach (var disassembleCommandWithArguments in disassembleCommandsWithArguments)
-                        {
-                            var disassembleCommandAndItsVersionWithArguments = disassembleCommandWithArguments + (string.IsNullOrEmpty(disassemblerVersion) ? string.Empty : $" (version: {disassemblerVersion})");
-                            // キャッシュヒット時はヒット数を増やし、残りのコマンドはスキップして次のアセンブリへ。
-                            var cachedIL = await _ilCache.TryGetILAsync(dotNetAssemblyFileAbsolutePath, disassembleCommandAndItsVersionWithArguments);
-                            if (cachedIL != null)
-                            {
-                                Interlocked.Increment(ref _ilCacheHits);
-                                break;
-                            }
-                        }
-                    }
+                    await TryHitCacheForAssemblyAsync(dotNetAssemblyFileAbsolutePath, disassembleCommandAndItsVersionList);
                 }
                 catch (Exception ex)
                 {
@@ -499,27 +442,16 @@ namespace FolderDiffIL4DotNet.Services
             (string workingDirectory, string[] args, string tempOut) argset,
             bool allowCache)
         {
-            string disassembleCommandAndItsVersionWithArguments = null;
-            string ilText = null;
+            string label = null;
 
-            // 逆アセンブル結果の取得前に IL キャッシュを確認してヒットすればプロセス起動を省略する。
-            if (allowCache && _config.EnableILCache && _ilCache != null)
+            if (allowCache)
             {
-                try
+                // キャッシュヒット時はプロセス起動を省略。ラベルはミス時も後続で再利用する。
+                var (hit, cachedIl, computedLabel) = await TryCacheHitAsync(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset.args);
+                label = computedLabel;
+                if (hit)
                 {
-                    // コマンド＋引数を正規化（バージョン取得のキーにも使う）し、キャッシュのキーにする。
-                    disassembleCommandAndItsVersionWithArguments = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, argset.args));
-                    var cachedIL = await _ilCache.TryGetILAsync(dotNetAssemblyFileAbsolutePath, disassembleCommandAndItsVersionWithArguments);
-                    if (cachedIL != null)
-                    {
-                        Interlocked.Increment(ref _ilCacheHits);
-                        RecordDisassemblerUsage(disassembleCommand, disassembleCommandAndItsVersionWithArguments, fromCache: true);
-                        return (Success: true, IlText: cachedIL, DisassembleCommandAndItsVersionWithArguments: disassembleCommandAndItsVersionWithArguments, Error: null);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_GET_IL_FROM_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    return (Success: true, IlText: cachedIl, DisassembleCommandAndItsVersionWithArguments: label, Error: null);
                 }
             }
 
@@ -536,42 +468,15 @@ namespace FolderDiffIL4DotNet.Services
             {
                 // 正常終了したらブラックリスト状態を解除。
                 ResetDisassembleFailure(disassembleCommand);
-
-                var isIlspy = IsIlspyCommand(disassembleCommand);
-                if (isIlspy && !string.IsNullOrEmpty(argset.tempOut) && File.Exists(argset.tempOut))
-                {
-                    // ilspycmd は一時ファイルに IL を出力するため、ファイルから読み込む。
-                    ilText = await File.ReadAllTextAsync(argset.tempOut);
-                    FileSystemUtility.DeleteFileSilent(argset.tempOut);
-                }
-                else
-                {
-                    // ildasm / dotnet-ildasm は標準出力に吐くため stdout を採用。
-                    ilText = stdout ?? string.Empty;
-                }
-
-                if (string.IsNullOrEmpty(disassembleCommandAndItsVersionWithArguments))
+                var ilText = await ReadIlTextAfterSuccessAsync(IsIlspyCommand(disassembleCommand), argset, stdout);
+                if (string.IsNullOrEmpty(label))
                 {
                     // キャッシュ miss → プロセス実行の経路ではラベルが未取得の場合があるためここで確保。
-                    disassembleCommandAndItsVersionWithArguments = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, argset.args));
+                    label = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, argset.args));
                 }
-
-                if (_config.EnableILCache && _ilCache != null)
-                {
-                    try
-                    {
-                        // 得られた IL をキャッシュに格納し、書き込みカウンタを増やす。
-                        await _ilCache.SetILAsync(dotNetAssemblyFileAbsolutePath, disassembleCommandAndItsVersionWithArguments, ilText);
-                        Interlocked.Increment(ref _ilCacheStores);
-                    }
-                    catch (Exception ex)
-                    {
-                        LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_SET_IL_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
-                    }
-                }
-
-                RecordDisassemblerUsage(disassembleCommand, disassembleCommandAndItsVersionWithArguments);
-                return (Success: true, IlText: ilText, DisassembleCommandAndItsVersionWithArguments: disassembleCommandAndItsVersionWithArguments, Error: null);
+                await TryStoreToCacheAsync(dotNetAssemblyFileAbsolutePath, label, ilText, disassembleCommand);
+                RecordDisassemblerUsage(disassembleCommand, label);
+                return (Success: true, IlText: ilText, DisassembleCommandAndItsVersionWithArguments: label, Error: null);
             }
             else
             {
@@ -580,6 +485,161 @@ namespace FolderDiffIL4DotNet.Services
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
             }
+        }
+
+        /// <summary>
+        /// IL キャッシュへのヒットを試みます。
+        /// ヒット時は (true, IlText, Label)、ミス時は (false, null, Label)、キャッシュ無効や例外時は (false, null, null) を返します。
+        /// ミス時も Label を返すことで、後続のキャッシュ格納でバージョン取得の再実行を省略できます。
+        /// </summary>
+        private async Task<(bool Hit, string IlText, string Label)> TryCacheHitAsync(
+            string disassembleCommand,
+            string dotNetAssemblyFileAbsolutePath,
+            string[] args)
+        {
+            if (!_config.EnableILCache || _ilCache == null)
+            {
+                return (false, null, null);
+            }
+            try
+            {
+                var label = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, args));
+                var cached = await _ilCache.TryGetILAsync(dotNetAssemblyFileAbsolutePath, label);
+                if (cached != null)
+                {
+                    Interlocked.Increment(ref _ilCacheHits);
+                    RecordDisassemblerUsage(disassembleCommand, label, fromCache: true);
+                    return (true, cached, label);
+                }
+                return (false, null, label);
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_GET_IL_FROM_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                return (false, null, null);
+            }
+        }
+
+        /// <summary>
+        /// プロセス正常終了後の IL テキストを取得します。
+        /// ilspycmd は一時ファイルから読み取り（読み取り後に削除）、その他は stdout を使用します。
+        /// </summary>
+        private static async Task<string> ReadIlTextAfterSuccessAsync(
+            bool isIlspy,
+            (string workingDirectory, string[] args, string tempOut) argset,
+            string stdout)
+        {
+            if (isIlspy && !string.IsNullOrEmpty(argset.tempOut) && File.Exists(argset.tempOut))
+            {
+                var text = await File.ReadAllTextAsync(argset.tempOut);
+                FileSystemUtility.DeleteFileSilent(argset.tempOut);
+                return text;
+            }
+            return stdout ?? string.Empty;
+        }
+
+        /// <summary>
+        /// IL テキストをキャッシュに格納します。格納成功時はストアカウンタをインクリメントします。
+        /// キャッシュ無効時やエラー時は警告ログを出力して処理を継続します。
+        /// </summary>
+        private async Task TryStoreToCacheAsync(
+            string dotNetAssemblyFileAbsolutePath,
+            string label,
+            string ilText,
+            string disassembleCommand)
+        {
+            if (!_config.EnableILCache || _ilCache == null)
+            {
+                return;
+            }
+            try
+            {
+                await _ilCache.SetILAsync(dotNetAssemblyFileAbsolutePath, label, ilText);
+                Interlocked.Increment(ref _ilCacheStores);
+            }
+            catch (Exception ex)
+            {
+                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_SET_IL_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+            }
+        }
+
+        /// <summary>
+        /// 1 アセンブリについて全コマンド × 引数パターンを総当たりし、IL キャッシュヒットを確認します。
+        /// いずれかのパターンでヒットした場合は <see cref="_ilCacheHits"/> をインクリメントします。
+        /// </summary>
+        private async Task TryHitCacheForAssemblyAsync(
+            string dotNetAssemblyFileAbsolutePath,
+            IList<(string disassembleCommand, string disassemblerVersion)> disassembleCommandAndItsVersionList)
+        {
+            var nameOnly = Path.GetFileName(dotNetAssemblyFileAbsolutePath);
+            foreach (var (disassembleCommand, disassemblerVersion) in disassembleCommandAndItsVersionList)
+            {
+                var disassemblerFileName = Path.GetFileName(disassembleCommand);
+                var patterns = BuildPrefetchCacheKeyPatterns(disassembleCommand, disassemblerFileName, dotNetAssemblyFileAbsolutePath, nameOnly);
+                foreach (var pattern in patterns)
+                {
+                    var fullLabel = pattern + (string.IsNullOrEmpty(disassemblerVersion) ? string.Empty : $" (version: {disassemblerVersion})");
+                    // キャッシュヒット時はヒット数を増やし、残りの引数パターンはスキップして次のコマンドへ。
+                    if (await _ilCache.TryGetILAsync(dotNetAssemblyFileAbsolutePath, fullLabel) != null)
+                    {
+                        Interlocked.Increment(ref _ilCacheHits);
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// プリフェッチ用のキャッシュキーパターン（コマンド＋引数の文字列）をコマンド種別に応じて列挙します。
+        /// ファイル名のみ版と絶対パス版の 2 パターンを返します。
+        /// </summary>
+        private static IEnumerable<string> BuildPrefetchCacheKeyPatterns(
+            string disassembleCommand,
+            string disassemblerFileName,
+            string assemblyAbsolutePath,
+            string assemblyNameOnly)
+        {
+            if (string.Equals(disassembleCommand, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
+            {
+                // dotnet muxer は "dotnet dotnet-ildasm" の形で実行されるため、両パスパターンを生成。
+                return [$"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {assemblyNameOnly}", $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {assemblyAbsolutePath}"];
+            }
+            if (string.Equals(disassemblerFileName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase))
+            {
+                // ilspycmd は -il スイッチを付与した 2 パターン。
+                return [$"{disassemblerFileName} {ILSPY_FLAG_IL} {assemblyNameOnly}", $"{disassemblerFileName} {ILSPY_FLAG_IL} {assemblyAbsolutePath}"];
+            }
+            // その他（ildasm 等）はコマンド＋ターゲットだけで 2 パターン。
+            return [$"{disassemblerFileName} {assemblyNameOnly}", $"{disassemblerFileName} {assemblyAbsolutePath}"];
+        }
+
+        /// <summary>
+        /// 逆アセンブラ候補コマンドのバージョンリストを構築します。
+        /// バージョン取得に失敗したコマンドは警告ログを出力してスキップされます。
+        /// </summary>
+        private static async Task<List<(string Command, string Version)>> BuildDisassemblerVersionListAsync()
+        {
+            var result = new List<(string Command, string Version)>();
+            foreach (var candidateCommand in CandidateDisassembleCommands())
+            {
+                try
+                {
+                    // dotnet muxer は "dotnet dotnet-ildasm" 形式でバージョンを問い合わせる。
+                    var versionQueryLabel = IsDotnetMuxer(candidateCommand)
+                        ? $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM}"
+                        : candidateCommand;
+                    var version = await DotNetDisassemblerCache.GetDisassemblerVersionAsync(versionQueryLabel);
+                    result.Add((candidateCommand, version));
+                }
+                catch
+                {
+                    LoggerService.LogMessage(
+                        LoggerService.LogLevel.Warning,
+                        string.Format(LOG_FAILED_TO_GET_VERSION_FOR_COMMAND, candidateCommand, candidateCommand),
+                        shouldOutputMessageToConsole: true);
+                }
+            }
+            return result;
         }
 
         /// <summary>
