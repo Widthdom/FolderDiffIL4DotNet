@@ -548,12 +548,8 @@ namespace FolderDiffIL4DotNet.Services
                 FileDiffResultLists.NewFilesAbsolutePath.Select(p => Path.GetRelativePath(_newFolderAbsolutePath, p)),
                 StringComparer.OrdinalIgnoreCase);
 
-            var unionSet = new HashSet<string>(oldRelativePathSet, StringComparer.OrdinalIgnoreCase);
-            foreach (var path in newRelativePathSet)
-            {
-                unionSet.Add(path);
-            }
-            return unionSet.Count;
+            oldRelativePathSet.UnionWith(newRelativePathSet);
+            return oldRelativePathSet.Count;
         }
 
         /// <summary>
