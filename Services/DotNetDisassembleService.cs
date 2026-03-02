@@ -72,6 +72,16 @@ namespace FolderDiffIL4DotNet.Services
         private const string ERROR_EXECUTE_ILDASM = "Failed to execute " + ILDASM_LABEL + " for file: {0}. {1}{2}";
 
         /// <summary>
+        /// 同一ツールでのペア逆アセンブル失敗時の例外フォーマット。
+        /// </summary>
+        private const string ERROR_EXECUTE_ILDASM_FOR_PAIR = "Failed to execute " + ILDASM_LABEL + " with the same disassembler for files: {0} and {1}. {2}{3}";
+
+        /// <summary>
+        /// old/new で同一候補を使ってもバージョン識別が一致しなかった場合のエラーフォーマット。
+        /// </summary>
+        private const string ERROR_DISASSEMBLER_VERSION_MISMATCH = "Disassembler version mismatch for command '{0}'. old='{1}', new='{2}'.";
+
+        /// <summary>
         /// ASCII一時コピー作成失敗
         /// </summary>
         private const string LOG_FAILED_CREATE_ASCII_TEMP_COPY = "Failed to create ASCII temp copy for '{0}': {1}";
@@ -236,7 +246,7 @@ namespace FolderDiffIL4DotNet.Services
                 try
                 {
                     // キャッシュ確認とプロセス起動を内包した TryDisassembleAsync を実行。
-                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: true);
+                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: true, recordUsage: true);
                     if (success)
                     {
                         return (ilText, disassembleCommandAndItsVersionWithArguments);
@@ -264,6 +274,86 @@ namespace FolderDiffIL4DotNet.Services
 
             var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
             throw new InvalidOperationException(string.Format(ERROR_EXECUTE_ILDASM, dotNetAssemblyfileAbsolutePath, GUIDANCE_INSTALL_DISASSEMBLER, innerMsg), lastError);
+        }
+
+        /// <summary>
+        /// old/new の両アセンブリを同一逆アセンブラ（同一バージョン識別）で逆アセンブルします。
+        /// </summary>
+        /// <param name="oldDotNetAssemblyFileAbsolutePath">old 側 .NET アセンブリの絶対パス。</param>
+        /// <param name="newDotNetAssemblyFileAbsolutePath">new 側 .NET アセンブリの絶対パス。</param>
+        /// <returns>old/new の IL テキストと、各逆アセンブル実行ラベル。</returns>
+        public async Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
+            string oldDotNetAssemblyFileAbsolutePath,
+            string newDotNetAssemblyFileAbsolutePath)
+        {
+            Exception lastError = null;
+            foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
+            {
+                if (IsDisassemblerBlacklisted(candidateDisassembleCommand))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var oldResult = await TryDisassembleAsync(candidateDisassembleCommand, oldDotNetAssemblyFileAbsolutePath, allowCache: true, recordUsage: false);
+                    if (!oldResult.Success)
+                    {
+                        if (oldResult.Error != null)
+                        {
+                            lastError = oldResult.Error;
+                        }
+                        continue;
+                    }
+
+                    var newResult = await TryDisassembleAsync(candidateDisassembleCommand, newDotNetAssemblyFileAbsolutePath, allowCache: true, recordUsage: false);
+                    if (!newResult.Success)
+                    {
+                        if (newResult.Error != null)
+                        {
+                            lastError = newResult.Error;
+                        }
+                        continue;
+                    }
+
+                    if (!AreSameDisassemblerVersion(oldResult.DisassembleCommandAndItsVersionWithArguments, newResult.DisassembleCommandAndItsVersionWithArguments))
+                    {
+                        lastError = new InvalidOperationException(string.Format(
+                            ERROR_DISASSEMBLER_VERSION_MISMATCH,
+                            candidateDisassembleCommand,
+                            oldResult.DisassembleCommandAndItsVersionWithArguments,
+                            newResult.DisassembleCommandAndItsVersionWithArguments));
+                        continue;
+                    }
+
+                    RecordDisassemblerUsage(candidateDisassembleCommand, oldResult.DisassembleCommandAndItsVersionWithArguments);
+                    RecordDisassemblerUsage(candidateDisassembleCommand, newResult.DisassembleCommandAndItsVersionWithArguments);
+                    return (
+                        oldResult.IlText,
+                        oldResult.DisassembleCommandAndItsVersionWithArguments,
+                        newResult.IlText,
+                        newResult.DisassembleCommandAndItsVersionWithArguments);
+                }
+                catch (System.ComponentModel.Win32Exception ex)
+                {
+                    lastError = ex;
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    RegisterDisassembleFailure(candidateDisassembleCommand);
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    RegisterDisassembleFailure(candidateDisassembleCommand);
+                    continue;
+                }
+            }
+
+            var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
+            throw new InvalidOperationException(
+                string.Format(ERROR_EXECUTE_ILDASM_FOR_PAIR, oldDotNetAssemblyFileAbsolutePath, newDotNetAssemblyFileAbsolutePath, GUIDANCE_INSTALL_DISASSEMBLER, innerMsg),
+                lastError);
         }
 
         /// <summary>
@@ -352,7 +442,8 @@ namespace FolderDiffIL4DotNet.Services
         private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleAsync(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
-            bool allowCache)
+            bool allowCache,
+            bool recordUsage)
         {
             Exception lastError = null;
             string tempAsciiPath = CreateAsciiTempCopyIfNeeded(dotNetAssemblyFileAbsolutePath);
@@ -361,7 +452,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 foreach (var argset in BuildArgSets(disassembleCommand, dotNetAssemblyFileAbsolutePath, tempAsciiPath))
                 {
-                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleWithArguments(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, allowCache);
+                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleWithArguments(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset, allowCache, recordUsage);
                     if (success)
                     {
                         return (success, ilText, disassembleCommandAndItsVersionWithArguments, error);
@@ -390,14 +481,15 @@ namespace FolderDiffIL4DotNet.Services
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
             (string workingDirectory, string[] args, string tempOut) argset,
-            bool allowCache)
+            bool allowCache,
+            bool recordUsage)
         {
             string label = null;
 
             if (allowCache)
             {
                 // キャッシュヒット時はプロセス起動を省略。ラベルはミス時も後続で再利用する。
-                var (hit, cachedIl, computedLabel) = await TryCacheHitAsync(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset.args);
+                var (hit, cachedIl, computedLabel) = await TryCacheHitAsync(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset.args, recordUsage);
                 label = computedLabel;
                 if (hit)
                 {
@@ -425,7 +517,10 @@ namespace FolderDiffIL4DotNet.Services
                     label = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, argset.args));
                 }
                 await TryStoreToCacheAsync(dotNetAssemblyFileAbsolutePath, label, ilText, disassembleCommand);
-                RecordDisassemblerUsage(disassembleCommand, label);
+                if (recordUsage)
+                {
+                    RecordDisassemblerUsage(disassembleCommand, label);
+                }
                 return (Success: true, IlText: ilText, DisassembleCommandAndItsVersionWithArguments: label, Error: null);
             }
             else
@@ -445,7 +540,8 @@ namespace FolderDiffIL4DotNet.Services
         private async Task<(bool Hit, string IlText, string Label)> TryCacheHitAsync(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
-            string[] args)
+            string[] args,
+            bool recordUsage)
         {
             if (!_config.EnableILCache || _ilCache == null)
             {
@@ -458,7 +554,10 @@ namespace FolderDiffIL4DotNet.Services
                 if (cached != null)
                 {
                     Interlocked.Increment(ref _ilCacheHits);
-                    RecordDisassemblerUsage(disassembleCommand, label, fromCache: true);
+                    if (recordUsage)
+                    {
+                        RecordDisassemblerUsage(disassembleCommand, label, fromCache: true);
+                    }
                     return (true, cached, label);
                 }
                 return (false, null, label);
@@ -995,6 +1094,16 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return disassembleCommandAndItsVersionWithArguments.Substring(start, end - start).Trim();
+        }
+
+        /// <summary>
+        /// 2 つの逆アセンブルラベルが同一バージョン識別を持つかを判定します。
+        /// </summary>
+        private static bool AreSameDisassemblerVersion(string oldLabel, string newLabel)
+        {
+            var oldVersion = ExtractVersionFromLabel(oldLabel) ?? string.Empty;
+            var newVersion = ExtractVersionFromLabel(newLabel) ?? string.Empty;
+            return string.Equals(oldVersion, newVersion, StringComparison.OrdinalIgnoreCase);
         }
         #endregion
     }

@@ -121,6 +121,16 @@ namespace FolderDiffIL4DotNet
         /// キープロンプトエラー
         /// </summary>
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
+
+        /// <summary>
+        /// 正常終了コード
+        /// </summary>
+        private const int EXIT_CODE_SUCCESS = 0;
+
+        /// <summary>
+        /// 異常終了コード
+        /// </summary>
+        private const int EXIT_CODE_ERROR = 1;
         #endregion
 
         #region private member variables
@@ -163,8 +173,9 @@ namespace FolderDiffIL4DotNet
         /// <summary>
         /// アプリケーションのエントリーポイント
         /// </summary>
-        static async Task Main(string[] args)
+        static async Task<int> Main(string[] args)
         {
+            var exitCode = EXIT_CODE_SUCCESS;
             try
             {
                 #region Loggerの初期化（以降Loggerを使ったログ出力が可能）
@@ -304,6 +315,7 @@ namespace FolderDiffIL4DotNet
                 // 例外を捕捉した場合は、stacktraceをログに出力して終了
                 LoggerService.LogMessage(LoggerService.LogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ex);
                 LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_ERROR_DETAILS_PATH, LoggerService._logFileAbsolutePath), shouldOutputMessageToConsole: true);
+                exitCode = EXIT_CODE_ERROR;
             }
             finally
             {
@@ -330,6 +342,7 @@ namespace FolderDiffIL4DotNet
 
                 }
             }
+            return exitCode;
         }
     }
 }

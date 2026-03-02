@@ -19,11 +19,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-disasm-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
             ResetDisassemblerFailureState();
+            ResetDisassemblerVersionCacheState();
         }
 
         public void Dispose()
         {
             ResetDisassemblerFailureState();
+            ResetDisassemblerVersionCacheState();
             try
             {
                 if (Directory.Exists(_rootDir))
@@ -94,6 +96,76 @@ exit 0
 
                 Assert.Contains("dotnet-ildasm", command1, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("ilspycmd", command2, StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                Environment.SetEnvironmentVariable("HOME", oldHome);
+            }
+        }
+
+        [Fact]
+        public async Task DisassemblePairWithSameDisassemblerAsync_UsesSingleFallbackToolForBothSides()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            FileDiffResultLists.DisassemblerToolVersions.Clear();
+            FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
+
+            var binDir = Path.Combine(_rootDir, "bin-pair");
+            Directory.CreateDirectory(binDir);
+
+            WriteExecutable(binDir, "dotnet-ildasm", """
+#!/bin/sh
+if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
+  echo "dotnet ildasm 0.12.0"
+  exit 0
+fi
+case "$1" in
+  *bad.dll) exit 90 ;;
+esac
+echo "IL_FROM_DOTNET_ILDASM"
+exit 0
+""");
+            WriteExecutable(binDir, "dotnet", """
+#!/bin/sh
+exit 1
+""");
+            WriteExecutable(binDir, "ilspycmd", """
+#!/bin/sh
+if [ "$1" = "--version" ] || [ "$1" = "-v" ] || [ "$1" = "-h" ]; then
+  echo "ilspycmd 9.1.0"
+  exit 0
+fi
+echo "IL_FROM_ILSPY"
+exit 0
+""");
+
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+            var oldHome = Environment.GetEnvironmentVariable("HOME");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
+                Environment.SetEnvironmentVariable("HOME", _rootDir);
+
+                var config = CreateConfig(enableIlCache: false);
+                var service = new DotNetDisassembleService(config, ilCache: null);
+
+                var goodDll = Path.Combine(_rootDir, "good-pair.dll");
+                var badDll = Path.Combine(_rootDir, "bad.dll");
+                await File.WriteAllTextAsync(goodDll, "dummy");
+                await File.WriteAllTextAsync(badDll, "dummy");
+
+                var (_, oldCommand, _, newCommand) = await service.DisassemblePairWithSameDisassemblerAsync(goodDll, badDll);
+
+                Assert.Contains("ilspycmd", oldCommand, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("ilspycmd", newCommand, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("dotnet-ildasm", oldCommand, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("dotnet-ildasm", newCommand, StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("dotnet-ildasm", string.Join(",", FileDiffResultLists.DisassemblerToolVersions.Keys), StringComparison.OrdinalIgnoreCase);
             }
             finally
             {
@@ -285,6 +357,15 @@ exit 0
             var field = typeof(DotNetDisassembleService).GetField("_disassembleFailCountAndTime", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(field);
             var dictionary = field.GetValue(null) as ConcurrentDictionary<string, (int FailCount, DateTime LastFailUtc)>;
+            Assert.NotNull(dictionary);
+            dictionary.Clear();
+        }
+
+        private static void ResetDisassemblerVersionCacheState()
+        {
+            var field = typeof(DotNetDisassemblerCache).GetField("disassemblerVersionCache", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            var dictionary = field.GetValue(null) as ConcurrentDictionary<string, string>;
             Assert.NotNull(dictionary);
             dictionary.Clear();
         }

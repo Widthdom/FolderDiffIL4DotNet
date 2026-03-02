@@ -75,9 +75,9 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_HEADER_IL_DISASSEMBLERS = "- IL Disassembler: {0}";
 
         /// <summary>
-        /// ildasm ツール名。
+        /// 逆アセンブラ未使用時の表示。
         /// </summary>
-        private const string ILDASM_TOOL_NAME = "ildasm";
+        private const string REPORT_DISASSEMBLER_NOT_USED = "N/A";
 
         /// <summary>
         /// レポートヘッダ: 経過時間
@@ -561,37 +561,57 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// レポート冒頭に記載する逆アセンブラ一覧を組み立てます。
-        /// 既知の 3 ツール（dotnet-ildasm / ildasm / ilspycmd）を必ず表示し、取得済みバージョンがあれば優先して付与します。
+        /// 実際に観測されたラベル（実行/キャッシュ経由）だけを表示します。
         /// </summary>
         private static string BuildDisassemblerHeaderText()
         {
-            var allObservedLabels = FileDiffResultLists.DisassemblerToolVersions.Keys
+            var observedLabels = FileDiffResultLists.DisassemblerToolVersions.Keys
                 .Concat(FileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
+                .Where(label => !string.IsNullOrWhiteSpace(label))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(GetDisassemblerDisplayOrder)
+                .ThenByDescending(label => label.IndexOf("(version:", StringComparison.OrdinalIgnoreCase) >= 0)
+                .ThenBy(label => label, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var orderedTools = new[] { Constants.DOTNET_ILDASM, ILDASM_TOOL_NAME, Constants.ILSPY_CMD };
-            var labels = orderedTools
-                .Select(tool => ResolveDisassemblerLabel(tool, allObservedLabels))
-                .ToList();
-
-            return string.Join(REPORT_LIST_SEPARATOR, labels);
+            return observedLabels.Count == 0
+                ? REPORT_DISASSEMBLER_NOT_USED
+                : string.Join(REPORT_LIST_SEPARATOR, observedLabels);
         }
 
         /// <summary>
-        /// 指定ツールの表示ラベルを解決します。収集済みの "tool (version: ...)" があればそれを返し、なければツール名のみ返します。
+        /// 表示ラベルを既知ツール順（dotnet-ildasm / ildasm / ilspycmd）で並べるためのソートキーを返します。
         /// </summary>
-        private static string ResolveDisassemblerLabel(string toolName, IReadOnlyCollection<string> observedLabels)
+        private static int GetDisassemblerDisplayOrder(string label)
         {
-            var matched = observedLabels
-                .Where(label =>
-                    string.Equals(label, toolName, StringComparison.OrdinalIgnoreCase) ||
-                    label.StartsWith(toolName + " ", StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(label => label.IndexOf("(version:", StringComparison.OrdinalIgnoreCase) >= 0)
-                .ThenBy(label => label, StringComparer.OrdinalIgnoreCase)
-                .FirstOrDefault();
+            var toolName = ExtractToolName(label);
+            if (string.Equals(toolName, Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase))
+            {
+                return 0;
+            }
+            if (string.Equals(toolName, "ildasm", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+            if (string.Equals(toolName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+            return 3;
+        }
 
-            return string.IsNullOrWhiteSpace(matched) ? toolName : matched;
+        /// <summary>
+        /// 表示ラベルからツール名部分を抽出します。
+        /// </summary>
+        private static string ExtractToolName(string label)
+        {
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return string.Empty;
+            }
+
+            var versionIndex = label.IndexOf(" (version:", StringComparison.OrdinalIgnoreCase);
+            return versionIndex >= 0 ? label.Substring(0, versionIndex).Trim() : label.Trim();
         }
 
         /// <summary>

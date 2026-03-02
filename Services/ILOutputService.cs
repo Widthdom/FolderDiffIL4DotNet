@@ -61,6 +61,11 @@ namespace FolderDiffIL4DotNet.Services
         /// IL出力失敗ログ
         /// </summary>
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
+
+        /// <summary>
+        /// old/new で同一逆アセンブラに揃えられなかった場合のエラー。
+        /// </summary>
+        private const string ERROR_MISMATCHED_DISASSEMBLER = "IL comparison requires the same disassembler and version for old/new. old: '{0}', new: '{1}'.";
         #endregion
 
         #region private read only member variables
@@ -175,9 +180,9 @@ namespace FolderDiffIL4DotNet.Services
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
 
-            // それぞれのアセンブリを逆アセンブルし、IL テキストと実行コマンドを受け取る。
-            var (ilText1, commandString1) = await _dotNetDisassembleService.DisassembleAsync(file1AbsolutePath);
-            var (ilText2, commandString2) = await _dotNetDisassembleService.DisassembleAsync(file2AbsolutePath);
+            // old/new を同一逆アセンブラ（同一バージョン識別）で逆アセンブルする。
+            var (ilText1, commandString1, ilText2, commandString2) =
+                await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath);
             var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
 
             // 行単位に分割して MVID 行を除外し、純粋な IL のみを比較する。
@@ -214,11 +219,15 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return newLabel;
             }
-            if (string.IsNullOrWhiteSpace(newLabel) || string.Equals(oldLabel, newLabel, StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(newLabel))
             {
                 return oldLabel;
             }
-            return $"{oldLabel} | {newLabel}";
+            if (string.Equals(oldLabel, newLabel, StringComparison.OrdinalIgnoreCase))
+            {
+                return oldLabel;
+            }
+            throw new InvalidOperationException(string.Format(ERROR_MISMATCHED_DISASSEMBLER, oldLabel, newLabel));
         }
 
         /// <summary>

@@ -71,13 +71,13 @@ Relation to CI:
 - Writes per-bucket listings to `Reports/<report label>/diff_report.md`; paths are relative for `Unchanged`/`Modified` and absolute for `Added`/`Removed`.
 - For `ILMatch` / `ILMismatch`, the report also includes the disassembler tool and version used (including cache hits).
 - Summarizes counts per bucket in the same report.
-- The report header always lists `dotnet-ildasm`, `ildasm`, and `ilspycmd` in `IL Disassembler`.
+- The report header lists only the disassembler labels actually observed during IL comparison (or `N/A` when not used).
 - Optionally writes ignored files, unchanged files, timestamps, and warnings when at least one `MD5Mismatch` exists.
 
 ## File comparison flow
 
 1. **MD5 hash** – if hashes match, the file is `Unchanged (MD5Match)`.
-2. **IL diff** – if the file is a .NET assembly (detected via PE/CLR headers, regardless of extension), the app disassembles both versions, strips `// MVID:` lines, and compares them line by line. Matches become `Unchanged (ILMatch)`; mismatches become `Modified (ILMismatch)`.
+2. **IL diff** – if the file is a .NET assembly (detected via PE/CLR headers, regardless of extension), the app disassembles both versions with the same disassembler/version identity, strips `// MVID:` lines, and compares them line by line. Matches become `Unchanged (ILMatch)`; mismatches become `Modified (ILMismatch)`.
 3. **Text diff** – if the extension appears in `TextFileExtensions`, a line-based text diff runs. Matches are `Unchanged (TextMatch)`; mismatches are `Modified (TextMismatch)`.
 4. **Fallback** – remaining files are treated as `Modified (MD5Mismatch)`.
 
@@ -210,6 +210,7 @@ Notes:
    3. Report label (used as the subfolder name under `Reports`).
    4. Optional `--no-pause` to skip the "Press any key" prompt.
 3. The prompt is automatically skipped when the process is non-interactive (I/O redirection).
+4. On errors, `--no-pause` also skips the key prompt; the process exits with code `1` (`0` on success).
 
 Build and run example:
 

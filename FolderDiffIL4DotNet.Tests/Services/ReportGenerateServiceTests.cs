@@ -34,9 +34,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReport_HeaderAlwaysListsThreeDisassemblers()
+        public void GenerateDiffReport_HeaderListsOnlyObservedDisassemblers()
         {
-            // one observed version to verify "known version preferred, unknown tool falls back to tool name"
             FileDiffResultLists.DisassemblerToolVersions["dotnet-ildasm (version: dotnet ildasm 0.12.0)"] = 0;
 
             var oldDir = Path.Combine(_rootDir, "old");
@@ -58,7 +57,34 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("- IL Disassembler: dotnet-ildasm (version: dotnet ildasm 0.12.0), ildasm, ilspycmd", reportText);
+            Assert.Contains("- IL Disassembler: dotnet-ildasm (version: dotnet ildasm 0.12.0)", reportText);
+            Assert.DoesNotContain(", ildasm", reportText);
+            Assert.DoesNotContain(", ilspycmd", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_HeaderShowsNotUsed_WhenNoDisassemblerWasObserved()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-none");
+            var newDir = Path.Combine(_rootDir, "new-none");
+            var reportDir = Path.Combine(_rootDir, "report-none");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.Contains("- IL Disassembler: N/A", reportText);
         }
 
         [Fact]
