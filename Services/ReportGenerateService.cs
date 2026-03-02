@@ -75,9 +75,9 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_HEADER_IL_DISASSEMBLERS = "- IL Disassembler: {0}";
 
         /// <summary>
-        /// レポートヘッダ: 逆アセンブラ未使用時の表示
+        /// ildasm ツール名。
         /// </summary>
-        private const string REPORT_HEADER_IL_DISASSEMBLERS_NONE = "N/A";
+        private const string ILDASM_TOOL_NAME = "ildasm";
 
         /// <summary>
         /// レポートヘッダ: 経過時間
@@ -262,12 +262,12 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// Unchanged ファイル行（タイムスタンプあり）
         /// </summary>
-        private const string REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP = "- " + REPORT_MARKER_UNCHANGED + " {0} <u>{1}</u> `{2}`";
+        private const string REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP = "- " + REPORT_MARKER_UNCHANGED + " {0} <u>{1}</u> {2}";
 
         /// <summary>
         /// Unchanged ファイル行（タイムスタンプなし）
         /// </summary>
-        private const string REPORT_UNCHANGED_ITEM = "- " + REPORT_MARKER_UNCHANGED + " {0} `{1}`";
+        private const string REPORT_UNCHANGED_ITEM = "- " + REPORT_MARKER_UNCHANGED + " {0} {1}";
 
         /// <summary>
         /// Unchanged/タイムスタンプ（旧+新）
@@ -302,12 +302,12 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// Modified ファイル行（タイムスタンプあり）
         /// </summary>
-        private const string REPORT_MODIFIED_ITEM_WITH_TIMESTAMP = "- " + REPORT_MARKER_MODIFIED + " {0} <u>(updated_old: {1}, updated_new: {2})</u> `{3}`";
+        private const string REPORT_MODIFIED_ITEM_WITH_TIMESTAMP = "- " + REPORT_MARKER_MODIFIED + " {0} <u>(updated_old: {1}, updated_new: {2})</u> {3}";
 
         /// <summary>
         /// Modified ファイル行（タイムスタンプなし）
         /// </summary>
-        private const string REPORT_MODIFIED_ITEM = "- " + REPORT_MARKER_MODIFIED + " {0} `{1}`";
+        private const string REPORT_MODIFIED_ITEM = "- " + REPORT_MARKER_MODIFIED + " {0} {1}";
 
         /// <summary>
         /// レポートフッタ: Summary セクション
@@ -387,19 +387,7 @@ namespace FolderDiffIL4DotNet.Services
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_NEW, newFolderAbsolutePath));
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_IGNORED_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)));
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_TEXT_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.TextFileExtensions)));
-                    var disassemblerLabels = FileDiffResultLists.DisassemblerToolVersions.Keys.OrderBy(label => label, StringComparer.OrdinalIgnoreCase).ToList();
-                    var disassemblerText = REPORT_HEADER_IL_DISASSEMBLERS_NONE;
-                    if (disassemblerLabels.Count > 0)
-                    {
-                        disassemblerText = string.Join(REPORT_LIST_SEPARATOR, disassemblerLabels);
-                    }
-                    else if (FileDiffResultLists.DisassemblerToolVersionsFromCache.Count > 0)
-                    {
-                        var cachedLabels = FileDiffResultLists.DisassemblerToolVersionsFromCache.Keys
-                            .OrderBy(label => label, StringComparer.OrdinalIgnoreCase)
-                            .ToList();
-                        disassemblerText = string.Join(REPORT_LIST_SEPARATOR, cachedLabels) + " (cache)";
-                    }
+                    var disassemblerText = BuildDisassemblerHeaderText();
                     streamWriter.WriteLine(string.Format(REPORT_HEADER_IL_DISASSEMBLERS, disassemblerText));
                     if (!string.IsNullOrWhiteSpace(elapsedTimeString))
                     {
@@ -469,6 +457,7 @@ namespace FolderDiffIL4DotNet.Services
                         foreach (var fileRelativePath in FileDiffResultLists.UnchangedFilesRelativePath)
                         {
                             var diffDetail = FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                            var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
                             if (config.ShouldOutputFileTimestamps)
                             {
                                 string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
@@ -476,11 +465,11 @@ namespace FolderDiffIL4DotNet.Services
                                 string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
                                     ? string.Format(REPORT_UNCHANGED_TIMESTAMP_BOTH, oldFileTimestamp, newFileTimestamp)
                                     : string.Format(REPORT_UNCHANGED_TIMESTAMP_NEW, newFileTimestamp);
-                                streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP, fileRelativePath, updateInfo, diffDetail));
+                                streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP, fileRelativePath, updateInfo, diffDetailDisplay));
                             }
                             else
                             {
-                                streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM, fileRelativePath, diffDetail));
+                                streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM, fileRelativePath, diffDetailDisplay));
                             }
                         }
                     }
@@ -518,15 +507,16 @@ namespace FolderDiffIL4DotNet.Services
                     foreach (var fileRelativePath in FileDiffResultLists.ModifiedFilesRelativePath)
                     {
                         var diffDetail = FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                        var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
                         if (config.ShouldOutputFileTimestamps)
                         {
                             string oldTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
                             string newTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
-                            streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM_WITH_TIMESTAMP, fileRelativePath, oldTimestamp, newTimestamp, diffDetail));
+                            streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM_WITH_TIMESTAMP, fileRelativePath, oldTimestamp, newTimestamp, diffDetailDisplay));
                         }
                         else
                         {
-                            streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM, fileRelativePath, diffDetail));
+                            streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM, fileRelativePath, diffDetailDisplay));
                         }
                     }
 
@@ -567,6 +557,55 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 spinner.Complete(reportGenerated ? LOG_REPORT_GENERATION_COMPLETED : null);
             }
+        }
+
+        /// <summary>
+        /// レポート冒頭に記載する逆アセンブラ一覧を組み立てます。
+        /// 既知の 3 ツール（dotnet-ildasm / ildasm / ilspycmd）を必ず表示し、取得済みバージョンがあれば優先して付与します。
+        /// </summary>
+        private static string BuildDisassemblerHeaderText()
+        {
+            var allObservedLabels = FileDiffResultLists.DisassemblerToolVersions.Keys
+                .Concat(FileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var orderedTools = new[] { Constants.DOTNET_ILDASM, ILDASM_TOOL_NAME, Constants.ILSPY_CMD };
+            var labels = orderedTools
+                .Select(tool => ResolveDisassemblerLabel(tool, allObservedLabels))
+                .ToList();
+
+            return string.Join(REPORT_LIST_SEPARATOR, labels);
+        }
+
+        /// <summary>
+        /// 指定ツールの表示ラベルを解決します。収集済みの "tool (version: ...)" があればそれを返し、なければツール名のみ返します。
+        /// </summary>
+        private static string ResolveDisassemblerLabel(string toolName, IReadOnlyCollection<string> observedLabels)
+        {
+            var matched = observedLabels
+                .Where(label =>
+                    string.Equals(label, toolName, StringComparison.OrdinalIgnoreCase) ||
+                    label.StartsWith(toolName + " ", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(label => label.IndexOf("(version:", StringComparison.OrdinalIgnoreCase) >= 0)
+                .ThenBy(label => label, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+
+            return string.IsNullOrWhiteSpace(matched) ? toolName : matched;
+        }
+
+        /// <summary>
+        /// 判定根拠表示を組み立てます。IL 判定の場合は逆アセンブラ情報を追記します。
+        /// </summary>
+        private static string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail)
+        {
+            if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch || diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&
+                FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
+                !string.IsNullOrWhiteSpace(label))
+            {
+                return $"`{diffDetail}` `{label}`";
+            }
+            return $"`{diffDetail}`";
         }
     }
 }

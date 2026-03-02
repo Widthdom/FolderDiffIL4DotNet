@@ -48,6 +48,16 @@ namespace FolderDiffIL4DotNet.Services
         private const string MVID_PREFIX = "// MVID:";
 
         /// <summary>
+        /// ildasm 実行ファイル名。
+        /// </summary>
+        private const string ILDASM_EXE = "ildasm";
+
+        /// <summary>
+        /// バージョンラベル接頭辞。
+        /// </summary>
+        private const string VERSION_LABEL_PREFIX = " (version: ";
+
+        /// <summary>
         /// IL出力失敗ログ
         /// </summary>
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
@@ -157,7 +167,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        public async Task<bool> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+        public async Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
         {
             // IL 比較時はビルド毎に異なる MVID 行を除外するためのフィルタをローカルに定義。
             static bool IsNotMvidLine(string line) => line is null || !line.StartsWith(MVID_PREFIX, StringComparison.Ordinal);
@@ -168,6 +178,7 @@ namespace FolderDiffIL4DotNet.Services
             // それぞれのアセンブリを逆アセンブルし、IL テキストと実行コマンドを受け取る。
             var (ilText1, commandString1) = await _dotNetDisassembleService.DisassembleAsync(file1AbsolutePath);
             var (ilText2, commandString2) = await _dotNetDisassembleService.DisassembleAsync(file2AbsolutePath);
+            var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
 
             // 行単位に分割して MVID 行を除外し、純粋な IL のみを比較する。
             var il1Lines = ilText1.Split('\n').ToList();
@@ -189,7 +200,87 @@ namespace FolderDiffIL4DotNet.Services
                 LoggerService.LogMessage(LoggerService.LogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
                 throw;
             }
-            return areILsEqual;
+            return (areILsEqual, disassemblerLabel);
+        }
+
+        /// <summary>
+        /// old/new で使用された逆アセンブラ表示ラベルを比較用に 1 つへまとめます。
+        /// </summary>
+        private static string BuildComparisonDisassemblerLabel(string commandStringOld, string commandStringNew)
+        {
+            var oldLabel = BuildToolAndVersionLabel(commandStringOld);
+            var newLabel = BuildToolAndVersionLabel(commandStringNew);
+            if (string.IsNullOrWhiteSpace(oldLabel))
+            {
+                return newLabel;
+            }
+            if (string.IsNullOrWhiteSpace(newLabel) || string.Equals(oldLabel, newLabel, StringComparison.OrdinalIgnoreCase))
+            {
+                return oldLabel;
+            }
+            return $"{oldLabel} | {newLabel}";
+        }
+
+        /// <summary>
+        /// 実行コマンド文字列から「ツール名 (version: x.y.z)」形式を抽出します。
+        /// </summary>
+        private static string BuildToolAndVersionLabel(string commandString)
+        {
+            if (string.IsNullOrWhiteSpace(commandString))
+            {
+                return null;
+            }
+
+            var tokens = ProcessHelper.TokenizeCommand(commandString);
+            if (tokens.Count == 0)
+            {
+                return null;
+            }
+
+            string toolName;
+            if (string.Equals(tokens[0], Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase) &&
+                tokens.Count >= 2 &&
+                string.Equals(tokens[1], Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase))
+            {
+                toolName = Constants.DOTNET_ILDASM;
+            }
+            else
+            {
+                toolName = Path.GetFileName(tokens[0]);
+            }
+
+            if (string.IsNullOrWhiteSpace(toolName))
+            {
+                return null;
+            }
+            if (string.Equals(toolName, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
+            {
+                toolName = Constants.DOTNET_ILDASM;
+            }
+
+            var versionStart = commandString.IndexOf(VERSION_LABEL_PREFIX, StringComparison.Ordinal);
+            if (versionStart < 0)
+            {
+                return toolName;
+            }
+
+            var versionEnd = commandString.IndexOf(')', versionStart + VERSION_LABEL_PREFIX.Length);
+            if (versionEnd <= versionStart)
+            {
+                return toolName;
+            }
+
+            var version = commandString.Substring(versionStart + VERSION_LABEL_PREFIX.Length, versionEnd - (versionStart + VERSION_LABEL_PREFIX.Length)).Trim();
+            if (string.IsNullOrWhiteSpace(version))
+            {
+                return toolName;
+            }
+
+            if (string.Equals(toolName, ILDASM_EXE, StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{ILDASM_EXE} (version: {version})";
+            }
+            return $"{toolName} (version: {version})";
         }
     }
 }

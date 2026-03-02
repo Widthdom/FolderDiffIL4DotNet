@@ -26,6 +26,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             FileDiffResultLists.RemovedFilesAbsolutePath = new System.Collections.Generic.List<string>();
             FileDiffResultLists.ModifiedFilesRelativePath = new System.Collections.Generic.List<string>();
             FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
+            FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.Clear();
             FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
             FileDiffResultLists.DisassemblerToolVersions.Clear();
             FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
@@ -59,6 +60,24 @@ namespace FolderDiffIL4DotNet.Tests.Models
             FileDiffResultLists.RecordDiffDetail("c.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             Assert.Equal(3, FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Count);
+        }
+
+        [Fact]
+        public void RecordDiffDetail_IlResult_WithDisassemblerLabel_Stored()
+        {
+            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            Assert.True(FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.ContainsKey("a.dll"));
+            Assert.Equal("dotnet-ildasm (version: 0.12.0)", FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary["a.dll"]);
+        }
+
+        [Fact]
+        public void RecordDiffDetail_NonIlResult_ClearsExistingDisassemblerLabel()
+        {
+            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
+            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+
+            Assert.False(FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.ContainsKey("a.dll"));
         }
 
         #endregion

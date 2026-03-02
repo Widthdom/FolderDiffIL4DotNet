@@ -8,7 +8,7 @@ namespace FolderDiffIL4DotNet.Services
     /// <summary>
     /// コンソールに進捗状況を表示するクラス
     /// </summary>
-    public sealed class ProgressReportService
+    public sealed class ProgressReportService : IDisposable
     {
         #region constants
         /// <summary>
@@ -116,6 +116,11 @@ namespace FolderDiffIL4DotNet.Services
         /// タイマーの初期化済みフラグ。
         /// </summary>
         private bool _keepAliveTimerStarted;
+
+        /// <summary>
+        /// 破棄済みフラグ。
+        /// </summary>
+        private bool _disposed;
         #endregion
 
         /// <summary>
@@ -131,6 +136,10 @@ namespace FolderDiffIL4DotNet.Services
         /// </exception>
         public void ReportProgress(double percentage)
         {
+            if (_disposed)
+            {
+                return;
+            }
             if (percentage < 0 || percentage > 100)
             {
                 throw new ArgumentOutOfRangeException(nameof(percentage), string.Format(ERROR_PROGRESS_OUT_OF_RANGE, percentage));
@@ -173,6 +182,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="label">ラベル文字列（null/空白なら未設定）。</param>
         public void SetLabel(string label)
         {
+            if (_disposed)
+            {
+                return;
+            }
             lock (_lock)
             {
                 _labelPrefix = string.IsNullOrWhiteSpace(label) ? null : label.Trim();
@@ -204,7 +217,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private void EnsureKeepAliveTimerStarted()
         {
-            if (_keepAliveTimerStarted || Console.IsOutputRedirected)
+            if (_keepAliveTimerStarted || Console.IsOutputRedirected || _disposed)
             {
                 return;
             }
@@ -214,6 +227,10 @@ namespace FolderDiffIL4DotNet.Services
             {
                 lock (_lock)
                 {
+                    if (_disposed)
+                    {
+                        return;
+                    }
                     if (_lastFormattedPercentage == null || _lastPercentage >= 100.0)
                     {
                         return;
@@ -331,6 +348,34 @@ namespace FolderDiffIL4DotNet.Services
             }
             _lastConsoleWriteUtc = DateTime.UtcNow;
             ConsoleRenderCoordinator.MarkProgressRendered();
+        }
+
+        /// <summary>
+        /// 進捗表示のタイマーを停止して資源を解放します。
+        /// 例外終了時に呼び出すことで、進捗スピナーが残り続ける状態を防ぎます。
+        /// </summary>
+        public void Dispose()
+        {
+            lock (_lock)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+                _disposed = true;
+                _keepAliveTimer?.Dispose();
+                _keepAliveTimer = null;
+
+                if (!Console.IsOutputRedirected && _lastRenderLength > 0)
+                {
+                    lock (ConsoleRenderCoordinator.RenderSyncRoot)
+                    {
+                        Console.WriteLine();
+                        Console.Out.Flush();
+                    }
+                    _lastRenderLength = 0;
+                }
+            }
         }
     }
 }

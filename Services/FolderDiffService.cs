@@ -521,6 +521,7 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
             FileDiffResultLists.ModifiedFilesRelativePath.Clear();
             FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
+            FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.Clear();
             FileDiffResultLists.DisassemblerToolVersions.Clear();
             FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
         }

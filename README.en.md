@@ -11,7 +11,8 @@ This repository hosts a .NET console application that compares two folders, clas
 - IL disassembler (the app automatically probes candidates in this order)
   - Preferred: `dotnet-ildasm` or `dotnet ildasm`
   - Fallback: `ilspycmd`
-- The app **locks to a single disassembler per run**. The first disassembly is executed without using cache, and the tool that succeeds is fixed for the rest of the run (only that tool's cache is used afterward). No mixing occurs.
+- The app tries disassembler candidates **per file** in order. Tools that fail repeatedly are temporarily blacklisted and skipped.
+- IL cache keys are built from `file MD5 + disassembler identity` (normally tool/version). If version lookup fails, the app falls back to a tool-binary fingerprint so caches from old/new tool builds do not get mixed.
 
 Installation example:
 
@@ -65,10 +66,12 @@ Relation to CI:
 ## What the app does
 
 - Recursively compares the old folder (CLI arg #1) and the new folder (CLI arg #2).
-- Tracks each file as `MD5Match`, `MD5Mismatch`, `ILMatch`, `ILMismatch`, `TextMatch`, or `TextMismatch`.
+- Tracks each file as `MD5Match`, `MD5Mismatch`, `ILMatch`, `ILMismatch`, `TextMatch`, or `TextMismatch` (for IL results, the used disassembler/version is also recorded).
 - Groups files into `Unchanged`, `Added`, `Removed`, and `Modified` buckets.
 - Writes per-bucket listings to `Reports/<report label>/diff_report.md`; paths are relative for `Unchanged`/`Modified` and absolute for `Added`/`Removed`.
+- For `ILMatch` / `ILMismatch`, the report also includes the disassembler tool and version used (including cache hits).
 - Summarizes counts per bucket in the same report.
+- The report header always lists `dotnet-ildasm`, `ildasm`, and `ilspycmd` in `IL Disassembler`.
 - Optionally writes ignored files, unchanged files, timestamps, and warnings when at least one `MD5Mismatch` exists.
 
 ## File comparison flow

@@ -136,6 +136,16 @@ namespace FolderDiffIL4DotNet.Services
         /// バージョン付与ラベルの接頭辞。
         /// </summary>
         private const string VERSION_LABEL_PREFIX = " (version: ";
+
+        /// <summary>
+        /// バージョン取得失敗時の識別子プレフィックス。
+        /// </summary>
+        private const string UNKNOWN_VERSION_FINGERPRINT_PREFIX = "unavailable; fingerprint: ";
+
+        /// <summary>
+        /// ディスクキャッシュ分離のための実行単位フォールバック識別子プレフィックス。
+        /// </summary>
+        private const string RUN_FINGERPRINT_PREFIX = "run:";
         #endregion
 
         #region private read only member variables
@@ -160,14 +170,10 @@ namespace FolderDiffIL4DotNet.Services
         private static readonly ConcurrentDictionary<string, (int FailCount, DateTime LastFailUtc)> _disassembleFailCountAndTime = new();
 
         /// <summary>
-        /// 実行中に固定された逆アセンブラコマンド（混在防止）。
+        /// 実行単位フォールバック識別子。ツール実体を解決できない場合でも前回実行のキャッシュと混ざらないようにする。
         /// </summary>
-        private string _fixedDisassembleCommand;
+        private static readonly string _runFingerprint = Guid.NewGuid().ToString("N");
 
-        /// <summary>
-        /// 逆アセンブラの初回選択を直列化するためのロック。
-        /// </summary>
-        private readonly SemaphoreSlim _disassemblerSelectionLock = new(1, 1);
         #endregion
 
         #region private writable member variables
@@ -218,98 +224,42 @@ namespace FolderDiffIL4DotNet.Services
         /// <returns>逆アセンブル済み IL テキストと、人間が読めるコマンド表示（バージョン付き）をタプルで返します。</returns>
         public async Task<(string ilText, string commandString)> DisassembleAsync(string dotNetAssemblyfileAbsolutePath)
         {
-            var fixedCommand = Volatile.Read(ref _fixedDisassembleCommand);
-            if (!string.IsNullOrWhiteSpace(fixedCommand))
-            {
-                return await DisassembleWithFixedCommandAsync(fixedCommand, dotNetAssemblyfileAbsolutePath);
-            }
-
-            await _disassemblerSelectionLock.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                fixedCommand = _fixedDisassembleCommand;
-                if (!string.IsNullOrWhiteSpace(fixedCommand))
-                {
-                    return await DisassembleWithFixedCommandAsync(fixedCommand, dotNetAssemblyfileAbsolutePath);
-                }
-
-                Exception lastError = null;
-                foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
-                {
-                    // 直近で連続失敗したコマンドは一時的にブラックリスト化しているためスキップ。
-                    if (IsDisassemblerBlacklisted(candidateDisassembleCommand))
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        // キャッシュ確認とプロセス起動を内包した TryDisassembleAsync を実行。
-                        var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: false);
-                        if (success)
-                        {
-                            Volatile.Write(ref _fixedDisassembleCommand, candidateDisassembleCommand);
-                            return (ilText, disassembleCommandAndItsVersionWithArguments);
-                        }
-                        if (error != null)
-                        {
-                            lastError = error;
-                        }
-                    }
-                    catch (System.ComponentModel.Win32Exception ex)
-                    {
-                        lastError = ex;
-                        LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
-                        RegisterDisassembleFailure(candidateDisassembleCommand);
-                        continue;
-                    }
-                    catch (Exception ex)
-                    {
-                        lastError = ex;
-                        LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
-                        RegisterDisassembleFailure(candidateDisassembleCommand);
-                        continue;
-                    }
-                }
-
-                var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
-                throw new InvalidOperationException(string.Format(ERROR_EXECUTE_ILDASM, dotNetAssemblyfileAbsolutePath, GUIDANCE_INSTALL_DISASSEMBLER, innerMsg), lastError);
-            }
-            finally
-            {
-                _disassemblerSelectionLock.Release();
-            }
-        }
-
-        /// <summary>
-        /// 固定済みの逆アセンブラのみで実行します（混在防止）。
-        /// </summary>
-        private async Task<(string ilText, string commandString)> DisassembleWithFixedCommandAsync(string disassembleCommand, string dotNetAssemblyfileAbsolutePath)
-        {
             Exception lastError = null;
-            try
+            foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
             {
-                var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(disassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: true);
-                if (success)
+                // 直近で連続失敗したコマンドは一時的にブラックリスト化しているためスキップ。
+                if (IsDisassemblerBlacklisted(candidateDisassembleCommand))
                 {
-                    return (ilText, disassembleCommandAndItsVersionWithArguments);
+                    continue;
                 }
-                if (error != null)
+
+                try
                 {
-                    lastError = error;
+                    // キャッシュ確認とプロセス起動を内包した TryDisassembleAsync を実行。
+                    var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: true);
+                    if (success)
+                    {
+                        return (ilText, disassembleCommandAndItsVersionWithArguments);
+                    }
+                    if (error != null)
+                    {
+                        lastError = error;
+                    }
                 }
-            }
-            catch (System.ComponentModel.Win32Exception ex)
-            {
-                lastError = ex;
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
-                RegisterDisassembleFailure(disassembleCommand);
-            }
-            catch (Exception ex)
-            {
-                lastError = ex;
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
-                RegisterDisassembleFailure(disassembleCommand);
+                catch (System.ComponentModel.Win32Exception ex)
+                {
+                    lastError = ex;
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    RegisterDisassembleFailure(candidateDisassembleCommand);
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    RegisterDisassembleFailure(candidateDisassembleCommand);
+                    continue;
+                }
             }
 
             var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
@@ -730,8 +680,130 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch
             {
-                return disassembleCommandWithArguments;
+                var fingerprint = BuildToolFingerprint(disassembleCommandWithArguments);
+                return $"{disassembleCommandWithArguments} (version: {UNKNOWN_VERSION_FINGERPRINT_PREFIX}{fingerprint})";
             }
+        }
+
+        /// <summary>
+        /// コマンド文字列から逆アセンブラ実体のフィンガープリントを構築します。
+        /// 取得できる実体がない場合は実行単位識別子を返します。
+        /// </summary>
+        private static string BuildToolFingerprint(string disassembleCommandWithArguments)
+        {
+            var tokens = ProcessHelper.TokenizeCommand(disassembleCommandWithArguments);
+            if (tokens.Count == 0)
+            {
+                return RUN_FINGERPRINT_PREFIX + _runFingerprint;
+            }
+
+            var executableCandidates = new List<string>();
+            var head = Path.GetFileName(tokens[0]) ?? tokens[0];
+            if (string.Equals(head, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase) &&
+                tokens.Count >= 2 &&
+                string.Equals(tokens[1], ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
+            {
+                executableCandidates.Add(tokens[0]);
+                executableCandidates.Add(Constants.DOTNET_ILDASM);
+                executableCandidates.Add(Path.Combine(UserDotnetToolsDirectory, Constants.DOTNET_ILDASM));
+            }
+            else
+            {
+                executableCandidates.Add(tokens[0]);
+            }
+
+            var fingerprints = new List<string>();
+            foreach (var executableCandidate in executableCandidates.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                var resolved = ResolveExecutablePath(executableCandidate);
+                if (string.IsNullOrWhiteSpace(resolved) || !File.Exists(resolved))
+                {
+                    continue;
+                }
+
+                var fileInfo = new FileInfo(resolved);
+                fingerprints.Add($"{Path.GetFileName(resolved)}@{fileInfo.Length}:{fileInfo.LastWriteTimeUtc.Ticks}");
+            }
+
+            if (fingerprints.Count == 0)
+            {
+                return RUN_FINGERPRINT_PREFIX + _runFingerprint;
+            }
+
+            return string.Join("|", fingerprints.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// コマンド名から実行ファイルの絶対パスを解決します。解決できない場合は null。
+        /// </summary>
+        private static string ResolveExecutablePath(string command)
+        {
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                return null;
+            }
+
+            if (Path.IsPathRooted(command))
+            {
+                return File.Exists(command) ? Path.GetFullPath(command) : null;
+            }
+
+            if (command.Contains(Path.DirectorySeparatorChar) || command.Contains(Path.AltDirectorySeparatorChar))
+            {
+                var fullPath = Path.GetFullPath(command);
+                return File.Exists(fullPath) ? fullPath : null;
+            }
+
+            var pathVariable = Environment.GetEnvironmentVariable("PATH");
+            if (string.IsNullOrWhiteSpace(pathVariable))
+            {
+                return null;
+            }
+
+            foreach (var pathEntry in pathVariable.Split(Path.PathSeparator))
+            {
+                if (string.IsNullOrWhiteSpace(pathEntry))
+                {
+                    continue;
+                }
+                foreach (var candidateName in EnumerateExecutableNames(command))
+                {
+                    var candidateAbsolutePath = Path.Combine(pathEntry, candidateName);
+                    if (File.Exists(candidateAbsolutePath))
+                    {
+                        return Path.GetFullPath(candidateAbsolutePath);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// OS に応じて実行可能ファイル名候補を列挙します。
+        /// </summary>
+        private static IEnumerable<string> EnumerateExecutableNames(string command)
+        {
+            var hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                command
+            };
+            if (OperatingSystem.IsWindows())
+            {
+                if (!command.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    hashSet.Add(command + ".exe");
+                }
+                if (!command.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
+                {
+                    hashSet.Add(command + ".cmd");
+                }
+                if (!command.EndsWith(".bat", StringComparison.OrdinalIgnoreCase))
+                {
+                    hashSet.Add(command + ".bat");
+                }
+            }
+            return hashSet;
         }
 
         /// <summary>

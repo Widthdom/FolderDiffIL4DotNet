@@ -78,6 +78,11 @@ namespace FolderDiffIL4DotNet.Models
         public static ConcurrentDictionary<string, DiffDetailResult> FileRelativePathToDiffDetailDictionary { get; } = new ConcurrentDictionary<string, DiffDetailResult>(StringComparer.Ordinal);
 
         /// <summary>
+        /// IL 比較を実施したファイルごとの逆アセンブラ表示ラベル（例: "dotnet-ildasm (version: 0.12.0)"）。
+        /// </summary>
+        public static ConcurrentDictionary<string, string> FileRelativePathToIlDisassemblerLabelDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+
+        /// <summary>
         /// 1 件以上のファイルが <see cref="DiffDetailResult.MD5Mismatch"/> と判定されているかどうか。
         /// </summary>
         public static bool HasAnyMd5Mismatch => FileRelativePathToDiffDetailDictionary.Values.Any(result => result == DiffDetailResult.MD5Mismatch);
@@ -103,12 +108,28 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         /// <param name="fileRelativePath">ファイルの相対パス</param>
         /// <param name="diffDetailResult">ファイルごとの一致/不一致の判定根拠</param>
+        /// <param name="ilDisassemblerLabel">IL 比較時に使用した逆アセンブラ表示ラベル（省略可）。</param>
         /// <exception cref="ArgumentNullException">fileRelativePath または diffDetailResult が null の場合にスローされます。</exception>
         /// <exception cref="ArgumentException">fileRelativePath が既に辞書に存在する場合にスローされます。</exception>
-        public static void RecordDiffDetail(string fileRelativePath, DiffDetailResult diffDetailResult)
+        public static void RecordDiffDetail(string fileRelativePath, DiffDetailResult diffDetailResult, string ilDisassemblerLabel = null)
         {
             // 既に存在する場合は上書き、存在しなければ追加 (スレッドセーフ)
             FileRelativePathToDiffDetailDictionary[fileRelativePath] = diffDetailResult;
+            if (diffDetailResult == DiffDetailResult.ILMatch || diffDetailResult == DiffDetailResult.ILMismatch)
+            {
+                if (!string.IsNullOrWhiteSpace(ilDisassemblerLabel))
+                {
+                    FileRelativePathToIlDisassemblerLabelDictionary[fileRelativePath] = ilDisassemblerLabel;
+                }
+                else
+                {
+                    FileRelativePathToIlDisassemblerLabelDictionary.TryRemove(fileRelativePath, out _);
+                }
+            }
+            else
+            {
+                FileRelativePathToIlDisassemblerLabelDictionary.TryRemove(fileRelativePath, out _);
+            }
         }
 
         /// <summary>

@@ -262,10 +262,11 @@ namespace FolderDiffIL4DotNet
 
                 #region フォルダ差分比較処理の実行
                 {
+                    using var progressReporter = new ProgressReportService();
                     // 処理時間計測開始
                     var stopwatch = Stopwatch.StartNew();
                     // 比較処理
-                    await new FolderDiffService(_config, new ProgressReportService(), _oldFolderAbsolutePath, _newFolderAbsolutePath, _reportsFolderAbsolutePath).ExecuteFolderDiffAsync();
+                    await new FolderDiffService(_config, progressReporter, _oldFolderAbsolutePath, _newFolderAbsolutePath, _reportsFolderAbsolutePath).ExecuteFolderDiffAsync();
                     // 処理時間計測終了
                     stopwatch.Stop();
                     // フォルダ差分比較処理時間のコンソール出力

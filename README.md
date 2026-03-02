@@ -11,7 +11,8 @@
 - IL 逆アセンブラ（自動で候補順に試行します）
 	- 優先: `dotnet-ildasm` または `dotnet ildasm`
 	- 代替: `ilspycmd`
-- 逆アセンブラは**実行中に1つに固定**します。最初の逆アセンブルはキャッシュを使わず実行し、成功したツールをその実行の間ずっと使い続けます（キャッシュもそのツールのものだけを使用）。混在しません。
+- 逆アセンブラは**ファイルごとに候補順で試行**します。連続失敗したツールは一定時間ブラックリスト化され、以後はスキップされます。
+- IL キャッシュキーは「対象ファイルの MD5 + 逆アセンブラ識別子（通常はツール名/バージョン）」で管理します。バージョン取得失敗時はツール実体のフィンガープリントを識別子に使い、旧/新ツールのキャッシュ混在を防ぎます。
 
 インストール例:
 ```bash
@@ -70,18 +71,20 @@ CI との関係:
 - ファイルごとに一致/不一致及びその判定根拠（以下）を記録
 	- MD5Match: MD5ハッシュが一致
     - MD5Mismatch: MD5ハッシュが不一致
-    - ILMatch: IL（中間言語）ベースで一致（ビルド固有情報の差異は無視）
-    - ILMismatch: IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視）
+    - ILMatch: IL（中間言語）ベースで一致（ビルド固有情報の差異は無視、使用した逆アセンブラ名/バージョンも記録）
+    - ILMismatch: IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視、使用した逆アセンブラ名/バージョンも記録）
     - TextMatch: テキストベースで一致
     - TextMismatch: テキストベースで不一致
 - 比較結果区分ごと（Unchanged/Added/Removed/Modified）にファイルを分類
 - 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時［`config.json`のShouldOutputFileTimestampsが `true` の場合］、判定根拠）
     - Unchanged/Modified は相対パスで記載されます。
     - Added/Removed は絶対パスで記載されます。
+    - `ILMatch` / `ILMismatch` には、逆アセンブルに使用したツール名/バージョンを併記します（キャッシュ利用時を含む）。
 - 比較結果区分ごとのファイル数を集計し`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力
     - 比較結果区分Unchangedのファイル一覧は、`config.json`のShouldIncludeUnchangedFilesが `true` の場合のみ出力されます。
     - IgnoredExtensions対象のファイル一覧は、`config.json`のShouldIncludeIgnoredFilesが `true` の場合に `## [ x ] Ignored Files` として Unchanged の直前に出力されます。
     - `MD5Mismatch` が 1 件以上存在する場合は、標準出力と `diff_report.md` の Summary 直下に警告を表示し、MD5 ハッシュ比較しか行えず、かつ不一致と判定されたファイルがある旨を明確に示します。
+    - レポート冒頭の `IL Disassembler` には `dotnet-ildasm` / `ildasm` / `ilspycmd` を常に出力します。
 
 ## ファイル比較フロー
 

@@ -105,8 +105,11 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     try
                     {
-                        bool areDotNetAssembliesEqual = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText);
-                        FileDiffResultLists.RecordDiffDetail(fileRelativePath, areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch);
+                        var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText);
+                        FileDiffResultLists.RecordDiffDetail(
+                            fileRelativePath,
+                            areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch,
+                            disassemblerLabel);
                         return areDotNetAssembliesEqual;
                     }
                     catch (InvalidOperationException ex)
