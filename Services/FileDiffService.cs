@@ -100,7 +100,7 @@ namespace FolderDiffIL4DotNet.Services
                     return true;
                 }
 
-                // 2) .NET アセンブリなら IL: IL 比較は MVID 行の除外などアセンブリ固有処理を伴うため別サービスに委譲。
+                // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
                 if (DotNetDetector.IsDotNetExecutable(file1AbsolutePath))
                 {
                     try

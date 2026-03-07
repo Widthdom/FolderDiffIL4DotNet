@@ -8,7 +8,7 @@ using FolderDiffIL4DotNet.Utils;
 namespace FolderDiffIL4DotNet.Services.ILOutput
 {
     /// <summary>
-    /// *_IL.txt (old/new) の生成を担当するサービス。MVID 行を除外後に保存し、読み取り専用属性を付与する。
+    /// *_IL.txt (old/new) の生成を担当するサービス。比較時に除外した行を除いた内容を保存し、読み取り専用属性を付与する。
     /// </summary>
     public sealed class ILTextOutputService
     {
@@ -45,7 +45,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         }
 
         /// <summary>
-        /// old/new 両側 IL 全文テキストを *_IL.txt に出力 (MVID 除外後) し読み取り専用化。
+        /// old/new 両側 IL 全文テキストを *_IL.txt に出力（比較時の除外行を適用後）し読み取り専用化。
         /// </summary>
         /// <exception cref="Exception">IL テキストの書き出しに失敗した場合。</exception>
         public async Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)

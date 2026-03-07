@@ -1,6 +1,6 @@
 # FolderDiffIL4DotNet
 
-2つのフォルダの差分をレポート出力するコンソールアプリケーションです。.NET アセンブリに関してはビルド固有情報（例: MVID）が存在する場合はこれを除外して IL 比較するため、ビルド日時が異なっていても実質同じ挙動であれば同一と判定します。
+2つのフォルダの差分をレポート出力するコンソールアプリケーションです。.NET アセンブリに関してはビルド固有情報（例: MVID）が存在する場合はこれを除外して IL 比較するため、ビルド日時が異なっていても実質同じ挙動であれば同一と判定します。加えて、設定により「指定文字列を含む行」を IL 比較時に無視できます。
 
 > Need this document in English? See [README.en.md](README.en.md).
 
@@ -88,6 +88,7 @@ CI との関係:
     - IgnoredExtensions対象のファイル一覧は、`config.json`のShouldIncludeIgnoredFilesが `true` の場合に `## [ x ] Ignored Files` として Unchanged の直前に出力されます。
     - `MD5Mismatch` が 1 件以上存在する場合は、標準出力と `diff_report.md` の Summary 直下に警告を表示し、MD5 ハッシュ比較しか行えず、かつ不一致と判定されたファイルがある旨を明確に示します。
     - レポート冒頭の `IL Disassembler` には、実際に IL 比較で使用された逆アセンブラ（ツール名/バージョン）のみを出力します（未使用時は `N/A`）。
+    - `ShouldIgnoreILLinesContainingConfiguredStrings` が `true` の場合、レポート冒頭に「`ILIgnoreLineContainingStrings` のいずれかを含む行を無視している」旨を出力します。
 
 ## ファイル比較フロー
 
@@ -97,7 +98,8 @@ CI との関係:
 2) .NET アセンブリであれば（拡張子に依存せず、PE/CLR ヘッダで判定）IL に逆アセンブルして比較します。
 - .NET アセンブリの判定は PE32（32bit）とPE32+（64bit）の両方に対応し、DnSpyなどの逆アセンブラで処理可能な全ての.NETファイルを正しく検出します（VB.NET、C#、F#などの言語に関係なく、CLRランタイムヘッダが存在するファイルを判定）
 - IL 比較時は old/new を同一逆アセンブラ（同一バージョン識別）で逆アセンブルします。異なるツール/バージョンの組み合わせ比較は行いません。
-- 行単位の比較（IL出力中の「`// MVID:`」で始まる行があった場合はこれを無視します。）
+- 行単位の比較（IL出力中の「`// MVID:`」で始まる行は常に無視します。）
+	- `config.json` の `ShouldIgnoreILLinesContainingConfiguredStrings` が `true` の場合、`ILIgnoreLineContainingStrings` のいずれかの文字列を「含む」行も無視します（前方一致ではなく部分一致）。
 	- ビルド日時などビルド固有情報の差異を無視して比較することで、実質同じ挙動のアセンブリはビルド日時が異なっていても同一と判定できます。
 	- 逆アセンブルに`dotnet-ildasm`を使用した場合、IL 先頭付近に「// MVID: {GUID}」が出力されることが多い一方、`ilspycmd`を使用した場合は出力されません。
 - 一致ならばUnchanged, ILMatch、不一致ならばModified, ILMismatchと判定し次のファイル比較へ
@@ -192,6 +194,8 @@ CI との関係:
 	"ShouldIncludeUnchangedFiles": true,
 	"ShouldIncludeIgnoredFiles": true,
 	"ShouldOutputILText": true,
+	"ShouldIgnoreILLinesContainingConfiguredStrings": false,
+	"ILIgnoreLineContainingStrings": [],
 	"ShouldOutputFileTimestamps": true,
 	"MaxParallelism": 0,
 	"EnableILCache": true,
@@ -212,6 +216,8 @@ CI との関係:
 | ShouldIncludeUnchangedFiles | `Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にUnchangedのファイル一覧を含めるか否か。 |
 | ShouldIncludeIgnoredFiles | IgnoredExtensions に該当して比較対象から除外されたファイルを `diff_report.md` の `## [ x ] Ignored Files` セクション（Unchanged の直前）に出力するか否か。 |
 | ShouldOutputILText | `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old, new`にIL全文を出力するか否か。 |
+| ShouldIgnoreILLinesContainingConfiguredStrings | IL 比較時に、`ILIgnoreLineContainingStrings` のいずれかを含む行を無視するか否か。 |
+| ILIgnoreLineContainingStrings | IL 比較時に無視したい文字列のリスト（部分一致、複数指定可）。例: `"buildserver"`。 |
 | ShouldOutputFileTimestamps | `diff_report.md` の各ファイル行に最終更新日時を併記するか否か（ `true`  で併記）。 |
 | MaxParallelism | ファイル比較の並列度。0 または未指定で論理コア数、自動判定。1 で逐次実行。 |
 | EnableILCache | IL 逆アセンブル結果（MD5 + ツール / バージョン単位）をメモリ & 任意ディスクにキャッシュし再実行時の逆アセンブルをスキップ。 |
@@ -255,6 +261,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old/*.txt` … 旧バージョン側（比較元）ファイルのビルド固有情報を除く IL 全文を出力（ファイル名称は相対パスの区切り文字を.に置換したもの）
 	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/new/*.txt` … 新バージョン側（比較先）ファイルのビルド固有情報を除く IL 全文を出力（ファイル名称は相対パスの区切り文字を.に置換したもの）
 		- 出力されるIL 全文は「`// MVID:`」で始まる行を除外しています。
+		- `ShouldIgnoreILLinesContainingConfiguredStrings` が `true` の場合は、`ILIgnoreLineContainingStrings` のいずれかを含む行も除外します。
 
 ## パフォーマンス最適化機能
 

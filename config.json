@@ -78,6 +78,8 @@
   "ShouldIncludeUnchangedFiles": true,
   "ShouldIncludeIgnoredFiles": true,
   "ShouldOutputILText": true,
+  "ShouldIgnoreILLinesContainingConfiguredStrings": false,
+  "ILIgnoreLineContainingStrings": [],
   "ShouldOutputFileTimestamps": true,
   "MaxParallelism": 0,
   "EnableILCache": true,

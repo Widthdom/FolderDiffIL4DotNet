@@ -169,9 +169,6 @@ namespace FolderDiffIL4DotNet.Services
 
         public async Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
         {
-            // IL 比較時はビルド毎に異なる MVID 行を除外するためのフィルタをローカルに定義。
-            static bool IsNotMvidLine(string line) => line is null || !line.StartsWith(MVID_PREFIX, StringComparison.Ordinal);
-
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
 
@@ -180,18 +177,19 @@ namespace FolderDiffIL4DotNet.Services
                 await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath);
             var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
 
-            // 行単位に分割して MVID 行を除外し、純粋な IL のみを比較する。
+            // 行単位に分割し、MVID 行および設定で指定された文字列を含む行を除外して比較する。
+            var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(_config);
             var il1Lines = ilText1.Split('\n').ToList();
             var il2Lines = ilText2.Split('\n').ToList();
-            var il1LinesMvidExcluded = il1Lines.Where(IsNotMvidLine).ToList();
-            var il2LinesMvidExcluded = il2Lines.Where(IsNotMvidLine).ToList();
-            bool areILsEqual = il1LinesMvidExcluded.SequenceEqual(il2LinesMvidExcluded);
+            var il1LinesExcluded = il1Lines.Where(line => !ShouldExcludeIlLine(line, _config.ShouldIgnoreILLinesContainingConfiguredStrings, ilIgnoreContainingStrings)).ToList();
+            var il2LinesExcluded = il2Lines.Where(line => !ShouldExcludeIlLine(line, _config.ShouldIgnoreILLinesContainingConfiguredStrings, ilIgnoreContainingStrings)).ToList();
+            bool areILsEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
             try
             {
                 if (shouldOutputIlText)
                 {
                     // 要求されている場合は、比較用に除外した IL テキストを *_IL.txt として保存する。
-                    await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesMvidExcluded, il2LinesMvidExcluded);
+                    await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
                 }
             }
             catch (Exception)
@@ -201,6 +199,46 @@ namespace FolderDiffIL4DotNet.Services
                 throw;
             }
             return (areILsEqual, disassemblerLabel);
+        }
+
+        /// <summary>
+        /// IL 比較時に除外すべき行かを判定します。
+        /// </summary>
+        private static bool ShouldExcludeIlLine(string line, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
+        {
+            if (line is null)
+            {
+                return false;
+            }
+
+            if (line.StartsWith(MVID_PREFIX, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (!shouldIgnoreContainingStrings || ilIgnoreContainingStrings == null || ilIgnoreContainingStrings.Count == 0)
+            {
+                return false;
+            }
+
+            return ilIgnoreContainingStrings.Any(target => line.Contains(target, StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// IL 比較時に「含む」判定で除外対象とする文字列を正規化します（null/空白除外、trim、重複排除）。
+        /// </summary>
+        private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
+        {
+            if (config?.ILIgnoreLineContainingStrings == null)
+            {
+                return new List<string>();
+            }
+
+            return config.ILIgnoreLineContainingStrings
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
         }
 
         /// <summary>

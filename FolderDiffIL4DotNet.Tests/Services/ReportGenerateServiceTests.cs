@@ -122,6 +122,64 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("`dotnet-ildasm (version: dotnet ildasm 0.12.0)`", reportText);
         }
 
+        [Fact]
+        public void GenerateDiffReport_HeaderShowsIlContainsIgnoreNote_WhenEnabled()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ignore-note");
+            var newDir = Path.Combine(_rootDir, "new-ignore-note");
+            var reportDir = Path.Combine(_rootDir, "report-ignore-note");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            config.ShouldIgnoreILLinesContainingConfiguredStrings = true;
+            config.ILIgnoreLineContainingStrings = new List<string> { "buildserver", " buildPath ", "", "buildserver" };
+
+            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.Contains("lines containing any of the configured strings are ignored", reportText);
+            Assert.Contains("\"buildserver\"", reportText);
+            Assert.Contains("\"buildPath\"", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_HeaderOmitsIlContainsIgnoreNote_WhenDisabled()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ignore-note-off");
+            var newDir = Path.Combine(_rootDir, "new-ignore-note-off");
+            var reportDir = Path.Combine(_rootDir, "report-ignore-note-off");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            config.ShouldIgnoreILLinesContainingConfiguredStrings = false;
+            config.ILIgnoreLineContainingStrings = new List<string> { "buildserver" };
+
+            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.DoesNotContain("lines containing any of the configured strings are ignored", reportText);
+        }
+
         private static ConfigSettings CreateConfig() => new()
         {
             IgnoredExtensions = new List<string>(),

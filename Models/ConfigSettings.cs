@@ -40,6 +40,16 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldOutputILText { get; set; }
 
         /// <summary>
+        /// IL 比較時に、指定文字列を「含む」行を無視するかどうか。
+        /// </summary>
+        public bool ShouldIgnoreILLinesContainingConfiguredStrings { get; set; }
+
+        /// <summary>
+        /// IL 比較時に無視対象とする文字列リスト（部分一致、複数指定可）。
+        /// </summary>
+        public List<string> ILIgnoreLineContainingStrings { get; set; } = new();
+
+        /// <summary>
         /// ファイルごとの更新日時をレポートに出力するか否か
         /// </summary>
         public bool ShouldOutputFileTimestamps { get; set; }

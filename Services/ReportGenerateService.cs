@@ -95,6 +95,16 @@ namespace FolderDiffIL4DotNet.Services
         private const string NOTE_MVID_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines starting with \"{MVID_PREFIX}\" (if present) are ignored.";
 
         /// <summary>
+        /// 設定された部分一致除外文字列の但し書き。
+        /// </summary>
+        private const string NOTE_IL_CONTAINS_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored: {{0}}.";
+
+        /// <summary>
+        /// 部分一致除外が有効だが、文字列設定が空の場合の但し書き。
+        /// </summary>
+        private const string NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY = "Note: IL line-ignore-by-contains is enabled, but no non-empty strings are configured.";
+
+        /// <summary>
         /// レジェンドのヘッダ
         /// </summary>
         private const string REPORT_LEGEND_HEADER = "- Legend:";
@@ -394,6 +404,13 @@ namespace FolderDiffIL4DotNet.Services
                         streamWriter.WriteLine(string.Format(REPORT_HEADER_ELAPSED_TIME, elapsedTimeString));
                     }
                     streamWriter.WriteLine("- " + NOTE_MVID_SKIP);
+                    if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
+                    {
+                        var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(config);
+                        streamWriter.WriteLine("- " + (ilIgnoreContainingStrings.Count == 0
+                            ? NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY
+                            : string.Format(NOTE_IL_CONTAINS_SKIP, string.Join(REPORT_LIST_SEPARATOR, ilIgnoreContainingStrings.Select(value => $"\"{value}\"")))));
+                    }
 
                     // Legend
                     streamWriter.WriteLine(REPORT_LEGEND_HEADER);
@@ -626,6 +643,23 @@ namespace FolderDiffIL4DotNet.Services
                 return $"`{diffDetail}` `{label}`";
             }
             return $"`{diffDetail}`";
+        }
+
+        /// <summary>
+        /// IL 比較時に「含む」判定で除外対象とする文字列を正規化します（null/空白除外、trim、重複排除）。
+        /// </summary>
+        private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
+        {
+            if (config?.ILIgnoreLineContainingStrings == null)
+            {
+                return new List<string>();
+            }
+
+            return config.ILIgnoreLineContainingStrings
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
         }
     }
 }

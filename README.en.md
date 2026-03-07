@@ -1,6 +1,6 @@
 # FolderDiffIL4DotNet (English)
 
-This repository hosts a .NET console application that compares two folders, classifies the differences, and writes a detailed Markdown report. When both inputs are .NET assemblies, the app ignores build-specific artifacts such as the `// MVID:` line, so assemblies that behave the same are treated as equal even if they were produced at different times.
+This repository hosts a .NET console application that compares two folders, classifies the differences, and writes a detailed Markdown report. When both inputs are .NET assemblies, the app ignores build-specific artifacts such as the `// MVID:` line, so assemblies that behave the same are treated as equal even if they were produced at different times. You can also configure additional "contains" filters to ignore lines that include specific strings (for example `buildserver`).
 
 > Looking for the Japanese version? See [README.md](README.md).
 
@@ -75,12 +75,13 @@ Relation to CI:
 - For `ILMatch` / `ILMismatch`, the report also includes the disassembler tool and version used (including cache hits).
 - Summarizes counts per bucket in the same report.
 - The report header lists only the disassembler labels actually observed during IL comparison (or `N/A` when not used).
+- If `ShouldIgnoreILLinesContainingConfiguredStrings` is enabled, the report header explicitly notes that lines containing values from `ILIgnoreLineContainingStrings` are ignored.
 - Optionally writes ignored files, unchanged files, timestamps, and warnings when at least one `MD5Mismatch` exists.
 
 ## File comparison flow
 
 1. **MD5 hash** – if hashes match, the file is `Unchanged (MD5Match)`.
-2. **IL diff** – if the file is a .NET assembly (detected via PE/CLR headers, regardless of extension), the app disassembles both versions with the same disassembler/version identity, strips `// MVID:` lines, and compares them line by line. Matches become `Unchanged (ILMatch)`; mismatches become `Modified (ILMismatch)`.
+2. **IL diff** – if the file is a .NET assembly (detected via PE/CLR headers, regardless of extension), the app disassembles both versions with the same disassembler/version identity, strips `// MVID:` lines, and compares them line by line. If `ShouldIgnoreILLinesContainingConfiguredStrings` is enabled, lines containing any entry in `ILIgnoreLineContainingStrings` are also ignored (substring match). Matches become `Unchanged (ILMatch)`; mismatches become `Modified (ILMismatch)`.
 3. **Text diff** – if the extension appears in `TextFileExtensions`, a line-based text diff runs. Matches are `Unchanged (TextMatch)`; mismatches are `Modified (TextMismatch)`.
 4. **Fallback** – remaining files are treated as `Modified (MD5Mismatch)`.
 
@@ -169,6 +170,8 @@ Place `config.json` next to the executable. Example:
   "ShouldIncludeUnchangedFiles": true,
   "ShouldIncludeIgnoredFiles": true,
   "ShouldOutputILText": true,
+  "ShouldIgnoreILLinesContainingConfiguredStrings": false,
+  "ILIgnoreLineContainingStrings": [],
   "ShouldOutputFileTimestamps": true,
   "MaxParallelism": 0,
   "EnableILCache": true,
@@ -189,6 +192,8 @@ Place `config.json` next to the executable. Example:
 | `ShouldIncludeUnchangedFiles` | Whether to list `Unchanged` files inside `Reports/<label>/diff_report.md`. |
 | `ShouldIncludeIgnoredFiles` | Whether to output ignored files in the `## [ x ] Ignored Files` section (before `Unchanged`). |
 | `ShouldOutputILText` | Writes IL dumps to `Reports/<label>/IL/old` and `.../IL/new`. |
+| `ShouldIgnoreILLinesContainingConfiguredStrings` | Whether to ignore IL lines that contain any configured string in `ILIgnoreLineContainingStrings`. |
+| `ILIgnoreLineContainingStrings` | List of strings used for IL line-ignore filtering (substring match, multiple values allowed), e.g. `buildserver`. |
 | `ShouldOutputFileTimestamps` | Adds last modified timestamps to each file line inside the report. |
 | `MaxParallelism` | Degree of parallelism for file comparisons. `0` or omitted uses the logical core count. |
 | `EnableILCache` | Caches IL disassembly results (MD5 + tool/version) in memory and optionally on disk. |
@@ -238,6 +243,7 @@ After writing the report, the following files are marked read-only (failures onl
   - `Reports/<label>/IL/old/*.txt` – IL dumps (build-specific noise removed) for files from the old folder.
   - `Reports/<label>/IL/new/*.txt` – IL dumps for the new folder.
   - IL dumps exclude lines that start with `// MVID:`.
+  - If `ShouldIgnoreILLinesContainingConfiguredStrings` is `true`, IL dumps also exclude lines containing any value from `ILIgnoreLineContainingStrings`.
 
 ## Performance optimizations
 
