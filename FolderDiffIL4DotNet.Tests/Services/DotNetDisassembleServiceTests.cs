@@ -105,6 +105,46 @@ exit 0
         }
 
         [Fact]
+        public void BuildArgSets_DotnetMuxer_UsesIldasmSubcommand()
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildArgSets", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var argSetsObject = method.Invoke(null, ["dotnet", "/tmp/sample.dll", null]);
+            var argSets = Assert.IsAssignableFrom<System.Collections.IEnumerable>(argSetsObject);
+
+            bool inspected = false;
+            foreach (var item in argSets)
+            {
+                var itemType = item.GetType();
+                var argsField = itemType.GetField("Item2");
+                Assert.NotNull(argsField);
+                var args = Assert.IsType<string[]>(argsField.GetValue(item));
+                Assert.NotEmpty(args);
+                Assert.Equal("ildasm", args[0]);
+                inspected = true;
+            }
+
+            Assert.True(inspected);
+        }
+
+        [Fact]
+        public void BuildPrefetchCacheKeyPatterns_DotnetMuxer_IncludesCanonicalAndLegacyLabels()
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildPrefetchCacheKeyPatterns", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var resultObject = method.Invoke(null, ["dotnet", "dotnet", "/tmp/sample.dll", "sample.dll"]);
+            var labels = Assert.IsAssignableFrom<System.Collections.Generic.IEnumerable<string>>(resultObject);
+            var labelList = new System.Collections.Generic.List<string>(labels);
+
+            Assert.Contains("dotnet ildasm sample.dll", labelList);
+            Assert.Contains("dotnet ildasm /tmp/sample.dll", labelList);
+            Assert.Contains("dotnet dotnet-ildasm sample.dll", labelList);
+            Assert.Contains("dotnet dotnet-ildasm /tmp/sample.dll", labelList);
+        }
+
+        [Fact]
         public async Task DisassemblePairWithSameDisassemblerAsync_UsesSingleFallbackToolForBothSides()
         {
             if (OperatingSystem.IsWindows())

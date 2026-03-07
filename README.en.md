@@ -19,6 +19,9 @@ Installation example:
 ```bash
 dotnet tool install --global dotnet-ildasm
 # add $HOME/.dotnet/tools (Unix) or %USERPROFILE%\.dotnet\tools (Windows) to PATH if necessary
+# after installation, both invocations run the same tool
+dotnet-ildasm --version
+dotnet ildasm --version
 ```
 
 ```bash

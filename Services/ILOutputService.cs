@@ -48,11 +48,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string MVID_PREFIX = "// MVID:";
 
         /// <summary>
-        /// ildasm 実行ファイル名。
-        /// </summary>
-        private const string ILDASM_EXE = "ildasm";
-
-        /// <summary>
         /// バージョンラベル接頭辞。
         /// </summary>
         private const string VERSION_LABEL_PREFIX = " (version: ";
@@ -249,7 +244,8 @@ namespace FolderDiffIL4DotNet.Services
             string toolName;
             if (string.Equals(tokens[0], Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase) &&
                 tokens.Count >= 2 &&
-                string.Equals(tokens[1], Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase))
+                (string.Equals(tokens[1], Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(tokens[1], Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase)))
             {
                 toolName = Constants.DOTNET_ILDASM;
             }
@@ -285,9 +281,9 @@ namespace FolderDiffIL4DotNet.Services
                 return toolName;
             }
 
-            if (string.Equals(toolName, ILDASM_EXE, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(toolName, Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
             {
-                return $"{ILDASM_EXE} (version: {version})";
+                return $"{Constants.ILDASM_LABEL} (version: {version})";
             }
             return $"{toolName} (version: {version})";
         }

@@ -589,7 +589,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return 0;
             }
-            if (string.Equals(toolName, "ildasm", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(toolName, Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
             {
                 return 1;
             }

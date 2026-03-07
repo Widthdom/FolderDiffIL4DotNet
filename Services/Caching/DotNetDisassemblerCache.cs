@@ -113,12 +113,14 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 throw new InvalidOperationException(string.Format(ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_INVALID, disassembleCommandWithArguments));
             }
 
-            // "dotnet ildasm ..." 形式かどうかを確認。dotnet 経由の場合は muxer を実行ファイルとする。
+            // "dotnet ildasm ..." 形式かどうかを確認。互換性のため "dotnet dotnet-ildasm ..." も許可する。
             if (string.Equals(tokens[0], Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
             {
-                if (tokens.Count >= 2 && string.Equals(tokens[1], Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase))
+                if (tokens.Count >= 2 &&
+                    (string.Equals(tokens[1], Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(tokens[1], Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase)))
                 {
-                    return (disassemblerKind: DisassemblerKind.DotnetIldasm, disassemblerVersionCacheKey: $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM}", disassemblerExe: Constants.DOTNET_MUXER);
+                    return (disassemblerKind: DisassemblerKind.DotnetIldasm, disassemblerVersionCacheKey: $"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL}", disassemblerExe: Constants.DOTNET_MUXER);
                 }
             }
 
@@ -137,9 +139,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// </summary>
         private static async Task<string> GetVersionForDotnetIldasmAsync(string disassemblerVersionCacheKey, string disassemblerExe)
         {
-            // dotnet-ildasmはサブコマンド付きで --version / -v を順に試す。
+            // dotnet ildasm を正規形として --version / -v を試し、旧表記 dotnet dotnet-ildasm も互換で試す。
             var attempts = new (string[] args, bool useFirstLine)[]
             {
+                ([Constants.ILDASM_LABEL, FLAG_VERSION_LONG], false),
+                ([Constants.ILDASM_LABEL, FLAG_VERSION_SHORT], false),
                 ([Constants.DOTNET_ILDASM, FLAG_VERSION_LONG], false),
                 ([Constants.DOTNET_ILDASM, FLAG_VERSION_SHORT], false)
             };
@@ -157,7 +161,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 ([FLAG_VERSION_LONG], false),
                 ([FLAG_VERSION_SHORT], false)
             };
-            return await GetVersionWithFallbacksAsync(disassemblerVersionCacheKey, disassemblerExe, attempts, Constants.DOTNET_ILDASM);
+            return await GetVersionWithFallbacksAsync(disassemblerVersionCacheKey, disassemblerExe, attempts, Constants.ILDASM_LABEL);
         }
 
         /// <summary>

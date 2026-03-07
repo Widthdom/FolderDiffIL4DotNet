@@ -37,11 +37,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string DOTNET_TOOLS_DIRNAME = "tools";
 
         /// <summary>
-        /// ildasmラベル
-        /// </summary>
-        private const string ILDASM_LABEL = "ildasm";
-
-        /// <summary>
         /// ilspycmd の IL 出力を有効にするスイッチ（例: -il）
         /// </summary>
         private const string ILSPY_FLAG_IL = "-il";
@@ -69,12 +64,12 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// ildasm実行失敗時の例外フォーマット
         /// </summary>
-        private const string ERROR_EXECUTE_ILDASM = "Failed to execute " + ILDASM_LABEL + " for file: {0}. {1}{2}";
+        private const string ERROR_EXECUTE_ILDASM = "Failed to execute " + Constants.ILDASM_LABEL + " for file: {0}. {1}{2}";
 
         /// <summary>
         /// 同一ツールでのペア逆アセンブル失敗時の例外フォーマット。
         /// </summary>
-        private const string ERROR_EXECUTE_ILDASM_FOR_PAIR = "Failed to execute " + ILDASM_LABEL + " with the same disassembler for files: {0} and {1}. {2}{3}";
+        private const string ERROR_EXECUTE_ILDASM_FOR_PAIR = "Failed to execute " + Constants.ILDASM_LABEL + " with the same disassembler for files: {0} and {1}. {2}{3}";
 
         /// <summary>
         /// old/new で同一候補を使ってもバージョン識別が一致しなかった場合のエラーフォーマット。
@@ -129,7 +124,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// ildasm失敗エラー
         /// </summary>
-        private const string ERROR_ILDASM_FAILED = ILDASM_LABEL + " failed (exit {0}) with command: {1} {2} in {3}\nFile: {4}\nStderr: {5}";
+        private const string ERROR_ILDASM_FAILED = Constants.ILDASM_LABEL + " failed (exit {0}) with command: {1} {2} in {3}\nFile: {4}\nStderr: {5}";
 
         /// <summary>
         /// ildasm/ilspyインストールガイダンス
@@ -650,8 +645,14 @@ namespace FolderDiffIL4DotNet.Services
         {
             if (string.Equals(disassembleCommand, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
             {
-                // dotnet muxer は "dotnet dotnet-ildasm" の形で実行されるため、両パスパターンを生成。
-                return [$"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {assemblyNameOnly}", $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {assemblyAbsolutePath}"];
+                // dotnet muxer は "dotnet ildasm" を正規形とし、旧表記 "dotnet dotnet-ildasm" も互換のため考慮する。
+                return
+                [
+                    $"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL} {assemblyNameOnly}",
+                    $"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL} {assemblyAbsolutePath}",
+                    $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {assemblyNameOnly}",
+                    $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM} {assemblyAbsolutePath}"
+                ];
             }
             if (string.Equals(disassemblerFileName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase))
             {
@@ -673,9 +674,9 @@ namespace FolderDiffIL4DotNet.Services
             {
                 try
                 {
-                    // dotnet muxer は "dotnet dotnet-ildasm" 形式でバージョンを問い合わせる。
+                    // dotnet muxer は "dotnet ildasm" 形式でバージョンを問い合わせる。
                     var versionQueryLabel = IsDotnetMuxer(candidateCommand)
-                        ? $"{Constants.DOTNET_MUXER} {Constants.DOTNET_ILDASM}"
+                        ? $"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL}"
                         : candidateCommand;
                     var version = await DotNetDisassemblerCache.GetDisassemblerVersionAsync(versionQueryLabel);
                     result.Add((candidateCommand, version));
@@ -736,11 +737,11 @@ namespace FolderDiffIL4DotNet.Services
             if (!isIlspy)
             {
                 // ildasm 系
-                argSets.Add((disassemblerFileDirectoryAbsolutePath, isDotnetMuxer ? [ILDASM_LABEL, disassemblerFileNameOnly] : [disassemblerFileNameOnly], null));
-                argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [ILDASM_LABEL, disassemblerFileAbsolutePath] : [disassemblerFileAbsolutePath], null));
+                argSets.Add((disassemblerFileDirectoryAbsolutePath, isDotnetMuxer ? [Constants.ILDASM_LABEL, disassemblerFileNameOnly] : [disassemblerFileNameOnly], null));
+                argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [Constants.ILDASM_LABEL, disassemblerFileAbsolutePath] : [disassemblerFileAbsolutePath], null));
                 if (!string.IsNullOrEmpty(tempAsciiPath))
                 {
-                    argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [ILDASM_LABEL, tempAsciiPath] : [tempAsciiPath], null));
+                    argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [Constants.ILDASM_LABEL, tempAsciiPath] : [tempAsciiPath], null));
                 }
             }
             else
@@ -800,7 +801,7 @@ namespace FolderDiffIL4DotNet.Services
             var head = Path.GetFileName(tokens[0]) ?? tokens[0];
             if (string.Equals(head, Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase) &&
                 tokens.Count >= 2 &&
-                string.Equals(tokens[1], ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
+                string.Equals(tokens[1], Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
             {
                 executableCandidates.Add(tokens[0]);
                 executableCandidates.Add(Constants.DOTNET_ILDASM);
@@ -1058,9 +1059,9 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return Constants.ILSPY_CMD;
             }
-            if (string.Equals(fileName, ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(fileName, Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
             {
-                return ILDASM_LABEL;
+                return Constants.ILDASM_LABEL;
             }
             return fileName ?? disassembleCommand;
         }

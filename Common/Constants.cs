@@ -38,9 +38,14 @@ namespace FolderDiffIL4DotNet.Common
         public const string DOTNET_MUXER = "dotnet";
 
         /// <summary>
-        /// ildasmコマンド
+        /// dotnet-ildasm グローバルツールの実行ファイル名。
         /// </summary>
         public const string DOTNET_ILDASM = "dotnet-ildasm";
+
+        /// <summary>
+        /// dotnet サブコマンドとしての ildasm ラベル（`dotnet ildasm`）。
+        /// </summary>
+        public const string ILDASM_LABEL = "ildasm";
 
         /// <summary>
         /// ilspyコマンド

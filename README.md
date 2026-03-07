@@ -20,6 +20,9 @@ dotnet tool install --global dotnet-ildasm
 # 必要に応じて PATH に追加
 # macOS/Linux/Unix:  $HOME/.dotnet/tools を PATH に追加
 # Windows:      %USERPROFILE%\.dotnet\tools を PATH に追加
+# インストール後は以下どちらの呼び方でも実行可能（同じツール）
+dotnet-ildasm --version
+dotnet ildasm --version
 ```
 ```bash
 dotnet tool install -g ilspycmd
