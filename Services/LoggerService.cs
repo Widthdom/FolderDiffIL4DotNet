@@ -112,6 +112,23 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="DirectoryNotFoundException">ログディレクトリが存在しない、またはパスが無効な場合。</exception>
         /// <exception cref="IOException">ファイル書き込み時に I/O エラーが発生した場合。</exception>
         public static void LogMessage(LogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+            => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
+
+        /// <summary>
+        /// メッセージをログファイルに追記し、必要に応じてコンソールにも指定色で出力します。
+        /// <para>
+        /// まだ <see cref="Initialize"/> が呼ばれていない場合は、コンソール出力（指定時）のみ行い、ファイル出力はスキップします。
+        /// </para>
+        /// </summary>
+        /// <param name="logLevel">ログレベル。</param>
+        /// <param name="message">出力するメッセージ（null 可）。</param>
+        /// <param name="shouldOutputMessageToConsole">true の場合、メッセージをコンソールにも出力します。</param>
+        /// <param name="consoleForegroundColor">コンソール出力に適用する文字色（未指定時は既定色）。</param>
+        /// <param name="exception">例外情報（省略可）。指定した場合、スタックトレースをログファイルに追記します。</param>
+        /// <exception cref="UnauthorizedAccessException">ログファイルへの書き込み権限がない場合。</exception>
+        /// <exception cref="DirectoryNotFoundException">ログディレクトリが存在しない、またはパスが無効な場合。</exception>
+        /// <exception cref="IOException">ファイル書き込み時に I/O エラーが発生した場合。</exception>
+        public static void LogMessage(LogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
         {
             string formattedMessage = FormatMessage(message, logLevel);
 
@@ -135,7 +152,24 @@ namespace FolderDiffIL4DotNet.Services
                         // ignore console position errors
                     }
                 }
-                Console.WriteLine(formattedMessage);
+
+                if (consoleForegroundColor.HasValue && !Console.IsOutputRedirected)
+                {
+                    var originalColor = Console.ForegroundColor;
+                    try
+                    {
+                        Console.ForegroundColor = consoleForegroundColor.Value;
+                        Console.WriteLine(formattedMessage);
+                    }
+                    finally
+                    {
+                        Console.ForegroundColor = originalColor;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(formattedMessage);
+                }
             }
 
             // 初期化前の場合はコンソール出力のみで終了。

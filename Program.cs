@@ -308,12 +308,12 @@ namespace FolderDiffIL4DotNet
                     _config);
 
                 // 正常終了メッセージ出力
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true);
+                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
             }
             catch (Exception ex)
             {
                 // 例外を捕捉した場合は、stacktraceをログに出力して終了
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ex);
+                LoggerService.LogMessage(LoggerService.LogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, ex);
                 LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_ERROR_DETAILS_PATH, LoggerService._logFileAbsolutePath), shouldOutputMessageToConsole: true);
                 exitCode = EXIT_CODE_ERROR;
             }

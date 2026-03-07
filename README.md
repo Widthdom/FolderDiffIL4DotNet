@@ -241,6 +241,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 ```
 
 実行するとコンソールに進捗率が表示され、完了後`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にレポートが生成されます。
+コンソール強調表示は最小限で、最終の成功メッセージ（`[INFO] ... finished without errors`）のみ緑、例外発生時のエラーメッセージ（`[ERROR] ...`）のみ赤で表示されます（それ以外は既定色）。
 
 出力完了後、以下の生成物は読み取り専用（ReadOnly 属性）に変更されます（失敗時は警告を出し処理は継続）。
 - `diff_report.md`

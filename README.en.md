@@ -223,6 +223,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 ```
 
 The console shows progress, and after completion the report is available at `Reports/<label>/diff_report.md`.
+Console color emphasis is intentionally minimal: only the final success message (`[INFO] ... finished without errors`) is shown in green, and only the exception error message (`[ERROR] ...`) is shown in red (all other logs use the default color).
 
 After writing the report, the following files are marked read-only (failures only generate warnings):
 
