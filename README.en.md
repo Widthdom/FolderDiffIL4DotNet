@@ -174,8 +174,8 @@ Place `config.json` next to the executable. Example:
   "EnableILCache": true,
   "ILCacheDirectoryAbsolutePath": "",
   "ILCacheStatsLogIntervalSeconds": 60,
-  "ILCacheMaxDiskFileCount": 0,
-  "ILCacheMaxDiskMegabytes": 0,
+  "ILCacheMaxDiskFileCount": 1000,
+  "ILCacheMaxDiskMegabytes": 512,
   "OptimizeForNetworkShares": false,
   "AutoDetectNetworkShares": true
 }
@@ -194,8 +194,8 @@ Place `config.json` next to the executable. Example:
 | `EnableILCache` | Caches IL disassembly results (MD5 + tool/version) in memory and optionally on disk. |
 | `ILCacheDirectoryAbsolutePath` | Custom cache folder. Blank defaults to `<exe>/ILCache` with LRU + TTL control. |
 | `ILCacheStatsLogIntervalSeconds` | Interval (seconds) for logging IL cache statistics. `<= 0` falls back to 60 seconds. |
-| `ILCacheMaxDiskFileCount` | Upper bound for disk cache files. `<= 0` disables trimming. Oldest entries are removed first. |
-| `ILCacheMaxDiskMegabytes` | Disk cache size limit (MB). `<= 0` disables trimming. Oldest entries are removed until under the limit. |
+| `ILCacheMaxDiskFileCount` | Upper bound for disk cache files. Default is `1000`. `<= 0` disables trimming. Oldest entries are removed first. |
+| `ILCacheMaxDiskMegabytes` | Disk cache size limit (MB). Default is `512`. `<= 0` disables trimming. Oldest entries are removed until under the limit. |
 | `OptimizeForNetworkShares` | Optimizes comparisons on NAS/SMB shares by skipping MD5 pre-warming, reducing parallelism, and forcing sequential diffing of large text files. |
 | `AutoDetectNetworkShares` | Detects network paths automatically (UNC on Windows, `statfs` on macOS, `/proc/mounts`/`/etc/mtab` on Linux/Unix) and enables the same optimizations automatically. |
 

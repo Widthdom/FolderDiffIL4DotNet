@@ -65,14 +65,14 @@ namespace FolderDiffIL4DotNet.Models
         public int ILCacheStatsLogIntervalSeconds { get; set; }
 
         /// <summary>
-        /// ディスク IL キャッシュの最大ファイル数（0 以下で無制限）。超過時は最終アクセスが最も古いものから削除。
+        /// ディスク IL キャッシュの最大ファイル数（既定: 1000、0 以下で無制限）。超過時は最終アクセスが最も古いものから削除。
         /// </summary>
-        public int ILCacheMaxDiskFileCount { get; set; }
+        public int ILCacheMaxDiskFileCount { get; set; } = 1000;
 
         /// <summary>
-        /// ディスク IL キャッシュのサイズ上限（MB 単位, 0 以下で無制限）。超過時はサイズが下回るまで古いものを削除。
+        /// ディスク IL キャッシュのサイズ上限（MB 単位、既定: 512、0 以下で無制限）。超過時はサイズが下回るまで古いものを削除。
         /// </summary>
-        public int ILCacheMaxDiskMegabytes { get; set; }
+        public int ILCacheMaxDiskMegabytes { get; set; } = 512;
 
         /// <summary>
         /// ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化するかどうか。

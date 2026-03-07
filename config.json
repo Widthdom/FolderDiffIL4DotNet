@@ -83,8 +83,8 @@
   "EnableILCache": true,
   "ILCacheDirectoryAbsolutePath": "",
   "ILCacheStatsLogIntervalSeconds": 60,
-  "ILCacheMaxDiskFileCount": 0,
-  "ILCacheMaxDiskMegabytes": 0,
+  "ILCacheMaxDiskFileCount": 1000,
+  "ILCacheMaxDiskMegabytes": 512,
   "OptimizeForNetworkShares": false,
   "AutoDetectNetworkShares": true
 }

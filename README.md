@@ -197,8 +197,8 @@ CI との関係:
 	"EnableILCache": true,
 	"ILCacheDirectoryAbsolutePath": "",
 	"ILCacheStatsLogIntervalSeconds": 60,
-	"ILCacheMaxDiskFileCount": 0,
-	"ILCacheMaxDiskMegabytes": 0,
+	"ILCacheMaxDiskFileCount": 1000,
+	"ILCacheMaxDiskMegabytes": 512,
 	"OptimizeForNetworkShares": false,
 	"AutoDetectNetworkShares": true
 }
@@ -217,8 +217,8 @@ CI との関係:
 | EnableILCache | IL 逆アセンブル結果（MD5 + ツール / バージョン単位）をメモリ & 任意ディスクにキャッシュし再実行時の逆アセンブルをスキップ。 |
 | ILCacheDirectoryAbsolutePath | キャッシュ格納ディレクトリ。空 / 未指定で実行ディレクトリ配下 `ILCache`。容量制御 (LRU) と TTL（現在 12h）あり。 |
 | ILCacheStatsLogIntervalSeconds | IL キャッシュの内部統計（ヒット率など）をログへ出力する間隔（秒）。0 以下で 60 秒が既定。 |
-| ILCacheMaxDiskFileCount | ディスク IL キャッシュの最大ファイル数。0 以下で無制限。超過時は最終アクセスの古い順に削除。 |
-| ILCacheMaxDiskMegabytes | ディスク IL キャッシュのサイズ上限（MB）。0 以下で無制限。超過時はサイズが下回るまで古い順に削除。 |
+| ILCacheMaxDiskFileCount | ディスク IL キャッシュの最大ファイル数。既定値は `1000`。`0` 以下で無制限。超過時は最終アクセスの古い順に削除。 |
+| ILCacheMaxDiskMegabytes | ディスク IL キャッシュのサイズ上限（MB）。既定値は `512`。`0` 以下で無制限。超過時はサイズが下回るまで古い順に削除。 |
 | OptimizeForNetworkShares | ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化。<br>`true` の場合:<br>- 事前MD5プリウォーム（ILCacheのPrecompute）とILキャッシュ先読み（Prefetch）をスキップし、ネットワークI/Oの二重読みを回避<br>- 既定の最大並列度を上限8に抑制（`MaxParallelism`が0以下の場合） <br>- 大きなテキストのチャンク並列比較を使わず逐次比較に統一。<br>1回限りや大規模フォルダの共有ドライブ比較で有効。 |
 | AutoDetectNetworkShares | 旧/新フォルダのパスからネットワーク共有を自動検出して「ネットワーク最適化」を自動有効化。<br>macOS:<br>- `statfs` の P/Invoke で `f_flags`（`MNT_LOCAL`）や `f_fstypename`（例: `smbfs`/`afpfs`/`webdav`/`nfs`/`sshfs`/`fusefs` 等）を確認し、ネットワークFSを検出。<br>Linux/Unix:<br>- `/proc/mounts` または `/etc/mtab` を解析し、`nfs`/`nfs4`/`cifs`/`smbfs`/`sshfs`/`fuse.sshfs`/`fuse.gvfsd-fuse`/`davfs`/`afpfs`/`ceph`/`glusterfs`/`9p` 等のネットワーク系 FS を検出。<br>Windows:<br>- UNC パス (`\\server\\share` / `\\?\\UNC\\...`) とネットワークドライブを検出。<br>※自動検出で `true` になった場合は `OptimizeForNetworkShares` が `false` のままでも最適化が有効になります。自動検出が `false` となった場合でも `OptimizeForNetworkShares` を `true` に設定すれば手動で最適化を強制できます。 |
 
