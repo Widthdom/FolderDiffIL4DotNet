@@ -180,6 +180,70 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain("lines containing any of the configured strings are ignored", reportText);
         }
 
+        [Fact]
+        public void GenerateDiffReport_HeaderShowsEmptyIlContainsIgnoreNote_WhenEnabledButNoValidStrings()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ignore-note-empty");
+            var newDir = Path.Combine(_rootDir, "new-ignore-note-empty");
+            var reportDir = Path.Combine(_rootDir, "report-ignore-note-empty");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            config.ShouldIgnoreILLinesContainingConfiguredStrings = true;
+            config.ILIgnoreLineContainingStrings = new List<string> { "", "   ", "\t" };
+
+            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.Contains("IL line-ignore-by-contains is enabled, but no non-empty strings are configured.", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_WritesSummaryWarning_WhenMd5MismatchExists()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-md5-warning");
+            var newDir = Path.Combine(_rootDir, "new-md5-warning");
+            var reportDir = Path.Combine(_rootDir, "report-md5-warning");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var oldFile = Path.Combine(oldDir, "payload.bin");
+            var newFile = Path.Combine(newDir, "payload.bin");
+            File.WriteAllText(oldFile, "old");
+            File.WriteAllText(newFile, "new");
+
+            FileDiffResultLists.SetOldFilesAbsolutePath(new List<string> { oldFile });
+            FileDiffResultLists.SetNewFilesAbsolutePath(new List<string> { newFile });
+            FileDiffResultLists.AddModifiedFileRelativePath("payload.bin");
+            FileDiffResultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+
+            var config = CreateConfig();
+            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.Contains("**WARNING:** One or more files were classified as `MD5Mismatch`.", reportText);
+            Assert.Contains("Manual review is recommended", reportText);
+        }
+
         private static ConfigSettings CreateConfig() => new()
         {
             IgnoredExtensions = new List<string>(),

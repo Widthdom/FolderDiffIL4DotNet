@@ -61,6 +61,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
 - .NET SDK 8.x がインストールされていること。
 - 単体テストの実行に `dotnet-ildasm` / `ilspycmd` は不要（アプリ本体の IL 比較時のみ必要）。
 - リポジトリルートでコマンドを実行することを想定。
+- コアサービスの専用ユニットテストとして `FolderDiffServiceTests` / `ReportGenerateServiceTests` を含みます。
 
 CI との関係:
 
