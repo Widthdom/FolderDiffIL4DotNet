@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 using Xunit;
 
@@ -19,17 +21,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
 
         private static void ClearAll()
         {
-            FileDiffResultLists.OldFilesAbsolutePath = new System.Collections.Generic.List<string>();
-            FileDiffResultLists.NewFilesAbsolutePath = new System.Collections.Generic.List<string>();
-            FileDiffResultLists.UnchangedFilesRelativePath = new System.Collections.Generic.List<string>();
-            FileDiffResultLists.AddedFilesAbsolutePath = new System.Collections.Generic.List<string>();
-            FileDiffResultLists.RemovedFilesAbsolutePath = new System.Collections.Generic.List<string>();
-            FileDiffResultLists.ModifiedFilesRelativePath = new System.Collections.Generic.List<string>();
-            FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
-            FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.Clear();
-            FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
-            FileDiffResultLists.DisassemblerToolVersions.Clear();
-            FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
+            FileDiffResultLists.ResetAll();
         }
 
         #region RecordDiffDetail
@@ -189,6 +181,72 @@ namespace FolderDiffIL4DotNet.Tests.Models
             FileDiffResultLists.RecordDisassemblerToolVersion("ildasm", null);
 
             Assert.True(FileDiffResultLists.DisassemblerToolVersions.ContainsKey("ildasm"));
+        }
+
+        #endregion
+
+        #region CollectionState
+
+        [Fact]
+        public void SetOldFilesAbsolutePath_ReplacesExistingEntries()
+        {
+            FileDiffResultLists.SetOldFilesAbsolutePath(new[] { "old-a.dll", "old-b.dll" });
+            FileDiffResultLists.SetOldFilesAbsolutePath(new[] { "old-c.dll" });
+
+            Assert.Single(FileDiffResultLists.OldFilesAbsolutePath);
+            Assert.Equal("old-c.dll", FileDiffResultLists.OldFilesAbsolutePath.Single());
+        }
+
+        [Fact]
+        public void AddUnchangedFileRelativePath_Parallel_AllEntriesRecorded()
+        {
+            const int total = 1000;
+            Parallel.For(0, total, i =>
+            {
+                FileDiffResultLists.AddUnchangedFileRelativePath($"unchanged-{i}.dll");
+            });
+
+            Assert.Equal(total, FileDiffResultLists.UnchangedFilesRelativePath.Count);
+        }
+
+        [Fact]
+        public void ResetAll_ClearsAllState()
+        {
+            FileDiffResultLists.SetOldFilesAbsolutePath(new[] { "old-a.dll" });
+            FileDiffResultLists.SetNewFilesAbsolutePath(new[] { "new-a.dll" });
+            FileDiffResultLists.AddUnchangedFileRelativePath("same.dll");
+            FileDiffResultLists.AddAddedFileAbsolutePath("added.dll");
+            FileDiffResultLists.AddRemovedFileAbsolutePath("removed.dll");
+            FileDiffResultLists.AddModifiedFileRelativePath("modified.dll");
+            FileDiffResultLists.RecordDiffDetail("same.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+            FileDiffResultLists.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            FileDiffResultLists.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0");
+            FileDiffResultLists.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0", fromCache: true);
+
+            FileDiffResultLists.ResetAll();
+
+            Assert.Empty(FileDiffResultLists.OldFilesAbsolutePath);
+            Assert.Empty(FileDiffResultLists.NewFilesAbsolutePath);
+            Assert.Empty(FileDiffResultLists.UnchangedFilesRelativePath);
+            Assert.Empty(FileDiffResultLists.AddedFilesAbsolutePath);
+            Assert.Empty(FileDiffResultLists.RemovedFilesAbsolutePath);
+            Assert.Empty(FileDiffResultLists.ModifiedFilesRelativePath);
+            Assert.Empty(FileDiffResultLists.FileRelativePathToDiffDetailDictionary);
+            Assert.Empty(FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary);
+            Assert.Empty(FileDiffResultLists.IgnoredFilesRelativePathToLocation);
+            Assert.Empty(FileDiffResultLists.DisassemblerToolVersions);
+            Assert.Empty(FileDiffResultLists.DisassemblerToolVersionsFromCache);
+        }
+
+        [Fact]
+        public void ResultQueueProperties_AreReadOnly()
+        {
+            Assert.False(typeof(FileDiffResultLists).GetProperty(nameof(FileDiffResultLists.OldFilesAbsolutePath))?.CanWrite);
+            Assert.False(typeof(FileDiffResultLists).GetProperty(nameof(FileDiffResultLists.NewFilesAbsolutePath))?.CanWrite);
+            Assert.False(typeof(FileDiffResultLists).GetProperty(nameof(FileDiffResultLists.UnchangedFilesRelativePath))?.CanWrite);
+            Assert.False(typeof(FileDiffResultLists).GetProperty(nameof(FileDiffResultLists.AddedFilesAbsolutePath))?.CanWrite);
+            Assert.False(typeof(FileDiffResultLists).GetProperty(nameof(FileDiffResultLists.RemovedFilesAbsolutePath))?.CanWrite);
+            Assert.False(typeof(FileDiffResultLists).GetProperty(nameof(FileDiffResultLists.ModifiedFilesRelativePath))?.CanWrite);
         }
 
         #endregion

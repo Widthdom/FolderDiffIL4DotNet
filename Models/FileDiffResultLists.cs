@@ -45,32 +45,32 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>
         /// 旧バージョン側（比較元）ファイルの絶対パスのリスト
         /// </summary>
-        public static List<string> OldFilesAbsolutePath { get; set; } = [];
+        public static ConcurrentQueue<string> OldFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
         /// <summary>
         /// 新バージョン側（比較先）ファイルの絶対パスのリスト
         /// </summary>
-        public static List<string> NewFilesAbsolutePath { get; set; } = [];
+        public static ConcurrentQueue<string> NewFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
         /// <summary>
         /// 差異のないファイルの相対パスのリスト
         /// </summary>
-        public static List<string> UnchangedFilesRelativePath { get; set; } = [];
+        public static ConcurrentQueue<string> UnchangedFilesRelativePath { get; } = new ConcurrentQueue<string>();
 
         /// <summary>
         /// 追加されたファイルの絶対パスのリスト
         /// </summary>
-        public static List<string> AddedFilesAbsolutePath { get; set; } = [];
+        public static ConcurrentQueue<string> AddedFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
         /// <summary>
         /// 削除されたファイルの絶対パスのリスト
         /// </summary>
-        public static List<string> RemovedFilesAbsolutePath { get; set; } = [];
+        public static ConcurrentQueue<string> RemovedFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
         /// <summary>
         /// 変更されたファイルの相対パスのリスト
         /// </summary>
-        public static List<string> ModifiedFilesRelativePath { get; set; } = [];
+        public static ConcurrentQueue<string> ModifiedFilesRelativePath { get; } = new ConcurrentQueue<string>();
 
         /// <summary>
         /// ファイル間の比較結果を保持する辞書 (並列比較で安全に書き込みできるよう ConcurrentDictionary)。
@@ -102,6 +102,78 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public static ConcurrentDictionary<string, byte> DisassemblerToolVersionsFromCache { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
         #endregion
+
+        /// <summary>
+        /// 旧バージョン側（比較元）ファイルの絶対パス一覧を置き換えます。
+        /// </summary>
+        /// <param name="oldFilesAbsolutePath">旧バージョン側（比較元）ファイルの絶対パス一覧。</param>
+        public static void SetOldFilesAbsolutePath(IEnumerable<string> oldFilesAbsolutePath)
+        {
+            ReplaceQueueItems(OldFilesAbsolutePath, oldFilesAbsolutePath, nameof(oldFilesAbsolutePath));
+        }
+
+        /// <summary>
+        /// 新バージョン側（比較先）ファイルの絶対パス一覧を置き換えます。
+        /// </summary>
+        /// <param name="newFilesAbsolutePath">新バージョン側（比較先）ファイルの絶対パス一覧。</param>
+        public static void SetNewFilesAbsolutePath(IEnumerable<string> newFilesAbsolutePath)
+        {
+            ReplaceQueueItems(NewFilesAbsolutePath, newFilesAbsolutePath, nameof(newFilesAbsolutePath));
+        }
+
+        /// <summary>
+        /// 差異のないファイルの相対パスを記録します。
+        /// </summary>
+        /// <param name="fileRelativePath">ファイルの相対パス。</param>
+        public static void AddUnchangedFileRelativePath(string fileRelativePath)
+        {
+            EnqueuePath(UnchangedFilesRelativePath, fileRelativePath, nameof(fileRelativePath));
+        }
+
+        /// <summary>
+        /// 追加されたファイルの絶対パスを記録します。
+        /// </summary>
+        /// <param name="newFileAbsolutePath">追加されたファイルの絶対パス。</param>
+        public static void AddAddedFileAbsolutePath(string newFileAbsolutePath)
+        {
+            EnqueuePath(AddedFilesAbsolutePath, newFileAbsolutePath, nameof(newFileAbsolutePath));
+        }
+
+        /// <summary>
+        /// 削除されたファイルの絶対パスを記録します。
+        /// </summary>
+        /// <param name="oldFileAbsolutePath">削除されたファイルの絶対パス。</param>
+        public static void AddRemovedFileAbsolutePath(string oldFileAbsolutePath)
+        {
+            EnqueuePath(RemovedFilesAbsolutePath, oldFileAbsolutePath, nameof(oldFileAbsolutePath));
+        }
+
+        /// <summary>
+        /// 変更されたファイルの相対パスを記録します。
+        /// </summary>
+        /// <param name="fileRelativePath">変更されたファイルの相対パス。</param>
+        public static void AddModifiedFileRelativePath(string fileRelativePath)
+        {
+            EnqueuePath(ModifiedFilesRelativePath, fileRelativePath, nameof(fileRelativePath));
+        }
+
+        /// <summary>
+        /// 比較結果の静的状態をすべて初期化します。
+        /// </summary>
+        public static void ResetAll()
+        {
+            OldFilesAbsolutePath.Clear();
+            NewFilesAbsolutePath.Clear();
+            UnchangedFilesRelativePath.Clear();
+            AddedFilesAbsolutePath.Clear();
+            RemovedFilesAbsolutePath.Clear();
+            ModifiedFilesRelativePath.Clear();
+            FileRelativePathToDiffDetailDictionary.Clear();
+            FileRelativePathToIlDisassemblerLabelDictionary.Clear();
+            IgnoredFilesRelativePathToLocation.Clear();
+            DisassemblerToolVersions.Clear();
+            DisassemblerToolVersionsFromCache.Clear();
+        }
 
         /// <summary>
         /// ファイルの比較結果を記録します。
@@ -161,6 +233,43 @@ namespace FolderDiffIL4DotNet.Models
             var label = string.IsNullOrWhiteSpace(version) ? toolName : $"{toolName} (version: {version})";
             var target = fromCache ? DisassemblerToolVersionsFromCache : DisassemblerToolVersions;
             target[label] = 0;
+        }
+
+        /// <summary>
+        /// スレッドセーフキュー内の要素を指定した内容で置き換えます。
+        /// </summary>
+        /// <param name="targetQueue">置き換え先キュー。</param>
+        /// <param name="items">置き換える要素。</param>
+        /// <param name="paramName">null チェック用の引数名。</param>
+        /// <exception cref="ArgumentNullException">items が null の場合。</exception>
+        private static void ReplaceQueueItems(ConcurrentQueue<string> targetQueue, IEnumerable<string> items, string paramName)
+        {
+            if (items is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+
+            targetQueue.Clear();
+            foreach (var item in items)
+            {
+                EnqueuePath(targetQueue, item, paramName);
+            }
+        }
+
+        /// <summary>
+        /// null でないことを確認してキューに追加します。
+        /// </summary>
+        /// <param name="targetQueue">追加先キュー。</param>
+        /// <param name="path">追加するパス。</param>
+        /// <param name="paramName">null チェック用の引数名。</param>
+        /// <exception cref="ArgumentNullException">path が null の場合。</exception>
+        private static void EnqueuePath(ConcurrentQueue<string> targetQueue, string path, string paramName)
+        {
+            if (path is null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+            targetQueue.Enqueue(path);
         }
     }
 }

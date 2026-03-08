@@ -79,6 +79,8 @@ CI との関係:
     - TextMatch: テキストベースで一致
     - TextMismatch: テキストベースで不一致
 - 比較結果区分ごと（Unchanged/Added/Removed/Modified）にファイルを分類
+- 比較結果の内部保持（`FileDiffResultLists`）は `ConcurrentQueue` / `ConcurrentDictionary` を使用し、並列実行時の追加処理をスレッドセーフに実行
+- `FolderDiffService.ExecuteFolderDiffAsync` の開始時に `FileDiffResultLists.ResetAll()` を実行し、同一プロセス内の複数回比較でも前回結果が混入しないように初期化
 - 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時［`config.json`のShouldOutputFileTimestampsが `true` の場合］、判定根拠）
     - Unchanged/Modified は相対パスで記載されます。
     - Added/Removed は絶対パスで記載されます。

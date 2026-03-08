@@ -382,18 +382,18 @@ namespace FolderDiffIL4DotNet.Services
                     if (await _fileDiffService.FilesAreEqualAsync(fileRelativePath))
                     {
                         // - Unchanged -
-                        FileDiffResultLists.UnchangedFilesRelativePath.Add(fileRelativePath);
+                        FileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
                     }
                     else
                     {
                         // - Modified -
-                        FileDiffResultLists.ModifiedFilesRelativePath.Add(fileRelativePath);
+                        FileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
                     }
                 }
                 else
                 {
                     // - Removed -
-                    FileDiffResultLists.RemovedFilesAbsolutePath.Add(oldFileAbsolutePath);
+                    FileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                 }
                 processedFileCountSoFar++;
                 _progressReporter.ReportProgress((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount);
@@ -402,8 +402,8 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// 並列に差分判定を行います。共有コレクションの更新は低粒度ロックで保護し、
-        /// 個別の比較処理はロック外で行ってスループットを確保します。
+        /// 並列に差分判定を行います。new 側の未処理集合へのアクセスのみ低粒度ロックで保護し、
+        /// 分類結果の追加はスレッドセーフなコレクション API で記録します。
         /// </summary>
         /// <param name="remainingNewFilesAbsolutePathHashSet">未処理の new 側ファイル集合（相対パス一致時に削除されます）</param>
         /// <param name="totalFilesRelativePathCount">進捗計算の母数</param>
@@ -417,12 +417,6 @@ namespace FolderDiffIL4DotNet.Services
             //           同じ相対パスの二重比較（重複処理）とレースコンディションによる不整合を防ぐ。
             //   - 粒度: メンバーシップ確認と削除の最小限の区間だけロックし、計算の重い処理はロック外で行う。
             var lockRemaining = new object();
-            // lockCollections: 分類結果コレクション（Unchanged/Modified/Removed）への追加操作を直列化するためのロック。
-            //   - 役割: 共有コレクション（List/Dictionary など）更新時の整合性を保つ。
-            //   - 分離理由: lockRemaining と分けることで、未処理集合の保護と結果集計の保護を独立させ、
-            //               競合範囲を縮小し、全体のスループットを高める。
-            var lockCollections = new object();
-
             // 処理済件数をインクリメントするための変数
             int processedFileCount = processedFileCountSoFar;
 
@@ -443,32 +437,24 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 if (hasMatchingFileInNewFilesAbsolutePathHashSet)
                 {
-                    // ロック外で比較（I/O / 計算を含むため）してから結果のみをロック下で分類
+                    // 比較本体はロック外で実行（I/O / 計算を含むため）
                     bool areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel);
-                    // 分類コレクション（Unchanged/Modified）への追加は別ロックで直列化
-                    lock (lockCollections)
+                    if (areFilesEqual)
                     {
-                        if (areFilesEqual)
-                        {
-                            // - Unchanged -
-                            FileDiffResultLists.UnchangedFilesRelativePath.Add(fileRelativePath);
-                        }
-                        else
-                        {
-                            // - Modified -
-                            FileDiffResultLists.ModifiedFilesRelativePath.Add(fileRelativePath);
-                        }
+                        // - Unchanged -
+                        FileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
+                    }
+                    else
+                    {
+                        // - Modified -
+                        FileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
                     }
                 }
                 else
                 {
                     // new 側に無いので Removed 判定
-                    // 分類コレクション（Removed）への追加は別ロックで直列化
-                    lock (lockCollections)
-                    {
-                        // - Removed -
-                        FileDiffResultLists.RemovedFilesAbsolutePath.Add(oldFileAbsolutePath);
-                    }
+                    // - Removed -
+                    FileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                 }
                 // 処理済件数をインクリメントし進捗を報告
                 var done = Interlocked.Increment(ref processedFileCount);
@@ -515,15 +501,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static void ClearResultCollections()
         {
-            FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
-            FileDiffResultLists.UnchangedFilesRelativePath.Clear();
-            FileDiffResultLists.AddedFilesAbsolutePath.Clear();
-            FileDiffResultLists.RemovedFilesAbsolutePath.Clear();
-            FileDiffResultLists.ModifiedFilesRelativePath.Clear();
-            FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
-            FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.Clear();
-            FileDiffResultLists.DisassemblerToolVersions.Clear();
-            FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
+            FileDiffResultLists.ResetAll();
         }
 
         /// <summary>
@@ -531,9 +509,9 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private void EnumerateAllFiles(HashSet<string> ignoredExtensions)
         {
-            FileDiffResultLists.OldFilesAbsolutePath = EnumerateIncludedFiles(_oldFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.Old);
+            FileDiffResultLists.SetOldFilesAbsolutePath(EnumerateIncludedFiles(_oldFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.Old));
             _progressReporter.ReportProgress(0.0);
-            FileDiffResultLists.NewFilesAbsolutePath = EnumerateIncludedFiles(_newFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.New);
+            FileDiffResultLists.SetNewFilesAbsolutePath(EnumerateIncludedFiles(_newFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.New));
             _progressReporter.ReportProgress(0.0);
         }
 
@@ -629,7 +607,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             foreach (var newFileAbsolutePath in remainingNewFiles)
             {
-                FileDiffResultLists.AddedFilesAbsolutePath.Add(newFileAbsolutePath);
+                FileDiffResultLists.AddAddedFileAbsolutePath(newFileAbsolutePath);
                 processedFileCount++;
                 _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
             }

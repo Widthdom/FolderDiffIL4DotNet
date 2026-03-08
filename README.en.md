@@ -71,6 +71,8 @@ Relation to CI:
 - Recursively compares the old folder (CLI arg #1) and the new folder (CLI arg #2).
 - Tracks each file as `MD5Match`, `MD5Mismatch`, `ILMatch`, `ILMismatch`, `TextMatch`, or `TextMismatch` (for IL results, the used disassembler/version is also recorded).
 - Groups files into `Unchanged`, `Added`, `Removed`, and `Modified` buckets.
+- Uses `ConcurrentQueue` / `ConcurrentDictionary` inside `FileDiffResultLists` so result aggregation is thread-safe during parallel comparison.
+- Calls `FileDiffResultLists.ResetAll()` at the start of `FolderDiffService.ExecuteFolderDiffAsync` to prevent state leakage across multiple runs in the same process.
 - Writes per-bucket listings to `Reports/<report label>/diff_report.md`; paths are relative for `Unchanged`/`Modified` and absolute for `Added`/`Removed`.
 - For `ILMatch` / `ILMismatch`, the report also includes the disassembler tool and version used (including cache hits).
 - Summarizes counts per bucket in the same report.

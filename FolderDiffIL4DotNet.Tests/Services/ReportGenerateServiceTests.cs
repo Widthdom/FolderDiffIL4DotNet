@@ -97,10 +97,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
-            FileDiffResultLists.OldFilesAbsolutePath = new List<string> { Path.Combine(oldDir, "a.dll"), Path.Combine(oldDir, "b.dll") };
-            FileDiffResultLists.NewFilesAbsolutePath = new List<string> { Path.Combine(newDir, "a.dll"), Path.Combine(newDir, "b.dll") };
-            FileDiffResultLists.UnchangedFilesRelativePath = new List<string> { "a.dll" };
-            FileDiffResultLists.ModifiedFilesRelativePath = new List<string> { "b.dll" };
+            FileDiffResultLists.SetOldFilesAbsolutePath(new List<string> { Path.Combine(oldDir, "a.dll"), Path.Combine(oldDir, "b.dll") });
+            FileDiffResultLists.SetNewFilesAbsolutePath(new List<string> { Path.Combine(newDir, "a.dll"), Path.Combine(newDir, "b.dll") });
+            FileDiffResultLists.AddUnchangedFileRelativePath("a.dll");
+            FileDiffResultLists.AddModifiedFileRelativePath("b.dll");
 
             FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: dotnet ildasm 0.12.0)");
             FileDiffResultLists.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: dotnet ildasm 0.12.0)");
@@ -191,17 +191,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static void ClearResultLists()
         {
-            FileDiffResultLists.OldFilesAbsolutePath = new List<string>();
-            FileDiffResultLists.NewFilesAbsolutePath = new List<string>();
-            FileDiffResultLists.UnchangedFilesRelativePath = new List<string>();
-            FileDiffResultLists.AddedFilesAbsolutePath = new List<string>();
-            FileDiffResultLists.RemovedFilesAbsolutePath = new List<string>();
-            FileDiffResultLists.ModifiedFilesRelativePath = new List<string>();
-            FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Clear();
-            FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.Clear();
-            FileDiffResultLists.IgnoredFilesRelativePathToLocation.Clear();
-            FileDiffResultLists.DisassemblerToolVersions.Clear();
-            FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
+            FileDiffResultLists.ResetAll();
         }
     }
 }
