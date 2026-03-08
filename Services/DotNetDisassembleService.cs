@@ -217,7 +217,8 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="ArgumentNullException"></exception>
         public DotNetDisassembleService(ConfigSettings config, ILCache ilCache)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
+            ArgumentNullException.ThrowIfNull(config);
+            _config = config;
             _ilCache = ilCache;
         }
 

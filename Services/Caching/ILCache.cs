@@ -519,10 +519,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// <exception cref="ArgumentNullException"><paramref name="ilCacheKey"/> が null の場合。</exception>
         private void StoreInMemoryCache(string ilCacheKey, string ilText)
         {
-            if (ilCacheKey == null)
-            {
-                throw new ArgumentNullException(nameof(ilCacheKey));
-            }
+            ArgumentNullException.ThrowIfNull(ilCacheKey);
             EnsureMemoryCapacity();
             _memoryILCacheDictionary[ilCacheKey] = (ilText, DateTime.UtcNow, DateTime.UtcNow);
         }

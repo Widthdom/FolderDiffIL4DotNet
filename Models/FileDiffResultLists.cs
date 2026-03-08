@@ -244,10 +244,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <exception cref="ArgumentNullException">items が null の場合。</exception>
         private static void ReplaceQueueItems(ConcurrentQueue<string> targetQueue, IEnumerable<string> items, string paramName)
         {
-            if (items is null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
+            ArgumentNullException.ThrowIfNull(items, paramName);
 
             targetQueue.Clear();
             foreach (var item in items)
@@ -265,10 +262,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <exception cref="ArgumentNullException">path が null の場合。</exception>
         private static void EnqueuePath(ConcurrentQueue<string> targetQueue, string path, string paramName)
         {
-            if (path is null)
-            {
-                throw new ArgumentNullException(paramName);
-            }
+            ArgumentNullException.ThrowIfNull(path, paramName);
             targetQueue.Enqueue(path);
         }
     }

@@ -66,10 +66,15 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public FileDiffService(ConfigSettings config, ILOutputService ilOutputService, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool optimizeForNetworkShares)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
-            _ilOutputService = ilOutputService ?? throw new ArgumentNullException(nameof(ilOutputService));
-            _oldFolderAbsolutePath = oldFolderAbsolutePath ?? throw new ArgumentNullException(nameof(oldFolderAbsolutePath));
-            _newFolderAbsolutePath = newFolderAbsolutePath ?? throw new ArgumentNullException(nameof(newFolderAbsolutePath));
+            ArgumentNullException.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(ilOutputService);
+            ArgumentNullException.ThrowIfNull(oldFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(newFolderAbsolutePath);
+
+            _config = config;
+            _ilOutputService = ilOutputService;
+            _oldFolderAbsolutePath = oldFolderAbsolutePath;
+            _newFolderAbsolutePath = newFolderAbsolutePath;
             _optimizeForNetworkShares = optimizeForNetworkShares;
         }
 

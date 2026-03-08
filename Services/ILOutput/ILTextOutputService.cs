@@ -40,8 +40,11 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         /// <param name="ilNewFolderAbsolutePath">新 IL フォルダの絶対パス</param>
         public ILTextOutputService(string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath)
         {
-            _ilOldFolderAbsolutePath = ilOldFolderAbsolutePath ?? throw new ArgumentNullException(nameof(ilOldFolderAbsolutePath));
-            _ilNewFolderAbsolutePath = ilNewFolderAbsolutePath ?? throw new ArgumentNullException(nameof(ilNewFolderAbsolutePath));
+            ArgumentNullException.ThrowIfNull(ilOldFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(ilNewFolderAbsolutePath);
+
+            _ilOldFolderAbsolutePath = ilOldFolderAbsolutePath;
+            _ilNewFolderAbsolutePath = ilNewFolderAbsolutePath;
         }
 
         /// <summary>

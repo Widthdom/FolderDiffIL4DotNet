@@ -183,12 +183,18 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="ArgumentNullException">config または progressReporter または oldFolderAbsolutePath または newFolderAbsolutePath または reportsFolderAbsolutePath が null の場合。</exception>
         public FolderDiffService(ConfigSettings config, ProgressReportService progressReporter, string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath)
         {
-            _config = config ?? throw new ArgumentNullException(nameof(config));
-            _progressReporter = progressReporter ?? throw new ArgumentNullException(nameof(progressReporter));
+            ArgumentNullException.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(progressReporter);
+            ArgumentNullException.ThrowIfNull(oldFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(newFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(reportsFolderAbsolutePath);
+
+            _config = config;
+            _progressReporter = progressReporter;
             _progressReporter.SetLabel(SPINNER_LABEL_FOLDER_DIFF);
-            _oldFolderAbsolutePath = oldFolderAbsolutePath ?? throw new ArgumentNullException(nameof(oldFolderAbsolutePath));
-            _newFolderAbsolutePath = newFolderAbsolutePath ?? throw new ArgumentNullException(nameof(newFolderAbsolutePath));
-            _reportsFolderAbsolutePath = reportsFolderAbsolutePath ?? throw new ArgumentNullException(nameof(reportsFolderAbsolutePath));
+            _oldFolderAbsolutePath = oldFolderAbsolutePath;
+            _newFolderAbsolutePath = newFolderAbsolutePath;
+            _reportsFolderAbsolutePath = reportsFolderAbsolutePath;
             _ilOutputFolderAbsolutePath = Path.Combine(_reportsFolderAbsolutePath, IL_FOLDER_NAME);
             _ilOldFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, IL_OLD_SUB_DIR);
             _ilNewFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, IL_NEW_SUB_DIR);
