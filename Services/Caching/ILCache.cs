@@ -179,6 +179,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// ディスククォータ適用処理（件数・サイズ制御）の同期用ロックオブジェクト。
         /// </summary>
         private readonly object _diskQuotaLock = new();
+
+        /// <summary>
+        /// ログ出力サービス。
+        /// </summary>
+        private readonly ILoggerService _logger;
         #endregion
 
         #region private member variables
@@ -225,6 +230,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// コンストラクタ。
         /// </summary>
         /// <param name="ilCacheDirectoryAbsolutePath">ディスクキャッシュ格納ディレクトリ（null/空で無効。作成に失敗した場合も無効）</param>
+        /// <param name="logger">ログ出力サービス（未指定時は <see cref="LoggerService"/> を使用）。</param>
         /// <param name="ilCacheMaxMemoryEntries">メモリキャッシュ最大件数（0 以下は既定 DEFAULT_MAX_MEMORY_ENTRIES を採用。超過時は LRU で削除）</param>
         /// <param name="timeToLive">各エントリのTime-To-Live（有効期間）（null で無期限。期限切れは参照時にパージ）</param>
         /// <param name="statsLogIntervalSeconds">内部統計ログ（ヒット率など）の出力間隔（秒）。0 以下で既定の DEFAULT_STATS_LOG_INTERVAL_SECONDS 秒。</param>
@@ -235,8 +241,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// - 統計ログの出力間隔は静的フィールド（全インスタンス共通）の <see cref="StatsLogInterval"/> に反映されます。
         /// - ディスクキャッシュの件数／サイズ制御は書き込み後に <see cref="EnforceDiskQuota"/> で適用されます。
         /// </remarks>
-        public ILCache(string ilCacheDirectoryAbsolutePath, int ilCacheMaxMemoryEntries = DEFAULT_MAX_MEMORY_ENTRIES, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0)
+        public ILCache(string ilCacheDirectoryAbsolutePath, ILoggerService logger = null, int ilCacheMaxMemoryEntries = DEFAULT_MAX_MEMORY_ENTRIES, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0)
         {
+            _logger = logger ?? new LoggerService();
+
             // メモリキャッシュ容量（0 以下なら既定の DEFAULT_MAX_MEMORY_ENTRIES 件）
             _ilCacheMaxMemoryEntries = ilCacheMaxMemoryEntries <= 0 ? DEFAULT_MAX_MEMORY_ENTRIES : ilCacheMaxMemoryEntries;
             // TTL（null で無期限。失効チェックは参照時に実施）
@@ -265,8 +273,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 catch (Exception ex)
                 {
                     _isDiskCacheEnabled = false;
-                    LoggerService.LogMessage(
-                        LoggerService.LogLevel.Warning,
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
                         string.Format(LOG_FAILED_CREATE_IL_CACHE_DIR, _ilCacheDirectoryAbsolutePath, ex.Message),
                         shouldOutputMessageToConsole: true,
                         ex);
@@ -300,15 +308,15 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     return Task.CompletedTask;
                 }
 
-                LoggerService.LogMessage(
-                    LoggerService.LogLevel.Info,
+                _logger.LogMessage(
+                    AppLogLevel.Info,
                     string.Format(LOG_PRECOMPUTE_MD5_START, files.Count, nameof(maxParallel), maxParallel),
                     shouldOutputMessageToConsole: true);
 
                 RunMd5Precompute(files, maxParallel);
 
-                LoggerService.LogMessage(
-                    LoggerService.LogLevel.Info,
+                _logger.LogMessage(
+                    AppLogLevel.Info,
                     string.Format(LOG_PRECOMPUTE_MD5_COMPLETE, files.Count),
                     shouldOutputMessageToConsole: true);
             }
@@ -372,8 +380,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     }
                     catch (Exception ex)
                     {
-                        LoggerService.LogMessage(
-                            LoggerService.LogLevel.Warning,
+                        _logger.LogMessage(
+                            AppLogLevel.Warning,
                             string.Format(LOG_FAILED_IL_CACHE_FILE_FORMAT, "read", diskILCacheFileAbsolutePath, ex.Message),
                             shouldOutputMessageToConsole: true,
                             ex);
@@ -465,8 +473,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage(
-                        LoggerService.LogLevel.Warning,
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
                         string.Format(LOG_FAILED_PRECOMPUTE_MD5_FILE, fileAbsolutePath),
                         shouldOutputMessageToConsole: true,
                         ex);
@@ -485,7 +493,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// <param name="totalFiles">対象ファイルの総数。</param>
         /// <param name="processed">現在までに処理済みの件数。</param>
         /// <param name="lastLogTicks">最後にログした時刻（Tick）。</param>
-        private static void LogPrecomputeProgress(int totalFiles, int processed, ref long lastLogTicks)
+        private void LogPrecomputeProgress(int totalFiles, int processed, ref long lastLogTicks)
         {
             // 一定秒数間隔または一定件数ごとに進捗ログを出す（初回は直ちに出力）
             var nowTicks = DateTime.UtcNow.Ticks;
@@ -505,8 +513,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             int percent = (int)(processed * 100.0 / totalFiles);
 
-            LoggerService.LogMessage(
-                LoggerService.LogLevel.Info,
+            _logger.LogMessage(
+                AppLogLevel.Info,
                 string.Format(LOG_PRECOMPUTE_MD5_PROGRESS, processed, totalFiles, percent),
                 shouldOutputMessageToConsole: true);
         }
@@ -599,8 +607,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
             catch (Exception ex)
             {
                 // 削除に失敗した場合は警告ログを吐く
-                LoggerService.LogMessage(
-                    LoggerService.LogLevel.Warning,
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
                     string.Format(LOG_FAILED_REMOVE_DISK_CACHE_FILE, BuildILCacheFileAbsolutePath(oldestILCacheKey)),
                     shouldOutputMessageToConsole: true,
                     ex);
@@ -630,8 +638,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
             catch (Exception ex)
             {
                 // 例外は握りつぶさず警告ログに残す
-                LoggerService.LogMessage(
-                    LoggerService.LogLevel.Warning,
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
                     string.Format(LOG_FAILED_IL_CACHE_FILE_FORMAT, "write", diskILCacheFileToWriteAbsolutePath, ex.Message),
                     shouldOutputMessageToConsole: true,
                     ex);
@@ -723,7 +731,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// </summary>
         /// <param name="file">削除対象のファイル。</param>
         /// <returns>削除に成功した場合 true。</returns>
-        private static bool TryDeleteCacheFile(FileInfo file)
+        private bool TryDeleteCacheFile(FileInfo file)
         {
             try
             {
@@ -732,8 +740,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage(
-                    LoggerService.LogLevel.Warning,
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
                     string.Format(LOG_FAILED_DELETE_CACHE_FILE, file.FullName),
                     shouldOutputMessageToConsole: true,
                     ex);
@@ -747,15 +755,15 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// <param name="removed">削除したファイル件数。</param>
         /// <param name="remainingCount">削除後のファイル件数。</param>
         /// <param name="remainingBytes">削除後の総バイト数。</param>
-        private static void LogDiskQuotaTrim(int removed, int remainingCount, long remainingBytes)
+        private void LogDiskQuotaTrim(int removed, int remainingCount, long remainingBytes)
         {
             if (removed <= 0)
             {
                 return;
             }
             // どれだけ削除され、残数・残容量がいくつかをコンソール・ログ出力
-            LoggerService.LogMessage(
-                LoggerService.LogLevel.Info,
+            _logger.LogMessage(
+                AppLogLevel.Info,
                 string.Format(LOG_DISK_QUOTA_TRIM, removed, remainingCount, remainingBytes),
                 shouldOutputMessageToConsole: true);
         }
@@ -780,8 +788,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 return;
             }
-            LoggerService.LogMessage(
-                LoggerService.LogLevel.Info,
+            _logger.LogMessage(
+                AppLogLevel.Info,
                 string.Format(LOG_IL_CACHE_STATS, _internalHits, _internalStores, _evictedCount, _expiredCount),
                 shouldOutputMessageToConsole: true);
         }

@@ -13,19 +13,25 @@ namespace FolderDiffIL4DotNet.Tests.Services
     public sealed class DotNetDisassembleServiceTests : IDisposable
     {
         private readonly string _rootDir;
+        private readonly FileDiffResultLists _resultLists = new();
+        private readonly ILoggerService _logger = new LoggerService();
+        private readonly DotNetDisassemblerCache _dotNetDisassemblerCache;
 
         public DotNetDisassembleServiceTests()
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-disasm-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
+            _dotNetDisassemblerCache = new DotNetDisassemblerCache(_logger);
             ResetDisassemblerFailureState();
             ResetDisassemblerVersionCacheState();
+            _resultLists.ResetAll();
         }
 
         public void Dispose()
         {
             ResetDisassemblerFailureState();
             ResetDisassemblerVersionCacheState();
+            _resultLists.ResetAll();
             try
             {
                 if (Directory.Exists(_rootDir))
@@ -84,7 +90,7 @@ exit 0
                 Environment.SetEnvironmentVariable("HOME", _rootDir);
 
                 var config = CreateConfig(enableIlCache: false);
-                var service = new DotNetDisassembleService(config, ilCache: null);
+                var service = CreateService(config, null);
 
                 var goodDll = Path.Combine(_rootDir, "good.dll");
                 var badDll = Path.Combine(_rootDir, "bad.dll");
@@ -152,8 +158,8 @@ exit 0
                 return;
             }
 
-            FileDiffResultLists.DisassemblerToolVersions.Clear();
-            FileDiffResultLists.DisassemblerToolVersionsFromCache.Clear();
+            _resultLists.DisassemblerToolVersions.Clear();
+            _resultLists.DisassemblerToolVersionsFromCache.Clear();
 
             var binDir = Path.Combine(_rootDir, "bin-pair");
             Directory.CreateDirectory(binDir);
@@ -192,7 +198,7 @@ exit 0
                 Environment.SetEnvironmentVariable("HOME", _rootDir);
 
                 var config = CreateConfig(enableIlCache: false);
-                var service = new DotNetDisassembleService(config, ilCache: null);
+                var service = CreateService(config, null);
 
                 var goodDll = Path.Combine(_rootDir, "good-pair.dll");
                 var badDll = Path.Combine(_rootDir, "bad.dll");
@@ -205,7 +211,7 @@ exit 0
                 Assert.Contains("ilspycmd", newCommand, StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotContain("dotnet-ildasm", oldCommand, StringComparison.OrdinalIgnoreCase);
                 Assert.DoesNotContain("dotnet-ildasm", newCommand, StringComparison.OrdinalIgnoreCase);
-                Assert.DoesNotContain("dotnet-ildasm", string.Join(",", FileDiffResultLists.DisassemblerToolVersions.Keys), StringComparison.OrdinalIgnoreCase);
+                Assert.DoesNotContain("dotnet-ildasm", string.Join(",", _resultLists.DisassemblerToolVersions.Keys), StringComparison.OrdinalIgnoreCase);
             }
             finally
             {
@@ -257,7 +263,7 @@ exit 0
                 Environment.SetEnvironmentVariable("HOME", _rootDir);
 
                 var config = CreateConfig(enableIlCache: false);
-                var service = new DotNetDisassembleService(config, ilCache: null);
+                var service = CreateService(config, null);
 
                 int countAfter1 = 0;
                 int countAfter2 = 0;
@@ -328,7 +334,7 @@ exit 1
                 await File.WriteAllTextAsync(dllPath, "dummy");
 
                 var config = CreateConfig(enableIlCache: true);
-                var service1 = new DotNetDisassembleService(config, new ILCache(cacheDir));
+                var service1 = CreateService(config, new ILCache(cacheDir, _logger));
                 var (_, command1) = await service1.DisassembleAsync(dllPath);
                 var countAfterFirstRun = File.Exists(counterPath) ? await CountLinesAsync(counterPath) : 0;
                 Assert.Contains("fingerprint:", command1, StringComparison.OrdinalIgnoreCase);
@@ -338,7 +344,7 @@ exit 1
                 await Task.Delay(1100);
                 WriteExecutable(binDir, "dotnet-ildasm", BuildVersionFailingDisassemblerScript(counterPath, "#REV-B-LONGER"));
 
-                var service2 = new DotNetDisassembleService(config, new ILCache(cacheDir));
+                var service2 = CreateService(config, new ILCache(cacheDir, _logger));
                 var (_, command2) = await service2.DisassembleAsync(dllPath);
                 var countAfterSecondRun = File.Exists(counterPath) ? await CountLinesAsync(counterPath) : 0;
 
@@ -401,13 +407,16 @@ exit 0
             dictionary.Clear();
         }
 
-        private static void ResetDisassemblerVersionCacheState()
+        private void ResetDisassemblerVersionCacheState()
         {
-            var field = typeof(DotNetDisassemblerCache).GetField("disassemblerVersionCache", BindingFlags.Static | BindingFlags.NonPublic);
+            var field = typeof(DotNetDisassemblerCache).GetField("_disassemblerVersionCache", BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(field);
-            var dictionary = field.GetValue(null) as ConcurrentDictionary<string, string>;
+            var dictionary = field.GetValue(_dotNetDisassemblerCache) as ConcurrentDictionary<string, string>;
             Assert.NotNull(dictionary);
             dictionary.Clear();
         }
+
+        private DotNetDisassembleService CreateService(ConfigSettings config, ILCache ilCache)
+            => new(config, ilCache, _resultLists, _logger, _dotNetDisassemblerCache);
     }
 }

@@ -7,6 +7,7 @@ using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Utils;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FolderDiffIL4DotNet
 {
@@ -168,6 +169,16 @@ namespace FolderDiffIL4DotNet
         /// 処理時間（文字列）
         /// </summary>
         private static string _elapsedTimeString;
+
+        /// <summary>
+        /// DI コンテナ（アプリ起動中の依存解決に使用）
+        /// </summary>
+        private static ServiceProvider _serviceProvider;
+
+        /// <summary>
+        /// ロガー
+        /// </summary>
+        private static ILoggerService _logger;
         #endregion
 
         /// <summary>
@@ -175,22 +186,25 @@ namespace FolderDiffIL4DotNet
         /// </summary>
         static async Task<int> Main(string[] args)
         {
+            _serviceProvider = BuildServiceProvider();
+            _logger = _serviceProvider.GetRequiredService<ILoggerService>();
+
             var exitCode = EXIT_CODE_SUCCESS;
             try
             {
                 #region Loggerの初期化（以降Loggerを使ったログ出力が可能）
                 Console.WriteLine(INITIALIZING_LOGGER);
-                LoggerService.Initialize();
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
+                _logger.Initialize();
+                _logger.LogMessage(AppLogLevel.Info, LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
                 #endregion
 
                 // アプリケーションのバージョンを取得
                 _thisAppVersion = SystemInfo.GetAppVersion(typeof(Program));
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, string.Format(APPLICATION_VERSION, _thisAppVersion), shouldOutputMessageToConsole: true);
 
                 _computerName = SystemInfo.GetComputerName();
 
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
 
                 #region コマンドライン引数の過不足およびnull, 空文字, 空白文字チェック
                 try
@@ -222,7 +236,7 @@ namespace FolderDiffIL4DotNet
                     }
                     catch (ArgumentException)
                     {
-                        LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(ERROR_INVALID_REPORT_LABEL, reportLabel), shouldOutputMessageToConsole: true);
+                        _logger.LogMessage(AppLogLevel.Error, string.Format(ERROR_INVALID_REPORT_LABEL, reportLabel), shouldOutputMessageToConsole: true);
                         throw;
                     }
                     // レポート出力先の準備
@@ -249,7 +263,7 @@ namespace FolderDiffIL4DotNet
                 }
                 #endregion
 
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
 
                 ConsoleBanner.Print();
 
@@ -257,27 +271,34 @@ namespace FolderDiffIL4DotNet
                 Directory.CreateDirectory(_reportsFolderAbsolutePath);
 
                 #region アプリケーション設定の読み込み
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
-                _config = await new ConfigService().LoadConfigAsync();
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
+                _config = await _serviceProvider.GetRequiredService<ConfigService>().LoadConfigAsync();
+                _logger.LogMessage(AppLogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
                 #endregion
 
                 // 古いログファイルの削除（失敗しても警告出力のみで処理継続）
-                LoggerService.CleanupOldLogFiles(_config.MaxLogGenerations);
+                _logger.CleanupOldLogFiles(_config.MaxLogGenerations);
 
                 // タイムスタンプキャッシュを初期化
                 Services.Caching.TimestampCache.Clear();
 
                 // 処理開始宣言
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_APP_STARTING, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, LOG_APP_STARTING, shouldOutputMessageToConsole: true);
 
                 #region フォルダ差分比較処理の実行
                 {
-                    using var progressReporter = new ProgressReportService();
+                    using var progressReporter = _serviceProvider.GetRequiredService<ProgressReportService>();
                     // 処理時間計測開始
                     var stopwatch = Stopwatch.StartNew();
                     // 比較処理
-                    await new FolderDiffService(_config, progressReporter, _oldFolderAbsolutePath, _newFolderAbsolutePath, _reportsFolderAbsolutePath).ExecuteFolderDiffAsync();
+                    var folderDiffService = ActivatorUtilities.CreateInstance<FolderDiffService>(
+                        _serviceProvider,
+                        _config,
+                        progressReporter,
+                        _oldFolderAbsolutePath,
+                        _newFolderAbsolutePath,
+                        _reportsFolderAbsolutePath);
+                    await folderDiffService.ExecuteFolderDiffAsync();
                     // 処理時間計測終了
                     stopwatch.Stop();
                     // フォルダ差分比較処理時間のコンソール出力
@@ -291,14 +312,14 @@ namespace FolderDiffIL4DotNet
                             string secondString = $"{lastRunDuration.Value.Seconds:00}";
                             string millisecondString = $"{lastRunDuration.Value.Milliseconds:000}";
                             _elapsedTimeString = $"{hourString}:{minuteString}:{secondString}.{millisecondString}";
-                            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(Constants.LOG_ELAPSED_TIME, _elapsedTimeString), shouldOutputMessageToConsole: true);
+                            _logger.LogMessage(AppLogLevel.Info, string.Format(Constants.LOG_ELAPSED_TIME, _elapsedTimeString), shouldOutputMessageToConsole: true);
                         }
                     }
                 }
                 #endregion
 
                 // 差分結果の集計レポートを生成
-                new ReportGenerateService().GenerateDiffReport(
+                _serviceProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(
                     _oldFolderAbsolutePath,
                     _newFolderAbsolutePath,
                     _reportsFolderAbsolutePath,
@@ -308,13 +329,14 @@ namespace FolderDiffIL4DotNet
                     _config);
 
                 // 正常終了メッセージ出力
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
+                _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
             }
             catch (Exception ex)
             {
                 // 例外を捕捉した場合は、stacktraceをログに出力して終了
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, ex);
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_ERROR_DETAILS_PATH, LoggerService._logFileAbsolutePath), shouldOutputMessageToConsole: true);
+                _logger?.LogMessage(AppLogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, ex);
+                var logFilePath = _logger?.LogFileAbsolutePath;
+                _logger?.LogMessage(AppLogLevel.Info, string.Format(LOG_ERROR_DETAILS_PATH, logFilePath), shouldOutputMessageToConsole: true);
                 exitCode = EXIT_CODE_ERROR;
             }
             finally
@@ -337,12 +359,28 @@ namespace FolderDiffIL4DotNet
                     }
                     catch (Exception ex)
                     {
-                        LoggerService.LogMessage(LoggerService.LogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
+                        _logger?.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
                     }
 
                 }
             }
+            _serviceProvider.Dispose();
             return exitCode;
+        }
+
+        /// <summary>
+        /// アプリで使用する依存関係を構成します。
+        /// </summary>
+        private static ServiceProvider BuildServiceProvider()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<ILoggerService, LoggerService>();
+            services.AddSingleton<FileDiffResultLists>();
+            services.AddSingleton<Services.Caching.DotNetDisassemblerCache>();
+            services.AddTransient<ConfigService>();
+            services.AddTransient<ProgressReportService>();
+            services.AddTransient<ReportGenerateService>();
+            return services.BuildServiceProvider();
         }
     }
 }

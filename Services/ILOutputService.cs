@@ -8,6 +8,7 @@ using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
 using FolderDiffIL4DotNet.Utils;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -93,6 +94,16 @@ namespace FolderDiffIL4DotNet.Services
         /// .NET 逆アセンブル担当サービス。
         /// </summary>
         private readonly DotNetDisassembleService _dotNetDisassembleService;
+
+        /// <summary>
+        /// ログ出力サービス。
+        /// </summary>
+        private readonly ILoggerService _logger;
+
+        /// <summary>
+        /// 補助サービスの解決に利用する DI サービスプロバイダー。
+        /// </summary>
+        private readonly IServiceProvider _serviceProvider;
         #endregion
 
         /// <summary>
@@ -101,24 +112,38 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="config">設定。</param>
         /// <param name="ilOldFolderAbsolutePath">old 側 IL テキスト出力フォルダ。</param>
         /// <param name="ilNewFolderAbsolutePath">new 側 IL テキスト出力フォルダ。</param>
-        public ILOutputService(ConfigSettings config, string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath)
+        /// <param name="serviceProvider">DI サービスプロバイダー。</param>
+        /// <param name="logger">ログ出力サービス。</param>
+        public ILOutputService(ConfigSettings config, string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath, IServiceProvider serviceProvider, ILoggerService logger)
         {
+            ArgumentNullException.ThrowIfNull(config);
+            ArgumentNullException.ThrowIfNull(ilOldFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(ilNewFolderAbsolutePath);
             _config = config;
+            ArgumentNullException.ThrowIfNull(serviceProvider);
+            _serviceProvider = serviceProvider;
+            ArgumentNullException.ThrowIfNull(logger);
+            _logger = logger;
             _ilOldFolderAbsolutePath = ilOldFolderAbsolutePath;
             _ilNewFolderAbsolutePath = ilNewFolderAbsolutePath;
-            _ilTextOutputService = new ILTextOutputService(_ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
+            _ilTextOutputService = ActivatorUtilities.CreateInstance<ILTextOutputService>(_serviceProvider, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
             if (_config.EnableILCache)
             {
                 _ilCache = new ILCache(
                     string.IsNullOrWhiteSpace(_config.ILCacheDirectoryAbsolutePath) ? Path.Combine(AppContext.BaseDirectory, Constants.DEFAULT_IL_CACHE_DIR_NAME) : _config.ILCacheDirectoryAbsolutePath,
+                    _logger,
                     ilCacheMaxMemoryEntries: IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
                     timeToLive: TimeSpan.FromHours(IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS),
                     statsLogIntervalSeconds: _config.ILCacheStatsLogIntervalSeconds <= 0 ? IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS : _config.ILCacheStatsLogIntervalSeconds,
                     ilCacheMaxDiskFileCount: _config.ILCacheMaxDiskFileCount,
-                    ilCacheMaxDiskMegabytes: _config.ILCacheMaxDiskMegabytes
-                );
+                    ilCacheMaxDiskMegabytes: _config.ILCacheMaxDiskMegabytes);
             }
-            _dotNetDisassembleService = new DotNetDisassembleService(_config, _ilCache);
+            _dotNetDisassembleService = new DotNetDisassembleService(
+                _config,
+                _ilCache,
+                _serviceProvider.GetRequiredService<FileDiffResultLists>(),
+                _logger,
+                _serviceProvider.GetRequiredService<DotNetDisassemblerCache>());
         }
 
         /// <summary>
@@ -144,7 +169,7 @@ namespace FolderDiffIL4DotNet.Services
             if (_config.OptimizeForNetworkShares)
             {
                 // ネットワーク共有最適化時は、MD5 プリウォームおよび IL キャッシュ先読みをスキップ
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP, shouldOutputMessageToConsole: true);
                 return;
             }
             if (maxParallel <= 0)
@@ -163,7 +188,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_PRECOMPUTE_MD5_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_PRECOMPUTE_MD5_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
             }
         }
 
@@ -195,7 +220,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception)
             {
                 // IL テキスト出力に失敗した場合はエラーログを出しつつ再スロー。
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
                 throw;
             }
             return (areILsEqual, disassemblerLabel);

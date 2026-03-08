@@ -191,6 +191,21 @@ namespace FolderDiffIL4DotNet.Services
         /// キャッシュ書き込み（格納）回数。
         /// </summary>
         private int _ilCacheStores;
+
+        /// <summary>
+        /// 比較結果を蓄積する実行単位の状態オブジェクト。
+        /// </summary>
+        private readonly FileDiffResultLists _fileDiffResultLists;
+
+        /// <summary>
+        /// ログ出力サービス。
+        /// </summary>
+        private readonly ILoggerService _logger;
+
+        /// <summary>
+        /// 逆アセンブラバージョン取得のキャッシュサービス。
+        /// </summary>
+        private readonly DotNetDisassemblerCache _dotNetDisassemblerCache;
         #endregion
 
         /// <summary>
@@ -212,14 +227,23 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="config"></param>
-        /// <param name="ilCache"></param>
+        /// <param name="config">アプリケーション設定。</param>
+        /// <param name="ilCache">IL キャッシュ（無効時は null）。</param>
+        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
+        /// <param name="logger">ログ出力サービス。</param>
+        /// <param name="dotNetDisassemblerCache">逆アセンブラバージョン取得キャッシュ。</param>
         /// <exception cref="ArgumentNullException"></exception>
-        public DotNetDisassembleService(ConfigSettings config, ILCache ilCache)
+        public DotNetDisassembleService(ConfigSettings config, ILCache ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
         {
             ArgumentNullException.ThrowIfNull(config);
             _config = config;
             _ilCache = ilCache;
+            ArgumentNullException.ThrowIfNull(fileDiffResultLists);
+            _fileDiffResultLists = fileDiffResultLists;
+            ArgumentNullException.ThrowIfNull(logger);
+            _logger = logger;
+            ArgumentNullException.ThrowIfNull(dotNetDisassemblerCache);
+            _dotNetDisassemblerCache = dotNetDisassemblerCache;
         }
 
         /// <summary>
@@ -255,14 +279,14 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
@@ -333,14 +357,14 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
@@ -379,8 +403,8 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             // 対象件数と並列度をログに出し、プリフェッチの開始を明示。
-            LoggerService.LogMessage(
-                LoggerService.LogLevel.Info,
+            _logger.LogMessage(
+                AppLogLevel.Info,
                 string.Format(LOG_PREFETCH_IL_CACHE_START, assemblies.Count, nameof(maxParallel), maxParallel),
                 shouldOutputMessageToConsole: true);
 
@@ -402,7 +426,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_PREFETCH_IL_CACHE, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_PREFETCH_IL_CACHE, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
                 }
                 finally
                 {
@@ -417,14 +441,14 @@ namespace FolderDiffIL4DotNet.Services
                         if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) == prev)
                         {
                             int percent = (int)(done * 100.0 / assemblies.Count);
-                            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREFETCH_IL_CACHE_PROGRESS, done, assemblies.Count, percent, IlCacheHits), shouldOutputMessageToConsole: true);
+                            _logger.LogMessage(AppLogLevel.Info, string.Format(LOG_PREFETCH_IL_CACHE_PROGRESS, done, assemblies.Count, percent, IlCacheHits), shouldOutputMessageToConsole: true);
                         }
                     }
                 }
             });
 
             // 最終的なヒット/格納カウントをログに出し、プリフェッチ完了を通知。
-            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREFETCH_IL_CACHE_COMPLETE, IlCacheHits, IlCacheStores), shouldOutputMessageToConsole: true);
+            _logger.LogMessage(AppLogLevel.Info, string.Format(LOG_PREFETCH_IL_CACHE_COMPLETE, IlCacheHits, IlCacheStores), shouldOutputMessageToConsole: true);
         }
 
         #region private methods
@@ -560,7 +584,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_GET_IL_FROM_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_GET_IL_FROM_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
                 return (false, null, null);
             }
         }
@@ -604,7 +628,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_SET_IL_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_SET_IL_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
             }
         }
 
@@ -668,7 +692,7 @@ namespace FolderDiffIL4DotNet.Services
         /// 逆アセンブラ候補コマンドのバージョンリストを構築します。
         /// バージョン取得に失敗したコマンドは警告ログを出力してスキップされます。
         /// </summary>
-        private static async Task<List<(string Command, string Version)>> BuildDisassemblerVersionListAsync()
+        private async Task<List<(string Command, string Version)>> BuildDisassemblerVersionListAsync()
         {
             var result = new List<(string Command, string Version)>();
             foreach (var candidateCommand in CandidateDisassembleCommands())
@@ -679,13 +703,13 @@ namespace FolderDiffIL4DotNet.Services
                     var versionQueryLabel = IsDotnetMuxer(candidateCommand)
                         ? $"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL}"
                         : candidateCommand;
-                    var version = await DotNetDisassemblerCache.GetDisassemblerVersionAsync(versionQueryLabel);
+                    var version = await _dotNetDisassemblerCache.GetDisassemblerVersionAsync(versionQueryLabel);
                     result.Add((candidateCommand, version));
                 }
                 catch
                 {
-                    LoggerService.LogMessage(
-                        LoggerService.LogLevel.Warning,
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
                         string.Format(LOG_FAILED_TO_GET_VERSION_FOR_COMMAND, candidateCommand, candidateCommand),
                         shouldOutputMessageToConsole: true);
                 }
@@ -706,7 +730,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// パスに非ASCII文字がある場合に、ASCII の一時パスへコピーしたファイルのパスを返します。該当しなければ null。
         /// </summary>
-        private static string CreateAsciiTempCopyIfNeeded(string dotNetAssemblyFileAbsolutePath)
+        private string CreateAsciiTempCopyIfNeeded(string dotNetAssemblyFileAbsolutePath)
         {
             try
             {
@@ -719,7 +743,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_CREATE_ASCII_TEMP_COPY, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_CREATE_ASCII_TEMP_COPY, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
             }
             return null;
         }
@@ -771,11 +795,11 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// ベースラベルにツールバージョンを付加して返します。取得失敗時はベースラベルをそのまま返します。
         /// </summary>
-        private static async Task<string> GetDisassembleCommandAndItsVersionWithArgumentsAsync(string disassembleCommandWithArguments)
+        private async Task<string> GetDisassembleCommandAndItsVersionWithArgumentsAsync(string disassembleCommandWithArguments)
         {
             try
             {
-                var disassemblerVersion = await DotNetDisassemblerCache.GetDisassemblerVersionAsync(disassembleCommandWithArguments);
+                var disassemblerVersion = await _dotNetDisassemblerCache.GetDisassemblerVersionAsync(disassembleCommandWithArguments);
                 var disassemblerVersionOneLine = disassemblerVersion.Replace("\r", " ").Replace("\n", " ").Trim();
                 return string.IsNullOrEmpty(disassemblerVersionOneLine) ? disassembleCommandWithArguments : $"{disassembleCommandWithArguments} (version: {disassemblerVersionOneLine})";
             }
@@ -1025,7 +1049,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// 使用した逆アセンブラ名/バージョンを集計します。
         /// </summary>
-        private static void RecordDisassemblerUsage(string disassembleCommand, string disassembleCommandAndItsVersionWithArguments, bool fromCache = false)
+        private void RecordDisassemblerUsage(string disassembleCommand, string disassembleCommandAndItsVersionWithArguments, bool fromCache = false)
         {
             if (string.IsNullOrWhiteSpace(disassembleCommandAndItsVersionWithArguments))
             {
@@ -1034,7 +1058,7 @@ namespace FolderDiffIL4DotNet.Services
 
             var toolName = NormalizeDisassemblerName(disassembleCommand);
             var version = ExtractVersionFromLabel(disassembleCommandAndItsVersionWithArguments);
-            FileDiffResultLists.RecordDisassemblerToolVersion(toolName, version, fromCache);
+            _fileDiffResultLists.RecordDisassemblerToolVersion(toolName, version, fromCache);
         }
 
         /// <summary>

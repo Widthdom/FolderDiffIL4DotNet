@@ -24,6 +24,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         private const string ERROR_FAILED_TO_OUTPUT_IL_TEXT = $"Failed to output {Constants.LABEL_IL} Text.";
         #endregion
 
+        #region private read-only member variables
         /// <summary>
         /// 旧 IL フォルダの絶対パス
         /// </summary>
@@ -34,17 +35,26 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         private readonly string _ilNewFolderAbsolutePath;
 
         /// <summary>
+        /// ログ出力サービス。
+        /// </summary>
+        private readonly ILoggerService _logger;
+        #endregion
+
+        /// <summary>
         /// コンストラクタ
         /// </summary>
         /// <param name="ilOldFolderAbsolutePath">旧 IL フォルダの絶対パス</param>
         /// <param name="ilNewFolderAbsolutePath">新 IL フォルダの絶対パス</param>
-        public ILTextOutputService(string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath)
+        /// <param name="logger">ログ出力サービス。</param>
+        public ILTextOutputService(string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath, ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(ilOldFolderAbsolutePath);
             ArgumentNullException.ThrowIfNull(ilNewFolderAbsolutePath);
 
             _ilOldFolderAbsolutePath = ilOldFolderAbsolutePath;
             _ilNewFolderAbsolutePath = ilNewFolderAbsolutePath;
+            ArgumentNullException.ThrowIfNull(logger);
+            _logger = logger;
         }
 
         /// <summary>
@@ -78,12 +88,12 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
                 }
             }
             catch (Exception)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL_TEXT, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL_TEXT, shouldOutputMessageToConsole: true);
                 throw;
             }
         }

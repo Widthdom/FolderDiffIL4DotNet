@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
 
@@ -11,9 +12,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndStackTraceToLogFile()
         {
+            var logger = new LoggerService();
             var originalOut = Console.Out;
-            var originalLogDir = LoggerService._logDirectoryAbsolutePath;
-            var originalLogFile = LoggerService._logFileAbsolutePath;
             var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var tempLogPath = Path.Combine(tempDir, "log_test.log");
@@ -22,8 +22,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             try
             {
                 Console.SetOut(writer);
-                LoggerService._logDirectoryAbsolutePath = tempDir;
-                LoggerService._logFileAbsolutePath = tempLogPath;
+                SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+                SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
 
                 Exception captured;
                 try
@@ -35,7 +35,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     captured = ex;
                 }
 
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, "failure", shouldOutputMessageToConsole: true, ConsoleColor.Red, captured);
+                logger.LogMessage(AppLogLevel.Error, "failure", shouldOutputMessageToConsole: true, ConsoleColor.Red, captured);
 
                 var consoleText = writer.ToString();
                 Assert.Contains("[ERROR] failure", consoleText);
@@ -47,8 +47,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             finally
             {
                 Console.SetOut(originalOut);
-                LoggerService._logDirectoryAbsolutePath = originalLogDir;
-                LoggerService._logFileAbsolutePath = originalLogFile;
                 try
                 {
                     if (Directory.Exists(tempDir))
@@ -66,16 +64,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void LogMessage_DefaultOverload_KeepsExistingConsoleFormat()
         {
+            var logger = new LoggerService();
             var originalOut = Console.Out;
-            var originalLogFile = LoggerService._logFileAbsolutePath;
             var writer = new StringWriter();
 
             try
             {
                 Console.SetOut(writer);
-                LoggerService._logFileAbsolutePath = null;
+                SetPrivateField(logger, "_logFileAbsolutePath", null);
 
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, "success", shouldOutputMessageToConsole: true);
+                logger.LogMessage(AppLogLevel.Info, "success", shouldOutputMessageToConsole: true);
 
                 var consoleText = writer.ToString();
                 Assert.Contains("[INFO] success", consoleText);
@@ -83,8 +81,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             finally
             {
                 Console.SetOut(originalOut);
-                LoggerService._logFileAbsolutePath = originalLogFile;
             }
+        }
+
+        private static void SetPrivateField(object target, string fieldName, string value)
+        {
+            var fieldInfo = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(fieldInfo);
+            fieldInfo.SetValue(target, value);
         }
     }
 

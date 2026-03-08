@@ -13,6 +13,30 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ReportGenerateService
     {
+        #region private read only member variables
+        /// <summary>
+        /// 差分結果保持オブジェクト。
+        /// </summary>
+        private readonly FileDiffResultLists _fileDiffResultLists;
+
+        /// <summary>
+        /// ログ出力サービス。
+        /// </summary>
+        private readonly ILoggerService _logger;
+        #endregion
+
+        /// <summary>
+        /// コンストラクタ。
+        /// </summary>
+        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
+        /// <param name="logger">ログ出力サービス。</param>
+        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger)
+        {
+            ArgumentNullException.ThrowIfNull(fileDiffResultLists);
+            _fileDiffResultLists = fileDiffResultLists;
+            ArgumentNullException.ThrowIfNull(logger);
+            _logger = logger;
+        }
         #region constants
         /// <summary>
         /// フォルダ差分の概要を出力する Markdown レポートのファイル名
@@ -375,10 +399,10 @@ namespace FolderDiffIL4DotNet.Services
             ConfigSettings config)
         {
             string diffReportAbsolutePath = Path.Combine(reportsFolderAbsolutePath, DIFF_REPORT_FILE_NAME);
-            bool hasMd5Mismatch = FileDiffResultLists.HasAnyMd5Mismatch;
+            bool hasMd5Mismatch = _fileDiffResultLists.HasAnyMd5Mismatch;
             if (hasMd5Mismatch)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Warning, WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Warning, WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true);
             }
             using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT);
             var reportGenerated = false;
@@ -422,10 +446,10 @@ namespace FolderDiffIL4DotNet.Services
                     // Ignored Files はアプリ設定（ShouldIncludeIgnoredFiles）が true の場合のみ出力。
                     // ShouldOutputFileTimestamps が true なら旧/新それぞれの存在箇所に応じた最終更新日時を併記し、
                     // 旧/新のどちらに存在したかもラベル（(old)/(new)/(old/new)）で明示します。
-                    if (config.ShouldIncludeIgnoredFiles && FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count > 0)
+                    if (config.ShouldIncludeIgnoredFiles && _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count > 0)
                     {
                         streamWriter.WriteLine(REPORT_SECTION_IGNORED_FILES);
-                        foreach (var entry in FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
+                        foreach (var entry in _fileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
                         {
                             var locationLabel = entry.Value switch
                             {
@@ -471,9 +495,9 @@ namespace FolderDiffIL4DotNet.Services
                     if (config.ShouldIncludeUnchangedFiles)
                     {
                         streamWriter.WriteLine(REPORT_SECTION_UNCHANGED_FILES);
-                        foreach (var fileRelativePath in FileDiffResultLists.UnchangedFilesRelativePath)
+                        foreach (var fileRelativePath in _fileDiffResultLists.UnchangedFilesRelativePath)
                         {
-                            var diffDetail = FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                            var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                             var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
                             if (config.ShouldOutputFileTimestamps)
                             {
@@ -493,7 +517,7 @@ namespace FolderDiffIL4DotNet.Services
 
                     // ボディ - Added Files -
                     streamWriter.WriteLine(REPORT_SECTION_ADDED_FILES);
-                    foreach (var newFileAbsolutePath in FileDiffResultLists.AddedFilesAbsolutePath)
+                    foreach (var newFileAbsolutePath in _fileDiffResultLists.AddedFilesAbsolutePath)
                     {
                         if (config.ShouldOutputFileTimestamps)
                         {
@@ -507,7 +531,7 @@ namespace FolderDiffIL4DotNet.Services
 
                     // ボディ - Removed Files -
                     streamWriter.WriteLine(REPORT_SECTION_REMOVED_FILES);
-                    foreach (var oldFileAbsolutePath in FileDiffResultLists.RemovedFilesAbsolutePath)
+                    foreach (var oldFileAbsolutePath in _fileDiffResultLists.RemovedFilesAbsolutePath)
                     {
                         if (config.ShouldOutputFileTimestamps)
                         {
@@ -521,9 +545,9 @@ namespace FolderDiffIL4DotNet.Services
 
                     // ボディ - Modified Files -
                     streamWriter.WriteLine(REPORT_SECTION_MODIFIED_FILES);
-                    foreach (var fileRelativePath in FileDiffResultLists.ModifiedFilesRelativePath)
+                    foreach (var fileRelativePath in _fileDiffResultLists.ModifiedFilesRelativePath)
                     {
-                        var diffDetail = FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                        var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                         var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
                         if (config.ShouldOutputFileTimestamps)
                         {
@@ -541,13 +565,13 @@ namespace FolderDiffIL4DotNet.Services
                     streamWriter.WriteLine(REPORT_SECTION_SUMMARY);
                     if (config.ShouldIncludeIgnoredFiles)
                     {
-                        streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_IGNORED, FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count));
+                        streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_IGNORED, _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count));
                     }
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_UNCHANGED, FileDiffResultLists.UnchangedFilesRelativePath.Count));
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_ADDED, FileDiffResultLists.AddedFilesAbsolutePath.Count));
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_REMOVED, FileDiffResultLists.RemovedFilesAbsolutePath.Count));
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_MODIFIED, FileDiffResultLists.ModifiedFilesRelativePath.Count));
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_COMPARED, REPORT_LABEL_COMPARED, FileDiffResultLists.OldFilesAbsolutePath.Count, FileDiffResultLists.NewFilesAbsolutePath.Count));
+                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_UNCHANGED, _fileDiffResultLists.UnchangedFilesRelativePath.Count));
+                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_ADDED, _fileDiffResultLists.AddedFilesAbsolutePath.Count));
+                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_REMOVED, _fileDiffResultLists.RemovedFilesAbsolutePath.Count));
+                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_MODIFIED, _fileDiffResultLists.ModifiedFilesRelativePath.Count));
+                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_COMPARED, REPORT_LABEL_COMPARED, _fileDiffResultLists.OldFilesAbsolutePath.Count, _fileDiffResultLists.NewFilesAbsolutePath.Count));
                     streamWriter.WriteLine();
                     if (hasMd5Mismatch)
                     {
@@ -558,7 +582,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(ERROR_FAILED_TO_OUTPUT_REPORT, diffReportAbsolutePath), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error, string.Format(ERROR_FAILED_TO_OUTPUT_REPORT, diffReportAbsolutePath), shouldOutputMessageToConsole: true);
                 throw;
             }
             finally
@@ -570,7 +594,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
                 }
                 spinner.Complete(reportGenerated ? LOG_REPORT_GENERATION_COMPLETED : null);
             }
@@ -580,10 +604,10 @@ namespace FolderDiffIL4DotNet.Services
         /// レポート冒頭に記載する逆アセンブラ一覧を組み立てます。
         /// 実際に観測されたラベル（実行/キャッシュ経由）だけを表示します。
         /// </summary>
-        private static string BuildDisassemblerHeaderText()
+        private string BuildDisassemblerHeaderText()
         {
-            var observedLabels = FileDiffResultLists.DisassemblerToolVersions.Keys
-                .Concat(FileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
+            var observedLabels = _fileDiffResultLists.DisassemblerToolVersions.Keys
+                .Concat(_fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
                 .Where(label => !string.IsNullOrWhiteSpace(label))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(GetDisassemblerDisplayOrder)
@@ -634,10 +658,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// 判定根拠表示を組み立てます。IL 判定の場合は逆アセンブラ情報を追記します。
         /// </summary>
-        private static string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail)
+        private string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail)
         {
             if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch || diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&
-                FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
+                _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
                 !string.IsNullOrWhiteSpace(label))
             {
                 return $"`{diffDetail}` `{label}`";

@@ -9,6 +9,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
     [Collection("FileDiffResultLists")]
     public class FileDiffResultListsTests : IDisposable
     {
+        private readonly FileDiffResultLists _sut = new();
+
         public FileDiffResultListsTests()
         {
             ClearAll();
@@ -19,9 +21,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
             ClearAll();
         }
 
-        private static void ClearAll()
+        private void ClearAll()
         {
-            FileDiffResultLists.ResetAll();
+            _sut.ResetAll();
         }
 
         #region RecordDiffDetail
@@ -29,47 +31,47 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void RecordDiffDetail_NewEntry_Stored()
         {
-            FileDiffResultLists.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
 
-            Assert.True(FileDiffResultLists.FileRelativePathToDiffDetailDictionary.ContainsKey("file.cs"));
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, FileDiffResultLists.FileRelativePathToDiffDetailDictionary["file.cs"]);
+            Assert.True(_sut.FileRelativePathToDiffDetailDictionary.ContainsKey("file.cs"));
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _sut.FileRelativePathToDiffDetailDictionary["file.cs"]);
         }
 
         [Fact]
         public void RecordDiffDetail_Overwrite_UpdatesValue()
         {
-            FileDiffResultLists.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
-            FileDiffResultLists.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.ILMismatch);
+            _sut.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("file.cs", FileDiffResultLists.DiffDetailResult.ILMismatch);
 
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.ILMismatch, FileDiffResultLists.FileRelativePathToDiffDetailDictionary["file.cs"]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.ILMismatch, _sut.FileRelativePathToDiffDetailDictionary["file.cs"]);
         }
 
         [Fact]
         public void RecordDiffDetail_MultipleEntries_AllStored()
         {
-            FileDiffResultLists.RecordDiffDetail("a.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
-            FileDiffResultLists.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
-            FileDiffResultLists.RecordDiffDetail("c.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+            _sut.RecordDiffDetail("a.cs", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
+            _sut.RecordDiffDetail("c.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
-            Assert.Equal(3, FileDiffResultLists.FileRelativePathToDiffDetailDictionary.Count);
+            Assert.Equal(3, _sut.FileRelativePathToDiffDetailDictionary.Count);
         }
 
         [Fact]
         public void RecordDiffDetail_IlResult_WithDisassemblerLabel_Stored()
         {
-            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
-            Assert.True(FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.ContainsKey("a.dll"));
-            Assert.Equal("dotnet-ildasm (version: 0.12.0)", FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary["a.dll"]);
+            Assert.True(_sut.FileRelativePathToIlDisassemblerLabelDictionary.ContainsKey("a.dll"));
+            Assert.Equal("dotnet-ildasm (version: 0.12.0)", _sut.FileRelativePathToIlDisassemblerLabelDictionary["a.dll"]);
         }
 
         [Fact]
         public void RecordDiffDetail_NonIlResult_ClearsExistingDisassemblerLabel()
         {
-            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
-            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
+            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
 
-            Assert.False(FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.ContainsKey("a.dll"));
+            Assert.False(_sut.FileRelativePathToIlDisassemblerLabelDictionary.ContainsKey("a.dll"));
         }
 
         #endregion
@@ -79,25 +81,25 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void HasAnyMd5Mismatch_Empty_ReturnsFalse()
         {
-            Assert.False(FileDiffResultLists.HasAnyMd5Mismatch);
+            Assert.False(_sut.HasAnyMd5Mismatch);
         }
 
         [Fact]
         public void HasAnyMd5Mismatch_OnlyMatches_ReturnsFalse()
         {
-            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
-            FileDiffResultLists.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
+            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
 
-            Assert.False(FileDiffResultLists.HasAnyMd5Mismatch);
+            Assert.False(_sut.HasAnyMd5Mismatch);
         }
 
         [Fact]
         public void HasAnyMd5Mismatch_WithMismatch_ReturnsTrue()
         {
-            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
-            FileDiffResultLists.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _sut.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
 
-            Assert.True(FileDiffResultLists.HasAnyMd5Mismatch);
+            Assert.True(_sut.HasAnyMd5Mismatch);
         }
 
         #endregion
@@ -107,19 +109,19 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void RecordIgnoredFile_OldOnly_StoresOldFlag()
         {
-            FileDiffResultLists.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _sut.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
 
-            Assert.True(FileDiffResultLists.IgnoredFilesRelativePathToLocation.ContainsKey("test.pdb"));
-            Assert.Equal(FileDiffResultLists.IgnoredFileLocation.Old, FileDiffResultLists.IgnoredFilesRelativePathToLocation["test.pdb"]);
+            Assert.True(_sut.IgnoredFilesRelativePathToLocation.ContainsKey("test.pdb"));
+            Assert.Equal(FileDiffResultLists.IgnoredFileLocation.Old, _sut.IgnoredFilesRelativePathToLocation["test.pdb"]);
         }
 
         [Fact]
         public void RecordIgnoredFile_BothOldAndNew_FlagsCombined()
         {
-            FileDiffResultLists.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
-            FileDiffResultLists.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.New);
+            _sut.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _sut.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.New);
 
-            var flags = FileDiffResultLists.IgnoredFilesRelativePathToLocation["test.pdb"];
+            var flags = _sut.IgnoredFilesRelativePathToLocation["test.pdb"];
             Assert.True(flags.HasFlag(FileDiffResultLists.IgnoredFileLocation.Old));
             Assert.True(flags.HasFlag(FileDiffResultLists.IgnoredFileLocation.New));
         }
@@ -131,17 +133,17 @@ namespace FolderDiffIL4DotNet.Tests.Models
         public void RecordIgnoredFile_NullOrWhitespace_ThrowsArgumentException(string path)
         {
             Assert.Throws<ArgumentException>(() =>
-                FileDiffResultLists.RecordIgnoredFile(path, FileDiffResultLists.IgnoredFileLocation.Old));
+                _sut.RecordIgnoredFile(path, FileDiffResultLists.IgnoredFileLocation.Old));
         }
 
         [Fact]
         public void RecordIgnoredFile_CaseInsensitiveKey()
         {
-            FileDiffResultLists.RecordIgnoredFile("Test.PDB", FileDiffResultLists.IgnoredFileLocation.Old);
-            FileDiffResultLists.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.New);
+            _sut.RecordIgnoredFile("Test.PDB", FileDiffResultLists.IgnoredFileLocation.Old);
+            _sut.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.New);
 
             // Should be the same entry due to OrdinalIgnoreCase
-            Assert.Single(FileDiffResultLists.IgnoredFilesRelativePathToLocation);
+            Assert.Single(_sut.IgnoredFilesRelativePathToLocation);
         }
 
         #endregion
@@ -151,36 +153,36 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void RecordDisassemblerToolVersion_Normal_Recorded()
         {
-            FileDiffResultLists.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0");
+            _sut.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0");
 
-            Assert.True(FileDiffResultLists.DisassemblerToolVersions.ContainsKey("dotnet-ildasm (version: 1.0.0)"));
+            Assert.True(_sut.DisassemblerToolVersions.ContainsKey("dotnet-ildasm (version: 1.0.0)"));
         }
 
         [Fact]
         public void RecordDisassemblerToolVersion_FromCache_RecordedInCacheDictionary()
         {
-            FileDiffResultLists.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0", fromCache: true);
+            _sut.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0", fromCache: true);
 
-            Assert.Empty(FileDiffResultLists.DisassemblerToolVersions);
-            Assert.True(FileDiffResultLists.DisassemblerToolVersionsFromCache.ContainsKey("dotnet-ildasm (version: 1.0.0)"));
+            Assert.Empty(_sut.DisassemblerToolVersions);
+            Assert.True(_sut.DisassemblerToolVersionsFromCache.ContainsKey("dotnet-ildasm (version: 1.0.0)"));
         }
 
         [Fact]
         public void RecordDisassemblerToolVersion_NullOrWhitespace_Ignored()
         {
-            FileDiffResultLists.RecordDisassemblerToolVersion(null, "1.0.0");
-            FileDiffResultLists.RecordDisassemblerToolVersion("", "1.0.0");
-            FileDiffResultLists.RecordDisassemblerToolVersion("   ", "1.0.0");
+            _sut.RecordDisassemblerToolVersion(null, "1.0.0");
+            _sut.RecordDisassemblerToolVersion("", "1.0.0");
+            _sut.RecordDisassemblerToolVersion("   ", "1.0.0");
 
-            Assert.Empty(FileDiffResultLists.DisassemblerToolVersions);
+            Assert.Empty(_sut.DisassemblerToolVersions);
         }
 
         [Fact]
         public void RecordDisassemblerToolVersion_NoVersion_UsesToolNameOnly()
         {
-            FileDiffResultLists.RecordDisassemblerToolVersion("ildasm", null);
+            _sut.RecordDisassemblerToolVersion("ildasm", null);
 
-            Assert.True(FileDiffResultLists.DisassemblerToolVersions.ContainsKey("ildasm"));
+            Assert.True(_sut.DisassemblerToolVersions.ContainsKey("ildasm"));
         }
 
         #endregion
@@ -190,11 +192,11 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void SetOldFilesAbsolutePath_ReplacesExistingEntries()
         {
-            FileDiffResultLists.SetOldFilesAbsolutePath(new[] { "old-a.dll", "old-b.dll" });
-            FileDiffResultLists.SetOldFilesAbsolutePath(new[] { "old-c.dll" });
+            _sut.SetOldFilesAbsolutePath(new[] { "old-a.dll", "old-b.dll" });
+            _sut.SetOldFilesAbsolutePath(new[] { "old-c.dll" });
 
-            Assert.Single(FileDiffResultLists.OldFilesAbsolutePath);
-            Assert.Equal("old-c.dll", FileDiffResultLists.OldFilesAbsolutePath.Single());
+            Assert.Single(_sut.OldFilesAbsolutePath);
+            Assert.Equal("old-c.dll", _sut.OldFilesAbsolutePath.Single());
         }
 
         [Fact]
@@ -203,39 +205,39 @@ namespace FolderDiffIL4DotNet.Tests.Models
             const int total = 1000;
             Parallel.For(0, total, i =>
             {
-                FileDiffResultLists.AddUnchangedFileRelativePath($"unchanged-{i}.dll");
+                _sut.AddUnchangedFileRelativePath($"unchanged-{i}.dll");
             });
 
-            Assert.Equal(total, FileDiffResultLists.UnchangedFilesRelativePath.Count);
+            Assert.Equal(total, _sut.UnchangedFilesRelativePath.Count);
         }
 
         [Fact]
         public void ResetAll_ClearsAllState()
         {
-            FileDiffResultLists.SetOldFilesAbsolutePath(new[] { "old-a.dll" });
-            FileDiffResultLists.SetNewFilesAbsolutePath(new[] { "new-a.dll" });
-            FileDiffResultLists.AddUnchangedFileRelativePath("same.dll");
-            FileDiffResultLists.AddAddedFileAbsolutePath("added.dll");
-            FileDiffResultLists.AddRemovedFileAbsolutePath("removed.dll");
-            FileDiffResultLists.AddModifiedFileRelativePath("modified.dll");
-            FileDiffResultLists.RecordDiffDetail("same.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
-            FileDiffResultLists.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
-            FileDiffResultLists.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0");
-            FileDiffResultLists.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0", fromCache: true);
+            _sut.SetOldFilesAbsolutePath(new[] { "old-a.dll" });
+            _sut.SetNewFilesAbsolutePath(new[] { "new-a.dll" });
+            _sut.AddUnchangedFileRelativePath("same.dll");
+            _sut.AddAddedFileAbsolutePath("added.dll");
+            _sut.AddRemovedFileAbsolutePath("removed.dll");
+            _sut.AddModifiedFileRelativePath("modified.dll");
+            _sut.RecordDiffDetail("same.dll", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _sut.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _sut.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0");
+            _sut.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0", fromCache: true);
 
-            FileDiffResultLists.ResetAll();
+            _sut.ResetAll();
 
-            Assert.Empty(FileDiffResultLists.OldFilesAbsolutePath);
-            Assert.Empty(FileDiffResultLists.NewFilesAbsolutePath);
-            Assert.Empty(FileDiffResultLists.UnchangedFilesRelativePath);
-            Assert.Empty(FileDiffResultLists.AddedFilesAbsolutePath);
-            Assert.Empty(FileDiffResultLists.RemovedFilesAbsolutePath);
-            Assert.Empty(FileDiffResultLists.ModifiedFilesRelativePath);
-            Assert.Empty(FileDiffResultLists.FileRelativePathToDiffDetailDictionary);
-            Assert.Empty(FileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary);
-            Assert.Empty(FileDiffResultLists.IgnoredFilesRelativePathToLocation);
-            Assert.Empty(FileDiffResultLists.DisassemblerToolVersions);
-            Assert.Empty(FileDiffResultLists.DisassemblerToolVersionsFromCache);
+            Assert.Empty(_sut.OldFilesAbsolutePath);
+            Assert.Empty(_sut.NewFilesAbsolutePath);
+            Assert.Empty(_sut.UnchangedFilesRelativePath);
+            Assert.Empty(_sut.AddedFilesAbsolutePath);
+            Assert.Empty(_sut.RemovedFilesAbsolutePath);
+            Assert.Empty(_sut.ModifiedFilesRelativePath);
+            Assert.Empty(_sut.FileRelativePathToDiffDetailDictionary);
+            Assert.Empty(_sut.FileRelativePathToIlDisassemblerLabelDictionary);
+            Assert.Empty(_sut.IgnoredFilesRelativePathToLocation);
+            Assert.Empty(_sut.DisassemblerToolVersions);
+            Assert.Empty(_sut.DisassemblerToolVersionsFromCache);
         }
 
         [Fact]

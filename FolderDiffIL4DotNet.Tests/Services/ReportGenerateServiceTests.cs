@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Services;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -9,11 +10,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
     public sealed class ReportGenerateServiceTests : IDisposable
     {
         private readonly string _rootDir;
+        private readonly FileDiffResultLists _resultLists = new();
+        private readonly ILoggerService _logger = new LoggerService();
+        private readonly ReportGenerateService _service;
 
         public ReportGenerateServiceTests()
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-report-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
+            _service = new ReportGenerateService(_resultLists, _logger);
             ClearResultLists();
         }
 
@@ -36,7 +41,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void GenerateDiffReport_HeaderListsOnlyObservedDisassemblers()
         {
-            FileDiffResultLists.DisassemblerToolVersions["dotnet-ildasm (version: dotnet ildasm 0.12.0)"] = 0;
+            _resultLists.DisassemblerToolVersions["dotnet-ildasm (version: dotnet ildasm 0.12.0)"] = 0;
 
             var oldDir = Path.Combine(_rootDir, "old");
             var newDir = Path.Combine(_rootDir, "new");
@@ -46,7 +51,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig();
-            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+            _service.GenerateDiffReport(
                 oldDir,
                 newDir,
                 reportDir,
@@ -73,7 +78,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig();
-            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+            _service.GenerateDiffReport(
                 oldDir,
                 newDir,
                 reportDir,
@@ -97,16 +102,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
-            FileDiffResultLists.SetOldFilesAbsolutePath(new List<string> { Path.Combine(oldDir, "a.dll"), Path.Combine(oldDir, "b.dll") });
-            FileDiffResultLists.SetNewFilesAbsolutePath(new List<string> { Path.Combine(newDir, "a.dll"), Path.Combine(newDir, "b.dll") });
-            FileDiffResultLists.AddUnchangedFileRelativePath("a.dll");
-            FileDiffResultLists.AddModifiedFileRelativePath("b.dll");
+            _resultLists.SetOldFilesAbsolutePath(new List<string> { Path.Combine(oldDir, "a.dll"), Path.Combine(oldDir, "b.dll") });
+            _resultLists.SetNewFilesAbsolutePath(new List<string> { Path.Combine(newDir, "a.dll"), Path.Combine(newDir, "b.dll") });
+            _resultLists.AddUnchangedFileRelativePath("a.dll");
+            _resultLists.AddModifiedFileRelativePath("b.dll");
 
-            FileDiffResultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: dotnet ildasm 0.12.0)");
-            FileDiffResultLists.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: dotnet ildasm 0.12.0)");
+            _resultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: dotnet ildasm 0.12.0)");
+            _resultLists.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: dotnet ildasm 0.12.0)");
 
             var config = CreateConfig();
-            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+            _service.GenerateDiffReport(
                 oldDir,
                 newDir,
                 reportDir,
@@ -136,7 +141,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIgnoreILLinesContainingConfiguredStrings = true;
             config.ILIgnoreLineContainingStrings = new List<string> { "buildserver", " buildPath ", "", "buildserver" };
 
-            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+            _service.GenerateDiffReport(
                 oldDir,
                 newDir,
                 reportDir,
@@ -166,7 +171,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIgnoreILLinesContainingConfiguredStrings = false;
             config.ILIgnoreLineContainingStrings = new List<string> { "buildserver" };
 
-            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+            _service.GenerateDiffReport(
                 oldDir,
                 newDir,
                 reportDir,
@@ -194,7 +199,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIgnoreILLinesContainingConfiguredStrings = true;
             config.ILIgnoreLineContainingStrings = new List<string> { "", "   ", "\t" };
 
-            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+            _service.GenerateDiffReport(
                 oldDir,
                 newDir,
                 reportDir,
@@ -223,13 +228,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFile, "old");
             File.WriteAllText(newFile, "new");
 
-            FileDiffResultLists.SetOldFilesAbsolutePath(new List<string> { oldFile });
-            FileDiffResultLists.SetNewFilesAbsolutePath(new List<string> { newFile });
-            FileDiffResultLists.AddModifiedFileRelativePath("payload.bin");
-            FileDiffResultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.SetOldFilesAbsolutePath(new List<string> { oldFile });
+            _resultLists.SetNewFilesAbsolutePath(new List<string> { newFile });
+            _resultLists.AddModifiedFileRelativePath("payload.bin");
+            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
 
             var config = CreateConfig();
-            new FolderDiffIL4DotNet.Services.ReportGenerateService().GenerateDiffReport(
+            _service.GenerateDiffReport(
                 oldDir,
                 newDir,
                 reportDir,
@@ -253,9 +258,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             ShouldOutputFileTimestamps = false
         };
 
-        private static void ClearResultLists()
+        private void ClearResultLists()
         {
-            FileDiffResultLists.ResetAll();
+            _resultLists.ResetAll();
         }
     }
 }

@@ -36,6 +36,7 @@ namespace FolderDiffIL4DotNet.Services
         private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * BYTES_PER_KILOBYTE;
         #endregion
 
+        #region private read only member variables
         /// <summary>
         /// アプリケーションの設定情報
         /// </summary>
@@ -62,9 +63,27 @@ namespace FolderDiffIL4DotNet.Services
         private readonly bool _optimizeForNetworkShares;
 
         /// <summary>
+        /// 比較結果を蓄積する実行単位の状態オブジェクト。
+        /// </summary>
+        private readonly FileDiffResultLists _fileDiffResultLists;
+
+        /// <summary>
+        /// ログ出力サービス。
+        /// </summary>
+        private readonly ILoggerService _logger;
+        #endregion
+
+        /// <summary>
         /// 依存関係を受け取り初期化します。
         /// </summary>
-        public FileDiffService(ConfigSettings config, ILOutputService ilOutputService, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool optimizeForNetworkShares)
+        /// <param name="config">アプリケーション設定。</param>
+        /// <param name="ilOutputService">IL 比較・出力サービス。</param>
+        /// <param name="oldFolderAbsolutePath">比較元フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">比較先フォルダの絶対パス。</param>
+        /// <param name="optimizeForNetworkShares">ネットワーク共有向け最適化フラグ。</param>
+        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
+        /// <param name="logger">ログ出力サービス。</param>
+        public FileDiffService(ConfigSettings config, ILOutputService ilOutputService, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool optimizeForNetworkShares, FileDiffResultLists fileDiffResultLists, ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(ilOutputService);
@@ -76,6 +95,10 @@ namespace FolderDiffIL4DotNet.Services
             _oldFolderAbsolutePath = oldFolderAbsolutePath;
             _newFolderAbsolutePath = newFolderAbsolutePath;
             _optimizeForNetworkShares = optimizeForNetworkShares;
+            ArgumentNullException.ThrowIfNull(fileDiffResultLists);
+            _fileDiffResultLists = fileDiffResultLists;
+            ArgumentNullException.ThrowIfNull(logger);
+            _logger = logger;
         }
 
         /// <summary>
@@ -101,7 +124,7 @@ namespace FolderDiffIL4DotNet.Services
                 // 1) MD5: ファイルサイズや内容が完全一致する場合はここで終了。
                 if (await FileComparer.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
                 {
-                    FileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Match);
+                    _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Match);
                     return true;
                 }
 
@@ -111,7 +134,7 @@ namespace FolderDiffIL4DotNet.Services
                     try
                     {
                         var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText);
-                        FileDiffResultLists.RecordDiffDetail(
+                        _fileDiffResultLists.RecordDiffDetail(
                             fileRelativePath,
                             areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch,
                             disassemblerLabel);
@@ -119,7 +142,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (InvalidOperationException ex)
                     {
-                        LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(LOG_IL_DIFF_FAILED, fileRelativePath), shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Error, string.Format(LOG_IL_DIFF_FAILED, fileRelativePath), shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
@@ -165,17 +188,17 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                     }
-                    FileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
+                    _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
                     return areTextFilesEqual;
                 }
 
-                FileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+                _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Mismatch);
                 return false;
             }
             catch (Exception)
             {
                 // 各比較手段での失敗は最終的にここでログ化し、呼び出し元へ再スロー。
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(Constants.ERROR_DIFFING, file1AbsolutePath, file2AbsolutePath), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error, string.Format(Constants.ERROR_DIFFING, file1AbsolutePath, file2AbsolutePath), shouldOutputMessageToConsole: true);
                 throw;
             }
         }

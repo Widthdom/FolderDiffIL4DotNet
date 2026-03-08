@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Utils;
@@ -169,6 +170,21 @@ namespace FolderDiffIL4DotNet.Services
         /// true の場合、この実行では新フォルダパスがネットワーク共有（UNC/NFS/SMB/SSHFS 等）と判定されています。
         /// </summary>
         private readonly bool _detectedNetworkNew;
+
+        /// <summary>
+        /// 比較結果を蓄積する実行単位の状態オブジェクト。
+        /// </summary>
+        private readonly FileDiffResultLists _fileDiffResultLists;
+
+        /// <summary>
+        /// ログ出力サービス。
+        /// </summary>
+        private readonly ILoggerService _logger;
+
+        /// <summary>
+        /// 実行時に動的生成が必要なサービスを解決するための DI サービスプロバイダー。
+        /// </summary>
+        private readonly IServiceProvider _serviceProvider;
         #endregion
 
         /// <summary>
@@ -180,8 +196,11 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="oldFolderAbsolutePath">旧バージョン側（比較元）フォルダの絶対パス</param>
         /// <param name="newFolderAbsolutePath">新バージョン側（比較先）フォルダの絶対パス</param>
         /// <param name="reportsFolderAbsolutePath">レポート出力先の絶対パス</param>
+        /// <param name="serviceProvider">DI サービスプロバイダー。</param>
+        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
+        /// <param name="logger">ログ出力サービス。</param>
         /// <exception cref="ArgumentNullException">config または progressReporter または oldFolderAbsolutePath または newFolderAbsolutePath または reportsFolderAbsolutePath が null の場合。</exception>
-        public FolderDiffService(ConfigSettings config, ProgressReportService progressReporter, string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath)
+        public FolderDiffService(ConfigSettings config, ProgressReportService progressReporter, string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath, IServiceProvider serviceProvider, FileDiffResultLists fileDiffResultLists, ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(progressReporter);
@@ -198,14 +217,20 @@ namespace FolderDiffIL4DotNet.Services
             _ilOutputFolderAbsolutePath = Path.Combine(_reportsFolderAbsolutePath, IL_FOLDER_NAME);
             _ilOldFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, IL_OLD_SUB_DIR);
             _ilNewFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, IL_NEW_SUB_DIR);
-            _ilOutputService = new ILOutputService(_config, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(serviceProvider);
+            _serviceProvider = serviceProvider;
+            ArgumentNullException.ThrowIfNull(fileDiffResultLists);
+            _fileDiffResultLists = fileDiffResultLists;
+            ArgumentNullException.ThrowIfNull(logger);
+            _logger = logger;
+            _ilOutputService = ActivatorUtilities.CreateInstance<ILOutputService>(_serviceProvider, _config, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
 
             // Auto検知（UNC/NFS/SSHFS等） + 手動指定のORで最終判定
             _detectedNetworkOld = _config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(_oldFolderAbsolutePath);
             _detectedNetworkNew = _config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(_newFolderAbsolutePath);
             _optimizeForNetworkShares = _config.OptimizeForNetworkShares || _detectedNetworkOld || _detectedNetworkNew;
 
-            _fileDiffService = new FileDiffService(_config, _ilOutputService, _oldFolderAbsolutePath, _newFolderAbsolutePath, _optimizeForNetworkShares);
+            _fileDiffService = ActivatorUtilities.CreateInstance<FileDiffService>(_serviceProvider, _config, _ilOutputService, _oldFolderAbsolutePath, _newFolderAbsolutePath, _optimizeForNetworkShares);
         }
 
         /// <summary>
@@ -268,7 +293,7 @@ namespace FolderDiffIL4DotNet.Services
 
                 CreateIlOutputDirectoriesIfNeeded();
 
-                var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(FileDiffResultLists.NewFilesAbsolutePath, StringComparer.OrdinalIgnoreCase);
+                var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(_fileDiffResultLists.NewFilesAbsolutePath, StringComparer.OrdinalIgnoreCase);
                 int processedFileCount = 0;
                 if (maxParallel <= 1)
                 {
@@ -284,7 +309,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Error, string.Format(Constants.ERROR_DIFFING, _oldFolderAbsolutePath, _newFolderAbsolutePath), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error, string.Format(Constants.ERROR_DIFFING, _oldFolderAbsolutePath, _newFolderAbsolutePath), shouldOutputMessageToConsole: true);
                 throw;
             }
             finally
@@ -310,14 +335,14 @@ namespace FolderDiffIL4DotNet.Services
             // ネットワーク最適化モードでは MD5/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
             if (_optimizeForNetworkShares)
             {
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, LOG_NETWORK_OPTIMIZED_SKIP_IL, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, LOG_NETWORK_OPTIMIZED_SKIP_IL, shouldOutputMessageToConsole: true);
                 _progressReporter.ReportProgress(0.0);
                 return;
             }
             // old/new の全パス（重複排除）を集約して一括プリフェッチ対象とする。
-            var allFilesAbsolutePath = FileDiffResultLists
+            var allFilesAbsolutePath = _fileDiffResultLists
                 .OldFilesAbsolutePath
-                .Concat(FileDiffResultLists.NewFilesAbsolutePath)
+                .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             // 事前計算が長引いても進捗が止まって見えないよう、定期的に 0% を流すキープアライブを起動。
@@ -347,7 +372,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex)
                 {
-                    LoggerService.LogMessage(LoggerService.LogLevel.Warning, string.Format(LOG_FAILED_PRECOMPUTE_IL_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_PRECOMPUTE_IL_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
                 }
             }
             finally
@@ -377,7 +402,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <returns>処理済件数</returns>
         private async Task<int> DetermineDiffsSequentiallyAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar)
         {
-            foreach (var oldFileAbsolutePath in FileDiffResultLists.OldFilesAbsolutePath)
+            foreach (var oldFileAbsolutePath in _fileDiffResultLists.OldFilesAbsolutePath)
             {
                 var fileRelativePath = Path.GetRelativePath(_oldFolderAbsolutePath, oldFileAbsolutePath);
                 var newFileAbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
@@ -388,18 +413,18 @@ namespace FolderDiffIL4DotNet.Services
                     if (await _fileDiffService.FilesAreEqualAsync(fileRelativePath))
                     {
                         // - Unchanged -
-                        FileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
+                        _fileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
                     }
                     else
                     {
                         // - Modified -
-                        FileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
+                        _fileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
                     }
                 }
                 else
                 {
                     // - Removed -
-                    FileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
+                    _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                 }
                 processedFileCountSoFar++;
                 _progressReporter.ReportProgress((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount);
@@ -426,7 +451,7 @@ namespace FolderDiffIL4DotNet.Services
             // 処理済件数をインクリメントするための変数
             int processedFileCount = processedFileCountSoFar;
 
-            await Parallel.ForEachAsync(FileDiffResultLists.OldFilesAbsolutePath, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (oldFileAbsolutePath, cancellationToken) =>
+            await Parallel.ForEachAsync(_fileDiffResultLists.OldFilesAbsolutePath, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (oldFileAbsolutePath, cancellationToken) =>
             {
                 var fileRelativePath = Path.GetRelativePath(_oldFolderAbsolutePath, oldFileAbsolutePath);
                 var newFileAbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
@@ -448,19 +473,19 @@ namespace FolderDiffIL4DotNet.Services
                     if (areFilesEqual)
                     {
                         // - Unchanged -
-                        FileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
+                        _fileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
                     }
                     else
                     {
                         // - Modified -
-                        FileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
+                        _fileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
                     }
                 }
                 else
                 {
                     // new 側に無いので Removed 判定
                     // - Removed -
-                    FileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
+                    _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                 }
                 // 処理済件数をインクリメントし進捗を報告
                 var done = Interlocked.Increment(ref processedFileCount);
@@ -483,7 +508,7 @@ namespace FolderDiffIL4DotNet.Services
                     if (_config.ShouldIncludeIgnoredFiles)
                     {
                         var relativePath = Path.GetRelativePath(rootFolderAbsolutePath, fileAbsolutePath);
-                        FileDiffResultLists.RecordIgnoredFile(relativePath, locationFlag);
+                        _fileDiffResultLists.RecordIgnoredFile(relativePath, locationFlag);
                     }
                     continue;
                 }
@@ -499,15 +524,15 @@ namespace FolderDiffIL4DotNet.Services
         {
             var mode = _optimizeForNetworkShares ? MODE_SERVER_NAS_OPTIMIZED : MODE_LOCAL_OPTIMIZED;
             var reason = string.Format(EXECUTION_MODE_REASON_FORMAT, _config.OptimizeForNetworkShares, _config.AutoDetectNetworkShares, _detectedNetworkOld, _detectedNetworkNew);
-            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_EXECUTION_MODE, mode, reason), shouldOutputMessageToConsole: true);
+            _logger.LogMessage(AppLogLevel.Info, string.Format(LOG_EXECUTION_MODE, mode, reason), shouldOutputMessageToConsole: true);
         }
 
         /// <summary>
         /// 前回実行の分類結果をすべてクリアします。
         /// </summary>
-        private static void ClearResultCollections()
+        private void ClearResultCollections()
         {
-            FileDiffResultLists.ResetAll();
+            _fileDiffResultLists.ResetAll();
         }
 
         /// <summary>
@@ -515,9 +540,9 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private void EnumerateAllFiles(HashSet<string> ignoredExtensions)
         {
-            FileDiffResultLists.SetOldFilesAbsolutePath(EnumerateIncludedFiles(_oldFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.Old));
+            _fileDiffResultLists.SetOldFilesAbsolutePath(EnumerateIncludedFiles(_oldFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.Old));
             _progressReporter.ReportProgress(0.0);
-            FileDiffResultLists.SetNewFilesAbsolutePath(EnumerateIncludedFiles(_newFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.New));
+            _fileDiffResultLists.SetNewFilesAbsolutePath(EnumerateIncludedFiles(_newFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.New));
             _progressReporter.ReportProgress(0.0);
         }
 
@@ -527,10 +552,10 @@ namespace FolderDiffIL4DotNet.Services
         private int ComputeUnionFileCount()
         {
             var oldRelativePathSet = new HashSet<string>(
-                FileDiffResultLists.OldFilesAbsolutePath.Select(p => Path.GetRelativePath(_oldFolderAbsolutePath, p)),
+                _fileDiffResultLists.OldFilesAbsolutePath.Select(p => Path.GetRelativePath(_oldFolderAbsolutePath, p)),
                 StringComparer.OrdinalIgnoreCase);
             var newRelativePathSet = new HashSet<string>(
-                FileDiffResultLists.NewFilesAbsolutePath.Select(p => Path.GetRelativePath(_newFolderAbsolutePath, p)),
+                _fileDiffResultLists.NewFilesAbsolutePath.Select(p => Path.GetRelativePath(_newFolderAbsolutePath, p)),
                 StringComparer.OrdinalIgnoreCase);
 
             oldRelativePathSet.UnionWith(newRelativePathSet);
@@ -557,19 +582,19 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private void LogDiscoveryAndParallelStats(int totalFilesRelativePathCount, int maxParallel)
         {
-            LoggerService.LogMessage(
-                LoggerService.LogLevel.Info,
+            _logger.LogMessage(
+                AppLogLevel.Info,
                 string.Format(LOG_PARALLEL_DIFF_PROCESSING, maxParallel, _config.MaxParallelism, _optimizeForNetworkShares, Environment.ProcessorCount),
                 shouldOutputMessageToConsole: true);
             _progressReporter.ReportProgress(0.0);
 
-            int oldCount = FileDiffResultLists.OldFilesAbsolutePath.Count;
-            int newCount = FileDiffResultLists.NewFilesAbsolutePath.Count;
-            LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_DISCOVERY_COMPLETE, oldCount, newCount, totalFilesRelativePathCount), shouldOutputMessageToConsole: true);
+            int oldCount = _fileDiffResultLists.OldFilesAbsolutePath.Count;
+            int newCount = _fileDiffResultLists.NewFilesAbsolutePath.Count;
+            _logger.LogMessage(AppLogLevel.Info, string.Format(LOG_DISCOVERY_COMPLETE, oldCount, newCount, totalFilesRelativePathCount), shouldOutputMessageToConsole: true);
 
             // .NET アセンブリ候補数も概算表示
-            var allFilesForLog = FileDiffResultLists.OldFilesAbsolutePath
-                .Concat(FileDiffResultLists.NewFilesAbsolutePath)
+            var allFilesForLog = _fileDiffResultLists.OldFilesAbsolutePath
+                .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
             int dotNetAssemblyCandidates = 0;
@@ -581,8 +606,8 @@ namespace FolderDiffIL4DotNet.Services
             {
                 // ignore
             }
-            LoggerService.LogMessage(
-                LoggerService.LogLevel.Info,
+            _logger.LogMessage(
+                AppLogLevel.Info,
                 string.Format(LOG_PRECOMPUTE_TARGETS, allFilesForLog.Count, nameof(dotNetAssemblyCandidates), dotNetAssemblyCandidates),
                 shouldOutputMessageToConsole: true);
             _progressReporter.ReportProgress(0.0);
@@ -602,7 +627,7 @@ namespace FolderDiffIL4DotNet.Services
                 PathValidator.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
                 Directory.CreateDirectory(_ilOldFolderAbsolutePath);
                 Directory.CreateDirectory(_ilNewFolderAbsolutePath);
-                LoggerService.LogMessage(LoggerService.LogLevel.Info, string.Format(LOG_PREPARED_IL_OUTPUT_DIRS, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, string.Format(LOG_PREPARED_IL_OUTPUT_DIRS, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath), shouldOutputMessageToConsole: true);
             }
         }
 
@@ -613,7 +638,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             foreach (var newFileAbsolutePath in remainingNewFiles)
             {
-                FileDiffResultLists.AddAddedFileAbsolutePath(newFileAbsolutePath);
+                _fileDiffResultLists.AddAddedFileAbsolutePath(newFileAbsolutePath);
                 processedFileCount++;
                 _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
             }

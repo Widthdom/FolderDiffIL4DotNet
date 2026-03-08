@@ -102,8 +102,10 @@ CI との関係:
     - TextMatch: テキストベースで一致
     - TextMismatch: テキストベースで不一致
 - 比較結果区分ごと（Unchanged/Added/Removed/Modified）にファイルを分類
-- 比較結果の内部保持（`FileDiffResultLists`）は `ConcurrentQueue` / `ConcurrentDictionary` を使用し、並列実行時の追加処理をスレッドセーフに実行
-- `FolderDiffService.ExecuteFolderDiffAsync` の開始時に `FileDiffResultLists.ResetAll()` を実行し、同一プロセス内の複数回比較でも前回結果が混入しないように初期化
+- 比較結果の内部保持（`FileDiffResultLists`）は DI で注入される実行単位インスタンスで、`ConcurrentQueue` / `ConcurrentDictionary` により並列実行時の追加処理をスレッドセーフに実行
+- `FolderDiffService.ExecuteFolderDiffAsync` の開始時に注入済み `FileDiffResultLists` の `ResetAll()` を実行し、同一プロセス内でも前回実行結果が混入しないように初期化
+- ログ出力は `ILoggerService`（`LoggerService` 実装）を DI で解決し、ログファイルパスは読み取り専用プロパティ（`LogFileAbsolutePath`）経由で参照
+- `Program` は `ServiceCollection` で依存関係を構成し、`ConfigService` / `FolderDiffService` / `ReportGenerateService` などを直接 `new` せず解決して実行
 - 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時［`config.json`のShouldOutputFileTimestampsが `true` の場合］、判定根拠）
     - Unchanged/Modified は相対パスで記載されます。
     - Added/Removed は絶対パスで記載されます。
