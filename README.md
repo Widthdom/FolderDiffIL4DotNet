@@ -107,6 +107,7 @@ CI との関係:
 - ログ出力は `ILoggerService`（`LoggerService` 実装）を DI で解決し、ログファイルパスは読み取り専用プロパティ（`LogFileAbsolutePath`）経由で参照
 - `Program` は `ServiceCollection` で依存関係を構成し、`ConfigService` / `FolderDiffService` / `ReportGenerateService` などを直接 `new` せず解決して実行
 - 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時［`config.json`のShouldOutputFileTimestampsが `true` の場合］、判定根拠）
+    - レポート生成は `ReportGenerateService.GenerateDiffReport` からヘッダ/レジェンド/各セクション/サマリーの private メソッドへ分割され、保守性を高めています。
     - Unchanged/Modified は相対パスで記載されます。
     - Added/Removed は絶対パスで記載されます。
     - `ILMatch` / `ILMismatch` には、逆アセンブルに使用したツール名/バージョンを併記します（キャッシュ利用時を含む）。
@@ -131,7 +132,7 @@ CI との関係:
 	- 逆アセンブルに`dotnet-ildasm`を使用した場合、IL 先頭付近に「// MVID: {GUID}」が出力されることが多い一方、`ilspycmd`を使用した場合は出力されません。
 - 一致ならばUnchanged, ILMatch、不一致ならばModified, ILMismatchと判定し次のファイル比較へ
 
-3) テキストベースのファイル（`config.json`のTextFileExtensionsに指定された拡張子か否かで判定）であれば行単位で比較します。
+3) テキストベースのファイル（`config.json`のTextFileExtensionsに指定された拡張子か否かを `StringComparison.OrdinalIgnoreCase` で判定）であれば行単位で比較します。
 - 一致ならばUnchanged, TextMatch、不一致ならばModified, TextMismatchと判定し次のファイル比較へ
 
 4) Modified, MD5Mismatchと判定し次のファイル比較へ
@@ -240,7 +241,7 @@ CI との関係:
 | 項目 | 説明 |
 | --- | --- |
 | IgnoredExtensions | 指定拡張子は比較対象から除外する（例: `.pdb`）。 |
-| TextFileExtensions | 指定拡張子のファイルはテキストとして行単位で比較する。ピリオド（`.`）付きで指定すること（例: `.cs`, `.json`, `.xml`）。 |
+| TextFileExtensions | 指定拡張子のファイルはテキストとして行単位で比較する。ピリオド（`.`）付きで指定すること（例: `.cs`, `.json`, `.xml`）。比較は大文字小文字を区別せず（`StringComparison.OrdinalIgnoreCase`）行われる。 |
 | MaxLogGenerations | アプリケーションログのローテーション世代数。 |
 | ShouldIncludeUnchangedFiles | `Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にUnchangedのファイル一覧を含めるか否か。 |
 | ShouldIncludeIgnoredFiles | IgnoredExtensions に該当して比較対象から除外されたファイルを `diff_report.md` の `## [ x ] Ignored Files` セクション（Unchanged の直前）に出力するか否か。 |

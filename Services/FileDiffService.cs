@@ -148,7 +148,8 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 // 3) テキスト拡張子ならテキスト比較: ネットワーク最適化時は逐次、それ以外は閾値に応じて並列比較を選択。
-                if (_config.TextFileExtensions.Contains(Path.GetExtension(file1AbsolutePath).ToLower()))
+                string fileExtension = Path.GetExtension(file1AbsolutePath);
+                if (_config.TextFileExtensions.Any(configuredExtension => string.Equals(configuredExtension, fileExtension, StringComparison.OrdinalIgnoreCase)))
                 {
                     int textDiffParallelThresholdBytes = GetEffectiveBytesFromConfiguredKilobytes(
                         configuredKilobytes: _config.TextDiffParallelThresholdKilobytes,

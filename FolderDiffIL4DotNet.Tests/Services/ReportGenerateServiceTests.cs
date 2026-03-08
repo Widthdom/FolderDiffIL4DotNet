@@ -214,6 +214,60 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReport_WritesAllMainSections()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-sections");
+            var newDir = Path.Combine(_rootDir, "new-sections");
+            var reportDir = Path.Combine(_rootDir, "report-sections");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var oldSame = Path.Combine(oldDir, "same.txt");
+            var newSame = Path.Combine(newDir, "same.txt");
+            var oldModified = Path.Combine(oldDir, "modified.txt");
+            var newModified = Path.Combine(newDir, "modified.txt");
+            var oldRemoved = Path.Combine(oldDir, "removed.txt");
+            var newAdded = Path.Combine(newDir, "added.txt");
+            File.WriteAllText(oldSame, "same");
+            File.WriteAllText(newSame, "same");
+            File.WriteAllText(oldModified, "before");
+            File.WriteAllText(newModified, "after");
+            File.WriteAllText(oldRemoved, "removed");
+            File.WriteAllText(newAdded, "added");
+
+            _resultLists.SetOldFilesAbsolutePath(new List<string> { oldSame, oldModified, oldRemoved });
+            _resultLists.SetNewFilesAbsolutePath(new List<string> { newSame, newModified, newAdded });
+            _resultLists.AddUnchangedFileRelativePath("same.txt");
+            _resultLists.RecordDiffDetail("same.txt", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _resultLists.AddModifiedFileRelativePath("modified.txt");
+            _resultLists.RecordDiffDetail("modified.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+            _resultLists.AddRemovedFileAbsolutePath(oldRemoved);
+            _resultLists.AddAddedFileAbsolutePath(newAdded);
+            _resultLists.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            _service.GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.Contains("## [ x ] Ignored Files", reportText);
+            Assert.Contains("## [ = ] Unchanged Files", reportText);
+            Assert.Contains("## [ + ] Added Files", reportText);
+            Assert.Contains("## [ - ] Removed Files", reportText);
+            Assert.Contains("## [ * ] Modified Files", reportText);
+            Assert.Contains("## Summary", reportText);
+        }
+
+        [Fact]
         public void GenerateDiffReport_WritesSummaryWarning_WhenMd5MismatchExists()
         {
             var oldDir = Path.Combine(_rootDir, "old-md5-warning");

@@ -140,6 +140,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(_resultLists.NewFilesAbsolutePath);
         }
 
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_TextExtensionComparison_IsCaseInsensitive()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-case-insensitive");
+            var newDir = Path.Combine(_rootDir, "new-case-insensitive");
+            var reportDir = Path.Combine(_rootDir, "report-case-insensitive");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            const string fileRelativePath = "sample.TxT";
+            WriteFile(oldDir, fileRelativePath, "before");
+            WriteFile(newDir, fileRelativePath, "after");
+
+            var config = CreateConfig(maxParallelism: 1);
+            config.TextFileExtensions = new List<string> { ".TXT" };
+            using var progressReporter = new ProgressReportService();
+            var service = new FolderDiffService(config, progressReporter, oldDir, newDir, reportDir, _serviceProvider, _resultLists, _logger);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Equal(
+                FileDiffResultLists.DiffDetailResult.TextMismatch,
+                _resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
+        }
+
         private static ConfigSettings CreateConfig(int maxParallelism) => new()
         {
             IgnoredExtensions = new List<string> { ".pdb" },

@@ -413,170 +413,14 @@ namespace FolderDiffIL4DotNet.Services
 
                 using (var streamWriter = new StreamWriter(diffReportAbsolutePath))
                 {
-                    // ヘッダ
-                    streamWriter.WriteLine(REPORT_TITLE);
-                    streamWriter.WriteLine(string.Format(REPORT_HEADER_APP_VERSION, appVersion));
-                    streamWriter.WriteLine(string.Format(REPORT_HEADER_COMPUTER, computerName));
-                    streamWriter.WriteLine(string.Format(REPORT_HEADER_OLD, oldFolderAbsolutePath));
-                    streamWriter.WriteLine(string.Format(REPORT_HEADER_NEW, newFolderAbsolutePath));
-                    streamWriter.WriteLine(string.Format(REPORT_HEADER_IGNORED_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)));
-                    streamWriter.WriteLine(string.Format(REPORT_HEADER_TEXT_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.TextFileExtensions)));
-                    var disassemblerText = BuildDisassemblerHeaderText();
-                    streamWriter.WriteLine(string.Format(REPORT_HEADER_IL_DISASSEMBLERS, disassemblerText));
-                    if (!string.IsNullOrWhiteSpace(elapsedTimeString))
-                    {
-                        streamWriter.WriteLine(string.Format(REPORT_HEADER_ELAPSED_TIME, elapsedTimeString));
-                    }
-                    streamWriter.WriteLine("- " + NOTE_MVID_SKIP);
-                    if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
-                    {
-                        var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(config);
-                        streamWriter.WriteLine("- " + (ilIgnoreContainingStrings.Count == 0
-                            ? NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY
-                            : string.Format(NOTE_IL_CONTAINS_SKIP, string.Join(REPORT_LIST_SEPARATOR, ilIgnoreContainingStrings.Select(value => $"\"{value}\"")))));
-                    }
-
-                    // Legend
-                    streamWriter.WriteLine(REPORT_LEGEND_HEADER);
-                    streamWriter.WriteLine(string.Format(REPORT_LEGEND_MD5, FileDiffResultLists.DiffDetailResult.MD5Match, FileDiffResultLists.DiffDetailResult.MD5Mismatch));
-                    streamWriter.WriteLine(string.Format(REPORT_LEGEND_IL, FileDiffResultLists.DiffDetailResult.ILMatch, FileDiffResultLists.DiffDetailResult.ILMismatch));
-                    streamWriter.WriteLine(string.Format(REPORT_LEGEND_TEXT, FileDiffResultLists.DiffDetailResult.TextMatch, FileDiffResultLists.DiffDetailResult.TextMismatch));
-
-                    // ボディ - Ignored Files -
-                    // Ignored Files はアプリ設定（ShouldIncludeIgnoredFiles）が true の場合のみ出力。
-                    // ShouldOutputFileTimestamps が true なら旧/新それぞれの存在箇所に応じた最終更新日時を併記し、
-                    // 旧/新のどちらに存在したかもラベル（(old)/(new)/(old/new)）で明示します。
-                    if (config.ShouldIncludeIgnoredFiles && _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count > 0)
-                    {
-                        streamWriter.WriteLine(REPORT_SECTION_IGNORED_FILES);
-                        foreach (var entry in _fileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
-                        {
-                            var locationLabel = entry.Value switch
-                            {
-                                FileDiffResultLists.IgnoredFileLocation.Old => REPORT_LOCATION_OLD,
-                                FileDiffResultLists.IgnoredFileLocation.New => REPORT_LOCATION_NEW,
-                                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New => REPORT_LOCATION_BOTH,
-                                _ => string.Empty
-                            };
-
-                            string timestampInfo = null;
-                            if (config.ShouldOutputFileTimestamps)
-                            {
-                                var timestampParts = new List<string>();
-                                if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0)
-                                {
-                                    timestampParts.Add(string.Format(REPORT_TIMESTAMP_UPDATED_OLD, Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))));
-                                }
-                                if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0)
-                                {
-                                    timestampParts.Add(string.Format(REPORT_TIMESTAMP_UPDATED_NEW, Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key))));
-                                }
-                                timestampInfo = timestampParts.Count > 0 ? string.Join(REPORT_TIMESTAMP_SEPARATOR, timestampParts) : null;
-                            }
-
-                            var line = string.Format(REPORT_IGNORED_FILE_ITEM, entry.Key);
-                            if (!string.IsNullOrEmpty(locationLabel))
-                            {
-                                line += " " + locationLabel;
-                            }
-                            if (config.ShouldOutputFileTimestamps && !string.IsNullOrEmpty(timestampInfo))
-                            {
-                                line += string.Format(REPORT_TIMESTAMP_HTML_WRAPPER, timestampInfo);
-                            }
-                            streamWriter.WriteLine(line);
-                        }
-                    }
-
-                    // ボディ - Unchanged Files -
-                    // Unchanged Files はアプリ設定で出力可否を制御。
-                    // ShouldOutputFileTimestamps が true の場合のみ、
-                    // 判定根拠が ILMatch のときは新旧両方の最終更新日時を、
-                    // それ以外は新の最終更新日時を併記します。
-                    if (config.ShouldIncludeUnchangedFiles)
-                    {
-                        streamWriter.WriteLine(REPORT_SECTION_UNCHANGED_FILES);
-                        foreach (var fileRelativePath in _fileDiffResultLists.UnchangedFilesRelativePath)
-                        {
-                            var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
-                            var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
-                            if (config.ShouldOutputFileTimestamps)
-                            {
-                                string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
-                                string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
-                                string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
-                                    ? string.Format(REPORT_UNCHANGED_TIMESTAMP_BOTH, oldFileTimestamp, newFileTimestamp)
-                                    : string.Format(REPORT_UNCHANGED_TIMESTAMP_NEW, newFileTimestamp);
-                                streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP, fileRelativePath, updateInfo, diffDetailDisplay));
-                            }
-                            else
-                            {
-                                streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM, fileRelativePath, diffDetailDisplay));
-                            }
-                        }
-                    }
-
-                    // ボディ - Added Files -
-                    streamWriter.WriteLine(REPORT_SECTION_ADDED_FILES);
-                    foreach (var newFileAbsolutePath in _fileDiffResultLists.AddedFilesAbsolutePath)
-                    {
-                        if (config.ShouldOutputFileTimestamps)
-                        {
-                            streamWriter.WriteLine(string.Format(REPORT_ADDED_ITEM_WITH_TIMESTAMP, newFileAbsolutePath, Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)));
-                        }
-                        else
-                        {
-                            streamWriter.WriteLine(string.Format(REPORT_ADDED_ITEM, newFileAbsolutePath));
-                        }
-                    }
-
-                    // ボディ - Removed Files -
-                    streamWriter.WriteLine(REPORT_SECTION_REMOVED_FILES);
-                    foreach (var oldFileAbsolutePath in _fileDiffResultLists.RemovedFilesAbsolutePath)
-                    {
-                        if (config.ShouldOutputFileTimestamps)
-                        {
-                            streamWriter.WriteLine(string.Format(REPORT_REMOVED_ITEM_WITH_TIMESTAMP, oldFileAbsolutePath, Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)));
-                        }
-                        else
-                        {
-                            streamWriter.WriteLine(string.Format(REPORT_REMOVED_ITEM, oldFileAbsolutePath));
-                        }
-                    }
-
-                    // ボディ - Modified Files -
-                    streamWriter.WriteLine(REPORT_SECTION_MODIFIED_FILES);
-                    foreach (var fileRelativePath in _fileDiffResultLists.ModifiedFilesRelativePath)
-                    {
-                        var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
-                        var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
-                        if (config.ShouldOutputFileTimestamps)
-                        {
-                            string oldTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
-                            string newTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
-                            streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM_WITH_TIMESTAMP, fileRelativePath, oldTimestamp, newTimestamp, diffDetailDisplay));
-                        }
-                        else
-                        {
-                            streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM, fileRelativePath, diffDetailDisplay));
-                        }
-                    }
-
-                    // フッタ
-                    streamWriter.WriteLine(REPORT_SECTION_SUMMARY);
-                    if (config.ShouldIncludeIgnoredFiles)
-                    {
-                        streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_IGNORED, _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count));
-                    }
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_UNCHANGED, _fileDiffResultLists.UnchangedFilesRelativePath.Count));
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_ADDED, _fileDiffResultLists.AddedFilesAbsolutePath.Count));
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_REMOVED, _fileDiffResultLists.RemovedFilesAbsolutePath.Count));
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_MODIFIED, _fileDiffResultLists.ModifiedFilesRelativePath.Count));
-                    streamWriter.WriteLine(string.Format(REPORT_SUMMARY_COMPARED, REPORT_LABEL_COMPARED, _fileDiffResultLists.OldFilesAbsolutePath.Count, _fileDiffResultLists.NewFilesAbsolutePath.Count));
-                    streamWriter.WriteLine();
-                    if (hasMd5Mismatch)
-                    {
-                        streamWriter.WriteLine(string.Format(REPORT_WARNING_LINE, WARNING_MD5_MISMATCH));
-                    }
+                    WriteReportHeader(streamWriter, oldFolderAbsolutePath, newFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config);
+                    WriteLegend(streamWriter);
+                    WriteIgnoredFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
+                    WriteUnchangedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
+                    WriteAddedFilesSection(streamWriter, config);
+                    WriteRemovedFilesSection(streamWriter, config);
+                    WriteModifiedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
+                    WriteSummarySection(streamWriter, config, hasMd5Mismatch);
                 }
                 reportGenerated = true;
             }
@@ -598,6 +442,275 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 spinner.Complete(reportGenerated ? LOG_REPORT_GENERATION_COMPLETED : null);
             }
+        }
+
+        /// <summary>
+        /// レポートのヘッダ部（タイトル・実行情報・IL比較の注記）を書き込みます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
+        /// <param name="appVersion">アプリケーションバージョン。</param>
+        /// <param name="elapsedTimeString">経過時間文字列。</param>
+        /// <param name="computerName">実行コンピュータ名。</param>
+        /// <param name="config">設定オブジェクト。</param>
+        private void WriteReportHeader(
+            StreamWriter streamWriter,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath,
+            string appVersion,
+            string elapsedTimeString,
+            string computerName,
+            ConfigSettings config)
+        {
+            streamWriter.WriteLine(REPORT_TITLE);
+            streamWriter.WriteLine(string.Format(REPORT_HEADER_APP_VERSION, appVersion));
+            streamWriter.WriteLine(string.Format(REPORT_HEADER_COMPUTER, computerName));
+            streamWriter.WriteLine(string.Format(REPORT_HEADER_OLD, oldFolderAbsolutePath));
+            streamWriter.WriteLine(string.Format(REPORT_HEADER_NEW, newFolderAbsolutePath));
+            streamWriter.WriteLine(string.Format(REPORT_HEADER_IGNORED_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)));
+            streamWriter.WriteLine(string.Format(REPORT_HEADER_TEXT_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.TextFileExtensions)));
+            var disassemblerText = BuildDisassemblerHeaderText();
+            streamWriter.WriteLine(string.Format(REPORT_HEADER_IL_DISASSEMBLERS, disassemblerText));
+            if (!string.IsNullOrWhiteSpace(elapsedTimeString))
+            {
+                streamWriter.WriteLine(string.Format(REPORT_HEADER_ELAPSED_TIME, elapsedTimeString));
+            }
+            streamWriter.WriteLine("- " + NOTE_MVID_SKIP);
+            if (!config.ShouldIgnoreILLinesContainingConfiguredStrings)
+            {
+                return;
+            }
+
+            var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(config);
+            streamWriter.WriteLine("- " + (ilIgnoreContainingStrings.Count == 0
+                ? NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY
+                : string.Format(NOTE_IL_CONTAINS_SKIP, string.Join(REPORT_LIST_SEPARATOR, ilIgnoreContainingStrings.Select(value => $"\"{value}\"")))));
+        }
+
+        /// <summary>
+        /// 判定根拠ラベルの凡例（Legend）を書き込みます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        private static void WriteLegend(StreamWriter streamWriter)
+        {
+            streamWriter.WriteLine(REPORT_LEGEND_HEADER);
+            streamWriter.WriteLine(string.Format(REPORT_LEGEND_MD5, FileDiffResultLists.DiffDetailResult.MD5Match, FileDiffResultLists.DiffDetailResult.MD5Mismatch));
+            streamWriter.WriteLine(string.Format(REPORT_LEGEND_IL, FileDiffResultLists.DiffDetailResult.ILMatch, FileDiffResultLists.DiffDetailResult.ILMismatch));
+            streamWriter.WriteLine(string.Format(REPORT_LEGEND_TEXT, FileDiffResultLists.DiffDetailResult.TextMatch, FileDiffResultLists.DiffDetailResult.TextMismatch));
+        }
+
+        /// <summary>
+        /// Ignored Files セクションを書き込みます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        /// <param name="config">設定オブジェクト。</param>
+        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
+        private void WriteIgnoredFilesSection(StreamWriter streamWriter, ConfigSettings config, string oldFolderAbsolutePath, string newFolderAbsolutePath)
+        {
+            // Ignored Files はアプリ設定（ShouldIncludeIgnoredFiles）が true の場合のみ出力。
+            // ShouldOutputFileTimestamps が true なら旧/新それぞれの存在箇所に応じた最終更新日時を併記し、
+            // 旧/新のどちらに存在したかもラベル（(old)/(new)/(old/new)）で明示します。
+            if (!config.ShouldIncludeIgnoredFiles || _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count == 0)
+            {
+                return;
+            }
+
+            streamWriter.WriteLine(REPORT_SECTION_IGNORED_FILES);
+            foreach (var entry in _fileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                var line = string.Format(REPORT_IGNORED_FILE_ITEM, entry.Key);
+                var locationLabel = GetIgnoredFileLocationLabel(entry.Value);
+                if (!string.IsNullOrEmpty(locationLabel))
+                {
+                    line += " " + locationLabel;
+                }
+
+                if (config.ShouldOutputFileTimestamps)
+                {
+                    var timestampInfo = BuildIgnoredFileTimestampInfo(entry, oldFolderAbsolutePath, newFolderAbsolutePath);
+                    if (!string.IsNullOrEmpty(timestampInfo))
+                    {
+                        line += string.Format(REPORT_TIMESTAMP_HTML_WRAPPER, timestampInfo);
+                    }
+                }
+
+                streamWriter.WriteLine(line);
+            }
+        }
+
+        /// <summary>
+        /// Unchanged Files セクションを書き込みます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        /// <param name="config">設定オブジェクト。</param>
+        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
+        private void WriteUnchangedFilesSection(StreamWriter streamWriter, ConfigSettings config, string oldFolderAbsolutePath, string newFolderAbsolutePath)
+        {
+            // Unchanged Files はアプリ設定で出力可否を制御。
+            // ShouldOutputFileTimestamps が true の場合のみ、
+            // 判定根拠が ILMatch のときは新旧両方の最終更新日時を、
+            // それ以外は新の最終更新日時を併記します。
+            if (!config.ShouldIncludeUnchangedFiles)
+            {
+                return;
+            }
+
+            streamWriter.WriteLine(REPORT_SECTION_UNCHANGED_FILES);
+            foreach (var fileRelativePath in _fileDiffResultLists.UnchangedFilesRelativePath)
+            {
+                var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
+                if (config.ShouldOutputFileTimestamps)
+                {
+                    string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
+                    string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
+                    string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
+                        ? string.Format(REPORT_UNCHANGED_TIMESTAMP_BOTH, oldFileTimestamp, newFileTimestamp)
+                        : string.Format(REPORT_UNCHANGED_TIMESTAMP_NEW, newFileTimestamp);
+                    streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP, fileRelativePath, updateInfo, diffDetailDisplay));
+                }
+                else
+                {
+                    streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM, fileRelativePath, diffDetailDisplay));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Added Files セクションを書き込みます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        /// <param name="config">設定オブジェクト。</param>
+        private void WriteAddedFilesSection(StreamWriter streamWriter, ConfigSettings config)
+        {
+            streamWriter.WriteLine(REPORT_SECTION_ADDED_FILES);
+            foreach (var newFileAbsolutePath in _fileDiffResultLists.AddedFilesAbsolutePath)
+            {
+                if (config.ShouldOutputFileTimestamps)
+                {
+                    streamWriter.WriteLine(string.Format(REPORT_ADDED_ITEM_WITH_TIMESTAMP, newFileAbsolutePath, Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)));
+                }
+                else
+                {
+                    streamWriter.WriteLine(string.Format(REPORT_ADDED_ITEM, newFileAbsolutePath));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removed Files セクションを書き込みます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        /// <param name="config">設定オブジェクト。</param>
+        private void WriteRemovedFilesSection(StreamWriter streamWriter, ConfigSettings config)
+        {
+            streamWriter.WriteLine(REPORT_SECTION_REMOVED_FILES);
+            foreach (var oldFileAbsolutePath in _fileDiffResultLists.RemovedFilesAbsolutePath)
+            {
+                if (config.ShouldOutputFileTimestamps)
+                {
+                    streamWriter.WriteLine(string.Format(REPORT_REMOVED_ITEM_WITH_TIMESTAMP, oldFileAbsolutePath, Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)));
+                }
+                else
+                {
+                    streamWriter.WriteLine(string.Format(REPORT_REMOVED_ITEM, oldFileAbsolutePath));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Modified Files セクションを書き込みます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        /// <param name="config">設定オブジェクト。</param>
+        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
+        private void WriteModifiedFilesSection(StreamWriter streamWriter, ConfigSettings config, string oldFolderAbsolutePath, string newFolderAbsolutePath)
+        {
+            streamWriter.WriteLine(REPORT_SECTION_MODIFIED_FILES);
+            foreach (var fileRelativePath in _fileDiffResultLists.ModifiedFilesRelativePath)
+            {
+                var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
+                if (config.ShouldOutputFileTimestamps)
+                {
+                    string oldTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
+                    string newTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
+                    streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM_WITH_TIMESTAMP, fileRelativePath, oldTimestamp, newTimestamp, diffDetailDisplay));
+                }
+                else
+                {
+                    streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM, fileRelativePath, diffDetailDisplay));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Summary セクションを書き込みます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        /// <param name="config">設定オブジェクト。</param>
+        /// <param name="hasMd5Mismatch">MD5Mismatch が存在する場合 true。</param>
+        private void WriteSummarySection(StreamWriter streamWriter, ConfigSettings config, bool hasMd5Mismatch)
+        {
+            streamWriter.WriteLine(REPORT_SECTION_SUMMARY);
+            if (config.ShouldIncludeIgnoredFiles)
+            {
+                streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_IGNORED, _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count));
+            }
+            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_UNCHANGED, _fileDiffResultLists.UnchangedFilesRelativePath.Count));
+            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_ADDED, _fileDiffResultLists.AddedFilesAbsolutePath.Count));
+            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_REMOVED, _fileDiffResultLists.RemovedFilesAbsolutePath.Count));
+            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_MODIFIED, _fileDiffResultLists.ModifiedFilesRelativePath.Count));
+            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_COMPARED, REPORT_LABEL_COMPARED, _fileDiffResultLists.OldFilesAbsolutePath.Count, _fileDiffResultLists.NewFilesAbsolutePath.Count));
+            streamWriter.WriteLine();
+            if (hasMd5Mismatch)
+            {
+                streamWriter.WriteLine(string.Format(REPORT_WARNING_LINE, WARNING_MD5_MISMATCH));
+            }
+        }
+
+        /// <summary>
+        /// Ignored ファイルの所在フラグから表示ラベルを返します。
+        /// </summary>
+        /// <param name="location">旧/新の所在フラグ。</param>
+        /// <returns>表示ラベル文字列。</returns>
+        private static string GetIgnoredFileLocationLabel(FileDiffResultLists.IgnoredFileLocation location)
+        {
+            return location switch
+            {
+                FileDiffResultLists.IgnoredFileLocation.Old => REPORT_LOCATION_OLD,
+                FileDiffResultLists.IgnoredFileLocation.New => REPORT_LOCATION_NEW,
+                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New => REPORT_LOCATION_BOTH,
+                _ => string.Empty
+            };
+        }
+
+        /// <summary>
+        /// Ignored ファイル行に表示する更新日時情報を組み立てます。
+        /// </summary>
+        /// <param name="entry">相対パスと所在フラグの組。</param>
+        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
+        /// <returns>更新日時情報。取得対象がない場合は null。</returns>
+        private static string BuildIgnoredFileTimestampInfo(
+            KeyValuePair<string, FileDiffResultLists.IgnoredFileLocation> entry,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath)
+        {
+            var timestampParts = new List<string>();
+            if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0)
+            {
+                timestampParts.Add(string.Format(REPORT_TIMESTAMP_UPDATED_OLD, Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))));
+            }
+            if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0)
+            {
+                timestampParts.Add(string.Format(REPORT_TIMESTAMP_UPDATED_NEW, Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key))));
+            }
+            return timestampParts.Count > 0 ? string.Join(REPORT_TIMESTAMP_SEPARATOR, timestampParts) : null;
         }
 
         /// <summary>

@@ -303,17 +303,13 @@ namespace FolderDiffIL4DotNet
                     stopwatch.Stop();
                     // フォルダ差分比較処理時間のコンソール出力
                     {
-                        TimeSpan? lastRunDuration = stopwatch.Elapsed;
-
-                        if (lastRunDuration.HasValue)
-                        {
-                            string hourString = $"{(int)Math.Floor(lastRunDuration.Value.TotalHours):00}";
-                            string minuteString = $"{lastRunDuration.Value.Minutes:00}";
-                            string secondString = $"{lastRunDuration.Value.Seconds:00}";
-                            string millisecondString = $"{lastRunDuration.Value.Milliseconds:000}";
-                            _elapsedTimeString = $"{hourString}:{minuteString}:{secondString}.{millisecondString}";
-                            _logger.LogMessage(AppLogLevel.Info, string.Format(Constants.LOG_ELAPSED_TIME, _elapsedTimeString), shouldOutputMessageToConsole: true);
-                        }
+                        TimeSpan lastRunDuration = stopwatch.Elapsed;
+                        string hourString = $"{(int)Math.Floor(lastRunDuration.TotalHours):00}";
+                        string minuteString = $"{lastRunDuration.Minutes:00}";
+                        string secondString = $"{lastRunDuration.Seconds:00}";
+                        string millisecondString = $"{lastRunDuration.Milliseconds:000}";
+                        _elapsedTimeString = $"{hourString}:{minuteString}:{secondString}.{millisecondString}";
+                        _logger.LogMessage(AppLogLevel.Info, string.Format(Constants.LOG_ELAPSED_TIME, _elapsedTimeString), shouldOutputMessageToConsole: true);
                     }
                 }
                 #endregion
