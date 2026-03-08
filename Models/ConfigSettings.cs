@@ -60,6 +60,16 @@ namespace FolderDiffIL4DotNet.Models
         public int MaxParallelism { get; set; }
 
         /// <summary>
+        /// テキスト差分で並列チャンク比較へ切り替えるサイズ閾値（KiB）。既定値は 512。
+        /// </summary>
+        public int TextDiffParallelThresholdKilobytes { get; set; } = 512;
+
+        /// <summary>
+        /// テキスト差分の並列チャンク比較で使用するチャンクサイズ（KiB）。既定値は 64。
+        /// </summary>
+        public int TextDiffChunkSizeKilobytes { get; set; } = 64;
+
+        /// <summary>
         /// IL 逆アセンブル結果をキャッシュして再実行時の再逆アセンブルを回避するか
         /// </summary>
         public bool EnableILCache { get; set; }

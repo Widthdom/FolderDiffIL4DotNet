@@ -26,14 +26,14 @@ namespace FolderDiffIL4DotNet.Services
         private const int BYTES_PER_KILOBYTE = 1024;
 
         /// <summary>
-        /// テキスト差分の高速化を検討するサイズ閾値（バイト）
+        /// テキスト差分の高速化を検討するサイズ閾値（バイト）の既定値。
         /// </summary>
-        private const int TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * BYTES_PER_KILOBYTE;
+        private const int DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * BYTES_PER_KILOBYTE;
 
         /// <summary>
-        /// テキスト差分比較時のチャンクサイズ（バイト）
+        /// テキスト差分比較時のチャンクサイズ（バイト）の既定値。
         /// </summary>
-        private const int TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * BYTES_PER_KILOBYTE;
+        private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * BYTES_PER_KILOBYTE;
         #endregion
 
         /// <summary>
@@ -127,6 +127,12 @@ namespace FolderDiffIL4DotNet.Services
                 // 3) テキスト拡張子ならテキスト比較: ネットワーク最適化時は逐次、それ以外は閾値に応じて並列比較を選択。
                 if (_config.TextFileExtensions.Contains(Path.GetExtension(file1AbsolutePath).ToLower()))
                 {
+                    int textDiffParallelThresholdBytes = GetEffectiveBytesFromConfiguredKilobytes(
+                        configuredKilobytes: _config.TextDiffParallelThresholdKilobytes,
+                        defaultBytes: DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES);
+                    int textDiffChunkSizeBytes = GetEffectiveBytesFromConfiguredKilobytes(
+                        configuredKilobytes: _config.TextDiffChunkSizeKilobytes,
+                        defaultBytes: DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES);
                     bool areTextFilesEqual;
                     try
                     {
@@ -138,10 +144,15 @@ namespace FolderDiffIL4DotNet.Services
                         else
                         {
                             var file1Info = new FileInfo(file1AbsolutePath);
-                            if (file1Info.Length >= TEXT_DIFF_PARALLEL_THRESHOLD_BYTES)
+                            if (file1Info.Length >= textDiffParallelThresholdBytes)
                             {
                                 // 大きいファイルは並列チャンク比較で高速化
-                                areTextFilesEqual = await DiffTextFilesParallelAsync(file1AbsolutePath, file2AbsolutePath, largeFileSizeThresholdBytes: TEXT_DIFF_PARALLEL_THRESHOLD_BYTES, maxParallel);
+                                areTextFilesEqual = await DiffTextFilesParallelAsync(
+                                    file1AbsolutePath,
+                                    file2AbsolutePath,
+                                    largeFileSizeThresholdBytes: textDiffParallelThresholdBytes,
+                                    chunkSizeBytes: textDiffChunkSizeBytes,
+                                    maxParallel: maxParallel);
                             }
                             else
                             {
@@ -177,9 +188,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
         /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
         /// <param name="largeFileSizeThresholdBytes">並列化閾値（バイト）。これ未満は逐次比較。</param>
+        /// <param name="chunkSizeBytes">チャンクサイズ（バイト）。</param>
         /// <param name="maxParallel">最大並列度</param>
         /// <returns>一致すれば true。エラーや引数不正時は false。</returns>
-        private static async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes, int maxParallel)
+        private static async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes, int chunkSizeBytes, int maxParallel)
         {
             try
             {
@@ -205,7 +217,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 // 大きなファイルは固定サイズのチャンクに分割し、読み取り→比較を並列実行する。
-                int chunkCount = (int)((file1Info.Length + TEXT_DIFF_CHUNK_SIZE_BYTES - 1) / TEXT_DIFF_CHUNK_SIZE_BYTES);
+                int chunkCount = (int)((file1Info.Length + chunkSizeBytes - 1) / chunkSizeBytes);
                 var differences = 0;
                 await Parallel.ForEachAsync(Enumerable.Range(0, chunkCount), new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (index, cancellationToken) =>
                 {
@@ -214,16 +226,16 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         return;
                     }
-                    var buffer1 = new byte[TEXT_DIFF_CHUNK_SIZE_BYTES];
-                    var buffer2 = new byte[TEXT_DIFF_CHUNK_SIZE_BYTES];
+                    var buffer1 = new byte[chunkSizeBytes];
+                    var buffer2 = new byte[chunkSizeBytes];
                     int read1, read2;
                     using (var file1Stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     using (var file2Stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        file1Stream.Seek((long)index * TEXT_DIFF_CHUNK_SIZE_BYTES, SeekOrigin.Begin);
-                        file2Stream.Seek((long)index * TEXT_DIFF_CHUNK_SIZE_BYTES, SeekOrigin.Begin);
-                        read1 = await file1Stream.ReadAsync(buffer1.AsMemory(0, TEXT_DIFF_CHUNK_SIZE_BYTES), cancellationToken);
-                        read2 = await file2Stream.ReadAsync(buffer2.AsMemory(0, TEXT_DIFF_CHUNK_SIZE_BYTES), cancellationToken);
+                        file1Stream.Seek((long)index * chunkSizeBytes, SeekOrigin.Begin);
+                        file2Stream.Seek((long)index * chunkSizeBytes, SeekOrigin.Begin);
+                        read1 = await file1Stream.ReadAsync(buffer1.AsMemory(0, chunkSizeBytes), cancellationToken);
+                        read2 = await file2Stream.ReadAsync(buffer2.AsMemory(0, chunkSizeBytes), cancellationToken);
                     }
                     // 同じオフセットのチャンクでも読み取りバイト数が異なれば即時不一致。
                     if (read1 != read2)
@@ -248,6 +260,25 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// KiB 指定の設定値をバイトへ変換します。設定値が 0 以下または変換でオーバーフローする場合は既定値を返します。
+        /// </summary>
+        private static int GetEffectiveBytesFromConfiguredKilobytes(int configuredKilobytes, int defaultBytes)
+        {
+            if (configuredKilobytes <= 0)
+            {
+                return defaultBytes;
+            }
+
+            long bytes = (long)configuredKilobytes * BYTES_PER_KILOBYTE;
+            if (bytes > int.MaxValue)
+            {
+                return defaultBytes;
+            }
+
+            return (int)bytes;
         }
     }
 }

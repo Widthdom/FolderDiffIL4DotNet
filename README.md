@@ -201,6 +201,8 @@ CI との関係:
 	"ILIgnoreLineContainingStrings": [],
 	"ShouldOutputFileTimestamps": true,
 	"MaxParallelism": 0,
+	"TextDiffParallelThresholdKilobytes": 512,
+	"TextDiffChunkSizeKilobytes": 64,
 	"EnableILCache": true,
 	"ILCacheDirectoryAbsolutePath": "",
 	"ILCacheStatsLogIntervalSeconds": 60,
@@ -223,6 +225,8 @@ CI との関係:
 | ILIgnoreLineContainingStrings | IL 比較時に無視したい文字列のリスト（部分一致、複数指定可）。例: `"buildserver"`。 |
 | ShouldOutputFileTimestamps | `diff_report.md` の各ファイル行に最終更新日時を併記するか否か（ `true`  で併記）。 |
 | MaxParallelism | ファイル比較の並列度。0 または未指定で論理コア数、自動判定。1 で逐次実行。 |
+| TextDiffParallelThresholdKilobytes | テキスト差分で並列チャンク比較へ切り替える閾値（KiB）。既定値 `512`。`0` 以下は既定値を使用。 |
+| TextDiffChunkSizeKilobytes | テキスト差分の並列比較で使うチャンクサイズ（KiB）。既定値 `64`。`0` 以下は既定値を使用。 |
 | EnableILCache | IL 逆アセンブル結果（MD5 + ツール / バージョン単位）をメモリ & 任意ディスクにキャッシュし再実行時の逆アセンブルをスキップ。 |
 | ILCacheDirectoryAbsolutePath | キャッシュ格納ディレクトリ。空 / 未指定で実行ディレクトリ配下 `ILCache`。容量制御 (LRU) と TTL（現在 12h）あり。 |
 | ILCacheStatsLogIntervalSeconds | IL キャッシュの内部統計（ヒット率など）をログへ出力する間隔（秒）。0 以下で 60 秒が既定。 |
@@ -274,7 +278,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 | IL キャッシュ | MD5 + ツールラベル (コマンド + バージョン) で IL テキストを再利用 | LRU (capacity=2000), TTL=12h, ディスク永続化可 |
 | MD5 プリウォーム | 全対象ファイルの MD5 を先読み並列計算 | キャッシュキー生成の待ち時間平準化 |
 | IL キャッシュ先読み | 既存ディスク IL キャッシュをメモリへ昇格 | 初回以降の逆アセンブル起動を更に削減 |
-| 並列テキスト差分 | 512KB 以上のテキストを 64KB チャンクで並列バイト比較 | 完全一致判定のみ（差分位置抽出なし） |
+| 並列テキスト差分 | `TextDiffParallelThresholdKilobytes` 以上（KiB）のテキストを `TextDiffChunkSizeKilobytes`（KiB）単位で並列バイト比較 | 完全一致判定のみ（差分位置抽出なし） |
 | ツール失敗ブラックリスト | 同一ツール連続失敗 (既定 3 回) で 10 分間スキップ | 起動オーバーヘッド削減 |
 
 ### IL キャッシュ補足

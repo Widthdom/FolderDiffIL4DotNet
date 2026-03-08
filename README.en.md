@@ -177,6 +177,8 @@ Place `config.json` next to the executable. Example:
   "ILIgnoreLineContainingStrings": [],
   "ShouldOutputFileTimestamps": true,
   "MaxParallelism": 0,
+  "TextDiffParallelThresholdKilobytes": 512,
+  "TextDiffChunkSizeKilobytes": 64,
   "EnableILCache": true,
   "ILCacheDirectoryAbsolutePath": "",
   "ILCacheStatsLogIntervalSeconds": 60,
@@ -199,6 +201,8 @@ Place `config.json` next to the executable. Example:
 | `ILIgnoreLineContainingStrings` | List of strings used for IL line-ignore filtering (substring match, multiple values allowed), e.g. `buildserver`. |
 | `ShouldOutputFileTimestamps` | Adds last modified timestamps to each file line inside the report. |
 | `MaxParallelism` | Degree of parallelism for file comparisons. `0` or omitted uses the logical core count. |
+| `TextDiffParallelThresholdKilobytes` | Size threshold (KiB) that switches text diffing to parallel chunk mode. Default `512`. Values `<= 0` fall back to default. |
+| `TextDiffChunkSizeKilobytes` | Chunk size (KiB) for parallel text diffing. Default `64`. Values `<= 0` fall back to default. |
 | `EnableILCache` | Caches IL disassembly results (MD5 + tool/version) in memory and optionally on disk. |
 | `ILCacheDirectoryAbsolutePath` | Custom cache folder. Blank defaults to `<exe>/ILCache` with LRU + TTL control. |
 | `ILCacheStatsLogIntervalSeconds` | Interval (seconds) for logging IL cache statistics. `<= 0` falls back to 60 seconds. |
@@ -256,7 +260,7 @@ After writing the report, the following files are marked read-only (failures onl
 | IL cache | Reuses IL text based on MD5 + tool label (command + version). | In-memory cache (LRU up to 2000 items, TTL 12h) with optional disk persistence. |
 | MD5 pre-warming | Precomputes MD5 for all targets in parallel before diffing. | Evens out cache key generation time. |
 | IL cache prefetch | Promotes disk cache entries into memory before diffing. | Further reduces disassembler launches. |
-| Parallel text diff | Files ≥512 KiB are split into 64 KiB chunks compared in parallel. | Only determines equality (no diff output). |
+| Parallel text diff | Files at/above `TextDiffParallelThresholdKilobytes` (KiB) are split by `TextDiffChunkSizeKilobytes` (KiB) and compared in parallel. | Only determines equality (no diff output). |
 | Tool failure blacklist | Skips IL tools that failed repeatedly (default: 3 times) for 10 minutes. | Reduces repeated launch overhead. |
 
 ### IL cache notes

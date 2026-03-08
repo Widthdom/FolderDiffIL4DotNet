@@ -82,6 +82,8 @@
   "ILIgnoreLineContainingStrings": [],
   "ShouldOutputFileTimestamps": true,
   "MaxParallelism": 0,
+  "TextDiffParallelThresholdKilobytes": 512,
+  "TextDiffChunkSizeKilobytes": 64,
   "EnableILCache": true,
   "ILCacheDirectoryAbsolutePath": "",
   "ILCacheStatsLogIntervalSeconds": 60,

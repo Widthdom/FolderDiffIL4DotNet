@@ -13,6 +13,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
 
             Assert.Equal(1000, config.ILCacheMaxDiskFileCount);
             Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
+            Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
             Assert.False(config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
@@ -25,6 +27,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.NotNull(config);
             Assert.Equal(1000, config.ILCacheMaxDiskFileCount);
             Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
+            Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
             Assert.False(config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
@@ -38,6 +42,16 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.NotNull(config);
             Assert.Equal(0, config.ILCacheMaxDiskFileCount);
             Assert.Equal(0, config.ILCacheMaxDiskMegabytes);
+        }
+
+        [Fact]
+        public void JsonDeserialize_TextDiffParallelSettings_AreApplied()
+        {
+            var json = "{\"TextDiffParallelThresholdKilobytes\":128,\"TextDiffChunkSizeKilobytes\":8}";
+            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+            Assert.NotNull(config);
+            Assert.Equal(128, config.TextDiffParallelThresholdKilobytes);
+            Assert.Equal(8, config.TextDiffChunkSizeKilobytes);
         }
 
         [Fact]
