@@ -14,7 +14,23 @@ This repository hosts a .NET console application that compares two folders, clas
 - The app tries disassembler candidates **per file** in order. Tools that fail repeatedly are temporarily blacklisted and skipped.
 - IL cache keys are built from `file MD5 + disassembler identity` (normally tool/version). If version lookup fails, the app falls back to a tool-binary fingerprint so caches from old/new tool builds do not get mixed.
 
-Installation example:
+.NET SDK 8.x installation examples:
+```powershell
+# Windows (winget)
+winget install Microsoft.DotNet.SDK.8
+```
+
+```powershell
+# Windows (dotnet-install script)
+powershell -ExecutionPolicy Bypass -c "& { iwr https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1; .\dotnet-install.ps1 -Channel 8.0 }"
+```
+
+```bash
+# macOS/Linux/Unix (dotnet-install script)
+curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+```
+
+IL disassembler installation examples:
 
 ```bash
 dotnet tool install --global dotnet-ildasm

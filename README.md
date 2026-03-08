@@ -14,7 +14,21 @@
 - 逆アセンブラは**ファイルごとに候補順で試行**します。連続失敗したツールは一定時間ブラックリスト化され、以後はスキップされます。
 - IL キャッシュキーは「対象ファイルの MD5 + 逆アセンブラ識別子（通常はツール名/バージョン）」で管理します。バージョン取得失敗時はツール実体のフィンガープリントを識別子に使い、旧/新ツールのキャッシュ混在を防ぎます。
 
-インストール例:
+.NET SDK 8.x のインストール例:
+```powershell
+# Windows (winget)
+winget install Microsoft.DotNet.SDK.8
+```
+```powershell
+# Windows (dotnet-install スクリプト)
+powershell -ExecutionPolicy Bypass -c "& { iwr https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1; .\dotnet-install.ps1 -Channel 8.0 }"
+```
+```bash
+# macOS/Linux/Unix (dotnet-install スクリプト)
+curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+```
+
+IL 逆アセンブラのインストール例:
 ```bash
 dotnet tool install --global dotnet-ildasm
 # 必要に応じて PATH に追加
