@@ -1,333 +1,441 @@
 # FolderDiffIL4DotNet
 
-2つのフォルダの差分をレポート出力するコンソールアプリケーションです。.NET アセンブリに関してはビルド固有情報（例: MVID）が存在する場合はこれを除外して IL 比較するため、ビルド日時が異なっていても実質同じ挙動であれば同一と判定します。加えて、設定により「指定文字列を含む行」を IL 比較時に無視できます。
+`FolderDiffIL4DotNet` is a .NET console application that compares two folders and outputs a Markdown report.
+For .NET assemblies, it compares IL while ignoring build-specific noise such as `// MVID:` lines, so behaviorally equivalent binaries can be treated as equal even when build timestamps differ.
 
-> Need this document in English? See [README.en.md](README.en.md).
+Developer-focused details (architecture, CI, tests, implementation cautions):
+- [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
-## 必要環境
+## Requirements
 
 - .NET SDK 8.x
-- macOS/Windows/Linux/Unix系（例: FreeBSD）で動作
-- IL 逆アセンブラ（自動で候補順に試行します）
-	- 優先: `dotnet-ildasm` または `dotnet ildasm`
-	- 代替: `ilspycmd`
-- 逆アセンブラは**ファイルごとに候補順で試行**します。連続失敗したツールは一定時間ブラックリスト化され、以後はスキップされます。
-- IL キャッシュキーは「対象ファイルの MD5 + 逆アセンブラ識別子（通常はツール名/バージョン）」で管理します。バージョン取得失敗時はツール実体のフィンガープリントを識別子に使い、旧/新ツールのキャッシュ混在を防ぎます。
+- macOS / Windows / Linux / Unix-like OS
+- IL disassembler (auto-probed per file)
+- Preferred: `dotnet-ildasm` or `dotnet ildasm`
+- Fallback: `ilspycmd`
 
-.NET SDK 8.x のインストール例:
+.NET SDK 8.x installation examples:
+
 ```powershell
 # Windows (winget)
 winget install Microsoft.DotNet.SDK.8
 ```
+
+```powershell
+# Windows (dotnet-install script)
+powershell -ExecutionPolicy Bypass -c "& { iwr https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1; .\dotnet-install.ps1 -Channel 8.0 }"
+```
+
+```bash
+# macOS/Linux/Unix (dotnet-install script)
+curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+```
+
+IL disassembler installation examples:
+
+```bash
+dotnet tool install --global dotnet-ildasm
+# add $HOME/.dotnet/tools (macOS/Linux/Unix) or %USERPROFILE%\.dotnet\tools (Windows) to PATH if needed
+
+# verify installation and version (both commands invoke the same dotnet-ildasm tool)
+dotnet-ildasm --version
+dotnet ildasm --version
+```
+
+```bash
+dotnet tool install --global ilspycmd
+# add $HOME/.dotnet/tools (macOS/Linux/Unix) or %USERPROFILE%\.dotnet\tools (Windows) to PATH if needed
+```
+
+## Usage
+
+1. Place `config.json` next to the executable.
+2. Run with arguments:
+- old folder absolute path
+- new folder absolute path
+- report label
+3. Add `--no-pause` if you want to skip key-wait at process end.
+
+```bash
+dotnet build
+dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" --no-pause
+```
+
+Main output:
+- `Reports/<label>/diff_report.md`
+- Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when `ShouldOutputILText=true`
+
+## Comparison Flow
+
+1. MD5 hash compare.
+- If equal: `Unchanged (MD5Match)`.
+2. If both files are .NET assemblies (detected by PE/CLR headers), disassemble both using the same disassembler/version identity and compare IL line-by-line.
+- `// MVID:` lines are always ignored.
+- If `ShouldIgnoreILLinesContainingConfiguredStrings=true`, lines containing any value in `ILIgnoreLineContainingStrings` are also ignored (substring match).
+- If equal: `Unchanged (ILMatch)`, else `Modified (ILMismatch)`.
+3. For extensions listed in `TextFileExtensions`, run text line-based compare.
+- If equal: `Unchanged (TextMatch)`, else `Modified (TextMismatch)`.
+4. Others fall back to `Modified (MD5Mismatch)`.
+
+## Configuration (`config.json`)
+
+Place `config.json` next to the executable. Example:
+
+```json
+{
+  "IgnoredExtensions": [".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"],
+  "TextFileExtensions": [
+    ".asax",
+    ".ascx",
+    ".asmx",
+    ".aspx",
+    ".bat",
+    ".c",
+    ".cmd",
+    ".config",
+    ".cpp",
+    ".cs",
+    ".cshtml",
+    ".csproj",
+    ".csx",
+    ".css",
+    ".csv",
+    ".editorconfig",
+    ".env",
+    ".fs",
+    ".fsi",
+    ".fsproj",
+    ".fsx",
+    ".gitattributes",
+    ".gitignore",
+    ".gitmodules",
+    ".go",
+    ".gql",
+    ".graphql",
+    ".h",
+    ".hpp",
+    ".htm",
+    ".html",
+    ".http",
+    ".ini",
+    ".js",
+    ".json",
+    ".jsx",
+    ".less",
+    ".manifest",
+    ".md",
+    ".mod",
+    ".nlog",
+    ".nuspec",
+    ".plist",
+    ".props",
+    ".ps1",
+    ".psd1",
+    ".psm1",
+    ".py",
+    ".razor",
+    ".resx",
+    ".rst",
+    ".sass",
+    ".scss",
+    ".sh",
+    ".sln",
+    ".sql",
+    ".sqlproj",
+    ".sum",
+    ".svg",
+    ".targets",
+    ".toml",
+    ".ts",
+    ".tsv",
+    ".tsx",
+    ".txt",
+    ".vb",
+    ".vbproj",
+    ".vue",
+    ".xaml",
+    ".xml",
+    ".yaml",
+    ".yml"
+  ],
+  "MaxLogGenerations": 5,
+  "ShouldIncludeUnchangedFiles": true,
+  "ShouldIncludeIgnoredFiles": true,
+  "ShouldOutputILText": true,
+  "ShouldIgnoreILLinesContainingConfiguredStrings": false,
+  "ILIgnoreLineContainingStrings": [],
+  "ShouldOutputFileTimestamps": true,
+  "MaxParallelism": 0,
+  "TextDiffParallelThresholdKilobytes": 512,
+  "TextDiffChunkSizeKilobytes": 64,
+  "EnableILCache": true,
+  "ILCacheDirectoryAbsolutePath": "",
+  "ILCacheStatsLogIntervalSeconds": 60,
+  "ILCacheMaxDiskFileCount": 1000,
+  "ILCacheMaxDiskMegabytes": 512,
+  "OptimizeForNetworkShares": false,
+  "AutoDetectNetworkShares": true
+}
+```
+
+| Key | Description |
+| --- | --- |
+| `IgnoredExtensions` | Excludes matching extensions from comparison. |
+| `TextFileExtensions` | Treats matching extensions as text. Include dot (`.cs`, `.json`). Matching is case-insensitive. |
+| `MaxLogGenerations` | Number of log files kept in rotation. |
+| `ShouldIncludeUnchangedFiles` | Includes `Unchanged` section in report. |
+| `ShouldIncludeIgnoredFiles` | Includes `Ignored Files` section before `Unchanged`. |
+| `ShouldOutputILText` | Outputs IL dumps under `Reports/<label>/IL/old,new`. |
+| `ShouldIgnoreILLinesContainingConfiguredStrings` | Enables additional IL line-ignore filter by substring. |
+| `ILIgnoreLineContainingStrings` | String list used by IL substring-ignore filter. |
+| `ShouldOutputFileTimestamps` | Adds last-modified timestamps to report entries. |
+| `MaxParallelism` | Max compare parallelism. `0` or less = auto. |
+| `TextDiffParallelThresholdKilobytes` | Text diff size threshold (KiB) for chunk-parallel mode. |
+| `TextDiffChunkSizeKilobytes` | Chunk size (KiB) for parallel text diff. |
+| `EnableILCache` | Enables IL cache (memory + optional disk). |
+| `ILCacheDirectoryAbsolutePath` | IL cache directory. Empty = `<exe>/ILCache`. |
+| `ILCacheStatsLogIntervalSeconds` | IL cache stats log interval. `<=0` uses default 60s. |
+| `ILCacheMaxDiskFileCount` | Disk cache file count cap. `<=0` means unlimited. |
+| `ILCacheMaxDiskMegabytes` | Disk cache size cap (MB). `<=0` means unlimited. |
+| `OptimizeForNetworkShares` | Enables network-share optimization mode. |
+| `AutoDetectNetworkShares` | Auto-detects network paths and enables optimization mode as needed. |
+
+Notes:
+- Files without extension are still compared.
+- If you want extensionless files treated as text, include empty string (`""`) in `TextFileExtensions`.
+
+## Generated Artifacts
+
+- `Reports/<label>/diff_report.md`
+- `Logs/log_YYYYMMDD.log`
+- Optional: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
+
+After writing, report/IL files are set to read-only when possible (failures are warning-only).
+
+## License
+
+- [MIT License](LICENSE)
+
+---
+
+# FolderDiffIL4DotNet（日本語）
+
+`FolderDiffIL4DotNet` は、2つのフォルダを比較して Markdown レポートを出力する .NET コンソールアプリです。
+.NET アセンブリは `// MVID:` などのビルド固有差分を除外して IL 比較するため、ビルド日時が違っても実質同等なら同一として扱えます。
+
+開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
+- [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
+
+## 必要環境
+
+- .NET SDK 8.x
+- macOS / Windows / Linux / Unix 系 OS
+- IL 逆アセンブラ（ファイルごとに自動判定）
+- 優先: `dotnet-ildasm` または `dotnet ildasm`
+- 代替: `ilspycmd`
+
+.NET SDK 8.x のインストール例:
+
+```powershell
+# Windows (winget)
+winget install Microsoft.DotNet.SDK.8
+```
+
 ```powershell
 # Windows (dotnet-install スクリプト)
 powershell -ExecutionPolicy Bypass -c "& { iwr https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1; .\dotnet-install.ps1 -Channel 8.0 }"
 ```
+
 ```bash
 # macOS/Linux/Unix (dotnet-install スクリプト)
 curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
 ```
 
 IL 逆アセンブラのインストール例:
+
 ```bash
 dotnet tool install --global dotnet-ildasm
-# 必要に応じて PATH に追加
-# macOS/Linux/Unix:  $HOME/.dotnet/tools を PATH に追加
-# Windows:      %USERPROFILE%\.dotnet\tools を PATH に追加
-# インストール後は以下どちらの呼び方でも実行可能（同じツール）
+# 必要に応じて PATH へ追加
+# macOS/Linux/Unix: $HOME/.dotnet/tools
+# Windows: %USERPROFILE%\.dotnet\tools
+
+# インストール確認とバージョン確認（どちらも同じ dotnet-ildasm を実行）
 dotnet-ildasm --version
 dotnet ildasm --version
 ```
-```bash
-dotnet tool install -g ilspycmd
-# 必要に応じて PATH に追加
-# macOS/Linux/Unix:  $HOME/.dotnet/tools を PATH に追加
-# Windows:      %USERPROFILE%\.dotnet\tools を PATH に追加
-```
-
-## CI (GitHub Actions)
-
-リポジトリには GitHub Actions 用のワークフロー（`.github/workflows/dotnet.yml`）を用意しています。`main` ブランチへの push / pull request で自動実行され、`workflow_dispatch` から手動でも起動できます。
-
-- `actions/checkout` は `fetch-depth: 0` で完全な履歴を取得し、Nerdbank.GitVersioning がコミット履歴を参照できるようにしています。
-- `actions/setup-dotnet` が `global.json` を読み取り、ローカルと同じ .NET SDK (例: 8.0.413) をインストールしたうえで `dotnet restore` と Release ビルドを実行します。
-- `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` が存在する場合のみ `dotnet test` を動かし、`coverlet.collector` の `XPlat Code Coverage` で Cobertura 形式のカバレッジを収集します（テストプロジェクトが未導入の状態でも失敗しません）。
-- `dotnet-reportgenerator-globaltool` で `TestResults/**/coverage.cobertura.xml` からサマリーを生成し、GitHub Actions の Step Summary と `CoverageReport` アーティファクトへ出力します。
-- `actions/cache` で NuGet（`~/.nuget/packages`）をキャッシュし、2 回目以降のビルドを高速化します。
-- Release ビルドの成果物は `dotnet publish FolderDiffIL4DotNet.csproj --output publish` で生成し、アップロード前に `*.pdb` などのデバッグシンボルを削除したうえで、`actions/upload-artifact` により `FolderDiffIL4DotNet` という名前でアップロードされます。加えてテスト結果（TRX）とカバレッジ関連ファイルは `TestAndCoverage` としてアップロードされます。
-
-利用手順:
-
-1. このリポジトリを GitHub に push するだけでワークフローが動きます。
-2. デフォルトブランチ名が `main` 以外の場合は、`.github/workflows/dotnet.yml` 内の `on.push.branches` と `on.pull_request.branches` を目的のブランチ名に変更してください。
-3. テストプロジェクトの場所や名前を変更した場合は、`.github/workflows/dotnet.yml` の `Test with coverage` ステップ（`if` と `dotnet test` の `csproj` パス）を合わせて更新してください。
-4. 作成された成果物は Actions 実行ページの `Artifacts > FolderDiffIL4DotNet`（Release ビルド）と `Artifacts > TestAndCoverage`（TRX / Cobertura / CoverageReport）から取得できます。
-
-## テスト実行
-
-ローカルでテストだけを実行する場合は、次のコマンドを使用します。
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
+dotnet tool install --global ilspycmd
+# 必要に応じて PATH へ追加
+# macOS/Linux/Unix: $HOME/.dotnet/tools
+# Windows: %USERPROFILE%\.dotnet\tools
 ```
 
-カバレッジも同時に取得したい場合は次のコマンドを使用します。
+## 使い方
 
-```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --collect:"XPlat Code Coverage" --results-directory ./TestResults
-```
+1. 実行ファイルと同じ場所に `config.json` を配置します。
+2. 次の引数で実行します。
+- 旧フォルダ（比較元）の絶対パス
+- 新フォルダ（比較先）の絶対パス
+- レポートラベル
+3. 終了時のキー待ちを省略する場合は `--no-pause` を付けます。
 
-前提:
-
-- .NET SDK 8.x がインストールされていること。
-- 単体テストの実行に `dotnet-ildasm` / `ilspycmd` は不要（アプリ本体の IL 比較時のみ必要）。
-- リポジトリルートでコマンドを実行することを想定。
-- コアサービスの専用ユニットテストとして `FolderDiffServiceTests` / `FileDiffServiceTests` / `ReportGenerateServiceTests` / `ILOutputServiceTests` / `DotNetDisassembleServiceTests` を含みます。
-- `ProgramTests` では `Main` をリフレクション経由で実行し、`--no-pause` を付けた実行パス（引数異常系と最小構成の成功系）を検証します。
-- `FileSystemUtilityTests` ではネットワークパス判定の mounts 解析（最長一致マウントポイント選択）を直接検証します。
-
-CI との関係:
-
-- GitHub Actions の `Test with coverage` ステップは `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults` を実行します。
-- 収集された `coverage.cobertura.xml` から `reportgenerator` が GitHub Summary と HTML レポートを生成し、`TestAndCoverage` アーティファクトにも保存されます。
-- 現在のソリューション内テストプロジェクトは `FolderDiffIL4DotNet.Tests` のみのため、ローカルの上記 `csproj` 指定コマンドと実行対象は同一です。
-- 将来テストプロジェクトを追加した場合は、CI 側の `Test with coverage` ステップを必要に応じて `sln` 実行へ戻すか、対象 `csproj` を追加してください。
-
-## 処理概要
-
-- 旧バージョン側（比較元）と新バージョン側（比較先）のフォルダ（コマンドライン第1引数と第2引数に指定）の内容を再帰的に比較
-- ファイルごとに一致/不一致及びその判定根拠（以下）を記録
-	- MD5Match: MD5ハッシュが一致
-    - MD5Mismatch: MD5ハッシュが不一致
-    - ILMatch: IL（中間言語）ベースで一致（ビルド固有情報の差異は無視、使用した逆アセンブラ名/バージョンも記録）
-    - ILMismatch: IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視、使用した逆アセンブラ名/バージョンも記録）
-    - TextMatch: テキストベースで一致
-    - TextMismatch: テキストベースで不一致
-- 比較結果区分ごと（Unchanged/Added/Removed/Modified）にファイルを分類
-- 比較結果の内部保持（`FileDiffResultLists`）は DI で注入される実行単位インスタンスで、`ConcurrentQueue` / `ConcurrentDictionary` により並列実行時の追加処理をスレッドセーフに実行
-- `FolderDiffService.ExecuteFolderDiffAsync` の開始時に注入済み `FileDiffResultLists` の `ResetAll()` を実行し、同一プロセス内でも前回実行結果が混入しないように初期化
-- ログ出力は `ILoggerService`（`LoggerService` 実装）を DI で解決し、ログファイルパスは読み取り専用プロパティ（`LogFileAbsolutePath`）経由で参照
-- `Program` は `ServiceCollection` で依存関係を構成し、`ConfigService` / `FolderDiffService` / `ReportGenerateService` などを直接 `new` せず解決して実行
-- 比較結果区分ごとのファイル一覧を`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力（ファイルのパス、最終更新日時［`config.json`のShouldOutputFileTimestampsが `true` の場合］、判定根拠）
-    - レポート生成は `ReportGenerateService.GenerateDiffReport` からヘッダ/レジェンド/各セクション/サマリーの private メソッドへ分割され、保守性を高めています。
-    - Unchanged/Modified は相対パスで記載されます。
-    - Added/Removed は絶対パスで記載されます。
-    - `ILMatch` / `ILMismatch` には、逆アセンブルに使用したツール名/バージョンを併記します（キャッシュ利用時を含む）。
-- 比較結果区分ごとのファイル数を集計し`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に出力
-    - 比較結果区分Unchangedのファイル一覧は、`config.json`のShouldIncludeUnchangedFilesが `true` の場合のみ出力されます。
-    - IgnoredExtensions対象のファイル一覧は、`config.json`のShouldIncludeIgnoredFilesが `true` の場合に `## [ x ] Ignored Files` として Unchanged の直前に出力されます。
-    - `MD5Mismatch` が 1 件以上存在する場合は、標準出力と `diff_report.md` の Summary 直下に警告を表示し、MD5 ハッシュ比較しか行えず、かつ不一致と判定されたファイルがある旨を明確に示します。
-    - レポート冒頭の `IL Disassembler` には、実際に IL 比較で使用された逆アセンブラ（ツール名/バージョン）のみを出力します（未使用時は `N/A`）。
-    - `ShouldIgnoreILLinesContainingConfiguredStrings` が `true` の場合、レポート冒頭に「`ILIgnoreLineContainingStrings` のいずれかを含む行を無視している」旨を出力します。
-
-## ファイル比較フロー
-
-1) バイナリデータをMD5ハッシュで比較します。
-- 一致ならばUnchanged, MD5Matchと判定し次のファイル比較へ
-
-2) .NET アセンブリであれば（拡張子に依存せず、PE/CLR ヘッダで判定）IL に逆アセンブルして比較します。
-- .NET アセンブリの判定は PE32（32bit）とPE32+（64bit）の両方に対応し、DnSpyなどの逆アセンブラで処理可能な全ての.NETファイルを正しく検出します（VB.NET、C#、F#などの言語に関係なく、CLRランタイムヘッダが存在するファイルを判定）
-- IL 比較時は old/new を同一逆アセンブラ（同一バージョン識別）で逆アセンブルします。異なるツール/バージョンの組み合わせ比較は行いません。
-- 行単位の比較（IL出力中の「`// MVID:`」で始まる行は常に無視します。）
-	- `config.json` の `ShouldIgnoreILLinesContainingConfiguredStrings` が `true` の場合、`ILIgnoreLineContainingStrings` のいずれかの文字列を「含む」行も無視します（前方一致ではなく部分一致）。
-	- ビルド日時などビルド固有情報の差異を無視して比較することで、実質同じ挙動のアセンブリはビルド日時が異なっていても同一と判定できます。
-	- 逆アセンブルに`dotnet-ildasm`を使用した場合、IL 先頭付近に「// MVID: {GUID}」が出力されることが多い一方、`ilspycmd`を使用した場合は出力されません。
-- 一致ならばUnchanged, ILMatch、不一致ならばModified, ILMismatchと判定し次のファイル比較へ
-
-3) テキストベースのファイル（`config.json`のTextFileExtensionsに指定された拡張子か否かを `StringComparison.OrdinalIgnoreCase` で判定）であれば行単位で比較します。
-- 一致ならばUnchanged, TextMatch、不一致ならばModified, TextMismatchと判定し次のファイル比較へ
-- 並列テキスト比較で例外が発生した場合は warning ログを出力し、逐次テキスト比較へフォールバックします。
-
-4) Modified, MD5Mismatchと判定し次のファイル比較へ
-
-## アプリケーション設定（`config.json`）
-
-実行ファイルと同じディレクトリに配置します。例:
-
-```json
-{
-	"IgnoredExtensions": [".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"],
-	"TextFileExtensions": [
-		".asax",
-		".ascx",
-		".asmx",
-		".aspx",
-		".bat",
-		".c",
-		".cmd",
-		".config",
-		".cpp",
-		".cs",
-		".cshtml",
-		".csproj",
-		".csx",
-		".css",
-		".csv",
-		".editorconfig",
-		".env",
-		".fs",
-		".fsi",
-		".fsproj",
-		".fsx",
-		".gitattributes",
-		".gitignore",
-		".gitmodules",
-		".go",
-		".gql",
-		".graphql",
-		".h",
-		".hpp",
-		".htm",
-		".html",
-		".http",
-		".ini",
-		".js",
-		".json",
-		".jsx",
-		".less",
-		".manifest",
-		".md",
-		".mod",
-		".nlog",
-		".nuspec",
-		".plist",
-		".props",
-		".ps1",
-		".psd1",
-		".psm1",
-		".py",
-		".razor",
-		".resx",
-		".rst",
-		".sass",
-		".scss",
-		".sh",
-		".sln",
-		".sql",
-		".sqlproj",
-		".sum",
-		".svg",
-		".targets",
-		".toml",
-		".ts",
-		".tsv",
-		".tsx",
-		".txt",
-		".vb",
-		".vbproj",
-		".vue",
-		".xaml",
-		".xml",
-		".yaml",
-		".yml"
-	],
-	"MaxLogGenerations": 5,
-	"ShouldIncludeUnchangedFiles": true,
-	"ShouldIncludeIgnoredFiles": true,
-	"ShouldOutputILText": true,
-	"ShouldIgnoreILLinesContainingConfiguredStrings": false,
-	"ILIgnoreLineContainingStrings": [],
-	"ShouldOutputFileTimestamps": true,
-	"MaxParallelism": 0,
-	"TextDiffParallelThresholdKilobytes": 512,
-	"TextDiffChunkSizeKilobytes": 64,
-	"EnableILCache": true,
-	"ILCacheDirectoryAbsolutePath": "",
-	"ILCacheStatsLogIntervalSeconds": 60,
-	"ILCacheMaxDiskFileCount": 1000,
-	"ILCacheMaxDiskMegabytes": 512,
-	"OptimizeForNetworkShares": false,
-	"AutoDetectNetworkShares": true
-}
-```
-
-| 項目 | 説明 |
-| --- | --- |
-| IgnoredExtensions | 指定拡張子は比較対象から除外する（例: `.pdb`）。 |
-| TextFileExtensions | 指定拡張子のファイルはテキストとして行単位で比較する。ピリオド（`.`）付きで指定すること（例: `.cs`, `.json`, `.xml`）。比較は大文字小文字を区別せず（`StringComparison.OrdinalIgnoreCase`）行われる。 |
-| MaxLogGenerations | アプリケーションログのローテーション世代数。 |
-| ShouldIncludeUnchangedFiles | `Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にUnchangedのファイル一覧を含めるか否か。 |
-| ShouldIncludeIgnoredFiles | IgnoredExtensions に該当して比較対象から除外されたファイルを `diff_report.md` の `## [ x ] Ignored Files` セクション（Unchanged の直前）に出力するか否か。 |
-| ShouldOutputILText | `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old, new`にIL全文を出力するか否か。 |
-| ShouldIgnoreILLinesContainingConfiguredStrings | IL 比較時に、`ILIgnoreLineContainingStrings` のいずれかを含む行を無視するか否か。 |
-| ILIgnoreLineContainingStrings | IL 比較時に無視したい文字列のリスト（部分一致、複数指定可）。例: `"buildserver"`。 |
-| ShouldOutputFileTimestamps | `diff_report.md` の各ファイル行に最終更新日時を併記するか否か（ `true`  で併記）。 |
-| MaxParallelism | ファイル比較の並列度。0 または未指定で論理コア数、自動判定。1 で逐次実行。 |
-| TextDiffParallelThresholdKilobytes | テキスト差分で並列チャンク比較へ切り替える閾値（KiB）。既定値 `512`。`0` 以下は既定値を使用。 |
-| TextDiffChunkSizeKilobytes | テキスト差分の並列比較で使うチャンクサイズ（KiB）。既定値 `64`。`0` 以下は既定値を使用。 |
-| EnableILCache | IL 逆アセンブル結果（MD5 + ツール / バージョン単位）をメモリ & 任意ディスクにキャッシュし再実行時の逆アセンブルをスキップ。 |
-| ILCacheDirectoryAbsolutePath | キャッシュ格納ディレクトリ。空 / 未指定で実行ディレクトリ配下 `ILCache`。容量制御 (LRU) と TTL（現在 12h）あり。 |
-| ILCacheStatsLogIntervalSeconds | IL キャッシュの内部統計（ヒット率など）をログへ出力する間隔（秒）。0 以下で 60 秒が既定。 |
-| ILCacheMaxDiskFileCount | ディスク IL キャッシュの最大ファイル数。既定値は `1000`。`0` 以下で無制限。超過時は最終アクセスの古い順に削除。 |
-| ILCacheMaxDiskMegabytes | ディスク IL キャッシュのサイズ上限（MB）。既定値は `512`。`0` 以下で無制限。超過時はサイズが下回るまで古い順に削除。 |
-| OptimizeForNetworkShares | ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化。<br>`true` の場合:<br>- 事前MD5プリウォーム（ILCacheのPrecompute）とILキャッシュ先読み（Prefetch）をスキップし、ネットワークI/Oの二重読みを回避<br>- 既定の最大並列度を上限8に抑制（`MaxParallelism`が0以下の場合） <br>- 大きなテキストのチャンク並列比較を使わず逐次比較に統一。<br>1回限りや大規模フォルダの共有ドライブ比較で有効。 |
-| AutoDetectNetworkShares | 旧/新フォルダのパスからネットワーク共有を自動検出して「ネットワーク最適化」を自動有効化。<br>macOS:<br>- `statfs` の P/Invoke で `f_flags`（`MNT_LOCAL`）や `f_fstypename`（例: `smbfs`/`afpfs`/`webdav`/`nfs`/`sshfs`/`fusefs` 等）を確認し、ネットワークFSを検出。<br>Linux/Unix:<br>- `/proc/mounts` または `/etc/mtab` を解析し、`nfs`/`nfs4`/`cifs`/`smbfs`/`sshfs`/`fuse.sshfs`/`fuse.gvfsd-fuse`/`davfs`/`afpfs`/`ceph`/`glusterfs`/`9p` 等のネットワーク系 FS を検出。<br>Windows:<br>- UNC パス (`\\server\\share` / `\\?\\UNC\\...`) とネットワークドライブを検出。<br>※パス不正・権限不足・一時的な I/O エラーなどの回復可能な検出失敗時は「ローカル扱い（false）」にフォールバックし、比較処理本体は継続します。<br>※自動検出で `true` になった場合は `OptimizeForNetworkShares` が `false` のままでも最適化が有効になります。自動検出が `false` となった場合でも `OptimizeForNetworkShares` を `true` に設定すれば手動で最適化を強制できます。 |
-
-補足:
-- 拡張子がないファイルも比較対象です。テキスト扱いにしたい場合はTextFileExtensionsに空文字（""）を含める運用を検討してください。
-- .NET の「拡張子なし実行ファイル」（apphost）は、状況により再ビルドしてもMD5ハッシュが変わらないことがあります。
-
-## アプリケーションの使用方法
-
-1) `config.json`（実行ファイルと同じフォルダに配置されています）の内容を確認・修正します。
-2) コマンドライン第1引数に「旧バージョン側（比較元）フォルダの絶対パス」、第2引数に「新バージョン側（比較先）フォルダの絶対パス」、第3引数に「レポートのラベル」を指定して実行します。
-3) `--no-pause` オプションをつけることで、終了時のキー入力待ちをスキップすることができます。
-	- オプションをつけていなくても、非対話（リダイレクトされている）の場合はスキップされます。
-	- エラー発生時も同様にスキップされます（この場合、プロセス終了コードは `1` です。正常終了は `0`）。
-
-ビルド・実行（例）:
 ```bash
 dotnet build
 dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" --no-pause
 ```
 
-実行するとコンソールに進捗率が表示され、完了後`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`にレポートが生成されます。
-コンソール強調表示は最小限で、最終の成功メッセージ（`[INFO] ... finished without errors`）のみ緑、例外発生時のエラーメッセージ（`[ERROR] ...`）のみ赤で表示されます（それ以外は既定色）。
+主な出力:
+- `Reports/<label>/diff_report.md`
+- `ShouldOutputILText=true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
 
-出力完了後、以下の生成物は読み取り専用（ReadOnly 属性）に変更されます（失敗時は警告を出し処理は継続）。
-- `diff_report.md`
-- `IL/old/*_IL.txt`（`config.json`のShouldOutputILText が `true` の場合）
-- `IL/new/*_IL.txt`（`config.json`のShouldOutputILText が `true` の場合）
+## 比較フロー
 
-## 副生成物
+1. MD5 ハッシュ比較。
+- 一致: `Unchanged (MD5Match)`。
+2. 両方が .NET アセンブリ（PE/CLR ヘッダ判定）の場合、同一逆アセンブラ/同一バージョン識別で逆アセンブルし、IL を行比較。
+- `// MVID:` 行は常に除外。
+- `ShouldIgnoreILLinesContainingConfiguredStrings=true` の場合、`ILIgnoreLineContainingStrings` のいずれかを含む行も除外（部分一致）。
+- 一致: `Unchanged (ILMatch)`、不一致: `Modified (ILMismatch)`。
+3. 拡張子が `TextFileExtensions` に含まれる場合はテキスト行比較。
+- 一致: `Unchanged (TextMatch)`、不一致: `Modified (TextMismatch)`。
+4. それ以外は `Modified (MD5Mismatch)`。
 
-- `Logs/log_YYYYMMDD.log` … アプリケーションログ（`config.json`のMaxLogGenerationsを超えるアプリケーションログがあった場合、古いものから順に削除されます。）
-- 以下は`config.json`のShouldOutputILTextが `true` の場合のみ生成されます。
-	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old/*.txt` … 旧バージョン側（比較元）ファイルのビルド固有情報を除く IL 全文を出力（ファイル名称は相対パスの区切り文字を.に置換したもの）
-	- `Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/new/*.txt` … 新バージョン側（比較先）ファイルのビルド固有情報を除く IL 全文を出力（ファイル名称は相対パスの区切り文字を.に置換したもの）
-		- 出力されるIL 全文は「`// MVID:`」で始まる行を除外しています。
-		- `ShouldIgnoreILLinesContainingConfiguredStrings` が `true` の場合は、`ILIgnoreLineContainingStrings` のいずれかを含む行も除外します。
+## 設定（`config.json`）
 
-## パフォーマンス最適化機能
+実行ファイルと同じディレクトリに配置します。例:
 
-| 機能 | 概要 | 備考 |
-|------|------|------|
-| 並列処理 | ファイル比較を最大 `MaxParallelism` 並列 | I/O/CPU バランス最適化 |
-| IL キャッシュ | MD5 + ツールラベル (コマンド + バージョン) で IL テキストを再利用 | LRU (capacity=2000), TTL=12h, ディスク永続化可 |
-| MD5 プリウォーム | 全対象ファイルの MD5 を先読み並列計算 | キャッシュキー生成の待ち時間平準化 |
-| IL キャッシュ先読み | 既存ディスク IL キャッシュをメモリへ昇格 | 初回以降の逆アセンブル起動を更に削減 |
-| 並列テキスト差分 | `TextDiffParallelThresholdKilobytes` 以上（KiB）のテキストを `TextDiffChunkSizeKilobytes`（KiB）単位で並列バイト比較 | 完全一致判定のみ（差分位置抽出なし） |
-| ツール失敗ブラックリスト | 同一ツール連続失敗 (既定 3 回) で 10 分間スキップ | 起動オーバーヘッド削減 |
-
-### IL キャッシュ補足
-
-- キャッシュファイル名にツールバージョンを含める際の `:` (version: x.y.z) による NTFS 代替データストリーム誤解釈を回避するため、
-- ファイル名サニタイズ（不正文字/コロンを `_` へ置換 + 長大名短縮）を実施しています。
-- ディスクキャッシュは LRU とは別に設定値 `ILCacheMaxDiskFileCount` と `ILCacheMaxDiskMegabytes` に基づいて、閾値超過時に古い順（ファイルの最終更新時刻ベース）でトリミングされます。
-
-## バージョニング（Gitタグ連携）
-
-このプロジェクトは [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) を用いてSemVerを自動付与します。
-- `version.json`の設定に基づき、`main`ブランチや`v1.2.3`のようなタグでパブリックリリースとして扱われます。
-- 生成される`AssemblyInformationalVersion`は`Reports/<コマンドライン第3引数に指定したレポートのラベル>/diff_report.md`に記録されます。
-- 手動で上書きしたい場合は`dotnet build /p:Version=1.2.3`のようにプロパティ指定も可能です。
-
-タグ付け例:
-```bash
-git tag v1.0.0
-git push origin v1.0.0
+```json
+{
+  "IgnoredExtensions": [".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"],
+  "TextFileExtensions": [
+    ".asax",
+    ".ascx",
+    ".asmx",
+    ".aspx",
+    ".bat",
+    ".c",
+    ".cmd",
+    ".config",
+    ".cpp",
+    ".cs",
+    ".cshtml",
+    ".csproj",
+    ".csx",
+    ".css",
+    ".csv",
+    ".editorconfig",
+    ".env",
+    ".fs",
+    ".fsi",
+    ".fsproj",
+    ".fsx",
+    ".gitattributes",
+    ".gitignore",
+    ".gitmodules",
+    ".go",
+    ".gql",
+    ".graphql",
+    ".h",
+    ".hpp",
+    ".htm",
+    ".html",
+    ".http",
+    ".ini",
+    ".js",
+    ".json",
+    ".jsx",
+    ".less",
+    ".manifest",
+    ".md",
+    ".mod",
+    ".nlog",
+    ".nuspec",
+    ".plist",
+    ".props",
+    ".ps1",
+    ".psd1",
+    ".psm1",
+    ".py",
+    ".razor",
+    ".resx",
+    ".rst",
+    ".sass",
+    ".scss",
+    ".sh",
+    ".sln",
+    ".sql",
+    ".sqlproj",
+    ".sum",
+    ".svg",
+    ".targets",
+    ".toml",
+    ".ts",
+    ".tsv",
+    ".tsx",
+    ".txt",
+    ".vb",
+    ".vbproj",
+    ".vue",
+    ".xaml",
+    ".xml",
+    ".yaml",
+    ".yml"
+  ],
+  "MaxLogGenerations": 5,
+  "ShouldIncludeUnchangedFiles": true,
+  "ShouldIncludeIgnoredFiles": true,
+  "ShouldOutputILText": true,
+  "ShouldIgnoreILLinesContainingConfiguredStrings": false,
+  "ILIgnoreLineContainingStrings": [],
+  "ShouldOutputFileTimestamps": true,
+  "MaxParallelism": 0,
+  "TextDiffParallelThresholdKilobytes": 512,
+  "TextDiffChunkSizeKilobytes": 64,
+  "EnableILCache": true,
+  "ILCacheDirectoryAbsolutePath": "",
+  "ILCacheStatsLogIntervalSeconds": 60,
+  "ILCacheMaxDiskFileCount": 1000,
+  "ILCacheMaxDiskMegabytes": 512,
+  "OptimizeForNetworkShares": false,
+  "AutoDetectNetworkShares": true
+}
 ```
+
+| 項目 | 説明 |
+| --- | --- |
+| `IgnoredExtensions` | 指定拡張子を比較対象から除外します。 |
+| `TextFileExtensions` | 指定拡張子をテキスト比較対象にします（`.` 付き指定、大小無視）。 |
+| `MaxLogGenerations` | ログローテーション世代数。 |
+| `ShouldIncludeUnchangedFiles` | レポートに `Unchanged` セクションを出力するか。 |
+| `ShouldIncludeIgnoredFiles` | レポートに `Ignored Files` セクションを出力するか。 |
+| `ShouldOutputILText` | `Reports/<label>/IL/old,new` へ IL を出力するか。 |
+| `ShouldIgnoreILLinesContainingConfiguredStrings` | IL 比較時の追加行除外（部分一致）を有効化するか。 |
+| `ILIgnoreLineContainingStrings` | IL 行除外に使う文字列一覧。 |
+| `ShouldOutputFileTimestamps` | レポート各行に更新日時を併記するか。 |
+| `MaxParallelism` | 比較の最大並列度。`0` 以下は自動。 |
+| `TextDiffParallelThresholdKilobytes` | 並列テキスト比較へ切替える閾値（KiB）。 |
+| `TextDiffChunkSizeKilobytes` | 並列テキスト比較のチャンクサイズ（KiB）。 |
+| `EnableILCache` | IL キャッシュ（メモリ + 任意ディスク）を有効化するか。 |
+| `ILCacheDirectoryAbsolutePath` | IL キャッシュディレクトリ。空なら `<exe>/ILCache`。 |
+| `ILCacheStatsLogIntervalSeconds` | IL キャッシュ統計ログ間隔。`<=0` で既定 60 秒。 |
+| `ILCacheMaxDiskFileCount` | ディスクキャッシュ最大ファイル数。`<=0` で無制限。 |
+| `ILCacheMaxDiskMegabytes` | ディスクキャッシュ容量上限（MB）。`<=0` で無制限。 |
+| `OptimizeForNetworkShares` | ネットワーク共有向け最適化モードを有効化。 |
+| `AutoDetectNetworkShares` | ネットワーク共有を自動検出して最適化モードを必要時に有効化。 |
+
+補足:
+- 拡張子なしファイルも比較対象です。
+- 拡張子なしファイルをテキスト扱いしたい場合は `TextFileExtensions` に空文字（`""`）を含めてください。
+
+## 生成物
+
+- `Reports/<label>/diff_report.md`
+- `Logs/log_YYYYMMDD.log`
+- 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
+
+レポート/IL 出力ファイルは可能な範囲で読み取り専用化されます（失敗時は警告のみ）。
 
 ## ライセンス
 
-このプロジェクトは [MIT License](LICENSE) の下で公開されています。
+- [MIT License](LICENSE)
