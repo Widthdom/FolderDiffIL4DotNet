@@ -40,9 +40,36 @@ jobs:
       - name: Build
         run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 
-      - name: Test
+      - name: Test with coverage
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
-        run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo
+        run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+      - name: Install ReportGenerator
+        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        run: dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.*
+
+      - name: Generate coverage report
+        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          reportgenerator \
+            -reports:"TestResults/**/coverage.cobertura.xml" \
+            -targetdir:"CoverageReport" \
+            -reporttypes:"MarkdownSummaryGithub;Cobertura;HtmlInline_AzurePipelines"
+          if [ -f "CoverageReport/SummaryGithub.md" ]; then
+            cat CoverageReport/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload test and coverage artifacts
+        if: ${{ always() && hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestAndCoverage
+          if-no-files-found: warn
+          path: |
+            TestResults/**/*.trx
+            TestResults/**/coverage.cobertura.xml
+            CoverageReport/**
 
       - name: Publish
         run: dotnet publish FolderDiffIL4DotNet.csproj --configuration Release --no-build --output publish

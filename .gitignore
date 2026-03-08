@@ -4,6 +4,8 @@ Logs/
 
 # Reports
 Reports/
+TestResults/
+CoverageReport/
 
 # User-specific files
 *.user

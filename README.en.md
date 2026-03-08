@@ -35,16 +35,17 @@ The repository includes `.github/workflows/dotnet.yml`. The workflow runs for pu
 
 - `actions/checkout` uses `fetch-depth: 0` so Nerdbank.GitVersioning can traverse the full commit history.
 - `actions/setup-dotnet` honors `global.json`, installing the same SDK (e.g., 8.0.413) that you use locally before running `dotnet restore` and a Release build.
-- `dotnet test` runs only when `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` exists, so repositories still succeed even before the test project is introduced.
+- `dotnet test` runs only when `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` exists, and collects Cobertura coverage via `coverlet.collector` (`XPlat Code Coverage`), so repositories still succeed even before the test project is introduced.
+- `dotnet-reportgenerator-globaltool` transforms `TestResults/**/coverage.cobertura.xml` into a GitHub Step Summary and a `CoverageReport` artifact.
 - NuGet packages inside `~/.nuget/packages` are cached via `actions/cache` to accelerate subsequent builds.
-- Release artifacts are produced with `dotnet publish FolderDiffIL4DotNet.csproj --output publish`, stripped of debug symbols (`*.pdb`), and uploaded as `FolderDiffIL4DotNet` via `actions/upload-artifact`.
+- Release artifacts are produced with `dotnet publish FolderDiffIL4DotNet.csproj --output publish`, stripped of debug symbols (`*.pdb`), and uploaded as `FolderDiffIL4DotNet` via `actions/upload-artifact`. Test/coverage outputs (TRX, Cobertura, and `CoverageReport`) are uploaded as `TestAndCoverage`.
 
 How to use it:
 
 1. Push this repo to GitHub—no additional configuration required.
 2. If your default branch is not `main`, edit `on.push.branches` and `on.pull_request.branches` in the workflow.
-3. If you rename or move the test project, update the `Test` step in `.github/workflows/dotnet.yml` (both the `if` expression and the `dotnet test` `csproj` path).
-4. Download the Release build from "Artifacts > FolderDiffIL4DotNet" on the workflow run page.
+3. If you rename or move the test project, update the `Test with coverage` step in `.github/workflows/dotnet.yml` (both the `if` expression and the `dotnet test` `csproj` path).
+4. Download artifacts from both "Artifacts > FolderDiffIL4DotNet" (Release build) and "Artifacts > TestAndCoverage" (TRX / Cobertura / CoverageReport).
 
 ## Running tests
 
@@ -52,6 +53,12 @@ To run only unit tests locally, use:
 
 ```bash
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
+```
+
+To collect coverage locally at the same time:
+
+```bash
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
 Prerequisites:
@@ -63,9 +70,10 @@ Prerequisites:
 
 Relation to CI:
 
-- The GitHub Actions `Test` step runs `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo`.
+- The GitHub Actions `Test with coverage` step runs `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults`.
+- `reportgenerator` then creates GitHub Summary + HTML output from `coverage.cobertura.xml`, and those files are published in the `TestAndCoverage` artifact.
 - At the moment, `FolderDiffIL4DotNet.Tests` is the only test project in the solution, so the local `csproj` command above targets the same tests.
-- If more test projects are added later, either switch CI back to solution-level testing or add the additional target `csproj` as needed.
+- If more test projects are added later, either switch the `Test with coverage` step back to solution-level testing or add each additional target `csproj` as needed.
 
 ## What the app does
 

@@ -37,16 +37,17 @@ dotnet tool install -g ilspycmd
 
 - `actions/checkout` は `fetch-depth: 0` で完全な履歴を取得し、Nerdbank.GitVersioning がコミット履歴を参照できるようにしています。
 - `actions/setup-dotnet` が `global.json` を読み取り、ローカルと同じ .NET SDK (例: 8.0.413) をインストールしたうえで `dotnet restore` と Release ビルドを実行します。
-- `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` が存在する場合のみ `dotnet test` を動かします（テストプロジェクトが未導入の状態でも失敗しません）。
+- `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` が存在する場合のみ `dotnet test` を動かし、`coverlet.collector` の `XPlat Code Coverage` で Cobertura 形式のカバレッジを収集します（テストプロジェクトが未導入の状態でも失敗しません）。
+- `dotnet-reportgenerator-globaltool` で `TestResults/**/coverage.cobertura.xml` からサマリーを生成し、GitHub Actions の Step Summary と `CoverageReport` アーティファクトへ出力します。
 - `actions/cache` で NuGet（`~/.nuget/packages`）をキャッシュし、2 回目以降のビルドを高速化します。
-- Release ビルドの成果物は `dotnet publish FolderDiffIL4DotNet.csproj --output publish` で生成し、アップロード前に `*.pdb` などのデバッグシンボルを削除したうえで、`actions/upload-artifact` により `FolderDiffIL4DotNet` という名前でアップロードされます（Actions 実行ページの「Artifacts」からダウンロードできます）。
+- Release ビルドの成果物は `dotnet publish FolderDiffIL4DotNet.csproj --output publish` で生成し、アップロード前に `*.pdb` などのデバッグシンボルを削除したうえで、`actions/upload-artifact` により `FolderDiffIL4DotNet` という名前でアップロードされます。加えてテスト結果（TRX）とカバレッジ関連ファイルは `TestAndCoverage` としてアップロードされます。
 
 利用手順:
 
 1. このリポジトリを GitHub に push するだけでワークフローが動きます。
 2. デフォルトブランチ名が `main` 以外の場合は、`.github/workflows/dotnet.yml` 内の `on.push.branches` と `on.pull_request.branches` を目的のブランチ名に変更してください。
-3. テストプロジェクトの場所や名前を変更した場合は、`.github/workflows/dotnet.yml` の `Test` ステップ（`if` と `dotnet test` の `csproj` パス）を合わせて更新してください。
-4. 作成された成果物は Actions 実行ページの `Artifacts > FolderDiffIL4DotNet` から取得できます。アーカイブ内には Release ビルド済みのファイル一式が含まれます。
+3. テストプロジェクトの場所や名前を変更した場合は、`.github/workflows/dotnet.yml` の `Test with coverage` ステップ（`if` と `dotnet test` の `csproj` パス）を合わせて更新してください。
+4. 作成された成果物は Actions 実行ページの `Artifacts > FolderDiffIL4DotNet`（Release ビルド）と `Artifacts > TestAndCoverage`（TRX / Cobertura / CoverageReport）から取得できます。
 
 ## テスト実行
 
@@ -54,6 +55,12 @@ dotnet tool install -g ilspycmd
 
 ```bash
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
+```
+
+カバレッジも同時に取得したい場合は次のコマンドを使用します。
+
+```bash
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
 前提:
@@ -65,9 +72,10 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
 
 CI との関係:
 
-- GitHub Actions の `Test` ステップは `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo` を実行します。
+- GitHub Actions の `Test with coverage` ステップは `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults` を実行します。
+- 収集された `coverage.cobertura.xml` から `reportgenerator` が GitHub Summary と HTML レポートを生成し、`TestAndCoverage` アーティファクトにも保存されます。
 - 現在のソリューション内テストプロジェクトは `FolderDiffIL4DotNet.Tests` のみのため、ローカルの上記 `csproj` 指定コマンドと実行対象は同一です。
-- 将来テストプロジェクトを追加した場合は、CI 側の `Test` ステップを必要に応じて `sln` 実行へ戻すか、対象 `csproj` を追加してください。
+- 将来テストプロジェクトを追加した場合は、CI 側の `Test with coverage` ステップを必要に応じて `sln` 実行へ戻すか、対象 `csproj` を追加してください。
 
 ## 処理概要
 
