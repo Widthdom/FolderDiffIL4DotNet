@@ -82,7 +82,9 @@ Prerequisites:
 - .NET SDK 8.x is installed.
 - `dotnet-ildasm` / `ilspycmd` are not required for unit tests (they are only needed for IL comparison in the application runtime path).
 - The command is intended to be run from the repository root.
-- Dedicated core-service unit tests include `FolderDiffServiceTests` and `ReportGenerateServiceTests`.
+- Dedicated core-service unit tests include `FolderDiffServiceTests`, `ReportGenerateServiceTests`, `ILOutputServiceTests`, and `DotNetDisassembleServiceTests`.
+- `ProgramTests` exercises `Main` via reflection with the `--no-pause` execution path, covering both invalid-argument and minimal success scenarios.
+- `FileSystemUtilityTests` directly validates network-path mount parsing logic (longest matching mount point selection).
 
 Relation to CI:
 

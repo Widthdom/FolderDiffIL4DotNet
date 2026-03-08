@@ -126,6 +126,53 @@ namespace FolderDiffIL4DotNet.Utils
             }
             return false;
         }
+
+        /// <summary>
+        /// Unix の mounts 形式行から、指定パスに最も長く一致するマウントポイントの fs type を取得します。
+        /// </summary>
+        private static string GetBestMatchingMountFileSystemType(string fullPath, IEnumerable<string> mountLines)
+        {
+            if (string.IsNullOrWhiteSpace(fullPath) || mountLines == null)
+            {
+                return null;
+            }
+
+            string bestMountPoint = null;
+            string bestFsType = null;
+
+            foreach (var line in mountLines)
+            {
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                {
+                    continue;
+                }
+
+                var parts = line.Split(' ');
+                if (parts.Length < 3)
+                {
+                    continue;
+                }
+
+                string mountPointRaw = parts[1];
+                string fsType = parts[2];
+                string mountPoint = mountPointRaw.Replace(ESCAPED_SPACE, SPACE);
+
+                bool isMatch = fullPath.StartsWith(mountPoint.EndsWith("/") ? mountPoint : mountPoint + "/", StringComparison.Ordinal)
+                    || string.Equals(fullPath, mountPoint, StringComparison.Ordinal);
+                if (!isMatch)
+                {
+                    continue;
+                }
+
+                if (bestMountPoint == null || mountPoint.Length > bestMountPoint.Length)
+                {
+                    bestMountPoint = mountPoint;
+                    bestFsType = fsType;
+                }
+            }
+
+            return bestFsType;
+        }
         #endregion
 
         #region public methods
@@ -260,33 +307,7 @@ namespace FolderDiffIL4DotNet.Utils
                 }
 
                 string fullPath = Path.GetFullPath(absolutePath);
-                string bestMountPoint = null;
-                string bestFsType = null;
-
-                foreach (var line in File.ReadLines(mountsFile))
-                {
-                    if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
-                    {
-                        continue;
-                    }
-                    var parts = line.Split(' ');
-                    if (parts.Length < 3)
-                    {
-                        continue;
-                    }
-                    string mountPointRaw = parts[1];
-                    string fsType = parts[2];
-                    string mountPoint = mountPointRaw.Replace(ESCAPED_SPACE, SPACE);
-
-                    if (fullPath.StartsWith(mountPoint.EndsWith("/") ? mountPoint : mountPoint + "/", StringComparison.Ordinal) || string.Equals(fullPath, mountPoint, StringComparison.Ordinal))
-                    {
-                        if (bestMountPoint == null || mountPoint.Length > bestMountPoint.Length)
-                        {
-                            bestMountPoint = mountPoint;
-                            bestFsType = fsType;
-                        }
-                    }
-                }
+                string bestFsType = GetBestMatchingMountFileSystemType(fullPath, File.ReadLines(mountsFile));
 
                 if (!string.IsNullOrEmpty(bestFsType) && s_unixNetworkFsTypes.Contains(bestFsType))
                 {

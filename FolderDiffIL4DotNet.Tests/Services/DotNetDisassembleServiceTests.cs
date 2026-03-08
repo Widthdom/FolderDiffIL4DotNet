@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -359,6 +360,44 @@ exit 1
             }
         }
 
+        [Fact]
+        public async Task PrefetchIlCacheAsync_NullInput_ReturnsWithoutThrowing()
+        {
+            var service = CreateService(CreateConfig(enableIlCache: true), new ILCache(Path.Combine(_rootDir, "prefetch-null"), _logger));
+            await service.PrefetchIlCacheAsync(null, maxParallel: 1);
+            Assert.Equal(0, service.IlCacheHits);
+        }
+
+        [Fact]
+        public async Task PrefetchIlCacheAsync_InvalidMaxParallel_Throws()
+        {
+            var service = CreateService(CreateConfig(enableIlCache: true), new ILCache(Path.Combine(_rootDir, "prefetch-invalid"), _logger));
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.PrefetchIlCacheAsync(new[] { "dummy.dll" }, maxParallel: 0));
+        }
+
+        [Fact]
+        public async Task PrefetchIlCacheAsync_WhenSeededCacheExists_IncrementsHitCounter()
+        {
+            var cacheDir = Path.Combine(_rootDir, "prefetch-hit-cache");
+            var ilCache = new ILCache(cacheDir, _logger);
+            var service = CreateService(CreateConfig(enableIlCache: true), ilCache);
+
+            var assemblyPath = Path.Combine(_rootDir, "prefetch-target.dll");
+            await File.WriteAllTextAsync(assemblyPath, "dummy");
+
+            const string version = "1.2.3";
+            SeedDisassemblerVersionCache(Constants.DOTNET_ILDASM, version);
+            SeedDisassemblerVersionCache($"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL}", version);
+            SeedDisassemblerVersionCache(Constants.ILSPY_CMD, version);
+
+            var label = $"{Constants.DOTNET_ILDASM} {Path.GetFileName(assemblyPath)} (version: {version})";
+            await ilCache.SetILAsync(assemblyPath, label, "CACHED_IL");
+
+            await service.PrefetchIlCacheAsync(new[] { assemblyPath }, maxParallel: 1);
+
+            Assert.True(service.IlCacheHits >= 1);
+        }
+
         private static ConfigSettings CreateConfig(bool enableIlCache) => new()
         {
             EnableILCache = enableIlCache,
@@ -414,6 +453,15 @@ exit 0
             var dictionary = field.GetValue(_dotNetDisassemblerCache) as ConcurrentDictionary<string, string>;
             Assert.NotNull(dictionary);
             dictionary.Clear();
+        }
+
+        private void SeedDisassemblerVersionCache(string key, string version)
+        {
+            var field = typeof(DotNetDisassemblerCache).GetField("_disassemblerVersionCache", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            var dictionary = field.GetValue(_dotNetDisassemblerCache) as ConcurrentDictionary<string, string>;
+            Assert.NotNull(dictionary);
+            dictionary[key] = version;
         }
 
         private DotNetDisassembleService CreateService(ConfigSettings config, ILCache ilCache)

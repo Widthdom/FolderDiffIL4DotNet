@@ -10,6 +10,19 @@ namespace FolderDiffIL4DotNet.Tests.Services
     public sealed class LoggerServiceTests
     {
         [Fact]
+        public void Initialize_SetsLogFilePath_AndCreatesLogDirectory()
+        {
+            var logger = new LoggerService();
+
+            logger.Initialize();
+
+            Assert.False(string.IsNullOrWhiteSpace(logger.LogFileAbsolutePath));
+            var directory = Path.GetDirectoryName(logger.LogFileAbsolutePath);
+            Assert.False(string.IsNullOrWhiteSpace(directory));
+            Assert.True(Directory.Exists(directory));
+        }
+
+        [Fact]
         public void LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndStackTraceToLogFile()
         {
             var logger = new LoggerService();
@@ -84,11 +97,109 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Fact]
+        public void LogMessage_WhenNotInitialized_DoesNotWriteFile()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", null);
+
+            try
+            {
+                logger.LogMessage(AppLogLevel.Info, "message", shouldOutputMessageToConsole: false);
+                Assert.Empty(Directory.GetFiles(tempDir));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_DeletesOldFilesBeyondGenerationLimit()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var old1 = Path.Combine(tempDir, "log_20240101.log");
+            var old2 = Path.Combine(tempDir, "log_20240102.log");
+            var keep = Path.Combine(tempDir, "log_20240103.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(old1, "a");
+            File.WriteAllText(old2, "b");
+            File.WriteAllText(keep, "c");
+            File.WriteAllText(active, "d");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 2);
+
+                Assert.False(File.Exists(old1));
+                Assert.False(File.Exists(old2));
+                Assert.True(File.Exists(keep));
+                Assert.True(File.Exists(active));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_WhenUninitialized_ReturnsWithoutThrowing()
+        {
+            var logger = new LoggerService();
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", null);
+
+            logger.CleanupOldLogFiles(1);
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_WithNegativeGeneration_DoesNotThrow()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(-1);
+                Assert.True(File.Exists(active));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
         private static void SetPrivateField(object target, string fieldName, string value)
         {
             var fieldInfo = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(fieldInfo);
             fieldInfo.SetValue(target, value);
+        }
+
+        private static void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, recursive: true);
+                }
+            }
+            catch
+            {
+                // ignore cleanup errors in tests
+            }
         }
     }
 

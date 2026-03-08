@@ -82,7 +82,9 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 - .NET SDK 8.x がインストールされていること。
 - 単体テストの実行に `dotnet-ildasm` / `ilspycmd` は不要（アプリ本体の IL 比較時のみ必要）。
 - リポジトリルートでコマンドを実行することを想定。
-- コアサービスの専用ユニットテストとして `FolderDiffServiceTests` / `ReportGenerateServiceTests` を含みます。
+- コアサービスの専用ユニットテストとして `FolderDiffServiceTests` / `ReportGenerateServiceTests` / `ILOutputServiceTests` / `DotNetDisassembleServiceTests` を含みます。
+- `ProgramTests` では `Main` をリフレクション経由で実行し、`--no-pause` を付けた実行パス（引数異常系と最小構成の成功系）を検証します。
+- `FileSystemUtilityTests` ではネットワークパス判定の mounts 解析（最長一致マウントポイント選択）を直接検証します。
 
 CI との関係:
 

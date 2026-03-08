@@ -1,7 +1,12 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Services.Caching;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -38,6 +43,103 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(new[] { "buildserver", "buildpath" }, result);
         }
 
+        [Theory]
+        [InlineData("dotnet ildasm sample.dll (version: 9.0.0)", "dotnet-ildasm (version: 9.0.0)")]
+        [InlineData("ilspycmd -il sample.dll (version: 8.2.1)", "ilspycmd (version: 8.2.1)")]
+        [InlineData("dotnet-ildasm sample.dll", "dotnet-ildasm")]
+        public void BuildToolAndVersionLabel_ReturnsExpectedLabel(string command, string expected)
+        {
+            var method = typeof(ILOutputService).GetMethod("BuildToolAndVersionLabel", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(null, new object[] { command });
+
+            Assert.Equal(expected, Assert.IsType<string>(result));
+        }
+
+        [Fact]
+        public void BuildComparisonDisassemblerLabel_WhenLabelsMismatch_Throws()
+        {
+            var method = typeof(ILOutputService).GetMethod("BuildComparisonDisassemblerLabel", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var ex = Assert.Throws<TargetInvocationException>(() =>
+                method.Invoke(null, new object[]
+                {
+                    "dotnet ildasm sample.dll (version: 1.0.0)",
+                    "ilspycmd -il sample.dll (version: 2.0.0)"
+                }));
+            Assert.IsType<InvalidOperationException>(ex.InnerException);
+        }
+
+        [Fact]
+        public void BuildComparisonDisassemblerLabel_WhenOnlyOneSideHasLabel_ReturnsAvailableOne()
+        {
+            var method = typeof(ILOutputService).GetMethod("BuildComparisonDisassemblerLabel", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(null, new object[] { null, "ilspycmd -il sample.dll (version: 8.2.1)" });
+            Assert.Equal("ilspycmd (version: 8.2.1)", Assert.IsType<string>(result));
+        }
+
+        [Fact]
+        public void BuildComparisonDisassemblerLabel_WhenBothMatch_IgnoresCaseAndReturnsLabel()
+        {
+            var method = typeof(ILOutputService).GetMethod("BuildComparisonDisassemblerLabel", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(null, new object[]
+            {
+                "dotnet ildasm sample.dll (version: 1.0.0)",
+                "DOTNET ILDASM sample.dll (version: 1.0.0)"
+            });
+            Assert.Equal("dotnet-ildasm (version: 1.0.0)", Assert.IsType<string>(result));
+        }
+
+        [Fact]
+        public async Task PrecomputeAsync_WhenOptimizeForNetworkShares_ExitsWithoutThrowing()
+        {
+            var config = new ConfigSettings
+            {
+                OptimizeForNetworkShares = true,
+                EnableILCache = true,
+                IgnoredExtensions = new(),
+                TextFileExtensions = new()
+            };
+
+            var service = CreateILOutputService(config);
+            await service.PrecomputeAsync(new[] { "/tmp/non-existent.dll" }, maxParallel: 0);
+        }
+
+        [Fact]
+        public async Task PrecomputeAsync_WithInvalidMaxParallel_ThrowsWhenNotNetworkOptimized()
+        {
+            var config = new ConfigSettings
+            {
+                OptimizeForNetworkShares = false,
+                EnableILCache = false,
+                IgnoredExtensions = new(),
+                TextFileExtensions = new()
+            };
+
+            var service = CreateILOutputService(config);
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.PrecomputeAsync(Array.Empty<string>(), maxParallel: 0));
+        }
+
+        [Fact]
+        public async Task PrecomputeAsync_WithCacheDisabled_ReturnsWithoutThrowing()
+        {
+            var config = new ConfigSettings
+            {
+                OptimizeForNetworkShares = false,
+                EnableILCache = false,
+                IgnoredExtensions = new(),
+                TextFileExtensions = new()
+            };
+            var service = CreateILOutputService(config);
+            await service.PrecomputeAsync(new[] { "/tmp/non-existent.dll" }, maxParallel: 1);
+        }
+
         private static bool InvokeShouldExcludeIlLine(string line, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
         {
             var method = typeof(ILOutputService).GetMethod("ShouldExcludeIlLine", BindingFlags.Static | BindingFlags.NonPublic);
@@ -52,6 +154,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(method);
             var result = method.Invoke(null, new object[] { config });
             return Assert.IsType<List<string>>(result);
+        }
+
+        private static ILOutputService CreateILOutputService(ConfigSettings config, string ilOldFolder = null, string ilNewFolder = null)
+        {
+            var logger = new LoggerService();
+            var services = new ServiceCollection();
+            services.AddSingleton<ILoggerService>(logger);
+            services.AddSingleton(new FileDiffResultLists());
+            services.AddSingleton(new DotNetDisassemblerCache(logger));
+            var provider = services.BuildServiceProvider();
+
+            var oldDir = ilOldFolder ?? Path.Combine(Path.GetTempPath(), "fd-iloutput-old-" + Guid.NewGuid().ToString("N"));
+            var newDir = ilNewFolder ?? Path.Combine(Path.GetTempPath(), "fd-iloutput-new-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            return new ILOutputService(config, oldDir, newDir, provider, logger);
         }
     }
 }
