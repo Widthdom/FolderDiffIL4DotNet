@@ -82,7 +82,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 - .NET SDK 8.x がインストールされていること。
 - 単体テストの実行に `dotnet-ildasm` / `ilspycmd` は不要（アプリ本体の IL 比較時のみ必要）。
 - リポジトリルートでコマンドを実行することを想定。
-- コアサービスの専用ユニットテストとして `FolderDiffServiceTests` / `ReportGenerateServiceTests` / `ILOutputServiceTests` / `DotNetDisassembleServiceTests` を含みます。
+- コアサービスの専用ユニットテストとして `FolderDiffServiceTests` / `FileDiffServiceTests` / `ReportGenerateServiceTests` / `ILOutputServiceTests` / `DotNetDisassembleServiceTests` を含みます。
 - `ProgramTests` では `Main` をリフレクション経由で実行し、`--no-pause` を付けた実行パス（引数異常系と最小構成の成功系）を検証します。
 - `FileSystemUtilityTests` ではネットワークパス判定の mounts 解析（最長一致マウントポイント選択）を直接検証します。
 
@@ -136,6 +136,7 @@ CI との関係:
 
 3) テキストベースのファイル（`config.json`のTextFileExtensionsに指定された拡張子か否かを `StringComparison.OrdinalIgnoreCase` で判定）であれば行単位で比較します。
 - 一致ならばUnchanged, TextMatch、不一致ならばModified, TextMismatchと判定し次のファイル比較へ
+- 並列テキスト比較で例外が発生した場合は warning ログを出力し、逐次テキスト比較へフォールバックします。
 
 4) Modified, MD5Mismatchと判定し次のファイル比較へ
 
@@ -260,7 +261,7 @@ CI との関係:
 | ILCacheMaxDiskFileCount | ディスク IL キャッシュの最大ファイル数。既定値は `1000`。`0` 以下で無制限。超過時は最終アクセスの古い順に削除。 |
 | ILCacheMaxDiskMegabytes | ディスク IL キャッシュのサイズ上限（MB）。既定値は `512`。`0` 以下で無制限。超過時はサイズが下回るまで古い順に削除。 |
 | OptimizeForNetworkShares | ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化。<br>`true` の場合:<br>- 事前MD5プリウォーム（ILCacheのPrecompute）とILキャッシュ先読み（Prefetch）をスキップし、ネットワークI/Oの二重読みを回避<br>- 既定の最大並列度を上限8に抑制（`MaxParallelism`が0以下の場合） <br>- 大きなテキストのチャンク並列比較を使わず逐次比較に統一。<br>1回限りや大規模フォルダの共有ドライブ比較で有効。 |
-| AutoDetectNetworkShares | 旧/新フォルダのパスからネットワーク共有を自動検出して「ネットワーク最適化」を自動有効化。<br>macOS:<br>- `statfs` の P/Invoke で `f_flags`（`MNT_LOCAL`）や `f_fstypename`（例: `smbfs`/`afpfs`/`webdav`/`nfs`/`sshfs`/`fusefs` 等）を確認し、ネットワークFSを検出。<br>Linux/Unix:<br>- `/proc/mounts` または `/etc/mtab` を解析し、`nfs`/`nfs4`/`cifs`/`smbfs`/`sshfs`/`fuse.sshfs`/`fuse.gvfsd-fuse`/`davfs`/`afpfs`/`ceph`/`glusterfs`/`9p` 等のネットワーク系 FS を検出。<br>Windows:<br>- UNC パス (`\\server\\share` / `\\?\\UNC\\...`) とネットワークドライブを検出。<br>※自動検出で `true` になった場合は `OptimizeForNetworkShares` が `false` のままでも最適化が有効になります。自動検出が `false` となった場合でも `OptimizeForNetworkShares` を `true` に設定すれば手動で最適化を強制できます。 |
+| AutoDetectNetworkShares | 旧/新フォルダのパスからネットワーク共有を自動検出して「ネットワーク最適化」を自動有効化。<br>macOS:<br>- `statfs` の P/Invoke で `f_flags`（`MNT_LOCAL`）や `f_fstypename`（例: `smbfs`/`afpfs`/`webdav`/`nfs`/`sshfs`/`fusefs` 等）を確認し、ネットワークFSを検出。<br>Linux/Unix:<br>- `/proc/mounts` または `/etc/mtab` を解析し、`nfs`/`nfs4`/`cifs`/`smbfs`/`sshfs`/`fuse.sshfs`/`fuse.gvfsd-fuse`/`davfs`/`afpfs`/`ceph`/`glusterfs`/`9p` 等のネットワーク系 FS を検出。<br>Windows:<br>- UNC パス (`\\server\\share` / `\\?\\UNC\\...`) とネットワークドライブを検出。<br>※パス不正・権限不足・一時的な I/O エラーなどの回復可能な検出失敗時は「ローカル扱い（false）」にフォールバックし、比較処理本体は継続します。<br>※自動検出で `true` になった場合は `OptimizeForNetworkShares` が `false` のままでも最適化が有効になります。自動検出が `false` となった場合でも `OptimizeForNetworkShares` を `true` に設定すれば手動で最適化を強制できます。 |
 
 補足:
 - 拡張子がないファイルも比較対象です。テキスト扱いにしたい場合はTextFileExtensionsに空文字（""）を含める運用を検討してください。

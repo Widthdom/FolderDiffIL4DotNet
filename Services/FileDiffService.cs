@@ -21,6 +21,11 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_IL_DIFF_FAILED = Constants.LABEL_IL + " diff failed for '{0}'.";
 
         /// <summary>
+        /// テキスト並列比較失敗時のフォールバックログ
+        /// </summary>
+        private const string LOG_TEXT_DIFF_PARALLEL_FALLBACK = "Parallel text diff failed for '{0}'. Falling back to sequential text diff.";
+
+        /// <summary>
         /// 1 KiB (2^10) を表すバイト数。
         /// </summary>
         private const int BYTES_PER_KILOBYTE = 1024;
@@ -185,8 +190,9 @@ namespace FolderDiffIL4DotNet.Services
                             }
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_TEXT_DIFF_PARALLEL_FALLBACK, fileRelativePath), shouldOutputMessageToConsole: true, ex);
                         areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                     }
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);

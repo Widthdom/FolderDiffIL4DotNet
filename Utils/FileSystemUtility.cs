@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace FolderDiffIL4DotNet.Utils
 {
@@ -120,12 +121,23 @@ namespace FolderDiffIL4DotNet.Utils
                     return true;
                 }
             }
-            catch
+            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
             {
-                // ignore
+                // ignore recoverable detection errors and fall back to non-network.
             }
             return false;
         }
+
+        /// <summary>
+        /// ネットワークパス検出時に発生し得る回復可能な例外かどうかを判定します。
+        /// </summary>
+        private static bool IsRecoverableNetworkPathDetectionException(Exception ex)
+            => ex is ArgumentException
+                or IOException
+                or UnauthorizedAccessException
+                or NotSupportedException
+                or SecurityException
+                or InvalidOperationException;
 
         /// <summary>
         /// Unix の mounts 形式行から、指定パスに最も長く一致するマウントポイントの fs type を取得します。
@@ -249,76 +261,95 @@ namespace FolderDiffIL4DotNet.Utils
             {
                 return false;
             }
-            try
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    if (absolutePath.StartsWith(WINDOWS_UNC_PREFIX, StringComparison.Ordinal) || absolutePath.StartsWith(WINDOWS_UNC_DEVICE_PREFIX, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                    var root = Path.GetPathRoot(absolutePath);
-                    if (!string.IsNullOrEmpty(root))
-                    {
-                        try
-                        {
-                            var di = new DriveInfo(root);
-                            if (di.DriveType == DriveType.Network)
-                            {
-                                return true;
-                            }
-                        }
-                        catch
-                        {
-                            // ignore and fallthrough
-                        }
-                    }
-                    return false;
-                }
-
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    if (TryGetFileSystemInfoOnMac(absolutePath, out var fsTypeMac, out var flagsMac))
-                    {
-                        if ((flagsMac & MNT_LOCAL) == 0)
-                        {
-                            return true;
-                        }
-                        if (!string.IsNullOrEmpty(fsTypeMac) && s_macNetworkFsTypes.Contains(fsTypeMac))
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
-                string mountsFile = null;
-                if (File.Exists(PROC_MOUNTS_PATH))
-                {
-                    mountsFile = PROC_MOUNTS_PATH;
-                }
-                else if (File.Exists(ETC_MTAB_PATH))
-                {
-                    mountsFile = ETC_MTAB_PATH;
-                }
-                if (mountsFile == null)
-                {
-                    return false;
-                }
-
-                string fullPath = Path.GetFullPath(absolutePath);
-                string bestFsType = GetBestMatchingMountFileSystemType(fullPath, File.ReadLines(mountsFile));
-
-                if (!string.IsNullOrEmpty(bestFsType) && s_unixNetworkFsTypes.Contains(bestFsType))
+                if (absolutePath.StartsWith(WINDOWS_UNC_PREFIX, StringComparison.Ordinal) || absolutePath.StartsWith(WINDOWS_UNC_DEVICE_PREFIX, StringComparison.OrdinalIgnoreCase))
                 {
                     return true;
                 }
+
+                string root;
+                try
+                {
+                    root = Path.GetPathRoot(absolutePath);
+                }
+                catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+                {
+                    return false;
+                }
+
+                if (!string.IsNullOrEmpty(root))
+                {
+                    try
+                    {
+                        var di = new DriveInfo(root);
+                        if (di.DriveType == DriveType.Network)
+                        {
+                            return true;
+                        }
+                    }
+                    catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+                    {
+                        // ignore recoverable detection errors and fall through.
+                    }
+                }
+                return false;
             }
-            catch
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // ignore
+                if (TryGetFileSystemInfoOnMac(absolutePath, out var fsTypeMac, out var flagsMac))
+                {
+                    if ((flagsMac & MNT_LOCAL) == 0)
+                    {
+                        return true;
+                    }
+                    if (!string.IsNullOrEmpty(fsTypeMac) && s_macNetworkFsTypes.Contains(fsTypeMac))
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
-            return false;
+
+            string mountsFile = null;
+            if (File.Exists(PROC_MOUNTS_PATH))
+            {
+                mountsFile = PROC_MOUNTS_PATH;
+            }
+            else if (File.Exists(ETC_MTAB_PATH))
+            {
+                mountsFile = ETC_MTAB_PATH;
+            }
+            if (mountsFile == null)
+            {
+                return false;
+            }
+
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(absolutePath);
+            }
+            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+            {
+                return false;
+            }
+
+            IEnumerable<string> mountLines;
+            try
+            {
+                mountLines = File.ReadLines(mountsFile);
+            }
+            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+            {
+                return false;
+            }
+
+            string bestFsType = GetBestMatchingMountFileSystemType(fullPath, mountLines);
+
+            return !string.IsNullOrEmpty(bestFsType) && s_unixNetworkFsTypes.Contains(bestFsType);
         }
         #endregion
     }

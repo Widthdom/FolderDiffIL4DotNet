@@ -124,6 +124,13 @@ namespace FolderDiffIL4DotNet.Tests.Utils
         }
 
         [Fact]
+        public void IsLikelyNetworkPath_InvalidPathCharacters_ReturnsFalse()
+        {
+            var invalidPath = $"invalid{'\0'}path";
+            Assert.False(FileSystemUtility.IsLikelyNetworkPath(invalidPath));
+        }
+
+        [Fact]
         public void GetBestMatchingMountFileSystemType_PicksMostSpecificMountPoint()
         {
             var method = typeof(FileSystemUtility).GetMethod(

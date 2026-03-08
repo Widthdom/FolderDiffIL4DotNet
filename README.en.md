@@ -82,7 +82,7 @@ Prerequisites:
 - .NET SDK 8.x is installed.
 - `dotnet-ildasm` / `ilspycmd` are not required for unit tests (they are only needed for IL comparison in the application runtime path).
 - The command is intended to be run from the repository root.
-- Dedicated core-service unit tests include `FolderDiffServiceTests`, `ReportGenerateServiceTests`, `ILOutputServiceTests`, and `DotNetDisassembleServiceTests`.
+- Dedicated core-service unit tests include `FolderDiffServiceTests`, `FileDiffServiceTests`, `ReportGenerateServiceTests`, `ILOutputServiceTests`, and `DotNetDisassembleServiceTests`.
 - `ProgramTests` exercises `Main` via reflection with the `--no-pause` execution path, covering both invalid-argument and minimal success scenarios.
 - `FileSystemUtilityTests` directly validates network-path mount parsing logic (longest matching mount point selection).
 
@@ -115,6 +115,7 @@ Relation to CI:
 1. **MD5 hash** – if hashes match, the file is `Unchanged (MD5Match)`.
 2. **IL diff** – if the file is a .NET assembly (detected via PE/CLR headers, regardless of extension), the app disassembles both versions with the same disassembler/version identity, strips `// MVID:` lines, and compares them line by line. If `ShouldIgnoreILLinesContainingConfiguredStrings` is enabled, lines containing any entry in `ILIgnoreLineContainingStrings` are also ignored (substring match). Matches become `Unchanged (ILMatch)`; mismatches become `Modified (ILMismatch)`.
 3. **Text diff** – if the extension appears in `TextFileExtensions` (checked with `StringComparison.OrdinalIgnoreCase`), a line-based text diff runs. Matches are `Unchanged (TextMatch)`; mismatches are `Modified (TextMismatch)`.
+   - If parallel text diffing throws, the app logs a warning and falls back to sequential text diffing.
 4. **Fallback** – remaining files are treated as `Modified (MD5Mismatch)`.
 
 ## Configuration (`config.json`)
@@ -238,7 +239,7 @@ Place `config.json` next to the executable. Example:
 | `ILCacheMaxDiskFileCount` | Upper bound for disk cache files. Default is `1000`. `<= 0` disables trimming. Oldest entries are removed first. |
 | `ILCacheMaxDiskMegabytes` | Disk cache size limit (MB). Default is `512`. `<= 0` disables trimming. Oldest entries are removed until under the limit. |
 | `OptimizeForNetworkShares` | Optimizes comparisons on NAS/SMB shares by skipping MD5 pre-warming, reducing parallelism, and forcing sequential diffing of large text files. |
-| `AutoDetectNetworkShares` | Detects network paths automatically (UNC on Windows, `statfs` on macOS, `/proc/mounts`/`/etc/mtab` on Linux/Unix) and enables the same optimizations automatically. |
+| `AutoDetectNetworkShares` | Detects network paths automatically (UNC on Windows, `statfs` on macOS, `/proc/mounts`/`/etc/mtab` on Linux/Unix) and enables the same optimizations automatically. Recoverable detection failures (invalid path, permission issues, transient I/O) fall back to `false` so the diff itself keeps running. |
 
 Notes:
 
