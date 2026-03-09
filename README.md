@@ -67,15 +67,61 @@ Main output:
 
 ## Comparison Flow
 
-1. MD5 hash compare.
-- If equal: `Unchanged (MD5Match)`.
-2. If both files are .NET assemblies (detected by PE/CLR headers), disassemble both using the same disassembler/version identity and compare IL line-by-line.
-- `// MVID:` lines are always ignored.
-- If `ShouldIgnoreILLinesContainingConfiguredStrings=true`, lines containing any value in `ILIgnoreLineContainingStrings` are also ignored (substring match).
-- If equal: `Unchanged (ILMatch)`, else `Modified (ILMismatch)`.
-3. For extensions listed in `TextFileExtensions`, run text line-based compare.
-- If equal: `Unchanged (TextMatch)`, else `Modified (TextMismatch)`.
-4. Others fall back to `Modified (MD5Mismatch)`.
+Flow A: Folder-level routing
+
+```mermaid
+flowchart TD
+    A["Start folder diff"] --> B{"Unprocessed old file exists?"}
+    B -- "Yes" --> C["Take one old file (relative path r)"]
+    C --> D{"Same r exists in new?"}
+    D -- "No" --> E["Record Removed"] --> B
+    D -- "Yes" --> F["WP-FILE: run FilesAreEqualAsync(r)"]
+    F --> G{"Equal?"}
+    G -- "Yes" --> H["Classify Unchanged"] --> B
+    G -- "No" --> I["Classify Modified"] --> B
+    B -- "No" --> J{"Remaining new-only file exists?"}
+    J -- "Yes" --> K["Record Added"] --> J
+    J -- "No" --> L["End"]
+```
+
+Flow B: `WP-FILE` (per matched file)
+
+```mermaid
+flowchart TD
+    A["WP-FILE entry"] --> B{"MD5 equal?"}
+    B -- "Yes" --> C["Record MD5Match; return true"]
+    B -- "No" --> D{"Old file is .NET executable?"}
+    D -- "Yes" --> E["Try pair IL compare (same disassembler identity)"]
+    E --> F{"IL compare succeeded?"}
+    F -- "No" --> X["Log error and throw (run stops)"]
+    F -- "Yes" --> G{"IL equal?"}
+    G -- "Yes" --> H["Record ILMatch; return true"]
+    G -- "No" --> I["Record ILMismatch; return false"]
+    D -- "No" --> J{"Extension in TextFileExtensions?"}
+    J -- "Yes" --> K["Run text compare (mode/size based)"]
+    K --> L{"Text equal?"}
+    L -- "Yes" --> M["Record TextMatch; return true"]
+    L -- "No" --> N["Record TextMismatch; return false"]
+    J -- "No" --> O["Record MD5Mismatch; return false"]
+```
+
+1. Folder-level classification (`FolderDiffService`):
+- If an old-side file has no same relative path in new, it is `Removed` and the flow moves to the next file.
+- If both sides have the same relative path, the flow jumps to `WP-FILE` and `FilesAreEqualAsync` decides `Unchanged` or `Modified`.
+- After old-side processing finishes, remaining new-only files are `Added`.
+2. Per matched file (`FileDiffService.FilesAreEqualAsync`), checks continue only while undecided:
+- MD5 equal: record `MD5Match`, return `true` immediately (decision fixed for that file).
+- MD5 mismatch + old-side file is .NET executable: run IL compare with the same disassembler identity.
+- IL ignores `// MVID:` lines always.
+- If `ShouldIgnoreILLinesContainingConfiguredStrings=true`, lines containing any value in `ILIgnoreLineContainingStrings` are also ignored (substring, case-sensitive).
+- IL equal: record `ILMatch`, return `true`. IL mismatch: record `ILMismatch`, return `false`.
+- If not in IL path and extension is in `TextFileExtensions`, run text compare and return `TextMatch`/`TextMismatch`.
+- If text parallel path errors, it falls back to sequential text compare and then returns a final text decision.
+- Otherwise, record `MD5Mismatch` and return `false`.
+3. Important runtime behavior:
+- Once one diff detail is recorded for a file, no further checks run for that file; processing moves to the next target file.
+- In parallel mode, the same short-circuit rule applies independently per file.
+- IL compare failure (`InvalidOperationException`) is rethrown, so the whole folder-diff run stops.
 
 ## Configuration (`config.json`)
 
@@ -291,15 +337,61 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 ## 比較フロー
 
-1. MD5 ハッシュ比較。
-- 一致: `Unchanged (MD5Match)`。
-2. 両方が .NET アセンブリ（PE/CLR ヘッダ判定）の場合、同一逆アセンブラ/同一バージョン識別で逆アセンブルし、IL を行比較。
-- `// MVID:` 行は常に除外。
-- `ShouldIgnoreILLinesContainingConfiguredStrings=true` の場合、`ILIgnoreLineContainingStrings` のいずれかを含む行も除外（部分一致）。
-- 一致: `Unchanged (ILMatch)`、不一致: `Modified (ILMismatch)`。
-3. 拡張子が `TextFileExtensions` に含まれる場合はテキスト行比較。
-- 一致: `Unchanged (TextMatch)`、不一致: `Modified (TextMismatch)`。
-4. それ以外は `Modified (MD5Mismatch)`。
+Flow A: フォルダ側ルーティング
+
+```mermaid
+flowchart TD
+    A["開始: フォルダ比較"] --> B{"old 側に未処理ファイルあり?"}
+    B -- "はい" --> C["old 側の1ファイルを取得（相対パス r）"]
+    C --> D{"new 側に同じ r がある?"}
+    D -- "いいえ" --> E["Removed を記録"] --> B
+    D -- "はい" --> F["WP-FILE: FilesAreEqualAsync(r)"]
+    F --> G{"一致?"}
+    G -- "はい" --> H["Unchanged に分類"] --> B
+    G -- "いいえ" --> I["Modified に分類"] --> B
+    B -- "いいえ" --> J{"new 側に未処理（old 側にない）あり?"}
+    J -- "はい" --> K["Added を記録"] --> J
+    J -- "いいえ" --> L["終了"]
+```
+
+Flow B: `WP-FILE`（同一相対パス1件の判定）
+
+```mermaid
+flowchart TD
+    A["WP-FILE 開始"] --> B{"MD5 一致?"}
+    B -- "はい" --> C["MD5Match を記録; true を返す"]
+    B -- "いいえ" --> D{"old 側ファイルは .NET 実行可能?"}
+    D -- "はい" --> E["同一逆アセンブラ識別で IL 比較を試行"]
+    E --> F{"IL 比較成功?"}
+    F -- "いいえ" --> X["エラーログ後に例外再送出（処理全体停止）"]
+    F -- "はい" --> G{"IL 一致?"}
+    G -- "はい" --> H["ILMatch を記録; true を返す"]
+    G -- "いいえ" --> I["ILMismatch を記録; false を返す"]
+    D -- "いいえ" --> J{"拡張子が TextFileExtensions 対象?"}
+    J -- "はい" --> K["テキスト比較（モード/サイズ依存）"]
+    K --> L{"テキスト一致?"}
+    L -- "はい" --> M["TextMatch を記録; true を返す"]
+    L -- "いいえ" --> N["TextMismatch を記録; false を返す"]
+    J -- "いいえ" --> O["MD5Mismatch を記録; false を返す"]
+```
+
+1. フォルダ単位の分類（`FolderDiffService`）:
+- old 側にしか存在しない相対パスは `Removed` を確定し、次のファイルへ進みます。
+- old/new の両方に同じ相対パスがある場合は `WP-FILE` へ進み、`FilesAreEqualAsync` で `Unchanged` か `Modified` を決めます。
+- old 側の走査が終わった後、new 側にだけ残ったファイルを `Added` として記録します。
+2. 同一相対パスのファイル判定（`FileDiffService.FilesAreEqualAsync`）:
+- 判定未確定の間だけ次の判定へ進み、確定した時点でそのファイルの判定は終了します。
+- MD5 一致なら `MD5Match` を記録して即 `true` を返します。
+- MD5 不一致かつ old 側が .NET 実行可能なら IL 比較を試行します。
+- IL 比較では `// MVID:` 行を常に除外し、`ShouldIgnoreILLinesContainingConfiguredStrings=true` の場合は `ILIgnoreLineContainingStrings` の部分一致（大文字小文字区別あり）も除外します。
+- IL 一致なら `ILMatch`（`true`）、不一致なら `ILMismatch`（`false`）を記録して返します。
+- IL 経路に入らず拡張子が `TextFileExtensions` 対象ならテキスト比較を行い、`TextMatch` / `TextMismatch` を返します。
+- テキスト並列比較で例外時は逐次比較にフォールバックして最終判定を返します。
+- どの条件にも該当しなければ `MD5Mismatch`（`false`）です。
+3. 実行時の重要な挙動:
+- 1ファイルで1つの詳細判定（`MD5Match` など）が記録された時点で、そのファイルの追加判定は行われず次の対象へ進みます。
+- 並列実行時も、この短絡ルールは各ファイルごとに独立して同じです。
+- IL 比較で `InvalidOperationException` が発生した場合は再送出され、フォルダ比較全体が停止します。
 
 ## 設定（`config.json`）
 
