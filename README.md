@@ -18,7 +18,7 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 
 ```powershell
 # Windows (winget)
-winget install Microsoft.DotNet.SDK.8
+winget install Microsoft.DotNet.SDK.8 --source winget
 ```
 
 ```powershell
@@ -284,7 +284,7 @@ After writing, report/IL files are set to read-only when possible (failures are 
 
 ```powershell
 # Windows (winget)
-winget install Microsoft.DotNet.SDK.8
+winget install Microsoft.DotNet.SDK.8 --source winget
 ```
 
 ```powershell
