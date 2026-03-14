@@ -62,6 +62,17 @@ namespace FolderDiffIL4DotNet.Tests.Utils
         }
 
         [Fact]
+        public void DetectDotNetExecutable_NonexistentFile_ReturnsFailedWithException()
+        {
+            var result = DotNetDetector.DetectDotNetExecutable(Path.Combine(_tempDir, "nonexistent.dll"));
+
+            Assert.Equal(DotNetExecutableDetectionStatus.Failed, result.Status);
+            Assert.False(result.IsDotNetExecutable);
+            Assert.True(result.IsFailure);
+            Assert.IsType<FileNotFoundException>(result.Exception);
+        }
+
+        [Fact]
         public void IsDotNetExecutable_RandomBytes_ReturnsFalse()
         {
             var random = new Random(42);
@@ -69,6 +80,19 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             random.NextBytes(bytes);
             var file = CreateTempFile("random.dll", bytes);
             Assert.False(DotNetDetector.IsDotNetExecutable(file));
+        }
+
+        [Fact]
+        public void DetectDotNetExecutable_TextFile_ReturnsNotDotNet()
+        {
+            var file = CreateTempFile("plain.txt", "This is not a PE file");
+
+            var result = DotNetDetector.DetectDotNetExecutable(file);
+
+            Assert.Equal(DotNetExecutableDetectionStatus.NotDotNetExecutable, result.Status);
+            Assert.False(result.IsDotNetExecutable);
+            Assert.False(result.IsFailure);
+            Assert.Null(result.Exception);
         }
 
         [Fact]

@@ -121,7 +121,17 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
-                if (DotNetDetector.IsDotNetExecutable(file1AbsolutePath))
+                var dotNetDetectionResult = DotNetDetector.DetectDotNetExecutable(file1AbsolutePath);
+                if (dotNetDetectionResult.IsFailure)
+                {
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable. Skipping IL diff.",
+                        shouldOutputMessageToConsole: true,
+                        dotNetDetectionResult.Exception);
+                }
+
+                if (dotNetDetectionResult.IsDotNetExecutable)
                 {
                     try
                     {
@@ -200,83 +210,78 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// サイズが閾値を超えるテキストファイルに対して高速化を目的に並列チャンク比較を行う実験的メソッド。
         /// 完全一致判定のみを行い、差分箇所の特定は行いません。
-        /// なお、本メソッドはエラーや引数不正が発生した場合でも例外を呼出し側へ送出せず、false を返します。
+        /// エラーや引数不正は呼び出し側へ送出し、呼び出し側で逐次比較へのフォールバック可否を判断します。
         /// </summary>
         /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
         /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
         /// <param name="largeFileSizeThresholdBytes">並列化閾値（バイト）。これ未満は逐次比較。</param>
         /// <param name="chunkSizeBytes">チャンクサイズ（バイト）。</param>
         /// <param name="maxParallel">最大並列度</param>
-        /// <returns>一致すれば true。エラーや引数不正時は false。</returns>
+        /// <returns>一致すれば true。不一致なら false。</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下の場合。</exception>
+        /// <exception cref="Exception">チャンク読み取りや比較準備で予期しない例外が発生した場合。</exception>
         private static async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes, int chunkSizeBytes, int maxParallel)
         {
-            try
-            {
-                var file1Info = new FileInfo(file1AbsolutePath);
-                var file2Info = new FileInfo(file2AbsolutePath);
-                // どちらかが存在しない、またはサイズが異なる場合は比較するまでもなく不一致。
-                if (!file1Info.Exists || !file2Info.Exists)
-                {
-                    return false;
-                }
-                if (file1Info.Length != file2Info.Length)
-                {
-                    return false;
-                }
-                // 小さいファイルは既存の逐次比較に委譲して余計なオーバーヘッドを避ける。
-                if (file1Info.Length < largeFileSizeThresholdBytes)
-                {
-                    return await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                }
-                if (maxParallel <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, Constants.ERROR_MAX_PARALLEL);
-                }
-
-                // 大きなファイルは固定サイズのチャンクに分割し、読み取り→比較を並列実行する。
-                int chunkCount = (int)((file1Info.Length + chunkSizeBytes - 1) / chunkSizeBytes);
-                var differences = 0;
-                await Parallel.ForEachAsync(Enumerable.Range(0, chunkCount), new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (index, cancellationToken) =>
-                {
-                    // 既に差分が見つかっていれば以降のチャンクは読む必要がない。
-                    if (Volatile.Read(ref differences) != 0)
-                    {
-                        return;
-                    }
-                    var buffer1 = new byte[chunkSizeBytes];
-                    var buffer2 = new byte[chunkSizeBytes];
-                    int read1, read2;
-                    using (var file1Stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    using (var file2Stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        file1Stream.Seek((long)index * chunkSizeBytes, SeekOrigin.Begin);
-                        file2Stream.Seek((long)index * chunkSizeBytes, SeekOrigin.Begin);
-                        read1 = await file1Stream.ReadAsync(buffer1.AsMemory(0, chunkSizeBytes), cancellationToken);
-                        read2 = await file2Stream.ReadAsync(buffer2.AsMemory(0, chunkSizeBytes), cancellationToken);
-                    }
-                    // 同じオフセットのチャンクでも読み取りバイト数が異なれば即時不一致。
-                    if (read1 != read2)
-                    {
-                        Interlocked.Exchange(ref differences, 1);
-                        return;
-                    }
-                    // チャンク内で1バイトでも異なれば不一致とし、他チャンクも打ち切る。
-                    for (int i = 0; i < read1; i++)
-                    {
-                        if (buffer1[i] != buffer2[i])
-                        {
-                            Interlocked.Exchange(ref differences, 1);
-                            break;
-                        }
-                    }
-                });
-                // 差分フラグが立っていなければ完全一致。
-                return differences == 0;
-            }
-            catch
+            var file1Info = new FileInfo(file1AbsolutePath);
+            var file2Info = new FileInfo(file2AbsolutePath);
+            // どちらかが存在しない、またはサイズが異なる場合は比較するまでもなく不一致。
+            if (!file1Info.Exists || !file2Info.Exists)
             {
                 return false;
             }
+            if (file1Info.Length != file2Info.Length)
+            {
+                return false;
+            }
+            // 小さいファイルは既存の逐次比較に委譲して余計なオーバーヘッドを避ける。
+            if (file1Info.Length < largeFileSizeThresholdBytes)
+            {
+                return await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+            }
+            if (maxParallel <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, Constants.ERROR_MAX_PARALLEL);
+            }
+
+            // 大きなファイルは固定サイズのチャンクに分割し、読み取り→比較を並列実行する。
+            int chunkCount = (int)((file1Info.Length + chunkSizeBytes - 1) / chunkSizeBytes);
+            var differences = 0;
+            await Parallel.ForEachAsync(Enumerable.Range(0, chunkCount), new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (index, cancellationToken) =>
+            {
+                // 既に差分が見つかっていれば以降のチャンクは読む必要がない。
+                if (Volatile.Read(ref differences) != 0)
+                {
+                    return;
+                }
+                var buffer1 = new byte[chunkSizeBytes];
+                var buffer2 = new byte[chunkSizeBytes];
+                int read1, read2;
+                using (var file1Stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var file2Stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    file1Stream.Seek((long)index * chunkSizeBytes, SeekOrigin.Begin);
+                    file2Stream.Seek((long)index * chunkSizeBytes, SeekOrigin.Begin);
+                    read1 = await file1Stream.ReadAsync(buffer1.AsMemory(0, chunkSizeBytes), cancellationToken);
+                    read2 = await file2Stream.ReadAsync(buffer2.AsMemory(0, chunkSizeBytes), cancellationToken);
+                }
+                // 同じオフセットのチャンクでも読み取りバイト数が異なれば即時不一致。
+                if (read1 != read2)
+                {
+                    Interlocked.Exchange(ref differences, 1);
+                    return;
+                }
+                // チャンク内で1バイトでも異なれば不一致とし、他チャンクも打ち切る。
+                for (int i = 0; i < read1; i++)
+                {
+                    if (buffer1[i] != buffer2[i])
+                    {
+                        Interlocked.Exchange(ref differences, 1);
+                        break;
+                    }
+                }
+            });
+            // 差分フラグが立っていなければ完全一致。
+            return differences == 0;
         }
 
         /// <summary>

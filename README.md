@@ -108,7 +108,7 @@ Important details:
 - `Added`, `Removed`, `Unchanged`, and `Modified` are decided by relative path, not by file name alone.
 - IL comparison always ignores `// MVID:` lines, so build-specific assembly noise does not create false differences.
 - If `ShouldIgnoreILLinesContainingConfiguredStrings=true`, lines containing any configured ignore string are also skipped during IL comparison.
-- Text files may use different internal strategies depending on size and runtime mode, but the final result is still just text match or text mismatch.
+- Text files may use different internal strategies depending on size and runtime mode. If chunk-parallel comparison for a large local file throws, the run logs a warning and retries with sequential text comparison.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
 ## Configuration (`config.json`)
@@ -370,7 +370,7 @@ flowchart TD
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
 - IL 比較では `// MVID:` 行を常に無視するため、ビルドごとの差分だけで別物扱いになりにくくしています。
 - `ShouldIgnoreILLinesContainingConfiguredStrings=true` の場合は、設定した文字列を含む行も IL 比較から除外します。
-- テキスト比較の内部実装はファイルサイズや実行モードで変わることがありますが、最終結果はテキスト一致か不一致です。
+- テキスト比較の内部実装はファイルサイズや実行モードで変わることがあります。大きいローカルファイルの並列比較で例外が出た場合は warning を記録し、逐次比較へフォールバックします。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
 ## 設定（`config.json`）

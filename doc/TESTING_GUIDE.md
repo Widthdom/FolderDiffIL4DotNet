@@ -16,13 +16,13 @@ Related documents:
 
 ## Current Test Scope Map
 
-Current tree has `206` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`).
+Current tree has `209` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
 | Entry and configuration | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` exit codes, minimal end-to-end execution, config loading/default behavior, MD5/timestamp warning console and report output |
-| Core diff flow | `FolderDiffServiceTests`, `FileDiffServiceTests`, `FileDiffResultListsTests` | Classification (`Unchanged/Added/Removed/Modified`), diff detail labels, timestamp-regression detection, reset behavior, case-insensitive extension handling |
-| IL/disassembler behavior | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | Same-disassembler pairing, fallback behavior, blacklist logic, detection and command handling |
+| Core diff flow | `FolderDiffServiceTests`, `FileDiffServiceTests`, `FileDiffResultListsTests` | Classification (`Unchanged/Added/Removed/Modified`), diff detail labels, timestamp-regression detection, reset behavior, case-insensitive extension handling, propagated text-diff fallback behavior |
+| IL/disassembler behavior | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | Same-disassembler pairing, fallback behavior, blacklist logic, detection and command handling, failure-vs-non-.NET detection semantics |
 | Caching | `ILCacheTests` | memory/disk cache semantics, retention, keying behavior |
 | Reporting/logging/progress | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | report sections/summary formatting, report-only warning responsibility, log output behavior, progress reporting lifecycle |
 | Utility layer | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | hashing/text compare, path/network detection, command tokenization, file-name/path sanitization |
@@ -129,13 +129,13 @@ Workflow: `.github/workflows/dotnet.yml`
 
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`）では `206` 件が成功しています。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`）では `209` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
 | エントリーポイント/設定 | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` の終了コード、最小構成の実行、設定読込/既定値、更新日時警告のコンソール/レポート出力 |
-| 差分処理本体 | `FolderDiffServiceTests`, `FileDiffServiceTests`, `FileDiffResultListsTests` | `Unchanged/Added/Removed/Modified` の分類、判定理由、更新日時逆転検出、状態リセット、拡張子大小無視 |
-| IL/逆アセンブラ | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | 同一逆アセンブラ比較、フォールバック、ブラックリスト、検出・コマンド処理 |
+| 差分処理本体 | `FolderDiffServiceTests`, `FileDiffServiceTests`, `FileDiffResultListsTests` | `Unchanged/Added/Removed/Modified` の分類、判定理由、更新日時逆転検出、状態リセット、拡張子大小無視、伝播したテキスト比較例外からのフォールバック |
+| IL/逆アセンブラ | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | 同一逆アセンブラ比較、フォールバック、ブラックリスト、検出・コマンド処理、判定失敗と非 .NET の区別 |
 | キャッシュ | `ILCacheTests` | メモリ/ディスクキャッシュの保持、キー生成、削除方針 |
 | レポート/ログ/進捗 | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | レポート出力内容、ログ動作、進捗報告ライフサイクル |
 | ユーティリティ層 | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | ハッシュ/テキスト比較、パス/ネットワーク判定、コマンド分解、ファイル名/パス整形 |

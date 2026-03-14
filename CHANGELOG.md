@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Moved aggregated `MD5Mismatch` console warnings into `ProgramRunner`, kept `ReportGenerateService` report-only, and updated related docs and automated tests.
 - Replaced one-off `string.Format(...)` usage with interpolated strings, removed broad `#region` usage, and deleted now-unused format/message constants.
 - Updated the developer and testing guides to reflect the current source-style expectations and latest passing test count.
+- Made `.NET` executable detection distinguish `NotDotNetExecutable` from detection failure, log a warning for non-fatal detection failures, and let chunk-parallel text-diff exceptions bubble to the existing sequential fallback path instead of silently returning `false`.
 
 ### [1.2.2] - 2026-03-14
 
@@ -210,6 +211,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - 集約後の `MD5Mismatch` コンソール警告を `ProgramRunner` に移し、`ReportGenerateService` はレポート専用の責務に整理しました。あわせて関連ドキュメントと自動テストを更新しました。
 - 単発利用の `string.Format(...)` を補間文字列へ置き換え、広範な `#region` 利用をやめ、不要になった書式・メッセージ定数を削除しました。
 - 開発ガイドとテストガイドを更新し、現在のソースコード方針と最新の通過テスト件数を反映しました。
+- `.NET` 実行可能判定で `NotDotNetExecutable` と判定失敗を区別するようにし、致命ではない判定失敗は warning を残して継続するようにしました。あわせて並列テキスト比較の例外は `false` に潰さず、既存の逐次比較フォールバック経路へ伝播させるようにしました。
 
 ### [1.2.2] - 2026-03-14
 

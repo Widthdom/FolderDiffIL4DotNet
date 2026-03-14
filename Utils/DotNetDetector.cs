@@ -4,6 +4,32 @@ using System.IO;
 namespace FolderDiffIL4DotNet.Utils
 {
     /// <summary>
+    /// .NET 実行可能判定の結果種別。
+    /// </summary>
+    public enum DotNetExecutableDetectionStatus
+    {
+        NotDotNetExecutable,
+        DotNetExecutable,
+        Failed
+    }
+
+    /// <summary>
+    /// .NET 実行可能判定の結果と、失敗時の例外を保持します。
+    /// </summary>
+    public readonly record struct DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus Status, Exception Exception = null)
+    {
+        /// <summary>
+        /// .NET 実行可能と判定された場合に true。
+        /// </summary>
+        public bool IsDotNetExecutable => Status == DotNetExecutableDetectionStatus.DotNetExecutable;
+
+        /// <summary>
+        /// 判定処理そのものが失敗した場合に true。
+        /// </summary>
+        public bool IsFailure => Status == DotNetExecutableDetectionStatus.Failed;
+    }
+
+    /// <summary>
     /// PE/CLR ヘッダーを解析し、.NET 実行可能ファイルかどうかを判定するクラス
     /// </summary>
     public static class DotNetDetector
@@ -65,12 +91,11 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// 指定されたファイルが .NET 実行可能ファイル（PE かつ CLR ヘッダを持つ）かを判定します。
         /// PE32（32bit）とPE32+（64bit）の両方に対応し、DnSpyで逆アセンブル可能な全ての.NETアセンブリを正しく判定します。
-        /// エラーが発生した場合や判定不能な場合は false を返します（例外は送出しません）。
+        /// 非 .NET ファイルと判定失敗を区別した結果を返します。
         /// </summary>
         /// <param name="fileAbsolutePath">判定するファイルの絶対パス</param>
-        /// <returns>.NET 実行可能ファイルと判定できた場合は true、それ以外（非 PE/CLR、読み取り失敗含む）の場合は false。</returns>
-        /// <exception cref="Exception">内部で発生した例外は捕捉されるため、呼び出し元へは送出されません。</exception>
-        public static bool IsDotNetExecutable(string fileAbsolutePath)
+        /// <returns>.NET 判定結果。読み取り失敗などで判定不能な場合は <see cref="DotNetExecutableDetectionStatus.Failed"/> を返します。</returns>
+        public static DotNetExecutableDetectionResult DetectDotNetExecutable(string fileAbsolutePath)
         {
             try
             {
@@ -80,7 +105,7 @@ namespace FolderDiffIL4DotNet.Utils
                     // DOSヘッダのマジックナンバー (DOS_HEADER_MAGIC: "MZ") を確認
                     if (binaryReader.ReadUInt16() != DOS_HEADER_MAGIC)
                     {
-                        return false;
+                        return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable);
                     }
 
                     // DOSヘッダ内のオフセット（DOS_HEADER_PE_POINTER_OFFSET）から PE ヘッダの位置を取得
@@ -90,14 +115,14 @@ namespace FolderDiffIL4DotNet.Utils
                     // ファイルサイズチェック（PEヘッダが範囲内か）
                     if (peHeaderOffset < 0 || peHeaderOffset >= fileStream.Length - OPTIONAL_HEADER_START_OFFSET)
                     {
-                        return false;
+                        return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable);
                     }
 
                     // PEシグネチャ (PE_SIGNATURE: "PE\0\0") を確認
                     fileStream.Seek(offset: peHeaderOffset, SeekOrigin.Begin);
                     if (binaryReader.ReadUInt32() != PE_SIGNATURE)
                     {
-                        return false;
+                        return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable);
                     }
 
                     // COFFヘッダ（COFF_HEADER_SIZE バイト）をスキップし Optional Header の先頭へ
@@ -120,13 +145,13 @@ namespace FolderDiffIL4DotNet.Utils
                     }
                     else
                     {
-                        return false; // 不明なPE形式
+                        return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable); // 不明なPE形式
                     }
 
                     // CLRヘッダのRVAとサイズを確認（CLR_RUNTIME_HEADER_MINIMUM_BYTES を読めるかチェック）
                     if (clrHeaderOffset + CLR_RUNTIME_HEADER_MINIMUM_BYTES > fileStream.Length)
                     {
-                        return false;
+                        return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable);
                     }
 
                     fileStream.Seek(offset: clrHeaderOffset, SeekOrigin.Begin);
@@ -134,13 +159,25 @@ namespace FolderDiffIL4DotNet.Utils
                     uint clrHeaderSize = binaryReader.ReadUInt32();
 
                     // CLRヘッダが存在し、サイズが妥当な場合は .NET アセンブリと判定
-                    return clrHeaderRva != 0 && clrHeaderSize > 0;
+                    return new DotNetExecutableDetectionResult(
+                        clrHeaderRva != 0 && clrHeaderSize > 0
+                            ? DotNetExecutableDetectionStatus.DotNetExecutable
+                            : DotNetExecutableDetectionStatus.NotDotNetExecutable);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                return false;
+                return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
             }
         }
+
+        /// <summary>
+        /// 指定されたファイルが .NET 実行可能ファイル（PE かつ CLR ヘッダを持つ）かを判定します。
+        /// 読み取り失敗などで判定不能な場合も false を返します。詳細な失敗理由が必要な場合は <see cref="DetectDotNetExecutable(string)"/> を使用します。
+        /// </summary>
+        /// <param name="fileAbsolutePath">判定するファイルの絶対パス</param>
+        /// <returns>.NET 実行可能ファイルと判定できた場合は true、それ以外の場合は false。</returns>
+        public static bool IsDotNetExecutable(string fileAbsolutePath)
+            => DetectDotNetExecutable(fileAbsolutePath).IsDotNetExecutable;
     }
 }
