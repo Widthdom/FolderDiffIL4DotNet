@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Reorganized runtime composition around `ProgramRunner`, `DiffExecutionContext`, and interface-based services to improve diff-pipeline testability and reduce direct static-state coupling.
 - Split developer and testing guidance into dedicated documents and expanded the README with clearer installation examples and comparison-flow documentation.
+- Expanded the developer guide with execution lifecycle, DI boundaries, runtime-mode notes, Mermaid diagrams, and a clearer documentation map across README and testing guidance.
 
 #### Fixed
 
@@ -201,6 +202,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `ProgramRunner`、`DiffExecutionContext`、インターフェイスベースのサービス構成へ整理し、差分パイプラインのテスタビリティを向上させるとともに、静的状態への直接依存を減らしました。
 - 開発者向け・テスト向けドキュメントを分離し、README のインストール手順と比較フロー説明を拡充しました。
+- 開発者ガイドに実行ライフサイクル、DI 境界、実行モード、Mermaid 図を追加し、README とテストガイドのドキュメント導線も整理しました。
 
 #### 修正
 

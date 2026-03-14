@@ -6,6 +6,14 @@ For .NET assemblies, it compares IL while ignoring build-specific noise such as 
 Developer-focused details (architecture, CI, tests, implementation cautions):
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
+## Documentation Map
+
+| Need | Document |
+| --- | --- |
+| Product overview, setup, usage, and configuration | `README.md` |
+| Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
+| Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
+
 ## Requirements
 
 - .NET SDK 8.x
@@ -278,6 +286,14 @@ After writing, report/IL files are set to read-only when possible (failures are 
 
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
+
+## ドキュメントの見取り図
+
+| 見たい内容 | ドキュメント |
+| --- | --- |
+| 製品概要、導入、使い方、設定 | `README.md` |
+| 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
+| テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
 
 ## 必要環境
 
