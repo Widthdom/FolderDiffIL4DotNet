@@ -18,25 +18,18 @@ namespace FolderDiffIL4DotNet
     /// </summary>
     public sealed class ProgramRunner
     {
-        #region constants
         private const string REPORTS_ROOT_DIR_NAME = "Reports";
         private const string INITIALIZING_LOGGER = "Initializing logger...";
         private const string LOGGER_INITIALIZED = "Logger initialized.";
-        private const string APPLICATION_VERSION = "Application version: {0}";
         private const string VALIDATING_ARGS = "Validating command line arguments...";
         private const string ERROR_INSUFFICIENT_ARGUMENTS = "Insufficient arguments.";
         private const string ERROR_ARGUMENTS_NULL_OR_EMPTY = "One or more required arguments are null or empty.";
         private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + $" <oldFolderAbsolutePath> <newFolderAbsolutePath> <reportLabel> [{NO_PAUSE}]";
-        private const string ERROR_INVALID_REPORT_LABEL = "The value '{0}', provided as the third argument (reportLabel), is invalid as a folder name.";
-        private const string ERROR_OLD_FOLDER_NOT_FOUND = "The old folder path does not exist: {0}";
-        private const string ERROR_NEW_FOLDER_NOT_FOUND = "The new folder path does not exist: {0}";
-        private const string ERROR_REPORT_FOLDER_EXISTS = "The report folder already exists: {0}. Provide a different report label.";
         private const string LOG_ARGS_VALIDATION_COMPLETED = "Command line arguments validation completed.";
         private const string LOG_LOADING_CONFIGURATION = "Loading configuration...";
         private const string LOG_CONFIGURATION_LOADED = "Configuration loaded successfully.";
         private const string LOG_APP_STARTING = "Starting " + Constants.APP_NAME + "...";
         private const string LOG_APP_FINISHED = Constants.APP_NAME + " finished without errors. See Reports folder for details.";
-        private const string LOG_ERROR_DETAILS_PATH = "Error details logged to: {0}";
         private const string NO_PAUSE = "--no-pause";
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
@@ -46,7 +39,6 @@ namespace FolderDiffIL4DotNet
         private const int IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT = 2000;
         private const int IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS = 60;
         private const int IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS = 12;
-        #endregion
 
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
@@ -72,7 +64,7 @@ namespace FolderDiffIL4DotNet
                 _logger.LogMessage(AppLogLevel.Info, LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
 
                 var appVersion = SystemInfo.GetAppVersion(typeof(Program));
-                _logger.LogMessage(AppLogLevel.Info, string.Format(APPLICATION_VERSION, appVersion), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, $"Application version: {appVersion}", shouldOutputMessageToConsole: true);
 
                 var computerName = SystemInfo.GetComputerName();
 
@@ -106,7 +98,7 @@ namespace FolderDiffIL4DotNet
                     await scopedProvider.GetRequiredService<IFolderDiffService>().ExecuteFolderDiffAsync();
                     stopwatch.Stop();
                     elapsedTimeString = FormatElapsedTime(stopwatch.Elapsed);
-                    _logger.LogMessage(AppLogLevel.Info, string.Format(Constants.LOG_ELAPSED_TIME, elapsedTimeString), shouldOutputMessageToConsole: true);
+                    _logger.LogMessage(AppLogLevel.Info, $"Elapsed Time: {elapsedTimeString}", shouldOutputMessageToConsole: true);
                 }
                 finally
                 {
@@ -130,7 +122,7 @@ namespace FolderDiffIL4DotNet
             catch (Exception ex)
             {
                 _logger.LogMessage(AppLogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, ex);
-                _logger.LogMessage(AppLogLevel.Info, string.Format(LOG_ERROR_DETAILS_PATH, _logger.LogFileAbsolutePath), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
                 exitCode = EXIT_CODE_ERROR;
             }
             finally
@@ -204,7 +196,7 @@ namespace FolderDiffIL4DotNet
             }
             catch (ArgumentException)
             {
-                _logger.LogMessage(AppLogLevel.Error, string.Format(ERROR_INVALID_REPORT_LABEL, reportLabel), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error, $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name.", shouldOutputMessageToConsole: true);
                 throw;
             }
 
@@ -214,15 +206,15 @@ namespace FolderDiffIL4DotNet
 
             if (!Directory.Exists(oldFolderAbsolutePath))
             {
-                throw new DirectoryNotFoundException(string.Format(ERROR_OLD_FOLDER_NOT_FOUND, oldFolderAbsolutePath));
+                throw new DirectoryNotFoundException($"The old folder path does not exist: {oldFolderAbsolutePath}");
             }
             if (!Directory.Exists(newFolderAbsolutePath))
             {
-                throw new DirectoryNotFoundException(string.Format(ERROR_NEW_FOLDER_NOT_FOUND, newFolderAbsolutePath));
+                throw new DirectoryNotFoundException($"The new folder path does not exist: {newFolderAbsolutePath}");
             }
             if (Directory.Exists(reportsFolderAbsolutePath))
             {
-                throw new ArgumentException(string.Format(ERROR_REPORT_FOLDER_EXISTS, reportsFolderAbsolutePath));
+                throw new ArgumentException($"The report folder already exists: {reportsFolderAbsolutePath}. Provide a different report label.");
             }
 
             return new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);

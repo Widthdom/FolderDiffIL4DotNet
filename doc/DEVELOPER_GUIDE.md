@@ -46,6 +46,13 @@ Generated during a run:
 - `Logs/log_YYYYMMDD.log`
 - `ILCache/` under the app base directory when disk cache is enabled and no custom cache directory is configured
 
+## Source Style Notes
+
+Keep internal formatting choices simple and local:
+- Prefer interpolated strings for fixed-format messages that are only used once.
+- Keep shared format templates only when the same message shape is intentionally reused in multiple places.
+- Avoid adding new `#region` blocks unless they solve a concrete readability problem that file structure and naming do not already solve.
+
 ## Architecture Overview
 
 ```mermaid
@@ -385,6 +392,13 @@ dotnet run -- "/absolute/path/to/old" "/absolute/path/to/new" "dev-run" --no-pau
 - `ShouldOutputILText=true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
 - `Logs/log_YYYYMMDD.log`
 - ディスクキャッシュ有効かつカスタム保存先未指定時はアプリ基準ディレクトリ配下の `ILCache/`
+
+## ソースコードのスタイル方針
+
+文字列整形や構造化は、まず局所性と読みやすさを優先します。
+- 固定書式で単発利用のメッセージは、`string.Format(...)` より補間文字列を優先します。
+- 同じ文言テンプレートを複数箇所で意図的に共有する場合のみ、共通の書式定数やヘルパーを残します。
+- `#region` は、ファイル構成や命名だけでは読みづらい具体的な事情がある場合に限って追加してください。
 
 ## アーキテクチャ概要
 

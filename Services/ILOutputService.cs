@@ -16,16 +16,10 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ILOutputService : IILOutputService
     {
-        #region constants
         /// <summary>
         /// ネットワーク共有最適化ログ (<see cref="ILOutputService"/>)
         /// </summary>
         private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
-
-        /// <summary>
-        /// MD5ハッシュ計算失敗ログ
-        /// </summary>
-        private const string LOG_FAILED_PRECOMPUTE_MD5_HASHES = "Failed to precompute " + Constants.LABEL_MD5 + " hashes: {0}";
 
         /// <summary>
         /// IL 出力から比較時に除外する MVID 行の接頭辞
@@ -42,13 +36,6 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
 
-        /// <summary>
-        /// old/new で同一逆アセンブラに揃えられなかった場合のエラー。
-        /// </summary>
-        private const string ERROR_MISMATCHED_DISASSEMBLER = "IL comparison requires the same disassembler and version for old/new. old: '{0}', new: '{1}'.";
-        #endregion
-
-        #region private read only member variables
         /// <summary>
         /// 設定値。IL 出力やキャッシュ利用可否、キャッシュパラメータ等を保持する <see cref="ConfigSettings"/>。
         /// </summary>
@@ -73,8 +60,6 @@ namespace FolderDiffIL4DotNet.Services
         /// ログ出力サービス。
         /// </summary>
         private readonly ILoggerService _logger;
-
-        #endregion
 
         /// <summary>
         /// コンストラクタ。実行コンテキストと協調サービスを受け取ります。
@@ -147,7 +132,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_PRECOMPUTE_MD5_HASHES, ex.Message), shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
         }
 
@@ -244,7 +229,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return oldLabel;
             }
-            throw new InvalidOperationException(string.Format(ERROR_MISMATCHED_DISASSEMBLER, oldLabel, newLabel));
+            throw new InvalidOperationException($"IL comparison requires the same disassembler and version for old/new. old: '{oldLabel}', new: '{newLabel}'.");
         }
 
         /// <summary>

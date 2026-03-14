@@ -20,7 +20,6 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class DotNetDisassembleService : IDotNetDisassembleService
     {
-        #region constants
         /// <summary>
         /// ブラックリスト化判定に用いる連続失敗閾値。
         /// </summary>
@@ -47,86 +46,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string ILSPY_FLAG_OUTPUT = "-o";
 
         /// <summary>
-        /// 例外のルート原因フォーマット
-        /// </summary>
-        private const string INFO_ROOT_CAUSE_FORMAT = " RootCause: {0}";
-
-        /// <summary>
-        /// 逆アセンブラ起動失敗ログ
-        /// </summary>
-        private const string LOG_FAILED_TO_START_DISASSEMBLER = "Failed to start disassembler tool '{0}': {1}";
-
-        /// <summary>
-        /// 逆アセンブラ準備時の予期せぬエラー
-        /// </summary>
-        private const string LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER = "Unexpected error while preparing to run '{0}': {1}";
-
-        /// <summary>
-        /// ildasm実行失敗時の例外フォーマット
-        /// </summary>
-        private const string ERROR_EXECUTE_ILDASM = "Failed to execute " + Constants.ILDASM_LABEL + " for file: {0}. {1}{2}";
-
-        /// <summary>
-        /// 同一ツールでのペア逆アセンブル失敗時の例外フォーマット。
-        /// </summary>
-        private const string ERROR_EXECUTE_ILDASM_FOR_PAIR = "Failed to execute " + Constants.ILDASM_LABEL + " with the same disassembler for files: {0} and {1}. {2}{3}";
-
-        /// <summary>
-        /// old/new で同一候補を使ってもバージョン識別が一致しなかった場合のエラーフォーマット。
-        /// </summary>
-        private const string ERROR_DISASSEMBLER_VERSION_MISMATCH = "Disassembler version mismatch for command '{0}'. old='{1}', new='{2}'.";
-
-        /// <summary>
-        /// ASCII一時コピー作成失敗
-        /// </summary>
-        private const string LOG_FAILED_CREATE_ASCII_TEMP_COPY = "Failed to create ASCII temp copy for '{0}': {1}";
-
-        /// <summary>
-        /// 逆アセンブラバージョン取得失敗ログ (prefetch)
-        /// </summary>
-        private const string LOG_FAILED_TO_GET_VERSION_FOR_COMMAND = "Failed to get version for disassemble command '{0}' (candidate: '{1}'). Skipping.";
-
-        /// <summary>
-        /// ILキャッシュプリフェッチ共通プレフィックス
-        /// </summary>
-        private const string LOG_PREFETCH_IL_CACHE_PREFIX = "Prefetch " + Constants.LABEL_IL_CACHE;
-
-        /// <summary>
-        /// ILキャッシュプリフェッチ開始
-        /// </summary>
-        private const string LOG_PREFETCH_IL_CACHE_START = LOG_PREFETCH_IL_CACHE_PREFIX + ": starting for {0} .NET assemblies ({1}={2})";
-
-        /// <summary>
-        /// ILキャッシュプリフェッチ進捗
-        /// </summary>
-        private const string LOG_PREFETCH_IL_CACHE_PROGRESS = LOG_PREFETCH_IL_CACHE_PREFIX + ": {0}/{1} ({2}%), hits={3}";
-
-        /// <summary>
-        /// ILキャッシュプリフェッチ完了
-        /// </summary>
-        private const string LOG_PREFETCH_IL_CACHE_COMPLETE = LOG_PREFETCH_IL_CACHE_PREFIX + ": completed. hits={0}, stores={1}";
-
-        /// <summary>
-        /// ILキャッシュプリフェッチ失敗
-        /// </summary>
-        private const string LOG_FAILED_PREFETCH_IL_CACHE = "Failed to prefetch " + Constants.LABEL_IL_CACHE + " for assembly '{0}': {1}";
-
-        /// <summary>
-        /// ILキャッシュ取得失敗
-        /// </summary>
-        private const string LOG_FAILED_GET_IL_FROM_CACHE = "Failed to get " + Constants.LABEL_IL + " from cache for {0} with command {1}: {2}";
-
-        /// <summary>
-        /// ILキャッシュ設定失敗
-        /// </summary>
-        private const string LOG_FAILED_SET_IL_CACHE = "Failed to set " + Constants.LABEL_IL_CACHE + " for {0} with command {1}: {2}";
-
-        /// <summary>
-        /// ildasm失敗エラー
-        /// </summary>
-        private const string ERROR_ILDASM_FAILED = Constants.ILDASM_LABEL + " failed (exit {0}) with command: {1} {2} in {3}\nFile: {4}\nStderr: {5}";
-
-        /// <summary>
         /// ildasm/ilspyインストールガイダンス
         /// </summary>
         private const string GUIDANCE_INSTALL_DISASSEMBLER =
@@ -151,9 +70,6 @@ namespace FolderDiffIL4DotNet.Services
         /// ディスクキャッシュ分離のための実行単位フォールバック識別子プレフィックス。
         /// </summary>
         private const string RUN_FINGERPRINT_PREFIX = "run:";
-        #endregion
-
-        #region private read only member variables
         /// <summary>
         /// ブラックリスト化有効期間。
         /// </summary>
@@ -178,10 +94,6 @@ namespace FolderDiffIL4DotNet.Services
         /// 実行単位フォールバック識別子。ツール実体を解決できない場合でも前回実行のキャッシュと混ざらないようにする。
         /// </summary>
         private static readonly string _runFingerprint = Guid.NewGuid().ToString("N");
-
-        #endregion
-
-        #region private writable member variables
         /// <summary>
         /// キャッシュヒット回数。
         /// </summary>
@@ -206,7 +118,6 @@ namespace FolderDiffIL4DotNet.Services
         /// 逆アセンブラバージョン取得のキャッシュサービス。
         /// </summary>
         private readonly DotNetDisassemblerCache _dotNetDisassemblerCache;
-        #endregion
 
         /// <summary>
         /// IL キャッシュのヒット件数（読み取り専用スナップショット）。
@@ -279,21 +190,21 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Unexpected error while preparing to run '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
             }
 
-            var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
-            throw new InvalidOperationException(string.Format(ERROR_EXECUTE_ILDASM, dotNetAssemblyfileAbsolutePath, GUIDANCE_INSTALL_DISASSEMBLER, innerMsg), lastError);
+            var innerMsg = lastError != null ? $" RootCause: {lastError.Message}" : string.Empty;
+            throw new InvalidOperationException($"Failed to execute ildasm for file: {dotNetAssemblyfileAbsolutePath}. {GUIDANCE_INSTALL_DISASSEMBLER}{innerMsg}", lastError);
         }
 
         /// <summary>
@@ -338,11 +249,7 @@ namespace FolderDiffIL4DotNet.Services
 
                     if (!AreSameDisassemblerVersion(oldResult.DisassembleCommandAndItsVersionWithArguments, newResult.DisassembleCommandAndItsVersionWithArguments))
                     {
-                        lastError = new InvalidOperationException(string.Format(
-                            ERROR_DISASSEMBLER_VERSION_MISMATCH,
-                            candidateDisassembleCommand,
-                            oldResult.DisassembleCommandAndItsVersionWithArguments,
-                            newResult.DisassembleCommandAndItsVersionWithArguments));
+                        lastError = new InvalidOperationException($"Disassembler version mismatch for command '{candidateDisassembleCommand}'. old='{oldResult.DisassembleCommandAndItsVersionWithArguments}', new='{newResult.DisassembleCommandAndItsVersionWithArguments}'.");
                         continue;
                     }
 
@@ -357,22 +264,22 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_TO_START_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
                 catch (Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_UNEXPECTED_ERROR_PREPARING_DISASSEMBLER, candidateDisassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Unexpected error while preparing to run '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
             }
 
-            var innerMsg = lastError != null ? string.Format(INFO_ROOT_CAUSE_FORMAT, lastError.Message) : string.Empty;
+            var innerMsg = lastError != null ? $" RootCause: {lastError.Message}" : string.Empty;
             throw new InvalidOperationException(
-                string.Format(ERROR_EXECUTE_ILDASM_FOR_PAIR, oldDotNetAssemblyFileAbsolutePath, newDotNetAssemblyFileAbsolutePath, GUIDANCE_INSTALL_DISASSEMBLER, innerMsg),
+                $"Failed to execute ildasm with the same disassembler for files: {oldDotNetAssemblyFileAbsolutePath} and {newDotNetAssemblyFileAbsolutePath}. {GUIDANCE_INSTALL_DISASSEMBLER}{innerMsg}",
                 lastError);
         }
 
@@ -405,7 +312,7 @@ namespace FolderDiffIL4DotNet.Services
             // 対象件数と並列度をログに出し、プリフェッチの開始を明示。
             _logger.LogMessage(
                 AppLogLevel.Info,
-                string.Format(LOG_PREFETCH_IL_CACHE_START, assemblies.Count, nameof(maxParallel), maxParallel),
+                $"Prefetch IL cache: starting for {assemblies.Count} .NET assemblies ({nameof(maxParallel)}={maxParallel})",
                 shouldOutputMessageToConsole: true);
 
             // 候補コマンドのバージョンリストを構築。どのコマンドのバージョンも取得できなければプリフェッチ不可。
@@ -426,7 +333,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_PREFETCH_IL_CACHE, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }
                 finally
                 {
@@ -441,17 +348,15 @@ namespace FolderDiffIL4DotNet.Services
                         if (Interlocked.CompareExchange(ref lastLogTicks, nowTicks, prev) == prev)
                         {
                             int percent = (int)(done * 100.0 / assemblies.Count);
-                            _logger.LogMessage(AppLogLevel.Info, string.Format(LOG_PREFETCH_IL_CACHE_PROGRESS, done, assemblies.Count, percent, IlCacheHits), shouldOutputMessageToConsole: true);
+                            _logger.LogMessage(AppLogLevel.Info, $"Prefetch IL cache: {done}/{assemblies.Count} ({percent}%), hits={IlCacheHits}", shouldOutputMessageToConsole: true);
                         }
                     }
                 }
             });
 
             // 最終的なヒット/格納カウントをログに出し、プリフェッチ完了を通知。
-            _logger.LogMessage(AppLogLevel.Info, string.Format(LOG_PREFETCH_IL_CACHE_COMPLETE, IlCacheHits, IlCacheStores), shouldOutputMessageToConsole: true);
+            _logger.LogMessage(AppLogLevel.Info, $"Prefetch IL cache: completed. hits={IlCacheHits}, stores={IlCacheStores}", shouldOutputMessageToConsole: true);
         }
-
-        #region private methods
         /// <summary>
         /// 指定コマンドでアセンブリの逆アセンブルを試行します。必要に応じて一時ASCIIパスを生成し、
         /// 複数の引数セットを順に試します。
@@ -546,7 +451,7 @@ namespace FolderDiffIL4DotNet.Services
             else
             {
                 // exit code が非 0 の場合は詳細付き例外に包んで失敗扱いとし、ブラックリストに登録。
-                var lastError = new InvalidOperationException(string.Format(ERROR_ILDASM_FAILED, exitCode, disassembleCommand, ProcessHelper.GetUsedArgs(argset.args), argset.workingDirectory, dotNetAssemblyFileAbsolutePath, stderr));
+                var lastError = new InvalidOperationException($"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\nFile: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}");
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
             }
@@ -584,7 +489,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_GET_IL_FROM_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 return (false, null, null);
             }
         }
@@ -628,7 +533,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_SET_IL_CACHE, dotNetAssemblyFileAbsolutePath, disassembleCommand, ex.Message), shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
         }
 
@@ -710,7 +615,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        string.Format(LOG_FAILED_TO_GET_VERSION_FOR_COMMAND, candidateCommand, candidateCommand),
+                        $"Failed to get version for disassemble command '{candidateCommand}' (candidate: '{candidateCommand}'). Skipping.",
                         shouldOutputMessageToConsole: true);
                 }
             }
@@ -743,7 +648,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_CREATE_ASCII_TEMP_COPY, dotNetAssemblyFileAbsolutePath, ex.Message), shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
             return null;
         }
@@ -1131,6 +1036,5 @@ namespace FolderDiffIL4DotNet.Services
             var newVersion = ExtractVersionFromLabel(newLabel) ?? string.Empty;
             return string.Equals(oldVersion, newVersion, StringComparison.OrdinalIgnoreCase);
         }
-        #endregion
     }
 }

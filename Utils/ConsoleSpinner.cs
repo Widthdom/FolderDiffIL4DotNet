@@ -10,7 +10,6 @@ namespace FolderDiffIL4DotNet.Utils
     /// </summary>
     public sealed class ConsoleSpinner : IDisposable
     {
-        #region private constants
         /// <summary>
         /// 既定のフレーム更新間隔（ミリ秒）。
         /// </summary>
@@ -20,9 +19,6 @@ namespace FolderDiffIL4DotNet.Utils
         /// 進捗バー描画直後はスピナーを抑止する時間。
         /// </summary>
         private static readonly TimeSpan SpinnerSuppressionInterval = TimeSpan.FromMilliseconds(800);
-        #endregion
-
-        #region private readonly member variables
         /// <summary>
         /// デフォルトのスピナーフレーム。
         /// </summary>
@@ -52,9 +48,6 @@ namespace FolderDiffIL4DotNet.Utils
         /// スピナーアニメーションを実行するタスク。
         /// </summary>
         private readonly Task _animationTask;
-        #endregion
-
-        #region private member variables
         /// <summary>
         /// 現在表示しているフレームインデックス。
         /// </summary>
@@ -69,7 +62,6 @@ namespace FolderDiffIL4DotNet.Utils
         /// 停止済みかどうか。
         /// </summary>
         private bool _isStopped;
-        #endregion
 
         /// <summary>
         /// スピナーを開始します。

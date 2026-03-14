@@ -129,7 +129,7 @@ Workflow: `.github/workflows/dotnet.yml`
 
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`）では `204` 件が成功しています。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`）では `206` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |

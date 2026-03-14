@@ -12,7 +12,6 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
     /// </summary>
     public sealed class ILTextOutputService : IILTextOutputService
     {
-        #region constants
         /// <summary>
         /// IL 比較の HTML ログファイル名（サイドバイサイド表示）。
         /// </summary>
@@ -22,9 +21,6 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         /// IL テキスト出力失敗時のメッセージ
         /// </summary>
         private const string ERROR_FAILED_TO_OUTPUT_IL_TEXT = $"Failed to output {Constants.LABEL_IL} Text.";
-        #endregion
-
-        #region private read-only member variables
         /// <summary>
         /// 旧 IL フォルダの絶対パス
         /// </summary>
@@ -38,7 +34,6 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         /// ログ出力サービス。
         /// </summary>
         private readonly ILoggerService _logger;
-        #endregion
 
         /// <summary>
         /// コンストラクタ

@@ -11,22 +11,15 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ConfigService
     {
-        #region constants
         /// <summary>
         /// 設定ファイル名
         /// </summary>
         private const string CONFIG_FILE_NAME = "config.json";
 
         /// <summary>
-        /// Configファイル無し
-        /// </summary>
-        private const string ERROR_CONFIG_NOT_FOUND = "Config file not found: {0}";
-
-        /// <summary>
         /// Config解析失敗
         /// </summary>
         private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse the config file.";
-        #endregion
 
         /// <summary>
         /// config.jsonファイルから設定情報を非同期で読み込みます。
@@ -44,7 +37,7 @@ namespace FolderDiffIL4DotNet.Services
                 string configFileAbsolutePath = Path.Combine(AppContext.BaseDirectory, CONFIG_FILE_NAME);
                 if (!File.Exists(configFileAbsolutePath))
                 {
-                    throw new FileNotFoundException(string.Format(ERROR_CONFIG_NOT_FOUND, configFileAbsolutePath));
+                    throw new FileNotFoundException($"Config file not found: {configFileAbsolutePath}");
                 }
 
                 string json = await File.ReadAllTextAsync(configFileAbsolutePath);

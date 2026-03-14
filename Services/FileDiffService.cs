@@ -14,17 +14,6 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class FileDiffService : IFileDiffService
     {
-        #region constants
-        /// <summary>
-        /// IL diff 失敗ログ
-        /// </summary>
-        private const string LOG_IL_DIFF_FAILED = Constants.LABEL_IL + " diff failed for '{0}'.";
-
-        /// <summary>
-        /// テキスト並列比較失敗時のフォールバックログ
-        /// </summary>
-        private const string LOG_TEXT_DIFF_PARALLEL_FALLBACK = "Parallel text diff failed for '{0}'. Falling back to sequential text diff.";
-
         /// <summary>
         /// 1 KiB (2^10) を表すバイト数。
         /// </summary>
@@ -39,9 +28,6 @@ namespace FolderDiffIL4DotNet.Services
         /// テキスト差分比較時のチャンクサイズ（バイト）の既定値。
         /// </summary>
         private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * BYTES_PER_KILOBYTE;
-        #endregion
-
-        #region private read only member variables
         /// <summary>
         /// アプリケーションの設定情報
         /// </summary>
@@ -76,7 +62,6 @@ namespace FolderDiffIL4DotNet.Services
         /// ログ出力サービス。
         /// </summary>
         private readonly ILoggerService _logger;
-        #endregion
 
         /// <summary>
         /// 依存関係を受け取り初期化します。
@@ -149,7 +134,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (InvalidOperationException ex)
                     {
-                        _logger.LogMessage(AppLogLevel.Error, string.Format(LOG_IL_DIFF_FAILED, fileRelativePath), shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}'.", shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
@@ -194,7 +179,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogMessage(AppLogLevel.Warning, string.Format(LOG_TEXT_DIFF_PARALLEL_FALLBACK, fileRelativePath), shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
                         areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                     }
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
@@ -207,7 +192,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception)
             {
                 // 各比較手段での失敗は最終的にここでログ化し、呼び出し元へ再スロー。
-                _logger.LogMessage(AppLogLevel.Error, string.Format(Constants.ERROR_DIFFING, file1AbsolutePath, file2AbsolutePath), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error, $"An error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.", shouldOutputMessageToConsole: true);
                 throw;
             }
         }

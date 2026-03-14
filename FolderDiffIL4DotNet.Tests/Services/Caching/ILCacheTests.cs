@@ -31,8 +31,6 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             return path;
         }
 
-        #region Memory Cache
-
         [Fact]
         public async Task SetAndGet_MemoryOnly_ReturnsStoredValue()
         {
@@ -100,10 +98,6 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Equal("IL-B", await cache.TryGetILAsync(file2, tool));
         }
 
-        #endregion
-
-        #region LRU Eviction
-
         [Fact]
         public async Task LRU_ExceedsMaxEntries_EvictsOldest()
         {
@@ -161,10 +155,6 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.True(cache.Stats.Evicted >= 1);
         }
 
-        #endregion
-
-        #region TTL Expiration
-
         [Fact]
         public async Task TTL_ExpiredEntry_ReturnsNull()
         {
@@ -193,10 +183,6 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 
             Assert.Equal("IL text", result);
         }
-
-        #endregion
-
-        #region Disk Cache
 
         [Fact]
         public async Task DiskCache_SetAndGet_PersistsToFile()
@@ -245,10 +231,6 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Equal("memory only", result);
         }
 
-        #endregion
-
-        #region Disk Quota
-
         [Fact]
         public async Task DiskQuota_MaxFileCount_RemovesOldFiles()
         {
@@ -284,10 +266,6 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.NotEmpty(cacheFiles);
         }
 
-        #endregion
-
-        #region Precompute
-
         [Fact]
         public async Task Precompute_ValidFiles_DoesNotThrow()
         {
@@ -321,7 +299,5 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
                 () => cache.PrecomputeAsync(new[] { file }, maxParallel: 0));
         }
-
-        #endregion
     }
 }

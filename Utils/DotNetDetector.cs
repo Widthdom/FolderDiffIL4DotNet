@@ -8,7 +8,6 @@ namespace FolderDiffIL4DotNet.Utils
     /// </summary>
     public static class DotNetDetector
     {
-        #region constants
         /// <summary>
         /// DOS ヘッダのマジックナンバー ("MZ")。
         /// </summary>
@@ -63,9 +62,6 @@ namespace FolderDiffIL4DotNet.Utils
         /// CLR Runtime Header の最小必要バイト数。
         /// </summary>
         private const int CLR_RUNTIME_HEADER_MINIMUM_BYTES = 8;
-        #endregion
-
-        #region public methods
         /// <summary>
         /// 指定されたファイルが .NET 実行可能ファイル（PE かつ CLR ヘッダを持つ）かを判定します。
         /// PE32（32bit）とPE32+（64bit）の両方に対応し、DnSpyで逆アセンブル可能な全ての.NETアセンブリを正しく判定します。
@@ -146,6 +142,5 @@ namespace FolderDiffIL4DotNet.Utils
                 return false;
             }
         }
-        #endregion
     }
 }

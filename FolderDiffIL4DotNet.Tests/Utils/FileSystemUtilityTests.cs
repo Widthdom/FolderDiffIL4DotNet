@@ -28,8 +28,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             return path;
         }
 
-        #region DeleteFileSilent
-
         [Fact]
         public void DeleteFileSilent_ExistingFile_Deleted()
         {
@@ -52,10 +50,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             FileSystemUtility.DeleteFileSilent(string.Empty);
         }
 
-        #endregion
-
-        #region GetTimestamp
-
         [Fact]
         public void GetTimestamp_ExistingFile_ReturnsTimestampString()
         {
@@ -75,10 +69,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             var timestamp = FileSystemUtility.GetTimestamp(missing);
             Assert.False(string.IsNullOrWhiteSpace(timestamp));
         }
-
-        #endregion
-
-        #region TrySetReadOnly
 
         [Fact]
         public void TrySetReadOnly_ExistingFile_SetsReadOnlyAttribute()
@@ -104,10 +94,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             var missing = Path.Combine(_tempDir, "missing-readonly.txt");
             Assert.Throws<FileNotFoundException>(() => FileSystemUtility.TrySetReadOnly(missing));
         }
-
-        #endregion
-
-        #region IsLikelyNetworkPath
 
         [Fact]
         public void IsLikelyNetworkPath_NullOrWhitespace_ReturnsFalse()
@@ -171,7 +157,5 @@ namespace FolderDiffIL4DotNet.Tests.Utils
 
             Assert.Equal("tmpfs", Assert.IsType<string>(result));
         }
-
-        #endregion
     }
 }

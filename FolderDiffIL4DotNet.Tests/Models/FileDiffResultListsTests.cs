@@ -26,8 +26,6 @@ namespace FolderDiffIL4DotNet.Tests.Models
             _sut.ResetAll();
         }
 
-        #region RecordDiffDetail
-
         [Fact]
         public void RecordDiffDetail_NewEntry_Stored()
         {
@@ -74,10 +72,6 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(_sut.FileRelativePathToIlDisassemblerLabelDictionary.ContainsKey("a.dll"));
         }
 
-        #endregion
-
-        #region HasAnyMd5Mismatch
-
         [Fact]
         public void HasAnyMd5Mismatch_Empty_ReturnsFalse()
         {
@@ -101,10 +95,6 @@ namespace FolderDiffIL4DotNet.Tests.Models
 
             Assert.True(_sut.HasAnyMd5Mismatch);
         }
-
-        #endregion
-
-        #region RecordIgnoredFile
 
         [Fact]
         public void RecordIgnoredFile_OldOnly_StoresOldFlag()
@@ -146,10 +136,6 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Single(_sut.IgnoredFilesRelativePathToLocation);
         }
 
-        #endregion
-
-        #region RecordDisassemblerToolVersion
-
         [Fact]
         public void RecordDisassemblerToolVersion_Normal_Recorded()
         {
@@ -185,10 +171,6 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.True(_sut.DisassemblerToolVersions.ContainsKey("ildasm"));
         }
 
-        #endregion
-
-        #region TimestampRegressionWarnings
-
         [Fact]
         public void RecordNewFileTimestampOlderThanOldWarning_NewEntry_Stored()
         {
@@ -209,10 +191,6 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Throws<ArgumentException>(() =>
                 _sut.RecordNewFileTimestampOlderThanOldWarning(path, "old", "new"));
         }
-
-        #endregion
-
-        #region CollectionState
 
         [Fact]
         public void SetOldFilesAbsolutePath_ReplacesExistingEntries()
@@ -277,7 +255,5 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(typeof(FileDiffResultLists).GetProperty(nameof(FileDiffResultLists.RemovedFilesAbsolutePath))?.CanWrite);
             Assert.False(typeof(FileDiffResultLists).GetProperty(nameof(FileDiffResultLists.ModifiedFilesRelativePath))?.CanWrite);
         }
-
-        #endregion
     }
 }

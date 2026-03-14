@@ -11,7 +11,6 @@ namespace FolderDiffIL4DotNet.Utils
     /// </summary>
     public static class FileComparer
     {
-        #region constants
         /// <summary>
         /// 1 KiB (2^10) を表すバイト数。
         /// </summary>
@@ -22,12 +21,6 @@ namespace FolderDiffIL4DotNet.Utils
         /// </summary>
         private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 64 * BYTES_PER_KILOBYTE;
 
-        private const string ERROR_HASH_DIFF_FILE_NOT_FOUND = "File not found during hash diff: {0}";
-        private const string ERROR_HASH_DIFF_ACCESS_DENIED = "Access denied during hash diff for file: {0}";
-        private const string ERROR_HASH_DIFF_IO = "I/O error during hash diff: {0}";
-        #endregion
-
-        #region public methods
         /// <summary>
         /// 指定された2つのファイルのMD5ハッシュ値を比較します。
         /// </summary>
@@ -59,15 +52,15 @@ namespace FolderDiffIL4DotNet.Utils
             }
             catch (FileNotFoundException ex)
             {
-                throw new FileNotFoundException(string.Format(ERROR_HASH_DIFF_FILE_NOT_FOUND, ex.FileName), ex);
+                throw new FileNotFoundException($"File not found during hash diff: {ex.FileName}", ex);
             }
             catch (UnauthorizedAccessException ex)
             {
-                throw new UnauthorizedAccessException(string.Format(ERROR_HASH_DIFF_ACCESS_DENIED, ex.Message), ex);
+                throw new UnauthorizedAccessException($"Access denied during hash diff for file: {ex.Message}", ex);
             }
             catch (IOException ex)
             {
-                throw new IOException(string.Format(ERROR_HASH_DIFF_IO, ex.Message), ex);
+                throw new IOException($"I/O error during hash diff: {ex.Message}", ex);
             }
         }
 
@@ -124,6 +117,5 @@ namespace FolderDiffIL4DotNet.Utils
 
             return true;
         }
-        #endregion
     }
 }

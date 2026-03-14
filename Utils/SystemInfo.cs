@@ -9,12 +9,8 @@ namespace FolderDiffIL4DotNet.Utils
     /// </summary>
     public static class SystemInfo
     {
-        #region constants
         private const string UNKNOWN_COMPUTER_NAME = "Unknown Computer";
         private const string ERROR_VERSION_STRING_EMPTY = "Version string is empty.";
-        #endregion
-
-        #region public methods
         /// <summary>
         /// 実行中のコンピュータ名をベストエフォートで取得します。
         /// </summary>
@@ -68,9 +64,6 @@ namespace FolderDiffIL4DotNet.Utils
             }
             return verToShow;
         }
-        #endregion
-
-        #region private helper methods
         private static string TryGetEnvironmentMachineName()
         {
             try
@@ -94,6 +87,5 @@ namespace FolderDiffIL4DotNet.Utils
                 return null;
             }
         }
-        #endregion
     }
 }

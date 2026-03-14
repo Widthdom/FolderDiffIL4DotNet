@@ -6,7 +6,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
 {
     public class ProcessHelperTests
     {
-        #region TokenizeCommand
 
         [Fact]
         public void TokenizeCommand_NullOrEmpty_ReturnsEmptyList()
@@ -49,10 +48,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             Assert.Equal(3, result.Count);
         }
 
-        #endregion
-
-        #region BuildBaseLabel / GetUsedArgs
-
         [Fact]
         public void BuildBaseLabel_NoArgs_ReturnsCommandOnly()
         {
@@ -80,7 +75,5 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             var result = ProcessHelper.GetUsedArgs(new[] { "a", "b" });
             Assert.Equal("a b", result);
         }
-
-        #endregion
     }
 }

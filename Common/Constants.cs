@@ -18,19 +18,9 @@ namespace FolderDiffIL4DotNet.Common
         public const string LABEL_IL = "IL";
 
         /// <summary>
-        /// MD5 の共通ラベル
-        /// </summary>
-        public const string LABEL_MD5 = "MD5";
-
-        /// <summary>
         /// IL キャッシュ用のデフォルトサブフォルダ名
         /// </summary>
         public const string DEFAULT_IL_CACHE_DIR_NAME = LABEL_IL + "Cache";
-
-        /// <summary>
-        /// IL キャッシュ表記
-        /// </summary>
-        public const string LABEL_IL_CACHE = LABEL_IL + " cache";
 
         /// <summary>
         /// dotnet 実行ファイル名。
@@ -53,16 +43,6 @@ namespace FolderDiffIL4DotNet.Common
         public const string ILSPY_CMD = "ilspycmd";
 
         /// <summary>
-        /// 経過時間表示
-        /// </summary>
-        public const string LOG_ELAPSED_TIME = "Elapsed Time: {0}";
-
-        /// <summary>
-        /// 差分エラーメッセージ
-        /// </summary>
-        public const string ERROR_DIFFING = "An error occurred while diffing '{0}' and '{1}'.";
-
-        /// <summary>
         /// 最大並列度エラー
         /// </summary>
         public const string ERROR_MAX_PARALLEL = "The maximum degree of parallelism must be 1 or greater.";
@@ -70,7 +50,7 @@ namespace FolderDiffIL4DotNet.Common
         /// <summary>
         /// MD5Mismatch の共通警告文言。
         /// </summary>
-        public const string WARNING_MD5_MISMATCH = $"One or more files were classified as `{LABEL_MD5}Mismatch`. Manual review is recommended because only an {LABEL_MD5} hash comparison was possible.";
+        public const string WARNING_MD5_MISMATCH = "One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.";
 
     }
 }

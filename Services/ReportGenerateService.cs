@@ -13,7 +13,6 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ReportGenerateService
     {
-        #region private read only member variables
         /// <summary>
         /// 差分結果保持オブジェクト。
         /// </summary>
@@ -23,7 +22,6 @@ namespace FolderDiffIL4DotNet.Services
         /// ログ出力サービス。
         /// </summary>
         private readonly ILoggerService _logger;
-        #endregion
 
         /// <summary>
         /// コンストラクタ。
@@ -37,7 +35,6 @@ namespace FolderDiffIL4DotNet.Services
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
         }
-        #region constants
         /// <summary>
         /// フォルダ差分の概要を出力する Markdown レポートのファイル名
         /// </summary>
@@ -59,49 +56,9 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_TITLE = "# Folder Diff Report";
 
         /// <summary>
-        /// レポートヘッダ: アプリバージョン
-        /// </summary>
-        private const string REPORT_HEADER_APP_VERSION = "- App Version: " + Constants.APP_NAME + " {0}";
-
-        /// <summary>
-        /// レポートヘッダ: コンピュータ名
-        /// </summary>
-        private const string REPORT_HEADER_COMPUTER = "- Computer: {0}";
-
-        /// <summary>
-        /// レポートヘッダ: 旧フォルダパス
-        /// </summary>
-        private const string REPORT_HEADER_OLD = "- Old: {0}";
-
-        /// <summary>
-        /// レポートヘッダ: 新フォルダパス
-        /// </summary>
-        private const string REPORT_HEADER_NEW = "- New: {0}";
-
-        /// <summary>
-        /// レポートヘッダ: 無視拡張子一覧
-        /// </summary>
-        private const string REPORT_HEADER_IGNORED_EXTENSIONS = "- Ignored Extensions: {0}";
-
-        /// <summary>
-        /// レポートヘッダ: テキスト拡張子一覧
-        /// </summary>
-        private const string REPORT_HEADER_TEXT_EXTENSIONS = "- Text File Extensions: {0}";
-
-        /// <summary>
-        /// レポートヘッダ: 使用した逆アセンブラ
-        /// </summary>
-        private const string REPORT_HEADER_IL_DISASSEMBLERS = "- IL Disassembler: {0}";
-
-        /// <summary>
         /// 逆アセンブラ未使用時の表示。
         /// </summary>
         private const string REPORT_DISASSEMBLER_NOT_USED = "N/A";
-
-        /// <summary>
-        /// レポートヘッダ: 経過時間
-        /// </summary>
-        private const string REPORT_HEADER_ELAPSED_TIME = "- " + Constants.LOG_ELAPSED_TIME;
 
         /// <summary>
         /// レポート内でのリスト結合区切り
@@ -114,11 +71,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string NOTE_MVID_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines starting with \"{MVID_PREFIX}\" (if present) are ignored.";
 
         /// <summary>
-        /// 設定された部分一致除外文字列の但し書き。
-        /// </summary>
-        private const string NOTE_IL_CONTAINS_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored: {{0}}.";
-
-        /// <summary>
         /// 部分一致除外が有効だが、文字列設定が空の場合の但し書き。
         /// </summary>
         private const string NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY = "Note: IL line-ignore-by-contains is enabled, but no non-empty strings are configured.";
@@ -127,26 +79,6 @@ namespace FolderDiffIL4DotNet.Services
         /// レジェンドのヘッダ
         /// </summary>
         private const string REPORT_LEGEND_HEADER = "- Legend:";
-
-        /// <summary>
-        /// レジェンド: 共通サフィックス
-        /// </summary>
-        private const string REPORT_LEGEND_SUFFIX_MATCH_MISMATCH = "match / mismatch";
-
-        /// <summary>
-        /// レジェンド: MD5
-        /// </summary>
-        private const string REPORT_LEGEND_MD5 = "  - `{0}` / `{1}`: " + Constants.LABEL_MD5 + " hash " + REPORT_LEGEND_SUFFIX_MATCH_MISMATCH;
-
-        /// <summary>
-        /// レジェンド: IL
-        /// </summary>
-        private const string REPORT_LEGEND_IL = "  - `{0}` / `{1}`: " + Constants.LABEL_IL + "(Intermediate Language) " + REPORT_LEGEND_SUFFIX_MATCH_MISMATCH;
-
-        /// <summary>
-        /// レジェンド: テキスト
-        /// </summary>
-        private const string REPORT_LEGEND_TEXT = "  - `{0}` / `{1}`: Text " + REPORT_LEGEND_SUFFIX_MATCH_MISMATCH;
 
         /// <summary>
         /// レポートマーカー: Ignored
@@ -254,114 +186,14 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_LOCATION_BOTH = "(old/new)";
 
         /// <summary>
-        /// ファイルの位置ラベル（旧・タイトルケース）
-        /// </summary>
-        private const string REPORT_LOCATION_OLD_TITLE = "(Old)";
-
-        /// <summary>
-        /// ファイルの位置ラベル（新・タイトルケース）
-        /// </summary>
-        private const string REPORT_LOCATION_NEW_TITLE = "(New)";
-
-        /// <summary>
-        /// Ignored ファイル行のフォーマット
-        /// </summary>
-        private const string REPORT_IGNORED_FILE_ITEM = "- " + REPORT_MARKER_IGNORED + " {0}";
-
-        /// <summary>
-        /// Ignored/タイムスタンプの HTML ラッパー
-        /// </summary>
-        private const string REPORT_TIMESTAMP_HTML_WRAPPER = " <u>({0})</u>";
-
-        /// <summary>
         /// タイムスタンプ結合時の区切り
         /// </summary>
         private const string REPORT_TIMESTAMP_SEPARATOR = ", ";
 
         /// <summary>
-        /// タイムスタンプ: 旧ファイル
-        /// </summary>
-        private const string REPORT_TIMESTAMP_UPDATED_OLD = "updated_old: {0}";
-
-        /// <summary>
-        /// タイムスタンプ: 新ファイル
-        /// </summary>
-        private const string REPORT_TIMESTAMP_UPDATED_NEW = "updated_new: {0}";
-
-        /// <summary>
-        /// Unchanged ファイル行（タイムスタンプあり）
-        /// </summary>
-        private const string REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP = "- " + REPORT_MARKER_UNCHANGED + " {0} <u>{1}</u> {2}";
-
-        /// <summary>
-        /// Unchanged ファイル行（タイムスタンプなし）
-        /// </summary>
-        private const string REPORT_UNCHANGED_ITEM = "- " + REPORT_MARKER_UNCHANGED + " {0} {1}";
-
-        /// <summary>
-        /// Unchanged/タイムスタンプ（旧+新）
-        /// </summary>
-        private const string REPORT_UNCHANGED_TIMESTAMP_BOTH = "(updated_old: {0}, updated_new: {1})";
-
-        /// <summary>
-        /// Unchanged/タイムスタンプ（新のみ）
-        /// </summary>
-        private const string REPORT_UNCHANGED_TIMESTAMP_NEW = "(updated: {0})";
-
-        /// <summary>
-        /// Added ファイル行（タイムスタンプあり）
-        /// </summary>
-        private const string REPORT_ADDED_ITEM_WITH_TIMESTAMP = "- " + REPORT_MARKER_ADDED + " {0} <u>(updated: {1})</u>";
-
-        /// <summary>
-        /// Added ファイル行（タイムスタンプなし）
-        /// </summary>
-        private const string REPORT_ADDED_ITEM = "- " + REPORT_MARKER_ADDED + " {0}";
-
-        /// <summary>
-        /// Removed ファイル行（タイムスタンプあり）
-        /// </summary>
-        private const string REPORT_REMOVED_ITEM_WITH_TIMESTAMP = "- " + REPORT_MARKER_REMOVED + " {0} <u>(updated: {1})</u>";
-
-        /// <summary>
-        /// Removed ファイル行（タイムスタンプなし）
-        /// </summary>
-        private const string REPORT_REMOVED_ITEM = "- " + REPORT_MARKER_REMOVED + " {0}";
-
-        /// <summary>
-        /// Modified ファイル行（タイムスタンプあり）
-        /// </summary>
-        private const string REPORT_MODIFIED_ITEM_WITH_TIMESTAMP = "- " + REPORT_MARKER_MODIFIED + " {0} <u>(updated_old: {1}, updated_new: {2})</u> {3}";
-
-        /// <summary>
-        /// Modified ファイル行（タイムスタンプなし）
-        /// </summary>
-        private const string REPORT_MODIFIED_ITEM = "- " + REPORT_MARKER_MODIFIED + " {0} {1}";
-
-        /// <summary>
         /// レポートフッタ: Summary セクション
         /// </summary>
         private const string REPORT_SECTION_SUMMARY = REPORT_SECTION_PREFIX + "Summary";
-
-        /// <summary>
-        /// Summary: ラベル幅
-        /// </summary>
-        private const int REPORT_SUMMARY_LABEL_WIDTH = 10;
-
-        /// <summary>
-        /// Summary: ラベル付き共通フォーマット
-        /// </summary>
-        private const string REPORT_SUMMARY_ITEM_FORMAT = "- {0,-10}: {1}";
-
-        /// <summary>
-        /// Summary: Compared
-        /// </summary>
-        private const string REPORT_SUMMARY_COMPARED = "- {0,-10}: {1} " + REPORT_LOCATION_OLD_TITLE + " vs {2} " + REPORT_LOCATION_NEW_TITLE;
-
-        /// <summary>
-        /// Summary: WARNING 行
-        /// </summary>
-        private const string REPORT_WARNING_LINE = "**WARNING:** {0}";
 
         /// <summary>
         /// new 側の更新日時逆転警告文言
@@ -374,20 +206,9 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_SECTION_WARNINGS = REPORT_SECTION_PREFIX + "Warnings";
 
         /// <summary>
-        /// 更新日時逆転警告の一覧行
-        /// </summary>
-        private const string REPORT_WARNING_TIMESTAMP_REGRESSION_ITEM = "- {0} (updated_old: {1}, updated_new: {2})";
-
-        /// <summary>
-        /// レポート出力失敗
-        /// </summary>
-        private const string ERROR_FAILED_TO_OUTPUT_REPORT = "Failed to output report to '{0}'";
-
-        /// <summary>
         /// レポート生成完了ログ。
         /// </summary>
         private const string LOG_REPORT_GENERATION_COMPLETED = "Report generation completed.";
-        #endregion
         /// <summary>
         /// <see cref="DIFF_REPORT_FILE_NAME"/> を生成します。
         /// </summary>
@@ -434,7 +255,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception)
             {
-                _logger.LogMessage(AppLogLevel.Error, string.Format(ERROR_FAILED_TO_OUTPUT_REPORT, diffReportAbsolutePath), shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
                 throw;
             }
             finally
@@ -472,17 +293,17 @@ namespace FolderDiffIL4DotNet.Services
             ConfigSettings config)
         {
             streamWriter.WriteLine(REPORT_TITLE);
-            streamWriter.WriteLine(string.Format(REPORT_HEADER_APP_VERSION, appVersion));
-            streamWriter.WriteLine(string.Format(REPORT_HEADER_COMPUTER, computerName));
-            streamWriter.WriteLine(string.Format(REPORT_HEADER_OLD, oldFolderAbsolutePath));
-            streamWriter.WriteLine(string.Format(REPORT_HEADER_NEW, newFolderAbsolutePath));
-            streamWriter.WriteLine(string.Format(REPORT_HEADER_IGNORED_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)));
-            streamWriter.WriteLine(string.Format(REPORT_HEADER_TEXT_EXTENSIONS, string.Join(REPORT_LIST_SEPARATOR, config.TextFileExtensions)));
+            streamWriter.WriteLine($"- App Version: FolderDiffIL4DotNet {appVersion}");
+            streamWriter.WriteLine($"- Computer: {computerName}");
+            streamWriter.WriteLine($"- Old: {oldFolderAbsolutePath}");
+            streamWriter.WriteLine($"- New: {newFolderAbsolutePath}");
+            streamWriter.WriteLine($"- Ignored Extensions: {string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)}");
+            streamWriter.WriteLine($"- Text File Extensions: {string.Join(REPORT_LIST_SEPARATOR, config.TextFileExtensions)}");
             var disassemblerText = BuildDisassemblerHeaderText();
-            streamWriter.WriteLine(string.Format(REPORT_HEADER_IL_DISASSEMBLERS, disassemblerText));
+            streamWriter.WriteLine($"- IL Disassembler: {disassemblerText}");
             if (!string.IsNullOrWhiteSpace(elapsedTimeString))
             {
-                streamWriter.WriteLine(string.Format(REPORT_HEADER_ELAPSED_TIME, elapsedTimeString));
+                streamWriter.WriteLine($"- Elapsed Time: {elapsedTimeString}");
             }
             streamWriter.WriteLine("- " + NOTE_MVID_SKIP);
             if (!config.ShouldIgnoreILLinesContainingConfiguredStrings)
@@ -493,7 +314,7 @@ namespace FolderDiffIL4DotNet.Services
             var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(config);
             streamWriter.WriteLine("- " + (ilIgnoreContainingStrings.Count == 0
                 ? NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY
-                : string.Format(NOTE_IL_CONTAINS_SKIP, string.Join(REPORT_LIST_SEPARATOR, ilIgnoreContainingStrings.Select(value => $"\"{value}\"")))));
+                : $"Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored: {string.Join(REPORT_LIST_SEPARATOR, ilIgnoreContainingStrings.Select(value => $"\"{value}\""))}."));
         }
 
         /// <summary>
@@ -503,9 +324,9 @@ namespace FolderDiffIL4DotNet.Services
         private static void WriteLegend(StreamWriter streamWriter)
         {
             streamWriter.WriteLine(REPORT_LEGEND_HEADER);
-            streamWriter.WriteLine(string.Format(REPORT_LEGEND_MD5, FileDiffResultLists.DiffDetailResult.MD5Match, FileDiffResultLists.DiffDetailResult.MD5Mismatch));
-            streamWriter.WriteLine(string.Format(REPORT_LEGEND_IL, FileDiffResultLists.DiffDetailResult.ILMatch, FileDiffResultLists.DiffDetailResult.ILMismatch));
-            streamWriter.WriteLine(string.Format(REPORT_LEGEND_TEXT, FileDiffResultLists.DiffDetailResult.TextMatch, FileDiffResultLists.DiffDetailResult.TextMismatch));
+            streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}`: MD5 hash match / mismatch");
+            streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}`: IL(Intermediate Language) match / mismatch");
+            streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}`: Text match / mismatch");
         }
 
         /// <summary>
@@ -528,7 +349,7 @@ namespace FolderDiffIL4DotNet.Services
             streamWriter.WriteLine(REPORT_SECTION_IGNORED_FILES);
             foreach (var entry in _fileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
             {
-                var line = string.Format(REPORT_IGNORED_FILE_ITEM, entry.Key);
+                var line = $"- [ x ] {entry.Key}";
                 var locationLabel = GetIgnoredFileLocationLabel(entry.Value);
                 if (!string.IsNullOrEmpty(locationLabel))
                 {
@@ -540,7 +361,7 @@ namespace FolderDiffIL4DotNet.Services
                     var timestampInfo = BuildIgnoredFileTimestampInfo(entry, oldFolderAbsolutePath, newFolderAbsolutePath);
                     if (!string.IsNullOrEmpty(timestampInfo))
                     {
-                        line += string.Format(REPORT_TIMESTAMP_HTML_WRAPPER, timestampInfo);
+                        line += $" <u>({timestampInfo})</u>";
                     }
                 }
 
@@ -576,13 +397,13 @@ namespace FolderDiffIL4DotNet.Services
                     string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
                     string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
                     string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
-                        ? string.Format(REPORT_UNCHANGED_TIMESTAMP_BOTH, oldFileTimestamp, newFileTimestamp)
-                        : string.Format(REPORT_UNCHANGED_TIMESTAMP_NEW, newFileTimestamp);
-                    streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM_WITH_TIMESTAMP, fileRelativePath, updateInfo, diffDetailDisplay));
+                        ? $"(updated_old: {oldFileTimestamp}, updated_new: {newFileTimestamp})"
+                        : $"(updated: {newFileTimestamp})";
+                    streamWriter.WriteLine($"- [ = ] {fileRelativePath} <u>{updateInfo}</u> {diffDetailDisplay}");
                 }
                 else
                 {
-                    streamWriter.WriteLine(string.Format(REPORT_UNCHANGED_ITEM, fileRelativePath, diffDetailDisplay));
+                    streamWriter.WriteLine($"- [ = ] {fileRelativePath} {diffDetailDisplay}");
                 }
             }
         }
@@ -599,11 +420,11 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (config.ShouldOutputFileTimestamps)
                 {
-                    streamWriter.WriteLine(string.Format(REPORT_ADDED_ITEM_WITH_TIMESTAMP, newFileAbsolutePath, Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)));
+                    streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)})</u>");
                 }
                 else
                 {
-                    streamWriter.WriteLine(string.Format(REPORT_ADDED_ITEM, newFileAbsolutePath));
+                    streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath}");
                 }
             }
         }
@@ -620,11 +441,11 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (config.ShouldOutputFileTimestamps)
                 {
-                    streamWriter.WriteLine(string.Format(REPORT_REMOVED_ITEM_WITH_TIMESTAMP, oldFileAbsolutePath, Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)));
+                    streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)})</u>");
                 }
                 else
                 {
-                    streamWriter.WriteLine(string.Format(REPORT_REMOVED_ITEM, oldFileAbsolutePath));
+                    streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath}");
                 }
             }
         }
@@ -647,11 +468,11 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string oldTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
                     string newTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
-                    streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM_WITH_TIMESTAMP, fileRelativePath, oldTimestamp, newTimestamp, diffDetailDisplay));
+                    streamWriter.WriteLine($"- [ * ] {fileRelativePath} <u>(updated_old: {oldTimestamp}, updated_new: {newTimestamp})</u> {diffDetailDisplay}");
                 }
                 else
                 {
-                    streamWriter.WriteLine(string.Format(REPORT_MODIFIED_ITEM, fileRelativePath, diffDetailDisplay));
+                    streamWriter.WriteLine($"- [ * ] {fileRelativePath} {diffDetailDisplay}");
                 }
             }
         }
@@ -667,17 +488,17 @@ namespace FolderDiffIL4DotNet.Services
             streamWriter.WriteLine(REPORT_SECTION_SUMMARY);
             if (config.ShouldIncludeIgnoredFiles)
             {
-                streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_IGNORED, _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count));
+                streamWriter.WriteLine($"- {REPORT_LABEL_IGNORED,-10}: {_fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count}");
             }
-            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_UNCHANGED, _fileDiffResultLists.UnchangedFilesRelativePath.Count));
-            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_ADDED, _fileDiffResultLists.AddedFilesAbsolutePath.Count));
-            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_REMOVED, _fileDiffResultLists.RemovedFilesAbsolutePath.Count));
-            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_ITEM_FORMAT, REPORT_LABEL_MODIFIED, _fileDiffResultLists.ModifiedFilesRelativePath.Count));
-            streamWriter.WriteLine(string.Format(REPORT_SUMMARY_COMPARED, REPORT_LABEL_COMPARED, _fileDiffResultLists.OldFilesAbsolutePath.Count, _fileDiffResultLists.NewFilesAbsolutePath.Count));
+            streamWriter.WriteLine($"- {REPORT_LABEL_UNCHANGED,-10}: {_fileDiffResultLists.UnchangedFilesRelativePath.Count}");
+            streamWriter.WriteLine($"- {REPORT_LABEL_ADDED,-10}: {_fileDiffResultLists.AddedFilesAbsolutePath.Count}");
+            streamWriter.WriteLine($"- {REPORT_LABEL_REMOVED,-10}: {_fileDiffResultLists.RemovedFilesAbsolutePath.Count}");
+            streamWriter.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {_fileDiffResultLists.ModifiedFilesRelativePath.Count}");
+            streamWriter.WriteLine($"- {REPORT_LABEL_COMPARED,-10}: {_fileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
             streamWriter.WriteLine();
             if (hasMd5Mismatch)
             {
-                streamWriter.WriteLine(string.Format(REPORT_WARNING_LINE, Constants.WARNING_MD5_MISMATCH));
+                streamWriter.WriteLine($"**WARNING:** {Constants.WARNING_MD5_MISMATCH}");
             }
         }
 
@@ -692,11 +513,11 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             streamWriter.WriteLine(REPORT_SECTION_WARNINGS);
-            streamWriter.WriteLine(string.Format(REPORT_WARNING_LINE, WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD));
+            streamWriter.WriteLine($"**WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
             foreach (var warning in _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                 .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
             {
-                streamWriter.WriteLine(string.Format(REPORT_WARNING_TIMESTAMP_REGRESSION_ITEM, warning.FileRelativePath, warning.OldTimestamp, warning.NewTimestamp));
+                streamWriter.WriteLine($"- {warning.FileRelativePath} (updated_old: {warning.OldTimestamp}, updated_new: {warning.NewTimestamp})");
             }
         }
 
@@ -731,11 +552,11 @@ namespace FolderDiffIL4DotNet.Services
             var timestampParts = new List<string>();
             if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0)
             {
-                timestampParts.Add(string.Format(REPORT_TIMESTAMP_UPDATED_OLD, Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))));
+                timestampParts.Add($"updated_old: {Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))}");
             }
             if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0)
             {
-                timestampParts.Add(string.Format(REPORT_TIMESTAMP_UPDATED_NEW, Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key))));
+                timestampParts.Add($"updated_new: {Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key))}");
             }
             return timestampParts.Count > 0 ? string.Join(REPORT_TIMESTAMP_SEPARATOR, timestampParts) : null;
         }

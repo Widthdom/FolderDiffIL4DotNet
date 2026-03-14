@@ -14,7 +14,6 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class LoggerService : ILoggerService
     {
-        #region constants
         /// <summary>
         /// ログディレクトリ名
         /// </summary>
@@ -24,16 +23,6 @@ namespace FolderDiffIL4DotNet.Services
         /// ログファイル名のプレフィックス
         /// </summary>
         private const string LOG_FILE_PREFIX = "log_";
-
-        /// <summary>
-        /// 古いログファイル削除ログ
-        /// </summary>
-        private const string LOG_DELETED_OLD_LOG_FILE = "Deleted old log file: {0}.";
-
-        /// <summary>
-        /// 古いログファイルクリーンアップ失敗
-        /// </summary>
-        private const string LOG_FAILED_CLEANUP_OLD_LOGS = "Failed to clean up old log files in '{0}'.";
 
         /// <summary>
         /// ログプレフィックス: INFO
@@ -49,9 +38,6 @@ namespace FolderDiffIL4DotNet.Services
         /// ログプレフィックス: ERROR
         /// </summary>
         private const string LOG_PREFIX_ERROR = "[ERROR]";
-        #endregion
-
-        #region private member variables
         /// <summary>
         /// ログディレクトリの絶対パス
         /// </summary>
@@ -61,7 +47,6 @@ namespace FolderDiffIL4DotNet.Services
         /// ログファイルの絶対パス
         /// </summary>
         private string _logFileAbsolutePath;
-        #endregion
 
         /// <summary>
         /// ログファイルの絶対パス（未初期化時は null）。
@@ -185,7 +170,7 @@ namespace FolderDiffIL4DotNet.Services
                     foreach (var oldLogfileAbsolutePath in oldLogFilesToDeleteAbsolutePaths)
                     {
                         File.Delete(oldLogfileAbsolutePath);
-                        LogMessage(AppLogLevel.Info, string.Format(LOG_DELETED_OLD_LOG_FILE, oldLogfileAbsolutePath), shouldOutputMessageToConsole: true);
+                        LogMessage(AppLogLevel.Info, $"Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
                     }
                 }
             }
@@ -195,7 +180,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex)
             {
-                LogMessage(AppLogLevel.Warning, string.Format(LOG_FAILED_CLEANUP_OLD_LOGS, _logDirectoryAbsolutePath), shouldOutputMessageToConsole: true, ex);
+                LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
             }
         }
 

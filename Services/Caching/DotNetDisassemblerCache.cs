@@ -14,7 +14,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
     /// </summary>
     public sealed class DotNetDisassemblerCache
     {
-        #region constants
         /// <summary>
         /// 逆アセンブラのバージョン決定に失敗した際の共通メッセージ
         /// </summary>
@@ -26,24 +25,9 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private const string ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_EMPTY = ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION + ": empty command label.";
 
         /// <summary>
-        /// 逆アセンブラのバージョン決定に失敗した際のメッセージ（ラベル付き）
-        /// </summary>
-        private const string ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_FOR_LABEL = ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION + " for label: '{0}'.";
-
-        /// <summary>
-        /// 逆アセンブラのバージョン決定に失敗した際のメッセージ（無効なラベル）
-        /// </summary>
-        private const string ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_INVALID = ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION + ": invalid command label '{0}'.";
-
-        /// <summary>
         /// バージョン文字列取得失敗時の共通メッセージ
         /// </summary>
         private const string ERROR_FAILED_TO_GET_VERSION = "Failed to obtain version string for";
-
-        /// <summary>
-        /// バージョン取得失敗ログ詳細
-        /// </summary>
-        private const string LOG_FAILED_TO_GET_VERSION_DETAIL = "Failed to get version ({0}='{1}', {2}='{3}'): {4}";
 
         /// <summary>
         /// 共通フラグ: バージョン表示（ロング）
@@ -59,7 +43,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// 共通フラグ: ヘルプ（ショート）
         /// </summary>
         private const string FLAG_HELP_SHORT = "-h";
-        #endregion
 
         /// <summary>
         /// 対応する逆アセンブラ種別（Unknown/dotnet-ildasm/ildasm/ilspy）。
@@ -71,8 +54,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
             Ildasm,
             Ilspy
         }
-
-        #region private read-only member variables
         /// <summary>
         /// コマンドラベルをキーにした逆アセンブラのバージョン文字列キャッシュ。
         /// </summary>
@@ -82,7 +63,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// ログ出力サービス。
         /// </summary>
         private readonly ILoggerService _logger;
-        #endregion
 
         /// <summary>
         /// コンストラクタ。
@@ -111,7 +91,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 DisassemblerKind.DotnetIldasm => await GetVersionForDotnetIldasmAsync(disassemblerVersionCacheKey, disassemblerExe),
                 DisassemblerKind.Ildasm => await GetVersionForIldasmAsync(disassemblerVersionCacheKey, disassemblerExe),
                 DisassemblerKind.Ilspy => await GetVersionForIlspyAsync(disassemblerVersionCacheKey, disassemblerExe),
-                _ => throw new InvalidOperationException(string.Format(ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_FOR_LABEL, disassembleCommandWithArguments))
+                _ => throw new InvalidOperationException($"Failed to determine disassembler version for label: '{disassembleCommandWithArguments}'.")
             };
         }
 
@@ -123,7 +103,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var tokens = ProcessHelper.TokenizeCommand(disassembleCommandWithArguments);
             if (tokens.Count == 0)
             {
-                throw new InvalidOperationException(string.Format(ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_INVALID, disassembleCommandWithArguments));
+                throw new InvalidOperationException($"Failed to determine disassembler version: invalid command label '{disassembleCommandWithArguments}'.");
             }
 
             if (string.Equals(tokens[0], Constants.DOTNET_MUXER, StringComparison.OrdinalIgnoreCase))
@@ -236,13 +216,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    string.Format(
-                        LOG_FAILED_TO_GET_VERSION_DETAIL,
-                        nameof(disassemblerVersionCacheKey),
-                        disassemblerVersionCacheKey,
-                        nameof(disassemblerExe),
-                        disassemblerExe,
-                        ex.Message),
+                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}'): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }

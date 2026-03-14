@@ -34,8 +34,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             return path;
         }
 
-        #region IsDotNetExecutable
-
         [Fact]
         public void IsDotNetExecutable_TextFile_ReturnsFalse()
         {
@@ -90,7 +88,5 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             var file = CreateTempFile("native.exe", pe);
             Assert.False(DotNetDetector.IsDotNetExecutable(file));
         }
-
-        #endregion
     }
 }

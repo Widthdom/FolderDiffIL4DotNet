@@ -9,7 +9,6 @@ namespace FolderDiffIL4DotNet.Utils
     /// </summary>
     public static class PathValidator
     {
-        #region private read only member variables
         /// <summary>
         /// Windows の禁止記号群（\\ / : * ? " < > |）。これを上限集合として全OSに適用。
         /// 制御文字(0x00-0x1F)のチェックは別途実装側で行います。
@@ -25,9 +24,6 @@ namespace FolderDiffIL4DotNet.Utils
             "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
             "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
         ];
-        #endregion
-
-        #region constants
         /// <summary>
         /// 許容される制御文字上限コードポイント。
         /// </summary>
@@ -55,14 +51,8 @@ namespace FolderDiffIL4DotNet.Utils
 
         private const string ERROR_FOLDER_NAME_EMPTY = "Folder name cannot be empty or whitespace.";
         private const string ERROR_FOLDER_NAME_DOT = "Folder name cannot be '.' or '..'.";
-        private const string ERROR_FOLDER_NAME_INVALID_CHAR = "Folder name contains invalid character: '{0}'.";
         private const string ERROR_FOLDER_NAME_END_SPACE = "Folder name cannot end with a space or a dot.";
-        private const string ERROR_FOLDER_NAME_RESERVED = "Folder name '{0}' is a reserved name on Windows.";
         private const string ERROR_ABSOLUTE_PATH_NULL = "Absolute path cannot be null or whitespace.";
-        private const string ERROR_ABSOLUTE_PATH_TOO_LONG = "Absolute path is too long for this OS (length {0} > limit {1}).";
-        #endregion
-
-        #region public methods
         /// <summary>
         /// フォルダ名として妥当か（macOS/Linux/Windowsの禁止事項を包括）検証し、問題があれば例外を投げます。
         /// - 空白や空、"."/".." は不可
@@ -91,7 +81,7 @@ namespace FolderDiffIL4DotNet.Utils
             {
                 if (ch <= MAX_CONTROL_CODE_POINT || s_windowsInvalidFileNameChars.Contains(ch))
                 {
-                    throw new ArgumentException(string.Format(ERROR_FOLDER_NAME_INVALID_CHAR, ch), paramName ?? nameof(folderName));
+                    throw new ArgumentException($"Folder name contains invalid character: '{ch}'.", paramName ?? nameof(folderName));
                 }
             }
 
@@ -107,7 +97,7 @@ namespace FolderDiffIL4DotNet.Utils
             var upper = basePart.ToUpperInvariant();
             if (s_windowsReservedNames.Contains(upper))
             {
-                throw new ArgumentException(string.Format(ERROR_FOLDER_NAME_RESERVED, folderName), paramName ?? nameof(folderName));
+                throw new ArgumentException($"Folder name '{folderName}' is a reserved name on Windows.", paramName ?? nameof(folderName));
             }
         }
 
@@ -148,9 +138,8 @@ namespace FolderDiffIL4DotNet.Utils
 
             if (absolutePath.Length > limit)
             {
-                throw new ArgumentException(string.Format(ERROR_ABSOLUTE_PATH_TOO_LONG, absolutePath.Length, limit), paramName ?? nameof(absolutePath));
+                throw new ArgumentException($"Absolute path is too long for this OS (length {absolutePath.Length} > limit {limit}).", paramName ?? nameof(absolutePath));
             }
         }
-        #endregion
     }
 }

@@ -35,8 +35,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             return path;
         }
 
-        #region DiffFilesByHashAsync
-
         [Fact]
         public async Task DiffFilesByHashAsync_IdenticalFiles_ReturnsTrue()
         {
@@ -77,10 +75,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             await Assert.ThrowsAsync<FileNotFoundException>(() => FileComparer.DiffFilesByHashAsync(file1, file2));
         }
 
-        #endregion
-
-        #region DiffTextFilesAsync
-
         [Fact]
         public async Task DiffTextFilesAsync_IdenticalContent_ReturnsTrue()
         {
@@ -112,10 +106,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             var file2 = CreateTempFile("b.txt", "");
             Assert.True(await FileComparer.DiffTextFilesAsync(file1, file2));
         }
-
-        #endregion
-
-        #region ComputeFileMd5Hex
 
         [Fact]
         public void ComputeFileMd5Hex_EmptyFile_ReturnsKnownHash()
@@ -150,7 +140,5 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             var file2 = CreateTempFile("b.bin", System.Text.Encoding.UTF8.GetBytes("bbb"));
             Assert.NotEqual(FileComparer.ComputeFileMd5Hex(file1), FileComparer.ComputeFileMd5Hex(file2));
         }
-
-        #endregion
     }
 }

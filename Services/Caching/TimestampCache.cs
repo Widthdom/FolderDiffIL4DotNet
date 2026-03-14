@@ -11,13 +11,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
     /// </summary>
     public static class TimestampCache
     {
-        #region constants
-        /// <summary>
-        /// タイムスタンプ取得時のパスエラー
-        /// </summary>
-        private const string ERROR_TIMESTAMP_INVALID_PATH = "Invalid value provided for timestamp retrieval: {0}";
-        #endregion
-
         /// <summary>
         /// キャッシュされたファイルの最終更新日時（文字列表現）を保持する <see cref="Dictionary{TKey,TValue}"/>。
         /// </summary>
@@ -41,7 +34,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             if (string.IsNullOrEmpty(absolutePath))
             {
-                throw new ArgumentException(string.Format(ERROR_TIMESTAMP_INVALID_PATH, absolutePath), nameof(absolutePath));
+                throw new ArgumentException($"Invalid value provided for timestamp retrieval: {absolutePath}", nameof(absolutePath));
             }
             if (cache.TryGetValue(absolutePath, out var timestamp))
             {

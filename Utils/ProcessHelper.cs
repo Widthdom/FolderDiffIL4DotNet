@@ -12,7 +12,6 @@ namespace FolderDiffIL4DotNet.Utils
     /// </summary>
     public static class ProcessHelper
     {
-        #region public methods
         /// <summary>
         /// シェルコマンド文字列を簡易にトークン分割（空白区切り・クォート対応）。
         /// </summary>
@@ -121,6 +120,5 @@ namespace FolderDiffIL4DotNet.Utils
         /// 引数の配列から、使用されている引数を取得します。
         /// </summary>
         public static string GetUsedArgs(string[] args) => string.Join(" ", args.Select(x => x.Contains(' ') ? $"\"{x}\"" : x));
-        #endregion
     }
 }

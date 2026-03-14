@@ -11,7 +11,6 @@ namespace FolderDiffIL4DotNet.Utils
     /// </summary>
     public static class FileSystemUtility
     {
-        #region private read only member variables
         /// <summary>
         /// macOS でネットワークドライブとみなすファイルシステム種別。
         /// </summary>
@@ -27,9 +26,6 @@ namespace FolderDiffIL4DotNet.Utils
         {
             "nfs","nfs4","cifs","smbfs","sshfs","fuse.sshfs","fuse.gvfsd-fuse","davfs","fuse.davfs","afpfs","fuse.afpfs","ceph","fuse.ceph","glusterfs","9p"
         };
-        #endregion
-
-        #region constants
         private const string WINDOWS_UNC_PREFIX = @"\\";
         private const string WINDOWS_UNC_DEVICE_PREFIX = @"\\?\UNC\";
         private const string PROC_MOUNTS_PATH = "/proc/mounts";
@@ -39,13 +35,8 @@ namespace FolderDiffIL4DotNet.Utils
         private const int FILE_SYSTEM_NAME_FIELD_LENGTH = 16;
         private const int MACOS_PATH_LIMIT = 1024;
         private const string TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.fff zzz";
-        private const string ERROR_LAST_MODIFIED_TIME = "Failed to retrieve the last modified time of '{0}'.";
         private const string ERROR_FILE_PATH_NULL = "File path cannot be null or whitespace.";
         private const string ERROR_FILE_NOT_FOUND = "File not found.";
-        private const string ERROR_SET_READONLY = "Failed to set read-only attribute for '{0}'.";
-        #endregion
-
-        #region private interop (macOS)
         /// <summary>
         /// macOS の <c><see cref="statfs"/></c> におけるフラグ。<c>MNT_LOCAL</c> が立っている場合はローカルファイルシステム。
         /// 本値が未セットの場合はネットワークファイルシステムの可能性が高いとみなします。
@@ -185,9 +176,6 @@ namespace FolderDiffIL4DotNet.Utils
 
             return bestFsType;
         }
-        #endregion
-
-        #region public methods
         /// <summary>
         /// 指定されたファイルの最終更新日時を取得し、
         /// 「yyyy-MM-dd HH:mm:ss.fff zzz」形式の文字列（ミリ秒精度・タイムゾーン付き）で返します。
@@ -200,7 +188,7 @@ namespace FolderDiffIL4DotNet.Utils
             }
             catch (Exception ex)
             {
-                throw new Exception(string.Format(ERROR_LAST_MODIFIED_TIME, fileAbsolutepath), ex);
+                throw new Exception($"Failed to retrieve the last modified time of '{fileAbsolutepath}'.", ex);
             }
         }
 
@@ -228,7 +216,7 @@ namespace FolderDiffIL4DotNet.Utils
             }
             catch (Exception ex)
             {
-                throw new Exception(string.Format(ERROR_SET_READONLY, fileAbsolutePath), ex);
+                throw new Exception($"Failed to set read-only attribute for '{fileAbsolutePath}'.", ex);
             }
         }
 
@@ -351,6 +339,5 @@ namespace FolderDiffIL4DotNet.Utils
 
             return !string.IsNullOrEmpty(bestFsType) && s_unixNetworkFsTypes.Contains(bestFsType);
         }
-        #endregion
     }
 }

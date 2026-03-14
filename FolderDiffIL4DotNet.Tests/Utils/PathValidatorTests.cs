@@ -7,7 +7,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
 {
     public class PathValidatorTests
     {
-        #region ValidateFolderNameOrThrow
 
         [Theory]
         [InlineData("MyFolder")]
@@ -78,10 +77,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             Assert.Throws<ArgumentException>(() => PathValidator.ValidateFolderNameOrThrow("my\x01folder"));
         }
 
-        #endregion
-
-        #region ValidateAbsolutePathLengthOrThrow
-
         [Theory]
         [InlineData(null)]
         [InlineData("")]
@@ -111,7 +106,5 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             var tooLongPath = "/" + new string('a', limit + 1);
             Assert.Throws<ArgumentException>(() => PathValidator.ValidateAbsolutePathLengthOrThrow(tooLongPath));
         }
-
-        #endregion
     }
 }

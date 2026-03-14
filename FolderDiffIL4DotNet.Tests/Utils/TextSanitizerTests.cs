@@ -5,7 +5,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
 {
     public class TextSanitizerTests
     {
-        #region ToSafeFileName
 
         [Fact]
         public void ToSafeFileName_NormalInput_ReturnsUnchanged()
@@ -50,10 +49,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             Assert.Equal(shortName, result);
         }
 
-        #endregion
-
-        #region Sanitize
-
         [Theory]
         [InlineData(null, "")]
         [InlineData("", "")]
@@ -85,10 +80,6 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             Assert.False(result.EndsWith("."));
         }
 
-        #endregion
-
-        #region ContainsNonAscii
-
         [Theory]
         [InlineData(null, false)]
         [InlineData("", false)]
@@ -107,7 +98,5 @@ namespace FolderDiffIL4DotNet.Tests.Utils
         {
             Assert.Equal(expected, TextSanitizer.ContainsNonAscii(input));
         }
-
-        #endregion
     }
 }

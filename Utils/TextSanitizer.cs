@@ -10,15 +10,11 @@ namespace FolderDiffIL4DotNet.Utils
     /// </summary>
     public static class TextSanitizer
     {
-        #region constants
         private const int MAX_ASCII_CODE_POINT = 0x7F;
         private const int SAFE_FILENAME_HEAD_LENGTH = 40;
         private const int SAFE_FILENAME_TAIL_LENGTH = 8;
         private const int SAFE_FILENAME_HASH_BYTES = 6;
         private const int SAFE_FILENAME_DEFAULT_MAX_LENGTH = 180;
-        #endregion
-
-        #region public methods
         /// <summary>
         /// サニタイズ(\\, /, :, ..を.に置換)返します。
         /// </summary>
@@ -93,6 +89,5 @@ namespace FolderDiffIL4DotNet.Utils
             }
             return false;
         }
-        #endregion
     }
 }

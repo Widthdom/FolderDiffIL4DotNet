@@ -33,71 +33,15 @@ namespace FolderDiffIL4DotNet.Services.Caching
     /// </remarks>
     public sealed class ILCache
     {
-        #region constants
         /// <summary>
         /// キャッシュキーの区切り
         /// </summary>
         private const string KEY_SEPARATOR = "_";
 
         /// <summary>
-        /// MD5 プリコンピュート共通プレフィックス
-        /// </summary>
-        private const string LOG_PRECOMPUTE_MD5_PREFIX = $"Precompute {Constants.LABEL_MD5}";
-
-        /// <summary>
-        /// MD5 プリコンピュート開始ログ
-        /// </summary>
-        private const string LOG_PRECOMPUTE_MD5_START = LOG_PRECOMPUTE_MD5_PREFIX + ": starting for {0} files ({1}={2})";
-
-        /// <summary>
-        /// MD5 プリコンピュート進捗ログ
-        /// </summary>
-        private const string LOG_PRECOMPUTE_MD5_PROGRESS = LOG_PRECOMPUTE_MD5_PREFIX + ": {0}/{1} ({2}%)";
-
-        /// <summary>
-        /// MD5 プリコンピュート完了ログ
-        /// </summary>
-        private const string LOG_PRECOMPUTE_MD5_COMPLETE = LOG_PRECOMPUTE_MD5_PREFIX + ": completed for {0} files";
-
-        /// <summary>
-        /// MD5 プリコンピュート失敗ログ
-        /// </summary>
-        private const string LOG_FAILED_PRECOMPUTE_MD5_FILE = "Failed to " + LOG_PRECOMPUTE_MD5_PREFIX + " for file '{0}'. This file will be skipped in the cache.";
-
-        /// <summary>
-        /// IL キャッシュディレクトリ作成失敗
-        /// </summary>
-        private const string LOG_FAILED_CREATE_IL_CACHE_DIR = "Failed to create " + Constants.LABEL_IL_CACHE + " directory '{0}': {1}";
-
-        /// <summary>
-        /// IL キャッシュファイル操作失敗フォーマット
-        /// </summary>
-        private const string LOG_FAILED_IL_CACHE_FILE_FORMAT = "Failed to {0} " + Constants.LABEL_IL_CACHE + " file '{1}': {2}";
-
-        /// <summary>
         /// IL キャッシュ拡張子
         /// </summary>
         private const string IL_CACHE_EXTENSION = ".ilcache";
-
-        /// <summary>
-        /// キャッシュファイル削除失敗ログ
-        /// </summary>
-        private const string LOG_FAILED_DELETE_CACHE_FILE = "Failed to delete cache file: {0}";
-
-        /// <summary>
-        /// LRU 除外時のディスクキャッシュ削除失敗ログ
-        /// </summary>
-        private const string LOG_FAILED_REMOVE_DISK_CACHE_FILE = "Failed to remove disk cache file '{0}' during LRU eviction.";
-
-        /// <summary>
-        /// ディスククォータ調整ログ
-        /// </summary>
-        private const string LOG_DISK_QUOTA_TRIM = "Disk quota trim: removed={0}, remain={1}, bytes={2}";
-
-        /// <summary>
-        /// IL キャッシュ統計ログ
-        /// </summary>
-        private const string LOG_IL_CACHE_STATS = Constants.LABEL_IL_CACHE + " stats: hits={0}, stores={1}, evicted={2}, expired={3}";
 
         /// <summary>
         /// 1 KiB (2^10) をlong 型で扱う値。
@@ -123,9 +67,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// プリフェッチ進捗ログのステップ件数。
         /// </summary>
         private const int PREFETCH_PROGRESS_LOG_STEP_COUNT = 500;
-        #endregion
-
-        #region private read-only variables
         /// <summary>
         /// メモリ上の IL キャッシュ本体。
         /// Key ：ファイル内容MD5 + ツールラベル)
@@ -184,9 +125,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// ログ出力サービス。
         /// </summary>
         private readonly ILoggerService _logger;
-        #endregion
-
-        #region private member variables
         /// <summary>
         /// LRU（Least Recently Used）方式で削除(退避)された累計件数
         /// </summary>
@@ -217,14 +155,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// コンストラクタの statsLogIntervalSeconds で上書きされ、既定は 60 秒です。
         /// </summary>
         private static TimeSpan StatsLogInterval = TimeSpan.FromSeconds(60);
-        #endregion
-
-        #region public properties
         /// <summary>
         /// 現在までの削除統計 (Evicted: LRU, Expired: TTL)
         /// </summary>
         public (long Evicted, long Expired) Stats => (_evictedCount, _expiredCount);
-        #endregion
 
         /// <summary>
         /// コンストラクタ。
@@ -275,7 +209,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     _isDiskCacheEnabled = false;
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        string.Format(LOG_FAILED_CREATE_IL_CACHE_DIR, _ilCacheDirectoryAbsolutePath, ex.Message),
+                        $"Failed to create IL cache directory '{_ilCacheDirectoryAbsolutePath}': {ex.Message}",
                         shouldOutputMessageToConsole: true,
                         ex);
                 }
@@ -310,14 +244,14 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
                 _logger.LogMessage(
                     AppLogLevel.Info,
-                    string.Format(LOG_PRECOMPUTE_MD5_START, files.Count, nameof(maxParallel), maxParallel),
+                    $"Precompute MD5: starting for {files.Count} files ({nameof(maxParallel)}={maxParallel})",
                     shouldOutputMessageToConsole: true);
 
                 RunMd5Precompute(files, maxParallel);
 
                 _logger.LogMessage(
                     AppLogLevel.Info,
-                    string.Format(LOG_PRECOMPUTE_MD5_COMPLETE, files.Count),
+                    $"Precompute MD5: completed for {files.Count} files",
                     shouldOutputMessageToConsole: true);
             }
             catch
@@ -382,7 +316,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     {
                         _logger.LogMessage(
                             AppLogLevel.Warning,
-                            string.Format(LOG_FAILED_IL_CACHE_FILE_FORMAT, "read", diskILCacheFileAbsolutePath, ex.Message),
+                            $"Failed to read IL cache file '{diskILCacheFileAbsolutePath}': {ex.Message}",
                             shouldOutputMessageToConsole: true,
                             ex);
                     }
@@ -413,8 +347,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
             Interlocked.Increment(ref _internalStores);
             LogStatsIfIntervalElapsed();
         }
-
-        #region private methods
         /// <summary>
         /// 指定ファイルの MD5 を取得（内部キャッシュ使用）。
         /// </summary>
@@ -475,7 +407,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        string.Format(LOG_FAILED_PRECOMPUTE_MD5_FILE, fileAbsolutePath),
+                        $"Failed to Precompute MD5 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
                         shouldOutputMessageToConsole: true,
                         ex);
                 }
@@ -515,7 +447,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             _logger.LogMessage(
                 AppLogLevel.Info,
-                string.Format(LOG_PRECOMPUTE_MD5_PROGRESS, processed, totalFiles, percent),
+                $"Precompute MD5: {processed}/{totalFiles} ({percent}%)",
                 shouldOutputMessageToConsole: true);
         }
 
@@ -609,7 +541,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 // 削除に失敗した場合は警告ログを吐く
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    string.Format(LOG_FAILED_REMOVE_DISK_CACHE_FILE, BuildILCacheFileAbsolutePath(oldestILCacheKey)),
+                    $"Failed to remove disk cache file '{BuildILCacheFileAbsolutePath(oldestILCacheKey)}' during LRU eviction.",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
@@ -640,7 +572,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 // 例外は握りつぶさず警告ログに残す
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    string.Format(LOG_FAILED_IL_CACHE_FILE_FORMAT, "write", diskILCacheFileToWriteAbsolutePath, ex.Message),
+                    $"Failed to write IL cache file '{diskILCacheFileToWriteAbsolutePath}': {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
@@ -742,7 +674,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    string.Format(LOG_FAILED_DELETE_CACHE_FILE, file.FullName),
+                    $"Failed to delete cache file: {file.FullName}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
@@ -764,7 +696,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             // どれだけ削除され、残数・残容量がいくつかをコンソール・ログ出力
             _logger.LogMessage(
                 AppLogLevel.Info,
-                string.Format(LOG_DISK_QUOTA_TRIM, removed, remainingCount, remainingBytes),
+                $"Disk quota trim: removed={removed}, remain={remainingCount}, bytes={remainingBytes}",
                 shouldOutputMessageToConsole: true);
         }
 
@@ -790,9 +722,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
             _logger.LogMessage(
                 AppLogLevel.Info,
-                string.Format(LOG_IL_CACHE_STATS, _internalHits, _internalStores, _evictedCount, _expiredCount),
+                $"IL cache stats: hits={_internalHits}, stores={_internalStores}, evicted={_evictedCount}, expired={_expiredCount}",
                 shouldOutputMessageToConsole: true);
         }
-        #endregion
     }
 }

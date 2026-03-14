@@ -10,12 +10,6 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ProgressReportService : IDisposable
     {
-        #region constants
-        /// <summary>
-        /// 進捗範囲エラー
-        /// </summary>
-        private const string ERROR_PROGRESS_OUT_OF_RANGE = "Progress must be between 0.00 and 100.00. Actual: {0:F2}";
-
         /// <summary>
         /// 進捗表示
         /// </summary>
@@ -46,13 +40,6 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static readonly char[] KeepAliveFrames = ['|', '/', '-', '\\'];
 
-        /// <summary>
-        /// スピナーまで含めた進捗バー以外の最大文字数。
-        /// </summary>
-        private const int BAR_SUFFIX_MAX_LENGTH = 12;
-        #endregion
-
-        #region private member variables
         /// <summary>
         /// 直前に出力したF2フォーマットの文字列（重複出力抑止用）
         /// </summary>
@@ -121,7 +108,6 @@ namespace FolderDiffIL4DotNet.Services
         /// 破棄済みフラグ。
         /// </summary>
         private bool _disposed;
-        #endregion
 
         /// <summary>
         /// 進捗率をコンソールに表示します。小数点以下2桁（F2）で出力します。
@@ -142,7 +128,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             if (percentage < 0 || percentage > 100)
             {
-                throw new ArgumentOutOfRangeException(nameof(percentage), string.Format(ERROR_PROGRESS_OUT_OF_RANGE, percentage));
+                throw new ArgumentOutOfRangeException(nameof(percentage), $"Progress must be between 0.00 and 100.00. Actual: {percentage:F2}");
             }
 
             // 単調増加と重複出力の抑止をスレッドセーフに実施

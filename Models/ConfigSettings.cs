@@ -8,7 +8,6 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed class ConfigSettings
     {
-        #region public properties
         /// <summary>
         /// 無視する拡張子のリスト
         /// </summary>
@@ -112,6 +111,5 @@ namespace FolderDiffIL4DotNet.Models
         /// 非Windowsでは判定精度の制約があるため既定は手動フラグと併用を推奨します。
         /// </summary>
         public bool AutoDetectNetworkShares { get; set; }
-        #endregion
     }
 }
