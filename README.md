@@ -6,13 +6,14 @@ For .NET assemblies, it compares IL while ignoring build-specific information su
 Developer-focused details (architecture, CI, tests, implementation cautions):
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
+<a id="readme-en-doc-map"></a>
 ## Documentation Map
 
 | Need | Document |
 | --- | --- |
-| Product overview, setup, usage, and configuration | [README.md](README.md) |
-| Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
-| Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
+| Product overview, setup, usage, and configuration | [README.md](README.md#readme-en-usage) |
+| Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-map) |
+| Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-en-run-tests) |
 | Generated API reference from XML documentation comments | [api/index.md](api/index.md) via [docfx.json](docfx.json) |
 
 ## Requirements
@@ -56,6 +57,7 @@ dotnet tool install --global ilspycmd
 # add $HOME/.dotnet/tools (macOS/Linux/Unix) or %USERPROFILE%\.dotnet\tools (Windows) to PATH if needed
 ```
 
+<a id="readme-en-usage"></a>
 ## Usage
 
 1. Place [`config.json`](config.json) next to the executable.
@@ -72,7 +74,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 Main output:
 - `Reports/<label>/diff_report.md`
-- Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when `ShouldOutputILText=true`
+- Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#configuration-table-en) is `true`
 
 Example `diff_report.md` (trimmed):
 
@@ -123,6 +125,7 @@ Example `diff_report.md` (trimmed):
   - payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
 ```
 
+<a id="readme-en-runtime-composition"></a>
 ## Runtime Composition
 
 - [`Program.cs`](Program.cs) is intentionally thin and only resolves [`ProgramRunner`](ProgramRunner.cs).
@@ -132,6 +135,7 @@ Example `diff_report.md` (trimmed):
 - [`FolderDiffService`](Services/FolderDiffService.cs) uses [`IFileSystemService`](Services/IFileSystemService.cs) for discovery/output I/O and [`FileDiffService`](Services/FileDiffService.cs) uses [`IFileComparisonService`](Services/IFileComparisonService.cs) for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
 - Core pipeline services ([`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
 
+<a id="readme-en-comparison-flow"></a>
 ## Comparison Flow
 
 At a high level, the tool first matches files by relative path, then decides whether each matched pair is effectively the same.
@@ -152,13 +156,13 @@ For one matched pair, the decision order is:
 
 1. Try an exact byte-level match with MD5.
 2. If MD5 differs and the old-side file is a .NET executable, compare filtered IL instead of raw bytes.
-3. If it is not in the IL path and the extension is listed in `TextFileExtensions`, compare it as text.
+3. If it is not in the IL path and the extension is listed in [`TextFileExtensions`](#configuration-table-en), compare it as text.
 4. If none of the checks say "same", treat it as a normal mismatch.
 
 Important details:
 - `Added`, `Removed`, `Unchanged`, and `Modified` are decided by relative path, not by file name alone.
 - IL comparison always ignores `// MVID:` lines, so build-specific assembly noise does not create false differences.
-- If `ShouldIgnoreILLinesContainingConfiguredStrings=true`, lines containing any configured ignore string are also skipped during IL comparison.
+- If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-en) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
 - Text files may use different internal strategies depending on size and runtime mode. If chunk-parallel comparison for a large local file throws, the run logs a warning and retries with sequential text comparison.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
@@ -182,36 +186,128 @@ Override only the settings you want to change. For example:
 }
 ```
 
-| Key | Default | Description |
-| --- | --- | --- |
-| `IgnoredExtensions` | `.cache`, `.DS_Store`, `.db`, `.ilcache`, `.log`, `.pdb` | Excludes matching extensions from comparison. |
-| `TextFileExtensions` | Built-in extension list in [`ConfigSettings`](Models/ConfigSettings.cs) | Treats matching extensions as text. Include dot (`.cs`, `.json`). Matching is case-insensitive. |
-| `MaxLogGenerations` | `5` | Number of log files kept in rotation. |
-| `ShouldIncludeUnchangedFiles` | `true` | Includes `Unchanged` section in report. |
-| `ShouldIncludeIgnoredFiles` | `true` | Includes `Ignored Files` section before `Unchanged`. |
-| `ShouldOutputILText` | `true` | Outputs IL dumps under `Reports/<label>/IL/old,new`. |
-| `ShouldIgnoreILLinesContainingConfiguredStrings` | `false` | Enables additional IL line-ignore filter by substring. |
-| `ILIgnoreLineContainingStrings` | `[]` | String list used by IL substring-ignore filter. |
-| `ShouldOutputFileTimestamps` | `true` | Adds last-modified timestamps to report entries. |
-| `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | `true` | Warns if a file in `new` has an older last-modified timestamp than the matching file in `old`, prints the warning at the end of the run, and appends a final `Warnings` section to `diff_report.md`. |
-| `MaxParallelism` | `0` | Max compare parallelism. `0` or less = auto. |
-| `TextDiffParallelThresholdKilobytes` | `512` | Text diff size threshold (KiB) for chunk-parallel mode. |
-| `TextDiffChunkSizeKilobytes` | `64` | Chunk size (KiB) for parallel text diff. |
-| `EnableILCache` | `true` | Enables IL cache (memory + optional disk). |
-| `ILCacheDirectoryAbsolutePath` | `""` | IL cache directory. Empty = `<exe>/ILCache`. |
-| `ILCacheStatsLogIntervalSeconds` | `60` | IL cache stats log interval. `<=0` uses default 60s. |
-| `ILCacheMaxDiskFileCount` | `1000` | Disk cache file count cap. `<=0` means unlimited. |
-| `ILCacheMaxDiskMegabytes` | `512` | Disk cache size cap (MB). `<=0` means unlimited. |
-| `OptimizeForNetworkShares` | `false` | Enables network-share optimization mode. |
-| `AutoDetectNetworkShares` | `true` | Auto-detects network paths and enables optimization mode as needed. |
+### Configuration Table EN
+
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Default</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr id="config-en-ignoredextensions">
+      <td><code>IgnoredExtensions</code></td>
+      <td><code>.cache</code>, <code>.DS_Store</code>, <code>.db</code>, <code>.ilcache</code>, <code>.log</code>, <code>.pdb</code></td>
+      <td>Excludes matching extensions from comparison.</td>
+    </tr>
+    <tr id="config-en-textfileextensions">
+      <td><code>TextFileExtensions</code></td>
+      <td>Built-in extension list in <a href="Models/ConfigSettings.cs"><code>ConfigSettings</code></a></td>
+      <td>Treats matching extensions as text. Include dot (<code>.cs</code>, <code>.json</code>). Matching is case-insensitive.</td>
+    </tr>
+    <tr id="config-en-maxloggenerations">
+      <td><code>MaxLogGenerations</code></td>
+      <td><code>5</code></td>
+      <td>Number of log files kept in rotation.</td>
+    </tr>
+    <tr id="config-en-shouldincludeunchangedfiles">
+      <td><code>ShouldIncludeUnchangedFiles</code></td>
+      <td><code>true</code></td>
+      <td>Includes <code>Unchanged</code> section in report.</td>
+    </tr>
+    <tr id="config-en-shouldincludeignoredfiles">
+      <td><code>ShouldIncludeIgnoredFiles</code></td>
+      <td><code>true</code></td>
+      <td>Includes <code>Ignored Files</code> section before <code>Unchanged</code>.</td>
+    </tr>
+    <tr id="config-en-shouldoutputiltext">
+      <td><code>ShouldOutputILText</code></td>
+      <td><code>true</code></td>
+      <td>Outputs IL dumps under <code>Reports/&lt;label&gt;/IL/old,new</code>.</td>
+    </tr>
+    <tr id="config-en-shouldignoreillinescontainingconfiguredstrings">
+      <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>
+      <td><code>false</code></td>
+      <td>Enables additional IL line-ignore filter by substring.</td>
+    </tr>
+    <tr id="config-en-ilignorelinecontainingstrings">
+      <td><code>ILIgnoreLineContainingStrings</code></td>
+      <td><code>[]</code></td>
+      <td>String list used by IL substring-ignore filter.</td>
+    </tr>
+    <tr id="config-en-shouldoutputfiletimestamps">
+      <td><code>ShouldOutputFileTimestamps</code></td>
+      <td><code>true</code></td>
+      <td>Adds last-modified timestamps to report entries.</td>
+    </tr>
+    <tr id="config-en-shouldwarnwhennewfiletimestampisolderthanoldfiletimestamp">
+      <td><code>ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp</code></td>
+      <td><code>true</code></td>
+      <td>Warns if a file in <code>new</code> has an older last-modified timestamp than the matching file in <code>old</code>, prints the warning at the end of the run, and appends a final <code>Warnings</code> section to <code>diff_report.md</code>.</td>
+    </tr>
+    <tr id="config-en-maxparallelism">
+      <td><code>MaxParallelism</code></td>
+      <td><code>0</code></td>
+      <td>Max compare parallelism. <code>0</code> or less = auto.</td>
+    </tr>
+    <tr id="config-en-textdiffparallelthresholdkilobytes">
+      <td><code>TextDiffParallelThresholdKilobytes</code></td>
+      <td><code>512</code></td>
+      <td>Text diff size threshold (KiB) for chunk-parallel mode.</td>
+    </tr>
+    <tr id="config-en-textdiffchunksizekilobytes">
+      <td><code>TextDiffChunkSizeKilobytes</code></td>
+      <td><code>64</code></td>
+      <td>Chunk size (KiB) for parallel text diff.</td>
+    </tr>
+    <tr id="config-en-enableilcache">
+      <td><code>EnableILCache</code></td>
+      <td><code>true</code></td>
+      <td>Enables IL cache (memory + optional disk).</td>
+    </tr>
+    <tr id="config-en-ilcachedirectoryabsolutepath">
+      <td><code>ILCacheDirectoryAbsolutePath</code></td>
+      <td><code>""</code></td>
+      <td>IL cache directory. Empty = <code>&lt;exe&gt;/ILCache</code>.</td>
+    </tr>
+    <tr id="config-en-ilcachestatslogintervalseconds">
+      <td><code>ILCacheStatsLogIntervalSeconds</code></td>
+      <td><code>60</code></td>
+      <td>IL cache stats log interval. <code>&lt;=0</code> uses default 60s.</td>
+    </tr>
+    <tr id="config-en-ilcachemaxdiskfilecount">
+      <td><code>ILCacheMaxDiskFileCount</code></td>
+      <td><code>1000</code></td>
+      <td>Disk cache file count cap. <code>&lt;=0</code> means unlimited.</td>
+    </tr>
+    <tr id="config-en-ilcachemaxdiskmegabytes">
+      <td><code>ILCacheMaxDiskMegabytes</code></td>
+      <td><code>512</code></td>
+      <td>Disk cache size cap (MB). <code>&lt;=0</code> means unlimited.</td>
+    </tr>
+    <tr id="config-en-optimizefornetworkshares">
+      <td><code>OptimizeForNetworkShares</code></td>
+      <td><code>false</code></td>
+      <td>Enables network-share optimization mode.</td>
+    </tr>
+    <tr id="config-en-autodetectnetworkshares">
+      <td><code>AutoDetectNetworkShares</code></td>
+      <td><code>true</code></td>
+      <td>Auto-detects network paths and enables optimization mode as needed.</td>
+    </tr>
+  </tbody>
+</table>
 
 Notes:
-- Built-in defaults, including the full `IgnoredExtensions` and `TextFileExtensions` lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
+- Built-in defaults, including the full [`IgnoredExtensions`](#configuration-table-en) and [`TextFileExtensions`](#configuration-table-en) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
 - Files without extension are still compared.
-- If you want extensionless files treated as text, include empty string (`""`) in `TextFileExtensions`.
+- If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#configuration-table-en).
 - Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
 - If any file ends as `MD5Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion.
 
+<a id="readme-en-generated-artifacts"></a>
 ## Generated Artifacts
 
 - `Reports/<label>/diff_report.md`
@@ -220,6 +316,7 @@ Notes:
 
 After writing, report/IL files are set to read-only when possible (failures are warning-only).
 
+<a id="readme-en-api-docs"></a>
 ## API Documentation
 
 API reference pages are generated with DocFX from the XML documentation comments already maintained in the source code.
@@ -254,13 +351,14 @@ CI also generates the same site and uploads it as the `DocumentationSite` artifa
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
+<a id="readme-ja-doc-map"></a>
 ## ドキュメントの見取り図
 
 | 見たい内容 | ドキュメント |
 | --- | --- |
-| 製品概要、導入、使い方、設定 | [README.md](README.md) |
-| 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
-| テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
+| 製品概要、導入、使い方、設定 | [README.md](README.md#readme-ja-usage) |
+| 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) |
+| テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-ja-run-tests) |
 | XML ドキュメントコメントから生成する API リファレンス | [api/index.md](api/index.md) と [docfx.json](docfx.json) |
 
 ## 必要環境
@@ -308,6 +406,7 @@ dotnet tool install --global ilspycmd
 # Windows: %USERPROFILE%\.dotnet\tools
 ```
 
+<a id="readme-ja-usage"></a>
 ## 使い方
 
 1. 実行ファイルと同じ場所に [`config.json`](config.json) を配置します。
@@ -324,7 +423,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 主な出力:
 - `Reports/<label>/diff_report.md`
-- `ShouldOutputILText=true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
+- [`ShouldOutputILText`](#configuration-table-ja) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
 
 `diff_report.md` の簡単な例:
 
@@ -375,6 +474,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
   - payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
 ```
 
+<a id="readme-ja-runtime-composition"></a>
 ## 実行時構成
 
 - [`Program.cs`](Program.cs) は薄いエントリーポイントで、[`ProgramRunner`](ProgramRunner.cs) の解決だけを行います。
@@ -384,6 +484,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 - [`FolderDiffService`](Services/FolderDiffService.cs) は列挙/出力系 I/O を [`IFileSystemService`](Services/IFileSystemService.cs)、[`FileDiffService`](Services/FileDiffService.cs) はハッシュ/テキスト/チャンク読み出し系 I/O を [`IFileComparisonService`](Services/IFileComparisonService.cs) に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
 - 主要パイプラインサービス（[`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
 
+<a id="readme-ja-comparison-flow"></a>
 ## 比較フロー
 
 大まかには、まず相対パスでファイルを突き合わせてから、両側に存在するファイルが「実質同じか」を判定します。
@@ -404,12 +505,12 @@ flowchart TD
 
 1. まず MD5 で完全一致かを確認します。
 2. MD5 が不一致で、old 側ファイルが .NET 実行可能なら、バイト列ではなく IL を比較します。
-3. IL 経路に入らず、拡張子が `TextFileExtensions` に含まれるなら、テキストとして比較します。
+3. IL 経路に入らず、拡張子が [`TextFileExtensions`](#configuration-table-ja) に含まれるなら、テキストとして比較します。
 4. どの比較でも「同じ」と言えなければ、通常の不一致として扱います。
 
 重要な点:
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
-- `ShouldIgnoreILLinesContainingConfiguredStrings=true` の場合は、設定した文字列を含む行も IL 比較から除外します。
+- [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-ja) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
 - テキスト比較の内部実装はファイルサイズや実行モードで変わることがあります。大きいローカルファイルの並列比較で例外が出た場合は warning を記録し、逐次比較へフォールバックします。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
@@ -433,36 +534,128 @@ flowchart TD
 }
 ```
 
-| 項目 | 既定値 | 説明 |
-| --- | --- | --- |
-| `IgnoredExtensions` | `.cache`, `.DS_Store`, `.db`, `.ilcache`, `.log`, `.pdb` | 指定拡張子を比較対象から除外します。 |
-| `TextFileExtensions` | [`ConfigSettings`](Models/ConfigSettings.cs) 内の組み込み拡張子一覧 | 指定拡張子をテキスト比較対象にします（`.` 付き指定、大小無視）。 |
-| `MaxLogGenerations` | `5` | ログローテーション世代数。 |
-| `ShouldIncludeUnchangedFiles` | `true` | レポートに `Unchanged` セクションを出力するか。 |
-| `ShouldIncludeIgnoredFiles` | `true` | レポートに `Ignored Files` セクションを出力するか。 |
-| `ShouldOutputILText` | `true` | `Reports/<label>/IL/old,new` へ IL を出力するか。 |
-| `ShouldIgnoreILLinesContainingConfiguredStrings` | `false` | IL 比較時の追加行除外（部分一致）を有効化するか。 |
-| `ILIgnoreLineContainingStrings` | `[]` | IL 行除外に使う文字列一覧。 |
-| `ShouldOutputFileTimestamps` | `true` | レポート各行に更新日時を併記するか。 |
-| `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | `true` | `new` 側の更新日時が対応する `old` 側より古いファイルを検出し、実行終了時のコンソールと `diff_report.md` 末尾の `Warnings` セクションへ一覧を出力します。 |
-| `MaxParallelism` | `0` | 比較の最大並列度。`0` 以下は自動。 |
-| `TextDiffParallelThresholdKilobytes` | `512` | 並列テキスト比較へ切替える閾値（KiB）。 |
-| `TextDiffChunkSizeKilobytes` | `64` | 並列テキスト比較のチャンクサイズ（KiB）。 |
-| `EnableILCache` | `true` | IL キャッシュ（メモリ + 任意ディスク）を有効化するか。 |
-| `ILCacheDirectoryAbsolutePath` | `""` | IL キャッシュディレクトリ。空なら `<exe>/ILCache`。 |
-| `ILCacheStatsLogIntervalSeconds` | `60` | IL キャッシュ統計ログ間隔。`<=0` で既定 60 秒。 |
-| `ILCacheMaxDiskFileCount` | `1000` | ディスクキャッシュ最大ファイル数。`<=0` で無制限。 |
-| `ILCacheMaxDiskMegabytes` | `512` | ディスクキャッシュ容量上限（MB）。`<=0` で無制限。 |
-| `OptimizeForNetworkShares` | `false` | ネットワーク共有向け最適化モードを有効化。 |
-| `AutoDetectNetworkShares` | `true` | ネットワーク共有を自動検出して最適化モードを必要時に有効化。 |
+### Configuration Table JA
+
+<table>
+  <thead>
+    <tr>
+      <th>項目</th>
+      <th>既定値</th>
+      <th>説明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr id="config-ja-ignoredextensions">
+      <td><code>IgnoredExtensions</code></td>
+      <td><code>.cache</code>, <code>.DS_Store</code>, <code>.db</code>, <code>.ilcache</code>, <code>.log</code>, <code>.pdb</code></td>
+      <td>指定拡張子を比較対象から除外します。</td>
+    </tr>
+    <tr id="config-ja-textfileextensions">
+      <td><code>TextFileExtensions</code></td>
+      <td><a href="Models/ConfigSettings.cs"><code>ConfigSettings</code></a> 内の組み込み拡張子一覧</td>
+      <td>指定拡張子をテキスト比較対象にします（<code>.</code> 付き指定、大小無視）。</td>
+    </tr>
+    <tr id="config-ja-maxloggenerations">
+      <td><code>MaxLogGenerations</code></td>
+      <td><code>5</code></td>
+      <td>ログローテーション世代数。</td>
+    </tr>
+    <tr id="config-ja-shouldincludeunchangedfiles">
+      <td><code>ShouldIncludeUnchangedFiles</code></td>
+      <td><code>true</code></td>
+      <td>レポートに <code>Unchanged</code> セクションを出力するか。</td>
+    </tr>
+    <tr id="config-ja-shouldincludeignoredfiles">
+      <td><code>ShouldIncludeIgnoredFiles</code></td>
+      <td><code>true</code></td>
+      <td>レポートに <code>Ignored Files</code> セクションを出力するか。</td>
+    </tr>
+    <tr id="config-ja-shouldoutputiltext">
+      <td><code>ShouldOutputILText</code></td>
+      <td><code>true</code></td>
+      <td><code>Reports/&lt;label&gt;/IL/old,new</code> へ IL を出力するか。</td>
+    </tr>
+    <tr id="config-ja-shouldignoreillinescontainingconfiguredstrings">
+      <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>
+      <td><code>false</code></td>
+      <td>IL 比較時の追加行除外（部分一致）を有効化するか。</td>
+    </tr>
+    <tr id="config-ja-ilignorelinecontainingstrings">
+      <td><code>ILIgnoreLineContainingStrings</code></td>
+      <td><code>[]</code></td>
+      <td>IL 行除外に使う文字列一覧。</td>
+    </tr>
+    <tr id="config-ja-shouldoutputfiletimestamps">
+      <td><code>ShouldOutputFileTimestamps</code></td>
+      <td><code>true</code></td>
+      <td>レポート各行に更新日時を併記するか。</td>
+    </tr>
+    <tr id="config-ja-shouldwarnwhennewfiletimestampisolderthanoldfiletimestamp">
+      <td><code>ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp</code></td>
+      <td><code>true</code></td>
+      <td><code>new</code> 側の更新日時が対応する <code>old</code> 側より古いファイルを検出し、実行終了時のコンソールと <code>diff_report.md</code> 末尾の <code>Warnings</code> セクションへ一覧を出力します。</td>
+    </tr>
+    <tr id="config-ja-maxparallelism">
+      <td><code>MaxParallelism</code></td>
+      <td><code>0</code></td>
+      <td>比較の最大並列度。<code>0</code> 以下は自動。</td>
+    </tr>
+    <tr id="config-ja-textdiffparallelthresholdkilobytes">
+      <td><code>TextDiffParallelThresholdKilobytes</code></td>
+      <td><code>512</code></td>
+      <td>並列テキスト比較へ切替える閾値（KiB）。</td>
+    </tr>
+    <tr id="config-ja-textdiffchunksizekilobytes">
+      <td><code>TextDiffChunkSizeKilobytes</code></td>
+      <td><code>64</code></td>
+      <td>並列テキスト比較のチャンクサイズ（KiB）。</td>
+    </tr>
+    <tr id="config-ja-enableilcache">
+      <td><code>EnableILCache</code></td>
+      <td><code>true</code></td>
+      <td>IL キャッシュ（メモリ + 任意ディスク）を有効化するか。</td>
+    </tr>
+    <tr id="config-ja-ilcachedirectoryabsolutepath">
+      <td><code>ILCacheDirectoryAbsolutePath</code></td>
+      <td><code>""</code></td>
+      <td>IL キャッシュディレクトリ。空なら <code>&lt;exe&gt;/ILCache</code>。</td>
+    </tr>
+    <tr id="config-ja-ilcachestatslogintervalseconds">
+      <td><code>ILCacheStatsLogIntervalSeconds</code></td>
+      <td><code>60</code></td>
+      <td>IL キャッシュ統計ログ間隔。<code>&lt;=0</code> で既定 60 秒。</td>
+    </tr>
+    <tr id="config-ja-ilcachemaxdiskfilecount">
+      <td><code>ILCacheMaxDiskFileCount</code></td>
+      <td><code>1000</code></td>
+      <td>ディスクキャッシュ最大ファイル数。<code>&lt;=0</code> で無制限。</td>
+    </tr>
+    <tr id="config-ja-ilcachemaxdiskmegabytes">
+      <td><code>ILCacheMaxDiskMegabytes</code></td>
+      <td><code>512</code></td>
+      <td>ディスクキャッシュ容量上限（MB）。<code>&lt;=0</code> で無制限。</td>
+    </tr>
+    <tr id="config-ja-optimizefornetworkshares">
+      <td><code>OptimizeForNetworkShares</code></td>
+      <td><code>false</code></td>
+      <td>ネットワーク共有向け最適化モードを有効化。</td>
+    </tr>
+    <tr id="config-ja-autodetectnetworkshares">
+      <td><code>AutoDetectNetworkShares</code></td>
+      <td><code>true</code></td>
+      <td>ネットワーク共有を自動検出して最適化モードを必要時に有効化。</td>
+    </tr>
+  </tbody>
+</table>
 
 補足:
-- `IgnoredExtensions` と `TextFileExtensions` を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
+- [`IgnoredExtensions`](#configuration-table-ja) と [`TextFileExtensions`](#configuration-table-ja) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
 - 拡張子なしファイルも比較対象です。
-- 拡張子なしファイルをテキスト扱いしたい場合は `TextFileExtensions` に空文字（`""`）を含めてください。
+- 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#configuration-table-ja) に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。
 - `MD5Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。
 
+<a id="readme-ja-generated-artifacts"></a>
 ## 生成物
 
 - `Reports/<label>/diff_report.md`
@@ -471,6 +664,7 @@ flowchart TD
 
 レポート/IL 出力ファイルは可能な範囲で読み取り専用化されます（失敗時は警告のみ）。
 
+<a id="readme-ja-api-docs"></a>
 ## API ドキュメント
 
 API リファレンスは、ソースコード内で維持している XML ドキュメントコメントを DocFX で収集して生成します。

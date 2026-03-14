@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Clarified the `// MVID:` ignore rationale in the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and report note output, while tightening the English/Japanese wording so the high-level behavior stays aligned across both locales.
 - Expanded documentation link coverage across the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md), and aligned locale-selectable external URLs to English/Japanese contexts.
+- Added stable bilingual document anchors across the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), [testing guide](doc/TESTING_GUIDE.md), and [documentation index](index.md), and redirected config-related links to the README configuration-table sections so navigation lands reliably in common Markdown renderers.
 - Added direct `.cs` source links for class references across the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md), excluding classes that would be split across partial definitions.
 - Moved the report-level `MD5Mismatch` warning from `Summary` into the final `Warnings` section, ordered it before timestamp-regression warnings, and refreshed the related docs and regression tests.
 - Introduced DocFX-based API documentation generation, added a documentation-site build path, and wired CI to publish the generated `DocumentationSite` artifact.
@@ -180,7 +181,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
-- Made `IgnoredExtensions` matching case-insensitive.
+- Made [`IgnoredExtensions`](README.md#configuration-table-en) matching case-insensitive.
 
 #### Removed
 
@@ -188,7 +189,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
-- Corrected `TextFileExtensions` configuration values.
+- Corrected [`TextFileExtensions`](README.md#configuration-table-en) configuration values.
 - Corrected README mistakes.
 - Reduced early runtime silence before progress output begins.
 
@@ -221,6 +222,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、レポート注記にある `// MVID:` 無視理由の説明を整理し、あわせて日英の要約表現がずれないように調整しました。
 - [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) のリンク付与範囲を広げ、ロケール切替可能な外部 URL を英語文脈・日本語文脈に合わせて統一しました。
+- [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md)、[ドキュメント index](index.md) に日英対応の安定アンカーを追加し、設定値まわりのリンクは README の設定表セクションへ寄せるようにして、一般的な Markdown レンダラでも着地先が安定するようにしました。
 - [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) にあるクラス参照へ、`partial` 分割を前提としないものを中心に対応する `.cs` ソースリンクを追加しました。
 - レポート上の `MD5Mismatch` 警告を `Summary` から末尾の `Warnings` セクションへ移し、更新日時逆転警告より先に出すように変更しました。あわせて関連ドキュメントと回帰テストを更新しました。
 - DocFX ベースの API ドキュメント自動生成を導入し、ドキュメントサイトの生成経路と `DocumentationSite` artifact 公開を CI に追加しました。
@@ -388,7 +390,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
-- `IgnoredExtensions` を大文字小文字を無視して評価するようにしました。
+- [`IgnoredExtensions`](README.md#configuration-table-ja) を大文字小文字を無視して評価するようにしました。
 
 #### 削除
 
@@ -396,7 +398,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 修正
 
-- `TextFileExtensions` の設定値誤りを是正しました。
+- [`TextFileExtensions`](README.md#configuration-table-ja) の設定値誤りを是正しました。
 - README の誤記を修正しました。
 - 進捗出力開始前の無音区間を短縮しました。
 

@@ -3,18 +3,20 @@
 This document centralizes the project's testing strategy, execution commands, and practical guardrails for extending tests safely.
 
 Related documents:
-- [README.md](../README.md)
-- [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+- [README.md](../README.md#readme-en-doc-map)
+- [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#guide-en-map)
 - [api/index.md](../api/index.md)
 
+<a id="testing-en-test-stack"></a>
 ## Test Stack
 
-- Test project: `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`
-- Framework: `xUnit` (`[Fact]` / `[Theory]`)
-- Runner: `Microsoft.NET.Test.Sdk`
-- Coverage collector: `coverlet.collector` (`XPlat Code Coverage`)
-- Target framework: `net8.0`
+- Test project: [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj)
+- Framework: [`xUnit` `2.9.3`](https://www.nuget.org/packages/xunit/2.9.3) (`[Fact]` / `[Theory]`)
+- Runner: [`Microsoft.NET.Test.Sdk` `17.12.0`](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/17.12.0)
+- Coverage collector: [`coverlet.collector` `6.0.4`](https://www.nuget.org/packages/coverlet.collector/6.0.4) (`XPlat Code Coverage`)
+- Target framework: [`.NET 8` / `net8.0`](https://learn.microsoft.com/en-us/dotnet/standard/frameworks)
 
+<a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
 Current tree has `219` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`).
@@ -42,6 +44,7 @@ Recommended starting points by change type:
 - IL/disassembler or cache changes: start with [`ILOutputServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs), [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs), [`DotNetDisassemblerCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/DotNetDisassemblerCacheTests.cs), and [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs).
 - Report wording or section changes: start with [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs).
 
+<a id="testing-en-run-tests"></a>
 ## Run Tests Locally
 
 All tests:
@@ -86,6 +89,7 @@ CI-parity command (same as GitHub Actions test step):
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
+<a id="testing-en-coverage"></a>
 ## Coverage Reporting
 
 After running with coverage, results are created under `TestResults/**/coverage.cobertura.xml`.
@@ -98,6 +102,7 @@ export PATH="$PATH:$HOME/.dotnet/tools"
 reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"MarkdownSummaryGithub;Cobertura;HtmlInline_AzurePipelines"
 ```
 
+<a id="testing-en-ci-notes"></a>
 ## CI Integration Notes
 
 Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
@@ -107,15 +112,17 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 - `TestAndCoverage` artifact includes TRX and coverage outputs.
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
 
+<a id="testing-en-isolation"></a>
 ## Test Isolation and Environment Notes
 
 - Most tests create unique temporary directories under `Path.GetTempPath()` and clean them up in `Dispose`/`finally`.
-- [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) temporarily writes `config.json` under `AppContext.BaseDirectory` and restores original content.
+- [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) temporarily writes `config.json` under [`AppContext.BaseDirectory`](https://learn.microsoft.com/en-us/dotNet/API/system.appcontext.basedirectory?view=net-8.0) and restores original content.
 - [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) temporarily rewires `PATH`/`HOME` and uses scripted fake tools to test fallback/blacklist logic deterministically.
 - Some disassembler tests are skipped on Windows (`OperatingSystem.IsWindows()` guard).
 - Unit tests do not require globally installed real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) for most scenarios because test doubles are used.
 - Avoid adding static mutable test hooks. Prefer constructor injection plus [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) for per-run values.
 
+<a id="testing-en-updating-tests"></a>
 ## Adding or Updating Tests
 
 - Keep tests deterministic: avoid network dependency, wall-clock assumptions, and global mutable state.
@@ -134,18 +141,20 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 このドキュメントは、プロジェクトのテスト戦略、実行手順、拡張時の注意点を集約したものです。
 
 関連ドキュメント:
-- [README.md](../README.md)
-- [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+- [README.md](../README.md#readme-ja-doc-map)
+- [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md#guide-ja-map)
 - [api/index.md](../api/index.md)
 
+<a id="testing-ja-test-stack"></a>
 ## テストスタック
 
-- テストプロジェクト: `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`
-- フレームワーク: `xUnit`（`[Fact]` / `[Theory]`）
-- ランナー: `Microsoft.NET.Test.Sdk`
-- カバレッジ収集: `coverlet.collector`（`XPlat Code Coverage`）
-- 対象フレームワーク: `net8.0`
+- テストプロジェクト: [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj)
+- フレームワーク: [`xUnit` `2.9.3`](https://www.nuget.org/packages/xunit/2.9.3)（`[Fact]` / `[Theory]`）
+- ランナー: [`Microsoft.NET.Test.Sdk` `17.12.0`](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/17.12.0)
+- カバレッジ収集: [`coverlet.collector` `6.0.4`](https://www.nuget.org/packages/coverlet.collector/6.0.4)（`XPlat Code Coverage`）
+- 対象フレームワーク: [`.NET 8` / `net8.0`](https://learn.microsoft.com/ja-jp/dotnet/standard/frameworks)
 
+<a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
 直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`）では `219` 件が成功しています。
@@ -173,6 +182,7 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 - IL/逆アセンブラ/キャッシュ変更: [`ILOutputServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs), [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs), [`DotNetDisassemblerCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/DotNetDisassemblerCacheTests.cs), [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs)
 - レポート文言やセクション変更: [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs)
 
+<a id="testing-ja-run-tests"></a>
 ## ローカルでのテスト実行
 
 全テスト実行:
@@ -217,6 +227,7 @@ CI 同等コマンド（GitHub Actions と同じ test ステップ）:
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
+<a id="testing-ja-coverage"></a>
 ## カバレッジレポート
 
 カバレッジ付き実行後、`TestResults/**/coverage.cobertura.xml` が生成されます。
@@ -229,6 +240,7 @@ export PATH="$PATH:$HOME/.dotnet/tools"
 reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"MarkdownSummaryGithub;Cobertura;HtmlInline_AzurePipelines"
 ```
 
+<a id="testing-ja-ci-notes"></a>
 ## CI 連携メモ
 
 ワークフロー: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
@@ -238,15 +250,17 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 - `TestAndCoverage` アーティファクトに TRX とカバレッジ関連ファイルを格納します。
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
 
+<a id="testing-ja-isolation"></a>
 ## テスト分離と実行環境の注意
 
 - 多くのテストは `Path.GetTempPath()` 配下に一意ディレクトリを作成し、`Dispose`/`finally` で後始末します。
-- [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) は `AppContext.BaseDirectory` 配下の `config.json` を一時書き換えし、必ず復元します。
+- [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) は [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) 配下の `config.json` を一時書き換えし、必ず復元します。
 - [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) は `PATH`/`HOME` を一時変更し、擬似ツールスクリプトでフォールバック/ブラックリスト挙動を決定的に検証します。
 - 逆アセンブラ関連の一部テストは Windows ではスキップされます（`OperatingSystem.IsWindows()` ガード）。
 - 多くの単体テストは実ツールのグローバルインストールを不要とします（テストダブル利用）。
 - 静的な可変テストフックは追加せず、実行単位の値はコンストラクタ注入と [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) で渡してください。
 
+<a id="testing-ja-updating-tests"></a>
 ## テスト追加・更新時の方針
 
 - 非決定要因（ネットワーク、時刻依存、グローバル状態依存）を避けて決定的に保ってください。

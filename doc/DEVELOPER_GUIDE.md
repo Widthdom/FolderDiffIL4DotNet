@@ -3,28 +3,29 @@
 This guide is for maintainers who need to change runtime behavior, extend the diff pipeline, or keep CI and tests aligned with implementation changes.
 
 Related documents:
-- [README.md](../README.md): product overview, installation, usage, and configuration reference
-- [doc/TESTING_GUIDE.md](TESTING_GUIDE.md): test strategy, local commands, and isolation rules
+- [README.md](../README.md#readme-en-doc-map): product overview, installation, usage, and configuration reference
+- [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-en-run-tests): test strategy, local commands, and isolation rules
 - [api/index.md](../api/index.md): generated API reference landing page
 - [docfx.json](../docfx.json): DocFX metadata/build configuration
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI pipeline definition
 
+<a id="guide-en-map"></a>
 ## Document Map
 
 | If you need to... | Start here |
 | --- | --- |
-| Understand the end-to-end execution flow | [Execution Lifecycle](#execution-lifecycle) |
-| Trace service boundaries and DI scopes | [Dependency Injection Layout](#dependency-injection-layout) |
-| Change file classification behavior | [Comparison Pipeline](#comparison-pipeline) |
-| Tune performance or network-share behavior | [Performance and Runtime Modes](#performance-and-runtime-modes) |
-| Refresh the generated API reference site | [Documentation Site and API Reference](#documentation-site-and-api-reference) |
-| Update build, test, or artifact behavior | [CI and Release Notes](#ci-and-release-notes) |
-| Safely extend the codebase | [Change Checklist](#change-checklist) |
+| Understand the end-to-end execution flow | [Execution Lifecycle](#guide-en-execution-lifecycle) |
+| Trace service boundaries and DI scopes | [Dependency Injection Layout](#guide-en-di-layout) |
+| Change file classification behavior | [Comparison Pipeline](#guide-en-comparison-pipeline) |
+| Tune performance or network-share behavior | [Performance and Runtime Modes](#guide-en-performance-runtime) |
+| Refresh the generated API reference site | [Documentation Site and API Reference](#guide-en-doc-site) |
+| Update build, test, or artifact behavior | [CI and Release Notes](#guide-en-ci-release) |
+| Safely extend the codebase | [Change Checklist](#guide-en-change-checklist) |
 
 ## Local Development
 
 Prerequisites:
-- [.NET SDK `8.0.413`](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) ([`global.json`](../global.json))
+- [`.NET SDK 8.0.413`](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) ([`global.json`](../global.json))
 - One IL disassembler available on `PATH`
   - [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) preferred
   - [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) supported as fallback
@@ -54,7 +55,7 @@ dotnet run -- "/absolute/path/to/old" "/absolute/path/to/new" "dev-run" --no-pau
 
 Generated during a run:
 - `Reports/<label>/diff_report.md`
-- `Reports/<label>/IL/old/*.txt` and `Reports/<label>/IL/new/*.txt` when `ShouldOutputILText=true`
+- `Reports/<label>/IL/old/*.txt` and `Reports/<label>/IL/new/*.txt` when [`ShouldOutputILText`](../README.md#configuration-table-en) is `true`
 - `Logs/log_YYYYMMDD.log`
 - `ILCache/` under the app base directory when disk cache is enabled and no custom cache directory is configured
 
@@ -95,6 +96,7 @@ Design intent:
 - [`IFileSystemService`](../Services/IFileSystemService.cs) and [`IFileComparisonService`](../Services/IFileComparisonService.cs) are the low-level seams that keep discovery/compare I/O unit-testable without changing the production decision tree.
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) is the run-scoped aggregation hub shared by diffing and reporting.
 
+<a id="guide-en-execution-lifecycle"></a>
 ## Execution Lifecycle
 
 ### Startup Sequence
@@ -128,7 +130,7 @@ sequenceDiagram
 1. Initialize logging and print application version.
 2. Validate `old`, `new`, and `reportLabel` arguments.
 3. Create `Reports/<label>` early and fail if the label already exists.
-4. Load [`config.json`](../config.json) from `AppContext.BaseDirectory` and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs).
+4. Load [`config.json`](../config.json) from [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs).
 5. Clear transient shared helpers such as [`TimestampCache`](../Services/Caching/TimestampCache.cs).
 6. Compute [`DiffExecutionContext`](../Services/DiffExecutionContext.cs), including network-share decisions.
 7. Build the run-scoped DI container.
@@ -141,6 +143,7 @@ Failure behavior:
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
 - Read-only protection on output files remains best-effort and warning-only.
 
+<a id="guide-en-di-layout"></a>
 ## Dependency Injection Layout
 
 ### Root container
@@ -195,6 +198,7 @@ Why this matters:
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads `FileDiffResultLists` only |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object |
 
+<a id="guide-en-comparison-pipeline"></a>
 ## Comparison Pipeline
 
 ### Folder-level routing
@@ -217,7 +221,7 @@ flowchart TD
 ```
 
 Implementation notes:
-- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) clears run-scoped aggregates, enumerates old/new files with `IgnoredExtensions` already applied, and computes progress from the union of relative paths.
+- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) clears run-scoped aggregates, enumerates old/new files with [`IgnoredExtensions`](../README.md#configuration-table-en) already applied, and computes progress from the union of relative paths.
 - `PrecomputeIlCachesAsync()` runs before per-file classification so disassembler/cache warm-up does not distort the later decision path.
 - The old side is the driving set. Missing matches in `new` become `Removed`, while leftovers in `remainingNewFilesAbsolutePathHashSet` become `Added` after old-side traversal completes.
 - Parallel mode only changes processing order. Because each relative path is removed from the remaining-new set before the expensive compare starts, the final classification rules are the same as in sequential execution.
@@ -257,12 +261,12 @@ Per-file mechanics:
 - Once MD5 matches, the code records `MD5Match` and returns immediately; no IL comparison or text comparison runs after that.
 - The IL path delegates to [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs), which disassembles old/new via `DisassemblePairWithSameDisassemblerAsync(...)`, normalizes the comparison label, filters lines, optionally writes filtered IL text, and returns both equality and the disassembler label.
 - `BuildComparisonDisassemblerLabel(...)` is part of correctness. If old/new produce different tool identities or version labels, the code rejects that comparison and raises [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0).
-- `ShouldExcludeIlLine(...)` always strips `// MVID:`. If `ShouldIgnoreILLinesContainingConfiguredStrings=true`, it also strips any substring from `ILIgnoreLineContainingStrings` after trimming and deduplicating the configured values, using `StringComparison.Ordinal`.
-- Files that are not handled by IL comparison and whose extension is included in `TextFileExtensions` are compared as text files. At that point, the code converts `TextDiffParallelThresholdKilobytes` and `TextDiffChunkSizeKilobytes` into effective byte counts and uses those values to choose the comparison method.
-- If `OptimizeForNetworkShares` is enabled, the code avoids chunk-parallel reads on remote storage and always uses sequential `DiffTextFilesAsync(...)`, regardless of file size. In local-optimized mode, it uses the old-side file size: below `TextDiffParallelThresholdKilobytes` it stays sequential, and at or above the threshold it splits the file into fixed-size chunks based on `TextDiffChunkSizeKilobytes` and runs `DiffTextFilesParallelAsync(...)`.
+- `ShouldExcludeIlLine(...)` always strips `// MVID:`. If [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-en) is `true`, it also strips any substring from [`ILIgnoreLineContainingStrings`](../README.md#configuration-table-en) after trimming and deduplicating the configured values, using `StringComparison.Ordinal`.
+- Files that are not handled by IL comparison and whose extension is included in [`TextFileExtensions`](../README.md#configuration-table-en) are compared as text files. At that point, the code converts [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en) and [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en) into effective byte counts and uses those values to choose the comparison method.
+- If [`OptimizeForNetworkShares`](../README.md#configuration-table-en) is enabled, the code avoids chunk-parallel reads on remote storage and always uses sequential `DiffTextFilesAsync(...)`, regardless of file size. In local-optimized mode, it uses the old-side file size: below [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en) it stays sequential, and at or above the threshold it splits the file into fixed-size chunks based on [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en) and runs `DiffTextFilesParallelAsync(...)`.
 - If chunk-parallel text comparison throws [`ArgumentOutOfRangeException`](https://learn.microsoft.com/en-us/dotnet/api/system.argumentoutofrangeexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), or [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0), the code logs a warning and falls back to sequential `DiffTextFilesAsync(...)`. Because of that fallback, `DiffTextFilesParallelAsync(...)` must not swallow those exceptions and replace them with `false`.
 - Files that are neither IL-comparison targets nor text-comparison targets end at `MD5Mismatch` when MD5 differs. `MD5Mismatch` is also part of the aggregated end-of-run warnings, and the report writes that warning in the final `Warnings` section before any timestamp-regression entries. There is no deeper generic binary diff step today.
-- For files that exist on both sides, if `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp=true` and the new-side last-modified time is older than the old-side last-modified time, the code records a timestamp-regression warning in addition to the comparison result. That warning is emitted in the aggregated console output at the end of the run and also written after the `MD5Mismatch` warning in the report's final `Warnings` section as a list of files with regressed timestamps.
+- For files that exist on both sides, if [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../README.md#configuration-table-en) is `true` and the new-side last-modified time is older than the old-side last-modified time, the code records a timestamp-regression warning in addition to the comparison result. That warning is emitted in the aggregated console output at the end of the run and also written after the `MD5Mismatch` warning in the report's final `Warnings` section as a list of files with regressed timestamps.
 
 Failure handling:
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) thrown during IL comparison is logged and intentionally rethrown. This treats IL tool mismatches or setup problems as fatal exceptions and stops the whole run.
@@ -311,19 +315,20 @@ catch (Exception ex)
 - IL tool labels are only present for IL-based comparisons.
 - Report generation reads execution results only and must not start new comparisons.
 
+<a id="guide-en-config-runtime"></a>
 ## Configuration and Runtime Modes
 
-[`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. [`config.json`](../config.json) is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults.
+[`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. [`config.json`](../config.json) is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults. For key-by-key descriptions, use the [README configuration table](../README.md#configuration-table-en).
 
 ### Configuration groups
 
 | Group | Keys | Purpose |
 | --- | --- | --- |
-| Inclusion and report shape | `IgnoredExtensions`, `TextFileExtensions`, `ShouldIncludeUnchangedFiles`, `ShouldIncludeIgnoredFiles`, `ShouldOutputFileTimestamps`, `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | Controls scope, report verbosity, and timestamp-regression warnings |
-| IL behavior | `ShouldOutputILText`, `ShouldIgnoreILLinesContainingConfiguredStrings`, `ILIgnoreLineContainingStrings` | Controls IL normalization and artifact output |
-| Parallelism | `MaxParallelism`, `TextDiffParallelThresholdKilobytes`, `TextDiffChunkSizeKilobytes` | Controls CPU and text-diff strategy |
-| Cache | `EnableILCache`, `ILCacheDirectoryAbsolutePath`, `ILCacheStatsLogIntervalSeconds`, `ILCacheMaxDiskFileCount`, `ILCacheMaxDiskMegabytes` | Controls IL cache lifetime and storage |
-| Network-share mode | `OptimizeForNetworkShares`, `AutoDetectNetworkShares` | Prevents high-I/O behavior on slower remote storage |
+| Inclusion and report shape | [`IgnoredExtensions`](../README.md#configuration-table-en), [`TextFileExtensions`](../README.md#configuration-table-en), [`ShouldIncludeUnchangedFiles`](../README.md#configuration-table-en), [`ShouldIncludeIgnoredFiles`](../README.md#configuration-table-en), [`ShouldOutputFileTimestamps`](../README.md#configuration-table-en), [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../README.md#configuration-table-en) | Controls scope, report verbosity, and timestamp-regression warnings |
+| IL behavior | [`ShouldOutputILText`](../README.md#configuration-table-en), [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-en), [`ILIgnoreLineContainingStrings`](../README.md#configuration-table-en) | Controls IL normalization and artifact output |
+| Parallelism | [`MaxParallelism`](../README.md#configuration-table-en), [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en), [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en) | Controls CPU and text-diff strategy |
+| Cache | [`EnableILCache`](../README.md#configuration-table-en), [`ILCacheDirectoryAbsolutePath`](../README.md#configuration-table-en), [`ILCacheStatsLogIntervalSeconds`](../README.md#configuration-table-en), [`ILCacheMaxDiskFileCount`](../README.md#configuration-table-en), [`ILCacheMaxDiskMegabytes`](../README.md#configuration-table-en) | Controls IL cache lifetime and storage |
+| Network-share mode | [`OptimizeForNetworkShares`](../README.md#configuration-table-en), [`AutoDetectNetworkShares`](../README.md#configuration-table-en) | Prevents high-I/O behavior on slower remote storage |
 
 ### Runtime mode resolution
 
@@ -344,6 +349,7 @@ Practical effect of network-optimized mode:
 - Avoid parallel text chunk reads and prefer sequential text comparison.
 - Preserve behavior correctness while reducing remote I/O amplification.
 
+<a id="guide-en-performance-runtime"></a>
 ## Performance and Runtime Modes
 
 Key performance features:
@@ -359,6 +365,7 @@ When to be careful:
 - Over-eager prefetching can regress NAS/SMB scenarios.
 - Large text-file behavior depends on both threshold and chunk size; they should be tuned together.
 
+<a id="guide-en-doc-site"></a>
 ## Documentation Site and API Reference
 
 DocFX is used as the API-reference generator and site builder.
@@ -383,6 +390,7 @@ Guardrails:
 - If you add public surface area, keep XML comments current so the generated API reference stays useful.
 - `_site/` and generated `api/*.yml` files are build outputs and should not be committed.
 
+<a id="guide-en-ci-release"></a>
 ## CI and Release Notes
 
 Workflow file:
@@ -405,7 +413,7 @@ Versioning:
 ## Extension Points
 
 Typical safe extension points:
-- Add new text extensions in [`config.json`](../config.json)
+- Add new text extensions in [`TextFileExtensions`](../README.md#configuration-table-en)
 - Introduce new report metadata in [`ReportGenerateService`](../Services/ReportGenerateService.cs)
 - Add logging around orchestration boundaries
 - Add new tests by substituting [`IFileSystemService`](../Services/IFileSystemService.cs), [`IFileComparisonService`](../Services/IFileComparisonService.cs), [`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), or [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs)
@@ -417,6 +425,7 @@ Higher-risk changes:
 - Mixing tool identities during IL comparison
 - Introducing static mutable caches without isolation
 
+<a id="guide-en-change-checklist"></a>
 ## Change Checklist
 
 Before merging behavior changes, check:
@@ -446,28 +455,29 @@ Before merging behavior changes, check:
 このガイドは、実行時挙動の変更、差分パイプラインの拡張、CI とテストの整合維持を行うメンテナ向けの資料です。
 
 関連ドキュメント:
-- [README.md](../README.md): 製品概要、導入、使い方、設定リファレンス
-- [doc/TESTING_GUIDE.md](TESTING_GUIDE.md): テスト戦略、ローカル実行コマンド、分離ルール
+- [README.md](../README.md#readme-ja-doc-map): 製品概要、導入、使い方、設定リファレンス
+- [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-ja-run-tests): テスト戦略、ローカル実行コマンド、分離ルール
 - [api/index.md](../api/index.md): 自動生成 API リファレンスの入口
 - [docfx.json](../docfx.json): DocFX のメタデータ/ビルド設定
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI パイプライン定義
 
+<a id="guide-ja-map"></a>
 ## ドキュメントの見取り図
 
 | やりたいこと | 最初に見る場所 |
 | --- | --- |
-| 実行全体の流れを把握したい | [実行ライフサイクル](#実行ライフサイクル) |
-| サービス境界や DI スコープを追いたい | [Dependency Injection 構成](#dependency-injection-構成) |
-| ファイル判定ロジックを変更したい | [比較パイプライン](#比較パイプライン) |
-| 性能やネットワーク共有向け挙動を調整したい | [性能と実行モード](#性能と実行モード) |
-| 自動生成 API リファレンスを更新したい | [ドキュメントサイトと API リファレンス](#ドキュメントサイトと-api-リファレンス) |
-| ビルド・テスト・成果物の流れを変えたい | [CI とリリースまわり](#ci-とリリースまわり) |
-| 安全に機能追加したい | [変更時チェックリスト](#変更時チェックリスト) |
+| 実行全体の流れを把握したい | [実行ライフサイクル](#guide-ja-execution-lifecycle) |
+| サービス境界や DI スコープを追いたい | [Dependency Injection 構成](#guide-ja-di-layout) |
+| ファイル判定ロジックを変更したい | [比較パイプライン](#guide-ja-comparison-pipeline) |
+| 性能やネットワーク共有向け挙動を調整したい | [性能と実行モード](#guide-ja-performance-runtime) |
+| 自動生成 API リファレンスを更新したい | [ドキュメントサイトと API リファレンス](#guide-ja-doc-site) |
+| ビルド・テスト・成果物の流れを変えたい | [CI とリリースまわり](#guide-ja-ci-release) |
+| 安全に機能追加したい | [変更時チェックリスト](#guide-ja-change-checklist) |
 
 ## ローカル開発
 
 前提:
-- [.NET SDK `8.0.413`](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0)（[`global.json`](../global.json)）
+- [`.NET SDK 8.0.413`](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0)（[`global.json`](../global.json)）
 - `PATH` 上で利用可能な IL 逆アセンブラ
   - 優先は [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) または [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)
   - フォールバックとして [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) をサポート
@@ -497,7 +507,7 @@ dotnet run -- "/absolute/path/to/old" "/absolute/path/to/new" "dev-run" --no-pau
 
 実行時に生成される主な成果物:
 - `Reports/<label>/diff_report.md`
-- `ShouldOutputILText=true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
+- [`ShouldOutputILText`](../README.md#configuration-table-ja) が `true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
 - `Logs/log_YYYYMMDD.log`
 - ディスクキャッシュ有効かつカスタム保存先未指定時はアプリ基準ディレクトリ配下の `ILCache/`
 
@@ -538,6 +548,7 @@ flowchart TD
 - [`IFileSystemService`](../Services/IFileSystemService.cs) と [`IFileComparisonService`](../Services/IFileComparisonService.cs) が、列挙/比較 I/O を切り出す最下層の差し替えポイントです。
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) は、差分処理とレポート生成が共有する実行単位の集約ハブです。
 
+<a id="guide-ja-execution-lifecycle"></a>
 ## 実行ライフサイクル
 
 ### 起動シーケンス
@@ -570,7 +581,7 @@ sequenceDiagram
 1. ログを初期化し、アプリのバージョンを表示します。
 2. `old`、`new`、`reportLabel` 引数を検証します。
 3. `Reports/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。
-4. `AppContext.BaseDirectory` から [`config.json`](../config.json) を読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。
+4. [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) から [`config.json`](../config.json) を読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。
 5. [`TimestampCache`](../Services/Caching/TimestampCache.cs) などの一時共有ヘルパーをクリアします。
 6. ネットワーク共有判定を含む [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) を組み立てます。
 7. 実行単位の DI コンテナを構築します。
@@ -583,6 +594,7 @@ sequenceDiagram
 - IL 比較由来の [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は致命的な例外扱いとし、実行全体を止めるものとします。
 - 出力ファイルの読み取り専用化はベストエフォートで、失敗しても警告止まりです。
 
+<a id="guide-ja-di-layout"></a>
 ## Dependency Injection 構成
 
 ### ルートコンテナ
@@ -637,6 +649,7 @@ sequenceDiagram
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | `FileDiffResultLists` を読むだけ |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態 |
 
+<a id="guide-ja-comparison-pipeline"></a>
 ## 比較パイプライン
 
 ### フォルダ単位のルーティング
@@ -659,7 +672,7 @@ flowchart TD
 ```
 
 実装上の補足:
-- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) は実行単位の集計を初期化し、`IgnoredExtensions` 適用後の old/new 一覧を列挙し、相対パスの和集合件数から進捗母数を作ります。
+- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) は実行単位の集計を初期化し、[`IgnoredExtensions`](../README.md#configuration-table-ja) 適用後の old/new 一覧を列挙し、相対パスの和集合件数から進捗母数を作ります。
 - `PrecomputeIlCachesAsync()` はファイルごとの本判定より前に走り、逆アセンブラや IL キャッシュのウォームアップを先に済ませます。
 - 走査の主導権は old 側にあります。new 側に対応がなければ `Removed`、最後まで `remainingNewFilesAbsolutePathHashSet` に残ったものが `Added` です。
 - 並列実行で変わるのは処理順序だけです。高コストな比較に入る前に new 側の集合から対象の相対パスを外すため、最終的な分類結果のルール自体は逐次実行時と変わりません。
@@ -699,12 +712,12 @@ flowchart TD
 - MD5 が一致した時点で `MD5Match` を記録して即終了し、その後に IL やテキスト比較へは進みません。
 - IL 経路は [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs) に委譲され、内部で `DisassemblePairWithSameDisassemblerAsync(...)`、比較用ラベル正規化、行除外、任意の IL テキスト出力までをまとめて担当します。
 - `BuildComparisonDisassemblerLabel(...)` は正しさの一部です。old/new でツール識別やバージョン表記がずれた場合は、その比較を認めず [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) にします。
-- `ShouldExcludeIlLine(...)` は `// MVID:` を必ず除外します。さらに `ShouldIgnoreILLinesContainingConfiguredStrings=true` の場合は、`ILIgnoreLineContainingStrings` に設定された文字列を trim・重複排除したうえで、`StringComparison.Ordinal` の部分一致で除外します。
-- `.NET` 実行可能として IL 比較の対象にならず、かつ拡張子が `TextFileExtensions` に含まれるファイルは、テキストファイルとして比較します。このとき `TextDiffParallelThresholdKilobytes` と `TextDiffChunkSizeKilobytes` を実効バイト数に変換し、比較方法を決めます。
-- `OptimizeForNetworkShares` が有効な場合は、ネットワーク共有上でチャンクごとに何度もファイルを開閉するコストを避けるため、ファイルサイズにかかわらず `DiffTextFilesAsync(...)` による逐次比較を使います。ローカル最適化時は old 側ファイルのサイズを基準にし、`TextDiffParallelThresholdKilobytes` 未満なら逐次比較、以上なら `TextDiffChunkSizeKilobytes` ごとの固定長チャンクに分割して `DiffTextFilesParallelAsync(...)` で並列比較します。
+- `ShouldExcludeIlLine(...)` は `// MVID:` を必ず除外します。さらに [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-ja) が `true` の場合は、[`ILIgnoreLineContainingStrings`](../README.md#configuration-table-ja) に設定された文字列を trim・重複排除したうえで、`StringComparison.Ordinal` の部分一致で除外します。
+- `.NET` 実行可能として IL 比較の対象にならず、かつ拡張子が [`TextFileExtensions`](../README.md#configuration-table-ja) に含まれるファイルは、テキストファイルとして比較します。このとき [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja) と [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) を実効バイト数に変換し、比較方法を決めます。
+- [`OptimizeForNetworkShares`](../README.md#configuration-table-ja) が有効な場合は、ネットワーク共有上でチャンクごとに何度もファイルを開閉するコストを避けるため、ファイルサイズにかかわらず `DiffTextFilesAsync(...)` による逐次比較を使います。ローカル最適化時は old 側ファイルのサイズを基準にし、[`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja) 未満なら逐次比較、以上なら [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) ごとの固定長チャンクに分割して `DiffTextFilesParallelAsync(...)` で並列比較します。
 - 並列チャンク比較の途中で [`ArgumentOutOfRangeException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.argumentoutofrangeexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) のいずれかが出た場合は、warning を記録したうえで `DiffTextFilesAsync(...)` による逐次比較へフォールバックします。したがって `DiffTextFilesParallelAsync(...)` 側でこれらの例外を `false` に置き換えて握りつぶすと、呼び出し元はフォールバックできません。
 - IL 比較対象でもテキスト比較対象でもないファイルは、MD5 不一致の時点で `MD5Mismatch` が最終結果です。`MD5Mismatch` は実行完了時の集約警告の対象でもあり、レポートでは末尾の `Warnings` セクションで更新日時逆転警告より先に出します。現状はその先の汎用バイナリ差分はありません。
-- old/new の両方に存在するファイルについて、`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp=true` かつ new 側の更新日時が old 側より古い場合は、比較結果とは別に更新日時逆転の警告が記録されます。この警告は実行完了時にコンソールへ集約出力され、レポートでは `MD5Mismatch` 警告の後に更新日時が逆転したファイルの一覧として `Warnings` セクションへ出力されます。
+- old/new の両方に存在するファイルについて、[`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../README.md#configuration-table-ja) が `true` かつ new 側の更新日時が old 側より古い場合は、比較結果とは別に更新日時逆転の警告が記録されます。この警告は実行完了時にコンソールへ集約出力され、レポートでは `MD5Mismatch` 警告の後に更新日時が逆転したファイルの一覧として `Warnings` セクションへ出力されます。
 
 失敗時の扱い:
 - IL 比較で発生した [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は、ログを出力したうえで意図的に再送出されます。これは IL ツールの不整合やセットアップ不備を致命的な例外として扱い、実行全体を停止させるためです。
@@ -753,19 +766,20 @@ catch (Exception ex)
 - IL のラベルは IL 比較時だけ存在すること
 - レポート生成は、実行結果の読み取りであり、新しい比較を開始しないこと
 
+<a id="guide-ja-config-runtime"></a>
 ## 設定と実行モード
 
-既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。[`config.json`](../config.json) は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。
+既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。[`config.json`](../config.json) は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。キーごとの説明は [README の設定表](../README.md#configuration-table-ja) を参照してください。
 
 ### 設定のまとまり
 
 | グループ | 主なキー | 目的 |
 | --- | --- | --- |
-| 対象範囲とレポート形状 | `IgnoredExtensions`, `TextFileExtensions`, `ShouldIncludeUnchangedFiles`, `ShouldIncludeIgnoredFiles`, `ShouldOutputFileTimestamps`, `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | 比較対象、レポート粒度、更新日時逆転警告の制御 |
-| IL 関連 | `ShouldOutputILText`, `ShouldIgnoreILLinesContainingConfiguredStrings`, `ILIgnoreLineContainingStrings` | IL 正規化と成果物出力の制御 |
-| 並列度 | `MaxParallelism`, `TextDiffParallelThresholdKilobytes`, `TextDiffChunkSizeKilobytes` | CPU 利用とテキスト比較戦略の制御 |
-| キャッシュ | `EnableILCache`, `ILCacheDirectoryAbsolutePath`, `ILCacheStatsLogIntervalSeconds`, `ILCacheMaxDiskFileCount`, `ILCacheMaxDiskMegabytes` | IL キャッシュの寿命と保存先制御 |
-| ネットワーク共有向け | `OptimizeForNetworkShares`, `AutoDetectNetworkShares` | 遅いストレージでの高 I/O 挙動抑制 |
+| 対象範囲とレポート形状 | [`IgnoredExtensions`](../README.md#configuration-table-ja), [`TextFileExtensions`](../README.md#configuration-table-ja), [`ShouldIncludeUnchangedFiles`](../README.md#configuration-table-ja), [`ShouldIncludeIgnoredFiles`](../README.md#configuration-table-ja), [`ShouldOutputFileTimestamps`](../README.md#configuration-table-ja), [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../README.md#configuration-table-ja) | 比較対象、レポート粒度、更新日時逆転警告の制御 |
+| IL 関連 | [`ShouldOutputILText`](../README.md#configuration-table-ja), [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-ja), [`ILIgnoreLineContainingStrings`](../README.md#configuration-table-ja) | IL 正規化と成果物出力の制御 |
+| 並列度 | [`MaxParallelism`](../README.md#configuration-table-ja), [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja), [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) | CPU 利用とテキスト比較戦略の制御 |
+| キャッシュ | [`EnableILCache`](../README.md#configuration-table-ja), [`ILCacheDirectoryAbsolutePath`](../README.md#configuration-table-ja), [`ILCacheStatsLogIntervalSeconds`](../README.md#configuration-table-ja), [`ILCacheMaxDiskFileCount`](../README.md#configuration-table-ja), [`ILCacheMaxDiskMegabytes`](../README.md#configuration-table-ja) | IL キャッシュの寿命と保存先制御 |
+| ネットワーク共有向け | [`OptimizeForNetworkShares`](../README.md#configuration-table-ja), [`AutoDetectNetworkShares`](../README.md#configuration-table-ja) | 遅いストレージでの高 I/O 挙動抑制 |
 
 ### 実行モードの決定
 
@@ -786,6 +800,7 @@ flowchart TD
 - テキスト比較は並列チャンク読みを避け、逐次比較を優先します。
 - 正しさを保ったまま、リモート I/O の増幅を抑えます。
 
+<a id="guide-ja-performance-runtime"></a>
 ## 性能と実行モード
 
 主な性能機能:
@@ -801,6 +816,7 @@ flowchart TD
 - 先読みを増やしすぎると NAS/SMB で退行しやすくなります。
 - 大きいテキストファイルの挙動は、閾値とチャンクサイズの組み合わせで決まります。
 
+<a id="guide-ja-doc-site"></a>
 ## ドキュメントサイトと API リファレンス
 
 API リファレンス生成とサイト構築には DocFX を使います。
@@ -825,6 +841,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - 公開 API を追加したら、生成結果が読める状態を維持するため XML コメントも必ず更新してください。
 - `_site/` と `api/*.yml` はビルド生成物なのでコミットしません。
 
+<a id="guide-ja-ci-release"></a>
 ## CI とリリースまわり
 
 ワークフロー:
@@ -847,7 +864,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 ## 拡張ポイント
 
 比較的安全に触りやすい場所:
-- [`config.json`](../config.json) のテキスト拡張子追加
+- [`TextFileExtensions`](../README.md#configuration-table-ja) の値追加
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs) へのレポートメタデータ追加
 - オーケストレーション境界でのログ追加
 - [`IFileSystemService`](../Services/IFileSystemService.cs)、[`IFileComparisonService`](../Services/IFileComparisonService.cs)、[`IFileDiffService`](../Services/IFileDiffService.cs)、[`IILOutputService`](../Services/IILOutputService.cs)、[`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) を差し替えるテスト追加
@@ -859,6 +876,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - IL 比較で old/new のツール識別を混在させる変更
 - 分離されていない静的可変キャッシュの導入
 
+<a id="guide-ja-change-checklist"></a>
 ## 変更時チェックリスト
 
 振る舞い変更をマージする前に確認:
