@@ -16,15 +16,15 @@ Related documents:
 
 ## Current Test Scope Map
 
-Current tree has `204` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`).
+Current tree has `206` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
-| Entry and configuration | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` exit codes, minimal end-to-end execution, config loading/default behavior, timestamp-warning console/report output |
+| Entry and configuration | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` exit codes, minimal end-to-end execution, config loading/default behavior, MD5/timestamp warning console and report output |
 | Core diff flow | `FolderDiffServiceTests`, `FileDiffServiceTests`, `FileDiffResultListsTests` | Classification (`Unchanged/Added/Removed/Modified`), diff detail labels, timestamp-regression detection, reset behavior, case-insensitive extension handling |
 | IL/disassembler behavior | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | Same-disassembler pairing, fallback behavior, blacklist logic, detection and command handling |
 | Caching | `ILCacheTests` | memory/disk cache semantics, retention, keying behavior |
-| Reporting/logging/progress | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | report sections/summary formatting, log output behavior, progress reporting lifecycle |
+| Reporting/logging/progress | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | report sections/summary formatting, report-only warning responsibility, log output behavior, progress reporting lifecycle |
 | Utility layer | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | hashing/text compare, path/network detection, command tokenization, file-name/path sanitization |
 
 Testability-related structure:

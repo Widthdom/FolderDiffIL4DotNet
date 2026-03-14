@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -146,6 +147,85 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Contains("sample.txt", reportText);
                 Assert.Contains("updated_old:", reportText);
                 Assert.Contains("updated_new:", reportText);
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                TimestampCache.Clear();
+                try
+                {
+                    if (Directory.Exists(tempRoot))
+                    {
+                        Directory.Delete(tempRoot, recursive: true);
+                    }
+                }
+                catch
+                {
+                    // ignore cleanup errors in tests
+                }
+                try
+                {
+                    if (Directory.Exists(reportDir))
+                    {
+                        Directory.Delete(reportDir, recursive: true);
+                    }
+                }
+                catch
+                {
+                    // ignore cleanup errors in tests
+                }
+            }
+        }
+
+        [Fact]
+        public async Task Main_WhenMd5MismatchExists_WritesWarningAtEndAndKeepsReportWarning()
+        {
+            TimestampCache.Clear();
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-tests-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old-md5-warning");
+            var newDir = Path.Combine(tempRoot, "new-md5-warning");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            await File.WriteAllTextAsync(Path.Combine(oldDir, "payload.bin"), "old");
+            await File.WriteAllTextAsync(Path.Combine(newDir, "payload.bin"), "new");
+
+            var reportLabel = "report_" + Guid.NewGuid().ToString("N");
+            var reportDir = Path.Combine(AppContext.BaseDirectory, "Reports", reportLabel);
+            var configJson = """
+            {
+              "IgnoredExtensions": [],
+              "TextFileExtensions": [],
+              "MaxLogGenerations": 3,
+              "ShouldIncludeUnchangedFiles": true,
+              "ShouldIncludeIgnoredFiles": false,
+              "ShouldOutputILText": false,
+              "ShouldIgnoreILLinesContainingConfiguredStrings": false,
+              "ILIgnoreLineContainingStrings": [],
+              "ShouldOutputFileTimestamps": false,
+              "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": true,
+              "MaxParallelism": 1,
+              "EnableILCache": false,
+              "OptimizeForNetworkShares": false,
+              "AutoDetectNetworkShares": false
+            }
+            """;
+            var originalOut = Console.Out;
+            var writer = new StringWriter();
+
+            try
+            {
+                Console.SetOut(writer);
+                await WithConfigFileAsync(configJson, async () =>
+                {
+                    var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, reportLabel, "--no-pause" });
+                    Assert.Equal(0, exitCode);
+                });
+
+                var consoleText = writer.ToString();
+                Assert.Contains(Constants.WARNING_MD5_MISMATCH, consoleText);
+
+                var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
+                Assert.Contains(Constants.WARNING_MD5_MISMATCH, reportText);
             }
             finally
             {

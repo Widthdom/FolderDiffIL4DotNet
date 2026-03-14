@@ -77,6 +77,7 @@ Main output:
 
 - `Program.cs` is intentionally thin and only resolves `ProgramRunner`.
 - `ProgramRunner` validates arguments, loads `config.json`, builds a per-run DI container, and executes the diff/report pipeline.
+- `ProgramRunner` also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
 - `DiffExecutionContext` carries run-specific paths and network-mode decisions.
 - Core pipeline services (`FolderDiffService`, `FileDiffService`, `ILOutputService`) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
 
@@ -137,6 +138,7 @@ flowchart TD
 - Once one diff detail is recorded for a file, no further checks run for that file; processing moves to the next target file.
 - In parallel mode, the same short-circuit rule applies independently per file.
 - IL compare failure (`InvalidOperationException`) is rethrown, so the whole folder-diff run stops.
+- `ReportGenerateService` writes report warnings, while `ProgramRunner` prints aggregated yellow console warnings at the end of the run.
 
 ## Configuration (`config.json`)
 
@@ -267,6 +269,7 @@ Notes:
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in `TextFileExtensions`.
 - Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
+- If any file ends as `MD5Mismatch`, the report summary keeps the warning and the same message is printed once at run completion.
 
 ## Generated Artifacts
 
@@ -365,6 +368,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 - `Program.cs` は薄いエントリーポイントで、`ProgramRunner` の解決だけを行います。
 - `ProgramRunner` が引数検証、`config.json` 読込、実行単位 DI コンテナ生成、差分/レポート処理の実行を担います。
+- `ProgramRunner` は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
 - `DiffExecutionContext` が実行ごとのパスやネットワークモード判定を保持します。
 - 主要パイプラインサービス（`FolderDiffService`, `FileDiffService`, `ILOutputService`）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
 
@@ -425,6 +429,7 @@ flowchart TD
 - 1ファイルで1つの詳細判定（`MD5Match` など）が記録された時点で、そのファイルの追加判定は行われず次の対象へ進みます。
 - 並列実行時も、この短絡ルールは各ファイルごとに独立して同じです。
 - IL 比較で `InvalidOperationException` が発生した場合は再送出され、フォルダ比較全体が停止します。
+- レポート警告の記述は `ReportGenerateService` が行い、終了時の黄色コンソール警告は `ProgramRunner` が集約して出力します。
 
 ## 設定（`config.json`）
 
@@ -555,6 +560,7 @@ flowchart TD
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は `TextFileExtensions` に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。
+- `MD5Mismatch` が1件でもある場合、レポート Summary の警告を維持したまま、同じ文言を実行終了時のコンソールにも1回だけ出力します。
 
 ## 生成物
 

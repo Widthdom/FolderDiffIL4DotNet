@@ -63,6 +63,7 @@ namespace FolderDiffIL4DotNet
         public async Task<int> RunAsync(string[] args)
         {
             var exitCode = EXIT_CODE_SUCCESS;
+            bool hasMd5MismatchWarnings = false;
             bool hasTimestampRegressionWarnings = false;
             try
             {
@@ -112,6 +113,9 @@ namespace FolderDiffIL4DotNet
                     progressReporter.Dispose();
                 }
 
+                hasMd5MismatchWarnings = resultLists.HasAnyMd5Mismatch;
+                hasTimestampRegressionWarnings = resultLists.HasAnyNewFileTimestampOlderThanOldWarning;
+
                 scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(
                     executionContext.OldFolderAbsolutePath,
                     executionContext.NewFolderAbsolutePath,
@@ -120,8 +124,6 @@ namespace FolderDiffIL4DotNet
                     elapsedTimeString,
                     computerName,
                     config);
-
-                hasTimestampRegressionWarnings = resultLists.HasAnyNewFileTimestampOlderThanOldWarning;
 
                 _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
             }
@@ -133,7 +135,7 @@ namespace FolderDiffIL4DotNet
             }
             finally
             {
-                OutputTimestampRegressionWarnings(hasTimestampRegressionWarnings);
+                OutputCompletionWarnings(hasMd5MismatchWarnings, hasTimestampRegressionWarnings);
 
                 if ((args?.Any(arg => string.Equals(arg, NO_PAUSE, StringComparison.OrdinalIgnoreCase)) ?? false)
                     || Console.IsInputRedirected
@@ -159,8 +161,13 @@ namespace FolderDiffIL4DotNet
             return exitCode;
         }
 
-        private void OutputTimestampRegressionWarnings(bool hasTimestampRegressionWarnings)
+        private void OutputCompletionWarnings(bool hasMd5MismatchWarnings, bool hasTimestampRegressionWarnings)
         {
+            if (hasMd5MismatchWarnings)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, Constants.WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
+            }
+
             if (!hasTimestampRegressionWarnings)
             {
                 return;

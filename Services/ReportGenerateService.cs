@@ -49,11 +49,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string MVID_PREFIX = "// MVID:";
 
         /// <summary>
-        /// MD5Mismatch警告文言
-        /// </summary>
-        private const string WARNING_MD5_MISMATCH = $"One or more files were classified as `{Constants.LABEL_MD5}Mismatch`. Manual review is recommended because only an {Constants.LABEL_MD5} hash comparison was possible.";
-
-        /// <summary>
         /// レポート生成スピナーのラベル。
         /// </summary>
         private const string SPINNER_LABEL_GENERATING_REPORT = "Generating report";
@@ -415,11 +410,6 @@ namespace FolderDiffIL4DotNet.Services
         {
             string diffReportAbsolutePath = Path.Combine(reportsFolderAbsolutePath, DIFF_REPORT_FILE_NAME);
             bool hasMd5Mismatch = _fileDiffResultLists.HasAnyMd5Mismatch;
-            if (hasMd5Mismatch)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
-            }
-
             bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT);
             var reportGenerated = false;
@@ -687,7 +677,7 @@ namespace FolderDiffIL4DotNet.Services
             streamWriter.WriteLine();
             if (hasMd5Mismatch)
             {
-                streamWriter.WriteLine(string.Format(REPORT_WARNING_LINE, WARNING_MD5_MISMATCH));
+                streamWriter.WriteLine(string.Format(REPORT_WARNING_LINE, Constants.WARNING_MD5_MISMATCH));
             }
         }
 

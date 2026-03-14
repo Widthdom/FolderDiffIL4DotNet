@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- Moved aggregated `MD5Mismatch` console warnings into `ProgramRunner`, kept `ReportGenerateService` report-only, and updated related docs and automated tests.
+
 ### [1.2.2] - 2026-03-14
 
 #### Added
@@ -198,6 +202,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- 集約後の `MD5Mismatch` コンソール警告を `ProgramRunner` に移し、`ReportGenerateService` はレポート専用の責務に整理しました。あわせて関連ドキュメントと自動テストを更新しました。
 
 ### [1.2.2] - 2026-03-14
 

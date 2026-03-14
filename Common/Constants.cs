@@ -67,5 +67,10 @@ namespace FolderDiffIL4DotNet.Common
         /// </summary>
         public const string ERROR_MAX_PARALLEL = "The maximum degree of parallelism must be 1 or greater.";
 
+        /// <summary>
+        /// MD5Mismatch の共通警告文言。
+        /// </summary>
+        public const string WARNING_MD5_MISMATCH = $"One or more files were classified as `{LABEL_MD5}Mismatch`. Manual review is recommended because only an {LABEL_MD5} hash comparison was possible.";
+
     }
 }

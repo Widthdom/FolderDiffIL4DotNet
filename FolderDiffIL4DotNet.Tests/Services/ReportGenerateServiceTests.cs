@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -299,8 +300,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("**WARNING:** One or more files were classified as `MD5Mismatch`.", reportText);
-            Assert.Contains("Manual review is recommended", reportText);
+            Assert.Contains(Constants.WARNING_MD5_MISMATCH, reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_DoesNotEmitConsoleWarningLog_WhenMd5MismatchExists()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-md5-warning-log");
+            var newDir = Path.Combine(_rootDir, "new-md5-warning-log");
+            var reportDir = Path.Combine(_rootDir, "report-md5-warning-log");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var oldFile = Path.Combine(oldDir, "payload.bin");
+            var newFile = Path.Combine(newDir, "payload.bin");
+            File.WriteAllText(oldFile, "old");
+            File.WriteAllText(newFile, "new");
+
+            _resultLists.SetOldFilesAbsolutePath(new List<string> { oldFile });
+            _resultLists.SetNewFilesAbsolutePath(new List<string> { newFile });
+            _resultLists.AddModifiedFileRelativePath("payload.bin");
+            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+
+            var logger = new TestLogger();
+            var service = new ReportGenerateService(_resultLists, logger);
+            var config = CreateConfig();
+            service.GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            Assert.DoesNotContain(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message == Constants.WARNING_MD5_MISMATCH);
         }
 
         [Fact]
@@ -352,5 +387,24 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             _resultLists.ResetAll();
         }
+
+        private sealed class TestLogger : ILoggerService
+        {
+            public string LogFileAbsolutePath => null;
+
+            public List<LogEntry> Entries { get; } = new();
+
+            public void Initialize() { }
+
+            public void CleanupOldLogFiles(int maxLogGenerations) { }
+
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+                => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
+
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+                => Entries.Add(new LogEntry(logLevel, message));
+        }
+
+        private sealed record LogEntry(AppLogLevel LogLevel, string Message);
     }
 }

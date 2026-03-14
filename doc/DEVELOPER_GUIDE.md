@@ -97,6 +97,7 @@ sequenceDiagram
     Runner->>Diff: ExecuteFolderDiffAsync()
     Diff-->>Runner: results in FileDiffResultLists
     Runner->>Report: GenerateDiffReport(...)
+    Runner->>Runner: output aggregated completion warnings
     Runner-->>CLI: exit code 0 or 1
 ```
 
@@ -111,7 +112,8 @@ sequenceDiagram
 7. Build the run-scoped DI container.
 8. Run the folder diff and dispose the progress reporter.
 9. Generate `diff_report.md` from aggregated results.
-10. Return success or log the exception and return error.
+10. Emit aggregated completion warnings such as `MD5Mismatch` and timestamp regression.
+11. Return success or log the exception and return error.
 
 Failure behavior:
 - Any unhandled exception in diffing or report generation becomes exit code `1`.
@@ -231,6 +233,7 @@ Rules that are easy to break:
 - Modified and unchanged file detail dictionaries must not contain stale entries from a previous run.
 - IL tool labels are only present for IL-based comparisons.
 - Report generation is a pure read of run state plus method arguments; it should not trigger new comparisons.
+- `ProgramRunner` owns end-of-run yellow console warnings derived from this aggregated state; `ReportGenerateService` should stay report-only.
 
 ## Configuration and Runtime Modes
 
