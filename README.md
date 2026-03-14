@@ -126,6 +126,7 @@ Override only the settings you want to change. For example:
 ```json
 {
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_"],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
   "ShouldIncludeIgnoredFiles": false
@@ -328,6 +329,7 @@ flowchart TD
 ```json
 {
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_"],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
   "ShouldIncludeIgnoredFiles": false
