@@ -79,6 +79,7 @@ Main output:
 - `ProgramRunner` validates arguments, loads `config.json`, builds a per-run DI container, and executes the diff/report pipeline.
 - `ProgramRunner` also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
 - `DiffExecutionContext` carries run-specific paths and network-mode decisions.
+- `FolderDiffService` uses `IFileSystemService` for discovery/output I/O and `FileDiffService` uses `IFileComparisonService` for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
 - Core pipeline services (`FolderDiffService`, `FileDiffService`, `ILOutputService`) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
 
 ## Comparison Flow
@@ -341,6 +342,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 - `ProgramRunner` が引数検証、`config.json` 読込、実行単位 DI コンテナ生成、差分/レポート処理の実行を担います。
 - `ProgramRunner` は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
 - `DiffExecutionContext` が実行ごとのパスやネットワークモード判定を保持します。
+- `FolderDiffService` は列挙/出力系 I/O を `IFileSystemService`、`FileDiffService` はハッシュ/テキスト/チャンク読み出し系 I/O を `IFileComparisonService` に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
 - 主要パイプラインサービス（`FolderDiffService`, `FileDiffService`, `ILOutputService`）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
 
 ## 比較フロー

@@ -117,6 +117,11 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILoggerService _logger;
 
         /// <summary>
+        /// ファイルシステムアクセス。
+        /// </summary>
+        private readonly IFileSystemService _fileSystem;
+
+        /// <summary>
         /// コンストラクタ。
         /// 必須パラメータをフィールドに束ね、IL 出力先（old/new サブディレクトリのパス）も初期化します。
         /// </summary>
@@ -134,11 +139,27 @@ namespace FolderDiffIL4DotNet.Services
             IFileDiffService fileDiffService,
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger)
+            : this(config, progressReporter, executionContext, fileDiffService, fileDiffResultLists, logger, new FileSystemService())
+        {
+        }
+
+        /// <summary>
+        /// テスト向けにファイルシステム実装を差し替え可能なコンストラクタ。
+        /// </summary>
+        public FolderDiffService(
+            ConfigSettings config,
+            ProgressReportService progressReporter,
+            DiffExecutionContext executionContext,
+            IFileDiffService fileDiffService,
+            FileDiffResultLists fileDiffResultLists,
+            ILoggerService logger,
+            IFileSystemService fileSystem)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(progressReporter);
             ArgumentNullException.ThrowIfNull(executionContext);
             ArgumentNullException.ThrowIfNull(fileDiffService);
+            ArgumentNullException.ThrowIfNull(fileSystem);
 
             _config = config;
             _progressReporter = progressReporter;
@@ -156,6 +177,7 @@ namespace FolderDiffIL4DotNet.Services
             _detectedNetworkNew = executionContext.DetectedNetworkNew;
             _optimizeForNetworkShares = executionContext.OptimizeForNetworkShares;
             _fileDiffService = fileDiffService;
+            _fileSystem = fileSystem;
         }
 
         /// <summary>
@@ -428,7 +450,7 @@ namespace FolderDiffIL4DotNet.Services
         private List<string> EnumerateIncludedFiles(string rootFolderAbsolutePath, HashSet<string> ignoredExtensions, FileDiffResultLists.IgnoredFileLocation locationFlag)
         {
             var includedFiles = new List<string>();
-            foreach (var fileAbsolutePath in Directory.GetFiles(rootFolderAbsolutePath, "*", SearchOption.AllDirectories))
+            foreach (var fileAbsolutePath in _fileSystem.GetFiles(rootFolderAbsolutePath, "*", SearchOption.AllDirectories))
             {
                 if (ignoredExtensions.Contains(Path.GetExtension(fileAbsolutePath)))
                 {
@@ -547,13 +569,13 @@ namespace FolderDiffIL4DotNet.Services
         private void CreateIlOutputDirectoriesIfNeeded()
         {
             PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOutputFolderAbsolutePath);
-            Directory.CreateDirectory(_ilOutputFolderAbsolutePath);
+            _fileSystem.CreateDirectory(_ilOutputFolderAbsolutePath);
             if (_config.ShouldOutputILText)
             {
                 PathValidator.ValidateAbsolutePathLengthOrThrow(_ilOldFolderAbsolutePath);
                 PathValidator.ValidateAbsolutePathLengthOrThrow(_ilNewFolderAbsolutePath);
-                Directory.CreateDirectory(_ilOldFolderAbsolutePath);
-                Directory.CreateDirectory(_ilNewFolderAbsolutePath);
+                _fileSystem.CreateDirectory(_ilOldFolderAbsolutePath);
+                _fileSystem.CreateDirectory(_ilNewFolderAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Info, $"Prepared IL output directories: old='{_ilOldFolderAbsolutePath}', new='{_ilNewFolderAbsolutePath}'", shouldOutputMessageToConsole: true);
             }
         }
@@ -581,8 +603,8 @@ namespace FolderDiffIL4DotNet.Services
                 return;
             }
 
-            var oldLastWriteTimeUtc = File.GetLastWriteTimeUtc(oldFileAbsolutePath);
-            var newLastWriteTimeUtc = File.GetLastWriteTimeUtc(newFileAbsolutePath);
+            var oldLastWriteTimeUtc = _fileSystem.GetLastWriteTimeUtc(oldFileAbsolutePath);
+            var newLastWriteTimeUtc = _fileSystem.GetLastWriteTimeUtc(newFileAbsolutePath);
             if (newLastWriteTimeUtc >= oldLastWriteTimeUtc)
             {
                 return;

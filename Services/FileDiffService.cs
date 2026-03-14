@@ -64,6 +64,11 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILoggerService _logger;
 
         /// <summary>
+        /// ファイル比較・判定 I/O。
+        /// </summary>
+        private readonly IFileComparisonService _fileComparisonService;
+
+        /// <summary>
         /// 依存関係を受け取り初期化します。
         /// </summary>
         /// <param name="config">アプリケーション設定。</param>
@@ -77,10 +82,25 @@ namespace FolderDiffIL4DotNet.Services
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger)
+            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, new FileComparisonService())
+        {
+        }
+
+        /// <summary>
+        /// テスト向けに比較 I/O を差し替え可能なコンストラクタ。
+        /// </summary>
+        public FileDiffService(
+            ConfigSettings config,
+            IILOutputService ilOutputService,
+            DiffExecutionContext executionContext,
+            FileDiffResultLists fileDiffResultLists,
+            ILoggerService logger,
+            IFileComparisonService fileComparisonService)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(ilOutputService);
             ArgumentNullException.ThrowIfNull(executionContext);
+            ArgumentNullException.ThrowIfNull(fileComparisonService);
 
             _config = config;
             _ilOutputService = ilOutputService;
@@ -91,6 +111,7 @@ namespace FolderDiffIL4DotNet.Services
             _fileDiffResultLists = fileDiffResultLists;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
+            _fileComparisonService = fileComparisonService;
         }
 
         /// <summary>
@@ -114,14 +135,14 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 // 1) MD5: ファイルサイズや内容が完全一致する場合はここで終了。
-                if (await FileComparer.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
+                if (await _fileComparisonService.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
                 {
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Match);
                     return true;
                 }
 
                 // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
-                var dotNetDetectionResult = DotNetDetector.DetectDotNetExecutable(file1AbsolutePath);
+                var dotNetDetectionResult = _fileComparisonService.DetectDotNetExecutable(file1AbsolutePath);
                 if (dotNetDetectionResult.IsFailure)
                 {
                     _logger.LogMessage(
@@ -165,12 +186,12 @@ namespace FolderDiffIL4DotNet.Services
                         if (_optimizeForNetworkShares)
                         {
                             // ネットワーク共有最適化時は、チャンク毎のOpen/Closeを伴う並列比較は避け、逐次読みで比較
-                            areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                            areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                         }
                         else
                         {
-                            var file1Info = new FileInfo(file1AbsolutePath);
-                            if (file1Info.Length >= textDiffParallelThresholdBytes)
+                            long file1Length = _fileComparisonService.GetFileLength(file1AbsolutePath);
+                            if (file1Length >= textDiffParallelThresholdBytes)
                             {
                                 // 大きいファイルは並列チャンク比較で高速化
                                 areTextFilesEqual = await DiffTextFilesParallelAsync(
@@ -183,14 +204,14 @@ namespace FolderDiffIL4DotNet.Services
                             else
                             {
                                 // 小さいファイルは逐次行比較（並列化のオーバーヘッドを避ける）
-                                areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                                areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                             }
                         }
                     }
                     catch (Exception ex)
                     {
                         _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                     }
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
                     return areTextFilesEqual;
@@ -220,23 +241,23 @@ namespace FolderDiffIL4DotNet.Services
         /// <returns>一致すれば true。不一致なら false。</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下の場合。</exception>
         /// <exception cref="Exception">チャンク読み取りや比較準備で予期しない例外が発生した場合。</exception>
-        private static async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes, int chunkSizeBytes, int maxParallel)
+        private async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes, int chunkSizeBytes, int maxParallel)
         {
-            var file1Info = new FileInfo(file1AbsolutePath);
-            var file2Info = new FileInfo(file2AbsolutePath);
             // どちらかが存在しない、またはサイズが異なる場合は比較するまでもなく不一致。
-            if (!file1Info.Exists || !file2Info.Exists)
+            if (!_fileComparisonService.FileExists(file1AbsolutePath) || !_fileComparisonService.FileExists(file2AbsolutePath))
             {
                 return false;
             }
-            if (file1Info.Length != file2Info.Length)
+            long file1Length = _fileComparisonService.GetFileLength(file1AbsolutePath);
+            long file2Length = _fileComparisonService.GetFileLength(file2AbsolutePath);
+            if (file1Length != file2Length)
             {
                 return false;
             }
             // 小さいファイルは既存の逐次比較に委譲して余計なオーバーヘッドを避ける。
-            if (file1Info.Length < largeFileSizeThresholdBytes)
+            if (file1Length < largeFileSizeThresholdBytes)
             {
-                return await FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                return await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
             }
             if (maxParallel <= 0)
             {
@@ -244,7 +265,7 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             // 大きなファイルは固定サイズのチャンクに分割し、読み取り→比較を並列実行する。
-            int chunkCount = (int)((file1Info.Length + chunkSizeBytes - 1) / chunkSizeBytes);
+            int chunkCount = (int)((file1Length + chunkSizeBytes - 1) / chunkSizeBytes);
             var differences = 0;
             await Parallel.ForEachAsync(Enumerable.Range(0, chunkCount), new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (index, cancellationToken) =>
             {
@@ -255,15 +276,8 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 var buffer1 = new byte[chunkSizeBytes];
                 var buffer2 = new byte[chunkSizeBytes];
-                int read1, read2;
-                using (var file1Stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                using (var file2Stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    file1Stream.Seek((long)index * chunkSizeBytes, SeekOrigin.Begin);
-                    file2Stream.Seek((long)index * chunkSizeBytes, SeekOrigin.Begin);
-                    read1 = await file1Stream.ReadAsync(buffer1.AsMemory(0, chunkSizeBytes), cancellationToken);
-                    read2 = await file2Stream.ReadAsync(buffer2.AsMemory(0, chunkSizeBytes), cancellationToken);
-                }
+                int read1 = await _fileComparisonService.ReadChunkAsync(file1AbsolutePath, (long)index * chunkSizeBytes, buffer1.AsMemory(0, chunkSizeBytes), cancellationToken);
+                int read2 = await _fileComparisonService.ReadChunkAsync(file2AbsolutePath, (long)index * chunkSizeBytes, buffer2.AsMemory(0, chunkSizeBytes), cancellationToken);
                 // 同じオフセットのチャンクでも読み取りバイト数が異なれば即時不一致。
                 if (read1 != read2)
                 {

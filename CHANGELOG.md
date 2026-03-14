@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Added `IFileSystemService` and `IFileComparisonService` as low-level seams for folder discovery/output I/O and per-file comparison I/O, making permission and disk-failure paths unit-testable without changing production behavior.
+- Split folder/file diff coverage more clearly into lightweight unit tests and temp-directory-backed integration tests, and expanded automated coverage for hash failures, IL-output failures, and large-text comparison paths.
+- Updated the README, developer guide, and testing guide in both English and Japanese to document the new service seams, test boundaries, and the latest passing test count (`218`).
 - Moved aggregated `MD5Mismatch` console warnings into `ProgramRunner`, kept `ReportGenerateService` report-only, and updated related docs and automated tests.
 - Replaced one-off `string.Format(...)` usage with interpolated strings, removed broad `#region` usage, and deleted now-unused format/message constants.
 - Updated the developer and testing guides to reflect the current source-style expectations and latest passing test count.
@@ -208,6 +211,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
+- `IFileSystemService` と `IFileComparisonService` を追加し、フォルダ列挙/出力系 I/O とファイル単位比較 I/O の差し替え口を明確にしました。これにより、本番挙動を変えずに権限エラーやディスク系失敗をユニットテストできるようにしました。
+- `FolderDiffService` / `FileDiffService` まわりのテストを、軽量ユニットテストと temp ディレクトリ前提の統合テストにより明確に分離し、ハッシュ失敗、IL 出力失敗、大きいテキスト比較経路の自動テストを拡充しました。
+- README、開発者ガイド、テストガイドの日英両記述を更新し、新しいサービス境界、テスト境界、最新の通過テスト件数（`218` 件）を反映しました。
 - 集約後の `MD5Mismatch` コンソール警告を `ProgramRunner` に移し、`ReportGenerateService` はレポート専用の責務に整理しました。あわせて関連ドキュメントと自動テストを更新しました。
 - 単発利用の `string.Format(...)` を補間文字列へ置き換え、広範な `#region` 利用をやめ、不要になった書式・メッセージ定数を削除しました。
 - 開発ガイドとテストガイドを更新し、現在のソースコード方針と最新の通過テスト件数を反映しました。

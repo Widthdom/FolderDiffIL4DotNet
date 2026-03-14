@@ -16,12 +16,12 @@ Related documents:
 
 ## Current Test Scope Map
 
-Current tree has `209` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`).
+Current tree has `218` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
 | Entry and configuration | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` exit codes, minimal end-to-end execution, config loading/default behavior, MD5/timestamp warning console and report output |
-| Core diff flow | `FolderDiffServiceTests`, `FileDiffServiceTests`, `FileDiffResultListsTests` | Classification (`Unchanged/Added/Removed/Modified`), diff detail labels, timestamp-regression detection, reset behavior, case-insensitive extension handling, propagated text-diff fallback behavior |
+| Core diff flow | `FolderDiffServiceTests`, `FolderDiffServiceUnitTests`, `FileDiffServiceTests`, `FileDiffServiceUnitTests`, `FileDiffResultListsTests` | Classification (`Unchanged/Added/Removed/Modified`), diff detail labels, timestamp-regression detection, reset behavior, case-insensitive extension handling, propagated text-diff fallback behavior, permission/I/O failure handling, large-batch classification without real disk I/O, per-file hash/IL/text error handling without real disk |
 | IL/disassembler behavior | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | Same-disassembler pairing, fallback behavior, blacklist logic, detection and command handling, failure-vs-non-.NET detection semantics |
 | Caching | `ILCacheTests` | memory/disk cache semantics, retention, keying behavior |
 | Reporting/logging/progress | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | report sections/summary formatting, report-only warning responsibility, log output behavior, progress reporting lifecycle |
@@ -30,11 +30,14 @@ Current tree has `209` passing tests in the latest full run (`dotnet test Folder
 Testability-related structure:
 - `ProgramTests` exercise the thin `Program.Main` entry point while the execution orchestration lives in `ProgramRunner`, which reduces static-state coupling.
 - Diff pipeline services now expose interface seams (`IFileDiffService`, `IILOutputService`, `IFolderDiffService`, `IDotNetDisassembleService`, `IILTextOutputService`) so tests can replace collaborators directly.
+- `FolderDiffService` also accepts `IFileSystemService`, which lets unit tests simulate enumeration failures, output-directory I/O failures, and large file sets without creating real directories.
+- `FileDiffService` also accepts `IFileComparisonService`, which lets unit tests simulate hash permission failures, IL-output write failures, and large-text chunk reads without creating real files.
 - `DiffExecutionContext` carries per-run paths and network-mode flags, which keeps test setup explicit and avoids mutating shared global state.
+- `FolderDiffServiceUnitTests` and `FileDiffServiceUnitTests` are marked with `Trait("Category", "Unit")`, while the temp-directory-backed `FolderDiffServiceTests` and `FileDiffServiceTests` are marked with `Trait("Category", "Integration")` to keep the boundary explicit.
 
 Recommended starting points by change type:
 - Entry point, CLI validation, or run orchestration changes: start with `ProgramTests` and `FolderDiffServiceTests`.
-- Per-file classification changes: start with `FileDiffServiceTests`.
+- Per-file classification changes: start with `FileDiffServiceUnitTests`, then confirm with `FileDiffServiceTests`.
 - IL/disassembler or cache changes: start with `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, and `ILCacheTests`.
 - Report wording or section changes: start with `ReportGenerateServiceTests`.
 
@@ -55,13 +58,25 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 Run one class:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --filter "FullyQualifiedName~FolderDiffIL4DotNet.Tests.Services.FolderDiffServiceTests"
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "FullyQualifiedName~FolderDiffIL4DotNet.Tests.Services.FolderDiffServiceTests"
 ```
 
 Run one test method:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --filter "FullyQualifiedName~Main_WithValidArguments_ReturnsSuccessAndGeneratesReport"
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "FullyQualifiedName~Main_WithValidArguments_ReturnsSuccessAndGeneratesReport"
+```
+
+Run only the lightweight unit tests for folder classification:
+
+```bash
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=Unit"
+```
+
+Run the filesystem-backed integration tests:
+
+```bash
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=Integration"
 ```
 
 CI-parity command (same as GitHub Actions test step):
@@ -129,12 +144,12 @@ Workflow: `.github/workflows/dotnet.yml`
 
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`）では `209` 件が成功しています。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`）では `218` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
 | エントリーポイント/設定 | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` の終了コード、最小構成の実行、設定読込/既定値、更新日時警告のコンソール/レポート出力 |
-| 差分処理本体 | `FolderDiffServiceTests`, `FileDiffServiceTests`, `FileDiffResultListsTests` | `Unchanged/Added/Removed/Modified` の分類、判定理由、更新日時逆転検出、状態リセット、拡張子大小無視、伝播したテキスト比較例外からのフォールバック |
+| 差分処理本体 | `FolderDiffServiceTests`, `FolderDiffServiceUnitTests`, `FileDiffServiceTests`, `FileDiffServiceUnitTests`, `FileDiffResultListsTests` | `Unchanged/Added/Removed/Modified` の分類、判定理由、更新日時逆転検出、状態リセット、拡張子大小無視、伝播したテキスト比較例外からのフォールバック、権限エラー/出力先 I/O 失敗/大量ファイルの扱い、ファイル単位のハッシュ/IL/テキスト分岐の異常系 |
 | IL/逆アセンブラ | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | 同一逆アセンブラ比較、フォールバック、ブラックリスト、検出・コマンド処理、判定失敗と非 .NET の区別 |
 | キャッシュ | `ILCacheTests` | メモリ/ディスクキャッシュの保持、キー生成、削除方針 |
 | レポート/ログ/進捗 | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | レポート出力内容、ログ動作、進捗報告ライフサイクル |
@@ -143,11 +158,14 @@ Workflow: `.github/workflows/dotnet.yml`
 テスタビリティに関する構成:
 - `ProgramTests` は薄い `Program.Main` を対象にしつつ、実行オーケストレーション本体は `ProgramRunner` に分離されています。これにより静的状態への結合を減らしています。
 - 差分パイプラインの主要サービスは `IFileDiffService`, `IILOutputService`, `IFolderDiffService`, `IDotNetDisassembleService`, `IILTextOutputService` の差し替えポイントを持ちます。
+- `FolderDiffService` は `IFileSystemService` も受け取れるため、ユニットテストでは実ファイルを作らずに列挙失敗・出力先 I/O 失敗・大量ファイル入力を再現できます。
+- `FileDiffService` は `IFileComparisonService` も受け取れるため、ユニットテストでは実ファイルを作らずにハッシュ権限エラー・IL 出力失敗・大きいテキスト比較のチャンク読み出しを再現できます。
 - `DiffExecutionContext` が実行単位のパスやネットワークモードを保持するため、テストセットアップで共有グローバル状態を書き換える必要がありません。
+- `FolderDiffServiceUnitTests` と `FileDiffServiceUnitTests` には `Trait("Category", "Unit")`、実ディレクトリを使う `FolderDiffServiceTests` と `FileDiffServiceTests` には `Trait("Category", "Integration")` を付け、境界を明示しています。
 
 変更種別ごとの出発点:
 - エントリーポイント、CLI 引数検証、実行オーケストレーション変更: `ProgramTests` と `FolderDiffServiceTests`
-- ファイル単位の分類変更: `FileDiffServiceTests`
+- ファイル単位の分類変更: `FileDiffServiceUnitTests` を先に見て、最後に `FileDiffServiceTests`
 - IL/逆アセンブラ/キャッシュ変更: `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `ILCacheTests`
 - レポート文言やセクション変更: `ReportGenerateServiceTests`
 
@@ -156,25 +174,37 @@ Workflow: `.github/workflows/dotnet.yml`
 全テスト実行:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false
 ```
 
 カバレッジ付き実行（Cobertura XML）:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --collect:"XPlat Code Coverage" --results-directory ./TestResults
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
 クラス単位実行:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --filter "FullyQualifiedName~FolderDiffIL4DotNet.Tests.Services.FolderDiffServiceTests"
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "FullyQualifiedName~FolderDiffIL4DotNet.Tests.Services.FolderDiffServiceTests"
 ```
 
 メソッド単位実行:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --filter "FullyQualifiedName~Main_WithValidArguments_ReturnsSuccessAndGeneratesReport"
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "FullyQualifiedName~Main_WithValidArguments_ReturnsSuccessAndGeneratesReport"
+```
+
+`FolderDiffService` の軽量ユニットテストだけを回す場合:
+
+```bash
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=Unit"
+```
+
+実ディレクトリを使う統合テストだけを回す場合:
+
+```bash
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=Integration"
 ```
 
 CI 同等コマンド（GitHub Actions と同じ test ステップ）:

@@ -31,7 +31,7 @@ Common commands:
 ```bash
 dotnet restore FolderDiffIL4DotNet.sln
 dotnet build FolderDiffIL4DotNet.sln --configuration Release
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false
 ```
 
 Debugging a local run:
@@ -64,13 +64,15 @@ flowchart TD
     E --> F["FolderDiffService"]
     E --> G["ReportGenerateService"]
     E --> H["ProgressReportService"]
-    F --> I["FileDiffService"]
-    I --> J["ILOutputService"]
-    J --> K["DotNetDisassembleService"]
-    J --> L["ILCache"]
-    J --> M["ILTextOutputService"]
-    F --> N["FileDiffResultLists"]
-    G --> N
+    F --> I["IFileSystemService"]
+    F --> J["FileDiffService"]
+    J --> K["IFileComparisonService"]
+    J --> L["ILOutputService"]
+    L --> M["DotNetDisassembleService"]
+    L --> N["ILCache"]
+    L --> O["ILTextOutputService"]
+    F --> P["FileDiffResultLists"]
+    G --> P
 ```
 
 Design intent:
@@ -78,6 +80,7 @@ Design intent:
 - `ProgramRunner` is the orchestration boundary for one console execution.
 - `DiffExecutionContext` carries immutable run-specific paths and mode decisions.
 - Core pipeline services use constructor injection and interfaces instead of static mutable state or ad hoc object creation.
+- `IFileSystemService` and `IFileComparisonService` are the low-level seams that keep discovery/compare I/O unit-testable without changing the production decision tree.
 - `FileDiffResultLists` is the run-scoped aggregation hub shared by diffing and reporting.
 
 ## Execution Lifecycle
@@ -151,6 +154,8 @@ Registered in `ProgramRunner.BuildRunServiceProvider(...)`:
 - `ILCache` (nullable when disabled)
 - `ProgressReportService`
 - `ReportGenerateService`
+- `IFileSystemService` / `FileSystemService`
+- `IFileComparisonService` / `FileComparisonService`
 - `IILTextOutputService` / `ILTextOutputService`
 - `IDotNetDisassembleService` / `DotNetDisassembleService`
 - `IILOutputService` / `ILOutputService`
@@ -170,7 +175,9 @@ Why this matters:
 | `ProgramRunner.cs` | Argument validation, config loading, run DI creation, orchestration | Main control plane |
 | `Services/DiffExecutionContext.cs` | Immutable run paths and network-mode decisions | No mutable state |
 | `Services/FolderDiffService.cs` | File discovery, scheduling, classification orchestration | Owns progress and added/removed routing |
+| `Services/IFileSystemService.cs` + `Services/FileSystemService.cs` | Discovery/output filesystem abstraction | Enables folder-level unit tests |
 | `Services/FileDiffService.cs` | Per-file decision tree | MD5 -> IL -> text -> fallback |
+| `Services/IFileComparisonService.cs` + `Services/FileComparisonService.cs` | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
 | `Services/ILOutputService.cs` | IL compare flow, line filtering, optional IL dump writing | Enforces same disassembler identity |
 | `Services/DotNetDisassembleService.cs` | Tool probing, reverse engineering, cache prefetch, blacklist handling | Central tool boundary |
 | `Services/Caching/ILCache.cs` | Memory and optional disk cache for IL artifacts | Key stability matters |
@@ -234,6 +241,7 @@ Rules that are easy to break:
 
 Per-file mechanics:
 - `FileDiffService.FilesAreEqualAsync(...)` uses the old-side absolute path for `.NET executable` detection, file extension lookup, and threshold decisions.
+- Production `.NET executable` detection, MD5/text compare, file length lookup, and chunk reads flow through `IFileComparisonService`; the default implementation delegates to `DotNetDetector` and `FileComparer`.
 - `DotNetDetector.DetectDotNetExecutable(...)` distinguishes `NotDotNetExecutable` from `Failed`; `FileDiffService` logs a warning on `Failed` before skipping the IL path.
 - A successful MD5 match records `MD5Match` and short-circuits immediately; no IL/text work should happen after that.
 - The IL path delegates to `ILOutputService.DiffDotNetAssembliesAsync(...)`, which disassembles old/new via `DisassemblePairWithSameDisassemblerAsync(...)`, normalizes the comparison label, filters lines, optionally writes filtered IL text, and returns both equality and the disassembler label.
@@ -336,7 +344,7 @@ Typical safe extension points:
 - Add new text extensions in `config.json`
 - Introduce new report metadata in `ReportGenerateService`
 - Add logging around orchestration boundaries
-- Add new tests by substituting `IFileDiffService`, `IILOutputService`, or `IDotNetDisassembleService`
+- Add new tests by substituting `IFileSystemService`, `IFileComparisonService`, `IFileDiffService`, `IILOutputService`, or `IDotNetDisassembleService`
 
 Higher-risk changes:
 - Altering the order `MD5 -> IL -> text`
@@ -402,7 +410,7 @@ Before merging behavior changes, check:
 ```bash
 dotnet restore FolderDiffIL4DotNet.sln
 dotnet build FolderDiffIL4DotNet.sln --configuration Release
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false
 ```
 
 ローカル実行例:
@@ -435,13 +443,15 @@ flowchart TD
     E --> F["FolderDiffService"]
     E --> G["ReportGenerateService"]
     E --> H["ProgressReportService"]
-    F --> I["FileDiffService"]
-    I --> J["ILOutputService"]
-    J --> K["DotNetDisassembleService"]
-    J --> L["ILCache"]
-    J --> M["ILTextOutputService"]
-    F --> N["FileDiffResultLists"]
-    G --> N
+    F --> I["IFileSystemService"]
+    F --> J["FileDiffService"]
+    J --> K["IFileComparisonService"]
+    J --> L["ILOutputService"]
+    L --> M["DotNetDisassembleService"]
+    L --> N["ILCache"]
+    L --> O["ILTextOutputService"]
+    F --> P["FileDiffResultLists"]
+    G --> P
 ```
 
 設計意図:
@@ -449,6 +459,7 @@ flowchart TD
 - `ProgramRunner` は 1 回のコンソール実行を調停する境界です。
 - `DiffExecutionContext` は実行固有のパスとモード判定を不変オブジェクトとして保持します。
 - コアサービスは、静的可変状態や場当たり的な `new` ではなく、コンストラクタ注入とインターフェースで接続されます。
+- `IFileSystemService` と `IFileComparisonService` が、列挙/比較 I/O を切り出す最下層の差し替えポイントです。
 - `FileDiffResultLists` は、差分処理とレポート生成が共有する実行単位の集約ハブです。
 
 ## 実行ライフサイクル
@@ -520,6 +531,8 @@ sequenceDiagram
 - `ILCache`（無効時は `null`）
 - `ProgressReportService`
 - `ReportGenerateService`
+- `IFileSystemService` / `FileSystemService`
+- `IFileComparisonService` / `FileComparisonService`
 - `IILTextOutputService` / `ILTextOutputService`
 - `IDotNetDisassembleService` / `DotNetDisassembleService`
 - `IILOutputService` / `ILOutputService`
@@ -539,7 +552,9 @@ sequenceDiagram
 | `ProgramRunner.cs` | 引数検証、設定読込、実行 DI 作成、全体調停 | 制御プレーンの中心 |
 | `Services/DiffExecutionContext.cs` | 実行固有パスとネットワークモードの保持 | 可変状態を持たない |
 | `Services/FolderDiffService.cs` | ファイル列挙、スケジューリング、分類の調停 | 進捗と Added/Removed もここ |
+| `Services/IFileSystemService.cs` + `Services/FileSystemService.cs` | 列挙/出力系ファイルシステム抽象 | フォルダ単位ユニットテスト向け |
 | `Services/FileDiffService.cs` | ファイル単位の判定木 | `MD5 -> IL -> text -> fallback` |
+| `Services/IFileComparisonService.cs` + `Services/FileComparisonService.cs` | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
 | `Services/ILOutputService.cs` | IL 比較、行除外、任意 IL 出力 | 同一逆アセンブラ制約を保証 |
 | `Services/DotNetDisassembleService.cs` | ツール探索、逆アセンブル、キャッシュ先読み、ブラックリスト | 外部ツール境界 |
 | `Services/Caching/ILCache.cs` | IL 結果のメモリ/ディスクキャッシュ | キー安定性が重要 |
@@ -603,6 +618,7 @@ flowchart TD
 
 ファイル単位の実装メモ:
 - `FileDiffService.FilesAreEqualAsync(...)` は、`.NET 実行可能か` の判定、拡張子判定、サイズ閾値判定の基準として old 側絶対パスを使います。
+- 本番の `.NET 実行可能判定`、MD5/テキスト比較、サイズ取得、チャンク読み出しは `IFileComparisonService` を通し、既定実装が `DotNetDetector` と `FileComparer` に委譲します。
 - `DotNetDetector.DetectDotNetExecutable(...)` は `NotDotNetExecutable` と `Failed` を区別します。`FileDiffService` は `Failed` の場合に warning を出して IL 経路をスキップします。
 - MD5 が一致した時点で `MD5Match` を記録して即終了し、その後に IL やテキスト比較へ進んではいけません。
 - IL 経路は `ILOutputService.DiffDotNetAssembliesAsync(...)` に委譲され、内部で `DisassemblePairWithSameDisassemblerAsync(...)`、比較用ラベル正規化、行除外、任意の IL テキスト出力までをまとめて担当します。
@@ -704,7 +720,7 @@ flowchart TD
 - `config.json` のテキスト拡張子追加
 - `ReportGenerateService` へのレポートメタデータ追加
 - オーケストレーション境界でのログ追加
-- `IFileDiffService`、`IILOutputService`、`IDotNetDisassembleService` を差し替えるテスト追加
+- `IFileSystemService`、`IFileComparisonService`、`IFileDiffService`、`IILOutputService`、`IDotNetDisassembleService` を差し替えるテスト追加
 
 高リスクな変更:
 - `MD5 -> IL -> text` の順番変更

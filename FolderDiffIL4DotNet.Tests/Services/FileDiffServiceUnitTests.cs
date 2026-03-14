@@ -1,0 +1,327 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Utils;
+using Xunit;
+
+namespace FolderDiffIL4DotNet.Tests.Services
+{
+    [Trait("Category", "Unit")]
+    public sealed class FileDiffServiceUnitTests
+    {
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenHashMatches_ReturnsTrueAndShortCircuitsFurtherWork()
+        {
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = true
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var areEqual = await service.FilesAreEqualAsync("sample.txt", maxParallel: 4);
+
+            Assert.True(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, resultLists.FileRelativePathToDiffDetailDictionary["sample.txt"]);
+            Assert.Single(fileComparisonService.HashCalls);
+            Assert.Empty(fileComparisonService.DotNetDetectionCalls);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+            Assert.Empty(ilOutputService.DiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenHashDiffThrowsUnauthorizedAccessException_LogsErrorAndRethrows()
+        {
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashException = new UnauthorizedAccessException("permission denied")
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.FilesAreEqualAsync("secret.bin"));
+
+            Assert.Equal("permission denied", exception.Message);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+            Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenIlOutputThrowsIOException_LogsErrorAndRethrows()
+        {
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffException = new IOException("disk full")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var exception = await Assert.ThrowsAsync<IOException>(() => service.FilesAreEqualAsync("assembly.dll"));
+
+            Assert.Equal("disk full", exception.Message);
+            Assert.Single(ilOutputService.DiffCalls);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+            Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenLargeTextFilesMatch_UsesParallelChunkComparison()
+        {
+            const string relativePath = "large.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            var oldFileAbsolutePath = Path.Combine("/virtual/old", relativePath);
+            var newFileAbsolutePath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldFileAbsolutePath, new string('A', 2048));
+            fileComparisonService.SetFileContent(newFileAbsolutePath, new string('A', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 2);
+
+            Assert.True(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMatch, resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            Assert.NotEmpty(fileComparisonService.ReadChunkCalls);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows()
+        {
+            const string relativePath = "locked.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffException = new UnauthorizedAccessException("text access denied")
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: true);
+
+            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.FilesAreEqualAsync(relativePath, maxParallel: 1));
+
+            Assert.Equal("text access denied", exception.Message);
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Falling back to sequential text diff", warning.Message);
+            Assert.IsType<UnauthorizedAccessException>(warning.Exception);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+            Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
+        }
+
+        private static FileDiffService CreateService(
+            FakeFileComparisonService fileComparisonService,
+            FakeILOutputService ilOutputService,
+            FileDiffResultLists resultLists,
+            TestLogger logger,
+            bool optimizeForNetworkShares = false,
+            Action<ConfigSettings> configure = null)
+        {
+            var config = new ConfigSettings
+            {
+                TextFileExtensions = new List<string> { ".txt" },
+                IgnoredExtensions = new List<string>(),
+                ShouldOutputILText = false,
+                EnableILCache = false,
+                OptimizeForNetworkShares = optimizeForNetworkShares,
+                TextDiffParallelThresholdKilobytes = 512,
+                TextDiffChunkSizeKilobytes = 64
+            };
+            configure?.Invoke(config);
+
+            var executionContext = new DiffExecutionContext(
+                "/virtual/old",
+                "/virtual/new",
+                "/virtual/report",
+                optimizeForNetworkShares: optimizeForNetworkShares,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
+            return new FileDiffService(config, ilOutputService, executionContext, resultLists, logger, fileComparisonService);
+        }
+
+        private sealed class FakeFileComparisonService : IFileComparisonService
+        {
+            private readonly Dictionary<string, byte[]> _fileContentsByPath = new(StringComparer.OrdinalIgnoreCase);
+
+            public bool HashResult { get; set; }
+
+            public Exception HashException { get; set; }
+
+            public bool TextDiffResult { get; set; }
+
+            public Exception TextDiffException { get; set; }
+
+            public Exception ReadChunkException { get; set; }
+
+            public DotNetExecutableDetectionResult DotNetDetectionResult { get; set; } =
+                new(DotNetExecutableDetectionStatus.NotDotNetExecutable);
+
+            public List<(string File1, string File2)> HashCalls { get; } = new();
+
+            public List<string> DotNetDetectionCalls { get; } = new();
+
+            public List<(string File1, string File2)> TextDiffCalls { get; } = new();
+
+            public List<(string Path, long Offset, int Length)> ReadChunkCalls { get; } = new();
+
+            public void SetFileContent(string path, string content)
+                => _fileContentsByPath[path] = System.Text.Encoding.UTF8.GetBytes(content);
+
+            public Task<bool> DiffFilesByHashAsync(string file1AbsolutePath, string file2AbsolutePath)
+            {
+                HashCalls.Add((file1AbsolutePath, file2AbsolutePath));
+                if (HashException != null)
+                {
+                    throw HashException;
+                }
+                return Task.FromResult(HashResult);
+            }
+
+            public Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
+            {
+                TextDiffCalls.Add((file1AbsolutePath, file2AbsolutePath));
+                if (TextDiffException != null)
+                {
+                    throw TextDiffException;
+                }
+                return Task.FromResult(TextDiffResult);
+            }
+
+            public DotNetExecutableDetectionResult DetectDotNetExecutable(string fileAbsolutePath)
+            {
+                DotNetDetectionCalls.Add(fileAbsolutePath);
+                return DotNetDetectionResult;
+            }
+
+            public bool FileExists(string fileAbsolutePath)
+                => _fileContentsByPath.ContainsKey(fileAbsolutePath);
+
+            public long GetFileLength(string fileAbsolutePath)
+            {
+                if (_fileContentsByPath.TryGetValue(fileAbsolutePath, out var content))
+                {
+                    return content.LongLength;
+                }
+
+                throw new FileNotFoundException($"File not found: {fileAbsolutePath}", fileAbsolutePath);
+            }
+
+            public Task<int> ReadChunkAsync(string fileAbsolutePath, long offset, Memory<byte> buffer, CancellationToken cancellationToken)
+            {
+                ReadChunkCalls.Add((fileAbsolutePath, offset, buffer.Length));
+                if (ReadChunkException != null)
+                {
+                    throw ReadChunkException;
+                }
+                if (!_fileContentsByPath.TryGetValue(fileAbsolutePath, out var content))
+                {
+                    throw new FileNotFoundException($"File not found: {fileAbsolutePath}", fileAbsolutePath);
+                }
+
+                int start = checked((int)offset);
+                if (start >= content.Length)
+                {
+                    return Task.FromResult(0);
+                }
+
+                int count = Math.Min(buffer.Length, content.Length - start);
+                content.AsMemory(start, count).CopyTo(buffer);
+                return Task.FromResult(count);
+            }
+        }
+
+        private sealed class FakeILOutputService : IILOutputService
+        {
+            public (bool AreEqual, string DisassemblerLabel) DiffResult { get; set; }
+
+            public Exception DiffException { get; set; }
+
+            public List<DiffCall> DiffCalls { get; } = new();
+
+            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
+                => Task.CompletedTask;
+
+            public Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+            {
+                DiffCalls.Add(new DiffCall(fileRelativePath, oldFolderAbsolutePath, newFolderAbsolutePath, shouldOutputIlText));
+                if (DiffException != null)
+                {
+                    throw DiffException;
+                }
+                return Task.FromResult(DiffResult);
+            }
+        }
+
+        private sealed class TestLogger : ILoggerService
+        {
+            public string LogFileAbsolutePath => null;
+
+            public List<LogEntry> Entries { get; } = new();
+
+            public void Initialize()
+            {
+            }
+
+            public void CleanupOldLogFiles(int maxLogGenerations)
+            {
+            }
+
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+                => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
+
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+                => Entries.Add(new LogEntry(logLevel, message, exception));
+        }
+
+        private sealed record DiffCall(string FileRelativePath, string OldFolderAbsolutePath, string NewFolderAbsolutePath, bool ShouldOutputIlText);
+
+        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception Exception);
+    }
+}

@@ -12,6 +12,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
+    [Trait("Category", "Integration")]
     public sealed class FileDiffServiceTests : IDisposable
     {
         private readonly string _rootDir;
