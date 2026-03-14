@@ -219,7 +219,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="elapsedTimeString">経過時間文字列 (null 可)</param>
         /// <param name="computerName">実行コンピュータ名</param>
         /// <param name="config">設定オブジェクト</param>
-        /// <exception cref="Exception">入出力エラーなど予期しない例外</exception>
+        /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
+        /// <exception cref="IOException">レポートファイルの削除または書き込みに失敗した場合。</exception>
+        /// <exception cref="UnauthorizedAccessException">レポート出力先へのアクセス権が不足している場合。</exception>
+        /// <exception cref="NotSupportedException">出力先パスの形式がサポートされない場合。</exception>
         public void GenerateDiffReport(
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,

@@ -117,9 +117,13 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// IL キャッシュ関連の事前計算を実行します（実体は <see cref="ILOutputService"/> に委譲）。
         /// </summary>
-        /// <exception cref="Exception">IL キャッシュの事前計算中に発生した例外。</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="filesAbsolutePath"/> が null の場合。</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下の場合。</exception>
         public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel)
-            => _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel);
+        {
+            ArgumentNullException.ThrowIfNull(filesAbsolutePath);
+            return _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel);
+        }
 
         /// <summary>
         /// 2つのファイルが等しいかを判定し、MD5→IL→テキストの順で比較を試みる統合メソッド。
@@ -127,7 +131,11 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="fileRelativePath">比較対象ファイルのフォルダ基準相対パス。</param>
         /// <param name="maxParallel">テキスト比較を並列実行する際の最大並列数（1 以上）。</param>
-        /// <exception cref="Exception">比較中に予期しないエラーが発生した場合。</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下で、並列テキスト比較が選択された場合。</exception>
+        /// <exception cref="IOException">ハッシュ比較、IL 比較、またはテキスト比較中の I/O に失敗した場合。</exception>
+        /// <exception cref="UnauthorizedAccessException">比較対象ファイルへのアクセス権が不足している場合。</exception>
+        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
+        /// <exception cref="InvalidOperationException">IL 逆アセンブルツールが見つからない、または実行に失敗した場合。</exception>
         public async Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1)
         {
             string file1AbsolutePath = Path.Combine(_oldFolderAbsolutePath, fileRelativePath);
@@ -255,7 +263,9 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="maxParallel">最大並列度</param>
         /// <returns>一致すれば true。不一致なら false。</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下の場合。</exception>
-        /// <exception cref="Exception">チャンク読み取りや比較準備で予期しない例外が発生した場合。</exception>
+        /// <exception cref="IOException">チャンク読み取りまたはファイル長取得に失敗した場合。</exception>
+        /// <exception cref="UnauthorizedAccessException">比較対象ファイルへのアクセス権が不足している場合。</exception>
+        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
         private async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes, int chunkSizeBytes, int maxParallel)
         {
             // どちらかが存在しない、またはサイズが異なる場合は比較するまでもなく不一致。

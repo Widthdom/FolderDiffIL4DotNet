@@ -54,7 +54,10 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         /// <summary>
         /// old/new 両側 IL 全文テキストを *_IL.txt に出力（比較時の除外行を適用後）し読み取り専用化。
         /// </summary>
-        /// <exception cref="Exception">IL テキストの書き出しに失敗した場合。</exception>
+        /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
+        /// <exception cref="IOException">IL テキストの削除または書き出しに失敗した場合。</exception>
+        /// <exception cref="UnauthorizedAccessException">IL テキスト出力先へのアクセス権が不足している場合。</exception>
+        /// <exception cref="NotSupportedException">出力先パスの形式がサポートされない場合。</exception>
         public async Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
         {
             try

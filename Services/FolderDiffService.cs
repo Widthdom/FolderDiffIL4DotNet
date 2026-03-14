@@ -204,11 +204,12 @@ namespace FolderDiffIL4DotNet.Services
         /// - 分類結果と詳細は <see cref="FileDiffResultLists"/> に集計され、後段のレポート生成で利用されます。
         /// </remarks>
         /// <returns>非同期操作を表すタスク。</returns>
+        /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
         /// <exception cref="IOException">ファイルの列挙や読み書きに失敗した場合。</exception>
         /// <exception cref="UnauthorizedAccessException">アクセス権限が不足している場合。</exception>
         /// <exception cref="DirectoryNotFoundException">指定フォルダが存在しない場合。</exception>
         /// <exception cref="InvalidOperationException">IL 逆アセンブルツールが見つからない、または実行に失敗した場合。</exception>
-        /// <exception cref="Exception">ログの初期化/クローズなど、その他の予期しないエラーが発生した場合。</exception>
+        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
         public async Task ExecuteFolderDiffAsync()
         {
             LogExecutionMode();

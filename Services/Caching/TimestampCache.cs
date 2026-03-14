@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services.Caching
@@ -19,7 +20,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// <summary>
         /// 内部 <see cref="cache"/> をクリアします。1 実行（1 レポート）単位の開始時に呼び出すことを推奨します。
         /// </summary>
-        /// <exception cref="Exception">本メソッドで発生した例外はなく、常に成功します。</exception>
         public static void Clear() => cache.Clear();
 
         /// <summary>
@@ -29,7 +29,9 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// <param name="absolutePath">対象ファイルの絶対パス。null/空は不可。</param>
         /// <returns>「yyyy-MM-dd HH:mm:ss.fff zzz」形式の最終更新日時（文字列表現）。</returns>
         /// <exception cref="ArgumentException">absolutePath が null または空文字の場合。</exception>
-        /// <exception cref="Exception">最終更新日時の取得に失敗した場合。元例外は <see cref="Exception.InnerException"/> に保持されます。</exception>
+        /// <exception cref="UnauthorizedAccessException">対象ファイルのメタデータ取得権限が不足している場合。</exception>
+        /// <exception cref="NotSupportedException">パスの形式がサポートされない場合。</exception>
+        /// <exception cref="IOException">タイムスタンプ取得中に I/O エラーが発生した場合。</exception>
         public static string GetOrAdd(string absolutePath)
         {
             if (string.IsNullOrEmpty(absolutePath))

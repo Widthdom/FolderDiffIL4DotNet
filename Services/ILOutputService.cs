@@ -104,12 +104,14 @@ namespace FolderDiffIL4DotNet.Services
         /// </list>
         /// 例外は内部で catch され WARNING ログ出力後に握りつぶします（差分処理本体の継続性を優先）。
         /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="filesAbsolutePaths"/> が null の場合にスローされます。</exception>
         /// <exception cref="ArgumentOutOfRangeException">maxParallel が 0 以下の場合にスローされます。</exception>
-        /// <exception cref="Exception">下層の I/O / ハッシュ計算 / プロセス起動等で想定外の例外が発生した場合でも、メソッド内で捕捉されログ化されるため、呼び出し側へは再スローされません。</exception>
         /// <seealso cref="PrefetchIlCacheAsync(IEnumerable{string}, int)"/>
         /// <seealso cref="ILCache"/>
         public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
         {
+            ArgumentNullException.ThrowIfNull(filesAbsolutePaths);
+
             if (_config.OptimizeForNetworkShares)
             {
                 // ネットワーク共有最適化時は、MD5 プリウォームおよび IL キャッシュ先読みをスキップ
