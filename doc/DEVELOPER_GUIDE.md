@@ -24,10 +24,10 @@ Related documents:
 ## Local Development
 
 Prerequisites:
-- .NET SDK `8.0.413` ([`global.json`](../global.json))
+- [.NET SDK `8.0.413`](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) ([`global.json`](../global.json))
 - One IL disassembler available on `PATH`
-- `dotnet-ildasm` or `dotnet ildasm` preferred
-- `ilspycmd` supported as fallback
+  - [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) preferred
+  - [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) supported as fallback
 
 Common commands:
 
@@ -92,7 +92,7 @@ Design intent:
 - [`ProgramRunner`](../ProgramRunner.cs) is the orchestration boundary for one console execution.
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) carries immutable run-specific paths and mode decisions.
 - Core pipeline services use constructor injection and interfaces instead of static mutable state or ad hoc object creation.
-- `IFileSystemService` and `IFileComparisonService` are the low-level seams that keep discovery/compare I/O unit-testable without changing the production decision tree.
+- [`IFileSystemService`](../Services/IFileSystemService.cs) and [`IFileComparisonService`](../Services/IFileComparisonService.cs) are the low-level seams that keep discovery/compare I/O unit-testable without changing the production decision tree.
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) is the run-scoped aggregation hub shared by diffing and reporting.
 
 ## Execution Lifecycle
@@ -128,7 +128,7 @@ sequenceDiagram
 1. Initialize logging and print application version.
 2. Validate `old`, `new`, and `reportLabel` arguments.
 3. Create `Reports/<label>` early and fail if the label already exists.
-4. Load `config.json` from `AppContext.BaseDirectory` and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs).
+4. Load [`config.json`](../config.json) from `AppContext.BaseDirectory` and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs).
 5. Clear transient shared helpers such as [`TimestampCache`](../Services/Caching/TimestampCache.cs).
 6. Compute [`DiffExecutionContext`](../Services/DiffExecutionContext.cs), including network-share decisions.
 7. Build the run-scoped DI container.
@@ -138,7 +138,7 @@ sequenceDiagram
 
 Failure behavior:
 - Any unhandled exception in diffing or report generation results in exit code `1`.
-- `InvalidOperationException` originating from IL comparison is treated as a fatal exception and stops the whole run.
+- [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
 - Read-only protection on output files remains best-effort and warning-only.
 
 ## Dependency Injection Layout
@@ -146,7 +146,7 @@ Failure behavior:
 ### Root container
 
 Registered in [`Program.cs`](../Program.cs):
-- `ILoggerService` -> [`LoggerService`](../Services/LoggerService.cs)
+- [`ILoggerService`](../Services/ILoggerService.cs) -> [`LoggerService`](../Services/LoggerService.cs)
 - [`ConfigService`](../Services/ConfigService.cs)
 - [`ProgramRunner`](../ProgramRunner.cs)
 
@@ -158,20 +158,20 @@ Registered in [`ProgramRunner.BuildRunServiceProvider(...)`](../ProgramRunner.cs
 - Singletons inside the run scope
 - [`ConfigSettings`](../Models/ConfigSettings.cs)
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs)
-- `ILoggerService` (shared logger instance)
+- [`ILoggerService`](../Services/ILoggerService.cs) (shared logger instance)
 - Scoped services
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 - [`DotNetDisassemblerCache`](../Services/Caching/DotNetDisassemblerCache.cs)
 - [`ILCache`](../Services/Caching/ILCache.cs) (nullable when disabled)
 - [`ProgressReportService`](../Services/ProgressReportService.cs)
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs)
-- `IFileSystemService` / [`FileSystemService`](../Services/FileSystemService.cs)
-- `IFileComparisonService` / [`FileComparisonService`](../Services/FileComparisonService.cs)
-- `IILTextOutputService` / [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs)
-- `IDotNetDisassembleService` / [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs)
-- `IILOutputService` / [`ILOutputService`](../Services/ILOutputService.cs)
-- `IFileDiffService` / [`FileDiffService`](../Services/FileDiffService.cs)
-- `IFolderDiffService` / [`FolderDiffService`](../Services/FolderDiffService.cs)
+- [`IFileSystemService`](../Services/IFileSystemService.cs) / [`FileSystemService`](../Services/FileSystemService.cs)
+- [`IFileComparisonService`](../Services/IFileComparisonService.cs) / [`FileComparisonService`](../Services/FileComparisonService.cs)
+- [`IILTextOutputService`](../Services/ILOutput/IILTextOutputService.cs) / [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs)
+- [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) / [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs)
+- [`IILOutputService`](../Services/IILOutputService.cs) / [`ILOutputService`](../Services/ILOutputService.cs)
+- [`IFileDiffService`](../Services/IFileDiffService.cs) / [`FileDiffService`](../Services/FileDiffService.cs)
+- [`IFolderDiffService`](../Services/IFolderDiffService.cs) / [`FolderDiffService`](../Services/FolderDiffService.cs)
 
 Why this matters:
 - Each execution gets a newly created [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) for diff results plus newly created disassembler-related state and caches for keeping old/new on the same disassembler, so nothing is carried over from the previous run.
@@ -252,23 +252,23 @@ Rules that are easy to break:
 
 Per-file mechanics:
 - [`FileDiffService.FilesAreEqualAsync(...)`](../Services/FileDiffService.cs) uses the old-side absolute path for `.NET executable` detection, file extension lookup, and threshold decisions.
-- In normal execution, `.NET executable` detection, MD5/text comparison, file length lookup, and chunk reads all go through `IFileComparisonService`. This keeps [`FileDiffService`](../Services/FileDiffService.cs) from depending directly on the concrete comparison implementation and lets tests replace `IFileComparisonService` with a mock or stub. The default implementation, [`FileComparisonService`](../Services/FileComparisonService.cs), delegates those operations to [`DotNetDetector`](../Utils/DotNetDetector.cs) and [`FileComparer`](../Utils/FileComparer.cs).
+- In normal execution, `.NET executable` detection, MD5/text comparison, file length lookup, and chunk reads all go through [`IFileComparisonService`](../Services/IFileComparisonService.cs). This keeps [`FileDiffService`](../Services/FileDiffService.cs) from depending directly on the concrete comparison implementation and lets tests replace [`IFileComparisonService`](../Services/IFileComparisonService.cs) with a mock or stub. The default implementation, [`FileComparisonService`](../Services/FileComparisonService.cs), delegates those operations to [`DotNetDetector`](../Utils/DotNetDetector.cs) and [`FileComparer`](../Utils/FileComparer.cs).
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../Utils/DotNetDetector.cs) distinguishes `NotDotNetExecutable` from `Failed`; [`FileDiffService`](../Services/FileDiffService.cs) logs a warning on `Failed` before skipping the IL path.
 - Once MD5 matches, the code records `MD5Match` and returns immediately; no IL comparison or text comparison runs after that.
 - The IL path delegates to [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs), which disassembles old/new via `DisassemblePairWithSameDisassemblerAsync(...)`, normalizes the comparison label, filters lines, optionally writes filtered IL text, and returns both equality and the disassembler label.
-- `BuildComparisonDisassemblerLabel(...)` is part of correctness. If old/new produce different tool identities or version labels, the code rejects that comparison and raises `InvalidOperationException`.
+- `BuildComparisonDisassemblerLabel(...)` is part of correctness. If old/new produce different tool identities or version labels, the code rejects that comparison and raises [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0).
 - `ShouldExcludeIlLine(...)` always strips `// MVID:`. If `ShouldIgnoreILLinesContainingConfiguredStrings=true`, it also strips any substring from `ILIgnoreLineContainingStrings` after trimming and deduplicating the configured values, using `StringComparison.Ordinal`.
 - Files that are not handled by IL comparison and whose extension is included in `TextFileExtensions` are compared as text files. At that point, the code converts `TextDiffParallelThresholdKilobytes` and `TextDiffChunkSizeKilobytes` into effective byte counts and uses those values to choose the comparison method.
 - If `OptimizeForNetworkShares` is enabled, the code avoids chunk-parallel reads on remote storage and always uses sequential `DiffTextFilesAsync(...)`, regardless of file size. In local-optimized mode, it uses the old-side file size: below `TextDiffParallelThresholdKilobytes` it stays sequential, and at or above the threshold it splits the file into fixed-size chunks based on `TextDiffChunkSizeKilobytes` and runs `DiffTextFilesParallelAsync(...)`.
-- If chunk-parallel text comparison throws `ArgumentOutOfRangeException`, `IOException`, `UnauthorizedAccessException`, or `NotSupportedException`, the code logs a warning and falls back to sequential `DiffTextFilesAsync(...)`. Because of that fallback, `DiffTextFilesParallelAsync(...)` must not swallow those exceptions and replace them with `false`.
+- If chunk-parallel text comparison throws [`ArgumentOutOfRangeException`](https://learn.microsoft.com/en-us/dotnet/api/system.argumentoutofrangeexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), or [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0), the code logs a warning and falls back to sequential `DiffTextFilesAsync(...)`. Because of that fallback, `DiffTextFilesParallelAsync(...)` must not swallow those exceptions and replace them with `false`.
 - Files that are neither IL-comparison targets nor text-comparison targets end at `MD5Mismatch` when MD5 differs. `MD5Mismatch` is also part of the aggregated end-of-run warnings, and the report writes that warning in the final `Warnings` section before any timestamp-regression entries. There is no deeper generic binary diff step today.
 - For files that exist on both sides, if `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp=true` and the new-side last-modified time is older than the old-side last-modified time, the code records a timestamp-regression warning in addition to the comparison result. That warning is emitted in the aggregated console output at the end of the run and also written after the `MD5Mismatch` warning in the report's final `Warnings` section as a list of files with regressed timestamps.
 
 Failure handling:
-- `InvalidOperationException` thrown during IL comparison is logged and intentionally rethrown. This treats IL tool mismatches or setup problems as fatal exceptions and stops the whole run.
+- [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) thrown during IL comparison is logged and intentionally rethrown. This treats IL tool mismatches or setup problems as fatal exceptions and stops the whole run.
 - Failures from [`DotNetDetector.DetectDotNetExecutable(...)`](../Utils/DotNetDetector.cs) are not treated as fatal exceptions. The code logs a warning, skips IL comparison only, and then continues into text comparison or `MD5Mismatch` handling.
 - Other unexpected exceptions are logged from inside `FilesAreEqualAsync(...)` with both old/new absolute paths and then rethrown to the caller.
-- Even when you need to add more context, do not wrap the original exception in a new generic `Exception`. Log the original exception and use `throw;` so the original exception type and stack trace are preserved.
+- Even when you need to add more context, do not wrap the original exception in a new generic [`Exception`](https://learn.microsoft.com/en-us/dotnet/api/system.exception?view=net-8.0). Log the original exception and use `throw;` so the original exception type and stack trace are preserved.
 
 Avoid:
 
@@ -313,7 +313,7 @@ catch (Exception ex)
 
 ## Configuration and Runtime Modes
 
-[`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. `config.json` is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults.
+[`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. [`config.json`](../config.json) is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults.
 
 ### Configuration groups
 
@@ -408,7 +408,7 @@ Typical safe extension points:
 - Add new text extensions in [`config.json`](../config.json)
 - Introduce new report metadata in [`ReportGenerateService`](../Services/ReportGenerateService.cs)
 - Add logging around orchestration boundaries
-- Add new tests by substituting `IFileSystemService`, `IFileComparisonService`, `IFileDiffService`, `IILOutputService`, or `IDotNetDisassembleService`
+- Add new tests by substituting [`IFileSystemService`](../Services/IFileSystemService.cs), [`IFileComparisonService`](../Services/IFileComparisonService.cs), [`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), or [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs)
 
 Higher-risk changes:
 - Altering the order `MD5 -> IL -> text`
@@ -467,10 +467,10 @@ Before merging behavior changes, check:
 ## ローカル開発
 
 前提:
-- .NET SDK `8.0.413`（[`global.json`](../global.json)）
+- [.NET SDK `8.0.413`](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0)（[`global.json`](../global.json)）
 - `PATH` 上で利用可能な IL 逆アセンブラ
-- 優先は `dotnet-ildasm` または `dotnet ildasm`
-- フォールバックとして `ilspycmd` をサポート
+  - 優先は [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) または [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)
+  - フォールバックとして [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) をサポート
 
 よく使うコマンド:
 
@@ -535,7 +535,7 @@ flowchart TD
 - [`ProgramRunner`](../ProgramRunner.cs) は 1 回のコンソール実行を調停する境界です。
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) は実行固有のパスとモード判定を不変オブジェクトとして保持します。
 - コアサービスは、静的可変状態や場当たり的な `new` ではなく、コンストラクタ注入とインターフェースで接続されます。
-- `IFileSystemService` と `IFileComparisonService` が、列挙/比較 I/O を切り出す最下層の差し替えポイントです。
+- [`IFileSystemService`](../Services/IFileSystemService.cs) と [`IFileComparisonService`](../Services/IFileComparisonService.cs) が、列挙/比較 I/O を切り出す最下層の差し替えポイントです。
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) は、差分処理とレポート生成が共有する実行単位の集約ハブです。
 
 ## 実行ライフサイクル
@@ -570,7 +570,7 @@ sequenceDiagram
 1. ログを初期化し、アプリのバージョンを表示します。
 2. `old`、`new`、`reportLabel` 引数を検証します。
 3. `Reports/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。
-4. `AppContext.BaseDirectory` から `config.json` を読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。
+4. `AppContext.BaseDirectory` から [`config.json`](../config.json) を読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。
 5. [`TimestampCache`](../Services/Caching/TimestampCache.cs) などの一時共有ヘルパーをクリアします。
 6. ネットワーク共有判定を含む [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) を組み立てます。
 7. 実行単位の DI コンテナを構築します。
@@ -580,7 +580,7 @@ sequenceDiagram
 
 失敗時の扱い:
 - 差分処理やレポート生成で未処理例外が出ると終了コードは `1` です。
-- IL 比較由来の `InvalidOperationException` は致命的な例外扱いとし、実行全体を止めるものとします。
+- IL 比較由来の [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は致命的な例外扱いとし、実行全体を止めるものとします。
 - 出力ファイルの読み取り専用化はベストエフォートで、失敗しても警告止まりです。
 
 ## Dependency Injection 構成
@@ -588,7 +588,7 @@ sequenceDiagram
 ### ルートコンテナ
 
 [`Program.cs`](../Program.cs) で登録:
-- `ILoggerService` -> [`LoggerService`](../Services/LoggerService.cs)
+- [`ILoggerService`](../Services/ILoggerService.cs) -> [`LoggerService`](../Services/LoggerService.cs)
 - [`ConfigService`](../Services/ConfigService.cs)
 - [`ProgramRunner`](../ProgramRunner.cs)
 
@@ -600,20 +600,20 @@ sequenceDiagram
 - 実行スコープ内シングルトン
 - [`ConfigSettings`](../Models/ConfigSettings.cs)
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs)
-- `ILoggerService`（共有ロガー）
+- [`ILoggerService`](../Services/ILoggerService.cs)（共有ロガー）
 - スコープサービス
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 - [`DotNetDisassemblerCache`](../Services/Caching/DotNetDisassemblerCache.cs)
 - [`ILCache`](../Services/Caching/ILCache.cs)（無効時は `null`）
 - [`ProgressReportService`](../Services/ProgressReportService.cs)
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs)
-- `IFileSystemService` / [`FileSystemService`](../Services/FileSystemService.cs)
-- `IFileComparisonService` / [`FileComparisonService`](../Services/FileComparisonService.cs)
-- `IILTextOutputService` / [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs)
-- `IDotNetDisassembleService` / [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs)
-- `IILOutputService` / [`ILOutputService`](../Services/ILOutputService.cs)
-- `IFileDiffService` / [`FileDiffService`](../Services/FileDiffService.cs)
-- `IFolderDiffService` / [`FolderDiffService`](../Services/FolderDiffService.cs)
+- [`IFileSystemService`](../Services/IFileSystemService.cs) / [`FileSystemService`](../Services/FileSystemService.cs)
+- [`IFileComparisonService`](../Services/IFileComparisonService.cs) / [`FileComparisonService`](../Services/FileComparisonService.cs)
+- [`IILTextOutputService`](../Services/ILOutput/IILTextOutputService.cs) / [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs)
+- [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) / [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs)
+- [`IILOutputService`](../Services/IILOutputService.cs) / [`ILOutputService`](../Services/ILOutputService.cs)
+- [`IFileDiffService`](../Services/IFileDiffService.cs) / [`FileDiffService`](../Services/FileDiffService.cs)
+- [`IFolderDiffService`](../Services/IFolderDiffService.cs) / [`FolderDiffService`](../Services/FolderDiffService.cs)
 
 この構成が重要な理由:
 - 実行ごとに、差分結果を保持する [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) と、old/new で同じ逆アセンブラを使うための内部状態やキャッシュは新しく作られ、前回の実行内容を引き継ぎません。
@@ -694,23 +694,23 @@ flowchart TD
 
 ファイル単位の実装メモ:
 - [`FileDiffService.FilesAreEqualAsync(...)`](../Services/FileDiffService.cs) は、`.NET 実行可能か` の判定、拡張子判定、サイズ閾値判定の基準として old 側絶対パスを使います。
-- 通常実行時の `.NET 実行可能判定`、MD5/テキスト比較、サイズ取得、チャンク読み出しは `IFileComparisonService` を通して行われます。これは、[`FileDiffService`](../Services/FileDiffService.cs) が比較処理の具体実装に直接依存せず、テストでは `IFileComparisonService` をモックやスタブに差し替えられるようにするためです。既定実装の [`FileComparisonService`](../Services/FileComparisonService.cs) は、これらの処理を [`DotNetDetector`](../Utils/DotNetDetector.cs) と [`FileComparer`](../Utils/FileComparer.cs) に委譲します。
+- 通常実行時の `.NET 実行可能判定`、MD5/テキスト比較、サイズ取得、チャンク読み出しは [`IFileComparisonService`](../Services/IFileComparisonService.cs) を通して行われます。これは、[`FileDiffService`](../Services/FileDiffService.cs) が比較処理の具体実装に直接依存せず、テストでは [`IFileComparisonService`](../Services/IFileComparisonService.cs) をモックやスタブに差し替えられるようにするためです。既定実装の [`FileComparisonService`](../Services/FileComparisonService.cs) は、これらの処理を [`DotNetDetector`](../Utils/DotNetDetector.cs) と [`FileComparer`](../Utils/FileComparer.cs) に委譲します。
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../Utils/DotNetDetector.cs) は `NotDotNetExecutable` と `Failed` を区別します。[`FileDiffService`](../Services/FileDiffService.cs) は `Failed` の場合に warning を出して IL 経路をスキップします。
 - MD5 が一致した時点で `MD5Match` を記録して即終了し、その後に IL やテキスト比較へは進みません。
 - IL 経路は [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs) に委譲され、内部で `DisassemblePairWithSameDisassemblerAsync(...)`、比較用ラベル正規化、行除外、任意の IL テキスト出力までをまとめて担当します。
-- `BuildComparisonDisassemblerLabel(...)` は正しさの一部です。old/new でツール識別やバージョン表記がずれた場合は、その比較を認めず `InvalidOperationException` にします。
+- `BuildComparisonDisassemblerLabel(...)` は正しさの一部です。old/new でツール識別やバージョン表記がずれた場合は、その比較を認めず [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) にします。
 - `ShouldExcludeIlLine(...)` は `// MVID:` を必ず除外します。さらに `ShouldIgnoreILLinesContainingConfiguredStrings=true` の場合は、`ILIgnoreLineContainingStrings` に設定された文字列を trim・重複排除したうえで、`StringComparison.Ordinal` の部分一致で除外します。
 - `.NET` 実行可能として IL 比較の対象にならず、かつ拡張子が `TextFileExtensions` に含まれるファイルは、テキストファイルとして比較します。このとき `TextDiffParallelThresholdKilobytes` と `TextDiffChunkSizeKilobytes` を実効バイト数に変換し、比較方法を決めます。
 - `OptimizeForNetworkShares` が有効な場合は、ネットワーク共有上でチャンクごとに何度もファイルを開閉するコストを避けるため、ファイルサイズにかかわらず `DiffTextFilesAsync(...)` による逐次比較を使います。ローカル最適化時は old 側ファイルのサイズを基準にし、`TextDiffParallelThresholdKilobytes` 未満なら逐次比較、以上なら `TextDiffChunkSizeKilobytes` ごとの固定長チャンクに分割して `DiffTextFilesParallelAsync(...)` で並列比較します。
-- 並列チャンク比較の途中で `ArgumentOutOfRangeException`、`IOException`、`UnauthorizedAccessException`、`NotSupportedException` のいずれかが出た場合は、warning を記録したうえで `DiffTextFilesAsync(...)` による逐次比較へフォールバックします。したがって `DiffTextFilesParallelAsync(...)` 側でこれらの例外を `false` に置き換えて握りつぶすと、呼び出し元はフォールバックできません。
+- 並列チャンク比較の途中で [`ArgumentOutOfRangeException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.argumentoutofrangeexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) のいずれかが出た場合は、warning を記録したうえで `DiffTextFilesAsync(...)` による逐次比較へフォールバックします。したがって `DiffTextFilesParallelAsync(...)` 側でこれらの例外を `false` に置き換えて握りつぶすと、呼び出し元はフォールバックできません。
 - IL 比較対象でもテキスト比較対象でもないファイルは、MD5 不一致の時点で `MD5Mismatch` が最終結果です。`MD5Mismatch` は実行完了時の集約警告の対象でもあり、レポートでは末尾の `Warnings` セクションで更新日時逆転警告より先に出します。現状はその先の汎用バイナリ差分はありません。
 - old/new の両方に存在するファイルについて、`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp=true` かつ new 側の更新日時が old 側より古い場合は、比較結果とは別に更新日時逆転の警告が記録されます。この警告は実行完了時にコンソールへ集約出力され、レポートでは `MD5Mismatch` 警告の後に更新日時が逆転したファイルの一覧として `Warnings` セクションへ出力されます。
 
 失敗時の扱い:
-- IL 比較で発生した `InvalidOperationException` は、ログを出力したうえで意図的に再送出されます。これは IL ツールの不整合やセットアップ不備を致命的な例外として扱い、実行全体を停止させるためです。
+- IL 比較で発生した [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は、ログを出力したうえで意図的に再送出されます。これは IL ツールの不整合やセットアップ不備を致命的な例外として扱い、実行全体を停止させるためです。
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../Utils/DotNetDetector.cs) の失敗は致命的な例外とは扱いません。警告ログを出力して IL 比較だけをスキップし、その後のテキスト比較または `MD5Mismatch` 判定へ進みます。
 - それ以外の予期しない例外は、`FilesAreEqualAsync(...)` の中で old/new 両方の絶対パスを含むエラーログを出力したうえで、呼び出し元へ再送出されます。
-- 例外に補足情報を付けたい場合も、汎用 `Exception` へ包み直すのではなく、元の例外をログに出したうえで `throw;` してください。元の例外型とスタックトレースを保つためです。
+- 例外に補足情報を付けたい場合も、汎用 [`Exception`](https://learn.microsoft.com/ja-jp/dotnet/api/system.exception?view=net-8.0) へ包み直すのではなく、元の例外をログに出したうえで `throw;` してください。元の例外型とスタックトレースを保つためです。
 
 避けたい例:
 
@@ -755,7 +755,7 @@ catch (Exception ex)
 
 ## 設定と実行モード
 
-既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。`config.json` は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。
+既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。[`config.json`](../config.json) は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。
 
 ### 設定のまとまり
 
@@ -850,7 +850,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - [`config.json`](../config.json) のテキスト拡張子追加
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs) へのレポートメタデータ追加
 - オーケストレーション境界でのログ追加
-- `IFileSystemService`、`IFileComparisonService`、`IFileDiffService`、`IILOutputService`、`IDotNetDisassembleService` を差し替えるテスト追加
+- [`IFileSystemService`](../Services/IFileSystemService.cs)、[`IFileComparisonService`](../Services/IFileComparisonService.cs)、[`IFileDiffService`](../Services/IFileDiffService.cs)、[`IILOutputService`](../Services/IILOutputService.cs)、[`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) を差し替えるテスト追加
 
 高リスクな変更:
 - `MD5 -> IL -> text` の順番変更

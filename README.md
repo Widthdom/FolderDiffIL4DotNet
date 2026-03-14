@@ -17,13 +17,13 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 
 ## Requirements
 
-- .NET SDK 8.x
+- [.NET SDK 8.x](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 - macOS / Windows / Linux / Unix-like OS
 - IL disassembler (auto-probed per file)
-- Preferred: `dotnet-ildasm` or `dotnet ildasm`
-- Fallback: `ilspycmd`
+  - Preferred: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)
+  - Fallback: [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/)
 
-.NET SDK 8.x installation examples:
+[.NET SDK 8.x](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) installation examples:
 
 ```powershell
 # Windows (winget)
@@ -129,7 +129,7 @@ Example `diff_report.md` (trimmed):
 - [`ProgramRunner`](ProgramRunner.cs) validates arguments, loads [`config.json`](config.json), builds a per-run DI container, and executes the diff/report pipeline.
 - [`ProgramRunner`](ProgramRunner.cs) also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
 - [`DiffExecutionContext`](Services/DiffExecutionContext.cs) carries run-specific paths and network-mode decisions.
-- [`FolderDiffService`](Services/FolderDiffService.cs) uses `IFileSystemService` for discovery/output I/O and [`FileDiffService`](Services/FileDiffService.cs) uses `IFileComparisonService` for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
+- [`FolderDiffService`](Services/FolderDiffService.cs) uses [`IFileSystemService`](Services/IFileSystemService.cs) for discovery/output I/O and [`FileDiffService`](Services/FileDiffService.cs) uses [`IFileComparisonService`](Services/IFileComparisonService.cs) for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
 - Core pipeline services ([`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
 
 ## Comparison Flow
@@ -265,13 +265,13 @@ CI also generates the same site and uploads it as the `DocumentationSite` artifa
 
 ## 必要環境
 
-- .NET SDK 8.x
+- [.NET SDK 8.x](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0)
 - macOS / Windows / Linux / Unix 系 OS
 - IL 逆アセンブラ（ファイルごとに自動判定）
-- 優先: `dotnet-ildasm` または `dotnet ildasm`
-- 代替: `ilspycmd`
+  - 優先: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) または [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)
+  - 代替: [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/)
 
-.NET SDK 8.x のインストール例:
+[.NET SDK 8.x](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0) のインストール例:
 
 ```powershell
 # Windows (winget)
@@ -381,7 +381,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 - [`ProgramRunner`](ProgramRunner.cs) が引数検証、[`config.json`](config.json) 読込、実行単位 DI コンテナ生成、差分/レポート処理の実行を担います。
 - [`ProgramRunner`](ProgramRunner.cs) は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
 - [`DiffExecutionContext`](Services/DiffExecutionContext.cs) が実行ごとのパスやネットワークモード判定を保持します。
-- [`FolderDiffService`](Services/FolderDiffService.cs) は列挙/出力系 I/O を `IFileSystemService`、[`FileDiffService`](Services/FileDiffService.cs) はハッシュ/テキスト/チャンク読み出し系 I/O を `IFileComparisonService` に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
+- [`FolderDiffService`](Services/FolderDiffService.cs) は列挙/出力系 I/O を [`IFileSystemService`](Services/IFileSystemService.cs)、[`FileDiffService`](Services/FileDiffService.cs) はハッシュ/テキスト/チャンク読み出し系 I/O を [`IFileComparisonService`](Services/IFileComparisonService.cs) に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
 - 主要パイプラインサービス（[`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
 
 ## 比較フロー

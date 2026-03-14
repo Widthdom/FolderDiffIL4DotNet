@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Expanded documentation link coverage across the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md), and aligned locale-selectable external URLs to English/Japanese contexts.
 - Added direct `.cs` source links for class references across the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md), excluding classes that would be split across partial definitions.
 - Moved the report-level `MD5Mismatch` warning from `Summary` into the final `Warnings` section, ordered it before timestamp-regression warnings, and refreshed the related docs and regression tests.
 - Introduced DocFX-based API documentation generation, added a documentation-site build path, and wired CI to publish the generated `DocumentationSite` artifact.
@@ -22,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Updated the developer and testing guides to reflect the current source-style expectations and latest passing test count.
 - Made `.NET` executable detection distinguish `NotDotNetExecutable` from detection failure, log a warning for non-fatal detection failures, and let chunk-parallel text-diff exceptions bubble to the existing sequential fallback path instead of silently returning `false`.
 - Enabled the `CA1031` analyzer for production code so broad exception catches are surfaced during normal builds, while excluding test cleanup code from the warning.
-- Removed generic `throw new Exception(..., ex)` wrapping from [`FileSystemUtility`](Utils/FileSystemUtility.cs) so original exception types and stack traces are preserved, and added regression coverage plus bilingual guide updates.
+- Removed generic `throw new Exception(..., ex)` wrapping from [`FileSystemUtility`](Utils/FileSystemUtility.cs), using [`Exception`](https://learn.microsoft.com/en-us/dotnet/api/system.exception?view=net-8.0) only as the referenced outer type name here, so original exception types and stack traces are preserved, and added regression coverage plus bilingual guide updates.
 - Moved configuration defaults into [`ConfigSettings`](Models/ConfigSettings.cs), normalized missing or `null` config values back to code-defined defaults, simplified the shipped [`config.json`](config.json) to an override-only shape, and refreshed bilingual docs plus config-focused tests.
 
 ### [1.2.2] - 2026-03-14
@@ -53,7 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
-- Standardized guard clauses on `ArgumentNullException.ThrowIfNull`.
+- Standardized guard clauses on [`ArgumentNullException.ThrowIfNull`](https://learn.microsoft.com/en-us/dotnet/api/system.argumentnullexception.throwifnull?view=net-8.0).
 
 #### Fixed
 
@@ -79,7 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
-- Unified `dotnet-ildasm` and `dotnet ildasm` handling, tightened disassembler identity consistency checks, and improved disassembler reporting details.
+- Unified [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) and [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) handling, tightened disassembler identity consistency checks, and improved disassembler reporting details.
 - Refactored utility helpers into single-responsibility classes and split large methods in [`DotNetDisassembleService`](Services/DotNetDisassembleService.cs) and [`FolderDiffService`](Services/FolderDiffService.cs).
 - Applied smaller internal cleanups, including replacing `HashSet.Union` result creation with `UnionWith`.
 
@@ -217,6 +218,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
+- [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) のリンク付与範囲を広げ、ロケール切替可能な外部 URL を英語文脈・日本語文脈に合わせて統一しました。
 - [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) にあるクラス参照へ、`partial` 分割を前提としないものを中心に対応する `.cs` ソースリンクを追加しました。
 - レポート上の `MD5Mismatch` 警告を `Summary` から末尾の `Warnings` セクションへ移し、更新日時逆転警告より先に出すように変更しました。あわせて関連ドキュメントと回帰テストを更新しました。
 - DocFX ベースの API ドキュメント自動生成を導入し、ドキュメントサイトの生成経路と `DocumentationSite` artifact 公開を CI に追加しました。
@@ -228,7 +230,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - 開発ガイドとテストガイドを更新し、現在のソースコード方針と最新の通過テスト件数を反映しました。
 - `.NET` 実行可能判定で `NotDotNetExecutable` と判定失敗を区別するようにし、致命ではない判定失敗は warning を残して継続するようにしました。あわせて並列テキスト比較の例外は `false` に潰さず、既存の逐次比較フォールバック経路へ伝播させるようにしました。
 - 本体コードで広すぎる例外捕捉を通常ビルド時に検出できるよう、`CA1031` アナライザーを有効化しました。テストの後片付け用 catch は warning 対象から外しています。
-- [`FileSystemUtility`](Utils/FileSystemUtility.cs) での `throw new Exception(..., ex)` 形式の汎用ラップをやめ、元の例外型とスタックトレースを維持するようにしました。あわせて回帰テストと日英ガイドを更新しました。
+- [`FileSystemUtility`](Utils/FileSystemUtility.cs) での `throw new Exception(..., ex)` 形式の汎用ラップをやめ、ここで言う外側の型名 [`Exception`](https://learn.microsoft.com/ja-jp/dotnet/api/system.exception?view=net-8.0) への包み直しを避けることで、元の例外型とスタックトレースを維持するようにしました。あわせて回帰テストと日英ガイドを更新しました。
 - 設定の既定値を [`ConfigSettings`](Models/ConfigSettings.cs) へ集約し、未指定や `null` の設定値をコード既定値へ正規化するようにしました。あわせて配布する [`config.json`](config.json) を override 専用の形に簡素化し、日英ドキュメントと設定まわりのテストを更新しました。
 
 ### [1.2.2] - 2026-03-14
@@ -259,7 +261,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
-- ガード節の null チェックを `ArgumentNullException.ThrowIfNull` に統一しました。
+- ガード節の null チェックを [`ArgumentNullException.ThrowIfNull`](https://learn.microsoft.com/ja-jp/dotnet/api/system.argumentnullexception.throwifnull?view=net-8.0) に統一しました。
 
 #### 修正
 
@@ -285,7 +287,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
-- `dotnet-ildasm` と `dotnet ildasm` の扱いを統一し、逆アセンブラ識別の整合性チェックとレポート表記を改善しました。
+- [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) と [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) の扱いを統一し、逆アセンブラ識別の整合性チェックとレポート表記を改善しました。
 - ユーティリティ群を単一責任のクラスへ分割し、[`DotNetDisassembleService`](Services/DotNetDisassembleService.cs) と [`FolderDiffService`](Services/FolderDiffService.cs) の長大メソッドを責務ごとに整理しました。
 - `HashSet.Union` の結果生成を `UnionWith` に置き換えるなど、内部的な軽微改善を行いました。
 
