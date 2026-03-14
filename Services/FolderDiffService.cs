@@ -199,8 +199,7 @@ namespace FolderDiffIL4DotNet.Services
         ///
         /// 補足:
         /// - ShouldOutputILText が true の場合、各側の IL テキストを
-        ///   Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/old と Reports/<コマンドライン第3引数に指定したレポートのラベル>/IL/newに保存します
-        ///   に保存します（比較時に除外した行は出力前に除外）。
+        ///   Reports/&lt;コマンドライン第3引数に指定したレポートのラベル&gt;/IL/old と Reports/&lt;コマンドライン第3引数に指定したレポートのラベル&gt;/IL/new に保存します（比較時に除外した行は出力前に除外）。
         /// - IL 比較では実際に使用したツールとコマンド、バージョン情報をログへ併記します。
         /// - 分類結果と詳細は <see cref="FileDiffResultLists"/> に集計され、後段のレポート生成で利用されます。
         /// </remarks>

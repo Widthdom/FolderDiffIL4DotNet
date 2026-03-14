@@ -40,6 +40,15 @@ jobs:
       - name: Build
         run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 
+      - name: Install DocFX
+        run: dotnet tool update --global docfx --version '2.*'
+
+      - name: Generate documentation site
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          docfx metadata docfx.json
+          docfx build docfx.json
+
       - name: Test with coverage
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
@@ -70,6 +79,12 @@ jobs:
             TestResults/**/*.trx
             TestResults/**/coverage.cobertura.xml
             CoverageReport/**
+
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DocumentationSite
+          path: _site/**
 
       - name: Publish
         run: dotnet publish FolderDiffIL4DotNet.csproj --configuration Release --no-build --output publish

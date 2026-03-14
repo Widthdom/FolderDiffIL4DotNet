@@ -5,6 +5,8 @@ This guide is for maintainers who need to change runtime behavior, extend the di
 Related documents:
 - [README.md](../README.md): product overview, installation, usage, and configuration reference
 - [doc/TESTING_GUIDE.md](TESTING_GUIDE.md): test strategy, local commands, and isolation rules
+- [api/index.md](../api/index.md): generated API reference landing page
+- [docfx.json](../docfx.json): DocFX metadata/build configuration
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI pipeline definition
 
 ## Document Map
@@ -15,6 +17,7 @@ Related documents:
 | Trace service boundaries and DI scopes | [Dependency Injection Layout](#dependency-injection-layout) |
 | Change file classification behavior | [Comparison Pipeline](#comparison-pipeline) |
 | Tune performance or network-share behavior | [Performance and Runtime Modes](#performance-and-runtime-modes) |
+| Refresh the generated API reference site | [Documentation Site and API Reference](#documentation-site-and-api-reference) |
 | Update build, test, or artifact behavior | [CI and Release Notes](#ci-and-release-notes) |
 | Safely extend the codebase | [Change Checklist](#change-checklist) |
 
@@ -32,6 +35,15 @@ Common commands:
 dotnet restore FolderDiffIL4DotNet.sln
 dotnet build FolderDiffIL4DotNet.sln --configuration Release
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false
+```
+
+Refresh the documentation site locally:
+
+```bash
+dotnet tool update --global docfx --version '2.*'
+export PATH="$PATH:$HOME/.dotnet/tools"
+docfx metadata docfx.json
+docfx build docfx.json
 ```
 
 Debugging a local run:
@@ -320,6 +332,30 @@ When to be careful:
 - Over-eager prefetching can regress NAS/SMB scenarios.
 - Large text-file behavior depends on both threshold and chunk size; they should be tuned together.
 
+## Documentation Site and API Reference
+
+DocFX is used as the API-reference generator and site builder.
+
+Inputs:
+- XML documentation comments emitted during `dotnet build`
+- `README.md`, this guide, and `doc/TESTING_GUIDE.md`
+- `docfx.json`, `index.md`, `toc.yml`, and `api/index.md`
+
+Outputs:
+- `_site/`: generated documentation site
+- `api/*.yml` and `api/toc.yml`: generated API metadata consumed by the site build
+
+Expected refresh sequence:
+1. Build the solution so the latest XML documentation file exists.
+2. Run `docfx metadata docfx.json`.
+3. Run `docfx build docfx.json`.
+4. Inspect `_site/index.html` or the CI artifact before merging larger API changes.
+
+Guardrails:
+- If you rename public namespaces or move public types, regenerate DocFX output in the same change.
+- If you add public surface area, keep XML comments current so the generated API reference stays useful.
+- `_site/` and generated `api/*.yml` files are build outputs and should not be committed.
+
 ## CI and Release Notes
 
 Workflow file:
@@ -329,6 +365,7 @@ Current CI behavior:
 - Runs on `push` and `pull_request` targeting `main`, plus `workflow_dispatch`
 - Uses `global.json` through `actions/setup-dotnet`
 - Restores and builds `FolderDiffIL4DotNet.sln`
+- Installs DocFX, generates the documentation site, and uploads it as `DocumentationSite`
 - Runs tests and coverage only when the test project exists
 - Generates coverage summary with `reportgenerator`
 - Publishes build output and uploads it as `FolderDiffIL4DotNet`
@@ -384,6 +421,8 @@ Before merging behavior changes, check:
 関連ドキュメント:
 - [README.md](../README.md): 製品概要、導入、使い方、設定リファレンス
 - [doc/TESTING_GUIDE.md](TESTING_GUIDE.md): テスト戦略、ローカル実行コマンド、分離ルール
+- [api/index.md](../api/index.md): 自動生成 API リファレンスの入口
+- [docfx.json](../docfx.json): DocFX のメタデータ/ビルド設定
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI パイプライン定義
 
 ## ドキュメントの見取り図
@@ -394,6 +433,7 @@ Before merging behavior changes, check:
 | サービス境界や DI スコープを追いたい | [Dependency Injection 構成](#dependency-injection-構成) |
 | ファイル判定ロジックを変更したい | [比較パイプライン](#比較パイプライン) |
 | 性能やネットワーク共有向け挙動を調整したい | [性能と実行モード](#性能と実行モード) |
+| 自動生成 API リファレンスを更新したい | [ドキュメントサイトと API リファレンス](#ドキュメントサイトと-api-リファレンス) |
 | ビルド・テスト・成果物の流れを変えたい | [CI とリリースまわり](#ci-とリリースまわり) |
 | 安全に機能追加したい | [変更時チェックリスト](#変更時チェックリスト) |
 
@@ -411,6 +451,15 @@ Before merging behavior changes, check:
 dotnet restore FolderDiffIL4DotNet.sln
 dotnet build FolderDiffIL4DotNet.sln --configuration Release
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false
+```
+
+ドキュメントサイトのローカル更新:
+
+```bash
+dotnet tool update --global docfx --version '2.*'
+export PATH="$PATH:$HOME/.dotnet/tools"
+docfx metadata docfx.json
+docfx build docfx.json
 ```
 
 ローカル実行例:
@@ -696,6 +745,30 @@ flowchart TD
 - 先読みを増やしすぎると NAS/SMB で退行しやすいです。
 - 大きいテキストファイルの挙動は、閾値とチャンクサイズの組み合わせで決まります。
 
+## ドキュメントサイトと API リファレンス
+
+API リファレンス生成とサイト構築には DocFX を使います。
+
+入力:
+- `dotnet build` で出力される XML ドキュメントコメント
+- `README.md`、このガイド、`doc/TESTING_GUIDE.md`
+- `docfx.json`、`index.md`、`toc.yml`、`api/index.md`
+
+出力:
+- `_site/`: 生成済みドキュメントサイト
+- `api/*.yml` と `api/toc.yml`: サイト構築に使う API メタデータ
+
+更新手順の基本:
+1. まずソリューションをビルドして最新の XML ドキュメントを出力します。
+2. `docfx metadata docfx.json` を実行します。
+3. `docfx build docfx.json` を実行します。
+4. 大きめの API 変更では、マージ前に `_site/index.html` または CI artifact を確認します。
+
+運用上の注意:
+- 公開 namespace や public 型を移動・改名したら、同じ変更で DocFX 出力も更新してください。
+- 公開 API を追加したら、生成結果が読める状態を維持するため XML コメントも必ず更新してください。
+- `_site/` と `api/*.yml` はビルド生成物なのでコミットしません。
+
 ## CI とリリースまわり
 
 ワークフロー:
@@ -705,6 +778,7 @@ flowchart TD
 - `main` 向け `push` / `pull_request` と `workflow_dispatch` で実行
 - `actions/setup-dotnet` で `global.json` を利用
 - `FolderDiffIL4DotNet.sln` を restore / build
+- DocFX を導入し、ドキュメントサイトを生成して `DocumentationSite` artifact としてアップロード
 - テストプロジェクトが存在するときだけテストとカバレッジを実行
 - `reportgenerator` でカバレッジ要約を生成
 - publish 出力を `FolderDiffIL4DotNet` としてアップロード

@@ -934,7 +934,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// ユーザーの .NET グローバルツールディレクトリ（例: C:\Users\<name>\.dotnet\tools）。
+        /// ユーザーの .NET グローバルツールディレクトリ（例: C:\Users\&lt;name&gt;\.dotnet\tools）。
         /// </summary>
         private static string UserDotnetToolsDirectory =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), DOTNET_HOME_DIRNAME, DOTNET_TOOLS_DIRNAME);

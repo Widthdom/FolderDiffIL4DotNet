@@ -10,7 +10,7 @@ namespace FolderDiffIL4DotNet.Utils
     public static class PathValidator
     {
         /// <summary>
-        /// Windows の禁止記号群（\\ / : * ? " < > |）。これを上限集合として全OSに適用。
+        /// Windows の禁止記号群（\\ / : * ? " &lt; &gt; |）。これを上限集合として全OSに適用。
         /// 制御文字(0x00-0x1F)のチェックは別途実装側で行います。
         /// </summary>
         private static readonly char[] s_windowsInvalidFileNameChars = ['"', '<', '>', '|', '\\', '/', ':', '*', '?'];

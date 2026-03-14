@@ -1,0 +1,50 @@
+{
+  "metadata": [
+    {
+      "src": [
+        {
+          "src": ".",
+          "files": [
+            "FolderDiffIL4DotNet.csproj"
+          ]
+        }
+      ],
+      "dest": "api",
+      "properties": {
+        "TargetFramework": "net8.0"
+      }
+    }
+  ],
+  "build": {
+    "content": [
+      {
+        "files": [
+          "index.md",
+          "README.md",
+          "toc.yml",
+          "doc/**/*.md",
+          "api/index.md",
+          "api/*.yml",
+          "api/toc.yml"
+        ]
+      }
+    ],
+    "resource": [
+      {
+        "files": [
+          "LICENSE"
+        ]
+      }
+    ],
+    "dest": "_site",
+    "globalMetadata": {
+      "_appName": "FolderDiffIL4DotNet",
+      "_appTitle": "FolderDiffIL4DotNet Documentation",
+      "_enableSearch": true
+    },
+    "template": [
+      "default",
+      "modern"
+    ]
+  }
+}

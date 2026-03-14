@@ -5,6 +5,7 @@ This document centralizes the project's testing strategy, execution commands, an
 Related documents:
 - [README.md](../README.md)
 - [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+- [api/index.md](../api/index.md)
 
 ## Test Stack
 
@@ -101,6 +102,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 
 Workflow: `.github/workflows/dotnet.yml`
 
+- DocFX site generation runs before tests and publishes `_site/` as the `DocumentationSite` artifact.
 - Tests and coverage run only when `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` exists.
 - `TestAndCoverage` artifact includes TRX and coverage outputs.
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
@@ -121,6 +123,7 @@ Workflow: `.github/workflows/dotnet.yml`
 - Always restore environment variables and temporary config files changed during tests.
 - Prefer asserting observable behavior (result classification/report content/log side-effects) over internal implementation details.
 - If test project path/name changes, update `.github/workflows/dotnet.yml` test and coverage conditions accordingly.
+- If the public API surface changes, regenerate the DocFX site and make sure XML comments still describe the new members correctly.
 - If user-visible execution behavior changes, also update `README.md` and `doc/DEVELOPER_GUIDE.md` in the same change.
 - If the runtime lifecycle or service boundaries change, confirm the terminology in tests still matches the developer guide.
 
@@ -133,6 +136,7 @@ Workflow: `.github/workflows/dotnet.yml`
 関連ドキュメント:
 - [README.md](../README.md)
 - [doc/DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
+- [api/index.md](../api/index.md)
 
 ## テストスタック
 
@@ -229,6 +233,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 
 ワークフロー: `.github/workflows/dotnet.yml`
 
+- テスト前に DocFX サイト生成を実行し、`_site/` を `DocumentationSite` artifact として公開します。
 - `FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj` が存在する場合のみテスト/カバレッジを実行します。
 - `TestAndCoverage` アーティファクトに TRX とカバレッジ関連ファイルを格納します。
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
@@ -249,5 +254,6 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 - 変更した環境変数や一時設定ファイルは必ず復元してください。
 - 内部実装より、分類結果・レポート内容・ログ副作用など観測可能な振る舞いを優先して検証してください。
 - テストプロジェクトの場所/名称を変更した場合は `.github/workflows/dotnet.yml` の条件とコマンドを更新してください。
+- public API を変更した場合は、DocFX サイトを再生成し、XML コメントが新しいメンバーを正しく説明しているか確認してください。
 - ユーザーから見える実行挙動が変わった場合は、`README.md` と `doc/DEVELOPER_GUIDE.md` も同じ変更で更新してください。
 - 実行ライフサイクルやサービス境界を変えた場合は、テスト名や説明に使っている用語も開発者ガイドと揃っているか確認してください。

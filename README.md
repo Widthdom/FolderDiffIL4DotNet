@@ -13,6 +13,7 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 | Product overview, setup, usage, and configuration | `README.md` |
 | Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
 | Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
+| Generated API reference from XML documentation comments | [api/index.md](api/index.md) via `docfx.json` |
 
 ## Requirements
 
@@ -251,6 +252,26 @@ Notes:
 
 After writing, report/IL files are set to read-only when possible (failures are warning-only).
 
+## API Documentation
+
+API reference pages are generated with DocFX from the XML documentation comments already maintained in the source code.
+
+Local refresh:
+
+```bash
+dotnet build FolderDiffIL4DotNet.sln --configuration Release
+dotnet tool update --global docfx --version '2.*'
+export PATH="$PATH:$HOME/.dotnet/tools"
+docfx metadata docfx.json
+docfx build docfx.json
+```
+
+Generated outputs:
+- Site root: `_site/index.html`
+- API metadata intermediate files: `api/*.yml`
+
+CI also generates the same site and uploads it as the `DocumentationSite` artifact.
+
 ## License
 
 - [MIT License](LICENSE)
@@ -272,6 +293,7 @@ After writing, report/IL files are set to read-only when possible (failures are 
 | 製品概要、導入、使い方、設定 | `README.md` |
 | 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
 | テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
+| XML ドキュメントコメントから生成する API リファレンス | [api/index.md](api/index.md) と `docfx.json` |
 
 ## 必要環境
 
@@ -513,6 +535,26 @@ flowchart TD
 - 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
 レポート/IL 出力ファイルは可能な範囲で読み取り専用化されます（失敗時は警告のみ）。
+
+## API ドキュメント
+
+API リファレンスは、ソースコード内で維持している XML ドキュメントコメントを DocFX で収集して生成します。
+
+ローカル更新手順:
+
+```bash
+dotnet build FolderDiffIL4DotNet.sln --configuration Release
+dotnet tool update --global docfx --version '2.*'
+export PATH="$PATH:$HOME/.dotnet/tools"
+docfx metadata docfx.json
+docfx build docfx.json
+```
+
+生成物:
+- サイト本体: `_site/index.html`
+- API メタデータ中間生成物: `api/*.yml`
+
+CI でも同じサイトを生成し、`DocumentationSite` artifact としてアップロードします。
 
 ## ライセンス
 

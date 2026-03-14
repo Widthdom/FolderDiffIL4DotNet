@@ -23,3 +23,8 @@ obj/
 # Others
 *.DS_Store
 Thumbs.db
+
+# DocFX outputs
+_site/
+api/*.yml
+api/toc.yml
