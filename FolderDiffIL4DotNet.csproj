@@ -5,6 +5,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <DefaultItemExcludes>$(DefaultItemExcludes);FolderDiffIL4DotNet.Tests/**</DefaultItemExcludes>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <NoWarn>$(NoWarn);1572;1573;1574;1591</NoWarn>
   </PropertyGroup>
 

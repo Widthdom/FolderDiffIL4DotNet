@@ -80,7 +80,19 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
                     FileSystemUtility.TrySetReadOnly(oldILFileAbsolutePath);
                     FileSystemUtility.TrySetReadOnly(newILFileAbsolutePath);
                 }
-                catch (Exception ex)
+                catch (ArgumentException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                }
+                catch (IOException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                }
+                catch (NotSupportedException ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
                 }

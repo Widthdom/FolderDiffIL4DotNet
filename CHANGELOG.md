@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Replaced one-off `string.Format(...)` usage with interpolated strings, removed broad `#region` usage, and deleted now-unused format/message constants.
 - Updated the developer and testing guides to reflect the current source-style expectations and latest passing test count.
 - Made `.NET` executable detection distinguish `NotDotNetExecutable` from detection failure, log a warning for non-fatal detection failures, and let chunk-parallel text-diff exceptions bubble to the existing sequential fallback path instead of silently returning `false`.
+- Enabled the `CA1031` analyzer for production code so broad exception catches are surfaced during normal builds, while excluding test cleanup code from the warning.
+- Removed generic `throw new Exception(..., ex)` wrapping from `FileSystemUtility` so original exception types and stack traces are preserved, and added regression coverage plus bilingual guide updates.
 
 ### [1.2.2] - 2026-03-14
 
@@ -220,6 +222,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - 単発利用の `string.Format(...)` を補間文字列へ置き換え、広範な `#region` 利用をやめ、不要になった書式・メッセージ定数を削除しました。
 - 開発ガイドとテストガイドを更新し、現在のソースコード方針と最新の通過テスト件数を反映しました。
 - `.NET` 実行可能判定で `NotDotNetExecutable` と判定失敗を区別するようにし、致命ではない判定失敗は warning を残して継続するようにしました。あわせて並列テキスト比較の例外は `false` に潰さず、既存の逐次比較フォールバック経路へ伝播させるようにしました。
+- 本体コードで広すぎる例外捕捉を通常ビルド時に検出できるよう、`CA1031` アナライザーを有効化しました。テストの後片付け用 catch は warning 対象から外しています。
+- `FileSystemUtility` での `throw new Exception(..., ex)` 形式の汎用ラップをやめ、元の例外型とスタックトレースを維持するようにしました。あわせて回帰テストと日英ガイドを更新しました。
 
 ### [1.2.2] - 2026-03-14
 

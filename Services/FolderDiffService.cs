@@ -316,7 +316,19 @@ namespace FolderDiffIL4DotNet.Services
                     // MD5 ハッシュや内部キー計算（ILCache.PrecomputeAsync）と、逆アセンブラのキャッシュウォームを実行。
                     await _fileDiffService.PrecomputeAsync(allFilesAbsolutePath, maxParallel);
                 }
-                catch (Exception ex)
+                catch (IOException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                }
+                catch (NotSupportedException ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }
@@ -545,15 +557,7 @@ namespace FolderDiffIL4DotNet.Services
                 .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            int dotNetAssemblyCandidates = 0;
-            try
-            {
-                dotNetAssemblyCandidates = allFilesForLog.Count(DotNetDetector.IsDotNetExecutable);
-            }
-            catch
-            {
-                // ignore
-            }
+            int dotNetAssemblyCandidates = allFilesForLog.Count(DotNetDetector.IsDotNetExecutable);
             _logger.LogMessage(
                 AppLogLevel.Info,
                 $"Precompute targets: totalFiles={allFilesForLog.Count}, {nameof(dotNetAssemblyCandidates)}={dotNetAssemblyCandidates}",

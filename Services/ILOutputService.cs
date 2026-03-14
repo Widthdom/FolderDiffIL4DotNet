@@ -130,7 +130,19 @@ namespace FolderDiffIL4DotNet.Services
                 // .NET 実行可能のみを対象に、逆アセンブル用キャッシュをプリフェッチ
                 await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel);
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (NotSupportedException ex)
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }

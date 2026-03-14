@@ -165,7 +165,19 @@ namespace FolderDiffIL4DotNet.Utils
                             : DotNetExecutableDetectionStatus.NotDotNetExecutable);
                 }
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
+            {
+                return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
+            }
+            catch (IOException ex)
+            {
+                return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
+            }
+            catch (NotSupportedException ex)
             {
                 return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
             }

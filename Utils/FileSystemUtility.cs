@@ -182,14 +182,7 @@ namespace FolderDiffIL4DotNet.Utils
         /// </summary>
         public static string GetTimestamp(string fileAbsolutepath)
         {
-            try
-            {
-                return new DateTimeOffset(File.GetLastWriteTime(fileAbsolutepath)).ToString(TIMESTAMP_FORMAT);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to retrieve the last modified time of '{fileAbsolutepath}'.", ex);
-            }
+            return new DateTimeOffset(File.GetLastWriteTime(fileAbsolutepath)).ToString(TIMESTAMP_FORMAT);
         }
 
         /// <summary>
@@ -206,17 +199,10 @@ namespace FolderDiffIL4DotNet.Utils
             {
                 throw new FileNotFoundException(ERROR_FILE_NOT_FOUND, fileAbsolutePath);
             }
-            try
+            var fileAttributes = File.GetAttributes(fileAbsolutePath);
+            if ((fileAttributes & FileAttributes.ReadOnly) == 0)
             {
-                var fileAttributes = File.GetAttributes(fileAbsolutePath);
-                if ((fileAttributes & FileAttributes.ReadOnly) == 0)
-                {
-                    File.SetAttributes(fileAbsolutePath, fileAttributes | FileAttributes.ReadOnly);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to set read-only attribute for '{fileAbsolutePath}'.", ex);
+                File.SetAttributes(fileAbsolutePath, fileAttributes | FileAttributes.ReadOnly);
             }
         }
 
@@ -234,7 +220,15 @@ namespace FolderDiffIL4DotNet.Utils
             {
                 File.Delete(fileAbsolutePath);
             }
-            catch
+            catch (IOException)
+            {
+                /* ignore */
+            }
+            catch (UnauthorizedAccessException)
+            {
+                /* ignore */
+            }
+            catch (NotSupportedException)
             {
                 /* ignore */
             }

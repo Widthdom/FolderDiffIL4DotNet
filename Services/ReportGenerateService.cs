@@ -253,7 +253,22 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 reportGenerated = true;
             }
-            catch (Exception)
+            catch (ArgumentException)
+            {
+                _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+                throw;
+            }
+            catch (IOException)
+            {
+                _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+                throw;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+                throw;
+            }
+            catch (NotSupportedException)
             {
                 _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
                 throw;
@@ -265,7 +280,19 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     FileSystemUtility.TrySetReadOnly(diffReportAbsolutePath);
                 }
-                catch (Exception ex)
+                catch (ArgumentException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                }
+                catch (IOException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                }
+                catch (NotSupportedException ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
                 }

@@ -57,6 +57,7 @@ namespace FolderDiffIL4DotNet
             var exitCode = EXIT_CODE_SUCCESS;
             bool hasMd5MismatchWarnings = false;
             bool hasTimestampRegressionWarnings = false;
+            #pragma warning disable CA1031 // Top-level application boundary converts unexpected failures into exit codes after logging.
             try
             {
                 Console.WriteLine(INITIALIZING_LOGGER);
@@ -125,6 +126,7 @@ namespace FolderDiffIL4DotNet
                 _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
                 exitCode = EXIT_CODE_ERROR;
             }
+            #pragma warning restore CA1031
             finally
             {
                 OutputCompletionWarnings(hasMd5MismatchWarnings, hasTimestampRegressionWarnings);
@@ -143,7 +145,11 @@ namespace FolderDiffIL4DotNet
                         Console.WriteLine(PRESS_ANY_KEY);
                         Console.ReadKey(true);
                     }
-                    catch (Exception ex)
+                    catch (InvalidOperationException ex)
+                    {
+                        _logger.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
+                    }
+                    catch (IOException ex)
                     {
                         _logger.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
                     }

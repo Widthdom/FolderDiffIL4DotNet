@@ -267,6 +267,7 @@ Failure semantics:
 - `InvalidOperationException` from the IL path is logged and rethrown intentionally, which makes IL tool/setup problems fatal for the whole run.
 - Detection failures from `DotNetDetector.DetectDotNetExecutable(...)` are non-fatal: the file skips the IL path after a warning and can still continue through text or MD5-mismatch handling.
 - Other unexpected exceptions in `FilesAreEqualAsync(...)` are also logged with both absolute paths before they bubble to `FolderDiffService`.
+- Utility helpers should not wrap failures in a new generic `Exception` only to add context. Prefer preserving the original exception type and stack trace, and add context at the logging boundary instead.
 - Recording detail results and returning the boolean must remain consistent. A file must never be marked `Unchanged` with a mismatch detail or `Modified` with a match detail.
 
 ## Result Model and Reporting Contract
@@ -681,6 +682,7 @@ flowchart TD
 - IL 経路の `InvalidOperationException` はログを出したうえで意図的に再送出されるため、IL ツール不整合やセットアップ問題は実行全体の致命扱いです。
 - `DotNetDetector.DetectDotNetExecutable(...)` の失敗は致命扱いではありません。warning を残して IL 経路だけを飛ばし、その後のテキスト比較または MD5 不一致処理を継続します。
 - それ以外の予期しない例外も `FilesAreEqualAsync(...)` 内で old/new 両絶対パス付きでログ化された後、`FolderDiffService` へ伝播します。
+- 文脈付与だけを目的に汎用 `Exception` へ包み直す実装は避けてください。元の例外型とスタックトレースを保ち、必要な補足情報はログ境界で追加する方針です。
 - 詳細結果の記録と bool 戻り値は常に整合していなければなりません。たとえば mismatch 詳細なのに `true` を返す変更はレポート分類を壊します。
 
 ## 結果モデルとレポート契約

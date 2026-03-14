@@ -178,7 +178,15 @@ namespace FolderDiffIL4DotNet.Services
             {
                 LogMessage(AppLogLevel.Warning, ex.Message + ".", shouldOutputMessageToConsole: true, ex);
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (NotSupportedException ex)
             {
                 LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
             }

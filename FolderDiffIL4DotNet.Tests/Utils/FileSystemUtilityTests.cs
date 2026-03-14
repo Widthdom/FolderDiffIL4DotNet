@@ -71,6 +71,12 @@ namespace FolderDiffIL4DotNet.Tests.Utils
         }
 
         [Fact]
+        public void GetTimestamp_Null_ThrowsOriginalArgumentException()
+        {
+            Assert.ThrowsAny<ArgumentException>(() => FileSystemUtility.GetTimestamp(null));
+        }
+
+        [Fact]
         public void TrySetReadOnly_ExistingFile_SetsReadOnlyAttribute()
         {
             var file = CreateTempFile("readonly.txt", "content");

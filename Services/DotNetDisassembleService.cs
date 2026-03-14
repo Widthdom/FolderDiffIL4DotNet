@@ -194,13 +194,6 @@ namespace FolderDiffIL4DotNet.Services
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
-                catch (Exception ex)
-                {
-                    lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, $"Unexpected error while preparing to run '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                    RegisterDisassembleFailure(candidateDisassembleCommand);
-                    continue;
-                }
             }
 
             var innerMsg = lastError != null ? $" RootCause: {lastError.Message}" : string.Empty;
@@ -268,13 +261,6 @@ namespace FolderDiffIL4DotNet.Services
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
-                catch (Exception ex)
-                {
-                    lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, $"Unexpected error while preparing to run '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                    RegisterDisassembleFailure(candidateDisassembleCommand);
-                    continue;
-                }
             }
 
             var innerMsg = lastError != null ? $" RootCause: {lastError.Message}" : string.Empty;
@@ -331,7 +317,19 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     await TryHitCacheForAssemblyAsync(dotNetAssemblyFileAbsolutePath, disassembleCommandAndItsVersionList);
                 }
-                catch (Exception ex)
+                catch (IOException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                }
+                catch (NotSupportedException ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }
@@ -487,7 +485,22 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 return (false, null, label);
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                return (false, null, null);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                return (false, null, null);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                return (false, null, null);
+            }
+            catch (NotSupportedException ex)
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 return (false, null, null);
@@ -531,7 +544,19 @@ namespace FolderDiffIL4DotNet.Services
                 await _ilCache.SetILAsync(dotNetAssemblyFileAbsolutePath, label, ilText);
                 Interlocked.Increment(ref _ilCacheStores);
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (NotSupportedException ex)
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
@@ -611,7 +636,7 @@ namespace FolderDiffIL4DotNet.Services
                     var version = await _dotNetDisassemblerCache.GetDisassemblerVersionAsync(versionQueryLabel);
                     result.Add((candidateCommand, version));
                 }
-                catch
+                catch (InvalidOperationException)
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
@@ -646,7 +671,19 @@ namespace FolderDiffIL4DotNet.Services
                     return tempAsciiPath;
                 }
             }
-            catch (Exception ex)
+            catch (ArgumentException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (IOException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+            }
+            catch (NotSupportedException ex)
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
@@ -708,7 +745,7 @@ namespace FolderDiffIL4DotNet.Services
                 var disassemblerVersionOneLine = disassemblerVersion.Replace("\r", " ").Replace("\n", " ").Trim();
                 return string.IsNullOrEmpty(disassemblerVersionOneLine) ? disassembleCommandWithArguments : $"{disassembleCommandWithArguments} (version: {disassemblerVersionOneLine})";
             }
-            catch
+            catch (InvalidOperationException)
             {
                 var fingerprint = BuildToolFingerprint(disassembleCommandWithArguments);
                 return $"{disassembleCommandWithArguments} (version: {UNKNOWN_VERSION_FINGERPRINT_PREFIX}{fingerprint})";
@@ -870,7 +907,27 @@ namespace FolderDiffIL4DotNet.Services
                 // 成功時は終了コードと標準出力/標準エラーを詰めて返す。
                 return (ExitCode: process.ExitCode, Stdout: stdOutput, Stderr: errorOutput, Error: null);
             }
-            catch (Exception ex)
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
+                return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
+                return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
+            }
+            catch (IOException ex)
+            {
+                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
+                return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
+            }
+            catch (NotSupportedException ex)
+            {
+                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
+                return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
+            }
+            catch (UnauthorizedAccessException ex)
             {
                 // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
                 return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);

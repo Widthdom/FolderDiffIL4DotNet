@@ -17,7 +17,7 @@ Related documents:
 
 ## Current Test Scope Map
 
-Current tree has `218` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`).
+Current tree has `219` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -26,7 +26,7 @@ Current tree has `218` passing tests in the latest full run (`dotnet test Folder
 | IL/disassembler behavior | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | Same-disassembler pairing, fallback behavior, blacklist logic, detection and command handling, failure-vs-non-.NET detection semantics |
 | Caching | `ILCacheTests` | memory/disk cache semantics, retention, keying behavior |
 | Reporting/logging/progress | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | report sections/summary formatting, report-only warning responsibility, log output behavior, progress reporting lifecycle |
-| Utility layer | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | hashing/text compare, path/network detection, command tokenization, file-name/path sanitization |
+| Utility layer | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | hashing/text compare, path/network detection, command tokenization, file-name/path sanitization, original exception-type preservation |
 
 Testability-related structure:
 - `ProgramTests` exercise the thin `Program.Main` entry point while the execution orchestration lives in `ProgramRunner`, which reduces static-state coupling.
@@ -148,7 +148,7 @@ Workflow: `.github/workflows/dotnet.yml`
 
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`）では `218` 件が成功しています。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`）では `219` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
@@ -157,7 +157,7 @@ Workflow: `.github/workflows/dotnet.yml`
 | IL/逆アセンブラ | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | 同一逆アセンブラ比較、フォールバック、ブラックリスト、検出・コマンド処理、判定失敗と非 .NET の区別 |
 | キャッシュ | `ILCacheTests` | メモリ/ディスクキャッシュの保持、キー生成、削除方針 |
 | レポート/ログ/進捗 | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | レポート出力内容、ログ動作、進捗報告ライフサイクル |
-| ユーティリティ層 | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | ハッシュ/テキスト比較、パス/ネットワーク判定、コマンド分解、ファイル名/パス整形 |
+| ユーティリティ層 | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | ハッシュ/テキスト比較、パス/ネットワーク判定、コマンド分解、ファイル名/パス整形、元例外型の維持 |
 
 テスタビリティに関する構成:
 - `ProgramTests` は薄い `Program.Main` を対象にしつつ、実行オーケストレーション本体は `ProgramRunner` に分離されています。これにより静的状態への結合を減らしています。

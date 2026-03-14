@@ -1,0 +1,7 @@
+root = true
+
+[*.cs]
+dotnet_diagnostic.CA1031.severity = warning
+
+[FolderDiffIL4DotNet.Tests/**/*.cs]
+dotnet_diagnostic.CA1031.severity = none

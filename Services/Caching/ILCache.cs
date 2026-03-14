@@ -204,7 +204,34 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     Directory.CreateDirectory(_ilCacheDirectoryAbsolutePath);
                     _isDiskCacheEnabled = true;
                 }
-                catch (Exception ex)
+                catch (ArgumentException ex)
+                {
+                    _isDiskCacheEnabled = false;
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Failed to create IL cache directory '{_ilCacheDirectoryAbsolutePath}': {ex.Message}",
+                        shouldOutputMessageToConsole: true,
+                        ex);
+                }
+                catch (IOException ex)
+                {
+                    _isDiskCacheEnabled = false;
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Failed to create IL cache directory '{_ilCacheDirectoryAbsolutePath}': {ex.Message}",
+                        shouldOutputMessageToConsole: true,
+                        ex);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _isDiskCacheEnabled = false;
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Failed to create IL cache directory '{_ilCacheDirectoryAbsolutePath}': {ex.Message}",
+                        shouldOutputMessageToConsole: true,
+                        ex);
+                }
+                catch (NotSupportedException ex)
                 {
                     _isDiskCacheEnabled = false;
                     _logger.LogMessage(
@@ -234,30 +261,23 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, Constants.ERROR_MAX_PARALLEL);
             }
 
-            try
+            var files = fileAbsolutePaths as ICollection<string> ?? [.. fileAbsolutePaths];
+            if (files.Count == 0)
             {
-                var files = fileAbsolutePaths as ICollection<string> ?? [.. fileAbsolutePaths];
-                if (files.Count == 0)
-                {
-                    return Task.CompletedTask;
-                }
-
-                _logger.LogMessage(
-                    AppLogLevel.Info,
-                    $"Precompute MD5: starting for {files.Count} files ({nameof(maxParallel)}={maxParallel})",
-                    shouldOutputMessageToConsole: true);
-
-                RunMd5Precompute(files, maxParallel);
-
-                _logger.LogMessage(
-                    AppLogLevel.Info,
-                    $"Precompute MD5: completed for {files.Count} files",
-                    shouldOutputMessageToConsole: true);
+                return Task.CompletedTask;
             }
-            catch
-            {
-                // ignore
-            }
+
+            _logger.LogMessage(
+                AppLogLevel.Info,
+                $"Precompute MD5: starting for {files.Count} files ({nameof(maxParallel)}={maxParallel})",
+                shouldOutputMessageToConsole: true);
+
+            RunMd5Precompute(files, maxParallel);
+
+            _logger.LogMessage(
+                AppLogLevel.Info,
+                $"Precompute MD5: completed for {files.Count} files",
+                shouldOutputMessageToConsole: true);
             return Task.CompletedTask;
         }
 
@@ -312,7 +332,23 @@ namespace FolderDiffIL4DotNet.Services.Caching
                         LogStatsIfIntervalElapsed();
                         return ilText;
                     }
-                    catch (Exception ex)
+                    catch (IOException ex)
+                    {
+                        _logger.LogMessage(
+                            AppLogLevel.Warning,
+                            $"Failed to read IL cache file '{diskILCacheFileAbsolutePath}': {ex.Message}",
+                            shouldOutputMessageToConsole: true,
+                            ex);
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        _logger.LogMessage(
+                            AppLogLevel.Warning,
+                            $"Failed to read IL cache file '{diskILCacheFileAbsolutePath}': {ex.Message}",
+                            shouldOutputMessageToConsole: true,
+                            ex);
+                    }
+                    catch (NotSupportedException ex)
                     {
                         _logger.LogMessage(
                             AppLogLevel.Warning,
@@ -403,7 +439,23 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     // 個々のファイルの MD5 を計算し、内部キャッシュに投入（GetOrAdd）
                     GetFileHash(fileAbsolutePath);
                 }
-                catch (Exception ex)
+                catch (IOException ex)
+                {
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Failed to Precompute MD5 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
+                        shouldOutputMessageToConsole: true,
+                        ex);
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Failed to Precompute MD5 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
+                        shouldOutputMessageToConsole: true,
+                        ex);
+                }
+                catch (NotSupportedException ex)
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
@@ -536,7 +588,25 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     File.Delete(diskILCacheFileToRemoveAbsolutePath);
                 }
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                // 削除に失敗した場合は警告ログを吐く
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Failed to remove disk cache file '{BuildILCacheFileAbsolutePath(oldestILCacheKey)}' during LRU eviction.",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // 削除に失敗した場合は警告ログを吐く
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Failed to remove disk cache file '{BuildILCacheFileAbsolutePath(oldestILCacheKey)}' during LRU eviction.",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+            catch (NotSupportedException ex)
             {
                 // 削除に失敗した場合は警告ログを吐く
                 _logger.LogMessage(
@@ -567,7 +637,25 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 await File.WriteAllTextAsync(diskILCacheFileToWriteAbsolutePath, ilText);
                 EnforceDiskQuota();
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                // 例外は握りつぶさず警告ログに残す
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Failed to write IL cache file '{diskILCacheFileToWriteAbsolutePath}': {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // 例外は握りつぶさず警告ログに残す
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Failed to write IL cache file '{diskILCacheFileToWriteAbsolutePath}': {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+            catch (NotSupportedException ex)
             {
                 // 例外は握りつぶさず警告ログに残す
                 _logger.LogMessage(
@@ -670,7 +758,23 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 file.Delete();
                 return true;
             }
-            catch (Exception ex)
+            catch (IOException ex)
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Failed to delete cache file: {file.FullName}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Failed to delete cache file: {file.FullName}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+            catch (NotSupportedException ex)
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,

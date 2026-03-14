@@ -208,7 +208,22 @@ namespace FolderDiffIL4DotNet.Services
                             }
                         }
                     }
-                    catch (Exception ex)
+                    catch (ArgumentOutOfRangeException ex)
+                    {
+                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
+                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                    }
+                    catch (IOException ex)
+                    {
+                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
+                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
+                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                    }
+                    catch (NotSupportedException ex)
                     {
                         _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
                         areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);

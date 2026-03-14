@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Sockets;
 
 namespace FolderDiffIL4DotNet.Utils
 {
@@ -70,7 +71,7 @@ namespace FolderDiffIL4DotNet.Utils
             {
                 return Environment.MachineName;
             }
-            catch
+            catch (InvalidOperationException)
             {
                 return null;
             }
@@ -82,7 +83,11 @@ namespace FolderDiffIL4DotNet.Utils
             {
                 return Dns.GetHostName();
             }
-            catch
+            catch (SocketException)
+            {
+                return null;
+            }
+            catch (InvalidOperationException)
             {
                 return null;
             }
