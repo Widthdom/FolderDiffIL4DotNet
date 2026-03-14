@@ -94,6 +94,31 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReport_HeaderShowsMvidReasonNote()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-mvid-note");
+            var newDir = Path.Combine(_rootDir, "new-mvid-note");
+            var reportDir = Path.Combine(_rootDir, "report-mvid-note");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.Contains("lines starting with \"// MVID:\" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata", reportText);
+        }
+
+        [Fact]
         public void GenerateDiffReport_IlDiffDetailsIncludeDisassemblerLabel()
         {
             var oldDir = Path.Combine(_rootDir, "old");

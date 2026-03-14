@@ -191,7 +191,7 @@ namespace FolderDiffIL4DotNet.Services
         /// 2) 進捗の母数を old∪new の相対パス件数で算出し、1 件処理ごとに ProgressReporter に通知
         /// 3) old 側を基準に走査し、各相対パスについて以下の順で比較:
         ///    - MD5 ハッシュ一致なら Unchanged
-        ///    - .NET 実行可能なら IL を逆アセンブルして比較（MVID 行および設定で指定された文字列を含む行を除外）。
+        ///    - .NET 実行可能なら IL を逆アセンブルして比較（再ビルドで変わり得る MVID 行および設定で指定された文字列を含む行を除外）。
         ///    - TextFileExtensions に含まれる拡張子ならテキスト差分で比較
         ///    - いずれも一致しなければ Modified と判定
         ///    new 側に存在しない場合は Removed として記録

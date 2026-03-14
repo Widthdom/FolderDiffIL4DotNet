@@ -245,7 +245,7 @@ flowchart TD
 Rules that are easy to break:
 - The first successful classification for a file is the final classification for that file.
 - IL comparison is only attempted after MD5 mismatch and only for files detected as .NET executables.
-- IL comparison ignores `// MVID:` lines unconditionally.
+- IL comparison ignores `// MVID:` lines unconditionally because they are disassembler-emitted Module Version ID metadata and can change on rebuild without reflecting an executable IL change.
 - Additional IL ignore rules are substring-based and case-sensitive (`StringComparison.Ordinal`).
 - IL comparison must use the same disassembler identity and version label for old/new.
 - Text comparison can fall back from chunk-parallel mode to sequential mode on error, but only because chunk-parallel exceptions are allowed to bubble to `FilesAreEqualAsync(...)`.
@@ -687,7 +687,7 @@ flowchart TD
 壊しやすい前提:
 - 1 ファイルで最初に確定した分類がそのファイルの最終分類です。
 - IL 比較は MD5 不一致の後、かつ .NET 実行可能ファイルにのみ進みます。
-- IL 比較では `// MVID:` 行を常に無視します。
+- IL 比較では `// MVID:` 行を常に無視します。これは逆アセンブラが出力する Module Version ID メタデータで、再ビルドのたびに変わり得るため、アセンブリの中身が実質的に同じでも、この行だけで差分ありと判定されてしまうことがあるためです。
 - 追加の IL 行無視は部分一致で、大文字小文字を区別します（`StringComparison.Ordinal`）。
 - old/new の IL 比較は、同じ逆アセンブラ識別子とバージョン表記でなければなりません。
 - テキスト比較は、並列チャンク経路で例外が出た場合に逐次比較へフォールバックします。この挙動は、並列比較側で例外を握りつぶさず `FilesAreEqualAsync(...)` まで伝播させる前提で成り立っています。

@@ -22,7 +22,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
 
         /// <summary>
-        /// IL 出力から比較時に除外する MVID 行の接頭辞
+        /// IL 出力から比較時に除外する MVID 行の接頭辞。MVID は再ビルドごとに変わり得る Module Version ID メタデータで、実行される IL 差分を直接意味しません。
         /// </summary>
         private const string MVID_PREFIX = "// MVID:";
 
@@ -160,7 +160,7 @@ namespace FolderDiffIL4DotNet.Services
                 await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath);
             var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
 
-            // 行単位に分割し、MVID 行および設定で指定された文字列を含む行を除外して比較する。
+            // 行単位に分割し、再ビルドで変わり得る MVID 行および設定で指定された文字列を含む行を除外して比較する。
             var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(_config);
             var il1Lines = ilText1.Split('\n').ToList();
             var il2Lines = ilText2.Split('\n').ToList();

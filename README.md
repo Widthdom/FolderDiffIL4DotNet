@@ -1,7 +1,7 @@
 # FolderDiffIL4DotNet
 
 `FolderDiffIL4DotNet` is a .NET console application that compares two folders and outputs a Markdown report.
-For .NET assemblies, it compares IL while ignoring build-specific noise such as `// MVID:` lines, so behaviorally equivalent binaries can be treated as equal even when build timestamps differ.
+For .NET assemblies, it compares IL while ignoring build-specific information such as `// MVID:` lines, so assemblies whose contents are effectively the same can still be judged equal.
 
 Developer-focused details (architecture, CI, tests, implementation cautions):
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
@@ -86,7 +86,7 @@ Example `diff_report.md` (trimmed):
 - Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
 - IL Disassembler: dotnet-ildasm (version: 0.12.2)
 - Elapsed Time: 00:00:01.234
-- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored.
+- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
 - Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
 - Legend:
   - `MD5Match` / `MD5Mismatch`: MD5 hash match / mismatch
@@ -249,7 +249,7 @@ CI also generates the same site and uploads it as the `DocumentationSite` artifa
 # FolderDiffIL4DotNet（日本語）
 
 `FolderDiffIL4DotNet` は、2つのフォルダを比較して Markdown レポートを出力する .NET コンソールアプリです。
-.NET アセンブリは `// MVID:` などのビルド固有差分を除外して IL 比較するため、ビルド日時が違っても実質同等なら同一として扱えます。
+.NET アセンブリは `// MVID:` などのビルド固有情報を除外して IL 比較することで、アセンブリの中身が実質的に同じであれば同一と判断します。
 
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
@@ -338,7 +338,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 - Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
 - IL Disassembler: dotnet-ildasm (version: 0.12.2)
 - Elapsed Time: 00:00:01.234
-- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored.
+- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
 - Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
 - Legend:
   - `MD5Match` / `MD5Mismatch`: MD5 hash match / mismatch
@@ -409,7 +409,6 @@ flowchart TD
 
 重要な点:
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
-- IL 比較では `// MVID:` 行を常に無視するため、ビルドごとの差分だけで別物扱いになりにくくしています。
 - `ShouldIgnoreILLinesContainingConfiguredStrings=true` の場合は、設定した文字列を含む行も IL 比較から除外します。
 - テキスト比較の内部実装はファイルサイズや実行モードで変わることがあります。大きいローカルファイルの並列比較で例外が出た場合は warning を記録し、逐次比較へフォールバックします。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
