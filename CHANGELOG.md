@@ -11,32 +11,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Added direct `.cs` source links for class references across the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md), excluding classes that would be split across partial definitions.
 - Moved the report-level `MD5Mismatch` warning from `Summary` into the final `Warnings` section, ordered it before timestamp-regression warnings, and refreshed the related docs and regression tests.
 - Introduced DocFX-based API documentation generation, added a documentation-site build path, and wired CI to publish the generated `DocumentationSite` artifact.
-- Added `IFileSystemService` and `IFileComparisonService` as low-level seams for folder discovery/output I/O and per-file comparison I/O, making permission and disk-failure paths unit-testable without changing production behavior.
+- Added [`IFileSystemService`](Services/IFileSystemService.cs) and [`IFileComparisonService`](Services/IFileComparisonService.cs) as low-level seams for folder discovery/output I/O and per-file comparison I/O, making permission and disk-failure paths unit-testable without changing production behavior.
 - Split folder/file diff coverage more clearly into lightweight unit tests and temp-directory-backed integration tests, and expanded automated coverage for hash failures, IL-output failures, and large-text comparison paths.
-- Updated the README, developer guide, and testing guide in both English and Japanese to document the new service seams, test boundaries, and the latest passing test count (`219`).
-- Moved aggregated `MD5Mismatch` console warnings into `ProgramRunner`, kept `ReportGenerateService` report-only, and updated related docs and automated tests.
+- Updated the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md) in both English and Japanese to document the new service seams, test boundaries, and the latest passing test count (`219`).
+- Moved aggregated `MD5Mismatch` console warnings into [`ProgramRunner`](ProgramRunner.cs), kept [`ReportGenerateService`](Services/ReportGenerateService.cs) report-only, and updated related docs and automated tests.
 - Replaced one-off `string.Format(...)` usage with interpolated strings, removed broad `#region` usage, and deleted now-unused format/message constants.
 - Updated the developer and testing guides to reflect the current source-style expectations and latest passing test count.
 - Made `.NET` executable detection distinguish `NotDotNetExecutable` from detection failure, log a warning for non-fatal detection failures, and let chunk-parallel text-diff exceptions bubble to the existing sequential fallback path instead of silently returning `false`.
 - Enabled the `CA1031` analyzer for production code so broad exception catches are surfaced during normal builds, while excluding test cleanup code from the warning.
-- Removed generic `throw new Exception(..., ex)` wrapping from `FileSystemUtility` so original exception types and stack traces are preserved, and added regression coverage plus bilingual guide updates.
-- Moved configuration defaults into `ConfigSettings`, normalized missing or `null` config values back to code-defined defaults, simplified the shipped `config.json` to an override-only shape, and refreshed bilingual docs plus config-focused tests.
+- Removed generic `throw new Exception(..., ex)` wrapping from [`FileSystemUtility`](Utils/FileSystemUtility.cs) so original exception types and stack traces are preserved, and added regression coverage plus bilingual guide updates.
+- Moved configuration defaults into [`ConfigSettings`](Models/ConfigSettings.cs), normalized missing or `null` config values back to code-defined defaults, simplified the shipped [`config.json`](config.json) to an override-only shape, and refreshed bilingual docs plus config-focused tests.
 
 ### [1.2.2] - 2026-03-14
 
 #### Added
 
 - Added configurable warnings when a file in `new` has an older last-modified timestamp than the matching file in `old`, including console output before exit and a final `Warnings` section in `diff_report.md`.
-- Added coverlet-based coverage collection in CI and expanded automated tests for `Program`, logging, progress reporting, file-system helpers, and text-diff fallback paths.
+- Added coverlet-based coverage collection in CI and expanded automated tests for [`Program`](Program.cs), logging, progress reporting, file-system helpers, and text-diff fallback paths.
 
 #### Changed
 
 - Extended console color emphasis so warning messages are also highlighted in yellow for consistency with the final success/failure messages.
 - Updated configuration samples, documentation, and automated tests for timestamp-regression warnings.
-- Reorganized runtime composition around `ProgramRunner`, `DiffExecutionContext`, and interface-based services to improve diff-pipeline testability and reduce direct static-state coupling.
-- Split developer and testing guidance into dedicated documents and expanded the README with clearer installation examples and comparison-flow documentation.
+- Reorganized runtime composition around [`ProgramRunner`](ProgramRunner.cs), [`DiffExecutionContext`](Services/DiffExecutionContext.cs), and interface-based services to improve diff-pipeline testability and reduce direct static-state coupling.
+- Split developer and testing guidance into dedicated documents and expanded the [README](README.md) with clearer installation examples and comparison-flow documentation.
 - Expanded the developer guide with execution lifecycle, DI boundaries, runtime-mode notes, Mermaid diagrams, and a clearer documentation map across README and testing guidance.
 
 #### Fixed
@@ -48,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Added
 
 - Added configuration keys for text-diff parallel threshold and chunk size in KiB.
-- Added focused tests for `FolderDiffService` and strengthened report-generation coverage.
+- Added focused tests for [`FolderDiffService`](Services/FolderDiffService.cs) and strengthened report-generation coverage.
 
 #### Changed
 
@@ -56,7 +57,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
-- Made `FileDiffResultLists` thread-safe and added `ResetAll` to reliably clear shared result state between runs.
+- Made [`FileDiffResultLists`](Models/FileDiffResultLists.cs) thread-safe and added `ResetAll` to reliably clear shared result state between runs.
 
 ### [1.2.0] - 2026-03-07
 
@@ -79,7 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Changed
 
 - Unified `dotnet-ildasm` and `dotnet ildasm` handling, tightened disassembler identity consistency checks, and improved disassembler reporting details.
-- Refactored utility helpers into single-responsibility classes and split large methods in `DotNetDisassembleService` and `FolderDiffService`.
+- Refactored utility helpers into single-responsibility classes and split large methods in [`DotNetDisassembleService`](Services/DotNetDisassembleService.cs) and [`FolderDiffService`](Services/FolderDiffService.cs).
 - Applied smaller internal cleanups, including replacing `HashSet.Union` result creation with `UnionWith`.
 
 #### Fixed
@@ -216,32 +217,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
+- [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) にあるクラス参照へ、`partial` 分割を前提としないものを中心に対応する `.cs` ソースリンクを追加しました。
 - レポート上の `MD5Mismatch` 警告を `Summary` から末尾の `Warnings` セクションへ移し、更新日時逆転警告より先に出すように変更しました。あわせて関連ドキュメントと回帰テストを更新しました。
 - DocFX ベースの API ドキュメント自動生成を導入し、ドキュメントサイトの生成経路と `DocumentationSite` artifact 公開を CI に追加しました。
-- `IFileSystemService` と `IFileComparisonService` を追加し、フォルダ列挙/出力系 I/O とファイル単位比較 I/O の差し替え口を明確にしました。これにより、本番挙動を変えずに権限エラーやディスク系失敗をユニットテストできるようにしました。
+- [`IFileSystemService`](Services/IFileSystemService.cs) と [`IFileComparisonService`](Services/IFileComparisonService.cs) を追加し、フォルダ列挙/出力系 I/O とファイル単位比較 I/O の差し替え口を明確にしました。これにより、本番挙動を変えずに権限エラーやディスク系失敗をユニットテストできるようにしました。
 - `FolderDiffService` / `FileDiffService` まわりのテストを、軽量ユニットテストと temp ディレクトリ前提の統合テストにより明確に分離し、ハッシュ失敗、IL 出力失敗、大きいテキスト比較経路の自動テストを拡充しました。
-- README、開発者ガイド、テストガイドの日英両記述を更新し、新しいサービス境界、テスト境界、最新の通過テスト件数（`219` 件）を反映しました。
-- 集約後の `MD5Mismatch` コンソール警告を `ProgramRunner` に移し、`ReportGenerateService` はレポート専用の責務に整理しました。あわせて関連ドキュメントと自動テストを更新しました。
+- [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md)の日英両記述を更新し、新しいサービス境界、テスト境界、最新の通過テスト件数（`219` 件）を反映しました。
+- 集約後の `MD5Mismatch` コンソール警告を [`ProgramRunner`](ProgramRunner.cs) に移し、[`ReportGenerateService`](Services/ReportGenerateService.cs) はレポート専用の責務に整理しました。あわせて関連ドキュメントと自動テストを更新しました。
 - 単発利用の `string.Format(...)` を補間文字列へ置き換え、広範な `#region` 利用をやめ、不要になった書式・メッセージ定数を削除しました。
 - 開発ガイドとテストガイドを更新し、現在のソースコード方針と最新の通過テスト件数を反映しました。
 - `.NET` 実行可能判定で `NotDotNetExecutable` と判定失敗を区別するようにし、致命ではない判定失敗は warning を残して継続するようにしました。あわせて並列テキスト比較の例外は `false` に潰さず、既存の逐次比較フォールバック経路へ伝播させるようにしました。
 - 本体コードで広すぎる例外捕捉を通常ビルド時に検出できるよう、`CA1031` アナライザーを有効化しました。テストの後片付け用 catch は warning 対象から外しています。
-- `FileSystemUtility` での `throw new Exception(..., ex)` 形式の汎用ラップをやめ、元の例外型とスタックトレースを維持するようにしました。あわせて回帰テストと日英ガイドを更新しました。
-- 設定の既定値を `ConfigSettings` へ集約し、未指定や `null` の設定値をコード既定値へ正規化するようにしました。あわせて配布する `config.json` を override 専用の形に簡素化し、日英ドキュメントと設定まわりのテストを更新しました。
+- [`FileSystemUtility`](Utils/FileSystemUtility.cs) での `throw new Exception(..., ex)` 形式の汎用ラップをやめ、元の例外型とスタックトレースを維持するようにしました。あわせて回帰テストと日英ガイドを更新しました。
+- 設定の既定値を [`ConfigSettings`](Models/ConfigSettings.cs) へ集約し、未指定や `null` の設定値をコード既定値へ正規化するようにしました。あわせて配布する [`config.json`](config.json) を override 専用の形に簡素化し、日英ドキュメントと設定まわりのテストを更新しました。
 
 ### [1.2.2] - 2026-03-14
 
 #### 追加
 
 - `new` 側ファイルの更新日時が対応する `old` 側より古い場合に、終了前のコンソール警告と `diff_report.md` 末尾の `Warnings` セクションを出す設定付き機能を追加しました。
-- CI に coverlet ベースのカバレッジ計測を追加し、`Program`、ロギング、進捗表示、ファイルシステム補助、テキスト差分フォールバック経路の自動テストを拡充しました。
+- CI に coverlet ベースのカバレッジ計測を追加し、[`Program`](Program.cs)、ロギング、進捗表示、ファイルシステム補助、テキスト差分フォールバック経路の自動テストを拡充しました。
 
 #### 変更
 
 - コンソール出力の色強調を見直し、最終的な成功・失敗メッセージに加えて警告メッセージも黄色で強調表示するようにしました。
 - 更新日時逆転警告に合わせて、設定例、各種ドキュメント、自動テストを更新しました。
-- `ProgramRunner`、`DiffExecutionContext`、インターフェイスベースのサービス構成へ整理し、差分パイプラインのテスタビリティを向上させるとともに、静的状態への直接依存を減らしました。
-- 開発者向け・テスト向けドキュメントを分離し、README のインストール手順と比較フロー説明を拡充しました。
+- [`ProgramRunner`](ProgramRunner.cs)、[`DiffExecutionContext`](Services/DiffExecutionContext.cs)、インターフェイスベースのサービス構成へ整理し、差分パイプラインのテスタビリティを向上させるとともに、静的状態への直接依存を減らしました。
+- 開発者向け・テスト向けドキュメントを分離し、[README](README.md) のインストール手順と比較フロー説明を拡充しました。
 - 開発者ガイドに実行ライフサイクル、DI 境界、実行モード、Mermaid 図を追加し、README とテストガイドのドキュメント導線も整理しました。
 
 #### 修正
@@ -253,7 +255,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 追加
 
 - テキスト差分の並列化しきい値とチャンクサイズを KiB 単位で設定できる構成項目を追加しました。
-- `FolderDiffService` 向けの専用テストを追加し、レポート生成まわりのテストを強化しました。
+- [`FolderDiffService`](Services/FolderDiffService.cs) 向けの専用テストを追加し、レポート生成まわりのテストを強化しました。
 
 #### 変更
 
@@ -261,7 +263,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 修正
 
-- `FileDiffResultLists` をスレッドセーフ化し、実行間で共有状態を確実に初期化できる `ResetAll` を追加しました。
+- [`FileDiffResultLists`](Models/FileDiffResultLists.cs) をスレッドセーフ化し、実行間で共有状態を確実に初期化できる `ResetAll` を追加しました。
 
 ### [1.2.0] - 2026-03-07
 
@@ -284,7 +286,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 変更
 
 - `dotnet-ildasm` と `dotnet ildasm` の扱いを統一し、逆アセンブラ識別の整合性チェックとレポート表記を改善しました。
-- ユーティリティ群を単一責任のクラスへ分割し、`DotNetDisassembleService` と `FolderDiffService` の長大メソッドを責務ごとに整理しました。
+- ユーティリティ群を単一責任のクラスへ分割し、[`DotNetDisassembleService`](Services/DotNetDisassembleService.cs) と [`FolderDiffService`](Services/FolderDiffService.cs) の長大メソッドを責務ごとに整理しました。
 - `HashSet.Union` の結果生成を `UnionWith` に置き換えるなど、内部的な軽微改善を行いました。
 
 #### 修正

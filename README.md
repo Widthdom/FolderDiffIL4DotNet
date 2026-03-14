@@ -125,12 +125,12 @@ Example `diff_report.md` (trimmed):
 
 ## Runtime Composition
 
-- [`Program.cs`](Program.cs) is intentionally thin and only resolves `ProgramRunner`.
-- `ProgramRunner` validates arguments, loads [`config.json`](config.json), builds a per-run DI container, and executes the diff/report pipeline.
-- `ProgramRunner` also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
-- `DiffExecutionContext` carries run-specific paths and network-mode decisions.
-- `FolderDiffService` uses `IFileSystemService` for discovery/output I/O and `FileDiffService` uses `IFileComparisonService` for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
-- Core pipeline services (`FolderDiffService`, `FileDiffService`, `ILOutputService`) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
+- [`Program.cs`](Program.cs) is intentionally thin and only resolves [`ProgramRunner`](ProgramRunner.cs).
+- [`ProgramRunner`](ProgramRunner.cs) validates arguments, loads [`config.json`](config.json), builds a per-run DI container, and executes the diff/report pipeline.
+- [`ProgramRunner`](ProgramRunner.cs) also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
+- [`DiffExecutionContext`](Services/DiffExecutionContext.cs) carries run-specific paths and network-mode decisions.
+- [`FolderDiffService`](Services/FolderDiffService.cs) uses `IFileSystemService` for discovery/output I/O and [`FileDiffService`](Services/FileDiffService.cs) uses `IFileComparisonService` for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
+- Core pipeline services ([`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
 
 ## Comparison Flow
 
@@ -164,7 +164,7 @@ Important details:
 
 ## Configuration ([`config.json`](config.json))
 
-Place [`config.json`](config.json) next to the executable. All keys are optional; omitted keys use the code-defined defaults in `ConfigSettings`. If the defaults are acceptable, this file can be just:
+Place [`config.json`](config.json) next to the executable. All keys are optional; omitted keys use the code-defined defaults in [`ConfigSettings`](Models/ConfigSettings.cs). If the defaults are acceptable, this file can be just:
 
 ```json
 {}
@@ -185,7 +185,7 @@ Override only the settings you want to change. For example:
 | Key | Default | Description |
 | --- | --- | --- |
 | `IgnoredExtensions` | `.cache`, `.DS_Store`, `.db`, `.ilcache`, `.log`, `.pdb` | Excludes matching extensions from comparison. |
-| `TextFileExtensions` | Built-in extension list in `ConfigSettings` | Treats matching extensions as text. Include dot (`.cs`, `.json`). Matching is case-insensitive. |
+| `TextFileExtensions` | Built-in extension list in [`ConfigSettings`](Models/ConfigSettings.cs) | Treats matching extensions as text. Include dot (`.cs`, `.json`). Matching is case-insensitive. |
 | `MaxLogGenerations` | `5` | Number of log files kept in rotation. |
 | `ShouldIncludeUnchangedFiles` | `true` | Includes `Unchanged` section in report. |
 | `ShouldIncludeIgnoredFiles` | `true` | Includes `Ignored Files` section before `Unchanged`. |
@@ -377,12 +377,12 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 ## 実行時構成
 
-- [`Program.cs`](Program.cs) は薄いエントリーポイントで、`ProgramRunner` の解決だけを行います。
-- `ProgramRunner` が引数検証、[`config.json`](config.json) 読込、実行単位 DI コンテナ生成、差分/レポート処理の実行を担います。
-- `ProgramRunner` は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
-- `DiffExecutionContext` が実行ごとのパスやネットワークモード判定を保持します。
-- `FolderDiffService` は列挙/出力系 I/O を `IFileSystemService`、`FileDiffService` はハッシュ/テキスト/チャンク読み出し系 I/O を `IFileComparisonService` に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
-- 主要パイプラインサービス（`FolderDiffService`, `FileDiffService`, `ILOutputService`）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
+- [`Program.cs`](Program.cs) は薄いエントリーポイントで、[`ProgramRunner`](ProgramRunner.cs) の解決だけを行います。
+- [`ProgramRunner`](ProgramRunner.cs) が引数検証、[`config.json`](config.json) 読込、実行単位 DI コンテナ生成、差分/レポート処理の実行を担います。
+- [`ProgramRunner`](ProgramRunner.cs) は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
+- [`DiffExecutionContext`](Services/DiffExecutionContext.cs) が実行ごとのパスやネットワークモード判定を保持します。
+- [`FolderDiffService`](Services/FolderDiffService.cs) は列挙/出力系 I/O を `IFileSystemService`、[`FileDiffService`](Services/FileDiffService.cs) はハッシュ/テキスト/チャンク読み出し系 I/O を `IFileComparisonService` に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
+- 主要パイプラインサービス（[`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
 
 ## 比較フロー
 
@@ -416,7 +416,7 @@ flowchart TD
 
 ## 設定（[`config.json`](config.json)）
 
-実行ファイルと同じディレクトリに配置します。全項目省略可能で、未指定の項目は `ConfigSettings` に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
+実行ファイルと同じディレクトリに配置します。全項目省略可能で、未指定の項目は [`ConfigSettings`](Models/ConfigSettings.cs) に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
 
 ```json
 {}
@@ -437,7 +437,7 @@ flowchart TD
 | 項目 | 既定値 | 説明 |
 | --- | --- | --- |
 | `IgnoredExtensions` | `.cache`, `.DS_Store`, `.db`, `.ilcache`, `.log`, `.pdb` | 指定拡張子を比較対象から除外します。 |
-| `TextFileExtensions` | `ConfigSettings` 内の組み込み拡張子一覧 | 指定拡張子をテキスト比較対象にします（`.` 付き指定、大小無視）。 |
+| `TextFileExtensions` | [`ConfigSettings`](Models/ConfigSettings.cs) 内の組み込み拡張子一覧 | 指定拡張子をテキスト比較対象にします（`.` 付き指定、大小無視）。 |
 | `MaxLogGenerations` | `5` | ログローテーション世代数。 |
 | `ShouldIncludeUnchangedFiles` | `true` | レポートに `Unchanged` セクションを出力するか。 |
 | `ShouldIncludeIgnoredFiles` | `true` | レポートに `Ignored Files` セクションを出力するか。 |
