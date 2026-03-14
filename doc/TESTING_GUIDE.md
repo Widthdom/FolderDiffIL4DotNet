@@ -21,7 +21,7 @@ Current tree has `219` passing tests in the latest full run (`dotnet test Folder
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
-| Entry and configuration | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` exit codes, minimal end-to-end execution, config loading/default behavior, MD5/timestamp warning console and report output |
+| Entry and configuration | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` exit codes, minimal end-to-end execution, code-defined config defaults and override behavior, MD5/timestamp warning console and report output |
 | Core diff flow | `FolderDiffServiceTests`, `FolderDiffServiceUnitTests`, `FileDiffServiceTests`, `FileDiffServiceUnitTests`, `FileDiffResultListsTests` | Classification (`Unchanged/Added/Removed/Modified`), diff detail labels, timestamp-regression detection, reset behavior, case-insensitive extension handling, propagated text-diff fallback behavior, permission/I/O failure handling, large-batch classification without real disk I/O, per-file hash/IL/text error handling without real disk |
 | IL/disassembler behavior | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | Same-disassembler pairing, fallback behavior, blacklist logic, detection and command handling, failure-vs-non-.NET detection semantics |
 | Caching | `ILCacheTests` | memory/disk cache semantics, retention, keying behavior |
@@ -152,7 +152,7 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
-| エントリーポイント/設定 | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` の終了コード、最小構成の実行、設定読込/既定値、更新日時警告のコンソール/レポート出力 |
+| エントリーポイント/設定 | `ProgramTests`, `ConfigServiceTests`, `ConfigSettingsTests` | `Main` の終了コード、最小構成の実行、コード既定値と override の設定挙動、更新日時警告のコンソール/レポート出力 |
 | 差分処理本体 | `FolderDiffServiceTests`, `FolderDiffServiceUnitTests`, `FileDiffServiceTests`, `FileDiffServiceUnitTests`, `FileDiffResultListsTests` | `Unchanged/Added/Removed/Modified` の分類、判定理由、更新日時逆転検出、状態リセット、拡張子大小無視、伝播したテキスト比較例外からのフォールバック、権限エラー/出力先 I/O 失敗/大量ファイルの扱い、ファイル単位のハッシュ/IL/テキスト分岐の異常系 |
 | IL/逆アセンブラ | `ILOutputServiceTests`, `DotNetDisassembleServiceTests`, `DotNetDisassemblerCacheTests`, `DotNetDetectorTests` | 同一逆アセンブラ比較、フォールバック、ブラックリスト、検出・コマンド処理、判定失敗と非 .NET の区別 |
 | キャッシュ | `ILCacheTests` | メモリ/ディスクキャッシュの保持、キー生成、削除方針 |

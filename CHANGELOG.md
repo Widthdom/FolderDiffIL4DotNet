@@ -14,13 +14,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Introduced DocFX-based API documentation generation, added a documentation-site build path, and wired CI to publish the generated `DocumentationSite` artifact.
 - Added `IFileSystemService` and `IFileComparisonService` as low-level seams for folder discovery/output I/O and per-file comparison I/O, making permission and disk-failure paths unit-testable without changing production behavior.
 - Split folder/file diff coverage more clearly into lightweight unit tests and temp-directory-backed integration tests, and expanded automated coverage for hash failures, IL-output failures, and large-text comparison paths.
-- Updated the README, developer guide, and testing guide in both English and Japanese to document the new service seams, test boundaries, and the latest passing test count (`218`).
+- Updated the README, developer guide, and testing guide in both English and Japanese to document the new service seams, test boundaries, and the latest passing test count (`219`).
 - Moved aggregated `MD5Mismatch` console warnings into `ProgramRunner`, kept `ReportGenerateService` report-only, and updated related docs and automated tests.
 - Replaced one-off `string.Format(...)` usage with interpolated strings, removed broad `#region` usage, and deleted now-unused format/message constants.
 - Updated the developer and testing guides to reflect the current source-style expectations and latest passing test count.
 - Made `.NET` executable detection distinguish `NotDotNetExecutable` from detection failure, log a warning for non-fatal detection failures, and let chunk-parallel text-diff exceptions bubble to the existing sequential fallback path instead of silently returning `false`.
 - Enabled the `CA1031` analyzer for production code so broad exception catches are surfaced during normal builds, while excluding test cleanup code from the warning.
 - Removed generic `throw new Exception(..., ex)` wrapping from `FileSystemUtility` so original exception types and stack traces are preserved, and added regression coverage plus bilingual guide updates.
+- Moved configuration defaults into `ConfigSettings`, normalized missing or `null` config values back to code-defined defaults, simplified the shipped `config.json` to an override-only shape, and refreshed bilingual docs plus config-focused tests.
 
 ### [1.2.2] - 2026-03-14
 
@@ -217,13 +218,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - DocFX ベースの API ドキュメント自動生成を導入し、ドキュメントサイトの生成経路と `DocumentationSite` artifact 公開を CI に追加しました。
 - `IFileSystemService` と `IFileComparisonService` を追加し、フォルダ列挙/出力系 I/O とファイル単位比較 I/O の差し替え口を明確にしました。これにより、本番挙動を変えずに権限エラーやディスク系失敗をユニットテストできるようにしました。
 - `FolderDiffService` / `FileDiffService` まわりのテストを、軽量ユニットテストと temp ディレクトリ前提の統合テストにより明確に分離し、ハッシュ失敗、IL 出力失敗、大きいテキスト比較経路の自動テストを拡充しました。
-- README、開発者ガイド、テストガイドの日英両記述を更新し、新しいサービス境界、テスト境界、最新の通過テスト件数（`218` 件）を反映しました。
+- README、開発者ガイド、テストガイドの日英両記述を更新し、新しいサービス境界、テスト境界、最新の通過テスト件数（`219` 件）を反映しました。
 - 集約後の `MD5Mismatch` コンソール警告を `ProgramRunner` に移し、`ReportGenerateService` はレポート専用の責務に整理しました。あわせて関連ドキュメントと自動テストを更新しました。
 - 単発利用の `string.Format(...)` を補間文字列へ置き換え、広範な `#region` 利用をやめ、不要になった書式・メッセージ定数を削除しました。
 - 開発ガイドとテストガイドを更新し、現在のソースコード方針と最新の通過テスト件数を反映しました。
 - `.NET` 実行可能判定で `NotDotNetExecutable` と判定失敗を区別するようにし、致命ではない判定失敗は warning を残して継続するようにしました。あわせて並列テキスト比較の例外は `false` に潰さず、既存の逐次比較フォールバック経路へ伝播させるようにしました。
 - 本体コードで広すぎる例外捕捉を通常ビルド時に検出できるよう、`CA1031` アナライザーを有効化しました。テストの後片付け用 catch は warning 対象から外しています。
 - `FileSystemUtility` での `throw new Exception(..., ex)` 形式の汎用ラップをやめ、元の例外型とスタックトレースを維持するようにしました。あわせて回帰テストと日英ガイドを更新しました。
+- 設定の既定値を `ConfigSettings` へ集約し、未指定や `null` の設定値をコード既定値へ正規化するようにしました。あわせて配布する `config.json` を override 専用の形に簡素化し、日英ドキュメントと設定まわりのテストを更新しました。
 
 ### [1.2.2] - 2026-03-14
 

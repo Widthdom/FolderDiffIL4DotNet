@@ -128,7 +128,7 @@ sequenceDiagram
 1. Initialize logging and print application version.
 2. Validate `old`, `new`, and `reportLabel` arguments.
 3. Create `Reports/<label>` early and fail if the label already exists.
-4. Load `config.json` from `AppContext.BaseDirectory`.
+4. Load `config.json` from `AppContext.BaseDirectory` and overlay it onto the code-defined defaults in `ConfigSettings`.
 5. Clear transient shared helpers such as `TimestampCache`.
 6. Compute `DiffExecutionContext`, including network-share decisions.
 7. Build the run-scoped DI container.
@@ -312,6 +312,8 @@ catch (Exception ex)
 - Report generation reads execution results only and must not start new comparisons.
 
 ## Configuration and Runtime Modes
+
+`ConfigSettings` is the single source of truth for defaults. `config.json` is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults.
 
 ### Configuration groups
 
@@ -568,7 +570,7 @@ sequenceDiagram
 1. ログを初期化し、アプリのバージョンを表示します。
 2. `old`、`new`、`reportLabel` 引数を検証します。
 3. `Reports/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。
-4. `AppContext.BaseDirectory` から `config.json` を読み込みます。
+4. `AppContext.BaseDirectory` から `config.json` を読み込み、`ConfigSettings` のコード既定値へ上書きします。
 5. `TimestampCache` などの一時共有ヘルパーをクリアします。
 6. ネットワーク共有判定を含む `DiffExecutionContext` を組み立てます。
 7. 実行単位の DI コンテナを構築します。
@@ -752,6 +754,8 @@ catch (Exception ex)
 - レポート生成は、実行結果の読み取りであり、新しい比較を開始しないこと
 
 ## 設定と実行モード
+
+既定値の正本は `ConfigSettings` です。`config.json` は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。
 
 ### 設定のまとまり
 

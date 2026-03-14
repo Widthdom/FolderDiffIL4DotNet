@@ -41,7 +41,8 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 string json = await File.ReadAllTextAsync(configFileAbsolutePath);
-                return JsonSerializer.Deserialize<ConfigSettings>(json);
+                return JsonSerializer.Deserialize<ConfigSettings>(json)
+                    ?? throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED);
             }
             catch (JsonException ex)
             {

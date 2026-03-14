@@ -115,130 +115,48 @@ Important details:
 
 ## Configuration ([`config.json`](config.json))
 
-Place [`config.json`](config.json) next to the executable. Example:
+Place [`config.json`](config.json) next to the executable. All keys are optional; omitted keys use the code-defined defaults in `ConfigSettings`. If the defaults are acceptable, this file can be just:
+
+```json
+{}
+```
+
+Override only the settings you want to change. For example:
 
 ```json
 {
-  "IgnoredExtensions": [".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"],
-  "TextFileExtensions": [
-    ".asax",
-    ".ascx",
-    ".asmx",
-    ".aspx",
-    ".bat",
-    ".c",
-    ".cmd",
-    ".config",
-    ".cpp",
-    ".cs",
-    ".cshtml",
-    ".csproj",
-    ".csx",
-    ".css",
-    ".csv",
-    ".editorconfig",
-    ".env",
-    ".fs",
-    ".fsi",
-    ".fsproj",
-    ".fsx",
-    ".gitattributes",
-    ".gitignore",
-    ".gitmodules",
-    ".go",
-    ".gql",
-    ".graphql",
-    ".h",
-    ".hpp",
-    ".htm",
-    ".html",
-    ".http",
-    ".ini",
-    ".js",
-    ".json",
-    ".jsx",
-    ".less",
-    ".manifest",
-    ".md",
-    ".mod",
-    ".nlog",
-    ".nuspec",
-    ".plist",
-    ".props",
-    ".ps1",
-    ".psd1",
-    ".psm1",
-    ".py",
-    ".razor",
-    ".resx",
-    ".rst",
-    ".sass",
-    ".scss",
-    ".sh",
-    ".sln",
-    ".sql",
-    ".sqlproj",
-    ".sum",
-    ".svg",
-    ".targets",
-    ".toml",
-    ".ts",
-    ".tsv",
-    ".tsx",
-    ".txt",
-    ".vb",
-    ".vbproj",
-    ".vue",
-    ".xaml",
-    ".xml",
-    ".yaml",
-    ".yml"
-  ],
-  "MaxLogGenerations": 5,
-  "ShouldIncludeUnchangedFiles": true,
-  "ShouldIncludeIgnoredFiles": true,
-  "ShouldOutputILText": true,
-  "ShouldIgnoreILLinesContainingConfiguredStrings": false,
-  "ILIgnoreLineContainingStrings": [],
-  "ShouldOutputFileTimestamps": true,
-  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": true,
-  "MaxParallelism": 0,
-  "TextDiffParallelThresholdKilobytes": 512,
-  "TextDiffChunkSizeKilobytes": 64,
-  "EnableILCache": true,
-  "ILCacheDirectoryAbsolutePath": "",
-  "ILCacheStatsLogIntervalSeconds": 60,
-  "ILCacheMaxDiskFileCount": 1000,
-  "ILCacheMaxDiskMegabytes": 512,
-  "OptimizeForNetworkShares": false,
-  "AutoDetectNetworkShares": true
+  "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ShouldOutputFileTimestamps": false,
+  "ShouldOutputILText": false,
+  "ShouldIncludeIgnoredFiles": false
 }
 ```
 
-| Key | Description |
-| --- | --- |
-| `IgnoredExtensions` | Excludes matching extensions from comparison. |
-| `TextFileExtensions` | Treats matching extensions as text. Include dot (`.cs`, `.json`). Matching is case-insensitive. |
-| `MaxLogGenerations` | Number of log files kept in rotation. |
-| `ShouldIncludeUnchangedFiles` | Includes `Unchanged` section in report. |
-| `ShouldIncludeIgnoredFiles` | Includes `Ignored Files` section before `Unchanged`. |
-| `ShouldOutputILText` | Outputs IL dumps under `Reports/<label>/IL/old,new`. |
-| `ShouldIgnoreILLinesContainingConfiguredStrings` | Enables additional IL line-ignore filter by substring. |
-| `ILIgnoreLineContainingStrings` | String list used by IL substring-ignore filter. |
-| `ShouldOutputFileTimestamps` | Adds last-modified timestamps to report entries. |
-| `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | When `true` (default), warns if a file in `new` has an older last-modified timestamp than the matching file in `old`, prints the warning at the end of the run, and appends a final `Warnings` section to `diff_report.md`. |
-| `MaxParallelism` | Max compare parallelism. `0` or less = auto. |
-| `TextDiffParallelThresholdKilobytes` | Text diff size threshold (KiB) for chunk-parallel mode. |
-| `TextDiffChunkSizeKilobytes` | Chunk size (KiB) for parallel text diff. |
-| `EnableILCache` | Enables IL cache (memory + optional disk). |
-| `ILCacheDirectoryAbsolutePath` | IL cache directory. Empty = `<exe>/ILCache`. |
-| `ILCacheStatsLogIntervalSeconds` | IL cache stats log interval. `<=0` uses default 60s. |
-| `ILCacheMaxDiskFileCount` | Disk cache file count cap. `<=0` means unlimited. |
-| `ILCacheMaxDiskMegabytes` | Disk cache size cap (MB). `<=0` means unlimited. |
-| `OptimizeForNetworkShares` | Enables network-share optimization mode. |
-| `AutoDetectNetworkShares` | Auto-detects network paths and enables optimization mode as needed. |
+| Key | Default | Description |
+| --- | --- | --- |
+| `IgnoredExtensions` | `.cache`, `.DS_Store`, `.db`, `.ilcache`, `.log`, `.pdb` | Excludes matching extensions from comparison. |
+| `TextFileExtensions` | Built-in extension list in `ConfigSettings` | Treats matching extensions as text. Include dot (`.cs`, `.json`). Matching is case-insensitive. |
+| `MaxLogGenerations` | `5` | Number of log files kept in rotation. |
+| `ShouldIncludeUnchangedFiles` | `true` | Includes `Unchanged` section in report. |
+| `ShouldIncludeIgnoredFiles` | `true` | Includes `Ignored Files` section before `Unchanged`. |
+| `ShouldOutputILText` | `true` | Outputs IL dumps under `Reports/<label>/IL/old,new`. |
+| `ShouldIgnoreILLinesContainingConfiguredStrings` | `false` | Enables additional IL line-ignore filter by substring. |
+| `ILIgnoreLineContainingStrings` | `[]` | String list used by IL substring-ignore filter. |
+| `ShouldOutputFileTimestamps` | `true` | Adds last-modified timestamps to report entries. |
+| `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | `true` | Warns if a file in `new` has an older last-modified timestamp than the matching file in `old`, prints the warning at the end of the run, and appends a final `Warnings` section to `diff_report.md`. |
+| `MaxParallelism` | `0` | Max compare parallelism. `0` or less = auto. |
+| `TextDiffParallelThresholdKilobytes` | `512` | Text diff size threshold (KiB) for chunk-parallel mode. |
+| `TextDiffChunkSizeKilobytes` | `64` | Chunk size (KiB) for parallel text diff. |
+| `EnableILCache` | `true` | Enables IL cache (memory + optional disk). |
+| `ILCacheDirectoryAbsolutePath` | `""` | IL cache directory. Empty = `<exe>/ILCache`. |
+| `ILCacheStatsLogIntervalSeconds` | `60` | IL cache stats log interval. `<=0` uses default 60s. |
+| `ILCacheMaxDiskFileCount` | `1000` | Disk cache file count cap. `<=0` means unlimited. |
+| `ILCacheMaxDiskMegabytes` | `512` | Disk cache size cap (MB). `<=0` means unlimited. |
+| `OptimizeForNetworkShares` | `false` | Enables network-share optimization mode. |
+| `AutoDetectNetworkShares` | `true` | Auto-detects network paths and enables optimization mode as needed. |
 
 Notes:
+- Built-in defaults, including the full `IgnoredExtensions` and `TextFileExtensions` lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in `TextFileExtensions`.
 - Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
@@ -399,130 +317,48 @@ flowchart TD
 
 ## 設定（[`config.json`](config.json)）
 
-実行ファイルと同じディレクトリに配置します。例:
+実行ファイルと同じディレクトリに配置します。全項目省略可能で、未指定の項目は `ConfigSettings` に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
+
+```json
+{}
+```
+
+変更したい項目だけを書けば十分です。例:
 
 ```json
 {
-  "IgnoredExtensions": [".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"],
-  "TextFileExtensions": [
-    ".asax",
-    ".ascx",
-    ".asmx",
-    ".aspx",
-    ".bat",
-    ".c",
-    ".cmd",
-    ".config",
-    ".cpp",
-    ".cs",
-    ".cshtml",
-    ".csproj",
-    ".csx",
-    ".css",
-    ".csv",
-    ".editorconfig",
-    ".env",
-    ".fs",
-    ".fsi",
-    ".fsproj",
-    ".fsx",
-    ".gitattributes",
-    ".gitignore",
-    ".gitmodules",
-    ".go",
-    ".gql",
-    ".graphql",
-    ".h",
-    ".hpp",
-    ".htm",
-    ".html",
-    ".http",
-    ".ini",
-    ".js",
-    ".json",
-    ".jsx",
-    ".less",
-    ".manifest",
-    ".md",
-    ".mod",
-    ".nlog",
-    ".nuspec",
-    ".plist",
-    ".props",
-    ".ps1",
-    ".psd1",
-    ".psm1",
-    ".py",
-    ".razor",
-    ".resx",
-    ".rst",
-    ".sass",
-    ".scss",
-    ".sh",
-    ".sln",
-    ".sql",
-    ".sqlproj",
-    ".sum",
-    ".svg",
-    ".targets",
-    ".toml",
-    ".ts",
-    ".tsv",
-    ".tsx",
-    ".txt",
-    ".vb",
-    ".vbproj",
-    ".vue",
-    ".xaml",
-    ".xml",
-    ".yaml",
-    ".yml"
-  ],
-  "MaxLogGenerations": 5,
-  "ShouldIncludeUnchangedFiles": true,
-  "ShouldIncludeIgnoredFiles": true,
-  "ShouldOutputILText": true,
-  "ShouldIgnoreILLinesContainingConfiguredStrings": false,
-  "ILIgnoreLineContainingStrings": [],
-  "ShouldOutputFileTimestamps": true,
-  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": true,
-  "MaxParallelism": 0,
-  "TextDiffParallelThresholdKilobytes": 512,
-  "TextDiffChunkSizeKilobytes": 64,
-  "EnableILCache": true,
-  "ILCacheDirectoryAbsolutePath": "",
-  "ILCacheStatsLogIntervalSeconds": 60,
-  "ILCacheMaxDiskFileCount": 1000,
-  "ILCacheMaxDiskMegabytes": 512,
-  "OptimizeForNetworkShares": false,
-  "AutoDetectNetworkShares": true
+  "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ShouldOutputFileTimestamps": false,
+  "ShouldOutputILText": false,
+  "ShouldIncludeIgnoredFiles": false
 }
 ```
 
-| 項目 | 説明 |
-| --- | --- |
-| `IgnoredExtensions` | 指定拡張子を比較対象から除外します。 |
-| `TextFileExtensions` | 指定拡張子をテキスト比較対象にします（`.` 付き指定、大小無視）。 |
-| `MaxLogGenerations` | ログローテーション世代数。 |
-| `ShouldIncludeUnchangedFiles` | レポートに `Unchanged` セクションを出力するか。 |
-| `ShouldIncludeIgnoredFiles` | レポートに `Ignored Files` セクションを出力するか。 |
-| `ShouldOutputILText` | `Reports/<label>/IL/old,new` へ IL を出力するか。 |
-| `ShouldIgnoreILLinesContainingConfiguredStrings` | IL 比較時の追加行除外（部分一致）を有効化するか。 |
-| `ILIgnoreLineContainingStrings` | IL 行除外に使う文字列一覧。 |
-| `ShouldOutputFileTimestamps` | レポート各行に更新日時を併記するか。 |
-| `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | `true` のとき（既定値）、`new` 側の更新日時が対応する `old` 側より古いファイルを検出し、実行終了時のコンソールと `diff_report.md` 末尾の `Warnings` セクションへ一覧を出力します。 |
-| `MaxParallelism` | 比較の最大並列度。`0` 以下は自動。 |
-| `TextDiffParallelThresholdKilobytes` | 並列テキスト比較へ切替える閾値（KiB）。 |
-| `TextDiffChunkSizeKilobytes` | 並列テキスト比較のチャンクサイズ（KiB）。 |
-| `EnableILCache` | IL キャッシュ（メモリ + 任意ディスク）を有効化するか。 |
-| `ILCacheDirectoryAbsolutePath` | IL キャッシュディレクトリ。空なら `<exe>/ILCache`。 |
-| `ILCacheStatsLogIntervalSeconds` | IL キャッシュ統計ログ間隔。`<=0` で既定 60 秒。 |
-| `ILCacheMaxDiskFileCount` | ディスクキャッシュ最大ファイル数。`<=0` で無制限。 |
-| `ILCacheMaxDiskMegabytes` | ディスクキャッシュ容量上限（MB）。`<=0` で無制限。 |
-| `OptimizeForNetworkShares` | ネットワーク共有向け最適化モードを有効化。 |
-| `AutoDetectNetworkShares` | ネットワーク共有を自動検出して最適化モードを必要時に有効化。 |
+| 項目 | 既定値 | 説明 |
+| --- | --- | --- |
+| `IgnoredExtensions` | `.cache`, `.DS_Store`, `.db`, `.ilcache`, `.log`, `.pdb` | 指定拡張子を比較対象から除外します。 |
+| `TextFileExtensions` | `ConfigSettings` 内の組み込み拡張子一覧 | 指定拡張子をテキスト比較対象にします（`.` 付き指定、大小無視）。 |
+| `MaxLogGenerations` | `5` | ログローテーション世代数。 |
+| `ShouldIncludeUnchangedFiles` | `true` | レポートに `Unchanged` セクションを出力するか。 |
+| `ShouldIncludeIgnoredFiles` | `true` | レポートに `Ignored Files` セクションを出力するか。 |
+| `ShouldOutputILText` | `true` | `Reports/<label>/IL/old,new` へ IL を出力するか。 |
+| `ShouldIgnoreILLinesContainingConfiguredStrings` | `false` | IL 比較時の追加行除外（部分一致）を有効化するか。 |
+| `ILIgnoreLineContainingStrings` | `[]` | IL 行除外に使う文字列一覧。 |
+| `ShouldOutputFileTimestamps` | `true` | レポート各行に更新日時を併記するか。 |
+| `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | `true` | `new` 側の更新日時が対応する `old` 側より古いファイルを検出し、実行終了時のコンソールと `diff_report.md` 末尾の `Warnings` セクションへ一覧を出力します。 |
+| `MaxParallelism` | `0` | 比較の最大並列度。`0` 以下は自動。 |
+| `TextDiffParallelThresholdKilobytes` | `512` | 並列テキスト比較へ切替える閾値（KiB）。 |
+| `TextDiffChunkSizeKilobytes` | `64` | 並列テキスト比較のチャンクサイズ（KiB）。 |
+| `EnableILCache` | `true` | IL キャッシュ（メモリ + 任意ディスク）を有効化するか。 |
+| `ILCacheDirectoryAbsolutePath` | `""` | IL キャッシュディレクトリ。空なら `<exe>/ILCache`。 |
+| `ILCacheStatsLogIntervalSeconds` | `60` | IL キャッシュ統計ログ間隔。`<=0` で既定 60 秒。 |
+| `ILCacheMaxDiskFileCount` | `1000` | ディスクキャッシュ最大ファイル数。`<=0` で無制限。 |
+| `ILCacheMaxDiskMegabytes` | `512` | ディスクキャッシュ容量上限（MB）。`<=0` で無制限。 |
+| `OptimizeForNetworkShares` | `false` | ネットワーク共有向け最適化モードを有効化。 |
+| `AutoDetectNetworkShares` | `true` | ネットワーク共有を自動検出して最適化モードを必要時に有効化。 |
 
 補足:
+- `IgnoredExtensions` と `TextFileExtensions` を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は `TextFileExtensions` に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。

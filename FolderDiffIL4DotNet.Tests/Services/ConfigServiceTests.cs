@@ -59,6 +59,39 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
         }
 
+        [Fact]
+        public async Task LoadConfigAsync_EmptyObject_UsesCodeDefinedDefaults()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync();
+
+                Assert.NotNull(config);
+                Assert.Equal(5, config.MaxLogGenerations);
+                Assert.True(config.ShouldIncludeUnchangedFiles);
+                Assert.True(config.ShouldIncludeIgnoredFiles);
+                Assert.True(config.ShouldOutputILText);
+                Assert.True(config.ShouldOutputFileTimestamps);
+                Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+                Assert.True(config.EnableILCache);
+                Assert.Equal(60, config.ILCacheStatsLogIntervalSeconds);
+                Assert.True(config.AutoDetectNetworkShares);
+                Assert.Contains(".cs", config.TextFileExtensions);
+                Assert.Contains(".pdb", config.IgnoredExtensions);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_NullJson_ThrowsInvalidDataException()
+        {
+            await WithConfigFileAsync("null", async () =>
+            {
+                var service = new ConfigService();
+                await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+            });
+        }
+
         private static async Task WithConfigFileAsync(string content, Func<Task> assertion, bool deleteConfig = false)
         {
             var backupExists = File.Exists(ConfigFilePath);

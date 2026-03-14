@@ -8,50 +8,84 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed class ConfigSettings
     {
+        private static readonly string[] DefaultIgnoredExtensionsValues =
+        {
+            ".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"
+        };
+
+        private static readonly string[] DefaultTextFileExtensionsValues =
+        {
+            ".asax", ".ascx", ".asmx", ".aspx", ".bat", ".c", ".cmd", ".config", ".cpp", ".cs",
+            ".cshtml", ".csproj", ".csx", ".css", ".csv", ".editorconfig", ".env", ".fs", ".fsi",
+            ".fsproj", ".fsx", ".gitattributes", ".gitignore", ".gitmodules", ".go", ".gql",
+            ".graphql", ".h", ".hpp", ".htm", ".html", ".http", ".ini", ".js", ".json", ".jsx",
+            ".less", ".manifest", ".md", ".mod", ".nlog", ".nuspec", ".plist", ".props", ".ps1",
+            ".psd1", ".psm1", ".py", ".razor", ".resx", ".rst", ".sass", ".scss", ".sh", ".sln",
+            ".sql", ".sqlproj", ".sum", ".svg", ".targets", ".toml", ".ts", ".tsv", ".tsx",
+            ".txt", ".vb", ".vbproj", ".vue", ".xaml", ".xml", ".yaml", ".yml"
+        };
+
+        private List<string> _ignoredExtensions = CreateDefaultIgnoredExtensions();
+        private List<string> _textFileExtensions = CreateDefaultTextFileExtensions();
+        private List<string> _ilIgnoreLineContainingStrings = new();
+        private string _ilCacheDirectoryAbsolutePath = string.Empty;
+
         /// <summary>
         /// 無視する拡張子のリスト
         /// </summary>
-        public List<string> IgnoredExtensions { get; set; }
+        public List<string> IgnoredExtensions
+        {
+            get => _ignoredExtensions;
+            set => _ignoredExtensions = value ?? CreateDefaultIgnoredExtensions();
+        }
 
         /// <summary>
         /// 行単位で比較する拡張子のリスト
         /// </summary>
-        public List<string> TextFileExtensions { get; set; }
+        public List<string> TextFileExtensions
+        {
+            get => _textFileExtensions;
+            set => _textFileExtensions = value ?? CreateDefaultTextFileExtensions();
+        }
 
         /// <summary>
         /// ログの最大世代数
         /// </summary>
-        public int MaxLogGenerations { get; set; }
+        public int MaxLogGenerations { get; set; } = 5;
 
         /// <summary>
         /// 差異なしのファイルをレポートに出力するか否か
         /// </summary>
-        public bool ShouldIncludeUnchangedFiles { get; set; }
+        public bool ShouldIncludeUnchangedFiles { get; set; } = true;
 
         /// <summary>
         /// IgnoredExtensions に該当し比較対象から除外されたファイルもレポートへ出力するか否か。
         /// </summary>
-        public bool ShouldIncludeIgnoredFiles { get; set; }
+        public bool ShouldIncludeIgnoredFiles { get; set; } = true;
 
         /// <summary>
         /// IL全文を出力するか否か
         /// </summary>
-        public bool ShouldOutputILText { get; set; }
+        public bool ShouldOutputILText { get; set; } = true;
 
         /// <summary>
         /// IL 比較時に、指定文字列を「含む」行を無視するかどうか。
         /// </summary>
-        public bool ShouldIgnoreILLinesContainingConfiguredStrings { get; set; }
+        public bool ShouldIgnoreILLinesContainingConfiguredStrings { get; set; } = false;
 
         /// <summary>
         /// IL 比較時に無視対象とする文字列リスト（部分一致、複数指定可）。
         /// </summary>
-        public List<string> ILIgnoreLineContainingStrings { get; set; } = new();
+        public List<string> ILIgnoreLineContainingStrings
+        {
+            get => _ilIgnoreLineContainingStrings;
+            set => _ilIgnoreLineContainingStrings = value ?? new List<string>();
+        }
 
         /// <summary>
         /// ファイルごとの更新日時をレポートに出力するか否か
         /// </summary>
-        public bool ShouldOutputFileTimestamps { get; set; }
+        public bool ShouldOutputFileTimestamps { get; set; } = true;
 
         /// <summary>
         /// old/new の両方に存在するファイルについて、new 側の更新日時が old 側より古い場合に警告を出すかどうか。
@@ -76,17 +110,21 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>
         /// IL 逆アセンブル結果をキャッシュして再実行時の再逆アセンブルを回避するか
         /// </summary>
-        public bool EnableILCache { get; set; }
+        public bool EnableILCache { get; set; } = true;
 
         /// <summary>
         /// IL キャッシュ格納ディレクトリ（null/空の場合は実行ディレクトリ配下 <see cref="Constants.DEFAULT_IL_CACHE_DIR_NAME"/> を既定使用）
         /// </summary>
-        public string ILCacheDirectoryAbsolutePath { get; set; }
+        public string ILCacheDirectoryAbsolutePath
+        {
+            get => _ilCacheDirectoryAbsolutePath;
+            set => _ilCacheDirectoryAbsolutePath = value ?? string.Empty;
+        }
 
         /// <summary>
         /// IL キャッシュ統計ログの出力間隔（秒）。0 以下または未指定で 60 秒。
         /// </summary>
-        public int ILCacheStatsLogIntervalSeconds { get; set; }
+        public int ILCacheStatsLogIntervalSeconds { get; set; } = 60;
 
         /// <summary>
         /// ディスク IL キャッシュの最大ファイル数（既定: 1000、0 以下で無制限）。超過時は最終アクセスが最も古いものから削除。
@@ -110,6 +148,10 @@ namespace FolderDiffIL4DotNet.Models
         /// ネットワーク最適化を有効化します。Windows で有効（UNC/NetworkDrive 判定）。
         /// 非Windowsでは判定精度の制約があるため既定は手動フラグと併用を推奨します。
         /// </summary>
-        public bool AutoDetectNetworkShares { get; set; }
+        public bool AutoDetectNetworkShares { get; set; } = true;
+
+        private static List<string> CreateDefaultIgnoredExtensions() => new(DefaultIgnoredExtensionsValues);
+
+        private static List<string> CreateDefaultTextFileExtensions() => new(DefaultTextFileExtensionsValues);
     }
 }

@@ -6,73 +6,138 @@ namespace FolderDiffIL4DotNet.Tests.Models
 {
     public sealed class ConfigSettingsTests
     {
+        private static readonly string[] ExpectedDefaultIgnoredExtensions =
+        {
+            ".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"
+        };
+
+        private static readonly string[] ExpectedDefaultTextFileExtensions =
+        {
+            ".asax", ".ascx", ".asmx", ".aspx", ".bat", ".c", ".cmd", ".config", ".cpp", ".cs",
+            ".cshtml", ".csproj", ".csx", ".css", ".csv", ".editorconfig", ".env", ".fs", ".fsi",
+            ".fsproj", ".fsx", ".gitattributes", ".gitignore", ".gitmodules", ".go", ".gql",
+            ".graphql", ".h", ".hpp", ".htm", ".html", ".http", ".ini", ".js", ".json", ".jsx",
+            ".less", ".manifest", ".md", ".mod", ".nlog", ".nuspec", ".plist", ".props", ".ps1",
+            ".psd1", ".psm1", ".py", ".razor", ".resx", ".rst", ".sass", ".scss", ".sh", ".sln",
+            ".sql", ".sqlproj", ".sum", ".svg", ".targets", ".toml", ".ts", ".tsv", ".tsx",
+            ".txt", ".vb", ".vbproj", ".vue", ".xaml", ".xml", ".yaml", ".yml"
+        };
+
         [Fact]
-        public void Constructor_DefaultDiskCacheLimits_Are1000And512()
+        public void Constructor_UsesCodeDefinedDefaults()
         {
             var config = new ConfigSettings();
 
-            Assert.Equal(1000, config.ILCacheMaxDiskFileCount);
-            Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
-            Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
-            Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
-            Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
-            Assert.False(config.ShouldIgnoreILLinesContainingConfiguredStrings);
-            Assert.NotNull(config.ILIgnoreLineContainingStrings);
-            Assert.Empty(config.ILIgnoreLineContainingStrings);
+            AssertMatchesDefaults(config);
         }
 
         [Fact]
-        public void JsonDeserialize_MissingDiskCacheLimits_UsesDefaults()
+        public void JsonDeserialize_EmptyObject_UsesCodeDefinedDefaults()
         {
             var config = JsonSerializer.Deserialize<ConfigSettings>("{}");
+
             Assert.NotNull(config);
-            Assert.Equal(1000, config.ILCacheMaxDiskFileCount);
-            Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
-            Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
-            Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
-            Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+            AssertMatchesDefaults(config);
+        }
+
+        [Fact]
+        public void JsonDeserialize_ExplicitOverrides_AreApplied()
+        {
+            const string json = """
+                {
+                  "IgnoredExtensions": [".tmp"],
+                  "TextFileExtensions": [".txt"],
+                  "MaxLogGenerations": 42,
+                  "ShouldIncludeUnchangedFiles": false,
+                  "ShouldIncludeIgnoredFiles": false,
+                  "ShouldOutputILText": false,
+                  "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+                  "ILIgnoreLineContainingStrings": ["buildserver", "path"],
+                  "ShouldOutputFileTimestamps": false,
+                  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": false,
+                  "MaxParallelism": 8,
+                  "TextDiffParallelThresholdKilobytes": 128,
+                  "TextDiffChunkSizeKilobytes": 8,
+                  "EnableILCache": false,
+                  "ILCacheDirectoryAbsolutePath": "/tmp/il-cache",
+                  "ILCacheStatsLogIntervalSeconds": 30,
+                  "ILCacheMaxDiskFileCount": 10,
+                  "ILCacheMaxDiskMegabytes": 20,
+                  "OptimizeForNetworkShares": true,
+                  "AutoDetectNetworkShares": false
+                }
+                """;
+
+            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+
+            Assert.NotNull(config);
+            Assert.Equal(new[] { ".tmp" }, config.IgnoredExtensions);
+            Assert.Equal(new[] { ".txt" }, config.TextFileExtensions);
+            Assert.Equal(42, config.MaxLogGenerations);
+            Assert.False(config.ShouldIncludeUnchangedFiles);
+            Assert.False(config.ShouldIncludeIgnoredFiles);
+            Assert.False(config.ShouldOutputILText);
+            Assert.True(config.ShouldIgnoreILLinesContainingConfiguredStrings);
+            Assert.Equal(new[] { "buildserver", "path" }, config.ILIgnoreLineContainingStrings);
+            Assert.False(config.ShouldOutputFileTimestamps);
+            Assert.False(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+            Assert.Equal(8, config.MaxParallelism);
+            Assert.Equal(128, config.TextDiffParallelThresholdKilobytes);
+            Assert.Equal(8, config.TextDiffChunkSizeKilobytes);
+            Assert.False(config.EnableILCache);
+            Assert.Equal("/tmp/il-cache", config.ILCacheDirectoryAbsolutePath);
+            Assert.Equal(30, config.ILCacheStatsLogIntervalSeconds);
+            Assert.Equal(10, config.ILCacheMaxDiskFileCount);
+            Assert.Equal(20, config.ILCacheMaxDiskMegabytes);
+            Assert.True(config.OptimizeForNetworkShares);
+            Assert.False(config.AutoDetectNetworkShares);
+        }
+
+        [Fact]
+        public void JsonDeserialize_NullCollectionsAndCachePath_FallBackToDefaults()
+        {
+            const string json = """
+                {
+                  "IgnoredExtensions": null,
+                  "TextFileExtensions": null,
+                  "ILIgnoreLineContainingStrings": null,
+                  "ILCacheDirectoryAbsolutePath": null
+                }
+                """;
+
+            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+
+            Assert.NotNull(config);
+            Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
+            Assert.Equal(ExpectedDefaultTextFileExtensions, config.TextFileExtensions);
+            Assert.NotNull(config.ILIgnoreLineContainingStrings);
+            Assert.Empty(config.ILIgnoreLineContainingStrings);
+            Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
+        }
+
+        private static void AssertMatchesDefaults(ConfigSettings config)
+        {
+            Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
+            Assert.Equal(ExpectedDefaultTextFileExtensions, config.TextFileExtensions);
+            Assert.Equal(5, config.MaxLogGenerations);
+            Assert.True(config.ShouldIncludeUnchangedFiles);
+            Assert.True(config.ShouldIncludeIgnoredFiles);
+            Assert.True(config.ShouldOutputILText);
             Assert.False(config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
-        }
-
-        [Fact]
-        public void JsonDeserialize_ExplicitZeroDiskCacheLimits_KeepsZero()
-        {
-            var json = "{\"ILCacheMaxDiskFileCount\":0,\"ILCacheMaxDiskMegabytes\":0}";
-            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
-            Assert.NotNull(config);
-            Assert.Equal(0, config.ILCacheMaxDiskFileCount);
-            Assert.Equal(0, config.ILCacheMaxDiskMegabytes);
-        }
-
-        [Fact]
-        public void JsonDeserialize_TextDiffParallelSettings_AreApplied()
-        {
-            var json = "{\"TextDiffParallelThresholdKilobytes\":128,\"TextDiffChunkSizeKilobytes\":8}";
-            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
-            Assert.NotNull(config);
-            Assert.Equal(128, config.TextDiffParallelThresholdKilobytes);
-            Assert.Equal(8, config.TextDiffChunkSizeKilobytes);
-        }
-
-        [Fact]
-        public void JsonDeserialize_IlIgnoreContainsSettings_AreApplied()
-        {
-            var json = "{\"ShouldIgnoreILLinesContainingConfiguredStrings\":true,\"ILIgnoreLineContainingStrings\":[\"buildserver\",\"path\"]}";
-            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
-            Assert.NotNull(config);
-            Assert.True(config.ShouldIgnoreILLinesContainingConfiguredStrings);
-            Assert.Equal(new[] { "buildserver", "path" }, config.ILIgnoreLineContainingStrings);
-        }
-
-        [Fact]
-        public void JsonDeserialize_TimestampWarningSetting_CanBeDisabled()
-        {
-            var json = "{\"ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp\":false}";
-            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
-            Assert.NotNull(config);
-            Assert.False(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+            Assert.True(config.ShouldOutputFileTimestamps);
+            Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+            Assert.Equal(0, config.MaxParallelism);
+            Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
+            Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
+            Assert.True(config.EnableILCache);
+            Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
+            Assert.Equal(60, config.ILCacheStatsLogIntervalSeconds);
+            Assert.Equal(1000, config.ILCacheMaxDiskFileCount);
+            Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
+            Assert.False(config.OptimizeForNetworkShares);
+            Assert.True(config.AutoDetectNetworkShares);
         }
     }
 }
