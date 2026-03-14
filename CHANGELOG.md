@@ -40,8 +40,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Extended console color emphasis so warning messages are also highlighted in yellow for consistency with the final success/failure messages.
 - Updated configuration samples, documentation, and automated tests for timestamp-regression warnings.
 - Reorganized runtime composition around [`ProgramRunner`](ProgramRunner.cs), [`DiffExecutionContext`](Services/DiffExecutionContext.cs), and interface-based services to improve diff-pipeline testability and reduce direct static-state coupling.
-- Split developer and testing guidance into dedicated documents and expanded the [README](README.md) with clearer installation examples and comparison-flow documentation.
-- Expanded the developer guide with execution lifecycle, DI boundaries, runtime-mode notes, Mermaid diagrams, and a clearer documentation map across README and testing guidance.
+- Split the [developer guide](doc/DEVELOPER_GUIDE.md) and [testing guide](doc/TESTING_GUIDE.md) into dedicated documents and expanded the [README](README.md) with clearer installation examples and comparison-flow documentation.
+- Expanded the [developer guide](doc/DEVELOPER_GUIDE.md) with execution lifecycle, DI boundaries, runtime-mode notes, Mermaid diagrams, and a clearer documentation map across [README](README.md) and [testing guide](doc/TESTING_GUIDE.md).
 
 #### Fixed
 
@@ -249,8 +249,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - コンソール出力の色強調を見直し、最終的な成功・失敗メッセージに加えて警告メッセージも黄色で強調表示するようにしました。
 - 更新日時逆転警告に合わせて、設定例、各種ドキュメント、自動テストを更新しました。
 - [`ProgramRunner`](ProgramRunner.cs)、[`DiffExecutionContext`](Services/DiffExecutionContext.cs)、インターフェイスベースのサービス構成へ整理し、差分パイプラインのテスタビリティを向上させるとともに、静的状態への直接依存を減らしました。
-- 開発者向け・テスト向けドキュメントを分離し、[README](README.md) のインストール手順と比較フロー説明を拡充しました。
-- 開発者ガイドに実行ライフサイクル、DI 境界、実行モード、Mermaid 図を追加し、README とテストガイドのドキュメント導線も整理しました。
+- [開発者ガイド](doc/DEVELOPER_GUIDE.md) と [テストガイド](doc/TESTING_GUIDE.md) を専用ドキュメントとして分離し、[README](README.md) のインストール手順と比較フロー説明を拡充しました。
+- [開発者ガイド](doc/DEVELOPER_GUIDE.md) に実行ライフサイクル、DI 境界、実行モード、Mermaid 図を追加し、[README](README.md) と [テストガイド](doc/TESTING_GUIDE.md) のドキュメント導線も整理しました。
 
 #### 修正
 

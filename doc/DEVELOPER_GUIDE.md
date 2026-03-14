@@ -17,6 +17,7 @@ Related documents:
 | Understand the end-to-end execution flow | [Execution Lifecycle](#guide-en-execution-lifecycle) |
 | Trace service boundaries and DI scopes | [Dependency Injection Layout](#guide-en-di-layout) |
 | Change file classification behavior | [Comparison Pipeline](#guide-en-comparison-pipeline) |
+| Understand or adjust configuration keys and runtime mode | [Configuration and Runtime Modes](#guide-en-config-runtime) |
 | Tune performance or network-share behavior | [Performance and Runtime Modes](#guide-en-performance-runtime) |
 | Refresh the generated API reference site | [Documentation Site and API Reference](#guide-en-doc-site) |
 | Update build, test, or artifact behavior | [CI and Release Notes](#guide-en-ci-release) |
@@ -469,6 +470,7 @@ Before merging behavior changes, check:
 | 実行全体の流れを把握したい | [実行ライフサイクル](#guide-ja-execution-lifecycle) |
 | サービス境界や DI スコープを追いたい | [Dependency Injection 構成](#guide-ja-di-layout) |
 | ファイル判定ロジックを変更したい | [比較パイプライン](#guide-ja-comparison-pipeline) |
+| 設定キーや実行モード判定を理解したい | [設定と実行モード](#guide-ja-config-runtime) |
 | 性能やネットワーク共有向け挙動を調整したい | [性能と実行モード](#guide-ja-performance-runtime) |
 | 自動生成 API リファレンスを更新したい | [ドキュメントサイトと API リファレンス](#guide-ja-doc-site) |
 | ビルド・テスト・成果物の流れを変えたい | [CI とリリースまわり](#guide-ja-ci-release) |
