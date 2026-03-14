@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Services.ILOutput;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -69,16 +70,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
 
             var resultLists = new FileDiffResultLists();
-            var provider = new ServiceCollection()
-                .AddSingleton<ILoggerService>(logger)
-                .AddSingleton(resultLists)
-                .AddSingleton(new DotNetDisassemblerCache(logger))
-                .BuildServiceProvider();
+            var executionContext = new DiffExecutionContext(
+                oldDir,
+                newDir,
+                Path.Combine(_rootDir, "report"),
+                optimizeForNetworkShares: true,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
 
             try
             {
-                var ilOutputService = new ILOutputService(config, oldDir, newDir, provider, logger);
-                var service = new FileDiffService(config, ilOutputService, oldDir, newDir, optimizeForNetworkShares: true, resultLists, logger);
+                var ilTextOutputService = new ILTextOutputService(executionContext, logger);
+                var dotNetDisassembleService = new DotNetDisassembleService(config, ilCache: null, resultLists, logger, new DotNetDisassemblerCache(logger));
+                var ilOutputService = new ILOutputService(config, executionContext, ilTextOutputService, dotNetDisassembleService, ilCache: null, logger);
+                var service = new FileDiffService(config, ilOutputService, executionContext, resultLists, logger);
 
                 var areEqual = await service.FilesAreEqualAsync(fileRelativePath, maxParallel: 1);
 
@@ -91,7 +96,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             finally
             {
                 exclusiveLockStream?.Dispose();
-                provider.Dispose();
             }
         }
 

@@ -18,7 +18,7 @@ namespace FolderDiffIL4DotNet.Services
     /// ツールのバージョン取得（<see cref="DotNetDisassemblerCache"/> 経由）・ブラックリスト制御・プリフェッチ（既存キャッシュの事前ヒット確認）も担当。
     /// 日本語/非ASCIIパス対策として必要に応じて ASCII 一時コピーを作成して実行します。
     /// </summary>
-    public sealed class DotNetDisassembleService
+    public sealed class DotNetDisassembleService : IDotNetDisassembleService
     {
         #region constants
         /// <summary>

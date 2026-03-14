@@ -10,7 +10,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
     /// <summary>
     /// *_IL.txt (old/new) の生成を担当するサービス。比較時に除外した行を除いた内容を保存し、読み取り専用属性を付与する。
     /// </summary>
-    public sealed class ILTextOutputService
+    public sealed class ILTextOutputService : IILTextOutputService
     {
         #region constants
         /// <summary>
@@ -46,13 +46,12 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         /// <param name="ilOldFolderAbsolutePath">旧 IL フォルダの絶対パス</param>
         /// <param name="ilNewFolderAbsolutePath">新 IL フォルダの絶対パス</param>
         /// <param name="logger">ログ出力サービス。</param>
-        public ILTextOutputService(string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath, ILoggerService logger)
+        public ILTextOutputService(DiffExecutionContext executionContext, ILoggerService logger)
         {
-            ArgumentNullException.ThrowIfNull(ilOldFolderAbsolutePath);
-            ArgumentNullException.ThrowIfNull(ilNewFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(executionContext);
 
-            _ilOldFolderAbsolutePath = ilOldFolderAbsolutePath;
-            _ilNewFolderAbsolutePath = ilNewFolderAbsolutePath;
+            _ilOldFolderAbsolutePath = executionContext.IlOldFolderAbsolutePath;
+            _ilNewFolderAbsolutePath = executionContext.IlNewFolderAbsolutePath;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
         }

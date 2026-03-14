@@ -12,7 +12,7 @@ namespace FolderDiffIL4DotNet.Services
     /// <summary>
     /// 個々のファイル比較（MD5/IL/テキスト）と、その前段となる事前計算の入口を提供するサービス。
     /// </summary>
-    public sealed class FileDiffService
+    public sealed class FileDiffService : IFileDiffService
     {
         #region constants
         /// <summary>
@@ -50,7 +50,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// IL 出力サービス
         /// </summary>
-        private readonly ILOutputService _ilOutputService;
+        private readonly IILOutputService _ilOutputService;
 
         /// <summary>
         /// 旧バージョン側（比較元）のIL全文ファイル出力先の絶対パス
@@ -83,23 +83,25 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="config">アプリケーション設定。</param>
         /// <param name="ilOutputService">IL 比較・出力サービス。</param>
-        /// <param name="oldFolderAbsolutePath">比較元フォルダの絶対パス。</param>
-        /// <param name="newFolderAbsolutePath">比較先フォルダの絶対パス。</param>
-        /// <param name="optimizeForNetworkShares">ネットワーク共有向け最適化フラグ。</param>
+        /// <param name="executionContext">実行コンテキスト。</param>
         /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
         /// <param name="logger">ログ出力サービス。</param>
-        public FileDiffService(ConfigSettings config, ILOutputService ilOutputService, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool optimizeForNetworkShares, FileDiffResultLists fileDiffResultLists, ILoggerService logger)
+        public FileDiffService(
+            ConfigSettings config,
+            IILOutputService ilOutputService,
+            DiffExecutionContext executionContext,
+            FileDiffResultLists fileDiffResultLists,
+            ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(ilOutputService);
-            ArgumentNullException.ThrowIfNull(oldFolderAbsolutePath);
-            ArgumentNullException.ThrowIfNull(newFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(executionContext);
 
             _config = config;
             _ilOutputService = ilOutputService;
-            _oldFolderAbsolutePath = oldFolderAbsolutePath;
-            _newFolderAbsolutePath = newFolderAbsolutePath;
-            _optimizeForNetworkShares = optimizeForNetworkShares;
+            _oldFolderAbsolutePath = executionContext.OldFolderAbsolutePath;
+            _newFolderAbsolutePath = executionContext.NewFolderAbsolutePath;
+            _optimizeForNetworkShares = executionContext.OptimizeForNetworkShares;
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
             ArgumentNullException.ThrowIfNull(logger);

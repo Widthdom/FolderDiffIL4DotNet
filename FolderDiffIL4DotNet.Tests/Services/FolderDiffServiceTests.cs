@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
-using Microsoft.Extensions.DependencyInjection;
+using FolderDiffIL4DotNet.Services.ILOutput;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -15,24 +15,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
         private readonly string _rootDir;
         private readonly FileDiffResultLists _resultLists = new();
         private readonly ILoggerService _logger = new LoggerService();
-        private readonly ServiceProvider _serviceProvider;
 
         public FolderDiffServiceTests()
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-folderdiff-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
             _resultLists.ResetAll();
-            _serviceProvider = new ServiceCollection()
-                .AddSingleton<ILoggerService>(_logger)
-                .AddSingleton(_resultLists)
-                .AddSingleton<DotNetDisassemblerCache>()
-                .BuildServiceProvider();
         }
 
         public void Dispose()
         {
             _resultLists.ResetAll();
-            _serviceProvider.Dispose();
             try
             {
                 if (Directory.Exists(_rootDir))
@@ -67,7 +60,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig(maxParallelism: 1);
             using var progressReporter = new ProgressReportService();
-            var service = new FolderDiffService(config, progressReporter, oldDir, newDir, reportDir, _serviceProvider, _resultLists, _logger);
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
 
@@ -100,7 +93,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig(maxParallelism: 2);
             using var progressReporter = new ProgressReportService();
-            var service = new FolderDiffService(config, progressReporter, oldDir, newDir, reportDir, _serviceProvider, _resultLists, _logger);
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
 
@@ -126,7 +119,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig(maxParallelism: 1);
             using var progressReporter = new ProgressReportService();
-            var service = new FolderDiffService(config, progressReporter, oldDir, newDir, reportDir, _serviceProvider, _resultLists, _logger);
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
 
@@ -157,7 +150,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var config = CreateConfig(maxParallelism: 1);
             config.TextFileExtensions = new List<string> { ".TXT" };
             using var progressReporter = new ProgressReportService();
-            var service = new FolderDiffService(config, progressReporter, oldDir, newDir, reportDir, _serviceProvider, _resultLists, _logger);
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
 
@@ -180,6 +173,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
             OptimizeForNetworkShares = false,
             AutoDetectNetworkShares = false
         };
+
+        private FolderDiffService CreateService(ConfigSettings config, ProgressReportService progressReporter, string oldDir, string newDir, string reportDir)
+        {
+            var executionContext = new DiffExecutionContext(
+                oldDir,
+                newDir,
+                reportDir,
+                optimizeForNetworkShares: false,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
+            var ilTextOutputService = new ILTextOutputService(executionContext, _logger);
+            var dotNetDisassembleService = new DotNetDisassembleService(config, ilCache: null, _resultLists, _logger, new DotNetDisassemblerCache(_logger));
+            var ilOutputService = new ILOutputService(config, executionContext, ilTextOutputService, dotNetDisassembleService, ilCache: null, _logger);
+            var fileDiffService = new FileDiffService(config, ilOutputService, executionContext, _resultLists, _logger);
+            return new FolderDiffService(config, progressReporter, executionContext, fileDiffService, _resultLists, _logger);
+        }
 
         private static void WriteFile(string rootDir, string relativePath, string content)
         {

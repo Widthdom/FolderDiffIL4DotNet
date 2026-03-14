@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
-using Microsoft.Extensions.DependencyInjection;
+using FolderDiffIL4DotNet.Services.ILOutput;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -159,17 +159,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
         private static ILOutputService CreateILOutputService(ConfigSettings config, string ilOldFolder = null, string ilNewFolder = null)
         {
             var logger = new LoggerService();
-            var services = new ServiceCollection();
-            services.AddSingleton<ILoggerService>(logger);
-            services.AddSingleton(new FileDiffResultLists());
-            services.AddSingleton(new DotNetDisassemblerCache(logger));
-            var provider = services.BuildServiceProvider();
-
             var oldDir = ilOldFolder ?? Path.Combine(Path.GetTempPath(), "fd-iloutput-old-" + Guid.NewGuid().ToString("N"));
             var newDir = ilNewFolder ?? Path.Combine(Path.GetTempPath(), "fd-iloutput-new-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            return new ILOutputService(config, oldDir, newDir, provider, logger);
+
+            var executionContext = new DiffExecutionContext(
+                oldDir,
+                newDir,
+                Path.Combine(Path.GetTempPath(), "fd-iloutput-report-" + Guid.NewGuid().ToString("N")),
+                optimizeForNetworkShares: config.OptimizeForNetworkShares,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
+            var resultLists = new FileDiffResultLists();
+            var ilTextOutputService = new ILTextOutputService(executionContext, logger);
+            var dotNetDisassembleService = new DotNetDisassembleService(config, ilCache: null, resultLists, logger, new DotNetDisassemblerCache(logger));
+            return new ILOutputService(config, executionContext, ilTextOutputService, dotNetDisassembleService, ilCache: null, logger);
         }
     }
 }

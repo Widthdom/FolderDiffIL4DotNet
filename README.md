@@ -65,6 +65,13 @@ Main output:
 - `Reports/<label>/diff_report.md`
 - Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when `ShouldOutputILText=true`
 
+## Runtime Composition
+
+- `Program.cs` is intentionally thin and only resolves `ProgramRunner`.
+- `ProgramRunner` validates arguments, loads `config.json`, builds a per-run DI container, and executes the diff/report pipeline.
+- `DiffExecutionContext` carries run-specific paths and network-mode decisions.
+- Core pipeline services (`FolderDiffService`, `FileDiffService`, `ILOutputService`) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
+
 ## Comparison Flow
 
 Flow A: Folder-level routing
@@ -334,6 +341,13 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 主な出力:
 - `Reports/<label>/diff_report.md`
 - `ShouldOutputILText=true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
+
+## 実行時構成
+
+- `Program.cs` は薄いエントリーポイントで、`ProgramRunner` の解決だけを行います。
+- `ProgramRunner` が引数検証、`config.json` 読込、実行単位 DI コンテナ生成、差分/レポート処理の実行を担います。
+- `DiffExecutionContext` が実行ごとのパスやネットワークモード判定を保持します。
+- 主要パイプラインサービス（`FolderDiffService`, `FileDiffService`, `ILOutputService`）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
 
 ## 比較フロー
 

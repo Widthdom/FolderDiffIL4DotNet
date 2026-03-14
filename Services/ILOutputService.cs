@@ -8,31 +8,15 @@ using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
 using FolderDiffIL4DotNet.Utils;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// 逆アセンブル（<see cref="DotNetDisassembleService"/>）・キャッシュ制御（<see cref="ILCache"/>）と出力サービスへの委譲を担うファサード。
     /// </summary>
-    public sealed class ILOutputService
+    public sealed class ILOutputService : IILOutputService
     {
         #region constants
-        /// <summary>
-        /// IL キャッシュのメモリ最大エントリ数（既定値）
-        /// </summary>
-        private const int IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT = 2000;
-
-        /// <summary>
-        /// IL キャッシュ統計ログの既定出力間隔（秒）。
-        /// </summary>
-        private const int IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS = 60;
-
-        /// <summary>
-        /// IL キャッシュの既定TTL（時間単位）。
-        /// </summary>
-        private const int IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS = 12;
-
         /// <summary>
         /// ネットワーク共有最適化ログ (<see cref="ILOutputService"/>)
         /// </summary>
@@ -76,74 +60,49 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILCache _ilCache;
 
         /// <summary>
-        /// old 側 *_IL.txt を出力するフォルダ（絶対パス）。
-        /// </summary>
-        private readonly string _ilOldFolderAbsolutePath;
-
-        /// <summary>
-        /// new 側 *_IL.txt を出力するフォルダ（絶対パス）。
-        /// </summary>
-        private readonly string _ilNewFolderAbsolutePath;
-
-        /// <summary>
         /// *_IL.txt の生成を担当するサービス。
         /// </summary>
-        private readonly ILTextOutputService _ilTextOutputService;
+        private readonly IILTextOutputService _ilTextOutputService;
 
         /// <summary>
         /// .NET 逆アセンブル担当サービス。
         /// </summary>
-        private readonly DotNetDisassembleService _dotNetDisassembleService;
+        private readonly IDotNetDisassembleService _dotNetDisassembleService;
 
         /// <summary>
         /// ログ出力サービス。
         /// </summary>
         private readonly ILoggerService _logger;
 
-        /// <summary>
-        /// 補助サービスの解決に利用する DI サービスプロバイダー。
-        /// </summary>
-        private readonly IServiceProvider _serviceProvider;
         #endregion
 
         /// <summary>
-        /// コンストラクタ。パスおよび設定値を受け取り必要に応じて IL キャッシュを構築する。
+        /// コンストラクタ。実行コンテキストと協調サービスを受け取ります。
         /// </summary>
         /// <param name="config">設定。</param>
-        /// <param name="ilOldFolderAbsolutePath">old 側 IL テキスト出力フォルダ。</param>
-        /// <param name="ilNewFolderAbsolutePath">new 側 IL テキスト出力フォルダ。</param>
-        /// <param name="serviceProvider">DI サービスプロバイダー。</param>
+        /// <param name="executionContext">実行コンテキスト。</param>
+        /// <param name="ilTextOutputService">IL テキスト出力サービス。</param>
+        /// <param name="dotNetDisassembleService">.NET 逆アセンブルサービス。</param>
+        /// <param name="ilCache">IL キャッシュインスタンス。無効時は null。</param>
         /// <param name="logger">ログ出力サービス。</param>
-        public ILOutputService(ConfigSettings config, string ilOldFolderAbsolutePath, string ilNewFolderAbsolutePath, IServiceProvider serviceProvider, ILoggerService logger)
+        public ILOutputService(
+            ConfigSettings config,
+            DiffExecutionContext executionContext,
+            IILTextOutputService ilTextOutputService,
+            IDotNetDisassembleService dotNetDisassembleService,
+            ILCache ilCache,
+            ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(config);
-            ArgumentNullException.ThrowIfNull(ilOldFolderAbsolutePath);
-            ArgumentNullException.ThrowIfNull(ilNewFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(executionContext);
             _config = config;
-            ArgumentNullException.ThrowIfNull(serviceProvider);
-            _serviceProvider = serviceProvider;
+            ArgumentNullException.ThrowIfNull(ilTextOutputService);
+            _ilTextOutputService = ilTextOutputService;
+            ArgumentNullException.ThrowIfNull(dotNetDisassembleService);
+            _dotNetDisassembleService = dotNetDisassembleService;
+            _ilCache = ilCache;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
-            _ilOldFolderAbsolutePath = ilOldFolderAbsolutePath;
-            _ilNewFolderAbsolutePath = ilNewFolderAbsolutePath;
-            _ilTextOutputService = ActivatorUtilities.CreateInstance<ILTextOutputService>(_serviceProvider, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
-            if (_config.EnableILCache)
-            {
-                _ilCache = new ILCache(
-                    string.IsNullOrWhiteSpace(_config.ILCacheDirectoryAbsolutePath) ? Path.Combine(AppContext.BaseDirectory, Constants.DEFAULT_IL_CACHE_DIR_NAME) : _config.ILCacheDirectoryAbsolutePath,
-                    _logger,
-                    ilCacheMaxMemoryEntries: IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
-                    timeToLive: TimeSpan.FromHours(IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS),
-                    statsLogIntervalSeconds: _config.ILCacheStatsLogIntervalSeconds <= 0 ? IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS : _config.ILCacheStatsLogIntervalSeconds,
-                    ilCacheMaxDiskFileCount: _config.ILCacheMaxDiskFileCount,
-                    ilCacheMaxDiskMegabytes: _config.ILCacheMaxDiskMegabytes);
-            }
-            _dotNetDisassembleService = new DotNetDisassembleService(
-                _config,
-                _ilCache,
-                _serviceProvider.GetRequiredService<FileDiffResultLists>(),
-                _logger,
-                _serviceProvider.GetRequiredService<DotNetDisassemblerCache>());
         }
 
         /// <summary>

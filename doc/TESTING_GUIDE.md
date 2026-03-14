@@ -12,7 +12,7 @@ This document centralizes the project's testing strategy, execution commands, an
 
 ## Current Test Scope Map
 
-Current tree has `160` test cases (`[Fact]` + `[Theory]` count).
+Current tree has `195` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -22,6 +22,11 @@ Current tree has `160` test cases (`[Fact]` + `[Theory]` count).
 | Caching | `ILCacheTests` | memory/disk cache semantics, retention, keying behavior |
 | Reporting/logging/progress | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | report sections/summary formatting, log output behavior, progress reporting lifecycle |
 | Utility layer | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | hashing/text compare, path/network detection, command tokenization, file-name/path sanitization |
+
+Testability-related structure:
+- `ProgramTests` exercise the thin `Program.Main` entry point while the execution orchestration lives in `ProgramRunner`, which reduces static-state coupling.
+- Diff pipeline services now expose interface seams (`IFileDiffService`, `IILOutputService`, `IFolderDiffService`, `IDotNetDisassembleService`, `IILTextOutputService`) so tests can replace collaborators directly.
+- `DiffExecutionContext` carries per-run paths and network-mode flags, which keeps test setup explicit and avoids mutating shared global state.
 
 ## Run Tests Locally
 
@@ -82,6 +87,7 @@ Workflow: `.github/workflows/dotnet.yml`
 - `DotNetDisassembleServiceTests` temporarily rewires `PATH`/`HOME` and uses scripted fake tools to test fallback/blacklist logic deterministically.
 - Some disassembler tests are skipped on Windows (`OperatingSystem.IsWindows()` guard).
 - Unit tests do not require globally installed real `dotnet-ildasm` or `ilspycmd` for most scenarios because test doubles are used.
+- Avoid adding static mutable test hooks. Prefer constructor injection plus `DiffExecutionContext` for per-run values.
 
 ## Adding or Updating Tests
 
@@ -107,7 +113,7 @@ Workflow: `.github/workflows/dotnet.yml`
 
 ## 現在のテスト範囲マップ
 
-現行ツリーのテストケース数は `160` 件（`[Fact]` + `[Theory]` の件数）です。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`）では `195` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
@@ -117,6 +123,11 @@ Workflow: `.github/workflows/dotnet.yml`
 | キャッシュ | `ILCacheTests` | メモリ/ディスクキャッシュの保持、キー生成、削除方針 |
 | レポート/ログ/進捗 | `ReportGenerateServiceTests`, `LoggerServiceTests`, `ProgressReportServiceTests` | レポート出力内容、ログ動作、進捗報告ライフサイクル |
 | ユーティリティ層 | `FileComparerTests`, `FileSystemUtilityTests`, `PathValidatorTests`, `ProcessHelperTests`, `TextSanitizerTests` | ハッシュ/テキスト比較、パス/ネットワーク判定、コマンド分解、ファイル名/パス整形 |
+
+テスタビリティに関する構成:
+- `ProgramTests` は薄い `Program.Main` を対象にしつつ、実行オーケストレーション本体は `ProgramRunner` に分離されています。これにより静的状態への結合を減らしています。
+- 差分パイプラインの主要サービスは `IFileDiffService`, `IILOutputService`, `IFolderDiffService`, `IDotNetDisassembleService`, `IILTextOutputService` の差し替えポイントを持ちます。
+- `DiffExecutionContext` が実行単位のパスやネットワークモードを保持するため、テストセットアップで共有グローバル状態を書き換える必要がありません。
 
 ## ローカルでのテスト実行
 
@@ -177,6 +188,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 - `DotNetDisassembleServiceTests` は `PATH`/`HOME` を一時変更し、擬似ツールスクリプトでフォールバック/ブラックリスト挙動を決定的に検証します。
 - 逆アセンブラ関連の一部テストは Windows ではスキップされます（`OperatingSystem.IsWindows()` ガード）。
 - 多くの単体テストは実ツールのグローバルインストールを不要とします（テストダブル利用）。
+- 静的な可変テストフックは追加せず、実行単位の値はコンストラクタ注入と `DiffExecutionContext` で渡してください。
 
 ## テスト追加・更新時の方針
 

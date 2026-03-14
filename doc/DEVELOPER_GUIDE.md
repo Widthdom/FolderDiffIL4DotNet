@@ -17,7 +17,9 @@ Testing details:
 ## Runtime Architecture
 
 Main components:
-- `Program.cs`: builds dependency graph using `ServiceCollection` and resolves services via DI.
+- `Program.cs`: thin entry point that creates the root `ServiceCollection` and delegates to `ProgramRunner`.
+- `ProgramRunner.cs`: validates arguments, loads config, creates per-run DI scope, and orchestrates end-to-end execution without static mutable run state.
+- `Services/DiffExecutionContext.cs`: run-scoped immutable context for old/new/report paths, IL output paths, and network-optimization decisions.
 - `Services/FolderDiffService.cs`: orchestrates end-to-end diff execution, file discovery, parallel scheduling, and result aggregation.
 - `Services/FileDiffService.cs`: performs per-file classification (`MD5Match`, `ILMatch`, `TextMatch`, etc.).
 - `Services/ILOutputService.cs`: facade for IL compare flow and optional IL text output.
@@ -25,6 +27,12 @@ Main components:
 - `Services/Caching/ILCache.cs`: memory + optional disk cache keyed by file hash and tool identity.
 - `Services/ReportGenerateService.cs`: writes `diff_report.md` sections and summary.
 - `Models/FileDiffResultLists.cs`: thread-safe run-scoped shared state (`ConcurrentQueue` / `ConcurrentDictionary`).
+
+Dependency injection notes:
+- `Program.cs` owns only application-root services (`ILoggerService`, `ConfigService`, `ProgramRunner`).
+- `ProgramRunner` creates a per-run service provider containing `ConfigSettings`, `DiffExecutionContext`, `FileDiffResultLists`, cache/disassembler services, and the diff/report pipeline.
+- `FileDiffService`, `ILOutputService`, `FolderDiffService`, `DotNetDisassembleService`, and `ILTextOutputService` now depend on interfaces or run context rather than constructing collaborators via `ActivatorUtilities.CreateInstance`.
+- This layout is intentional for testability: test code can replace `IFileDiffService`, `IILOutputService`, `IFolderDiffService`, `IDotNetDisassembleService`, or `IILTextOutputService` without mutating static fields.
 
 Comparison pipeline:
 1. MD5 compare first.
@@ -65,6 +73,9 @@ Current behavior:
 
 ## Implementation Cautions
 
+- Keep `Program.cs` thin. Add orchestration logic to `ProgramRunner` or lower services, not back into static entry-point state.
+- Preserve the contract that each execution gets a fresh `DiffExecutionContext` and `FileDiffResultLists`. Reusing them across runs would reintroduce cross-run contamination and make tests order-dependent.
+- Avoid reintroducing `ActivatorUtilities.CreateInstance` or service-side `new` calls for core collaborators when constructor injection is feasible. That would weaken substitution in tests.
 - Always keep `FolderDiffService` run initialization behavior intact: `FileDiffResultLists.ResetAll()` must run before enumeration/comparison to avoid cross-run contamination.
 - Do not mix disassemblers across old/new assembly pair comparison. `ILOutputService` expects the same tool/version identity and throws on mismatch.
 - `ILIgnoreLineContainingStrings` filtering is substring-based and case-sensitive (`StringComparison.Ordinal`). Treat this as a compatibility behavior when changing filtering.
@@ -95,7 +106,9 @@ dotnet build FolderDiffIL4DotNet.sln --configuration Release
 ## 実行時アーキテクチャ
 
 主要コンポーネント:
-- `Program.cs`: `ServiceCollection` で DI 構成を組み立て、各サービスを解決して実行。
+- `Program.cs`: ルート DI を組み立てて `ProgramRunner` に委譲する薄いエントリーポイント。
+- `ProgramRunner.cs`: 引数検証、設定読込、実行単位 DI スコープ生成、差分実行全体のオーケストレーションを担当。実行中の静的可変状態は持ちません。
+- `Services/DiffExecutionContext.cs`: old/new/report パス、IL 出力パス、ネットワーク最適化判定をまとめた実行単位の不変コンテキスト。
 - `Services/FolderDiffService.cs`: ファイル列挙、並列実行、集計を含む全体オーケストレーション。
 - `Services/FileDiffService.cs`: ファイル単位の判定（`MD5Match` / `ILMatch` / `TextMatch` など）。
 - `Services/ILOutputService.cs`: IL 比較フローと IL 出力のファサード。
@@ -103,6 +116,12 @@ dotnet build FolderDiffIL4DotNet.sln --configuration Release
 - `Services/Caching/ILCache.cs`: `ファイルハッシュ + ツール識別子` ベースのメモリ/ディスクキャッシュ。
 - `Services/ReportGenerateService.cs`: `diff_report.md` の各セクションとサマリー出力。
 - `Models/FileDiffResultLists.cs`: 実行単位のスレッドセーフ共有状態。
+
+DI 構成メモ:
+- `Program.cs` ではアプリ全体のルートサービス（`ILoggerService`, `ConfigService`, `ProgramRunner`）だけを登録します。
+- `ProgramRunner` が実行ごとの `ServiceProvider` を作成し、`ConfigSettings`, `DiffExecutionContext`, `FileDiffResultLists`, キャッシュ系サービス、差分/レポート系サービスをスコープ化します。
+- `FileDiffService`, `ILOutputService`, `FolderDiffService`, `DotNetDisassembleService`, `ILTextOutputService` は、`ActivatorUtilities.CreateInstance` に頼らず、コンストラクタ注入された依存関係または `DiffExecutionContext` を使います。
+- この構成により、テストでは `IFileDiffService`, `IILOutputService`, `IFolderDiffService`, `IDotNetDisassembleService`, `IILTextOutputService` を差し替え可能です。
 
 比較パイプライン:
 1. まず MD5 比較。
@@ -143,6 +162,9 @@ dotnet build FolderDiffIL4DotNet.sln --configuration Release
 
 ## 実装上の注意点
 
+- `Program.cs` は薄いまま維持してください。起動フローの追加ロジックは `ProgramRunner` か下位サービスへ置き、静的状態へ戻さないでください。
+- 実行ごとに新しい `DiffExecutionContext` と `FileDiffResultLists` を使う前提を崩さないでください。使い回すと、前回実行の状態混入やテスト順依存を再導入します。
+- コアな協調サービスに対して、可能な箇所で `ActivatorUtilities.CreateInstance` やサービス内 `new` を再導入しないでください。テスト時の差し替え性が落ちます。
 - `FolderDiffService` の実行初期化で `FileDiffResultLists.ResetAll()` を必ず維持してください。これがないと同一プロセス内で前回結果が混入します。
 - old/new の IL 比較で逆アセンブラ識別子を混在させないでください。`ILOutputService` は同一識別子前提で、不一致時は例外にします。
 - `ILIgnoreLineContainingStrings` の判定は「部分一致 + 大小区別あり（`StringComparison.Ordinal`）」です。互換性に影響するため変更時は注意してください。

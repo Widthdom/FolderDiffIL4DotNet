@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Utils;
@@ -14,24 +13,9 @@ namespace FolderDiffIL4DotNet.Services
     /// <summary>
     /// フォルダ間の差分を比較するサービスクラス
     /// </summary>
-    public sealed class FolderDiffService
+    public sealed class FolderDiffService : IFolderDiffService
     {
         #region constants
-        /// <summary>
-        /// IL テキスト出力用のサブフォルダ名
-        /// </summary>
-        private const string IL_FOLDER_NAME = Constants.LABEL_IL;
-
-        /// <summary>
-        /// 旧バージョン側（比較元）の IL 出力サブディレクトリ名
-        /// </summary>
-        private const string IL_OLD_SUB_DIR = "old";
-
-        /// <summary>
-        /// 新バージョン側（比較先）の IL 出力サブディレクトリ名
-        /// </summary>
-        private const string IL_NEW_SUB_DIR = "new";
-
         /// <summary>
         /// 実行モードログ
         /// </summary>
@@ -125,11 +109,6 @@ namespace FolderDiffIL4DotNet.Services
         private readonly string _newFolderAbsolutePath;
 
         /// <summary>
-        /// レポート出力先の絶対パス
-        /// </summary>
-        private readonly string _reportsFolderAbsolutePath;
-
-        /// <summary>
         /// IL全文ファイル出力先の絶対パス
         /// </summary>
         private readonly string _ilOutputFolderAbsolutePath;
@@ -145,14 +124,9 @@ namespace FolderDiffIL4DotNet.Services
         private readonly string _ilNewFolderAbsolutePath;
 
         /// <summary>
-        /// IL 出力サービス
-        /// </summary>
-        private readonly ILOutputService _ilOutputService;
-
-        /// <summary>
         /// ファイル比較サービス
         /// </summary>
-        private readonly FileDiffService _fileDiffService;
+        private readonly IFileDiffService _fileDiffService;
 
         /// <summary>
         /// 実行時に決定されるネットワーク最適化フラグ（Auto検知 + 手動フラグ を統合）。
@@ -181,10 +155,6 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private readonly ILoggerService _logger;
 
-        /// <summary>
-        /// 実行時に動的生成が必要なサービスを解決するための DI サービスプロバイダー。
-        /// </summary>
-        private readonly IServiceProvider _serviceProvider;
         #endregion
 
         /// <summary>
@@ -193,44 +163,40 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="config">アプリケーションの設定情報</param>
         /// <param name="progressReporter">進捗状況を報告するためのユーティリティ</param>
-        /// <param name="oldFolderAbsolutePath">旧バージョン側（比較元）フォルダの絶対パス</param>
-        /// <param name="newFolderAbsolutePath">新バージョン側（比較先）フォルダの絶対パス</param>
-        /// <param name="reportsFolderAbsolutePath">レポート出力先の絶対パス</param>
-        /// <param name="serviceProvider">DI サービスプロバイダー。</param>
+        /// <param name="executionContext">実行コンテキスト。</param>
+        /// <param name="fileDiffService">ファイル比較サービス。</param>
         /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
         /// <param name="logger">ログ出力サービス。</param>
-        /// <exception cref="ArgumentNullException">config または progressReporter または oldFolderAbsolutePath または newFolderAbsolutePath または reportsFolderAbsolutePath が null の場合。</exception>
-        public FolderDiffService(ConfigSettings config, ProgressReportService progressReporter, string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath, IServiceProvider serviceProvider, FileDiffResultLists fileDiffResultLists, ILoggerService logger)
+        /// <exception cref="ArgumentNullException">config または progressReporter または executionContext が null の場合。</exception>
+        public FolderDiffService(
+            ConfigSettings config,
+            ProgressReportService progressReporter,
+            DiffExecutionContext executionContext,
+            IFileDiffService fileDiffService,
+            FileDiffResultLists fileDiffResultLists,
+            ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(progressReporter);
-            ArgumentNullException.ThrowIfNull(oldFolderAbsolutePath);
-            ArgumentNullException.ThrowIfNull(newFolderAbsolutePath);
-            ArgumentNullException.ThrowIfNull(reportsFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(executionContext);
+            ArgumentNullException.ThrowIfNull(fileDiffService);
 
             _config = config;
             _progressReporter = progressReporter;
             _progressReporter.SetLabel(SPINNER_LABEL_FOLDER_DIFF);
-            _oldFolderAbsolutePath = oldFolderAbsolutePath;
-            _newFolderAbsolutePath = newFolderAbsolutePath;
-            _reportsFolderAbsolutePath = reportsFolderAbsolutePath;
-            _ilOutputFolderAbsolutePath = Path.Combine(_reportsFolderAbsolutePath, IL_FOLDER_NAME);
-            _ilOldFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, IL_OLD_SUB_DIR);
-            _ilNewFolderAbsolutePath = Path.Combine(_ilOutputFolderAbsolutePath, IL_NEW_SUB_DIR);
-            ArgumentNullException.ThrowIfNull(serviceProvider);
-            _serviceProvider = serviceProvider;
+            _oldFolderAbsolutePath = executionContext.OldFolderAbsolutePath;
+            _newFolderAbsolutePath = executionContext.NewFolderAbsolutePath;
+            _ilOutputFolderAbsolutePath = executionContext.IlOutputFolderAbsolutePath;
+            _ilOldFolderAbsolutePath = executionContext.IlOldFolderAbsolutePath;
+            _ilNewFolderAbsolutePath = executionContext.IlNewFolderAbsolutePath;
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
-            _ilOutputService = ActivatorUtilities.CreateInstance<ILOutputService>(_serviceProvider, _config, _ilOldFolderAbsolutePath, _ilNewFolderAbsolutePath);
-
-            // Auto検知（UNC/NFS/SSHFS等） + 手動指定のORで最終判定
-            _detectedNetworkOld = _config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(_oldFolderAbsolutePath);
-            _detectedNetworkNew = _config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(_newFolderAbsolutePath);
-            _optimizeForNetworkShares = _config.OptimizeForNetworkShares || _detectedNetworkOld || _detectedNetworkNew;
-
-            _fileDiffService = ActivatorUtilities.CreateInstance<FileDiffService>(_serviceProvider, _config, _ilOutputService, _oldFolderAbsolutePath, _newFolderAbsolutePath, _optimizeForNetworkShares);
+            _detectedNetworkOld = executionContext.DetectedNetworkOld;
+            _detectedNetworkNew = executionContext.DetectedNetworkNew;
+            _optimizeForNetworkShares = executionContext.OptimizeForNetworkShares;
+            _fileDiffService = fileDiffService;
         }
 
         /// <summary>
