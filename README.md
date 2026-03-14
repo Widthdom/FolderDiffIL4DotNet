@@ -74,6 +74,56 @@ Main output:
 - `Reports/<label>/diff_report.md`
 - Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when `ShouldOutputILText=true`
 
+Example `diff_report.md` (trimmed):
+
+```md
+# Folder Diff Report
+- App Version: FolderDiffIL4DotNet 1.0.0
+- Computer: dev-machine
+- Old: /Users/UserA/workspace/old
+- New: /Users/UserA/workspace/new
+- Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
+- Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
+- IL Disassembler: dotnet-ildasm (version: 0.12.2)
+- Elapsed Time: 00:00:01.234
+- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored.
+- Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
+- Legend:
+  - `MD5Match` / `MD5Mismatch`: MD5 hash match / mismatch
+  - `ILMatch` / `ILMismatch`: IL(Intermediate Language) match / mismatch
+  - `TextMatch` / `TextMismatch`: Text match / mismatch
+
+## [ x ] Ignored Files
+- [ x ] bin/MyApp.pdb (old/new) <u>(updated_old: 2026-03-15 08:57:00.000 +09:00, updated_new: 2026-03-15 09:03:00.000 +09:00)</u>
+
+## [ = ] Unchanged Files
+- [ = ] appsettings.json <u>(updated: 2026-03-15 09:00:00.000 +09:00)</u> `TextMatch`
+
+## [ + ] Added Files
+- [ + ] /Users/UserA/workspace/new/docs/guide.md <u>(updated: 2026-03-15 09:01:00.000 +09:00)</u>
+
+## [ - ] Removed Files
+- [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt <u>(updated: 2026-03-15 08:55:00.000 +09:00)</u>
+
+## [ * ] Modified Files
+- [ * ] src/MyApp.dll <u>(updated_old: 2026-03-15 08:58:00.000 +09:00, updated_new: 2026-03-15 09:02:00.000 +09:00)</u> `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
+- [ * ] payload.bin <u>(updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)</u> `MD5Mismatch`
+
+## Summary
+- Ignored   : 1
+- Unchanged : 1
+- Added     : 1
+- Removed   : 1
+- Modified  : 2
+- Compared  : 5 (Old) vs 5 (New)
+
+**WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
+
+## Warnings
+**WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
+- payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
+```
+
 ## Runtime Composition
 
 - [`Program.cs`](Program.cs) is intentionally thin and only resolves `ProgramRunner`.
@@ -276,6 +326,56 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 主な出力:
 - `Reports/<label>/diff_report.md`
 - `ShouldOutputILText=true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
+
+`diff_report.md` の簡単な例:
+
+```md
+# Folder Diff Report
+- App Version: FolderDiffIL4DotNet 1.0.0
+- Computer: dev-machine
+- Old: /Users/UserA/workspace/old
+- New: /Users/UserA/workspace/new
+- Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
+- Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
+- IL Disassembler: dotnet-ildasm (version: 0.12.2)
+- Elapsed Time: 00:00:01.234
+- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored.
+- Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
+- Legend:
+  - `MD5Match` / `MD5Mismatch`: MD5 hash match / mismatch
+  - `ILMatch` / `ILMismatch`: IL(Intermediate Language) match / mismatch
+  - `TextMatch` / `TextMismatch`: Text match / mismatch
+
+## [ x ] Ignored Files
+- [ x ] bin/MyApp.pdb (old/new) <u>(updated_old: 2026-03-15 08:57:00.000 +09:00, updated_new: 2026-03-15 09:03:00.000 +09:00)</u>
+
+## [ = ] Unchanged Files
+- [ = ] appsettings.json <u>(updated: 2026-03-15 09:00:00.000 +09:00)</u> `TextMatch`
+
+## [ + ] Added Files
+- [ + ] /Users/UserA/workspace/new/docs/guide.md <u>(updated: 2026-03-15 09:01:00.000 +09:00)</u>
+
+## [ - ] Removed Files
+- [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt <u>(updated: 2026-03-15 08:55:00.000 +09:00)</u>
+
+## [ * ] Modified Files
+- [ * ] src/MyApp.dll <u>(updated_old: 2026-03-15 08:58:00.000 +09:00, updated_new: 2026-03-15 09:02:00.000 +09:00)</u> `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
+- [ * ] payload.bin <u>(updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)</u> `MD5Mismatch`
+
+## Summary
+- Ignored   : 1
+- Unchanged : 1
+- Added     : 1
+- Removed   : 1
+- Modified  : 2
+- Compared  : 5 (Old) vs 5 (New)
+
+**WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
+
+## Warnings
+**WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
+- payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
+```
 
 ## 実行時構成
 
