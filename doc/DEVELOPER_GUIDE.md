@@ -24,7 +24,7 @@ Related documents:
 ## Local Development
 
 Prerequisites:
-- .NET SDK `8.0.413` (`global.json`)
+- .NET SDK `8.0.413` ([`global.json`](../global.json))
 - One IL disassembler available on `PATH`
 - `dotnet-ildasm` or `dotnet ildasm` preferred
 - `ilspycmd` supported as fallback
@@ -88,7 +88,7 @@ flowchart TD
 ```
 
 Design intent:
-- `Program.cs` stays minimal and owns only application-root service registration.
+- [`Program.cs`](../Program.cs) stays minimal and owns only application-root service registration.
 - `ProgramRunner` is the orchestration boundary for one console execution.
 - `DiffExecutionContext` carries immutable run-specific paths and mode decisions.
 - Core pipeline services use constructor injection and interfaces instead of static mutable state or ad hoc object creation.
@@ -182,18 +182,18 @@ Why this matters:
 
 | File | Responsibility | Notes |
 | --- | --- | --- |
-| `Program.cs` | Application entry point | Must remain thin |
-| `ProgramRunner.cs` | Argument validation, config loading, run DI creation, orchestration | Main control plane |
-| `Services/DiffExecutionContext.cs` | Immutable run paths and network-mode decisions | No mutable state |
-| `Services/FolderDiffService.cs` | File discovery, scheduling, classification orchestration | Owns progress and added/removed routing |
-| `Services/IFileSystemService.cs` + `Services/FileSystemService.cs` | Discovery/output filesystem abstraction | Enables folder-level unit tests |
-| `Services/FileDiffService.cs` | Per-file decision tree | MD5 -> IL -> text -> fallback |
-| `Services/IFileComparisonService.cs` + `Services/FileComparisonService.cs` | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
-| `Services/ILOutputService.cs` | IL compare flow, line filtering, optional IL dump writing | Enforces same disassembler identity |
-| `Services/DotNetDisassembleService.cs` | Tool probing, reverse engineering, cache prefetch, blacklist handling | Central tool boundary |
-| `Services/Caching/ILCache.cs` | Memory and optional disk cache for IL artifacts | Key stability matters |
-| `Services/ReportGenerateService.cs` | Markdown report generation | Reads `FileDiffResultLists` only |
-| `Models/FileDiffResultLists.cs` | Thread-safe run results and metadata | Shared aggregation object |
+| [`Program.cs`](../Program.cs) | Application entry point | Must remain thin |
+| [`ProgramRunner.cs`](../ProgramRunner.cs) | Argument validation, config loading, run DI creation, orchestration | Main control plane |
+| [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | Immutable run paths and network-mode decisions | No mutable state |
+| [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | File discovery, scheduling, classification orchestration | Owns progress and added/removed routing |
+| [`Services/IFileSystemService.cs`](../Services/IFileSystemService.cs) + [`Services/FileSystemService.cs`](../Services/FileSystemService.cs) | Discovery/output filesystem abstraction | Enables folder-level unit tests |
+| [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | Per-file decision tree | MD5 -> IL -> text -> fallback |
+| [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
+| [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL compare flow, line filtering, optional IL dump writing | Enforces same disassembler identity |
+| [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | Tool probing, reverse engineering, cache prefetch, blacklist handling | Central tool boundary |
+| [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | Memory and optional disk cache for IL artifacts | Key stability matters |
+| [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads `FileDiffResultLists` only |
+| [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object |
 
 ## Comparison Pipeline
 
@@ -363,12 +363,12 @@ DocFX is used as the API-reference generator and site builder.
 
 Inputs:
 - XML documentation comments emitted during `dotnet build`
-- `README.md`, this guide, and `doc/TESTING_GUIDE.md`
-- `docfx.json`, `index.md`, `toc.yml`, and `api/index.md`
+- [`README.md`](../README.md), this guide, and [`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md)
+- [`docfx.json`](../docfx.json), [`index.md`](../index.md), [`toc.yml`](../toc.yml), and [`api/index.md`](../api/index.md)
 
 Outputs:
 - `_site/`: generated documentation site
-- `api/*.yml` and `api/toc.yml`: generated API metadata consumed by the site build
+- `api/*.yml` and [`api/toc.yml`](../api/toc.yml): generated API metadata consumed by the site build
 
 Expected refresh sequence:
 1. Build the solution so the latest XML documentation file exists.
@@ -388,7 +388,7 @@ Workflow file:
 
 Current CI behavior:
 - Runs on `push` and `pull_request` targeting `main`, plus `workflow_dispatch`
-- Uses `global.json` through `actions/setup-dotnet`
+- Uses [`global.json`](../global.json) through `actions/setup-dotnet`
 - Restores and builds `FolderDiffIL4DotNet.sln`
 - Installs DocFX, generates the documentation site, and uploads it as `DocumentationSite`
 - Runs tests and coverage only when the test project exists
@@ -397,13 +397,13 @@ Current CI behavior:
 - Uploads TRX and coverage files as `TestAndCoverage`
 
 Versioning:
-- `version.json` uses Nerdbank.GitVersioning
+- [`version.json`](../version.json) uses Nerdbank.GitVersioning
 - Informational version is embedded and later included in the generated report
 
 ## Extension Points
 
 Typical safe extension points:
-- Add new text extensions in `config.json`
+- Add new text extensions in [`config.json`](../config.json)
 - Introduce new report metadata in `ReportGenerateService`
 - Add logging around orchestration boundaries
 - Add new tests by substituting `IFileSystemService`, `IFileComparisonService`, `IFileDiffService`, `IILOutputService`, or `IDotNetDisassembleService`
@@ -418,16 +418,16 @@ Higher-risk changes:
 ## Change Checklist
 
 Before merging behavior changes, check:
-1. Does `Program.cs` remain thin, with orchestration still in `ProgramRunner` or lower services?
+1. Does [`Program.cs`](../Program.cs) remain thin, with orchestration still in `ProgramRunner` or lower services?
 2. Does each run still get a fresh `DiffExecutionContext` and `FileDiffResultLists`?
 3. Are new collaborators injected rather than created ad hoc inside core services?
 4. Does `FolderDiffService` still call `ResetAll()` before enumeration and classification?
 5. Is the reporting specification still consistent with the contents of `FileDiffResultLists`?
 6. If IL behavior changed, are same-tool enforcement and ignore-line semantics still explicit?
 7. If performance behavior changed, have local and network-share modes both been considered?
-8. Did `README.md`, this guide, and `doc/TESTING_GUIDE.md` stay in sync with user-visible behavior?
+8. Did [`README.md`](../README.md), this guide, and [`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md) stay in sync with user-visible behavior?
 9. Were tests added or updated for the changed execution path?
-10. If CI assumptions changed, was `.github/workflows/dotnet.yml` updated too?
+10. If CI assumptions changed, was [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) updated too?
 
 ## Debugging Tips
 
@@ -465,7 +465,7 @@ Before merging behavior changes, check:
 ## ローカル開発
 
 前提:
-- .NET SDK `8.0.413`（`global.json`）
+- .NET SDK `8.0.413`（[`global.json`](../global.json)）
 - `PATH` 上で利用可能な IL 逆アセンブラ
 - 優先は `dotnet-ildasm` または `dotnet ildasm`
 - フォールバックとして `ilspycmd` をサポート
@@ -529,7 +529,7 @@ flowchart TD
 ```
 
 設計意図:
-- `Program.cs` は最小限に保ち、アプリ全体の起点だけを担います。
+- [`Program.cs`](../Program.cs) は最小限に保ち、アプリ全体の起点だけを担います。
 - `ProgramRunner` は 1 回のコンソール実行を調停する境界です。
 - `DiffExecutionContext` は実行固有のパスとモード判定を不変オブジェクトとして保持します。
 - コアサービスは、静的可変状態や場当たり的な `new` ではなく、コンストラクタ注入とインターフェースで接続されます。
@@ -622,18 +622,18 @@ sequenceDiagram
 
 | ファイル | 主な責務 | 補足 |
 | --- | --- | --- |
-| `Program.cs` | アプリ起動点 | 薄いまま維持する |
-| `ProgramRunner.cs` | 引数検証、設定読込、実行 DI 作成、全体調停 | 制御プレーンの中心 |
-| `Services/DiffExecutionContext.cs` | 実行固有パスとネットワークモードの保持 | 可変状態を持たない |
-| `Services/FolderDiffService.cs` | ファイル列挙、スケジューリング、分類の調停 | 進捗と Added/Removed もここ |
-| `Services/IFileSystemService.cs` + `Services/FileSystemService.cs` | 列挙/出力系ファイルシステム抽象 | フォルダ単位ユニットテスト向け |
-| `Services/FileDiffService.cs` | ファイル単位の判定木 | `MD5 -> IL -> text -> fallback` |
-| `Services/IFileComparisonService.cs` + `Services/FileComparisonService.cs` | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
-| `Services/ILOutputService.cs` | IL 比較、行除外、任意 IL 出力 | 同一逆アセンブラ制約を保証 |
-| `Services/DotNetDisassembleService.cs` | ツール探索、逆アセンブル、キャッシュ先読み、ブラックリスト | 外部ツール境界 |
-| `Services/Caching/ILCache.cs` | IL 結果のメモリ/ディスクキャッシュ | キー安定性が重要 |
-| `Services/ReportGenerateService.cs` | Markdown レポート生成 | `FileDiffResultLists` を読むだけ |
-| `Models/FileDiffResultLists.cs` | スレッドセーフな結果集約 | 実行単位の共有状態 |
+| [`Program.cs`](../Program.cs) | アプリ起動点 | 薄いまま維持する |
+| [`ProgramRunner.cs`](../ProgramRunner.cs) | 引数検証、設定読込、実行 DI 作成、全体調停 | 制御プレーンの中心 |
+| [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | 実行固有パスとネットワークモードの保持 | 可変状態を持たない |
+| [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | ファイル列挙、スケジューリング、分類の調停 | 進捗と Added/Removed もここ |
+| [`Services/IFileSystemService.cs`](../Services/IFileSystemService.cs) + [`Services/FileSystemService.cs`](../Services/FileSystemService.cs) | 列挙/出力系ファイルシステム抽象 | フォルダ単位ユニットテスト向け |
+| [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | ファイル単位の判定木 | `MD5 -> IL -> text -> fallback` |
+| [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
+| [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL 比較、行除外、任意 IL 出力 | 同一逆アセンブラ制約を保証 |
+| [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | ツール探索、逆アセンブル、キャッシュ先読み、ブラックリスト | 外部ツール境界 |
+| [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | IL 結果のメモリ/ディスクキャッシュ | キー安定性が重要 |
+| [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | `FileDiffResultLists` を読むだけ |
+| [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態 |
 
 ## 比較パイプライン
 
@@ -803,12 +803,12 @@ API リファレンス生成とサイト構築には DocFX を使います。
 
 入力:
 - `dotnet build` で出力される XML ドキュメントコメント
-- `README.md`、このガイド、`doc/TESTING_GUIDE.md`
-- `docfx.json`、`index.md`、`toc.yml`、`api/index.md`
+- [`README.md`](../README.md)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md)
+- [`docfx.json`](../docfx.json)、[`index.md`](../index.md)、[`toc.yml`](../toc.yml)、[`api/index.md`](../api/index.md)
 
 出力:
 - `_site/`: 生成済みドキュメントサイト
-- `api/*.yml` と `api/toc.yml`: サイト構築に使う API メタデータ
+- `api/*.yml` と [`api/toc.yml`](../api/toc.yml): サイト構築に使う API メタデータ
 
 更新手順の基本:
 1. まずソリューションをビルドして最新の XML ドキュメントを出力します。
@@ -828,7 +828,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 
 現在の CI 挙動:
 - `main` 向け `push` / `pull_request` と `workflow_dispatch` で実行
-- `actions/setup-dotnet` で `global.json` を利用
+- `actions/setup-dotnet` で [`global.json`](../global.json) を利用
 - `FolderDiffIL4DotNet.sln` を restore / build
 - DocFX を導入し、ドキュメントサイトを生成して `DocumentationSite` artifact としてアップロード
 - テストプロジェクトが存在するときだけテストとカバレッジを実行
@@ -837,13 +837,13 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - TRX とカバレッジ関連を `TestAndCoverage` としてアップロード
 
 バージョニング:
-- `version.json` で Nerdbank.GitVersioning を利用
+- [`version.json`](../version.json) で Nerdbank.GitVersioning を利用
 - Informational Version が埋め込まれ、生成レポートにも出力されます
 
 ## 拡張ポイント
 
 比較的安全に触りやすい場所:
-- `config.json` のテキスト拡張子追加
+- [`config.json`](../config.json) のテキスト拡張子追加
 - `ReportGenerateService` へのレポートメタデータ追加
 - オーケストレーション境界でのログ追加
 - `IFileSystemService`、`IFileComparisonService`、`IFileDiffService`、`IILOutputService`、`IDotNetDisassembleService` を差し替えるテスト追加
@@ -858,16 +858,16 @@ API リファレンス生成とサイト構築には DocFX を使います。
 ## 変更時チェックリスト
 
 振る舞い変更をマージする前に確認:
-1. `Program.cs` は薄いままで、調停ロジックが `ProgramRunner` か下位サービスに留まっているか。
+1. [`Program.cs`](../Program.cs) は薄いままで、調停ロジックが `ProgramRunner` か下位サービスに留まっているか。
 2. 実行ごとに新しい `DiffExecutionContext` と `FileDiffResultLists` が作られているか。
 3. 新しい協調オブジェクトは、場当たり的に生成せず注入されているか。
 4. `FolderDiffService` が列挙や分類の前に `ResetAll()` を呼んでいるか。
 5. レポート仕様が `FileDiffResultLists` の内容と乖離していないか。
 6. IL 挙動を変えた場合、同一ツール強制と行除外仕様が明示されたままか。
 7. 性能挙動を変えた場合、ローカルモードとネットワーク共有モードの両方を検討したか。
-8. `README.md`、このガイド、`doc/TESTING_GUIDE.md` がユーザー向け挙動と同期しているか。
+8. [`README.md`](../README.md)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md) がユーザー向け挙動と同期しているか。
 9. 変更した実行経路に対するテストを追加・更新したか。
-10. CI 前提が変わったなら `.github/workflows/dotnet.yml` も更新したか。
+10. CI 前提が変わったなら [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) も更新したか。
 
 ## デバッグのコツ
 

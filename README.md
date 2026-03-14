@@ -10,10 +10,10 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 
 | Need | Document |
 | --- | --- |
-| Product overview, setup, usage, and configuration | `README.md` |
+| Product overview, setup, usage, and configuration | [README.md](README.md) |
 | Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
 | Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
-| Generated API reference from XML documentation comments | [api/index.md](api/index.md) via `docfx.json` |
+| Generated API reference from XML documentation comments | [api/index.md](api/index.md) via [docfx.json](docfx.json) |
 
 ## Requirements
 
@@ -58,7 +58,7 @@ dotnet tool install --global ilspycmd
 
 ## Usage
 
-1. Place `config.json` next to the executable.
+1. Place [`config.json`](config.json) next to the executable.
 2. Run with arguments:
 - old folder absolute path
 - new folder absolute path
@@ -76,8 +76,8 @@ Main output:
 
 ## Runtime Composition
 
-- `Program.cs` is intentionally thin and only resolves `ProgramRunner`.
-- `ProgramRunner` validates arguments, loads `config.json`, builds a per-run DI container, and executes the diff/report pipeline.
+- [`Program.cs`](Program.cs) is intentionally thin and only resolves `ProgramRunner`.
+- `ProgramRunner` validates arguments, loads [`config.json`](config.json), builds a per-run DI container, and executes the diff/report pipeline.
 - `ProgramRunner` also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
 - `DiffExecutionContext` carries run-specific paths and network-mode decisions.
 - `FolderDiffService` uses `IFileSystemService` for discovery/output I/O and `FileDiffService` uses `IFileComparisonService` for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
@@ -113,9 +113,9 @@ Important details:
 - Text files may use different internal strategies depending on size and runtime mode. If chunk-parallel comparison for a large local file throws, the run logs a warning and retries with sequential text comparison.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
-## Configuration (`config.json`)
+## Configuration ([`config.json`](config.json))
 
-Place `config.json` next to the executable. Example:
+Place [`config.json`](config.json) next to the executable. Example:
 
 ```json
 {
@@ -290,10 +290,10 @@ CI also generates the same site and uploads it as the `DocumentationSite` artifa
 
 | 見たい内容 | ドキュメント |
 | --- | --- |
-| 製品概要、導入、使い方、設定 | `README.md` |
+| 製品概要、導入、使い方、設定 | [README.md](README.md) |
 | 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) |
 | テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md) |
-| XML ドキュメントコメントから生成する API リファレンス | [api/index.md](api/index.md) と `docfx.json` |
+| XML ドキュメントコメントから生成する API リファレンス | [api/index.md](api/index.md) と [docfx.json](docfx.json) |
 
 ## 必要環境
 
@@ -342,7 +342,7 @@ dotnet tool install --global ilspycmd
 
 ## 使い方
 
-1. 実行ファイルと同じ場所に `config.json` を配置します。
+1. 実行ファイルと同じ場所に [`config.json`](config.json) を配置します。
 2. 次の引数で実行します。
 - 旧フォルダ（比較元）の絶対パス
 - 新フォルダ（比較先）の絶対パス
@@ -360,8 +360,8 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 
 ## 実行時構成
 
-- `Program.cs` は薄いエントリーポイントで、`ProgramRunner` の解決だけを行います。
-- `ProgramRunner` が引数検証、`config.json` 読込、実行単位 DI コンテナ生成、差分/レポート処理の実行を担います。
+- [`Program.cs`](Program.cs) は薄いエントリーポイントで、`ProgramRunner` の解決だけを行います。
+- `ProgramRunner` が引数検証、[`config.json`](config.json) 読込、実行単位 DI コンテナ生成、差分/レポート処理の実行を担います。
 - `ProgramRunner` は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
 - `DiffExecutionContext` が実行ごとのパスやネットワークモード判定を保持します。
 - `FolderDiffService` は列挙/出力系 I/O を `IFileSystemService`、`FileDiffService` はハッシュ/テキスト/チャンク読み出し系 I/O を `IFileComparisonService` に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
@@ -397,7 +397,7 @@ flowchart TD
 - テキスト比較の内部実装はファイルサイズや実行モードで変わることがあります。大きいローカルファイルの並列比較で例外が出た場合は warning を記録し、逐次比較へフォールバックします。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
-## 設定（`config.json`）
+## 設定（[`config.json`](config.json)）
 
 実行ファイルと同じディレクトリに配置します。例:
 
