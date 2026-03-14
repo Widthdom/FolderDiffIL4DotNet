@@ -178,7 +178,7 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
-        public async Task Main_WhenMd5MismatchExists_WritesWarningAtEndAndKeepsReportWarning()
+        public async Task Main_WhenMd5MismatchExists_WritesWarningAtEndAndAddsReportWarningsSection()
         {
             TimestampCache.Clear();
             var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-tests-" + Guid.NewGuid().ToString("N"));
@@ -225,7 +225,11 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Contains(Constants.WARNING_MD5_MISMATCH, consoleText);
 
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
-                Assert.Contains(Constants.WARNING_MD5_MISMATCH, reportText);
+                Assert.Contains("## Warnings", reportText);
+                Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
+                Assert.True(
+                    reportText.IndexOf("## Warnings", StringComparison.Ordinal) <
+                    reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal));
             }
             finally
             {

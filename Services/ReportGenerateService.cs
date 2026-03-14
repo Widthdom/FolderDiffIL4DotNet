@@ -251,8 +251,8 @@ namespace FolderDiffIL4DotNet.Services
                     WriteAddedFilesSection(streamWriter, config);
                     WriteRemovedFilesSection(streamWriter, config);
                     WriteModifiedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
-                    WriteSummarySection(streamWriter, config, hasMd5Mismatch);
-                    WriteWarningsSection(streamWriter, hasTimestampRegressionWarning);
+                    WriteSummarySection(streamWriter, config);
+                    WriteWarningsSection(streamWriter, hasMd5Mismatch, hasTimestampRegressionWarning);
                 }
                 reportGenerated = true;
             }
@@ -512,8 +512,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="streamWriter">出力先ライター。</param>
         /// <param name="config">設定オブジェクト。</param>
-        /// <param name="hasMd5Mismatch">MD5Mismatch が存在する場合 true。</param>
-        private void WriteSummarySection(StreamWriter streamWriter, ConfigSettings config, bool hasMd5Mismatch)
+        private void WriteSummarySection(StreamWriter streamWriter, ConfigSettings config)
         {
             streamWriter.WriteLine(REPORT_SECTION_SUMMARY);
             if (config.ShouldIncludeIgnoredFiles)
@@ -526,28 +525,34 @@ namespace FolderDiffIL4DotNet.Services
             streamWriter.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {_fileDiffResultLists.ModifiedFilesRelativePath.Count}");
             streamWriter.WriteLine($"- {REPORT_LABEL_COMPARED,-10}: {_fileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
             streamWriter.WriteLine();
-            if (hasMd5Mismatch)
-            {
-                streamWriter.WriteLine($"**WARNING:** {Constants.WARNING_MD5_MISMATCH}");
-            }
         }
 
         /// <summary>
         /// 追加の警告セクションを書き込みます。
         /// </summary>
-        private void WriteWarningsSection(StreamWriter streamWriter, bool hasTimestampRegressionWarning)
+        private void WriteWarningsSection(StreamWriter streamWriter, bool hasMd5Mismatch, bool hasTimestampRegressionWarning)
         {
-            if (!hasTimestampRegressionWarning)
+            if (!hasMd5Mismatch && !hasTimestampRegressionWarning)
             {
                 return;
             }
 
             streamWriter.WriteLine(REPORT_SECTION_WARNINGS);
-            streamWriter.WriteLine($"**WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
+            if (hasMd5Mismatch)
+            {
+                streamWriter.WriteLine($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}");
+            }
+
+            if (!hasTimestampRegressionWarning)
+            {
+                return;
+            }
+
+            streamWriter.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
             foreach (var warning in _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                 .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
             {
-                streamWriter.WriteLine($"- {warning.FileRelativePath} (updated_old: {warning.OldTimestamp}, updated_new: {warning.NewTimestamp})");
+                streamWriter.WriteLine($"  - {warning.FileRelativePath} (updated_old: {warning.OldTimestamp}, updated_new: {warning.NewTimestamp})");
             }
         }
 

@@ -117,11 +117,10 @@ Example `diff_report.md` (trimmed):
 - Modified  : 2
 - Compared  : 5 (Old) vs 5 (New)
 
-**WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
-
 ## Warnings
-**WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
-- payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
+- **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
+- **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
+  - payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
 ```
 
 ## Runtime Composition
@@ -211,7 +210,7 @@ Notes:
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in `TextFileExtensions`.
 - Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
-- If any file ends as `MD5Mismatch`, the report summary keeps the warning and the same message is printed once at run completion.
+- If any file ends as `MD5Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion.
 
 ## Generated Artifacts
 
@@ -370,11 +369,10 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 - Modified  : 2
 - Compared  : 5 (Old) vs 5 (New)
 
-**WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
-
 ## Warnings
-**WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
-- payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
+- **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
+- **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
+  - payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
 ```
 
 ## 実行時構成
@@ -464,7 +462,7 @@ flowchart TD
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は `TextFileExtensions` に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。
-- `MD5Mismatch` が1件でもある場合、レポート Summary の警告を維持したまま、同じ文言を実行終了時のコンソールにも1回だけ出力します。
+- `MD5Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。
 
 ## 生成物
 

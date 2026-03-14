@@ -269,7 +269,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReport_WritesSummaryWarning_WhenMd5MismatchExists()
+        public void GenerateDiffReport_WritesMd5MismatchWarningInWarningsSection_WhenMd5MismatchExists()
         {
             var oldDir = Path.Combine(_rootDir, "old-md5-warning");
             var newDir = Path.Combine(_rootDir, "new-md5-warning");
@@ -300,7 +300,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains(Constants.WARNING_MD5_MISMATCH, reportText);
+            Assert.Contains("## Warnings", reportText);
+            Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
+            Assert.True(
+                reportText.IndexOf("## Summary", StringComparison.Ordinal) <
+                reportText.IndexOf("## Warnings", StringComparison.Ordinal));
+            Assert.True(
+                reportText.IndexOf("## Warnings", StringComparison.Ordinal) <
+                reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal));
         }
 
         [Fact]
@@ -339,7 +346,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReport_WritesTimestampRegressionWarningSectionAtEnd()
+        public void GenerateDiffReport_WritesWarningsInSeverityOrder_WhenMd5MismatchAndTimestampRegressionExist()
         {
             var oldDir = Path.Combine(_rootDir, "old-timestamp-warning");
             var newDir = Path.Combine(_rootDir, "new-timestamp-warning");
@@ -352,6 +359,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Path.Combine("nested", "payload.bin"),
                 "2026-03-14 10:00:00.000 +09:00",
                 "2026-03-14 09:00:00.000 +09:00");
+            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
 
             var config = CreateConfig();
             _service.GenerateDiffReport(
@@ -366,11 +374,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
             Assert.Contains("## Warnings", reportText);
-            Assert.Contains("older last-modified timestamps", reportText);
-            Assert.Contains("- nested", reportText);
+            Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
+            Assert.Contains("- **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
+            Assert.Contains("  - nested", reportText);
             Assert.Contains("updated_old: 2026-03-14 10:00:00.000 +09:00", reportText);
             Assert.Contains("updated_new: 2026-03-14 09:00:00.000 +09:00", reportText);
             Assert.EndsWith("updated_new: 2026-03-14 09:00:00.000 +09:00)", reportText.TrimEnd());
+            Assert.True(
+                reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal) <
+                reportText.IndexOf("files in `new` have older last-modified timestamps", StringComparison.Ordinal));
         }
 
         private static ConfigSettings CreateConfig() => new()

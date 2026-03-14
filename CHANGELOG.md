@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Moved the report-level `MD5Mismatch` warning from `Summary` into the final `Warnings` section, ordered it before timestamp-regression warnings, and refreshed the related docs and regression tests.
 - Introduced DocFX-based API documentation generation, added a documentation-site build path, and wired CI to publish the generated `DocumentationSite` artifact.
 - Added `IFileSystemService` and `IFileComparisonService` as low-level seams for folder discovery/output I/O and per-file comparison I/O, making permission and disk-failure paths unit-testable without changing production behavior.
 - Split folder/file diff coverage more clearly into lightweight unit tests and temp-directory-backed integration tests, and expanded automated coverage for hash failures, IL-output failures, and large-text comparison paths.
@@ -215,6 +216,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
+- レポート上の `MD5Mismatch` 警告を `Summary` から末尾の `Warnings` セクションへ移し、更新日時逆転警告より先に出すように変更しました。あわせて関連ドキュメントと回帰テストを更新しました。
 - DocFX ベースの API ドキュメント自動生成を導入し、ドキュメントサイトの生成経路と `DocumentationSite` artifact 公開を CI に追加しました。
 - `IFileSystemService` と `IFileComparisonService` を追加し、フォルダ列挙/出力系 I/O とファイル単位比較 I/O の差し替え口を明確にしました。これにより、本番挙動を変えずに権限エラーやディスク系失敗をユニットテストできるようにしました。
 - `FolderDiffService` / `FileDiffService` まわりのテストを、軽量ユニットテストと temp ディレクトリ前提の統合テストにより明確に分離し、ハッシュ失敗、IL 出力失敗、大きいテキスト比較経路の自動テストを拡充しました。
