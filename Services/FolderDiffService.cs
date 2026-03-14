@@ -376,6 +376,7 @@ namespace FolderDiffIL4DotNet.Services
                 if (remainingNewFilesAbsolutePathHashSet.Contains(newFileAbsolutePath))
                 {
                     remainingNewFilesAbsolutePathHashSet.Remove(newFileAbsolutePath);
+                    RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
                     if (await _fileDiffService.FilesAreEqualAsync(fileRelativePath))
                     {
                         // - Unchanged -
@@ -434,6 +435,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 if (hasMatchingFileInNewFilesAbsolutePathHashSet)
                 {
+                    RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
                     // 比較本体はロック外で実行（I/O / 計算を含むため）
                     bool areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel);
                     if (areFilesEqual)
@@ -608,6 +610,29 @@ namespace FolderDiffIL4DotNet.Services
                 processedFileCount++;
                 _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
             }
+        }
+
+        /// <summary>
+        /// old/new の両方に存在するファイルについて、new 側の更新日時が old 側より古い場合に警告情報を記録します。
+        /// </summary>
+        private void RecordNewFileTimestampOlderThanOldWarningIfNeeded(string fileRelativePath, string oldFileAbsolutePath, string newFileAbsolutePath)
+        {
+            if (!_config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp)
+            {
+                return;
+            }
+
+            var oldLastWriteTimeUtc = File.GetLastWriteTimeUtc(oldFileAbsolutePath);
+            var newLastWriteTimeUtc = File.GetLastWriteTimeUtc(newFileAbsolutePath);
+            if (newLastWriteTimeUtc >= oldLastWriteTimeUtc)
+            {
+                return;
+            }
+
+            _fileDiffResultLists.RecordNewFileTimestampOlderThanOldWarning(
+                fileRelativePath,
+                Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath),
+                Caching.TimestampCache.GetOrAdd(newFileAbsolutePath));
         }
     }
 }

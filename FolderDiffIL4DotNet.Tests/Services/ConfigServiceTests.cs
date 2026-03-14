@@ -40,7 +40,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                   "IgnoredExtensions": [".tmp"],
                   "TextFileExtensions": [".cs", ".json"],
                   "MaxLogGenerations": 42,
-                  "ShouldIncludeUnchangedFiles": false
+                  "ShouldIncludeUnchangedFiles": false,
+                  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": false
                 }
                 """;
 
@@ -52,6 +53,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.NotNull(config);
                 Assert.Equal(42, config.MaxLogGenerations);
                 Assert.False(config.ShouldIncludeUnchangedFiles);
+                Assert.False(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
                 Assert.Equal(new[] { ".tmp" }, config.IgnoredExtensions);
                 Assert.Equal(new[] { ".cs", ".json" }, config.TextFileExtensions);
             });

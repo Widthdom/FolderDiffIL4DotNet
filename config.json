@@ -81,6 +81,7 @@
   "ShouldIgnoreILLinesContainingConfiguredStrings": false,
   "ILIgnoreLineContainingStrings": [],
   "ShouldOutputFileTimestamps": true,
+  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": true,
   "MaxParallelism": 0,
   "TextDiffParallelThresholdKilobytes": 512,
   "TextDiffChunkSizeKilobytes": 64,

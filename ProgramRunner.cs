@@ -40,6 +40,7 @@ namespace FolderDiffIL4DotNet
         private const string NO_PAUSE = "--no-pause";
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
+        private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in 'new' have older last-modified timestamps than the corresponding files in 'old'. See diff_report.md for details.";
         private const int EXIT_CODE_SUCCESS = 0;
         private const int EXIT_CODE_ERROR = 1;
         private const int IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT = 2000;
@@ -62,6 +63,7 @@ namespace FolderDiffIL4DotNet
         public async Task<int> RunAsync(string[] args)
         {
             var exitCode = EXIT_CODE_SUCCESS;
+            bool hasTimestampRegressionWarnings = false;
             try
             {
                 Console.WriteLine(INITIALIZING_LOGGER);
@@ -94,6 +96,7 @@ namespace FolderDiffIL4DotNet
                 using var scope = runProvider.CreateScope();
                 var scopedProvider = scope.ServiceProvider;
                 var progressReporter = scopedProvider.GetRequiredService<ProgressReportService>();
+                var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
 
                 string elapsedTimeString;
                 try
@@ -118,6 +121,8 @@ namespace FolderDiffIL4DotNet
                     computerName,
                     config);
 
+                hasTimestampRegressionWarnings = resultLists.HasAnyNewFileTimestampOlderThanOldWarning;
+
                 _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
             }
             catch (Exception ex)
@@ -128,6 +133,8 @@ namespace FolderDiffIL4DotNet
             }
             finally
             {
+                OutputTimestampRegressionWarnings(hasTimestampRegressionWarnings);
+
                 if ((args?.Any(arg => string.Equals(arg, NO_PAUSE, StringComparison.OrdinalIgnoreCase)) ?? false)
                     || Console.IsInputRedirected
                     || Console.IsOutputRedirected
@@ -150,6 +157,16 @@ namespace FolderDiffIL4DotNet
             }
 
             return exitCode;
+        }
+
+        private void OutputTimestampRegressionWarnings(bool hasTimestampRegressionWarnings)
+        {
+            if (!hasTimestampRegressionWarnings)
+            {
+                return;
+            }
+
+            _logger.LogMessage(AppLogLevel.Warning, WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
         }
 
         private RunArguments ValidateAndBuildRunArguments(string[] args)

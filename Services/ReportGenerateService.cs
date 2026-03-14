@@ -369,6 +369,21 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_WARNING_LINE = "**WARNING:** {0}";
 
         /// <summary>
+        /// new 側の更新日時逆転警告文言
+        /// </summary>
+        private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.";
+
+        /// <summary>
+        /// 警告セクション
+        /// </summary>
+        private const string REPORT_SECTION_WARNINGS = REPORT_SECTION_PREFIX + "Warnings";
+
+        /// <summary>
+        /// 更新日時逆転警告の一覧行
+        /// </summary>
+        private const string REPORT_WARNING_TIMESTAMP_REGRESSION_ITEM = "- {0} (updated_old: {1}, updated_new: {2})";
+
+        /// <summary>
         /// レポート出力失敗
         /// </summary>
         private const string ERROR_FAILED_TO_OUTPUT_REPORT = "Failed to output report to '{0}'";
@@ -402,8 +417,10 @@ namespace FolderDiffIL4DotNet.Services
             bool hasMd5Mismatch = _fileDiffResultLists.HasAnyMd5Mismatch;
             if (hasMd5Mismatch)
             {
-                _logger.LogMessage(AppLogLevel.Warning, WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true);
+                _logger.LogMessage(AppLogLevel.Warning, WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
             }
+
+            bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT);
             var reportGenerated = false;
             try
@@ -421,6 +438,7 @@ namespace FolderDiffIL4DotNet.Services
                     WriteRemovedFilesSection(streamWriter, config);
                     WriteModifiedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
                     WriteSummarySection(streamWriter, config, hasMd5Mismatch);
+                    WriteWarningsSection(streamWriter, hasTimestampRegressionWarning);
                 }
                 reportGenerated = true;
             }
@@ -670,6 +688,25 @@ namespace FolderDiffIL4DotNet.Services
             if (hasMd5Mismatch)
             {
                 streamWriter.WriteLine(string.Format(REPORT_WARNING_LINE, WARNING_MD5_MISMATCH));
+            }
+        }
+
+        /// <summary>
+        /// 追加の警告セクションを書き込みます。
+        /// </summary>
+        private void WriteWarningsSection(StreamWriter streamWriter, bool hasTimestampRegressionWarning)
+        {
+            if (!hasTimestampRegressionWarning)
+            {
+                return;
+            }
+
+            streamWriter.WriteLine(REPORT_SECTION_WARNINGS);
+            streamWriter.WriteLine(string.Format(REPORT_WARNING_LINE, WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD));
+            foreach (var warning in _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
+                .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
+            {
+                streamWriter.WriteLine(string.Format(REPORT_WARNING_TIMESTAMP_REGRESSION_ITEM, warning.FileRelativePath, warning.OldTimestamp, warning.NewTimestamp));
             }
         }
 

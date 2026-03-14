@@ -20,11 +20,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-folderdiff-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
+            TimestampCache.Clear();
             _resultLists.ResetAll();
         }
 
         public void Dispose()
         {
+            TimestampCache.Clear();
             _resultLists.ResetAll();
             try
             {
@@ -159,6 +161,62 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 _resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
         }
 
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenNewFileTimestampIsOlder_RecordsWarning()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-timestamp-warning");
+            var newDir = Path.Combine(_rootDir, "new-timestamp-warning");
+            var reportDir = Path.Combine(_rootDir, "report-timestamp-warning");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            const string fileRelativePath = "timestamp.txt";
+            WriteFile(oldDir, fileRelativePath, "same");
+            WriteFile(newDir, fileRelativePath, "same");
+            var oldFile = Path.Combine(oldDir, fileRelativePath);
+            var newFile = Path.Combine(newDir, fileRelativePath);
+            File.SetLastWriteTimeUtc(oldFile, new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
+            File.SetLastWriteTimeUtc(newFile, new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
+
+            var config = CreateConfig(maxParallelism: 1);
+            using var progressReporter = new ProgressReportService();
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
+
+            await service.ExecuteFolderDiffAsync();
+
+            var warning = Assert.Single(_resultLists.NewFileTimestampOlderThanOldWarnings.Values);
+            Assert.Equal(fileRelativePath, warning.FileRelativePath);
+            Assert.Equal(TimestampCache.GetOrAdd(oldFile), warning.OldTimestamp);
+            Assert.Equal(TimestampCache.GetOrAdd(newFile), warning.NewTimestamp);
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenTimestampWarningDisabled_DoesNotRecordWarning()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-timestamp-warning-off");
+            var newDir = Path.Combine(_rootDir, "new-timestamp-warning-off");
+            var reportDir = Path.Combine(_rootDir, "report-timestamp-warning-off");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            const string fileRelativePath = "timestamp.txt";
+            WriteFile(oldDir, fileRelativePath, "same");
+            WriteFile(newDir, fileRelativePath, "same");
+            File.SetLastWriteTimeUtc(Path.Combine(oldDir, fileRelativePath), new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
+            File.SetLastWriteTimeUtc(Path.Combine(newDir, fileRelativePath), new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
+
+            var config = CreateConfig(maxParallelism: 1);
+            config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
+            using var progressReporter = new ProgressReportService();
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Empty(_resultLists.NewFileTimestampOlderThanOldWarnings);
+        }
+
         private static ConfigSettings CreateConfig(int maxParallelism) => new()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
@@ -169,6 +227,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             ShouldIgnoreILLinesContainingConfiguredStrings = false,
             ILIgnoreLineContainingStrings = new List<string>(),
             ShouldOutputFileTimestamps = false,
+            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true,
             MaxParallelism = maxParallelism,
             OptimizeForNetworkShares = false,
             AutoDetectNetworkShares = false

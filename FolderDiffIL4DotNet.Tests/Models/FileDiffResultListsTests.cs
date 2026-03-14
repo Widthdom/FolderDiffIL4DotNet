@@ -187,6 +187,31 @@ namespace FolderDiffIL4DotNet.Tests.Models
 
         #endregion
 
+        #region TimestampRegressionWarnings
+
+        [Fact]
+        public void RecordNewFileTimestampOlderThanOldWarning_NewEntry_Stored()
+        {
+            _sut.RecordNewFileTimestampOlderThanOldWarning("nested/file.txt", "2026-03-14 10:00:00.000 +09:00", "2026-03-14 09:00:00.000 +09:00");
+
+            Assert.True(_sut.HasAnyNewFileTimestampOlderThanOldWarning);
+            Assert.True(_sut.NewFileTimestampOlderThanOldWarnings.ContainsKey("nested/file.txt"));
+            Assert.Equal("2026-03-14 10:00:00.000 +09:00", _sut.NewFileTimestampOlderThanOldWarnings["nested/file.txt"].OldTimestamp);
+            Assert.Equal("2026-03-14 09:00:00.000 +09:00", _sut.NewFileTimestampOlderThanOldWarnings["nested/file.txt"].NewTimestamp);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("   ")]
+        public void RecordNewFileTimestampOlderThanOldWarning_NullOrWhitespace_ThrowsArgumentException(string path)
+        {
+            Assert.Throws<ArgumentException>(() =>
+                _sut.RecordNewFileTimestampOlderThanOldWarning(path, "old", "new"));
+        }
+
+        #endregion
+
         #region CollectionState
 
         [Fact]
@@ -224,6 +249,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             _sut.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
             _sut.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0");
             _sut.RecordDisassemblerToolVersion("dotnet-ildasm", "1.0.0", fromCache: true);
+            _sut.RecordNewFileTimestampOlderThanOldWarning("stale.txt", "old", "new");
 
             _sut.ResetAll();
 
@@ -238,6 +264,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Empty(_sut.IgnoredFilesRelativePathToLocation);
             Assert.Empty(_sut.DisassemblerToolVersions);
             Assert.Empty(_sut.DisassemblerToolVersionsFromCache);
+            Assert.Empty(_sut.NewFileTimestampOlderThanOldWarnings);
         }
 
         [Fact]

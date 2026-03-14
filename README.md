@@ -226,6 +226,7 @@ Place `config.json` next to the executable. Example:
   "ShouldIgnoreILLinesContainingConfiguredStrings": false,
   "ILIgnoreLineContainingStrings": [],
   "ShouldOutputFileTimestamps": true,
+  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": true,
   "MaxParallelism": 0,
   "TextDiffParallelThresholdKilobytes": 512,
   "TextDiffChunkSizeKilobytes": 64,
@@ -250,6 +251,7 @@ Place `config.json` next to the executable. Example:
 | `ShouldIgnoreILLinesContainingConfiguredStrings` | Enables additional IL line-ignore filter by substring. |
 | `ILIgnoreLineContainingStrings` | String list used by IL substring-ignore filter. |
 | `ShouldOutputFileTimestamps` | Adds last-modified timestamps to report entries. |
+| `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | When `true` (default), warns if a file in `new` has an older last-modified timestamp than the matching file in `old`, prints the warning at the end of the run, and appends a final `Warnings` section to `diff_report.md`. |
 | `MaxParallelism` | Max compare parallelism. `0` or less = auto. |
 | `TextDiffParallelThresholdKilobytes` | Text diff size threshold (KiB) for chunk-parallel mode. |
 | `TextDiffChunkSizeKilobytes` | Chunk size (KiB) for parallel text diff. |
@@ -264,6 +266,7 @@ Place `config.json` next to the executable. Example:
 Notes:
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in `TextFileExtensions`.
+- Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
 
 ## Generated Artifacts
 
@@ -511,6 +514,7 @@ flowchart TD
   "ShouldIgnoreILLinesContainingConfiguredStrings": false,
   "ILIgnoreLineContainingStrings": [],
   "ShouldOutputFileTimestamps": true,
+  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": true,
   "MaxParallelism": 0,
   "TextDiffParallelThresholdKilobytes": 512,
   "TextDiffChunkSizeKilobytes": 64,
@@ -535,6 +539,7 @@ flowchart TD
 | `ShouldIgnoreILLinesContainingConfiguredStrings` | IL 比較時の追加行除外（部分一致）を有効化するか。 |
 | `ILIgnoreLineContainingStrings` | IL 行除外に使う文字列一覧。 |
 | `ShouldOutputFileTimestamps` | レポート各行に更新日時を併記するか。 |
+| `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp` | `true` のとき（既定値）、`new` 側の更新日時が対応する `old` 側より古いファイルを検出し、実行終了時のコンソールと `diff_report.md` 末尾の `Warnings` セクションへ一覧を出力します。 |
 | `MaxParallelism` | 比較の最大並列度。`0` 以下は自動。 |
 | `TextDiffParallelThresholdKilobytes` | 並列テキスト比較へ切替える閾値（KiB）。 |
 | `TextDiffChunkSizeKilobytes` | 並列テキスト比較のチャンクサイズ（KiB）。 |
@@ -549,6 +554,7 @@ flowchart TD
 補足:
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は `TextFileExtensions` に空文字（`""`）を含めてください。
+- 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。
 
 ## 生成物
 

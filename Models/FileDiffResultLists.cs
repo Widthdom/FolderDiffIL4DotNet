@@ -101,6 +101,16 @@ namespace FolderDiffIL4DotNet.Models
         /// キャッシュ経由で利用された逆アセンブラの名称とバージョン。
         /// </summary>
         public ConcurrentDictionary<string, byte> DisassemblerToolVersionsFromCache { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// new 側の更新日時が old 側より古いファイルの警告一覧。
+        /// </summary>
+        public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 1 件以上のファイルで new 側の更新日時が old 側より古いかどうか。
+        /// </summary>
+        public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
         #endregion
 
         /// <summary>
@@ -173,6 +183,7 @@ namespace FolderDiffIL4DotNet.Models
             IgnoredFilesRelativePathToLocation.Clear();
             DisassemblerToolVersions.Clear();
             DisassemblerToolVersionsFromCache.Clear();
+            NewFileTimestampOlderThanOldWarnings.Clear();
         }
 
         /// <summary>
@@ -233,6 +244,22 @@ namespace FolderDiffIL4DotNet.Models
             var label = string.IsNullOrWhiteSpace(version) ? toolName : $"{toolName} (version: {version})";
             var target = fromCache ? DisassemblerToolVersionsFromCache : DisassemblerToolVersions;
             target[label] = 0;
+        }
+
+        /// <summary>
+        /// new 側の更新日時が old 側より古いファイルの警告を記録します。
+        /// </summary>
+        /// <param name="fileRelativePath">ファイルの相対パス。</param>
+        /// <param name="oldTimestamp">old 側の更新日時。</param>
+        /// <param name="newTimestamp">new 側の更新日時。</param>
+        public void RecordNewFileTimestampOlderThanOldWarning(string fileRelativePath, string oldTimestamp, string newTimestamp)
+        {
+            if (string.IsNullOrWhiteSpace(fileRelativePath))
+            {
+                throw new ArgumentException(string.Format(ERROR_FILE_RELATIVE_PATH_EMPTY, nameof(fileRelativePath)));
+            }
+
+            NewFileTimestampOlderThanOldWarnings[fileRelativePath] = new FileTimestampRegressionWarning(fileRelativePath, oldTimestamp, newTimestamp);
         }
 
         /// <summary>

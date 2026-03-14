@@ -303,13 +303,49 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Manual review is recommended", reportText);
         }
 
+        [Fact]
+        public void GenerateDiffReport_WritesTimestampRegressionWarningSectionAtEnd()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-timestamp-warning");
+            var newDir = Path.Combine(_rootDir, "new-timestamp-warning");
+            var reportDir = Path.Combine(_rootDir, "report-timestamp-warning");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning(
+                Path.Combine("nested", "payload.bin"),
+                "2026-03-14 10:00:00.000 +09:00",
+                "2026-03-14 09:00:00.000 +09:00");
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir,
+                newDir,
+                reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.Contains("## Warnings", reportText);
+            Assert.Contains("older last-modified timestamps", reportText);
+            Assert.Contains("- nested", reportText);
+            Assert.Contains("updated_old: 2026-03-14 10:00:00.000 +09:00", reportText);
+            Assert.Contains("updated_new: 2026-03-14 09:00:00.000 +09:00", reportText);
+            Assert.EndsWith("updated_new: 2026-03-14 09:00:00.000 +09:00)", reportText.TrimEnd());
+        }
+
         private static ConfigSettings CreateConfig() => new()
         {
             IgnoredExtensions = new List<string>(),
             TextFileExtensions = new List<string>(),
             ShouldIncludeUnchangedFiles = true,
             ShouldIncludeIgnoredFiles = false,
-            ShouldOutputFileTimestamps = false
+            ShouldOutputFileTimestamps = false,
+            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true
         };
 
         private void ClearResultLists()

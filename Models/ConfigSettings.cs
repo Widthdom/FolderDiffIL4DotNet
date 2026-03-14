@@ -55,6 +55,11 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldOutputFileTimestamps { get; set; }
 
         /// <summary>
+        /// old/new の両方に存在するファイルについて、new 側の更新日時が old 側より古い場合に警告を出すかどうか。
+        /// </summary>
+        public bool ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp { get; set; } = true;
+
+        /// <summary>
         /// ファイル比較処理の最大並列度（0 以下または未指定で CPU 論理コア数、自動判定）。1 の場合は従来通り逐次実行。
         /// </summary>
         public int MaxParallelism { get; set; }

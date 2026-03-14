@@ -15,6 +15,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
             Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
+            Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
             Assert.False(config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
@@ -29,6 +30,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
             Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
+            Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
             Assert.False(config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
@@ -62,6 +64,15 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.NotNull(config);
             Assert.True(config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.Equal(new[] { "buildserver", "path" }, config.ILIgnoreLineContainingStrings);
+        }
+
+        [Fact]
+        public void JsonDeserialize_TimestampWarningSetting_CanBeDisabled()
+        {
+            var json = "{\"ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp\":false}";
+            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+            Assert.NotNull(config);
+            Assert.False(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
         }
     }
 }
