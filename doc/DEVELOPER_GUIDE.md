@@ -198,6 +198,13 @@ flowchart TD
     J -- "No" --> K["Record remaining new-only files as Added"]
 ```
 
+Implementation notes:
+- `FolderDiffService.ExecuteFolderDiffAsync()` clears run-scoped aggregates, enumerates old/new files with `IgnoredExtensions` already applied, and computes progress from the union of relative paths.
+- `PrecomputeIlCachesAsync()` runs before per-file classification so disassembler/cache warm-up does not distort the later decision path.
+- The old side is the driving set. Missing matches in `new` become `Removed`, while leftovers in `remainingNewFilesAbsolutePathHashSet` become `Added` after old-side traversal completes.
+- Parallel mode only changes scheduling. The classification contract stays the same because each relative path is removed from the remaining-new set before the expensive compare starts.
+- `Unchanged` versus `Modified` is decided only from the boolean returned by `FilesAreEqualAsync(relativePath, maxParallel)`. The detail reason is recorded separately in `FileDiffResultLists`.
+
 ### Per-file decision tree
 
 ```mermaid
@@ -224,6 +231,21 @@ Rules that are easy to break:
 - Additional IL ignore rules are substring-based and case-sensitive (`StringComparison.Ordinal`).
 - IL comparison must use the same disassembler identity and version label for old/new.
 - Text comparison can fall back from chunk-parallel mode to sequential mode on error.
+
+Per-file mechanics:
+- `FileDiffService.FilesAreEqualAsync(...)` uses the old-side absolute path for `.NET executable` detection, file extension lookup, and threshold decisions.
+- A successful MD5 match records `MD5Match` and short-circuits immediately; no IL/text work should happen after that.
+- The IL path delegates to `ILOutputService.DiffDotNetAssembliesAsync(...)`, which disassembles old/new via `DisassemblePairWithSameDisassemblerAsync(...)`, normalizes the comparison label, filters lines, optionally writes filtered IL text, and returns both equality and the disassembler label.
+- `BuildComparisonDisassemblerLabel(...)` is part of the correctness contract: mismatched tool identity/version raises `InvalidOperationException` instead of accepting a cross-tool comparison.
+- `ShouldExcludeIlLine(...)` always strips `// MVID:` and conditionally strips configured substrings after trim/dedup normalization. Matching uses `StringComparison.Ordinal`, so changing case-handling is a behavior change.
+- The text path first resolves effective byte thresholds from config, then chooses sequential compare for network-share mode or small files, and chunk-parallel compare only for large local files.
+- Any exception inside the selected text compare path logs a warning and retries with sequential `FileComparer.DiffTextFilesAsync(...)`. This fallback is part of the public runtime behavior and should not be removed casually.
+- Non-text, non-IL files with MD5 mismatch end as `MD5Mismatch`; there is no deeper binary diff layer today.
+
+Failure semantics:
+- `InvalidOperationException` from the IL path is logged and rethrown intentionally, which makes IL tool/setup problems fatal for the whole run.
+- Other unexpected exceptions in `FilesAreEqualAsync(...)` are also logged with both absolute paths before they bubble to `FolderDiffService`.
+- Recording detail results and returning the boolean must remain consistent. A file must never be marked `Unchanged` with a mismatch detail or `Modified` with a match detail.
 
 ## Result Model and Reporting Contract
 
@@ -543,6 +565,13 @@ flowchart TD
     J -- "いいえ" --> K["残った new 側のみのファイルを Added として記録"]
 ```
 
+実装上の補足:
+- `FolderDiffService.ExecuteFolderDiffAsync()` は実行単位の集計を初期化し、`IgnoredExtensions` 適用後の old/new 一覧を列挙し、相対パスの和集合件数から進捗母数を作ります。
+- `PrecomputeIlCachesAsync()` はファイルごとの本判定より前に走り、逆アセンブラや IL キャッシュのウォームアップを先に済ませます。
+- 走査の主導権は old 側にあります。new 側に対応がなければ `Removed`、最後まで `remainingNewFilesAbsolutePathHashSet` に残ったものが `Added` です。
+- 並列実行で変わるのはスケジューリングだけです。高コスト比較の前に new 側集合から相対パスを外すため、分類契約そのものは逐次時と同じです。
+- `Unchanged` と `Modified` は `FilesAreEqualAsync(relativePath, maxParallel)` の bool 戻り値だけで決まり、詳細理由は別途 `FileDiffResultLists` に記録されます。
+
 ### ファイル単位の判定木
 
 ```mermaid
@@ -569,6 +598,21 @@ flowchart TD
 - 追加の IL 行無視は部分一致で、大文字小文字を区別します（`StringComparison.Ordinal`）。
 - old/new の IL 比較は、同じ逆アセンブラ識別子とバージョン表記でなければなりません。
 - テキスト比較は、並列チャンク経路で例外が出た場合に逐次比較へフォールバックします。
+
+ファイル単位の実装メモ:
+- `FileDiffService.FilesAreEqualAsync(...)` は、`.NET 実行可能か` の判定、拡張子判定、サイズ閾値判定の基準として old 側絶対パスを使います。
+- MD5 が一致した時点で `MD5Match` を記録して即終了し、その後に IL やテキスト比較へ進んではいけません。
+- IL 経路は `ILOutputService.DiffDotNetAssembliesAsync(...)` に委譲され、内部で `DisassemblePairWithSameDisassemblerAsync(...)`、比較用ラベル正規化、行除外、任意の IL テキスト出力までをまとめて担当します。
+- `BuildComparisonDisassemblerLabel(...)` は正しさの一部です。old/new でツール識別やバージョン表記がずれた場合は、その比較を認めず `InvalidOperationException` にします。
+- `ShouldExcludeIlLine(...)` は `// MVID:` を必ず除外し、設定文字列は trim・重複排除後に `StringComparison.Ordinal` の部分一致で除外します。ここで大文字小文字の扱いを変えると仕様変更です。
+- テキスト経路では、設定値から実効バイト閾値を求めた後、ネットワーク共有最適化時または小さいファイルでは逐次比較、大きいローカルファイルだけをチャンク並列比較に回します。
+- 選ばれたテキスト比較経路で例外が出た場合は warning を出して `FileComparer.DiffTextFilesAsync(...)` に戻します。このフォールバックは公開挙動の一部なので、軽く変えないでください。
+- IL 対象でもテキスト対象でもないファイルは、MD5 不一致の時点で `MD5Mismatch` が最終結果です。現状はその先の汎用バイナリ差分はありません。
+
+失敗時の意味論:
+- IL 経路の `InvalidOperationException` はログを出したうえで意図的に再送出されるため、IL ツール不整合やセットアップ問題は実行全体の致命扱いです。
+- それ以外の予期しない例外も `FilesAreEqualAsync(...)` 内で old/new 両絶対パス付きでログ化された後、`FolderDiffService` へ伝播します。
+- 詳細結果の記録と bool 戻り値は常に整合していなければなりません。たとえば mismatch 詳細なのに `true` を返す変更はレポート分類を壊します。
 
 ## 結果モデルとレポート契約
 
