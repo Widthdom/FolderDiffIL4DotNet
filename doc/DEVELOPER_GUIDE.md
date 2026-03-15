@@ -449,6 +449,8 @@ Release automation:
 
 Security automation:
 - `codeql.yml` analyzes both `csharp` and `actions` on `push`, `pull_request`, weekly schedule, and `workflow_dispatch`
+- The Checkout step uses `fetch-depth: 0` so Nerdbank.GitVersioning can compute version height from the full commit graph during the `csharp` autobuild
+- The Analyze step uses `continue-on-error: true` to tolerate the SARIF upload rejection that occurs when the repository's GitHub Default Setup code scanning is also active for the `actions` language
 - `dependabot.yml` opens weekly update PRs for both `nuget` dependencies and GitHub Actions
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) protects the expected CI/release/security file presence and key settings from accidental removal
 
@@ -946,6 +948,8 @@ API リファレンス生成とサイト構築には DocFX を使います。
 
 セキュリティ自動化:
 - `codeql.yml` は `csharp` と `actions` を対象に、`push` / `pull_request` / 週次スケジュール / `workflow_dispatch` で解析します
+- Checkout ステップでは `fetch-depth: 0` を指定し、`csharp` の autobuild 時に Nerdbank.GitVersioning がフルコミット履歴からバージョン計算できるようにします
+- Analyze ステップは `continue-on-error: true` を設定し、リポジトリの GitHub Default Setup コードスキャンが有効なとき `actions` 言語の SARIF アップロードが拒否されてもジョブが失敗しないようにします
 - `dependabot.yml` は `nuget` 依存関係と GitHub Actions の更新 PR を週次で作成します
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) で CI / リリース / セキュリティ設定ファイルの存在と主要設定の剥がれを検知します
 
