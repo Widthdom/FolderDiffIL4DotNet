@@ -36,8 +36,6 @@ namespace FolderDiffIL4DotNet
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in 'new' have older last-modified timestamps than the corresponding files in 'old'. See diff_report.md for details.";
-        private const int EXIT_CODE_SUCCESS = 0;
-        private const int EXIT_CODE_ERROR = 1;
 
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
@@ -53,35 +51,58 @@ namespace FolderDiffIL4DotNet
 
         public async Task<int> RunAsync(string[] args)
         {
-            var exitCode = EXIT_CODE_SUCCESS;
-            bool hasMd5MismatchWarnings = false;
-            bool hasTimestampRegressionWarnings = false;
-            #pragma warning disable CA1031 // Top-level application boundary converts unexpected failures into exit codes after logging.
+            var result = await RunWithResultAsync(args);
+            OutputCompletionWarnings(result.HasMd5MismatchWarnings, result.HasTimestampRegressionWarnings);
+            PromptForExitKeyIfNeeded(args);
+            return (int)result.ExitCode;
+        }
+
+        /// <summary>
+        /// 実行全体を型付き結果へ変換し、公開 API である終了コードへ写像する境界処理です。
+        /// </summary>
+        /// <param name="args">コマンドライン引数。</param>
+        /// <returns>成功/失敗種別と補助情報を含む実行結果。</returns>
+        private async Task<ProgramRunResult> RunWithResultAsync(string[] args)
+        {
+            #pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
             try
             {
                 var appVersion = InitializeLoggerAndGetAppVersion();
                 var computerName = SystemInfo.GetComputerName();
-                var runArguments = ValidateAndBuildRunArguments(args);
-                var completionState = await RunPipelineAsync(runArguments, appVersion, computerName);
-                hasMd5MismatchWarnings = completionState.HasMd5MismatchWarnings;
-                hasTimestampRegressionWarnings = completionState.HasTimestampRegressionWarnings;
+
+                var runArgumentsResult = TryValidateAndBuildRunArguments(args);
+                if (!runArgumentsResult.IsSuccess)
+                {
+                    return runArgumentsResult.Failure;
+                }
+
+                var runArguments = runArgumentsResult.Value;
+                var prepareReportsDirectoryResult = TryPrepareReportsDirectory(runArguments.ReportsFolderAbsolutePath);
+                if (!prepareReportsDirectoryResult.IsSuccess)
+                {
+                    return prepareReportsDirectoryResult.Failure;
+                }
+
+                var configResult = await TryLoadConfigurationAsync();
+                if (!configResult.IsSuccess)
+                {
+                    return configResult.Failure;
+                }
+
+                var completionStateResult = await TryExecuteRunAsync(runArguments, configResult.Value, appVersion, computerName);
+                if (!completionStateResult.IsSuccess)
+                {
+                    return completionStateResult.Failure;
+                }
 
                 _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
+                return ProgramRunResult.Success(completionStateResult.Value);
             }
             catch (Exception ex)
             {
-                _logger.LogMessage(AppLogLevel.Error, ex.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, ex);
-                _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
-                exitCode = EXIT_CODE_ERROR;
+                return CreateFailureResult(ProgramExitCode.UnexpectedError, ex);
             }
             #pragma warning restore CA1031
-            finally
-            {
-                OutputCompletionWarnings(hasMd5MismatchWarnings, hasTimestampRegressionWarnings);
-                PromptForExitKeyIfNeeded(args);
-            }
-
-            return exitCode;
         }
 
         private string InitializeLoggerAndGetAppVersion()
@@ -110,19 +131,35 @@ namespace FolderDiffIL4DotNet
             _logger.LogMessage(AppLogLevel.Warning, WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
         }
 
-        private RunArguments ValidateAndBuildRunArguments(string[] args)
+        /// <summary>
+        /// CLI 引数検証フェーズを型付き結果として返します。
+        /// </summary>
+        /// <param name="args">コマンドライン引数。</param>
+        /// <returns>成功時は実行引数、失敗時は入力不正の実行結果。</returns>
+        private StepResult<RunArguments> TryValidateAndBuildRunArguments(string[] args)
         {
-            _logger.LogMessage(AppLogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
-            ValidateRequiredArguments(args);
+            try
+            {
+                _logger.LogMessage(AppLogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
+                ValidateRequiredArguments(args);
 
-            var oldFolderAbsolutePath = args[0];
-            var newFolderAbsolutePath = args[1];
-            var reportLabel = args[2];
-            ValidateReportLabel(reportLabel);
-            string reportsFolderAbsolutePath = GetReportsFolderAbsolutePath(reportLabel);
-            ValidateRunDirectories(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
-            _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
-            return new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
+                var oldFolderAbsolutePath = args[0];
+                var newFolderAbsolutePath = args[1];
+                var reportLabel = args[2];
+                ValidateReportLabel(reportLabel);
+                string reportsFolderAbsolutePath = GetReportsFolderAbsolutePath(reportLabel);
+                ValidateRunDirectories(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
+                _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
+                return StepResult<RunArguments>.FromValue(new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath));
+            }
+            catch (ArgumentException ex)
+            {
+                return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
+            }
         }
 
         private static void ValidateRequiredArguments(string[] args)
@@ -220,10 +257,133 @@ namespace FolderDiffIL4DotNet
             return services.BuildServiceProvider();
         }
 
-        private async Task<RunCompletionState> RunPipelineAsync(RunArguments runArguments, string appVersion, string computerName)
+        /// <summary>
+        /// レポート出力先ディレクトリの初期化を型付き結果として返します。
+        /// </summary>
+        /// <param name="reportsFolderAbsolutePath">今回のレポート出力先ディレクトリ。</param>
+        /// <returns>成功/失敗を表す結果。</returns>
+        private StepResult<bool> TryPrepareReportsDirectory(string reportsFolderAbsolutePath)
         {
-            PrepareReportsDirectory(runArguments.ReportsFolderAbsolutePath);
-            var config = await LoadConfigurationAsync();
+            try
+            {
+                PrepareReportsDirectory(reportsFolderAbsolutePath);
+                return StepResult<bool>.FromValue(true);
+            }
+            catch (ArgumentException ex)
+            {
+                return StepResult<bool>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (IOException ex)
+            {
+                return StepResult<bool>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StepResult<bool>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (NotSupportedException ex)
+            {
+                return StepResult<bool>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+        }
+
+        /// <summary>
+        /// 設定読込フェーズを型付き結果として返します。
+        /// </summary>
+        /// <returns>成功時は読み込んだ設定、失敗時は設定不正の実行結果。</returns>
+        private async Task<StepResult<ConfigSettings>> TryLoadConfigurationAsync()
+        {
+            try
+            {
+                var config = await LoadConfigurationAsync();
+                return StepResult<ConfigSettings>.FromValue(config);
+            }
+            catch (FileNotFoundException ex)
+            {
+                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
+            }
+            catch (InvalidDataException ex)
+            {
+                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
+            }
+            catch (IOException ex)
+            {
+                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
+            }
+            catch (NotSupportedException ex)
+            {
+                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
+            }
+        }
+
+        /// <summary>
+        /// 差分実行とレポート生成フェーズを型付き結果として返します。
+        /// </summary>
+        /// <param name="runArguments">検証済みの実行引数。</param>
+        /// <param name="config">読込済み設定。</param>
+        /// <param name="appVersion">アプリケーションバージョン。</param>
+        /// <param name="computerName">実行マシン名。</param>
+        /// <returns>成功時は完了状態、失敗時は実行失敗の結果。</returns>
+        private async Task<StepResult<RunCompletionState>> TryExecuteRunAsync(
+            RunArguments runArguments,
+            ConfigSettings config,
+            string appVersion,
+            string computerName)
+        {
+            try
+            {
+                var completionState = await RunPipelineAsync(runArguments, config, appVersion, computerName);
+                return StepResult<RunCompletionState>.FromValue(completionState);
+            }
+            catch (ArgumentException ex)
+            {
+                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (FileNotFoundException ex)
+            {
+                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (IOException ex)
+            {
+                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+            catch (NotSupportedException ex)
+            {
+                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
+            }
+        }
+
+        /// <summary>
+        /// 失敗種別をログ出力付きの型付き結果へ変換します。
+        /// </summary>
+        /// <param name="exitCode">失敗を表す終了コード。</param>
+        /// <param name="exception">元例外。</param>
+        /// <returns>ログ済みの失敗結果。</returns>
+        private ProgramRunResult CreateFailureResult(ProgramExitCode exitCode, Exception exception)
+        {
+            _logger.LogMessage(AppLogLevel.Error, exception.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, exception);
+            _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
+            return ProgramRunResult.Failure(exitCode);
+        }
+
+        private async Task<RunCompletionState> RunPipelineAsync(RunArguments runArguments, ConfigSettings config, string appVersion, string computerName)
+        {
             var executionContext = BuildExecutionContext(runArguments, config);
             using var runProvider = BuildRunServiceProvider(config, executionContext);
             using var scope = runProvider.CreateScope();
@@ -355,5 +515,141 @@ namespace FolderDiffIL4DotNet
         private sealed record RunArguments(string OldFolderAbsolutePath, string NewFolderAbsolutePath, string ReportsFolderAbsolutePath);
 
         private sealed record RunCompletionState(bool HasMd5MismatchWarnings, bool HasTimestampRegressionWarnings);
+
+        /// <summary>
+        /// コンソールアプリの公開終了コードを定義します。
+        /// </summary>
+        private enum ProgramExitCode
+        {
+            /// <summary>
+            /// 正常終了です。
+            /// </summary>
+            Success = 0,
+
+            /// <summary>
+            /// CLI 引数または入力パスが不正です。
+            /// </summary>
+            InvalidArguments = 2,
+
+            /// <summary>
+            /// 設定ファイルの不備または読込失敗です。
+            /// </summary>
+            ConfigurationError = 3,
+
+            /// <summary>
+            /// 差分実行またはレポート生成に失敗しました。
+            /// </summary>
+            ExecutionFailed = 4,
+
+            /// <summary>
+            /// 分類不能な想定外エラーです。
+            /// </summary>
+            UnexpectedError = 1
+        }
+
+        /// <summary>
+        /// 実行全体の成功/失敗を表す結果モデルです。
+        /// </summary>
+        private sealed class ProgramRunResult
+        {
+            /// <summary>
+            /// 失敗時に返す共通の警告なし状態です。
+            /// </summary>
+            private static readonly RunCompletionState _noWarnings = new(false, false);
+
+            /// <summary>
+            /// 実行結果の終了コードです。
+            /// </summary>
+            public ProgramExitCode ExitCode { get; }
+
+            /// <summary>
+            /// MD5 不一致の終了時警告有無です。
+            /// </summary>
+            public bool HasMd5MismatchWarnings { get; }
+
+            /// <summary>
+            /// 更新日時逆転の終了時警告有無です。
+            /// </summary>
+            public bool HasTimestampRegressionWarnings { get; }
+
+            /// <summary>
+            /// 成功時の結果を生成します。
+            /// </summary>
+            /// <param name="completionState">集約済みの完了状態。</param>
+            /// <returns>成功結果。</returns>
+            public static ProgramRunResult Success(RunCompletionState completionState)
+                => new(ProgramExitCode.Success, completionState);
+
+            /// <summary>
+            /// 失敗時の結果を生成します。
+            /// </summary>
+            /// <param name="exitCode">失敗種別の終了コード。</param>
+            /// <returns>失敗結果。</returns>
+            public static ProgramRunResult Failure(ProgramExitCode exitCode)
+                => new(exitCode, _noWarnings);
+
+            /// <summary>
+            /// 実行結果を初期化します。
+            /// </summary>
+            /// <param name="exitCode">終了コード。</param>
+            /// <param name="completionState">終了時警告の集約状態。</param>
+            private ProgramRunResult(ProgramExitCode exitCode, RunCompletionState completionState)
+            {
+                ExitCode = exitCode;
+                HasMd5MismatchWarnings = completionState.HasMd5MismatchWarnings;
+                HasTimestampRegressionWarnings = completionState.HasTimestampRegressionWarnings;
+            }
+        }
+
+        /// <summary>
+        /// 各実行フェーズの成功値または失敗結果を保持する簡易 Result 型です。
+        /// </summary>
+        /// <typeparam name="TValue">成功時の値型。</typeparam>
+        private sealed class StepResult<TValue>
+        {
+            /// <summary>
+            /// フェーズが成功したかどうかを示します。
+            /// </summary>
+            public bool IsSuccess { get; }
+
+            /// <summary>
+            /// 成功時の値です。
+            /// </summary>
+            public TValue Value { get; }
+
+            /// <summary>
+            /// 失敗時の実行結果です。
+            /// </summary>
+            public ProgramRunResult Failure { get; }
+
+            /// <summary>
+            /// 成功値から結果を生成します。
+            /// </summary>
+            /// <param name="value">成功時の値。</param>
+            /// <returns>成功結果。</returns>
+            public static StepResult<TValue> FromValue(TValue value)
+                => new(true, value, null);
+
+            /// <summary>
+            /// 失敗結果から結果を生成します。
+            /// </summary>
+            /// <param name="failure">失敗結果。</param>
+            /// <returns>失敗結果。</returns>
+            public static StepResult<TValue> FromFailure(ProgramRunResult failure)
+                => new(false, default, failure);
+
+            /// <summary>
+            /// フェーズ結果を初期化します。
+            /// </summary>
+            /// <param name="isSuccess">成功可否。</param>
+            /// <param name="value">成功時の値。</param>
+            /// <param name="failure">失敗時の実行結果。</param>
+            private StepResult(bool isSuccess, TValue value, ProgramRunResult failure)
+            {
+                IsSuccess = isSuccess;
+                Value = value;
+                Failure = failure;
+            }
+        }
     }
 }

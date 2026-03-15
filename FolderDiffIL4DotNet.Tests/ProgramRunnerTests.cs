@@ -32,7 +32,7 @@ namespace FolderDiffIL4DotNet.Tests
                 {
                     var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "invalid/name", "--no-pause" });
 
-                    Assert.Equal(1, exitCode);
+                    Assert.Equal(2, exitCode);
                     Assert.Contains(logger.Messages, message => message.Contains("provided as the third argument", StringComparison.Ordinal));
                     Assert.DoesNotContain(logger.Messages, message => message.Contains("Config file not found", StringComparison.Ordinal));
                 });
@@ -63,7 +63,7 @@ namespace FolderDiffIL4DotNet.Tests
                 {
                     var exitCode = await runner.RunAsync(new[] { oldDir, newDir, reportLabel, "--no-pause" });
 
-                    Assert.Equal(1, exitCode);
+                    Assert.Equal(2, exitCode);
                     Assert.Contains(logger.Messages, message => message.Contains("The report folder already exists:", StringComparison.Ordinal));
                     Assert.DoesNotContain(logger.Messages, message => message.Contains("Config file not found", StringComparison.Ordinal));
                 });
@@ -72,6 +72,60 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 TryDeleteDirectory(tempRoot);
                 TryDeleteDirectory(reportDir);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_WithMissingConfigFile_ReturnsConfigurationErrorExitCode()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-runner-tests-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old-config-missing");
+            var newDir = Path.Combine(tempRoot, "new-config-missing");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithMissingConfigFileAsync(async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
+
+                    Assert.Equal(3, exitCode);
+                    Assert.Contains(logger.Messages, message => message.Contains("Config file not found", StringComparison.Ordinal));
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_WithInvalidConfigJson_ReturnsConfigurationErrorExitCode()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-runner-tests-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old-config-invalid");
+            var newDir = Path.Combine(tempRoot, "new-config-invalid");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithConfigFileAsync("{ invalid-json", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
+
+                    Assert.Equal(3, exitCode);
+                    Assert.Contains(logger.Messages, message => message.Contains("Failed to parse the config file.", StringComparison.Ordinal));
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
             }
         }
 
@@ -116,6 +170,29 @@ namespace FolderDiffIL4DotNet.Tests
                 if (backupExists)
                 {
                     await File.WriteAllTextAsync(ConfigFilePath, backupContent);
+                }
+            }
+        }
+
+        private static async Task WithConfigFileAsync(string content, Func<Task> assertion)
+        {
+            var backupExists = File.Exists(ConfigFilePath);
+            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
+
+            try
+            {
+                await File.WriteAllTextAsync(ConfigFilePath, content);
+                await assertion();
+            }
+            finally
+            {
+                if (backupExists)
+                {
+                    await File.WriteAllTextAsync(ConfigFilePath, backupContent ?? string.Empty);
+                }
+                else if (File.Exists(ConfigFilePath))
+                {
+                    File.Delete(ConfigFilePath);
                 }
             }
         }

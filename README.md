@@ -76,6 +76,13 @@ Main output:
 - `Reports/<label>/diff_report.md`
 - Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#configuration-table-en) is `true`
 
+Process exit codes:
+- `0`: success
+- `2`: invalid arguments or input paths
+- `3`: configuration load/parse error
+- `4`: diff execution or report generation failure
+- `1`: unexpected internal error
+
 Example `diff_report.md` (trimmed):
 
 ```md
@@ -129,7 +136,7 @@ Example `diff_report.md` (trimmed):
 ## Runtime Composition
 
 - [`Program.cs`](Program.cs) is intentionally thin and only resolves [`ProgramRunner`](ProgramRunner.cs).
-- [`ProgramRunner`](ProgramRunner.cs) keeps `RunAsync()` as a phase-oriented coordinator by delegating logger initialization, argument validation, configuration loading, run-scope creation, diff execution, and report generation to focused helpers.
+- [`ProgramRunner`](ProgramRunner.cs) keeps `RunAsync()` as a phase-oriented coordinator by delegating logger initialization, argument validation, configuration loading, run-scope creation, diff execution, and report generation to focused helpers, while converting each phase into a typed result before mapping it to a process exit code.
 - [`ProgramRunner`](ProgramRunner.cs) also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
 - [`DiffExecutionContext`](Services/DiffExecutionContext.cs) carries run-specific paths and network-mode decisions.
 - Domain-independent console, diagnostics, I/O, and text helpers now live under [`FolderDiffIL4DotNet.Core/`](FolderDiffIL4DotNet.Core/), so the main executable project stays focused on folder-diff behavior.
@@ -438,6 +445,13 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 - `Reports/<label>/diff_report.md`
 - [`ShouldOutputILText`](#configuration-table-ja) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
 
+プロセス終了コード:
+- `0`: 正常終了
+- `2`: 引数または入力パス不正
+- `3`: 設定ファイルの読込/解析失敗
+- `4`: 差分実行またはレポート生成失敗
+- `1`: 想定外の内部エラー
+
 `diff_report.md` の簡単な例:
 
 ```md
@@ -491,7 +505,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 ## 実行時構成
 
 - [`Program.cs`](Program.cs) は薄いエントリーポイントで、[`ProgramRunner`](ProgramRunner.cs) の解決だけを行います。
-- [`ProgramRunner`](ProgramRunner.cs) は `RunAsync()` をフェーズ調停役に絞り、ロガー初期化、引数検証、設定読込、実行スコープ生成、差分実行、レポート生成を専用 helper へ委譲します。
+- [`ProgramRunner`](ProgramRunner.cs) は `RunAsync()` をフェーズ調停役に絞り、ロガー初期化、引数検証、設定読込、実行スコープ生成、差分実行、レポート生成を専用 helper へ委譲しつつ、各フェーズを型付き結果に変換してからプロセス終了コードへ写像します。
 - [`ProgramRunner`](ProgramRunner.cs) は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
 - [`DiffExecutionContext`](Services/DiffExecutionContext.cs) が実行ごとのパスやネットワークモード判定を保持します。
 - ドメイン非依存の console / diagnostics / I/O / text helper は [`FolderDiffIL4DotNet.Core/`](FolderDiffIL4DotNet.Core/) へ分離し、実行ファイル側のプロジェクトはフォルダ差分の振る舞いへ集中させています。

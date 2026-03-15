@@ -17,7 +17,40 @@ namespace FolderDiffIL4DotNet.Tests
         public async Task Main_WithInsufficientArguments_ReturnsErrorCode()
         {
             var exitCode = await InvokeProgramMainAsync(new[] { "--no-pause" });
-            Assert.Equal(1, exitCode);
+            Assert.Equal(2, exitCode);
+        }
+
+        [Fact]
+        public async Task Main_WithMissingConfigFile_ReturnsConfigurationErrorCode()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-tests-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old-config-missing");
+            var newDir = Path.Combine(tempRoot, "new-config-missing");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+
+            try
+            {
+                await WithMissingConfigFileAsync(async () =>
+                {
+                    var exitCode = await InvokeProgramMainAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
+                    Assert.Equal(3, exitCode);
+                });
+            }
+            finally
+            {
+                try
+                {
+                    if (Directory.Exists(tempRoot))
+                    {
+                        Directory.Delete(tempRoot, recursive: true);
+                    }
+                }
+                catch
+                {
+                    // ignore cleanup errors in tests
+                }
+            }
         }
 
         [Fact]
@@ -292,6 +325,29 @@ namespace FolderDiffIL4DotNet.Tests
                 else if (File.Exists(ConfigFilePath))
                 {
                     File.Delete(ConfigFilePath);
+                }
+            }
+        }
+
+        private static async Task WithMissingConfigFileAsync(Func<Task> assertion)
+        {
+            var backupExists = File.Exists(ConfigFilePath);
+            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
+
+            try
+            {
+                if (backupExists)
+                {
+                    File.Delete(ConfigFilePath);
+                }
+
+                await assertion();
+            }
+            finally
+            {
+                if (backupExists)
+                {
+                    await File.WriteAllTextAsync(ConfigFilePath, backupContent ?? string.Empty);
                 }
             }
         }

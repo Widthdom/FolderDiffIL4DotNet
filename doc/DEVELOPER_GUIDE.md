@@ -129,7 +129,7 @@ sequenceDiagram
     Diff-->>Runner: results in FileDiffResultLists
     Runner->>Report: GenerateDiffReport(...)
     Runner->>Runner: output aggregated completion warnings
-    Runner-->>CLI: exit code 0 or 1
+    Runner-->>CLI: typed exit code (0/2/3/4/1)
 ```
 
 ### What happens inside `RunAsync`
@@ -143,12 +143,16 @@ sequenceDiagram
 7. Build the run-scoped DI container.
 8. Run the folder diff and finish progress display.
 9. Generate `diff_report.md` from aggregated results.
-10. Return `0` on success; on exception, log it and return `1`.
+10. Convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors.
 
 The implementation keeps `RunAsync()` short by treating those steps as explicit phases and delegating each phase to focused private helpers.
 
 Failure behavior:
-- Any unhandled exception in diffing or report generation results in exit code `1`.
+- [`ProgramRunner`](../ProgramRunner.cs) now uses small typed step results at the application boundary instead of flattening every failure into one catch-all exit code.
+- Argument validation and missing input paths map to exit code `2`.
+- [`ConfigService`](../Services/ConfigService.cs) failures such as missing `config.json`, parse failures, or config-read I/O errors map to exit code `3`.
+- Diff execution and report-generation failures, including fatal IL comparison failures surfaced as [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0), map to exit code `4`.
+- Exit code `1` is reserved for unexpected internal errors that escape the explicit phase classification.
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
 - `FolderDiffService.ExecuteFolderDiffAsync()` logs and rethrows expected runtime exceptions such as path-validation errors, `DirectoryNotFoundException`, `IOException`, `UnauthorizedAccessException`, and `NotSupportedException`; only truly unexpected exceptions use the separate "unexpected error" log wording.
 - Read-only protection on output files remains best-effort and warning-only.
@@ -619,7 +623,7 @@ sequenceDiagram
     Runner->>Diff: ExecuteFolderDiffAsync()
     Diff-->>Runner: FileDiffResultLists に結果集約
     Runner->>Report: GenerateDiffReport(...)
-    Runner-->>CLI: 終了コード 0 または 1
+    Runner-->>CLI: 型付き終了コード (0/2/3/4/1)
 ```
 
 ### `RunAsync` の中で起きること
@@ -633,12 +637,16 @@ sequenceDiagram
 7. 実行単位の DI コンテナを構築します。
 8. フォルダ比較を実行し、進捗表示を終了します。
 9. 集約結果から `diff_report.md` を生成します。
-10. 成功なら `0`、例外ならログに出力して `1` を返します。
+10. フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。
 
 実装上は、`RunAsync()` 自体を短く保つため、これらを明示的なフェーズとして private helper へ分割しています。
 
 失敗時の扱い:
-- 差分処理やレポート生成で未処理例外が出ると終了コードは `1` です。
+- [`ProgramRunner`](../ProgramRunner.cs) はアプリ境界で小さな型付き Result を使い、すべての失敗を 1 つの終了コードへ潰さないようにしています。
+- 引数検証エラーや入力パス不足/不正は終了コード `2` です。
+- [`ConfigService`](../Services/ConfigService.cs) の `config.json` 未検出、解析失敗、設定読込 I/O 失敗は終了コード `3` です。
+- 差分実行やレポート生成の失敗、さらに IL 比較由来の致命的な [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は終了コード `4` です。
+- 明示分類から漏れた想定外の内部エラーだけを終了コード `1` として扱います。
 - IL 比較由来の [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は致命的な例外扱いとし、実行全体を止めるものとします。
 - `FolderDiffService.ExecuteFolderDiffAsync()` は、パス検証エラーや `DirectoryNotFoundException`、`IOException`、`UnauthorizedAccessException`、`NotSupportedException` などの想定される実行時例外を error として記録して再スローします。本当に想定外の例外だけを別文言の "unexpected error" として記録します。
 - 出力ファイルの読み取り専用化はベストエフォートで、失敗しても警告止まりです。
