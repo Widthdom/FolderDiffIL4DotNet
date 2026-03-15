@@ -76,9 +76,11 @@ flowchart TD
     B --> D["DiffExecutionContext"]
     B --> E["Run-scoped ServiceProvider"]
     E --> F["FolderDiffService"]
+    E --> Q["FolderDiffExecutionStrategy"]
     E --> G["ReportGenerateService"]
     E --> H["ProgressReportService"]
     F --> I["IFileSystemService"]
+    F --> Q
     F --> J["FileDiffService"]
     J --> K["IFileComparisonService"]
     J --> L["ILOutputService"]
@@ -95,6 +97,7 @@ Design intent:
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) carries immutable run-specific paths and mode decisions.
 - Core pipeline services use constructor injection and interfaces instead of static mutable state or ad hoc object creation.
 - [`IFileSystemService`](../Services/IFileSystemService.cs) and [`IFileComparisonService`](../Services/IFileComparisonService.cs) are the low-level seams that keep discovery/compare I/O unit-testable without changing the production decision tree. `IFileSystemService.EnumerateFiles(...)` specifically preserves lazy discovery so large trees do not require an eager `string[]` snapshot before filtering.
+- [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) centralizes inclusion filtering, ignored-file recording, and auto-parallelism policy so those rules are no longer embedded directly inside [`FolderDiffService`](../Services/FolderDiffService.cs).
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) is the run-scoped aggregation hub shared by diffing and reporting.
 
 <a id="guide-en-execution-lifecycle"></a>
@@ -170,6 +173,7 @@ Registered in [`ProgramRunner.BuildRunServiceProvider(...)`](../ProgramRunner.cs
 - [`ProgressReportService`](../Services/ProgressReportService.cs)
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs)
 - [`IFileSystemService`](../Services/IFileSystemService.cs) / [`FileSystemService`](../Services/FileSystemService.cs)
+- [`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs) / [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs)
 - [`IFileComparisonService`](../Services/IFileComparisonService.cs) / [`FileComparisonService`](../Services/FileComparisonService.cs)
 - [`IILTextOutputService`](../Services/ILOutput/IILTextOutputService.cs) / [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs)
 - [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) / [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs)
@@ -189,7 +193,8 @@ Why this matters:
 | [`Program.cs`](../Program.cs) | Application entry point | Must remain thin |
 | [`ProgramRunner.cs`](../ProgramRunner.cs) | Argument validation, config loading, run DI creation, orchestration | Main control plane |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | Immutable run paths and network-mode decisions | No mutable state |
-| [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | File discovery, scheduling, classification orchestration | Owns progress and added/removed routing |
+| [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | Folder-diff orchestration and result routing | Owns progress and added/removed routing |
+| [`Services/FolderDiffExecutionStrategy.cs`](../Services/FolderDiffExecutionStrategy.cs) | Discovery filtering and auto-parallelism policy | Applies ignored extensions and network-aware auto parallelism |
 | [`Services/IFileSystemService.cs`](../Services/IFileSystemService.cs) + [`Services/FileSystemService.cs`](../Services/FileSystemService.cs) | Discovery/output filesystem abstraction | Enables folder-level unit tests and lazy file discovery |
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | Per-file decision tree | MD5 -> IL -> text -> fallback |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
@@ -224,7 +229,7 @@ flowchart TD
 ```
 
 Implementation notes:
-- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) clears run-scoped aggregates, enumerates old/new files with [`IgnoredExtensions`](../README.md#configuration-table-en) already applied, and computes progress from the union of relative paths.
+- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) clears run-scoped aggregates, then asks [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) to enumerate old/new files with [`IgnoredExtensions`](../README.md#configuration-table-en) already applied and to compute progress from the union of relative paths.
 - Discovery now flows through `IFileSystemService.EnumerateFiles(...)`, so ignored extensions are filtered while entries are streamed instead of first materializing the entire directory tree into an array.
 - `PrecomputeIlCachesAsync()` runs before per-file classification so disassembler/cache warm-up does not distort the later decision path.
 - The old side is the driving set. Missing matches in `new` become `Removed`, while leftovers in `remainingNewFilesAbsolutePathHashSet` become `Added` after old-side traversal completes.
@@ -420,7 +425,7 @@ Typical safe extension points:
 - Add new text extensions in [`TextFileExtensions`](../README.md#configuration-table-en)
 - Introduce new report metadata in [`ReportGenerateService`](../Services/ReportGenerateService.cs)
 - Add logging around orchestration boundaries
-- Add new tests by substituting [`IFileSystemService`](../Services/IFileSystemService.cs), [`IFileComparisonService`](../Services/IFileComparisonService.cs), [`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), or [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs)
+- Add new tests by substituting [`IFileSystemService`](../Services/IFileSystemService.cs), [`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs), [`IFileComparisonService`](../Services/IFileComparisonService.cs), [`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), or [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs)
 
 Higher-risk changes:
 - Altering the order `MD5 -> IL -> text`
@@ -532,9 +537,11 @@ flowchart TD
     B --> D["DiffExecutionContext"]
     B --> E["実行単位 ServiceProvider"]
     E --> F["FolderDiffService"]
+    E --> Q["FolderDiffExecutionStrategy"]
     E --> G["ReportGenerateService"]
     E --> H["ProgressReportService"]
     F --> I["IFileSystemService"]
+    F --> Q
     F --> J["FileDiffService"]
     J --> K["IFileComparisonService"]
     J --> L["ILOutputService"]
@@ -551,6 +558,7 @@ flowchart TD
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) は実行固有のパスとモード判定を不変オブジェクトとして保持します。
 - コアサービスは、静的可変状態や場当たり的な `new` ではなく、コンストラクタ注入とインターフェースで接続されます。
 - [`IFileSystemService`](../Services/IFileSystemService.cs) と [`IFileComparisonService`](../Services/IFileComparisonService.cs) が、列挙/比較 I/O を切り出す最下層の差し替えポイントです。特に `IFileSystemService.EnumerateFiles(...)` は、巨大なフォルダでもフィルタ前に `string[]` を丸ごと確保しない遅延列挙を維持します。
+- [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) は、比較対象への取り込み条件、無視ファイル記録、自動並列度の決定を集約し、[`FolderDiffService`](../Services/FolderDiffService.cs) へポリシー知識が広がりすぎないようにします。
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) は、差分処理とレポート生成が共有する実行単位の集約ハブです。
 
 <a id="guide-ja-execution-lifecycle"></a>
@@ -625,6 +633,7 @@ sequenceDiagram
 - [`ProgressReportService`](../Services/ProgressReportService.cs)
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs)
 - [`IFileSystemService`](../Services/IFileSystemService.cs) / [`FileSystemService`](../Services/FileSystemService.cs)
+- [`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs) / [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs)
 - [`IFileComparisonService`](../Services/IFileComparisonService.cs) / [`FileComparisonService`](../Services/FileComparisonService.cs)
 - [`IILTextOutputService`](../Services/ILOutput/IILTextOutputService.cs) / [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs)
 - [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) / [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs)
@@ -644,7 +653,8 @@ sequenceDiagram
 | [`Program.cs`](../Program.cs) | アプリ起動点 | 薄いまま維持する |
 | [`ProgramRunner.cs`](../ProgramRunner.cs) | 引数検証、設定読込、実行 DI 作成、全体調停 | 制御プレーンの中心 |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | 実行固有パスとネットワークモードの保持 | 可変状態を持たない |
-| [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | ファイル列挙、スケジューリング、分類の調停 | 進捗と Added/Removed もここ |
+| [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | フォルダ差分全体の調停と結果振り分け | 進捗と Added/Removed もここ |
+| [`Services/FolderDiffExecutionStrategy.cs`](../Services/FolderDiffExecutionStrategy.cs) | 列挙フィルタと自動並列度ポリシー | 無視拡張子適用とネットワーク考慮の並列度決定を担当 |
 | [`Services/IFileSystemService.cs`](../Services/IFileSystemService.cs) + [`Services/FileSystemService.cs`](../Services/FileSystemService.cs) | 列挙/出力系ファイルシステム抽象 | フォルダ単位ユニットテスト向け。遅延列挙もここで扱う |
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | ファイル単位の判定木 | `MD5 -> IL -> text -> fallback` |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
@@ -679,7 +689,7 @@ flowchart TD
 ```
 
 実装上の補足:
-- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) は実行単位の集計を初期化し、[`IgnoredExtensions`](../README.md#configuration-table-ja) 適用後の old/new 一覧を列挙し、相対パスの和集合件数から進捗母数を作ります。
+- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) は実行単位の集計を初期化し、その後 [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) へ [`IgnoredExtensions`](../README.md#configuration-table-ja) 適用済み old/new 一覧の列挙と相対パス和集合件数の算出を委譲します。
 - 列挙は `IFileSystemService.EnumerateFiles(...)` 経由の遅延列挙で進むため、巨大フォルダでも全件配列化してからフィルタする構造を避けています。
 - `PrecomputeIlCachesAsync()` はファイルごとの本判定より前に走り、逆アセンブラや IL キャッシュのウォームアップを先に済ませます。
 - 走査の主導権は old 側にあります。new 側に対応がなければ `Removed`、最後まで `remainingNewFilesAbsolutePathHashSet` に残ったものが `Added` です。
@@ -875,7 +885,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - [`TextFileExtensions`](../README.md#configuration-table-ja) の値追加
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs) へのレポートメタデータ追加
 - オーケストレーション境界でのログ追加
-- [`IFileSystemService`](../Services/IFileSystemService.cs)、[`IFileComparisonService`](../Services/IFileComparisonService.cs)、[`IFileDiffService`](../Services/IFileDiffService.cs)、[`IILOutputService`](../Services/IILOutputService.cs)、[`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) を差し替えるテスト追加
+- [`IFileSystemService`](../Services/IFileSystemService.cs)、[`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs)、[`IFileComparisonService`](../Services/IFileComparisonService.cs)、[`IFileDiffService`](../Services/IFileDiffService.cs)、[`IILOutputService`](../Services/IILOutputService.cs)、[`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) を差し替えるテスト追加
 
 高リスクな変更:
 - `MD5 -> IL -> text` の順番変更

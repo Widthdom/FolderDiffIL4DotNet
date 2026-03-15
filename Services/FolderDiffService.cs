@@ -41,11 +41,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string MODE_SERVER_NAS_OPTIMIZED = "Server/NAS-optimized";
 
         /// <summary>
-        /// ネットワーク最適化時の最大並列度上限。
-        /// </summary>
-        private const int MAX_PARALLEL_NETWORK_LIMIT = 8;
-
-        /// <summary>
         /// キープアライブの出力間隔（秒）。
         /// </summary>
         private const int KEEP_ALIVE_INTERVAL_SECONDS = 5;
@@ -122,6 +117,11 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IFileSystemService _fileSystem;
 
         /// <summary>
+        /// 探索・並列度決定ポリシー。
+        /// </summary>
+        private readonly IFolderDiffExecutionStrategy _executionStrategy;
+
+        /// <summary>
         /// コンストラクタ。
         /// 必須パラメータをフィールドに束ね、IL 出力先（old/new サブディレクトリのパス）も初期化します。
         /// </summary>
@@ -139,7 +139,7 @@ namespace FolderDiffIL4DotNet.Services
             IFileDiffService fileDiffService,
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger)
-            : this(config, progressReporter, executionContext, fileDiffService, fileDiffResultLists, logger, new FileSystemService())
+            : this(config, progressReporter, executionContext, fileDiffService, fileDiffResultLists, logger, new FileSystemService(), null)
         {
         }
 
@@ -154,6 +154,22 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger,
             IFileSystemService fileSystem)
+            : this(config, progressReporter, executionContext, fileDiffService, fileDiffResultLists, logger, fileSystem, null)
+        {
+        }
+
+        /// <summary>
+        /// テストや DI 向けに戦略オブジェクトも差し替え可能なコンストラクタ。
+        /// </summary>
+        public FolderDiffService(
+            ConfigSettings config,
+            ProgressReportService progressReporter,
+            DiffExecutionContext executionContext,
+            IFileDiffService fileDiffService,
+            FileDiffResultLists fileDiffResultLists,
+            ILoggerService logger,
+            IFileSystemService fileSystem,
+            IFolderDiffExecutionStrategy executionStrategy)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(progressReporter);
@@ -178,6 +194,7 @@ namespace FolderDiffIL4DotNet.Services
             _optimizeForNetworkShares = executionContext.OptimizeForNetworkShares;
             _fileDiffService = fileDiffService;
             _fileSystem = fileSystem;
+            _executionStrategy = executionStrategy ?? new FolderDiffExecutionStrategy(config, executionContext, fileDiffResultLists, fileSystem);
         }
 
         /// <summary>
@@ -220,10 +237,11 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _progressReporter.ReportProgress(0.0);
 
-                var ignoredExtensions = new HashSet<string>(_config.IgnoredExtensions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-                EnumerateAllFiles(ignoredExtensions);
+                EnumerateAllFiles();
 
-                var totalFilesRelativePathCount = ComputeUnionFileCount();
+                var totalFilesRelativePathCount = _executionStrategy.ComputeUnionFileCount(
+                    _fileDiffResultLists.OldFilesAbsolutePath,
+                    _fileDiffResultLists.NewFilesAbsolutePath);
                 if (totalFilesRelativePathCount == 0)
                 {
                     _progressReporter.ReportProgress(100);
@@ -232,7 +250,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 _progressReporter.ReportProgress(0.0);
 
-                var maxParallel = DetermineMaxParallel();
+                var maxParallel = _executionStrategy.DetermineMaxParallel();
                 LogDiscoveryAndParallelStats(totalFilesRelativePathCount, maxParallel);
 
                 await PrecomputeIlCachesAsync(maxParallel);
@@ -457,30 +475,6 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// IgnoredExtensions を適用して比較対象へ含めるファイル一覧を取得します。必要に応じて無視対象のレポート用情報も記録します。
-        /// </summary>
-        private List<string> EnumerateIncludedFiles(string rootFolderAbsolutePath, HashSet<string> ignoredExtensions, FileDiffResultLists.IgnoredFileLocation locationFlag)
-        {
-            var includedFiles = new List<string>();
-            foreach (var fileAbsolutePath in _fileSystem.EnumerateFiles(rootFolderAbsolutePath, "*", SearchOption.AllDirectories))
-            {
-                if (ignoredExtensions.Contains(Path.GetExtension(fileAbsolutePath)))
-                {
-                    if (_config.ShouldIncludeIgnoredFiles)
-                    {
-                        var relativePath = Path.GetRelativePath(rootFolderAbsolutePath, fileAbsolutePath);
-                        _fileDiffResultLists.RecordIgnoredFile(relativePath, locationFlag);
-                    }
-                    continue;
-                }
-
-                // Directory.EnumerateFiles ベースの遅延列挙を活かし、比較対象だけを収集する。
-                includedFiles.Add(fileAbsolutePath);
-            }
-            return includedFiles;
-        }
-
-        /// <summary>
         /// 実行モード（ローカル最適化 / サーバー・NAS 最適化）とその判定理由をログに出力します。
         /// </summary>
         private void LogExecutionMode()
@@ -501,43 +495,12 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// 無視拡張子を除いた旧・新フォルダのファイル一覧を <see cref="FileDiffResultLists"/> に格納します。
         /// </summary>
-        private void EnumerateAllFiles(HashSet<string> ignoredExtensions)
+        private void EnumerateAllFiles()
         {
-            _fileDiffResultLists.SetOldFilesAbsolutePath(EnumerateIncludedFiles(_oldFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.Old));
+            _fileDiffResultLists.SetOldFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_oldFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.Old));
             _progressReporter.ReportProgress(0.0);
-            _fileDiffResultLists.SetNewFilesAbsolutePath(EnumerateIncludedFiles(_newFolderAbsolutePath, ignoredExtensions, FileDiffResultLists.IgnoredFileLocation.New));
+            _fileDiffResultLists.SetNewFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_newFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.New));
             _progressReporter.ReportProgress(0.0);
-        }
-
-        /// <summary>
-        /// 旧・新フォルダのファイル相対パスの和集合の件数を返します。
-        /// </summary>
-        private int ComputeUnionFileCount()
-        {
-            var oldRelativePathSet = new HashSet<string>(
-                _fileDiffResultLists.OldFilesAbsolutePath.Select(p => Path.GetRelativePath(_oldFolderAbsolutePath, p)),
-                StringComparer.OrdinalIgnoreCase);
-            var newRelativePathSet = new HashSet<string>(
-                _fileDiffResultLists.NewFilesAbsolutePath.Select(p => Path.GetRelativePath(_newFolderAbsolutePath, p)),
-                StringComparer.OrdinalIgnoreCase);
-
-            oldRelativePathSet.UnionWith(newRelativePathSet);
-            return oldRelativePathSet.Count;
-        }
-
-        /// <summary>
-        /// 設定とモードに基づいて最大並列度を決定します。
-        /// </summary>
-        private int DetermineMaxParallel()
-        {
-            if (_config.MaxParallelism <= 0)
-            {
-                // 既定の並列度を、ローカルはCPU論理コア数、ネットワーク共有最適化時は上限MAX_PARALLEL_NETWORK_LIMITに抑制
-                return _optimizeForNetworkShares
-                    ? Math.Min(Environment.ProcessorCount, MAX_PARALLEL_NETWORK_LIMIT)
-                    : Environment.ProcessorCount;
-            }
-            return _config.MaxParallelism;
         }
 
         /// <summary>
@@ -556,14 +519,16 @@ namespace FolderDiffIL4DotNet.Services
             _logger.LogMessage(AppLogLevel.Info, $"Discovery complete: old={oldCount}, new={newCount}, union(relative)={totalFilesRelativePathCount}", shouldOutputMessageToConsole: true);
 
             // .NET アセンブリ候補数も概算表示
-            var allFilesForLog = _fileDiffResultLists.OldFilesAbsolutePath
+            int dotNetAssemblyCandidates = _executionStrategy.CountDotNetAssemblyCandidates(
+                _fileDiffResultLists.OldFilesAbsolutePath,
+                _fileDiffResultLists.NewFilesAbsolutePath);
+            int totalFilesForLog = _fileDiffResultLists.OldFilesAbsolutePath
                 .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            int dotNetAssemblyCandidates = allFilesForLog.Count(DotNetDetector.IsDotNetExecutable);
+                .Count();
             _logger.LogMessage(
                 AppLogLevel.Info,
-                $"Precompute targets: totalFiles={allFilesForLog.Count}, {nameof(dotNetAssemblyCandidates)}={dotNetAssemblyCandidates}",
+                $"Precompute targets: totalFiles={totalFilesForLog}, {nameof(dotNetAssemblyCandidates)}={dotNetAssemblyCandidates}",
                 shouldOutputMessageToConsole: true);
             _progressReporter.ReportProgress(0.0);
         }

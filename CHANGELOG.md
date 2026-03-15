@@ -11,9 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Refactored discovery filtering and auto-parallelism policy out of [`FolderDiffService`](Services/FolderDiffService.cs) into [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs), reducing orchestration sprawl while keeping runtime behavior stable.
+- Added focused unit coverage in [`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs) for ignored-file filtering, relative-path union counting, and network-aware auto-parallelism, and updated the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md) to reflect the new boundary and latest passing test count (`227`).
 - Refactored [`ILCache`](Services/Caching/ILCache.cs) into a thinner coordinator backed by [`ILMemoryCache`](Services/Caching/ILMemoryCache.cs) and [`ILDiskCache`](Services/Caching/ILDiskCache.cs), keeping the public API stable while separating in-memory retention from disk persistence/quota handling.
 - Added regression coverage in [`ILCacheTests`](FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs) for same-key updates at memory-capacity limits and for coordinated disk cleanup when LRU eviction removes an entry.
-- Updated the [developer guide](doc/DEVELOPER_GUIDE.md) and [testing guide](doc/TESTING_GUIDE.md) to describe the split cache internals and reflect the latest passing test count (`223`).
+- Updated the [developer guide](doc/DEVELOPER_GUIDE.md) and [testing guide](doc/TESTING_GUIDE.md) to describe the split cache internals and reflect the latest passing test count (`227`).
 - Replaced eager `Directory.GetFiles(...)` usage in [`FolderDiffService`](Services/FolderDiffService.cs) with lazy `Directory.EnumerateFiles(...)` behind [`IFileSystemService`](Services/IFileSystemService.cs), reducing discovery-side allocations for large trees and network shares while keeping folder-diff behavior unchanged.
 - Added unit-test coverage for streaming file discovery in [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) and updated the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md) accordingly.
 - Fixed missing link to [Developer Guide](doc/DEVELOPER_GUIDE.md).
@@ -226,9 +228,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
+- [`FolderDiffService`](Services/FolderDiffService.cs) に埋め込まれていた列挙フィルタと自動並列度決定を [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs) へ抽出し、実行時挙動を変えずにオーケストレーション責務を整理しました。
+- [`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs) を追加し、無視ファイルの扱い、相対パス和集合件数、自動並列度のネットワーク考慮を回帰テスト化しました。あわせて [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) を更新し、最新の通過テスト件数（`227` 件）を反映しました。
 - [`ILCache`](Services/Caching/ILCache.cs) を、公開 API を維持したまま [`ILMemoryCache`](Services/Caching/ILMemoryCache.cs) と [`ILDiskCache`](Services/Caching/ILDiskCache.cs) を使う薄い調停役へ整理し、メモリ保持とディスク永続化/クォータ制御の責務を分離しました。
 - [`ILCacheTests`](FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs) に、メモリ上限到達時の同一キー再保存と、LRU 退避時のディスクキャッシュ連動削除に対する回帰テストを追加しました。
-- [開発者ガイド](doc/DEVELOPER_GUIDE.md) と [テストガイド](doc/TESTING_GUIDE.md) を更新し、キャッシュ内部の分離方針と最新の通過テスト件数（`223` 件）を反映しました。
+- [開発者ガイド](doc/DEVELOPER_GUIDE.md) と [テストガイド](doc/TESTING_GUIDE.md) を更新し、キャッシュ内部の分離方針と最新の通過テスト件数（`227` 件）を反映しました。
 - [`FolderDiffService`](Services/FolderDiffService.cs) 内で使っていた即時配列化の `Directory.GetFiles(...)` 相当を、[`IFileSystemService`](Services/IFileSystemService.cs) 越しの遅延列挙 `Directory.EnumerateFiles(...)` へ置き換えました。これにより、大量ファイルやネットワーク共有上の列挙で不要な配列確保を減らしつつ、フォルダ差分の振る舞いは維持しています。
 - [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) にストリーミング列挙のテストを追加し、あわせて [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) を更新しました。
 - [開発者ガイド](doc/DEVELOPER_GUIDE.md)のリンク付与漏れを修正しました。

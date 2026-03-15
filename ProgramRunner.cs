@@ -253,6 +253,7 @@ namespace FolderDiffIL4DotNet
             services.AddScoped<ProgressReportService>();
             services.AddScoped<ReportGenerateService>();
             services.AddScoped<IFileSystemService, FileSystemService>();
+            services.AddScoped<IFolderDiffExecutionStrategy, FolderDiffExecutionStrategy>();
             services.AddScoped<IFileComparisonService, FileComparisonService>();
             services.AddScoped<IILTextOutputService, ILTextOutputService>();
             services.AddScoped<IDotNetDisassembleService, DotNetDisassembleService>();
