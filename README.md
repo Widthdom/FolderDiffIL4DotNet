@@ -102,10 +102,15 @@ Main output:
 
 Process exit codes:
 - `0`: success
-- `2`: invalid arguments or input paths
+- `2`: invalid arguments or input paths (includes preflight failures — see below)
 - `3`: configuration load/parse error
 - `4`: diff execution or report generation failure
 - `1`: unexpected internal error
+
+Before loading configuration, three preflight checks run against the reports output path (all failures produce exit code `2`):
+1. **Path length** — the constructed `Reports/<label>` path must not exceed the OS limit (260 chars on Windows without long-path opt-in, 1024 on macOS, 4096 on Linux).
+2. **Disk space** — at least 100 MB of free space is required on the drive that will hold the reports folder. The check is best-effort and skips silently when drive information is unavailable (e.g., network shares).
+3. **Write permission** — a temporary probe file is created and deleted in the `Reports/` parent directory to verify that the process has write access before any actual output is produced.
 
 Example `diff_report.md` (trimmed):
 
@@ -511,10 +516,15 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 
 プロセス終了コード:
 - `0`: 正常終了
-- `2`: 引数または入力パス不正
+- `2`: 引数または入力パス不正（下記プリフライトチェック失敗を含む）
 - `3`: 設定ファイルの読込/解析失敗
 - `4`: 差分実行またはレポート生成失敗
 - `1`: 想定外の内部エラー
+
+設定読み込みの前に、レポート出力パスに対して 3 つのプリフライトチェックを実行します（いずれの失敗も終了コード `2`）:
+1. **パス長** — 構築した `Reports/<label>` パスが OS の上限を超えていないこと（Windows 標準は 260 文字、macOS は 1024 文字、Linux は 4096 文字）。
+2. **ディスク空き容量** — レポートフォルダを作成するドライブに 100 MB 以上の空き容量があること。ドライブ情報を取得できない場合（ネットワーク共有など）は best-effort でスキップします。
+3. **書き込み権限** — `Reports/` 親ディレクトリに一時プローブファイルを作成・削除して、プロセスが書き込み権限を持つことを確認します。
 
 `diff_report.md` の簡単な例:
 

@@ -44,6 +44,11 @@ namespace FolderDiffIL4DotNet
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in 'new' have older last-modified timestamps than the corresponding files in 'old'. See diff_report.md for details.";
+
+        /// <summary>
+        /// プリフライトチェック: レポートドライブに要求する最低空き容量（MB）。
+        /// </summary>
+        private const long PREFLIGHT_MIN_FREE_DISK_MEGABYTES = 100L;
         private const string HELP_TEXT =
             "Usage: " + Constants.APP_NAME + " <oldFolder> <newFolder> <reportLabel> [options]\n\n" +
             "Arguments:\n" +
@@ -223,6 +228,14 @@ namespace FolderDiffIL4DotNet
             {
                 return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
             }
+            catch (IOException ex)
+            {
+                return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
+            }
         }
 
         private static void ValidateRequiredArguments(string[] args)
@@ -267,6 +280,11 @@ namespace FolderDiffIL4DotNet
 
         private static void ValidateRunDirectories(string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath)
         {
+            // 1. パス長チェック（OS 制限を超えていないか）
+            //    レポートフォルダはアプリが構築するパスなので、実際にアクセスする前に検証する。
+            PathValidator.ValidateAbsolutePathLengthOrThrow(reportsFolderAbsolutePath, nameof(reportsFolderAbsolutePath));
+
+            // 2. 旧/新フォルダの存在確認
             if (!Directory.Exists(oldFolderAbsolutePath))
             {
                 throw new DirectoryNotFoundException($"The old folder path does not exist: {oldFolderAbsolutePath}");
@@ -277,9 +295,97 @@ namespace FolderDiffIL4DotNet
                 throw new DirectoryNotFoundException($"The new folder path does not exist: {newFolderAbsolutePath}");
             }
 
+            // 3. レポートフォルダが既に存在しないことの確認
             if (Directory.Exists(reportsFolderAbsolutePath))
             {
                 throw new ArgumentException($"The report folder already exists: {reportsFolderAbsolutePath}. Provide a different report label.");
+            }
+
+            // 4. ディスク空き容量チェック（best-effort）
+            CheckDiskSpaceOrThrow(reportsFolderAbsolutePath);
+
+            // 5. レポート親ディレクトリへの書き込み権限チェック
+            CheckReportsParentWritableOrThrow(reportsFolderAbsolutePath);
+        }
+
+        /// <summary>
+        /// レポートフォルダを作成するドライブに十分な空き容量があることを確認します。
+        /// ドライブ情報を取得できない場合（ネットワーク共有や仮想ドライブ等）は best-effort でスキップします。
+        /// </summary>
+        /// <param name="reportsFolderAbsolutePath">レポートフォルダの絶対パス。</param>
+        /// <exception cref="IOException">空き容量が <see cref="PREFLIGHT_MIN_FREE_DISK_MEGABYTES"/> MB 未満の場合。</exception>
+        internal static void CheckDiskSpaceOrThrow(string reportsFolderAbsolutePath)
+        {
+            DriveInfo drive;
+            try
+            {
+                var root = Path.GetPathRoot(reportsFolderAbsolutePath);
+                if (string.IsNullOrEmpty(root))
+                {
+                    return;
+                }
+
+                drive = new DriveInfo(root);
+            }
+            catch (ArgumentException)
+            {
+                return; // ドライブ情報を取得できない場合はスキップ
+            }
+            catch (IOException)
+            {
+                return; // ドライブが利用不可の場合はスキップ
+            }
+
+            long availableMb = drive.AvailableFreeSpace / (1024L * 1024L);
+            if (availableMb < PREFLIGHT_MIN_FREE_DISK_MEGABYTES)
+            {
+                throw new IOException(
+                    $"Insufficient disk space on '{drive.RootDirectory.FullName}': {availableMb} MB available, at least {PREFLIGHT_MIN_FREE_DISK_MEGABYTES} MB required.");
+            }
+        }
+
+        /// <summary>
+        /// レポートフォルダの親ディレクトリへの書き込み権限を一時プローブファイルで確認します。
+        /// 親ディレクトリが存在しない場合は確認をスキップします。
+        /// </summary>
+        /// <param name="reportsFolderAbsolutePath">レポートフォルダの絶対パス。</param>
+        /// <exception cref="UnauthorizedAccessException">書き込み権限がない場合。</exception>
+        internal static void CheckReportsParentWritableOrThrow(string reportsFolderAbsolutePath)
+        {
+            var parent = Path.GetDirectoryName(reportsFolderAbsolutePath);
+            if (string.IsNullOrEmpty(parent) || !Directory.Exists(parent))
+            {
+                return;
+            }
+
+            var probePath = Path.Combine(parent, "." + Guid.NewGuid().ToString("N") + ".tmp");
+            try
+            {
+                File.WriteAllBytes(probePath, Array.Empty<byte>());
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw new UnauthorizedAccessException(
+                    $"The reports parent directory is not writable: '{parent}'. Ensure the process has write permission.");
+            }
+            catch (IOException)
+            {
+                return; // I/O エラーはディスク容量チェック側で捕捉済みのためスキップ
+            }
+            finally
+            {
+                try
+                {
+                    File.Delete(probePath);
+                }
+                catch (IOException)
+                {
+                    // プローブファイルの削除失敗は best-effort
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    // プローブファイルの削除失敗は best-effort
+                }
             }
         }
 

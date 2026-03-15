@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
@@ -489,6 +490,87 @@ namespace FolderDiffIL4DotNet.Tests
             finally
             {
                 TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Preflight checks
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_WhenReportsFolderPathExceedsOsLimit_ReturnsInvalidArgumentsExitCode()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-preflight-pathlen-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            // A label long enough so that BaseDirectory + "/Reports/" + label exceeds any OS path limit
+            var longLabel = new string('a', 4096);
+
+            try
+            {
+                await WithMissingConfigFileAsync(async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, longLabel, "--no-pause" });
+
+                    Assert.Equal(2, exitCode);
+                    Assert.Contains(logger.Messages, m => m.Contains("too long", StringComparison.OrdinalIgnoreCase));
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public void CheckDiskSpaceOrThrow_WithSufficientFreeSpace_DoesNotThrow()
+        {
+            // Verifies that the disk-space check passes silently on a normal system.
+            var ex = Record.Exception(() => ProgramRunner.CheckDiskSpaceOrThrow(Path.GetTempPath()));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_ThrowsUnauthorizedAccessException()
+        {
+            // This test requires Unix file-mode semantics and a non-root user.
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
+                !RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return;
+            }
+
+            if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
+            {
+                return; // root bypasses Unix permission checks
+            }
+
+            var dir = Path.Combine(Path.GetTempPath(), "fd-perm-test-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                // Remove write permission from the directory (read + execute only)
+                File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+                // Pass a path whose parent is `dir` — the check probes a file inside `dir`
+                Assert.Throws<UnauthorizedAccessException>(() =>
+                    ProgramRunner.CheckReportsParentWritableOrThrow(Path.Combine(dir, "label")));
+            }
+            finally
+            {
+                try
+                {
+                    File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                }
+                catch (IOException) { }
+                catch (UnauthorizedAccessException) { }
+
+                TryDeleteDirectory(dir);
             }
         }
 
