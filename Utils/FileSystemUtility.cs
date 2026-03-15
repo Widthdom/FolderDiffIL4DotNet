@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
+using FolderDiffIL4DotNet.Common;
 
 namespace FolderDiffIL4DotNet.Utils
 {
@@ -34,7 +36,6 @@ namespace FolderDiffIL4DotNet.Utils
         private const string SPACE = " ";
         private const int FILE_SYSTEM_NAME_FIELD_LENGTH = 16;
         private const int MACOS_PATH_LIMIT = 1024;
-        private const string TIMESTAMP_FORMAT = "yyyy-MM-dd HH:mm:ss.fff zzz";
         private const string ERROR_FILE_PATH_NULL = "File path cannot be null or whitespace.";
         private const string ERROR_FILE_NOT_FOUND = "File not found.";
         /// <summary>
@@ -182,7 +183,8 @@ namespace FolderDiffIL4DotNet.Utils
         /// </summary>
         public static string GetTimestamp(string fileAbsolutepath)
         {
-            return new DateTimeOffset(File.GetLastWriteTime(fileAbsolutepath)).ToString(TIMESTAMP_FORMAT);
+            return new DateTimeOffset(File.GetLastWriteTime(fileAbsolutepath))
+                .ToString(Constants.TIMESTAMP_WITH_TIME_ZONE_FORMAT, CultureInfo.InvariantCulture);
         }
 
         /// <summary>

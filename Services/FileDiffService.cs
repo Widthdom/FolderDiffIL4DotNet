@@ -15,19 +15,14 @@ namespace FolderDiffIL4DotNet.Services
     public sealed class FileDiffService : IFileDiffService
     {
         /// <summary>
-        /// 1 KiB (2^10) を表すバイト数。
-        /// </summary>
-        private const int BYTES_PER_KILOBYTE = 1024;
-
-        /// <summary>
         /// テキスト差分の高速化を検討するサイズ閾値（バイト）の既定値。
         /// </summary>
-        private const int DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * BYTES_PER_KILOBYTE;
+        private const int DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * Constants.BYTES_PER_KILOBYTE;
 
         /// <summary>
         /// テキスト差分比較時のチャンクサイズ（バイト）の既定値。
         /// </summary>
-        private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * BYTES_PER_KILOBYTE;
+        private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * Constants.BYTES_PER_KILOBYTE;
         /// <summary>
         /// アプリケーションの設定情報
         /// </summary>
@@ -378,7 +373,7 @@ namespace FolderDiffIL4DotNet.Services
                 return defaultBytes;
             }
 
-            long bytes = (long)configuredKilobytes * BYTES_PER_KILOBYTE;
+            long bytes = (long)configuredKilobytes * Constants.BYTES_PER_KILOBYTE;
             if (bytes > int.MaxValue)
             {
                 return defaultBytes;

@@ -36,9 +36,6 @@ namespace FolderDiffIL4DotNet
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in 'new' have older last-modified timestamps than the corresponding files in 'old'. See diff_report.md for details.";
         private const int EXIT_CODE_SUCCESS = 0;
         private const int EXIT_CODE_ERROR = 1;
-        private const int IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT = 2000;
-        private const int IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS = 60;
-        private const int IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS = 12;
 
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
@@ -332,12 +329,14 @@ namespace FolderDiffIL4DotNet
                 return null;
             }
 
+            // 起動引数や config.json では露出していないメモリ件数と TTL は、
+            // コンソール実行の再利用効率と常駐コストのバランスを取る共通既定値を使う。
             return new ILCache(
                 string.IsNullOrWhiteSpace(config.ILCacheDirectoryAbsolutePath) ? Path.Combine(AppContext.BaseDirectory, Constants.DEFAULT_IL_CACHE_DIR_NAME) : config.ILCacheDirectoryAbsolutePath,
                 logger,
-                ilCacheMaxMemoryEntries: IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
-                timeToLive: TimeSpan.FromHours(IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS),
-                statsLogIntervalSeconds: config.ILCacheStatsLogIntervalSeconds <= 0 ? IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS : config.ILCacheStatsLogIntervalSeconds,
+                ilCacheMaxMemoryEntries: Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
+                timeToLive: TimeSpan.FromHours(Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS),
+                statsLogIntervalSeconds: config.ILCacheStatsLogIntervalSeconds <= 0 ? Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS : config.ILCacheStatsLogIntervalSeconds,
                 ilCacheMaxDiskFileCount: config.ILCacheMaxDiskFileCount,
                 ilCacheMaxDiskMegabytes: config.ILCacheMaxDiskMegabytes);
         }

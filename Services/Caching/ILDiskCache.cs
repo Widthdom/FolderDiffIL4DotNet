@@ -19,11 +19,6 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private const string IL_CACHE_EXTENSION = ".ilcache";
 
         /// <summary>
-        /// 1 KiB (2^10) を long 型で扱う値。
-        /// </summary>
-        private const long BYTES_PER_KILOBYTE_LONG = 1024L;
-
-        /// <summary>
         /// ログ出力サービス。
         /// </summary>
         private readonly ILoggerService _logger;
@@ -66,7 +61,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             _cacheDirectoryAbsolutePath = cacheDirectoryAbsolutePath;
             _maxDiskFileCount = maxDiskFileCount;
             _maxDiskBytes = maxDiskMegabytes > 0
-                ? maxDiskMegabytes * BYTES_PER_KILOBYTE_LONG * BYTES_PER_KILOBYTE_LONG
+                ? maxDiskMegabytes * Constants.BYTES_PER_KILOBYTE * Constants.BYTES_PER_KILOBYTE
                 : 0;
 
             if (string.IsNullOrWhiteSpace(cacheDirectoryAbsolutePath))

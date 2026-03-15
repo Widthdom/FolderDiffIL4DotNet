@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services
@@ -73,7 +75,9 @@ namespace FolderDiffIL4DotNet.Services
 
             Directory.CreateDirectory(_logDirectoryAbsolutePath);
 
-            _logFileAbsolutePath = Path.Combine(_logDirectoryAbsolutePath, $"{LOG_FILE_PREFIX}{DateTime.Now:yyyyMMdd}.log");
+            _logFileAbsolutePath = Path.Combine(
+                _logDirectoryAbsolutePath,
+                $"{LOG_FILE_PREFIX}{DateTime.Now.ToString(Constants.LOG_FILE_DATE_FORMAT, CultureInfo.InvariantCulture)}.log");
 
             PathValidator.ValidateAbsolutePathLengthOrThrow(_logFileAbsolutePath);
         }
@@ -139,7 +143,8 @@ namespace FolderDiffIL4DotNet.Services
 
             using (var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true))
             {
-                streamWriter.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {formattedMessage}");
+                streamWriter.WriteLine(
+                    $"[{DateTime.Now.ToString(Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture)}] {formattedMessage}");
                 if (exception != null)
                 {
                     streamWriter.WriteLine(exception.StackTrace);

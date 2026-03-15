@@ -1,6 +1,8 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Utils;
 using Xunit;
 
@@ -58,8 +60,9 @@ namespace FolderDiffIL4DotNet.Tests.Utils
             var timestamp = FileSystemUtility.GetTimestamp(file);
 
             Assert.False(string.IsNullOrWhiteSpace(timestamp));
-            Assert.Contains("-", timestamp);
-            Assert.Contains(":", timestamp);
+            Assert.True(
+                DateTimeOffset.TryParseExact(timestamp, Constants.TIMESTAMP_WITH_TIME_ZONE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                $"Unexpected timestamp format: {timestamp}");
         }
 
         [Fact]

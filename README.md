@@ -304,10 +304,12 @@ Override only the settings you want to change. For example:
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#configuration-table-en) and [`TextFileExtensions`](#configuration-table-en) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
+- Shared byte-size and timestamp format literals are defined in [`Common/Constants.cs`](Common/Constants.cs), so log-file naming, log-entry timestamps, and report timestamps do not drift independently.
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#configuration-table-en).
 - Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
 - If any file ends as `MD5Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion.
+- Internal IL cache defaults that are not exposed in [`config.json`](config.json) are currently `2000` in-memory entries, `12` hours TTL, and `60` seconds for internal stats logging; [`ProgramRunner`](ProgramRunner.cs) keeps them as shared code defaults to balance reuse against console-tool memory/log growth.
 
 <a id="readme-en-generated-artifacts"></a>
 ## Generated Artifacts
@@ -654,10 +656,12 @@ flowchart TD
 
 補足:
 - [`IgnoredExtensions`](#configuration-table-ja) と [`TextFileExtensions`](#configuration-table-ja) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
+- バイト換算値や日時フォーマットなどの共有リテラルは [`Common/Constants.cs`](Common/Constants.cs) に集約してあり、ログファイル名・ログ本文・レポート用タイムスタンプが別々にずれないようにしています。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#configuration-table-ja) に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。
 - `MD5Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。
+- [`config.json`](config.json) に公開していない内部 IL キャッシュ既定値は、現在メモリ `2000` 件、TTL `12` 時間、内部統計ログ `60` 秒です。[`ProgramRunner`](ProgramRunner.cs) で共通既定値として管理し、再利用効率とコンソールツールとしてのメモリ/ログ増加のバランスを取っています。
 
 <a id="readme-ja-generated-artifacts"></a>
 ## 生成物

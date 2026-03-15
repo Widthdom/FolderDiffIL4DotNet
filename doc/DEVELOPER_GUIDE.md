@@ -65,6 +65,7 @@ Generated during a run:
 Keep internal formatting choices simple and local:
 - Prefer interpolated strings for fixed-format messages that are only used once.
 - Keep shared format templates only when the same message shape is intentionally reused in multiple places.
+- Promote repeated byte-size, date-format, and similar app-wide literals into [`Common/Constants.cs`](../Common/Constants.cs) instead of re-declaring near each caller.
 - Avoid adding new `#region` blocks unless they solve a concrete readability problem that file structure and naming do not already solve.
 
 ## Architecture Overview
@@ -344,6 +345,10 @@ catch (Exception ex)
 | Cache | [`EnableILCache`](../README.md#configuration-table-en), [`ILCacheDirectoryAbsolutePath`](../README.md#configuration-table-en), [`ILCacheStatsLogIntervalSeconds`](../README.md#configuration-table-en), [`ILCacheMaxDiskFileCount`](../README.md#configuration-table-en), [`ILCacheMaxDiskMegabytes`](../README.md#configuration-table-en) | Controls IL cache lifetime and storage |
 | Network-share mode | [`OptimizeForNetworkShares`](../README.md#configuration-table-en), [`AutoDetectNetworkShares`](../README.md#configuration-table-en) | Prevents high-I/O behavior on slower remote storage |
 
+Additional internal defaults:
+- [`ProgramRunner`](../ProgramRunner.cs) currently applies non-configurable IL cache defaults from [`Common/Constants.cs`](../Common/Constants.cs): `2000` memory entries, `12` hours TTL, and `60` seconds for internal stats logs.
+- Those values are intentionally documented in code because they trade off same-day rerun reuse against unbounded memory or log growth in a short-lived console process.
+
 ### Runtime mode resolution
 
 ```mermaid
@@ -531,6 +536,7 @@ dotnet run -- "/absolute/path/to/old" "/absolute/path/to/new" "dev-run" --no-pau
 文字列整形や構造化は、まず局所性と読みやすさを優先します。
 - 固定書式で単発利用のメッセージは、`string.Format(...)` より補間文字列を優先します。
 - 同じ文言テンプレートを複数箇所で意図的に共有する場合のみ、共通の書式定数やヘルパーを残します。
+- バイト換算値、日時フォーマットのようなアプリ横断の共有リテラルは、呼び出し側ごとに再定義せず [`Common/Constants.cs`](../Common/Constants.cs) へ寄せてください。
 - `#region` は、ファイル構成や命名だけでは読みづらい具体的な事情がある場合に限って追加してください。
 
 ## アーキテクチャ概要
@@ -808,6 +814,10 @@ catch (Exception ex)
 | 並列度 | [`MaxParallelism`](../README.md#configuration-table-ja), [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja), [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) | CPU 利用とテキスト比較戦略の制御 |
 | キャッシュ | [`EnableILCache`](../README.md#configuration-table-ja), [`ILCacheDirectoryAbsolutePath`](../README.md#configuration-table-ja), [`ILCacheStatsLogIntervalSeconds`](../README.md#configuration-table-ja), [`ILCacheMaxDiskFileCount`](../README.md#configuration-table-ja), [`ILCacheMaxDiskMegabytes`](../README.md#configuration-table-ja) | IL キャッシュの寿命と保存先制御 |
 | ネットワーク共有向け | [`OptimizeForNetworkShares`](../README.md#configuration-table-ja), [`AutoDetectNetworkShares`](../README.md#configuration-table-ja) | 遅いストレージでの高 I/O 挙動抑制 |
+
+補足の内部既定値:
+- [`ProgramRunner`](../ProgramRunner.cs) は、[`Common/Constants.cs`](../Common/Constants.cs) で定義した IL キャッシュ内部既定値として、メモリ `2000` 件、TTL `12` 時間、内部統計ログ `60` 秒を使います。
+- これらは同日中の再実行で再利用を効かせつつ、短命なコンソールプロセスとしてメモリ消費やログ肥大を抑えるため、コード側で理由付きの既定値として維持しています。
 
 ### 実行モードの決定
 

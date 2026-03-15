@@ -1,6 +1,9 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
 
@@ -20,6 +23,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var directory = Path.GetDirectoryName(logger.LogFileAbsolutePath);
             Assert.False(string.IsNullOrWhiteSpace(directory));
             Assert.True(Directory.Exists(directory));
+            var logFileName = Path.GetFileName(logger.LogFileAbsolutePath);
+            Assert.Matches(new Regex(@"^log_\d{8}\.log$", RegexOptions.CultureInvariant), logFileName);
+            var datePart = Assert.IsType<string>(logFileName)[4..^4];
+            Assert.True(
+                DateTime.TryParseExact(datePart, Constants.LOG_FILE_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                $"Unexpected log file date format: {logFileName}");
         }
 
         [Fact]
@@ -56,6 +65,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var logText = File.ReadAllText(tempLogPath);
                 Assert.Contains("[ERROR] failure", logText);
                 Assert.Contains(captured.StackTrace, logText);
+                var firstLine = Assert.IsType<string>(logText.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)[0]);
+                Assert.Matches(new Regex(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[ERROR\] failure$", RegexOptions.CultureInvariant), firstLine);
+                var timestampText = firstLine[1..firstLine.IndexOf(']')];
+                Assert.True(
+                    DateTime.TryParseExact(timestampText, Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                    $"Unexpected log entry timestamp format: {firstLine}");
             }
             finally
             {

@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Centralized repeated byte-size and timestamp format literals in [`Common/Constants.cs`](Common/Constants.cs), switched logging/timestamp helpers to the shared definitions, documented the rationale for the internal IL cache defaults used by [`ProgramRunner`](ProgramRunner.cs), and added regression coverage for the shared formats and cache-default wiring.
 - Replaced broad `catch (Exception)` blocks in [`FolderDiffService`](Services/FolderDiffService.cs) and [`FileDiffService`](Services/FileDiffService.cs) with expected runtime exception handling plus separate unexpected-error logging, clarified the best-effort versus fatal exception policy around precompute/cache-cleanup/report-protection paths, and refreshed the bilingual docs and regression tests.
 - Refactored [`ProgramRunner.RunAsync()`](ProgramRunner.cs) into phase-oriented helpers for logger startup, argument validation, configuration/runtime preparation, diff execution, report generation, and exit prompting, reducing the main orchestration method without changing observable behavior.
 - Split OS-specific network-path detection branches out of [`FileSystemUtility.IsLikelyNetworkPath()`](Utils/FileSystemUtility.cs) and extracted report-write/protection helpers from [`ReportGenerateService.GenerateDiffReport()`](Services/ReportGenerateService.cs), improving readability while keeping behavior stable.
@@ -232,6 +233,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
+- 繰り返し出ていたバイト換算値と日時フォーマットを [`Common/Constants.cs`](Common/Constants.cs) へ集約し、ログ出力・タイムスタンプ生成をその共有定義へ切り替えました。あわせて [`ProgramRunner`](ProgramRunner.cs) が使う内部 IL キャッシュ既定値の採用理由をコード上に明記し、共有書式と既定値配線を確認する回帰テストを追加しました。
 - [`FolderDiffService`](Services/FolderDiffService.cs) と [`FileDiffService`](Services/FileDiffService.cs) に残っていた広すぎる `catch (Exception)` を、想定される実行時例外の個別処理と想定外例外用ログへ置き換えました。あわせて、プリコンピュート・キャッシュ削除・レポート保護の best-effort 方針と、致命扱いで再スローする経路の境界を明文化し、日英ドキュメントと回帰テストを更新しました。
 - [`ProgramRunner.RunAsync()`](ProgramRunner.cs) を、ロガー起動、引数検証、設定/実行準備、差分実行、レポート生成、終了プロンプトの各 helper へ分割し、外部挙動を変えずに主オーケストレーションの見通しを改善しました。
 - [`FileSystemUtility.IsLikelyNetworkPath()`](Utils/FileSystemUtility.cs) から OS 別のネットワークパス判定を切り出し、[`ReportGenerateService.GenerateDiffReport()`](Services/ReportGenerateService.cs) でもレポート書き出しと読み取り専用保護の helper を抽出して、挙動を維持したまま可読性を上げました。

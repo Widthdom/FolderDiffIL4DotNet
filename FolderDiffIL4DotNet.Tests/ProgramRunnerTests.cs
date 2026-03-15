@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Services.Caching;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests
@@ -71,6 +75,28 @@ namespace FolderDiffIL4DotNet.Tests
             }
         }
 
+        [Fact]
+        public void CreateIlCache_WhenStatsIntervalIsNonPositive_UsesDocumentedDefaults()
+        {
+            var config = new ConfigSettings
+            {
+                EnableILCache = true,
+                ILCacheStatsLogIntervalSeconds = 0
+            };
+
+            var cache = InvokeCreateIlCache(config, new TestLogger());
+
+            Assert.NotNull(cache);
+            var memoryCache = GetPrivateFieldValue(cache, "_memoryCache");
+            var maxEntries = Assert.IsType<int>(GetPrivateFieldValue(memoryCache, "_maxEntries"));
+            var timeToLive = Assert.IsType<TimeSpan>(GetPrivateFieldValue(memoryCache, "_timeToLive"));
+            var statsLogInterval = Assert.IsType<TimeSpan>(GetPrivateFieldValue(cache, "_statsLogInterval"));
+
+            Assert.Equal(Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT, maxEntries);
+            Assert.Equal(TimeSpan.FromHours(Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS), timeToLive);
+            Assert.Equal(TimeSpan.FromSeconds(Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS), statsLogInterval);
+        }
+
         private static async Task WithMissingConfigFileAsync(Func<Task> assertion)
         {
             var backupExists = File.Exists(ConfigFilePath);
@@ -92,6 +118,22 @@ namespace FolderDiffIL4DotNet.Tests
                     await File.WriteAllTextAsync(ConfigFilePath, backupContent);
                 }
             }
+        }
+
+        private static ILCache InvokeCreateIlCache(ConfigSettings config, ILoggerService logger)
+        {
+            var method = typeof(ProgramRunner).GetMethod("CreateIlCache", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            return Assert.IsType<ILCache>(method.Invoke(null, new object[] { config, logger }));
+        }
+
+        private static object GetPrivateFieldValue(object target, string fieldName)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            var value = field.GetValue(target);
+            Assert.NotNull(value);
+            return value;
         }
 
         private static void TryDeleteDirectory(string path)
