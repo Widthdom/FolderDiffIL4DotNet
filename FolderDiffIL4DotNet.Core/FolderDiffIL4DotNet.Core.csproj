@@ -7,8 +7,5 @@
     <NoWarn>$(NoWarn);1572;1573;1574;1591</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Figgle" Version="0.5.1" />
-  </ItemGroup>
 
 </Project>
