@@ -242,7 +242,7 @@ flowchart TD
 Implementation notes:
 - [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) clears run-scoped aggregates, then asks [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) to enumerate old/new files with [`IgnoredExtensions`](../README.md#configuration-table-en) already applied and to compute progress from the union of relative paths.
 - Discovery now flows through `IFileSystemService.EnumerateFiles(...)`, so ignored extensions are filtered while entries are streamed instead of first materializing the entire directory tree into an array.
-- `PrecomputeIlCachesAsync()` runs before per-file classification so disassembler/cache warm-up does not distort the later decision path.
+- `PrecomputeIlCachesAsync()` runs before per-file classification so disassembler/cache warm-up does not distort the later decision path. It now streams distinct old/new absolute paths in configurable batches instead of building one extra all-files list first, which reduces peak memory pressure on very large trees.
 - The old side is the driving set. Missing matches in `new` become `Removed`, while leftovers in `remainingNewFilesAbsolutePathHashSet` become `Added` after old-side traversal completes.
 - Parallel mode only changes processing order. Because each relative path is removed from the remaining-new set before the expensive compare starts, the final classification rules are the same as in sequential execution.
 - `Unchanged` versus `Modified` is decided only from the boolean returned by `FilesAreEqualAsync(relativePath, maxParallel)`. The detail reason is recorded separately in [`FileDiffResultLists`](../Models/FileDiffResultLists.cs).
@@ -285,6 +285,7 @@ Per-file mechanics:
 - `ShouldExcludeIlLine(...)` always strips `// MVID:`. If [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-en) is `true`, it also strips any substring from [`ILIgnoreLineContainingStrings`](../README.md#configuration-table-en) after trimming and deduplicating the configured values, using `StringComparison.Ordinal`.
 - Files that are not handled by IL comparison and whose extension is included in [`TextFileExtensions`](../README.md#configuration-table-en) are compared as text files. At that point, the code converts [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en) and [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en) into effective byte counts and uses those values to choose the comparison method.
 - If [`OptimizeForNetworkShares`](../README.md#configuration-table-en) is enabled, the code avoids chunk-parallel reads on remote storage and always uses sequential `DiffTextFilesAsync(...)`, regardless of file size. In local-optimized mode, it uses the old-side file size: below [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en) it stays sequential, and at or above the threshold it splits the file into fixed-size chunks based on [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en) and runs `DiffTextFilesParallelAsync(...)`.
+- If [`TextDiffParallelMemoryLimitMegabytes`](../README.md#configuration-table-en) is greater than `0`, [`FileDiffService`](../Services/FileDiffService.cs) treats it as an additional buffer budget for chunk-parallel text diff, logs the current managed-heap size, and reduces the effective worker count or falls back to sequential comparison when that budget cannot cover the requested parallelism.
 - If chunk-parallel text comparison throws [`ArgumentOutOfRangeException`](https://learn.microsoft.com/en-us/dotnet/api/system.argumentoutofrangeexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), or [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0), the code logs a warning and falls back to sequential `DiffTextFilesAsync(...)`. Because of that fallback, `DiffTextFilesParallelAsync(...)` must not swallow those exceptions and replace them with `false`.
 - Files that are neither IL-comparison targets nor text-comparison targets end at `MD5Mismatch` when MD5 differs. `MD5Mismatch` is also part of the aggregated end-of-run warnings, and the report writes that warning in the final `Warnings` section before any timestamp-regression entries. There is no deeper generic binary diff step today.
 - For files that exist on both sides, if [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../README.md#configuration-table-en) is `true` and the new-side last-modified time is older than the old-side last-modified time, the code records a timestamp-regression warning in addition to the comparison result. That warning is emitted in the aggregated console output at the end of the run and also written after the `MD5Mismatch` warning in the report's final `Warnings` section as a list of files with regressed timestamps.
@@ -349,8 +350,8 @@ catch (Exception ex)
 | --- | --- | --- |
 | Inclusion and report shape | [`IgnoredExtensions`](../README.md#configuration-table-en), [`TextFileExtensions`](../README.md#configuration-table-en), [`ShouldIncludeUnchangedFiles`](../README.md#configuration-table-en), [`ShouldIncludeIgnoredFiles`](../README.md#configuration-table-en), [`ShouldOutputFileTimestamps`](../README.md#configuration-table-en), [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../README.md#configuration-table-en) | Controls scope, report verbosity, and timestamp-regression warnings |
 | IL behavior | [`ShouldOutputILText`](../README.md#configuration-table-en), [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-en), [`ILIgnoreLineContainingStrings`](../README.md#configuration-table-en) | Controls IL normalization and artifact output |
-| Parallelism | [`MaxParallelism`](../README.md#configuration-table-en), [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en), [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en) | Controls CPU and text-diff strategy |
-| Cache | [`EnableILCache`](../README.md#configuration-table-en), [`ILCacheDirectoryAbsolutePath`](../README.md#configuration-table-en), [`ILCacheStatsLogIntervalSeconds`](../README.md#configuration-table-en), [`ILCacheMaxDiskFileCount`](../README.md#configuration-table-en), [`ILCacheMaxDiskMegabytes`](../README.md#configuration-table-en) | Controls IL cache lifetime and storage |
+| Parallelism | [`MaxParallelism`](../README.md#configuration-table-en), [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en), [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en), [`TextDiffParallelMemoryLimitMegabytes`](../README.md#configuration-table-en) | Controls CPU usage, chunk sizing, and optional memory budget for large-text comparison |
+| Cache | [`EnableILCache`](../README.md#configuration-table-en), [`ILCacheDirectoryAbsolutePath`](../README.md#configuration-table-en), [`ILCacheStatsLogIntervalSeconds`](../README.md#configuration-table-en), [`ILCacheMaxDiskFileCount`](../README.md#configuration-table-en), [`ILCacheMaxDiskMegabytes`](../README.md#configuration-table-en), [`ILPrecomputeBatchSize`](../README.md#configuration-table-en) | Controls IL cache lifetime, storage, and large-tree precompute batching |
 | Network-share mode | [`OptimizeForNetworkShares`](../README.md#configuration-table-en), [`AutoDetectNetworkShares`](../README.md#configuration-table-en) | Prevents high-I/O behavior on slower remote storage |
 
 Additional internal defaults:
@@ -383,6 +384,8 @@ Key performance features:
 - Parallel file comparison in [`FolderDiffService`](../Services/FolderDiffService.cs)
 - Optional IL cache warmup and disk persistence
 - Chunk-parallel text comparison for large local text files
+- Optional memory-budget-aware throttling for chunk-parallel text comparison
+- Batched IL precompute target enumeration for very large folder trees
 - Tool failure blacklist inside disassembler flow
 - Progress keep-alive while long-running precompute is in flight
 
@@ -390,7 +393,7 @@ When to be careful:
 - Changing default parallelism changes both throughput and I/O pressure.
 - Cache key shape must remain stable across tool-version changes.
 - Over-eager prefetching can regress NAS/SMB scenarios.
-- Large text-file behavior depends on both threshold and chunk size; they should be tuned together.
+- Large text-file behavior depends on threshold, chunk size, and optional memory budget; they should be tuned together.
 
 <a id="guide-en-doc-site"></a>
 ## Documentation Site and API Reference
@@ -736,7 +739,7 @@ flowchart TD
 実装上の補足:
 - [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) は実行単位の集計を初期化し、その後 [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) へ [`IgnoredExtensions`](../README.md#configuration-table-ja) 適用済み old/new 一覧の列挙と相対パス和集合件数の算出を委譲します。
 - 列挙は `IFileSystemService.EnumerateFiles(...)` 経由の遅延列挙で進むため、巨大フォルダでも全件配列化してからフィルタする構造を避けています。
-- `PrecomputeIlCachesAsync()` はファイルごとの本判定より前に走り、逆アセンブラや IL キャッシュのウォームアップを先に済ませます。
+- `PrecomputeIlCachesAsync()` はファイルごとの本判定より前に走り、逆アセンブラや IL キャッシュのウォームアップを先に済ませます。あわせて、大規模ツリーでも old/new 全件の追加リストをもう 1 本作らないよう、重複排除済みパスを設定可能なバッチ単位で流します。
 - 走査の主導権は old 側にあります。new 側に対応がなければ `Removed`、最後まで `remainingNewFilesAbsolutePathHashSet` に残ったものが `Added` です。
 - 並列実行で変わるのは処理順序だけです。高コストな比較に入る前に new 側の集合から対象の相対パスを外すため、最終的な分類結果のルール自体は逐次実行時と変わりません。
 - `Unchanged` と `Modified` は `FilesAreEqualAsync(relativePath, maxParallel)` の bool 戻り値だけで決まり、詳細理由は別途 [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) に記録されます。
@@ -779,6 +782,7 @@ flowchart TD
 - `ShouldExcludeIlLine(...)` は `// MVID:` を必ず除外します。さらに [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-ja) が `true` の場合は、[`ILIgnoreLineContainingStrings`](../README.md#configuration-table-ja) に設定された文字列を trim・重複排除したうえで、`StringComparison.Ordinal` の部分一致で除外します。
 - `.NET` 実行可能として IL 比較の対象にならず、かつ拡張子が [`TextFileExtensions`](../README.md#configuration-table-ja) に含まれるファイルは、テキストファイルとして比較します。このとき [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja) と [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) を実効バイト数に変換し、比較方法を決めます。
 - [`OptimizeForNetworkShares`](../README.md#configuration-table-ja) が有効な場合は、ネットワーク共有上でチャンクごとに何度もファイルを開閉するコストを避けるため、ファイルサイズにかかわらず `DiffTextFilesAsync(...)` による逐次比較を使います。ローカル最適化時は old 側ファイルのサイズを基準にし、[`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja) 未満なら逐次比較、以上なら [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) ごとの固定長チャンクに分割して `DiffTextFilesParallelAsync(...)` で並列比較します。
+- [`TextDiffParallelMemoryLimitMegabytes`](../README.md#configuration-table-ja) が `0` より大きい場合、[`FileDiffService`](../Services/FileDiffService.cs) はそれを並列テキスト比較で追加確保してよいバッファ予算として扱い、その時点の managed heap 使用量をログへ残しつつ、実効ワーカー数を下げるか逐次比較へフォールバックします。
 - 並列チャンク比較の途中で [`ArgumentOutOfRangeException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.argumentoutofrangeexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) のいずれかが出た場合は、warning を記録したうえで `DiffTextFilesAsync(...)` による逐次比較へフォールバックします。したがって `DiffTextFilesParallelAsync(...)` 側でこれらの例外を `false` に置き換えて握りつぶすと、呼び出し元はフォールバックできません。
 - IL 比較対象でもテキスト比較対象でもないファイルは、MD5 不一致の時点で `MD5Mismatch` が最終結果です。`MD5Mismatch` は実行完了時の集約警告の対象でもあり、レポートでは末尾の `Warnings` セクションで更新日時逆転警告より先に出します。現状はその先の汎用バイナリ差分はありません。
 - old/new の両方に存在するファイルについて、[`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../README.md#configuration-table-ja) が `true` かつ new 側の更新日時が old 側より古い場合は、比較結果とは別に更新日時逆転の警告が記録されます。この警告は実行完了時にコンソールへ集約出力され、レポートでは `MD5Mismatch` 警告の後に更新日時が逆転したファイルの一覧として `Warnings` セクションへ出力されます。
@@ -843,8 +847,8 @@ catch (Exception ex)
 | --- | --- | --- |
 | 対象範囲とレポート形状 | [`IgnoredExtensions`](../README.md#configuration-table-ja), [`TextFileExtensions`](../README.md#configuration-table-ja), [`ShouldIncludeUnchangedFiles`](../README.md#configuration-table-ja), [`ShouldIncludeIgnoredFiles`](../README.md#configuration-table-ja), [`ShouldOutputFileTimestamps`](../README.md#configuration-table-ja), [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../README.md#configuration-table-ja) | 比較対象、レポート粒度、更新日時逆転警告の制御 |
 | IL 関連 | [`ShouldOutputILText`](../README.md#configuration-table-ja), [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-ja), [`ILIgnoreLineContainingStrings`](../README.md#configuration-table-ja) | IL 正規化と成果物出力の制御 |
-| 並列度 | [`MaxParallelism`](../README.md#configuration-table-ja), [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja), [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) | CPU 利用とテキスト比較戦略の制御 |
-| キャッシュ | [`EnableILCache`](../README.md#configuration-table-ja), [`ILCacheDirectoryAbsolutePath`](../README.md#configuration-table-ja), [`ILCacheStatsLogIntervalSeconds`](../README.md#configuration-table-ja), [`ILCacheMaxDiskFileCount`](../README.md#configuration-table-ja), [`ILCacheMaxDiskMegabytes`](../README.md#configuration-table-ja) | IL キャッシュの寿命と保存先制御 |
+| 並列度 | [`MaxParallelism`](../README.md#configuration-table-ja), [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja), [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja), [`TextDiffParallelMemoryLimitMegabytes`](../README.md#configuration-table-ja) | CPU 利用、チャンク粒度、大きいテキスト比較時の任意メモリ予算を制御 |
+| キャッシュ | [`EnableILCache`](../README.md#configuration-table-ja), [`ILCacheDirectoryAbsolutePath`](../README.md#configuration-table-ja), [`ILCacheStatsLogIntervalSeconds`](../README.md#configuration-table-ja), [`ILCacheMaxDiskFileCount`](../README.md#configuration-table-ja), [`ILCacheMaxDiskMegabytes`](../README.md#configuration-table-ja), [`ILPrecomputeBatchSize`](../README.md#configuration-table-ja) | IL キャッシュの寿命、保存先、大規模ツリー向け事前計算バッチを制御 |
 | ネットワーク共有向け | [`OptimizeForNetworkShares`](../README.md#configuration-table-ja), [`AutoDetectNetworkShares`](../README.md#configuration-table-ja) | 遅いストレージでの高 I/O 挙動抑制 |
 
 補足の内部既定値:
@@ -877,6 +881,8 @@ flowchart TD
 - [`FolderDiffService`](../Services/FolderDiffService.cs) によるファイル比較の並列実行
 - 任意の IL キャッシュウォームアップとディスク永続化
 - ローカルの大きいテキスト向けチャンク並列比較
+- 並列テキスト比較に対する任意のメモリ予算ベース抑制
+- 大規模ツリー向けの IL 事前計算バッチ化
 - 逆アセンブラ失敗時のブラックリスト
 - 長い事前計算中でも進捗が止まって見えないようにスピナーを回す
 
@@ -884,7 +890,7 @@ flowchart TD
 - 既定並列度の変更はスループットと I/O 圧力の両方に効きます。
 - キャッシュキー形状を変えると、ツール更新時の整合性を壊しやすくなります。
 - 先読みを増やしすぎると NAS/SMB で退行しやすくなります。
-- 大きいテキストファイルの挙動は、閾値とチャンクサイズの組み合わせで決まります。
+- 大きいテキストファイルの挙動は、閾値・チャンクサイズ・任意メモリ予算の組み合わせで決まります。
 
 <a id="guide-ja-doc-site"></a>
 ## ドキュメントサイトと API リファレンス

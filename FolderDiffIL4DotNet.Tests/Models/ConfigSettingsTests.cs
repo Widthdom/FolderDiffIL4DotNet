@@ -58,11 +58,13 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "MaxParallelism": 8,
                   "TextDiffParallelThresholdKilobytes": 128,
                   "TextDiffChunkSizeKilobytes": 8,
+                  "TextDiffParallelMemoryLimitMegabytes": 32,
                   "EnableILCache": false,
                   "ILCacheDirectoryAbsolutePath": "/tmp/il-cache",
                   "ILCacheStatsLogIntervalSeconds": 30,
                   "ILCacheMaxDiskFileCount": 10,
                   "ILCacheMaxDiskMegabytes": 20,
+                  "ILPrecomputeBatchSize": 512,
                   "OptimizeForNetworkShares": true,
                   "AutoDetectNetworkShares": false
                 }
@@ -84,11 +86,13 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(8, config.MaxParallelism);
             Assert.Equal(128, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(8, config.TextDiffChunkSizeKilobytes);
+            Assert.Equal(32, config.TextDiffParallelMemoryLimitMegabytes);
             Assert.False(config.EnableILCache);
             Assert.Equal("/tmp/il-cache", config.ILCacheDirectoryAbsolutePath);
             Assert.Equal(30, config.ILCacheStatsLogIntervalSeconds);
             Assert.Equal(10, config.ILCacheMaxDiskFileCount);
             Assert.Equal(20, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(512, config.ILPrecomputeBatchSize);
             Assert.True(config.OptimizeForNetworkShares);
             Assert.False(config.AutoDetectNetworkShares);
         }
@@ -131,11 +135,13 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(0, config.MaxParallelism);
             Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
+            Assert.Equal(0, config.TextDiffParallelMemoryLimitMegabytes);
             Assert.True(config.EnableILCache);
             Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
             Assert.Equal(60, config.ILCacheStatsLogIntervalSeconds);
             Assert.Equal(1000, config.ILCacheMaxDiskFileCount);
             Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(2048, config.ILPrecomputeBatchSize);
             Assert.False(config.OptimizeForNetworkShares);
             Assert.True(config.AutoDetectNetworkShares);
         }

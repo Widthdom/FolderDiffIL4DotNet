@@ -141,7 +141,7 @@ Example `diff_report.md` (trimmed):
 - [`DiffExecutionContext`](Services/DiffExecutionContext.cs) carries run-specific paths and network-mode decisions.
 - Domain-independent console, diagnostics, I/O, and text helpers now live under [`FolderDiffIL4DotNet.Core/`](FolderDiffIL4DotNet.Core/), so the main executable project stays focused on folder-diff behavior.
 - [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs) owns discovery filtering and auto-parallelism policy, so [`FolderDiffService`](Services/FolderDiffService.cs) can stay focused on progress, orchestration, and result routing.
-- [`FolderDiffService`](Services/FolderDiffService.cs) uses [`IFileSystemService`](Services/IFileSystemService.cs) for discovery/output I/O, including lazy file enumeration via `EnumerateFiles(...)`, and [`FileDiffService`](Services/FileDiffService.cs) uses [`IFileComparisonService`](Services/IFileComparisonService.cs) for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
+- [`FolderDiffService`](Services/FolderDiffService.cs) uses [`IFileSystemService`](Services/IFileSystemService.cs) for discovery/output I/O, including lazy file enumeration via `EnumerateFiles(...)` plus batched IL-precompute target enumeration for large trees, and [`FileDiffService`](Services/FileDiffService.cs) uses [`IFileComparisonService`](Services/IFileComparisonService.cs) for hash, text, and chunk-read operations while honoring an optional text-diff memory budget, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
 - Core pipeline services ([`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
 
 <a id="readme-en-comparison-flow"></a>
@@ -172,7 +172,7 @@ Important details:
 - `Added`, `Removed`, `Unchanged`, and `Modified` are decided by relative path, not by file name alone.
 - IL comparison always ignores `// MVID:` lines, so build-specific assembly noise does not create false differences.
 - If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-en) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
-- Text files may use different internal strategies depending on size and runtime mode. If chunk-parallel comparison for a large local file throws, the run logs a warning and retries with sequential text comparison.
+- Text files may use different internal strategies depending on size, runtime mode, and optional memory budget. If [`TextDiffParallelMemoryLimitMegabytes`](#configuration-table-en) is set, the run logs the current managed-heap size when it reduces chunk-parallel workers or falls back to sequential text comparison. If chunk-parallel comparison for a large local file throws, the run logs a warning and retries with sequential text comparison.
 - Warm-up, cache cleanup, and post-write read-only protection are best-effort paths that log warnings and continue. Folder enumeration, matched-pair comparison, and report writing log and rethrow expected runtime exceptions because they affect correctness or required output.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
@@ -272,6 +272,11 @@ Override only the settings you want to change. For example:
       <td><code>64</code></td>
       <td>Chunk size (KiB) for parallel text diff.</td>
     </tr>
+    <tr id="config-en-textdiffparallelmemorylimitmegabytes">
+      <td><code>TextDiffParallelMemoryLimitMegabytes</code></td>
+      <td><code>0</code></td>
+      <td>Optional additional buffer budget (MB) for chunk-parallel text diff. <code>&lt;=0</code> means unlimited; otherwise the run reduces worker count or falls back to sequential comparison and logs the current managed-heap size.</td>
+    </tr>
     <tr id="config-en-enableilcache">
       <td><code>EnableILCache</code></td>
       <td><code>true</code></td>
@@ -296,6 +301,11 @@ Override only the settings you want to change. For example:
       <td><code>ILCacheMaxDiskMegabytes</code></td>
       <td><code>512</code></td>
       <td>Disk cache size cap (MB). <code>&lt;=0</code> means unlimited.</td>
+    </tr>
+    <tr id="config-en-ilprecomputebatchsize">
+      <td><code>ILPrecomputeBatchSize</code></td>
+      <td><code>2048</code></td>
+      <td>Batch size for IL-related precompute. <code>&lt;=0</code> uses the default and avoids building one extra all-files list for very large trees.</td>
     </tr>
     <tr id="config-en-optimizefornetworkshares">
       <td><code>OptimizeForNetworkShares</code></td>
@@ -510,7 +520,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 - [`DiffExecutionContext`](Services/DiffExecutionContext.cs) が実行ごとのパスやネットワークモード判定を保持します。
 - ドメイン非依存の console / diagnostics / I/O / text helper は [`FolderDiffIL4DotNet.Core/`](FolderDiffIL4DotNet.Core/) へ分離し、実行ファイル側のプロジェクトはフォルダ差分の振る舞いへ集中させています。
 - [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs) が、ファイル探索時の除外ルール適用と自動並列度の決定を担当し、[`FolderDiffService`](Services/FolderDiffService.cs) は進捗・実行制御・結果振り分けへ寄せています。
-- [`FolderDiffService`](Services/FolderDiffService.cs) は列挙/出力系 I/O を [`IFileSystemService`](Services/IFileSystemService.cs) に委譲しており、ファイル列挙も `EnumerateFiles(...)` による遅延列挙で扱います。[`FileDiffService`](Services/FileDiffService.cs) はハッシュ/テキスト/チャンク読み出し系 I/O を [`IFileComparisonService`](Services/IFileComparisonService.cs) に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
+- [`FolderDiffService`](Services/FolderDiffService.cs) は列挙/出力系 I/O を [`IFileSystemService`](Services/IFileSystemService.cs) に委譲しており、ファイル列挙も `EnumerateFiles(...)` による遅延列挙に加えて大量ツリー向けの IL 事前計算対象バッチ化で扱います。[`FileDiffService`](Services/FileDiffService.cs) はハッシュ/テキスト/チャンク読み出し系 I/O を [`IFileComparisonService`](Services/IFileComparisonService.cs) に委譲しつつ、必要に応じてテキスト比較のメモリ予算も適用するため、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
 - 主要パイプラインサービス（[`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
 
 <a id="readme-ja-comparison-flow"></a>
@@ -540,7 +550,7 @@ flowchart TD
 重要な点:
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
 - [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-ja) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
-- テキスト比較の内部実装はファイルサイズや実行モードで変わることがあります。大きいローカルファイルの並列比較で例外が出た場合は warning を記録し、逐次比較へフォールバックします。
+- テキスト比較の内部実装はファイルサイズ、実行モード、任意のメモリ予算で変わることがあります。[`TextDiffParallelMemoryLimitMegabytes`](#configuration-table-ja) を設定すると、並列ワーカー数を下げるか逐次比較へ切り替える際に、その時点の managed heap 使用量をログへ残します。大きいローカルファイルの並列比較で例外が出た場合は warning を記録し、逐次比較へフォールバックします。
 - ウォームアップ、キャッシュ削除、書き込み後の読み取り専用化は best-effort として warning を記録して継続します。一方、フォルダ列挙、対応ファイル比較、レポート書き込みは正しさや成果物に直結するため、想定される実行時例外でもログ出力のうえ再スローします。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
@@ -640,6 +650,11 @@ flowchart TD
       <td><code>64</code></td>
       <td>並列テキスト比較のチャンクサイズ（KiB）。</td>
     </tr>
+    <tr id="config-ja-textdiffparallelmemorylimitmegabytes">
+      <td><code>TextDiffParallelMemoryLimitMegabytes</code></td>
+      <td><code>0</code></td>
+      <td>並列テキスト比較で追加確保してよいバッファ予算（MB）。<code>&lt;=0</code> は無制限で、それ以外はワーカー数を減らすか逐次比較へ切り替え、その際の managed heap 使用量をログへ出力します。</td>
+    </tr>
     <tr id="config-ja-enableilcache">
       <td><code>EnableILCache</code></td>
       <td><code>true</code></td>
@@ -664,6 +679,11 @@ flowchart TD
       <td><code>ILCacheMaxDiskMegabytes</code></td>
       <td><code>512</code></td>
       <td>ディスクキャッシュ容量上限（MB）。<code>&lt;=0</code> で無制限。</td>
+    </tr>
+    <tr id="config-ja-ilprecomputebatchsize">
+      <td><code>ILPrecomputeBatchSize</code></td>
+      <td><code>2048</code></td>
+      <td>IL 関連事前計算のバッチサイズ。<code>&lt;=0</code> で既定値を使い、非常に大きいツリーでも余分な全件リストを追加生成しないようにします。</td>
     </tr>
     <tr id="config-ja-optimizefornetworkshares">
       <td><code>OptimizeForNetworkShares</code></td>

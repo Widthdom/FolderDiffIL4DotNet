@@ -108,6 +108,13 @@ namespace FolderDiffIL4DotNet.Models
         public int TextDiffChunkSizeKilobytes { get; set; } = 64;
 
         /// <summary>
+        /// テキスト差分の並列チャンク比較で追加確保してよいバッファ予算（MB 単位）。
+        /// 0 以下は制限なしです。1 ワーカーあたり old/new 2 本のチャンクバッファを確保する想定で、
+        /// この予算を超える場合は実効並列度を下げるか逐次比較へフォールバックします。
+        /// </summary>
+        public int TextDiffParallelMemoryLimitMegabytes { get; set; }
+
+        /// <summary>
         /// IL 逆アセンブル結果をキャッシュして再実行時の再逆アセンブルを回避するか
         /// </summary>
         public bool EnableILCache { get; set; } = true;
@@ -135,6 +142,12 @@ namespace FolderDiffIL4DotNet.Models
         /// ディスク IL キャッシュのサイズ上限（MB 単位、既定: 512、0 以下で無制限）。超過時はサイズが下回るまで古いものを削除。
         /// </summary>
         public int ILCacheMaxDiskMegabytes { get; set; } = 512;
+
+        /// <summary>
+        /// IL 関連の事前計算を分割実行するバッチサイズ。既定値は 2048、0 以下または未指定で既定値を使います。
+        /// 大量ファイル時に old/new 全件の一時集約を避け、追加メモリ使用量を抑えます。
+        /// </summary>
+        public int ILPrecomputeBatchSize { get; set; } = 2048;
 
         /// <summary>
         /// ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化するかどうか。

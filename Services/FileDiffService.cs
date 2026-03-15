@@ -22,6 +22,11 @@ namespace FolderDiffIL4DotNet.Services
         /// テキスト差分比較時のチャンクサイズ（バイト）の既定値。
         /// </summary>
         private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * Constants.BYTES_PER_KILOBYTE;
+
+        /// <summary>
+        /// 1 MiB を表すバイト数。
+        /// </summary>
+        private const int BYTES_PER_MEGABYTE = Constants.BYTES_PER_KILOBYTE * Constants.BYTES_PER_KILOBYTE;
         /// <summary>
         /// アプリケーションの設定情報
         /// </summary>
@@ -196,13 +201,22 @@ namespace FolderDiffIL4DotNet.Services
                             long file1Length = _fileComparisonService.GetFileLength(file1AbsolutePath);
                             if (file1Length >= textDiffParallelThresholdBytes)
                             {
-                                // 大きいファイルは並列チャンク比較で高速化
-                                areTextFilesEqual = await DiffTextFilesParallelAsync(
-                                    file1AbsolutePath,
-                                    file2AbsolutePath,
-                                    largeFileSizeThresholdBytes: textDiffParallelThresholdBytes,
-                                    chunkSizeBytes: textDiffChunkSizeBytes,
-                                    maxParallel: maxParallel);
+                                int effectiveMaxParallel = DetermineEffectiveTextDiffParallelism(fileRelativePath, maxParallel, textDiffChunkSizeBytes);
+                                if (effectiveMaxParallel == 1)
+                                {
+                                    // メモリ予算が小さい場合は追加バッファ確保を抑えるため逐次比較へ切り替える。
+                                    areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                                }
+                                else
+                                {
+                                    // 大きいファイルは並列チャンク比較で高速化
+                                    areTextFilesEqual = await DiffTextFilesParallelAsync(
+                                        file1AbsolutePath,
+                                        file2AbsolutePath,
+                                        largeFileSizeThresholdBytes: textDiffParallelThresholdBytes,
+                                        chunkSizeBytes: textDiffChunkSizeBytes,
+                                        maxParallel: effectiveMaxParallel);
+                                }
                             }
                             else
                             {
@@ -379,6 +393,83 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return (int)bytes;
+        }
+
+        /// <summary>
+        /// テキスト差分の追加メモリ予算を考慮して、チャンク並列比較に使う実効並列度を決定します。
+        /// </summary>
+        /// <param name="fileRelativePath">ログ出力に使うファイル相対パス。</param>
+        /// <param name="requestedMaxParallel">呼び出し側が要求した最大並列度。</param>
+        /// <param name="chunkSizeBytes">1 チャンクのサイズ（バイト）。</param>
+        /// <returns>実効並列度。1 以下の場合は呼び出し側が逐次比較へフォールバックします。</returns>
+        private int DetermineEffectiveTextDiffParallelism(string fileRelativePath, int requestedMaxParallel, int chunkSizeBytes)
+        {
+            if (requestedMaxParallel <= 1)
+            {
+                return requestedMaxParallel;
+            }
+
+            long memoryLimitBytes = GetConfiguredTextDiffParallelMemoryLimitBytes();
+            if (memoryLimitBytes <= 0)
+            {
+                return requestedMaxParallel;
+            }
+
+            long bytesPerWorker = (long)chunkSizeBytes * 2;
+            if (bytesPerWorker <= 0)
+            {
+                return requestedMaxParallel;
+            }
+
+            long maxWorkersByBudget = memoryLimitBytes / bytesPerWorker;
+            if (maxWorkersByBudget <= 1)
+            {
+                LogTextDiffMemoryLimitApplied(fileRelativePath, requestedMaxParallel, effectiveMaxParallel: 1, chunkSizeBytes, memoryLimitBytes, fallbackToSequential: true);
+                return 1;
+            }
+
+            int effectiveMaxParallel = (int)Math.Min(requestedMaxParallel, Math.Min(maxWorkersByBudget, int.MaxValue));
+            if (effectiveMaxParallel < requestedMaxParallel)
+            {
+                LogTextDiffMemoryLimitApplied(fileRelativePath, requestedMaxParallel, effectiveMaxParallel, chunkSizeBytes, memoryLimitBytes, fallbackToSequential: false);
+            }
+
+            return effectiveMaxParallel;
+        }
+
+        /// <summary>
+        /// 設定されたテキスト差分の追加メモリ予算をバイト単位で返します。
+        /// </summary>
+        /// <returns>バイト単位の予算。0 以下は制限なし。</returns>
+        private long GetConfiguredTextDiffParallelMemoryLimitBytes()
+        {
+            if (_config.TextDiffParallelMemoryLimitMegabytes <= 0)
+            {
+                return 0;
+            }
+
+            return (long)_config.TextDiffParallelMemoryLimitMegabytes * BYTES_PER_MEGABYTE;
+        }
+
+        /// <summary>
+        /// テキスト差分のメモリ予算により実効並列度を調整したことをログ出力します。
+        /// </summary>
+        /// <param name="fileRelativePath">対象ファイルの相対パス。</param>
+        /// <param name="requestedMaxParallel">要求された最大並列度。</param>
+        /// <param name="effectiveMaxParallel">実際に採用する最大並列度。</param>
+        /// <param name="chunkSizeBytes">チャンクサイズ（バイト）。</param>
+        /// <param name="memoryLimitBytes">追加メモリ予算（バイト）。</param>
+        /// <param name="fallbackToSequential">逐次比較へフォールバックするかどうか。</param>
+        private void LogTextDiffMemoryLimitApplied(string fileRelativePath, int requestedMaxParallel, int effectiveMaxParallel, int chunkSizeBytes, long memoryLimitBytes, bool fallbackToSequential)
+        {
+            long managedHeapBytes = GC.GetTotalMemory(forceFullCollection: false);
+            string action = fallbackToSequential
+                ? "Falling back to sequential text diff."
+                : $"Reducing chunk-parallel text diff to maxParallel={effectiveMaxParallel}.";
+            _logger.LogMessage(
+                AppLogLevel.Info,
+                $"Text diff memory budget applied for '{fileRelativePath}'. requestedMaxParallel={requestedMaxParallel}, chunkSizeBytes={chunkSizeBytes}, additionalBufferBudgetBytes={memoryLimitBytes}, managedHeapBytes={managedHeapBytes}. {action}",
+                shouldOutputMessageToConsole: true);
         }
     }
 }

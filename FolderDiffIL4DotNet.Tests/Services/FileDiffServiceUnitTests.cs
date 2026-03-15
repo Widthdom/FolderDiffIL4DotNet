@@ -170,6 +170,49 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task FilesAreEqualAsync_WhenTextDiffMemoryBudgetCannotFitParallelBuffers_FallsBackToSequentialTextDiff()
+        {
+            const string relativePath = "memory-limited.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var oldFileAbsolutePath = Path.Combine("/virtual/old", relativePath);
+            var newFileAbsolutePath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldFileAbsolutePath, new string('B', 2048));
+            fileComparisonService.SetFileContent(newFileAbsolutePath, new string('B', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1024;
+                    config.TextDiffParallelMemoryLimitMegabytes = 1;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 4);
+
+            Assert.True(areEqual);
+            Assert.Single(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Info
+                    && entry.Message.Contains("Text diff memory budget applied", StringComparison.Ordinal)
+                    && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public async Task FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows()
         {
             const string relativePath = "locked.txt";
@@ -218,7 +261,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 EnableILCache = false,
                 OptimizeForNetworkShares = optimizeForNetworkShares,
                 TextDiffParallelThresholdKilobytes = 512,
-                TextDiffChunkSizeKilobytes = 64
+                TextDiffChunkSizeKilobytes = 64,
+                TextDiffParallelMemoryLimitMegabytes = 0
             };
             configure?.Invoke(config);
 

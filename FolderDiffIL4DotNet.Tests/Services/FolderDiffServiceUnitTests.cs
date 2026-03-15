@@ -339,7 +339,52 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.All(fileDiffService.FilesAreEqualCalls, call => Assert.Equal(4, call.MaxParallel));
         }
 
-        private static ConfigSettings CreateConfig(int maxParallelism) => new()
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenPrecomputeBatchSizeIsSmall_SplitsDistinctTargetsAcrossMultipleCalls()
+        {
+            const string oldDir = "/virtual/old-batched";
+            const string newDir = "/virtual/new-batched";
+            const string reportDir = "/virtual/report-batched";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(
+                oldDir,
+                Path.Combine(oldDir, "shared-a.txt"),
+                Path.Combine(oldDir, "shared-b.txt"),
+                Path.Combine(oldDir, "old-only.txt"));
+            fileSystem.SetFiles(
+                newDir,
+                Path.Combine(newDir, "shared-a.txt"),
+                Path.Combine(newDir, "shared-b.txt"),
+                Path.Combine(newDir, "new-only.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["shared-a.txt"] = true,
+                ["shared-b.txt"] = true
+            });
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService();
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Equal(3, fileDiffService.PrecomputeCalls.Count);
+            Assert.All(fileDiffService.PrecomputeCalls, call => Assert.InRange(call.FilesAbsolutePath.Count, 1, 2));
+            var allPrecomputeTargets = fileDiffService.PrecomputeCalls.SelectMany(call => call.FilesAbsolutePath).ToArray();
+            Assert.Equal(6, allPrecomputeTargets.Length);
+            Assert.Equal(6, allPrecomputeTargets.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        }
+
+        private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = 2048) => new()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
             TextFileExtensions = new List<string> { ".txt" },
@@ -352,6 +397,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true,
             MaxParallelism = maxParallelism,
             EnableILCache = false,
+            ILPrecomputeBatchSize = ilPrecomputeBatchSize,
             OptimizeForNetworkShares = false,
             AutoDetectNetworkShares = false
         };

@@ -45,6 +45,16 @@ namespace FolderDiffIL4DotNet.Services
         /// キープアライブの出力間隔（秒）。
         /// </summary>
         private const int KEEP_ALIVE_INTERVAL_SECONDS = 5;
+
+        /// <summary>
+        /// IL 関連事前計算バッチサイズの既定値。
+        /// </summary>
+        private const int DEFAULT_IL_PRECOMPUTE_BATCH_SIZE = 2048;
+
+        /// <summary>
+        /// 大規模フォルダとして追加ログを出す和集合件数の閾値。
+        /// </summary>
+        private const int LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD = 10000;
         /// <summary>
         /// アプリケーションの設定情報
         /// </summary>
@@ -338,12 +348,7 @@ namespace FolderDiffIL4DotNet.Services
                 _progressReporter.ReportProgress(0.0);
                 return;
             }
-            // old/new の全パス（重複排除）を集約して一括プリフェッチ対象とする。
-            var allFilesAbsolutePath = _fileDiffResultLists
-                .OldFilesAbsolutePath
-                .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            int precomputeBatchSize = GetEffectiveIlPrecomputeBatchSize();
             // 事前計算が長引いても進捗が止まって見えないよう、定期的に 0% を流すキープアライブを起動。
             using var keepAliveCts = new CancellationTokenSource();
             var keepAliveTask = Task.Run(async () =>
@@ -369,7 +374,10 @@ namespace FolderDiffIL4DotNet.Services
                     // プリコンピュート失敗は性能劣化に留まり、後続の本比較で必要な処理は再実行される。
                     // そのため、ここは best-effort として warning を残しつつ継続する。
                     // MD5 ハッシュや内部キー計算（ILCache.PrecomputeAsync）と、逆アセンブラのキャッシュウォームを実行。
-                    await _fileDiffService.PrecomputeAsync(allFilesAbsolutePath, maxParallel);
+                    foreach (var batch in EnumerateDistinctPrecomputeBatches(precomputeBatchSize))
+                    {
+                        await _fileDiffService.PrecomputeAsync(batch, maxParallel);
+                    }
                 }
                 catch (IOException ex)
                 {
@@ -582,8 +590,15 @@ namespace FolderDiffIL4DotNet.Services
                 .Count();
             _logger.LogMessage(
                 AppLogLevel.Info,
-                $"Precompute targets: totalFiles={totalFilesForLog}, {nameof(dotNetAssemblyCandidates)}={dotNetAssemblyCandidates}",
+                $"Precompute targets: totalFiles={totalFilesForLog}, {nameof(dotNetAssemblyCandidates)}={dotNetAssemblyCandidates}, batchSize={GetEffectiveIlPrecomputeBatchSize()}",
                 shouldOutputMessageToConsole: true);
+            if (totalFilesRelativePathCount >= LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD)
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Info,
+                    $"Large file set detected (union(relative)={totalFilesRelativePathCount}). IL precompute will run in batches to limit peak memory usage.",
+                    shouldOutputMessageToConsole: true);
+            }
             _progressReporter.ReportProgress(0.0);
         }
 
@@ -639,6 +654,46 @@ namespace FolderDiffIL4DotNet.Services
                 fileRelativePath,
                 Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath),
                 Caching.TimestampCache.GetOrAdd(newFileAbsolutePath));
+        }
+
+        /// <summary>
+        /// IL 関連の事前計算に使う実効バッチサイズを返します。
+        /// </summary>
+        /// <returns>1 以上のバッチサイズ。</returns>
+        private int GetEffectiveIlPrecomputeBatchSize()
+            => _config.ILPrecomputeBatchSize > 0
+                ? _config.ILPrecomputeBatchSize
+                : DEFAULT_IL_PRECOMPUTE_BATCH_SIZE;
+
+        /// <summary>
+        /// old/new の重複を除いたファイル群を、指定サイズごとのバッチに分けて列挙します。
+        /// </summary>
+        /// <param name="batchSize">1 バッチあたりの最大件数。</param>
+        /// <returns>重複排除済みのファイル絶対パスバッチ列挙。</returns>
+        private IEnumerable<IReadOnlyList<string>> EnumerateDistinctPrecomputeBatches(int batchSize)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var batch = new List<string>(batchSize);
+
+            foreach (var fileAbsolutePath in _fileDiffResultLists.OldFilesAbsolutePath.Concat(_fileDiffResultLists.NewFilesAbsolutePath))
+            {
+                if (!seen.Add(fileAbsolutePath))
+                {
+                    continue;
+                }
+
+                batch.Add(fileAbsolutePath);
+                if (batch.Count >= batchSize)
+                {
+                    yield return batch;
+                    batch = new List<string>(batchSize);
+                }
+            }
+
+            if (batch.Count > 0)
+            {
+                yield return batch;
+            }
         }
     }
 }
