@@ -33,6 +33,21 @@ namespace FolderDiffIL4DotNet.Models
             Old = 1,
             New = 2
         }
+
+        /// <summary>
+        /// サマリーセクション向けのファイル件数の集計値を保持するレコード。
+        /// </summary>
+        /// <param name="AddedCount">new 側にのみ存在するファイルの件数。</param>
+        /// <param name="RemovedCount">old 側にのみ存在するファイルの件数。</param>
+        /// <param name="ModifiedCount">old/new 両側に存在し内容が異なるファイルの件数。</param>
+        /// <param name="UnchangedCount">old/new 両側に存在し内容が一致するファイルの件数。</param>
+        /// <param name="IgnoredCount">IgnoredExtensions により除外されたファイルの件数。</param>
+        public sealed record DiffSummaryStatistics(
+            int AddedCount,
+            int RemovedCount,
+            int ModifiedCount,
+            int UnchangedCount,
+            int IgnoredCount);
         /// <summary>
         /// 旧バージョン側（比較元）ファイルの絶対パスのリスト
         /// </summary>
@@ -102,6 +117,17 @@ namespace FolderDiffIL4DotNet.Models
         /// 1 件以上のファイルで new 側の更新日時が old 側より古いかどうか。
         /// </summary>
         public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
+
+        /// <summary>
+        /// サマリーセクション向けのファイル件数を一括で返す計算プロパティ。
+        /// Added / Removed / Modified / Unchanged / Ignored の各カウントを <see cref="DiffSummaryStatistics"/> にまとめて返します。
+        /// </summary>
+        public DiffSummaryStatistics SummaryStatistics => new(
+            AddedCount: AddedFilesAbsolutePath.Count,
+            RemovedCount: RemovedFilesAbsolutePath.Count,
+            ModifiedCount: ModifiedFilesRelativePath.Count,
+            UnchangedCount: UnchangedFilesRelativePath.Count,
+            IgnoredCount: IgnoredFilesRelativePathToLocation.Count);
 
         /// <summary>
         /// 旧バージョン側（比較元）ファイルの絶対パス一覧を置き換えます。

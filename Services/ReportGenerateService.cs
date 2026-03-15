@@ -587,14 +587,15 @@ namespace FolderDiffIL4DotNet.Services
         private void WriteSummarySection(StreamWriter streamWriter, ConfigSettings config)
         {
             streamWriter.WriteLine(REPORT_SECTION_SUMMARY);
+            var stats = _fileDiffResultLists.SummaryStatistics;
             if (config.ShouldIncludeIgnoredFiles)
             {
-                streamWriter.WriteLine($"- {REPORT_LABEL_IGNORED,-10}: {_fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count}");
+                streamWriter.WriteLine($"- {REPORT_LABEL_IGNORED,-10}: {stats.IgnoredCount}");
             }
-            streamWriter.WriteLine($"- {REPORT_LABEL_UNCHANGED,-10}: {_fileDiffResultLists.UnchangedFilesRelativePath.Count}");
-            streamWriter.WriteLine($"- {REPORT_LABEL_ADDED,-10}: {_fileDiffResultLists.AddedFilesAbsolutePath.Count}");
-            streamWriter.WriteLine($"- {REPORT_LABEL_REMOVED,-10}: {_fileDiffResultLists.RemovedFilesAbsolutePath.Count}");
-            streamWriter.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {_fileDiffResultLists.ModifiedFilesRelativePath.Count}");
+            streamWriter.WriteLine($"- {REPORT_LABEL_UNCHANGED,-10}: {stats.UnchangedCount}");
+            streamWriter.WriteLine($"- {REPORT_LABEL_ADDED,-10}: {stats.AddedCount}");
+            streamWriter.WriteLine($"- {REPORT_LABEL_REMOVED,-10}: {stats.RemovedCount}");
+            streamWriter.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {stats.ModifiedCount}");
             streamWriter.WriteLine($"- {REPORT_LABEL_COMPARED,-10}: {_fileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
             streamWriter.WriteLine();
         }

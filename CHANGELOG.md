@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- Added `DiffSummaryStatistics` record and `SummaryStatistics` computed property to [`FileDiffResultLists`](Models/FileDiffResultLists.cs). The property returns a single `DiffSummaryStatistics(AddedCount, RemovedCount, ModifiedCount, UnchangedCount, IgnoredCount)` snapshot instead of requiring callers to access five separate concurrent collections. Updated [`ReportGenerateService.WriteSummarySection()`](Services/ReportGenerateService.cs) to use `SummaryStatistics` instead of direct `.Count` accesses on each queue/dictionary. Added 4 unit tests to [`FileDiffResultListsTests`](FolderDiffIL4DotNet.Tests/Models/FileDiffResultListsTests.cs).
+
 #### Changed
 
 - Consolidated the duplicate `"// MVID:"` literal into a single [`Constants.IL_MVID_LINE_PREFIX`](Common/Constants.cs) constant and removed the now-redundant `private const string MVID_PREFIX` definitions from both [`ReportGenerateService`](Services/ReportGenerateService.cs) and [`ILOutputService`](Services/ILOutputService.cs). No behaviour change; the string value is identical in both call sites.
@@ -254,6 +258,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- [`FileDiffResultLists`](Models/FileDiffResultLists.cs) に `DiffSummaryStatistics` レコードと `SummaryStatistics` 計算プロパティを追加しました。このプロパティは `DiffSummaryStatistics(AddedCount, RemovedCount, ModifiedCount, UnchangedCount, IgnoredCount)` として 5 つのカウントをまとめて返し、呼び出し側が 5 つの並行コレクションを個別に参照する必要をなくします。あわせて [`ReportGenerateService.WriteSummarySection()`](Services/ReportGenerateService.cs) を `SummaryStatistics` プロパティを使うように更新し、キュー/辞書への個別 `.Count` 呼び出しを削減しました。[`FileDiffResultListsTests`](FolderDiffIL4DotNet.Tests/Models/FileDiffResultListsTests.cs) にユニットテスト 4 件を追加しました。
 
 #### 変更
 

@@ -245,6 +245,80 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Empty(_sut.NewFileTimestampOlderThanOldWarnings);
         }
 
+        /// <summary>
+        /// すべてのキューが空のとき SummaryStatistics が全フィールド 0 を返すことを確認します。
+        /// </summary>
+        [Fact]
+        public void SummaryStatistics_WhenEmpty_ReturnsAllZeros()
+        {
+            var stats = _sut.SummaryStatistics;
+
+            Assert.Equal(0, stats.AddedCount);
+            Assert.Equal(0, stats.RemovedCount);
+            Assert.Equal(0, stats.ModifiedCount);
+            Assert.Equal(0, stats.UnchangedCount);
+            Assert.Equal(0, stats.IgnoredCount);
+        }
+
+        /// <summary>
+        /// 各分類にファイルを追加したあと SummaryStatistics が正確な件数を返すことを確認します。
+        /// </summary>
+        [Fact]
+        public void SummaryStatistics_AfterAddingFiles_ReflectsCorrectCounts()
+        {
+            _sut.AddAddedFileAbsolutePath("/new/a.dll");
+            _sut.AddAddedFileAbsolutePath("/new/b.dll");
+            _sut.AddRemovedFileAbsolutePath("/old/c.dll");
+            _sut.AddModifiedFileRelativePath("d.dll");
+            _sut.AddModifiedFileRelativePath("e.dll");
+            _sut.AddModifiedFileRelativePath("f.dll");
+            _sut.AddUnchangedFileRelativePath("g.dll");
+            _sut.RecordIgnoredFile("h.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _sut.RecordIgnoredFile("i.pdb", FileDiffResultLists.IgnoredFileLocation.New);
+
+            var stats = _sut.SummaryStatistics;
+
+            Assert.Equal(2, stats.AddedCount);
+            Assert.Equal(1, stats.RemovedCount);
+            Assert.Equal(3, stats.ModifiedCount);
+            Assert.Equal(1, stats.UnchangedCount);
+            Assert.Equal(2, stats.IgnoredCount);
+        }
+
+        /// <summary>
+        /// ResetAll 後は SummaryStatistics が全フィールド 0 に戻ることを確認します。
+        /// </summary>
+        [Fact]
+        public void SummaryStatistics_AfterResetAll_ReturnsAllZeros()
+        {
+            _sut.AddAddedFileAbsolutePath("/new/a.dll");
+            _sut.AddRemovedFileAbsolutePath("/old/b.dll");
+            _sut.AddModifiedFileRelativePath("c.dll");
+            _sut.AddUnchangedFileRelativePath("d.dll");
+            _sut.RecordIgnoredFile("e.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+
+            _sut.ResetAll();
+            var stats = _sut.SummaryStatistics;
+
+            Assert.Equal(0, stats.AddedCount);
+            Assert.Equal(0, stats.RemovedCount);
+            Assert.Equal(0, stats.ModifiedCount);
+            Assert.Equal(0, stats.UnchangedCount);
+            Assert.Equal(0, stats.IgnoredCount);
+        }
+
+        /// <summary>
+        /// 同じパスを IgnoredFile として Old と New の両方から記録した場合、IgnoredCount が 1 であることを確認します。
+        /// </summary>
+        [Fact]
+        public void SummaryStatistics_IgnoredCount_DeduplicatesByRelativePath()
+        {
+            _sut.RecordIgnoredFile("same.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _sut.RecordIgnoredFile("same.pdb", FileDiffResultLists.IgnoredFileLocation.New);
+
+            Assert.Equal(1, _sut.SummaryStatistics.IgnoredCount);
+        }
+
         [Fact]
         public void ResultQueueProperties_AreReadOnly()
         {
