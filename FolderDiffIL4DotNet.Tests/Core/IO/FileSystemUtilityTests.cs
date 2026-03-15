@@ -125,6 +125,39 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             Assert.False(FileSystemUtility.IsLikelyNetworkPath(invalidPath));
         }
 
+        /// <summary>
+        /// スラッシュ形式の IP ベース UNC パス（例: //192.168.1.1/share）が Windows ネットワークパスとして検出されることを確認します。
+        /// IsLikelyWindowsNetworkPath は <c>\\</c> プレフィックスのみ対応していましたが、
+        /// <c>//</c> 形式の UNC パスも同様にネットワークパスと判定できるよう修正された回帰テストです。
+        /// </summary>
+        [Fact]
+        public void IsLikelyWindowsNetworkPath_ForwardSlashIpUncPath_ReturnsTrue()
+        {
+            var method = typeof(FileSystemUtility).GetMethod(
+                "IsLikelyWindowsNetworkPath",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            // //192.168.1.1/share は Windows で有効な UNC パス（スラッシュ形式）
+            var result = method.Invoke(null, ["//192.168.1.1/share/folder"]);
+            Assert.True(Assert.IsType<bool>(result));
+        }
+
+        /// <summary>
+        /// バックスラッシュ形式の UNC パス（\\server\share）が引き続きネットワークパスとして検出されることを確認します。
+        /// </summary>
+        [Fact]
+        public void IsLikelyWindowsNetworkPath_BackslashUncPath_ReturnsTrue()
+        {
+            var method = typeof(FileSystemUtility).GetMethod(
+                "IsLikelyWindowsNetworkPath",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(null, [@"\\server\share\folder"]);
+            Assert.True(Assert.IsType<bool>(result));
+        }
+
         [Fact]
         public void GetBestMatchingMountFileSystemType_PicksMostSpecificMountPoint()
         {

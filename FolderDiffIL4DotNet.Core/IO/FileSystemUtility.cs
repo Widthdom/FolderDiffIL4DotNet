@@ -30,6 +30,10 @@ namespace FolderDiffIL4DotNet.Core.IO
         };
         private const string WINDOWS_UNC_PREFIX = @"\\";
         private const string WINDOWS_UNC_DEVICE_PREFIX = @"\\?\UNC\";
+        /// <summary>
+        /// Windows でスラッシュ形式の UNC パスを示すプレフィックス（例: //server/share）。
+        /// </summary>
+        private const string WINDOWS_FORWARD_SLASH_UNC_PREFIX = "//";
         private const string PROC_MOUNTS_PATH = "/proc/mounts";
         private const string ETC_MTAB_PATH = "/etc/mtab";
         private const string ESCAPED_SPACE = "\\040";
@@ -262,7 +266,8 @@ namespace FolderDiffIL4DotNet.Core.IO
         private static bool IsLikelyWindowsNetworkPath(string absolutePath)
         {
             if (absolutePath.StartsWith(WINDOWS_UNC_PREFIX, StringComparison.Ordinal)
-                || absolutePath.StartsWith(WINDOWS_UNC_DEVICE_PREFIX, StringComparison.OrdinalIgnoreCase))
+                || absolutePath.StartsWith(WINDOWS_UNC_DEVICE_PREFIX, StringComparison.OrdinalIgnoreCase)
+                || absolutePath.StartsWith(WINDOWS_FORWARD_SLASH_UNC_PREFIX, StringComparison.Ordinal))
             {
                 return true;
             }

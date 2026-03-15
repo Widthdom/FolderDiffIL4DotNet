@@ -301,6 +301,75 @@ exit 0
             }
         }
 
+        /// <summary>
+        /// ブラックリスト TTL（10 分）が満了した後、同ツールが再度試行されて成功することを確認します。
+        /// _disassembleFailCountAndTime に "失敗回数 >= 閾値 かつ 最終失敗時刻が 11 分前" のエントリを直接挿入し、
+        /// TTL 失効でエントリが消去されてから逆アセンブルが成功することを検証します。
+        /// </summary>
+        [Fact]
+        public async Task DisassembleAsync_AfterBlacklistTtlExpiry_RetriesToolAndSucceeds()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var binDir = Path.Combine(_rootDir, "bin-ttl");
+            Directory.CreateDirectory(binDir);
+
+            // dotnet-ildasm は常に成功するスクリプト
+            WriteExecutable(binDir, "dotnet-ildasm", """
+#!/bin/sh
+if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
+  echo "dotnet ildasm 1.0.0"
+  exit 0
+fi
+echo "IL_FROM_DOTNET_ILDASM"
+exit 0
+""");
+            WriteExecutable(binDir, "dotnet", """
+#!/bin/sh
+exit 1
+""");
+            WriteExecutable(binDir, "ilspycmd", """
+#!/bin/sh
+exit 1
+""");
+
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+            var oldHome = Environment.GetEnvironmentVariable("HOME");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
+                Environment.SetEnvironmentVariable("HOME", _rootDir);
+
+                var config = CreateConfig(enableIlCache: false);
+                var service = CreateService(config, null);
+
+                // TTL 失効済みエントリ（失敗回数 = 閾値 = 3、最終失敗 = 11 分前）を直接挿入
+                var failField = typeof(DotNetDisassembleService).GetField("_disassembleFailCountAndTime", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+                Assert.NotNull(failField);
+                var dict = failField.GetValue(null) as System.Collections.Concurrent.ConcurrentDictionary<string, (int FailCount, DateTime LastFailUtc)>;
+                Assert.NotNull(dict);
+                dict[FolderDiffIL4DotNet.Common.Constants.DOTNET_ILDASM] = (FailCount: 3, LastFailUtc: DateTime.UtcNow.AddMinutes(-11));
+
+                var dllPath = Path.Combine(_rootDir, "ttl-target.dll");
+                await File.WriteAllTextAsync(dllPath, "dummy");
+
+                // TTL 失効後のため dotnet-ildasm が再試行されて成功する
+                var (_, command) = await service.DisassembleAsync(dllPath);
+
+                Assert.Contains("dotnet-ildasm", command, StringComparison.OrdinalIgnoreCase);
+                // エントリは IsDisassemblerBlacklisted 内で削除されているはず
+                Assert.False(dict.ContainsKey(FolderDiffIL4DotNet.Common.Constants.DOTNET_ILDASM));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                Environment.SetEnvironmentVariable("HOME", oldHome);
+            }
+        }
+
         [Fact]
         public async Task DisassembleAsync_WhenVersionLookupFails_UsesFingerprintAndAvoidsCrossVersionCacheMix()
         {

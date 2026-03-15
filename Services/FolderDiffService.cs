@@ -32,6 +32,11 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
 
         /// <summary>
+        /// 比較中にファイルが削除された場合の警告ログフォーマット。
+        /// </summary>
+        private const string LOG_FILE_DELETED_DURING_COMPARISON = "File '{0}' was deleted from the new folder after enumeration; classifying as Removed.";
+
+        /// <summary>
         /// ローカルモードの表示名。
         /// </summary>
         private const string MODE_LOCAL_OPTIMIZED = "Local-optimized";
@@ -450,7 +455,21 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     remainingNewFilesAbsolutePathHashSet.Remove(newFileAbsolutePath);
                     RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
-                    if (await _fileDiffService.FilesAreEqualAsync(fileRelativePath))
+                    bool areEqual;
+                    try
+                    {
+                        areEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // 列挙後に new 側ファイルが削除された場合は Removed として扱い、警告を記録して継続する。
+                        _logger.LogMessage(AppLogLevel.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_FILE_DELETED_DURING_COMPARISON, fileRelativePath), shouldOutputMessageToConsole: true);
+                        _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
+                        processedFileCountSoFar++;
+                        _progressReporter.ReportProgress((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount);
+                        continue;
+                    }
+                    if (areEqual)
                     {
                         // - Unchanged -
                         _fileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
@@ -510,7 +529,20 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
                     // 比較本体はロック外で実行（I/O / 計算を含むため）
-                    bool areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel);
+                    bool areFilesEqual;
+                    try
+                    {
+                        areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // 列挙後に new 側ファイルが削除された場合は Removed として扱い、警告を記録して継続する。
+                        _logger.LogMessage(AppLogLevel.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_FILE_DELETED_DURING_COMPARISON, fileRelativePath), shouldOutputMessageToConsole: true);
+                        _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
+                        var doneOnDelete = Interlocked.Increment(ref processedFileCount);
+                        _progressReporter.ReportProgress((double)doneOnDelete * 100.0 / totalFilesRelativePathCount);
+                        return;
+                    }
                     if (areFilesEqual)
                     {
                         // - Unchanged -
