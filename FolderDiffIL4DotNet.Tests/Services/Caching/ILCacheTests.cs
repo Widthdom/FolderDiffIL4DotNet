@@ -141,6 +141,24 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
         }
 
         [Fact]
+        public async Task Set_SameKeyAtCapacity_DoesNotEvictOtherEntries()
+        {
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null, ilCacheMaxMemoryEntries: 2);
+            var tool = "tool";
+
+            var file1 = CreateTestFile("1.dll", "c1");
+            var file2 = CreateTestFile("2.dll", "c2");
+
+            await cache.SetILAsync(file1, tool, "IL-1");
+            await cache.SetILAsync(file2, tool, "IL-2");
+            await cache.SetILAsync(file1, tool, "IL-1-updated");
+
+            Assert.Equal("IL-1-updated", await cache.TryGetILAsync(file1, tool));
+            Assert.Equal("IL-2", await cache.TryGetILAsync(file2, tool));
+            Assert.Equal(0, cache.Stats.Evicted);
+        }
+
+        [Fact]
         public async Task Stats_TracksEvictions()
         {
             var cache = new ILCache(ilCacheDirectoryAbsolutePath: null, ilCacheMaxMemoryEntries: 1);
@@ -248,6 +266,26 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 
             var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
             Assert.True(cacheFiles.Length <= 2, $"Expected <= 2 cache files, got {cacheFiles.Length}");
+        }
+
+        [Fact]
+        public async Task LRU_WithDiskCache_RemovesEvictedDiskEntry()
+        {
+            var tool = "tool";
+            var file1 = CreateTestFile("disk-1.dll", "disk-c1");
+            var file2 = CreateTestFile("disk-2.dll", "disk-c2");
+
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxMemoryEntries: 1);
+            await cache.SetILAsync(file1, tool, "IL-1");
+            await Task.Delay(50);
+            await cache.SetILAsync(file2, tool, "IL-2");
+
+            var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
+            Assert.Single(cacheFiles);
+
+            var freshCache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxMemoryEntries: 1);
+            Assert.Null(await freshCache.TryGetILAsync(file1, tool));
+            Assert.Equal("IL-2", await freshCache.TryGetILAsync(file2, tool));
         }
 
         [Fact]
