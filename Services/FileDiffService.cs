@@ -132,6 +132,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="fileRelativePath">比較対象ファイルのフォルダ基準相対パス。</param>
         /// <param name="maxParallel">テキスト比較を並列実行する際の最大並列数（1 以上）。</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下で、並列テキスト比較が選択された場合。</exception>
+        /// <exception cref="DirectoryNotFoundException">比較途中で親ディレクトリが見つからなくなった場合。</exception>
         /// <exception cref="IOException">ハッシュ比較、IL 比較、またはテキスト比較中の I/O に失敗した場合。</exception>
         /// <exception cref="UnauthorizedAccessException">比較対象ファイルへのアクセス権が不足している場合。</exception>
         /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
@@ -243,12 +244,56 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Mismatch);
                 return false;
             }
-            catch (Exception)
+            // このメソッドの本比較で起きた失敗はファイル分類の正しさに直結するため、
+            // 想定内の実行時例外も error を残して呼び出し元へ再スローする。
+            catch (DirectoryNotFoundException ex)
             {
-                // 各比較手段での失敗は最終的にここでログ化し、呼び出し元へ再スロー。
-                _logger.LogMessage(AppLogLevel.Error, $"An error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.", shouldOutputMessageToConsole: true);
+                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
                 throw;
             }
+            catch (IOException ex)
+            {
+                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                throw;
+            }
+            catch (NotSupportedException ex)
+            {
+                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                LogUnexpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                throw;
+            }
+        }
+
+        private void LogExpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Error,
+                $"An error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
+                shouldOutputMessageToConsole: true,
+                exception);
+        }
+
+        private void LogUnexpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Error,
+                $"An unexpected error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
+                shouldOutputMessageToConsole: true,
+                exception);
         }
 
         /// <summary>

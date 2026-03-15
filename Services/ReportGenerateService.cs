@@ -239,6 +239,7 @@ namespace FolderDiffIL4DotNet.Services
             var reportGenerated = false;
             try
             {
+                // diff_report.md は最終成果物なので、削除/書き込み/パス検証に失敗したら継続せず再スローする。
                 WriteDiffReport(
                     diffReportAbsolutePath,
                     oldFolderAbsolutePath,
@@ -273,6 +274,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
+                // 書き込み後の読み取り専用化は best-effort。失敗してもレポート自体は既に利用可能なので warning のみ。
                 TrySetReportReadOnly(diffReportAbsolutePath);
                 spinner.Complete(reportGenerated ? LOG_REPORT_GENERATION_COMPLETED : null);
             }

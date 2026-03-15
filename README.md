@@ -165,6 +165,7 @@ Important details:
 - IL comparison always ignores `// MVID:` lines, so build-specific assembly noise does not create false differences.
 - If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-en) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
 - Text files may use different internal strategies depending on size and runtime mode. If chunk-parallel comparison for a large local file throws, the run logs a warning and retries with sequential text comparison.
+- Warm-up, cache cleanup, and post-write read-only protection are best-effort paths that log warnings and continue. Folder enumeration, matched-pair comparison, and report writing log and rethrow expected runtime exceptions because they affect correctness or required output.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
 ## Configuration ([`config.json`](config.json))
@@ -315,7 +316,7 @@ Notes:
 - `Logs/log_YYYYMMDD.log`
 - Optional: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
-After writing, report/IL files are set to read-only when possible (failures are warning-only).
+Report and IL-text creation are treated as required output, so write failures stop the run. After writing, the files are set to read-only when possible, and that protection step remains warning-only.
 
 <a id="readme-en-api-docs"></a>
 ## API Documentation
@@ -514,6 +515,7 @@ flowchart TD
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
 - [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-ja) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
 - テキスト比較の内部実装はファイルサイズや実行モードで変わることがあります。大きいローカルファイルの並列比較で例外が出た場合は warning を記録し、逐次比較へフォールバックします。
+- ウォームアップ、キャッシュ削除、書き込み後の読み取り専用化は best-effort として warning を記録して継続します。一方、フォルダ列挙、対応ファイル比較、レポート書き込みは正しさや成果物に直結するため、想定される実行時例外でもログ出力のうえ再スローします。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
 ## 設定（[`config.json`](config.json)）
@@ -664,7 +666,7 @@ flowchart TD
 - `Logs/log_YYYYMMDD.log`
 - 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
-レポート/IL 出力ファイルは可能な範囲で読み取り専用化されます（失敗時は警告のみ）。
+レポート本体と IL テキストの生成は必須成果物として扱うため、書き込み失敗時は実行を停止します。生成後の読み取り専用化は可能な範囲で行い、失敗しても警告のみです。
 
 <a id="readme-ja-api-docs"></a>
 ## API ドキュメント

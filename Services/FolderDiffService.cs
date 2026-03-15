@@ -219,6 +219,7 @@ namespace FolderDiffIL4DotNet.Services
         ///   Reports/&lt;コマンドライン第3引数に指定したレポートのラベル&gt;/IL/old と Reports/&lt;コマンドライン第3引数に指定したレポートのラベル&gt;/IL/new に保存します（比較時に除外した行は出力前に除外）。
         /// - IL 比較では実際に使用したツールとコマンド、バージョン情報をログへ併記します。
         /// - 分類結果と詳細は <see cref="FileDiffResultLists"/> に集計され、後段のレポート生成で利用されます。
+        /// - IL プリコンピュートは best-effort で、warning を記録して継続します。一方、列挙・出力先準備・本比較での失敗は error を記録して再スローします。
         /// </remarks>
         /// <returns>非同期操作を表すタスク。</returns>
         /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
@@ -272,9 +273,41 @@ namespace FolderDiffIL4DotNet.Services
                 ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);
                 folderDiffCompleted = true;
             }
-            catch (Exception)
+            // 列挙、IL 出力先準備、本比較での失敗は run 全体の正しさに影響するため、
+            // 想定内の実行時例外もここで error を記録して再スローする。
+            catch (ArgumentException ex)
             {
-                _logger.LogMessage(AppLogLevel.Error, $"An error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.", shouldOutputMessageToConsole: true);
+                LogExpectedFolderDiffFailure(ex);
+                throw;
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                LogExpectedFolderDiffFailure(ex);
+                throw;
+            }
+            catch (IOException ex)
+            {
+                LogExpectedFolderDiffFailure(ex);
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogExpectedFolderDiffFailure(ex);
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                LogExpectedFolderDiffFailure(ex);
+                throw;
+            }
+            catch (NotSupportedException ex)
+            {
+                LogExpectedFolderDiffFailure(ex);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                LogUnexpectedFolderDiffFailure(ex);
                 throw;
             }
             finally
@@ -332,6 +365,8 @@ namespace FolderDiffIL4DotNet.Services
             {
                 try
                 {
+                    // プリコンピュート失敗は性能劣化に留まり、後続の本比較で必要な処理は再実行される。
+                    // そのため、ここは best-effort として warning を残しつつ継続する。
                     // MD5 ハッシュや内部キー計算（ILCache.PrecomputeAsync）と、逆アセンブラのキャッシュウォームを実行。
                     await _fileDiffService.PrecomputeAsync(allFilesAbsolutePath, maxParallel);
                 }
@@ -367,6 +402,24 @@ namespace FolderDiffIL4DotNet.Services
                 // プリフェッチ完了後に進捗を更新しておく。
                 _progressReporter.ReportProgress(0.0);
             }
+        }
+
+        private void LogExpectedFolderDiffFailure(Exception exception)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Error,
+                $"An error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.",
+                shouldOutputMessageToConsole: true,
+                exception);
+        }
+
+        private void LogUnexpectedFolderDiffFailure(Exception exception)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Error,
+                $"An unexpected error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.",
+                shouldOutputMessageToConsole: true,
+                exception);
         }
 
         /// <summary>

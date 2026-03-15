@@ -87,6 +87,52 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task FilesAreEqualAsync_WhenHashDiffThrowsDirectoryNotFoundException_LogsErrorAndRethrows()
+        {
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashException = new DirectoryNotFoundException("parent directory missing")
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var exception = await Assert.ThrowsAsync<DirectoryNotFoundException>(() => service.FilesAreEqualAsync("missing.bin"));
+
+            Assert.Equal("parent directory missing", exception.Message);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Exception is DirectoryNotFoundException
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+            Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenHashDiffThrowsUnexpectedException_LogsUnexpectedErrorAndRethrows()
+        {
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashException = new FormatException("bad format")
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var exception = await Assert.ThrowsAsync<FormatException>(() => service.FilesAreEqualAsync("broken.bin"));
+
+            Assert.Equal("bad format", exception.Message);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Exception is FormatException
+                    && entry.Message.Contains("An unexpected error occurred while diffing", StringComparison.Ordinal));
+            Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
+        }
+
+        [Fact]
         public async Task FilesAreEqualAsync_WhenLargeTextFilesMatch_UsesParallelChunkComparison()
         {
             const string relativePath = "large.txt";

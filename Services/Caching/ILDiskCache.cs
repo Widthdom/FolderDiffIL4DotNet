@@ -165,6 +165,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 if (File.Exists(cacheFileAbsolutePath))
                 {
+                    // LRU 退避に伴うディスク削除は容量維持の best-effort 処理。
+                    // 失敗しても比較結果自体は壊れないため、warning のみで継続する。
                     File.Delete(cacheFileAbsolutePath);
                 }
             }

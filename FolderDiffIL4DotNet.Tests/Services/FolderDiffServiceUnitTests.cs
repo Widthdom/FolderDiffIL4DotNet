@@ -191,6 +191,88 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenCreatingIlOutputDirectoryThrowsDirectoryNotFoundException_LogsAndRethrows()
+        {
+            const string oldDir = "/virtual/old-missing-parent";
+            const string newDir = "/virtual/new-missing-parent";
+            const string reportDir = "/virtual/report-missing-parent";
+
+            var executionContext = CreateExecutionContext(oldDir, newDir, reportDir);
+            var fileSystem = new FakeFileSystemService
+            {
+                CreateDirectoryExceptionPath = executionContext.IlOutputFolderAbsolutePath,
+                CreateDirectoryException = new DirectoryNotFoundException("parent directory missing")
+            };
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "sample.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "sample.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal))
+            {
+                EqualityByRelativePath =
+                {
+                    ["sample.txt"] = true
+                }
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService();
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                executionContext,
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            var exception = await Assert.ThrowsAsync<DirectoryNotFoundException>(() => service.ExecuteFolderDiffAsync());
+
+            Assert.Equal("parent directory missing", exception.Message);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Exception is DirectoryNotFoundException
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenFileDiffThrowsUnexpectedException_LogsUnexpectedErrorAndRethrows()
+        {
+            const string oldDir = "/virtual/old-unexpected";
+            const string newDir = "/virtual/new-unexpected";
+            const string reportDir = "/virtual/report-unexpected";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "sample.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "sample.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal))
+            {
+                FilesAreEqualException = new FormatException("unexpected compare failure")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService();
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            var exception = await Assert.ThrowsAsync<FormatException>(() => service.ExecuteFolderDiffAsync());
+
+            Assert.Equal("unexpected compare failure", exception.Message);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Exception is FormatException
+                    && entry.Message.Contains($"An unexpected error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public async Task ExecuteFolderDiffAsync_WithHundredsOfFiles_CompletesParallelClassificationDeterministically()
         {
             const string oldDir = "/virtual/old-many";
@@ -350,6 +432,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public Dictionary<string, bool> EqualityByRelativePath { get; }
 
+            public Exception FilesAreEqualException { get; init; }
+
             public ConcurrentQueue<PrecomputeCall> PrecomputeCalls { get; } = new();
 
             public ConcurrentQueue<FilesAreEqualCall> FilesAreEqualCalls { get; } = new();
@@ -363,6 +447,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             public Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1)
             {
                 FilesAreEqualCalls.Enqueue(new FilesAreEqualCall(fileRelativePath, maxParallel));
+                if (FilesAreEqualException != null)
+                {
+                    throw FilesAreEqualException;
+                }
                 return Task.FromResult(EqualityByRelativePath[fileRelativePath]);
             }
         }

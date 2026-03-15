@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Replaced broad `catch (Exception)` blocks in [`FolderDiffService`](Services/FolderDiffService.cs) and [`FileDiffService`](Services/FileDiffService.cs) with expected runtime exception handling plus separate unexpected-error logging, clarified the best-effort versus fatal exception policy around precompute/cache-cleanup/report-protection paths, and refreshed the bilingual docs and regression tests.
 - Refactored [`ProgramRunner.RunAsync()`](ProgramRunner.cs) into phase-oriented helpers for logger startup, argument validation, configuration/runtime preparation, diff execution, report generation, and exit prompting, reducing the main orchestration method without changing observable behavior.
 - Split OS-specific network-path detection branches out of [`FileSystemUtility.IsLikelyNetworkPath()`](Utils/FileSystemUtility.cs) and extracted report-write/protection helpers from [`ReportGenerateService.GenerateDiffReport()`](Services/ReportGenerateService.cs), improving readability while keeping behavior stable.
 - Added focused regression coverage in [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) for validation-before-config-loading ordering, added a null-input case to [`FileSystemUtilityTests`](FolderDiffIL4DotNet.Tests/Utils/FileSystemUtilityTests.cs), and updated the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md) to reflect the refactor and latest passing test count (`230`).
@@ -231,6 +232,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
+- [`FolderDiffService`](Services/FolderDiffService.cs) と [`FileDiffService`](Services/FileDiffService.cs) に残っていた広すぎる `catch (Exception)` を、想定される実行時例外の個別処理と想定外例外用ログへ置き換えました。あわせて、プリコンピュート・キャッシュ削除・レポート保護の best-effort 方針と、致命扱いで再スローする経路の境界を明文化し、日英ドキュメントと回帰テストを更新しました。
 - [`ProgramRunner.RunAsync()`](ProgramRunner.cs) を、ロガー起動、引数検証、設定/実行準備、差分実行、レポート生成、終了プロンプトの各 helper へ分割し、外部挙動を変えずに主オーケストレーションの見通しを改善しました。
 - [`FileSystemUtility.IsLikelyNetworkPath()`](Utils/FileSystemUtility.cs) から OS 別のネットワークパス判定を切り出し、[`ReportGenerateService.GenerateDiffReport()`](Services/ReportGenerateService.cs) でもレポート書き出しと読み取り専用保護の helper を抽出して、挙動を維持したまま可読性を上げました。
 - [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) を追加して「引数検証が設定読込より先に失敗すること」を回帰テスト化し、[`FileSystemUtilityTests`](FolderDiffIL4DotNet.Tests/Utils/FileSystemUtilityTests.cs) に null 入力ケースを追加しました。あわせて [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) を更新し、最新の通過テスト件数（`230` 件）を反映しました。

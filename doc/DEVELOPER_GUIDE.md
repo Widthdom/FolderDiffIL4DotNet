@@ -147,6 +147,7 @@ The implementation keeps `RunAsync()` short by treating those steps as explicit 
 Failure behavior:
 - Any unhandled exception in diffing or report generation results in exit code `1`.
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
+- `FolderDiffService.ExecuteFolderDiffAsync()` logs and rethrows expected runtime exceptions such as path-validation errors, `DirectoryNotFoundException`, `IOException`, `UnauthorizedAccessException`, and `NotSupportedException`; only truly unexpected exceptions use the separate "unexpected error" log wording.
 - Read-only protection on output files remains best-effort and warning-only.
 
 <a id="guide-en-di-layout"></a>
@@ -282,7 +283,9 @@ Per-file mechanics:
 Failure handling:
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) thrown during IL comparison is logged and intentionally rethrown. This treats IL tool mismatches or setup problems as fatal exceptions and stops the whole run.
 - Failures from [`DotNetDetector.DetectDotNetExecutable(...)`](../Utils/DotNetDetector.cs) are not treated as fatal exceptions. The code logs a warning, skips IL comparison only, and then continues into text comparison or `MD5Mismatch` handling.
-- Other unexpected exceptions are logged from inside `FilesAreEqualAsync(...)` with both old/new absolute paths and then rethrown to the caller.
+- `FilesAreEqualAsync(...)` also treats `DirectoryNotFoundException`, `IOException`, `UnauthorizedAccessException`, and `NotSupportedException` as expected runtime failures: it logs them with both old/new absolute paths and rethrows without changing the exception type.
+- Other unexpected exceptions are logged from inside `FilesAreEqualAsync(...)` with separate "unexpected error" wording and then rethrown to the caller.
+- `PrecomputeIlCachesAsync()`, disk-cache eviction cleanup, and post-write read-only protection are best-effort operations. They log warnings and continue because the main comparison result or already-written report remains usable.
 - Even when you need to add more context, do not wrap the original exception in a new generic [`Exception`](https://learn.microsoft.com/en-us/dotnet/api/system.exception?view=net-8.0). Log the original exception and use `throw;` so the original exception type and stack trace are preserved.
 
 Avoid:
@@ -609,6 +612,7 @@ sequenceDiagram
 失敗時の扱い:
 - 差分処理やレポート生成で未処理例外が出ると終了コードは `1` です。
 - IL 比較由来の [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は致命的な例外扱いとし、実行全体を止めるものとします。
+- `FolderDiffService.ExecuteFolderDiffAsync()` は、パス検証エラーや `DirectoryNotFoundException`、`IOException`、`UnauthorizedAccessException`、`NotSupportedException` などの想定される実行時例外を error として記録して再スローします。本当に想定外の例外だけを別文言の "unexpected error" として記録します。
 - 出力ファイルの読み取り専用化はベストエフォートで、失敗しても警告止まりです。
 
 <a id="guide-ja-di-layout"></a>
@@ -744,7 +748,9 @@ flowchart TD
 失敗時の扱い:
 - IL 比較で発生した [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は、ログを出力したうえで意図的に再送出されます。これは IL ツールの不整合やセットアップ不備を致命的な例外として扱い、実行全体を停止させるためです。
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../Utils/DotNetDetector.cs) の失敗は致命的な例外とは扱いません。警告ログを出力して IL 比較だけをスキップし、その後のテキスト比較または `MD5Mismatch` 判定へ進みます。
-- それ以外の予期しない例外は、`FilesAreEqualAsync(...)` の中で old/new 両方の絶対パスを含むエラーログを出力したうえで、呼び出し元へ再送出されます。
+- `FilesAreEqualAsync(...)` では、`DirectoryNotFoundException`、`IOException`、`UnauthorizedAccessException`、`NotSupportedException` も想定される実行時失敗として扱い、old/new 両方の絶対パスを含む error ログを出したうえで例外型を変えずに再送出します。
+- それ以外の予期しない例外は、`FilesAreEqualAsync(...)` の中で old/new 両方の絶対パスを含む "unexpected error" ログを出力したうえで、呼び出し元へ再送出されます。
+- `PrecomputeIlCachesAsync()`、ディスクキャッシュ退避時の削除、書き込み後の読み取り専用化は best-effort です。比較結果や生成済みレポートは利用できるため、warning を記録して継続します。
 - 例外に補足情報を付けたい場合も、汎用 [`Exception`](https://learn.microsoft.com/ja-jp/dotnet/api/system.exception?view=net-8.0) へ包み直すのではなく、元の例外をログに出したうえで `throw;` してください。元の例外型とスタックトレースを保つためです。
 
 避けたい例:
