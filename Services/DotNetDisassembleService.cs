@@ -7,9 +7,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Diagnostics;
+using FolderDiffIL4DotNet.Core.IO;
+using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
-using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services
 {

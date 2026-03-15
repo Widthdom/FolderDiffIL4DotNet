@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.Text
 {
     /// <summary>
     /// 文字列サニタイズおよびファイル名安全化を提供するクラス

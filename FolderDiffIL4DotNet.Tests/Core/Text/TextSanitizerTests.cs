@@ -1,7 +1,7 @@
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.Text;
 using Xunit;
 
-namespace FolderDiffIL4DotNet.Tests.Utils
+namespace FolderDiffIL4DotNet.Tests.Core.Text
 {
     public class TextSanitizerTests
     {

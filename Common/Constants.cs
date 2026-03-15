@@ -1,3 +1,5 @@
+using FolderDiffIL4DotNet.Core.Common;
+
 namespace FolderDiffIL4DotNet.Common
 {
     /// <summary>
@@ -9,7 +11,7 @@ namespace FolderDiffIL4DotNet.Common
         /// <summary>
         /// 1 KiB (2^10) を表すバイト数。
         /// </summary>
-        public const int BYTES_PER_KILOBYTE = 1024;
+        public const int BYTES_PER_KILOBYTE = CoreConstants.BYTES_PER_KILOBYTE;
 
         /// <summary>
         /// アプリケーション名
@@ -59,7 +61,7 @@ namespace FolderDiffIL4DotNet.Common
         /// <summary>
         /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、ミリ秒、UTC オフセット付き）。
         /// </summary>
-        public const string TIMESTAMP_WITH_TIME_ZONE_FORMAT = "yyyy-MM-dd HH:mm:ss.fff zzz";
+        public const string TIMESTAMP_WITH_TIME_ZONE_FORMAT = CoreConstants.TIMESTAMP_WITH_TIME_ZONE_FORMAT;
 
         /// <summary>
         /// ログファイル本文で使うタイムスタンプ形式（ローカル時刻、ミリ秒）。

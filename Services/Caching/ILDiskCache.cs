@@ -4,7 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.IO;
+using FolderDiffIL4DotNet.Core.Text;
 
 namespace FolderDiffIL4DotNet.Services.Caching
 {

@@ -4,9 +4,9 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
-using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.IO
 {
     /// <summary>
     /// ファイルシステム操作（タイムスタンプ取得、読み取り専用設定、ファイル削除、ネットワークパス検出）を提供するクラス
@@ -184,7 +184,7 @@ namespace FolderDiffIL4DotNet.Utils
         public static string GetTimestamp(string fileAbsolutepath)
         {
             return new DateTimeOffset(File.GetLastWriteTime(fileAbsolutepath))
-                .ToString(Constants.TIMESTAMP_WITH_TIME_ZONE_FORMAT, CultureInfo.InvariantCulture);
+                .ToString(CoreConstants.TIMESTAMP_WITH_TIME_ZONE_FORMAT, CultureInfo.InvariantCulture);
         }
 
         /// <summary>

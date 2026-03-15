@@ -6,6 +6,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderDiffIL4DotNet", "Fold
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderDiffIL4DotNet.Tests", "FolderDiffIL4DotNet.Tests\FolderDiffIL4DotNet.Tests.csproj", "{D146A816-D93D-466D-902B-421F5EA2688D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FolderDiffIL4DotNet.Core", "FolderDiffIL4DotNet.Core\FolderDiffIL4DotNet.Core.csproj", "{0193D941-9F9F-4DB7-AD21-A2BE543D0B59}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,10 @@ Global
 		{D146A816-D93D-466D-902B-421F5EA2688D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D146A816-D93D-466D-902B-421F5EA2688D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D146A816-D93D-466D-902B-421F5EA2688D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0193D941-9F9F-4DB7-AD21-A2BE543D0B59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0193D941-9F9F-4DB7-AD21-A2BE543D0B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0193D941-9F9F-4DB7-AD21-A2BE543D0B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0193D941-9F9F-4DB7-AD21-A2BE543D0B59}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

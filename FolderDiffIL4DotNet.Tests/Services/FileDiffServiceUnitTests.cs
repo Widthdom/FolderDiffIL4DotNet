@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
-using FolderDiffIL4DotNet.Utils;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services

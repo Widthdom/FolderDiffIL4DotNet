@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.IO;
+using FolderDiffIL4DotNet.Core.Text;
 
 namespace FolderDiffIL4DotNet.Services.ILOutput
 {

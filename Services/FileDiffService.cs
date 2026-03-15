@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
-using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services
 {

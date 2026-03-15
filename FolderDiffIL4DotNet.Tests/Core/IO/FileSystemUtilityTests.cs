@@ -3,10 +3,10 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using FolderDiffIL4DotNet.Common;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.IO;
 using Xunit;
 
-namespace FolderDiffIL4DotNet.Tests.Utils
+namespace FolderDiffIL4DotNet.Tests.Core.IO
 {
     public class FileSystemUtilityTests : IDisposable
     {

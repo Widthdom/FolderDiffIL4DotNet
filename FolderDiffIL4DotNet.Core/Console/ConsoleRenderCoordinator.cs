@@ -1,12 +1,12 @@
 using System;
 using System.Threading;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.Console
 {
     /// <summary>
     /// コンソールのスピナー/進捗バー描画を調停します。
     /// </summary>
-    internal static class ConsoleRenderCoordinator
+    public static class ConsoleRenderCoordinator
     {
         private static readonly object RenderLock = new object();
         private static long _lastProgressRenderTicks = DateTime.MinValue.Ticks;

@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\FolderDiffIL4DotNet.Core\FolderDiffIL4DotNet.Core.csproj" />
     <ProjectReference Include="..\FolderDiffIL4DotNet.csproj" />
   </ItemGroup>
 

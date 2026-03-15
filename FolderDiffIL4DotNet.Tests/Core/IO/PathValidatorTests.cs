@@ -1,9 +1,9 @@
 using System;
 using System.Runtime.InteropServices;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.IO;
 using Xunit;
 
-namespace FolderDiffIL4DotNet.Tests.Utils
+namespace FolderDiffIL4DotNet.Tests.Core.IO
 {
     public class PathValidatorTests
     {

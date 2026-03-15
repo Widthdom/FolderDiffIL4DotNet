@@ -2,7 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.IO;
 
 namespace FolderDiffIL4DotNet.Services.Caching
 {

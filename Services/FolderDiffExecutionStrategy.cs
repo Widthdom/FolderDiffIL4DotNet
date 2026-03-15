@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
-using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services
 {

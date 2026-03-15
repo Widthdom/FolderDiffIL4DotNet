@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.Console
 {
     /// <summary>
     /// シンプルなコンソールスピナー。指定したラベルと共に一定間隔で回転する文字を表示します。
@@ -82,7 +82,7 @@ namespace FolderDiffIL4DotNet.Utils
         /// </summary>
         private async Task SpinAsync()
         {
-            if (Console.IsOutputRedirected)
+            if (System.Console.IsOutputRedirected)
             {
                 return;
             }
@@ -108,8 +108,8 @@ namespace FolderDiffIL4DotNet.Utils
                 _lastRenderLength = text.Length;
                 lock (ConsoleRenderCoordinator.RenderSyncRoot)
                 {
-                    Console.Write($"\r{text}");
-                    Console.Out.Flush();
+                    System.Console.Write($"\r{text}");
+                    System.Console.Out.Flush();
                 }
                 try
                 {
@@ -133,8 +133,8 @@ namespace FolderDiffIL4DotNet.Utils
             }
             lock (ConsoleRenderCoordinator.RenderSyncRoot)
             {
-                Console.Write("\r" + new string(' ', _lastRenderLength) + "\r");
-                Console.Out.Flush();
+                System.Console.Write("\r" + new string(' ', _lastRenderLength) + "\r");
+                System.Console.Out.Flush();
             }
         }
 
@@ -169,7 +169,7 @@ namespace FolderDiffIL4DotNet.Utils
             StopInternal();
             if (!string.IsNullOrEmpty(completionMessage))
             {
-                Console.WriteLine(completionMessage);
+                System.Console.WriteLine(completionMessage);
             }
         }
 

@@ -3,9 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.IO
 {
     /// <summary>
     /// ファイルのハッシュ比較およびテキスト比較を提供するクラス
@@ -15,7 +15,7 @@ namespace FolderDiffIL4DotNet.Utils
         /// <summary>
         /// 逐次読み取りで利用する既定の FileStream バッファサイズ（64KiB）。
         /// </summary>
-        private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 64 * Constants.BYTES_PER_KILOBYTE;
+        private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 64 * CoreConstants.BYTES_PER_KILOBYTE;
 
         /// <summary>
         /// 指定された2つのファイルのMD5ハッシュ値を比較します。

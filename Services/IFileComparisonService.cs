@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.Diagnostics;
 
 namespace FolderDiffIL4DotNet.Services
 {

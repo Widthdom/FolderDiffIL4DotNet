@@ -4,11 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Console;
+using FolderDiffIL4DotNet.Core.Diagnostics;
+using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
-using FolderDiffIL4DotNet.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FolderDiffIL4DotNet

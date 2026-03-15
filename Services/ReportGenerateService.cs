@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Console;
+using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
-using FolderDiffIL4DotNet.Utils;
 
 namespace FolderDiffIL4DotNet.Services
 {

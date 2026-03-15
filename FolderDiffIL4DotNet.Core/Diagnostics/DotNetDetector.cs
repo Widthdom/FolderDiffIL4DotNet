@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.Diagnostics
 {
     /// <summary>
     /// .NET 実行可能判定の結果種別。

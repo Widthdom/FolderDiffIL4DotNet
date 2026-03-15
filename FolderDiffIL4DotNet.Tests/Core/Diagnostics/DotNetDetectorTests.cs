@@ -1,9 +1,9 @@
 using System;
 using System.IO;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.Diagnostics;
 using Xunit;
 
-namespace FolderDiffIL4DotNet.Tests.Utils
+namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
 {
     public class DotNetDetectorTests : IDisposable
     {

@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Threading;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.Console;
 
 namespace FolderDiffIL4DotNet.Services
 {

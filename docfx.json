@@ -5,7 +5,8 @@
         {
           "src": ".",
           "files": [
-            "FolderDiffIL4DotNet.csproj"
+            "FolderDiffIL4DotNet.csproj",
+            "FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj"
           ]
         }
       ],

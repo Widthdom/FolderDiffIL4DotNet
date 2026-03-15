@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.Diagnostics
 {
     /// <summary>
     /// システム情報およびアプリケーションメタデータの取得を提供するクラス

@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.IO
 {
     /// <summary>
     /// パスおよびフォルダ名の妥当性検証を提供するクラス

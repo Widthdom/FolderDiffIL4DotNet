@@ -132,6 +132,7 @@ Example `diff_report.md` (trimmed):
 - [`ProgramRunner`](ProgramRunner.cs) keeps `RunAsync()` as a phase-oriented coordinator by delegating logger initialization, argument validation, configuration loading, run-scope creation, diff execution, and report generation to focused helpers.
 - [`ProgramRunner`](ProgramRunner.cs) also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
 - [`DiffExecutionContext`](Services/DiffExecutionContext.cs) carries run-specific paths and network-mode decisions.
+- Domain-independent console, diagnostics, I/O, and text helpers now live under [`FolderDiffIL4DotNet.Core/`](FolderDiffIL4DotNet.Core/), so the main executable project stays focused on folder-diff behavior.
 - [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs) owns discovery filtering and auto-parallelism policy, so [`FolderDiffService`](Services/FolderDiffService.cs) can stay focused on progress, orchestration, and result routing.
 - [`FolderDiffService`](Services/FolderDiffService.cs) uses [`IFileSystemService`](Services/IFileSystemService.cs) for discovery/output I/O, including lazy file enumeration via `EnumerateFiles(...)`, and [`FileDiffService`](Services/FileDiffService.cs) uses [`IFileComparisonService`](Services/IFileComparisonService.cs) for hash, text, and chunk-read operations, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
 - Core pipeline services ([`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
@@ -304,7 +305,7 @@ Override only the settings you want to change. For example:
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#configuration-table-en) and [`TextFileExtensions`](#configuration-table-en) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
-- Shared byte-size and timestamp format literals are defined in [`Common/Constants.cs`](Common/Constants.cs), so log-file naming, log-entry timestamps, and report timestamps do not drift independently.
+- Cross-project byte-size and timestamp literals are defined in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](FolderDiffIL4DotNet.Core/Common/CoreConstants.cs), and app-level constants remain in [`Common/Constants.cs`](Common/Constants.cs), so shared formats do not drift independently across projects.
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#configuration-table-en).
 - Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
@@ -323,7 +324,7 @@ Report and IL-text creation are treated as required output, so write failures st
 <a id="readme-en-api-docs"></a>
 ## API Documentation
 
-API reference pages are generated with DocFX from the XML documentation comments already maintained in the source code.
+API reference pages are generated with DocFX from the XML documentation comments emitted by both [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) and [`FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj).
 
 Local refresh:
 
@@ -485,6 +486,7 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
 - [`ProgramRunner`](ProgramRunner.cs) は `RunAsync()` をフェーズ調停役に絞り、ロガー初期化、引数検証、設定読込、実行スコープ生成、差分実行、レポート生成を専用 helper へ委譲します。
 - [`ProgramRunner`](ProgramRunner.cs) は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
 - [`DiffExecutionContext`](Services/DiffExecutionContext.cs) が実行ごとのパスやネットワークモード判定を保持します。
+- ドメイン非依存の console / diagnostics / I/O / text helper は [`FolderDiffIL4DotNet.Core/`](FolderDiffIL4DotNet.Core/) へ分離し、実行ファイル側のプロジェクトはフォルダ差分の振る舞いへ集中させています。
 - [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs) が、ファイル探索時の除外ルール適用と自動並列度の決定を担当し、[`FolderDiffService`](Services/FolderDiffService.cs) は進捗・実行制御・結果振り分けへ寄せています。
 - [`FolderDiffService`](Services/FolderDiffService.cs) は列挙/出力系 I/O を [`IFileSystemService`](Services/IFileSystemService.cs) に委譲しており、ファイル列挙も `EnumerateFiles(...)` による遅延列挙で扱います。[`FileDiffService`](Services/FileDiffService.cs) はハッシュ/テキスト/チャンク読み出し系 I/O を [`IFileComparisonService`](Services/IFileComparisonService.cs) に委譲しており、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
 - 主要パイプラインサービス（[`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
@@ -656,7 +658,7 @@ flowchart TD
 
 補足:
 - [`IgnoredExtensions`](#configuration-table-ja) と [`TextFileExtensions`](#configuration-table-ja) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
-- バイト換算値や日時フォーマットなどの共有リテラルは [`Common/Constants.cs`](Common/Constants.cs) に集約してあり、ログファイル名・ログ本文・レポート用タイムスタンプが別々にずれないようにしています。
+- プロジェクト横断で使うバイト換算値や日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) に置き、アプリ固有の定数は [`Common/Constants.cs`](Common/Constants.cs) で管理しているため、共有書式がプロジェクトごとにずれません。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#configuration-table-ja) に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。
@@ -675,7 +677,7 @@ flowchart TD
 <a id="readme-ja-api-docs"></a>
 ## API ドキュメント
 
-API リファレンスは、ソースコード内で維持している XML ドキュメントコメントを DocFX で収集して生成します。
+API リファレンスは、[`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) と [`FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) が出力する XML ドキュメントコメントを DocFX で収集して生成します。
 
 ローカル更新手順:
 

@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using FolderDiffIL4DotNet.Utils;
+using FolderDiffIL4DotNet.Core.IO;
 using Xunit;
 
-namespace FolderDiffIL4DotNet.Tests.Utils
+namespace FolderDiffIL4DotNet.Tests.Core.IO
 {
     public class FileComparerTests : IDisposable
     {

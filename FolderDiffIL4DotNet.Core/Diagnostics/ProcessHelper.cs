@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FolderDiffIL4DotNet.Utils
+namespace FolderDiffIL4DotNet.Core.Diagnostics
 {
     /// <summary>
     /// プロセス実行およびコマンドライン処理を提供するクラス
