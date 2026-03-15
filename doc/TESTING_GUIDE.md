@@ -19,7 +19,7 @@ Related documents:
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
-Current tree has `248` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`).
+Current tree has `251` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -179,7 +179,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 <a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）では `248` 件が成功しています。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）では `251` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |

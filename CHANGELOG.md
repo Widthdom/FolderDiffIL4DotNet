@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- Added targeted regression tests in [`FileDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs) and [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) to cover the partial-parallelism-reduction path in `DetermineEffectiveTextDiffParallelism`, the duplicate-path skip in `EnumerateDistinctPrecomputeBatches`, and the zero-batch-size fallback in `GetEffectiveIlPrecomputeBatchSize`; these three branches introduced in commit `e61ba70` were previously untested and caused branch coverage to drop below the `71%` CI threshold enforced in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml), and refreshed the bilingual docs with the latest passing test count (`251`).
+
 #### Changed
 
 - Added `TextDiffParallelMemoryLimitMegabytes` and `ILPrecomputeBatchSize` to [`ConfigSettings`](Models/ConfigSettings.cs), so large local text comparison can clamp chunk-parallel workers based on a configurable buffer budget while logging current managed-heap usage, and IL-related precompute now runs in batches instead of building one extra all-files list for very large trees; added regression coverage in [`FileDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs), [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs), and [`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs), and refreshed the bilingual docs with the latest passing test count (`248`).
@@ -235,6 +239,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- [`FileDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs) と [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) に回帰テストを追加し、`DetermineEffectiveTextDiffParallelism` の並列度部分低減経路、`EnumerateDistinctPrecomputeBatches` の重複パスのスキップ経路、`GetEffectiveIlPrecomputeBatchSize` のバッチサイズ 0 時のフォールバック経路をカバーしました。これら 3 つの分岐は commit `e61ba70` で追加されたが未テストのまま残っており、[`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) で強制している分岐カバレッジ `71%` を下回る原因となっていました。あわせて日英ドキュメントへ最新の通過テスト件数（`251` 件）を反映しました。
 
 #### 変更
 
