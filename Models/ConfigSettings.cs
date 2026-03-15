@@ -4,6 +4,31 @@ using FolderDiffIL4DotNet.Common;
 namespace FolderDiffIL4DotNet.Models
 {
     /// <summary>
+    /// <see cref="ConfigSettings"/> のバリデーション結果を表します。
+    /// </summary>
+    public sealed class ConfigValidationResult
+    {
+        /// <summary>
+        /// バリデーションが成功したかどうか。
+        /// </summary>
+        public bool IsValid => Errors.Count == 0;
+
+        /// <summary>
+        /// バリデーションエラーのリスト。IsValid が true の場合は空。
+        /// </summary>
+        public IReadOnlyList<string> Errors { get; }
+
+        /// <summary>
+        /// バリデーション結果を初期化します。
+        /// </summary>
+        public ConfigValidationResult(IReadOnlyList<string> errors)
+        {
+            Errors = errors;
+        }
+    }
+
+
+    /// <summary>
     /// config.jsonの設定を保持するモデルクラス。
     /// </summary>
     public sealed class ConfigSettings
@@ -162,6 +187,36 @@ namespace FolderDiffIL4DotNet.Models
         /// 非Windowsでは判定精度の制約があるため既定は手動フラグと併用を推奨します。
         /// </summary>
         public bool AutoDetectNetworkShares { get; set; } = true;
+
+        /// <summary>
+        /// 設定値の整合性を検証し、結果を返します。
+        /// </summary>
+        /// <returns>バリデーション結果。エラーがある場合は <see cref="ConfigValidationResult.IsValid"/> が false になります。</returns>
+        public ConfigValidationResult Validate()
+        {
+            var errors = new List<string>();
+
+            if (MaxLogGenerations < 1)
+            {
+                errors.Add($"MaxLogGenerations must be 1 or greater (current value: {MaxLogGenerations}).");
+            }
+
+            if (TextDiffParallelThresholdKilobytes < 1)
+            {
+                errors.Add($"TextDiffParallelThresholdKilobytes must be 1 or greater (current value: {TextDiffParallelThresholdKilobytes}).");
+            }
+
+            if (TextDiffChunkSizeKilobytes < 1)
+            {
+                errors.Add($"TextDiffChunkSizeKilobytes must be 1 or greater (current value: {TextDiffChunkSizeKilobytes}).");
+            }
+            else if (TextDiffParallelThresholdKilobytes >= 1 && TextDiffChunkSizeKilobytes >= TextDiffParallelThresholdKilobytes)
+            {
+                errors.Add($"TextDiffChunkSizeKilobytes ({TextDiffChunkSizeKilobytes}) must be less than TextDiffParallelThresholdKilobytes ({TextDiffParallelThresholdKilobytes}).");
+            }
+
+            return new ConfigValidationResult(errors);
+        }
 
         private static List<string> CreateDefaultIgnoredExtensions() => new(DefaultIgnoredExtensionsValues);
 

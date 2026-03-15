@@ -92,6 +92,87 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
         }
 
+        [Fact]
+        public async Task LoadConfigAsync_InvalidMaxLogGenerations_ThrowsInvalidDataExceptionWithDetails()
+        {
+            const string json = """{ "MaxLogGenerations": 0 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
+                Assert.Contains("MaxLogGenerations", ex.Message, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_InvalidTextDiffThreshold_ThrowsInvalidDataExceptionWithDetails()
+        {
+            const string json = """{ "TextDiffParallelThresholdKilobytes": -1 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_ChunkSizeEqualToThreshold_ThrowsInvalidDataExceptionWithDetails()
+        {
+            const string json = """{ "TextDiffChunkSizeKilobytes": 64, "TextDiffParallelThresholdKilobytes": 64 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffChunkSizeKilobytes", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_MultipleInvalidSettings_ThrowsWithAllErrorDetails()
+        {
+            const string json = """{ "MaxLogGenerations": 0, "TextDiffParallelThresholdKilobytes": 0, "TextDiffChunkSizeKilobytes": 0 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
+                Assert.Contains("MaxLogGenerations", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffChunkSizeKilobytes", ex.Message, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_ValidCustomSettings_ReturnsSettings()
+        {
+            const string json = """
+                {
+                  "MaxLogGenerations": 3,
+                  "TextDiffParallelThresholdKilobytes": 256,
+                  "TextDiffChunkSizeKilobytes": 32
+                }
+                """;
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync();
+
+                Assert.Equal(3, config.MaxLogGenerations);
+                Assert.Equal(256, config.TextDiffParallelThresholdKilobytes);
+                Assert.Equal(32, config.TextDiffChunkSizeKilobytes);
+            });
+        }
+
         private static async Task WithConfigFileAsync(string content, Func<Task> assertion, bool deleteConfig = false)
         {
             var backupExists = File.Exists(ConfigFilePath);

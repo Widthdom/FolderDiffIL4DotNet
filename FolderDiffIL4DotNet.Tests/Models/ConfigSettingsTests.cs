@@ -119,6 +119,110 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
         }
 
+        [Fact]
+        public void Validate_DefaultSettings_IsValid()
+        {
+            var config = new ConfigSettings();
+
+            var result = config.Validate();
+
+            Assert.True(result.IsValid);
+            Assert.Empty(result.Errors);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_MaxLogGenerationsLessThanOne_ReturnsError(int value)
+        {
+            var config = new ConfigSettings { MaxLogGenerations = value };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Single(result.Errors);
+            Assert.Contains("MaxLogGenerations", result.Errors[0], StringComparison.Ordinal);
+            Assert.Contains(value.ToString(), result.Errors[0], StringComparison.Ordinal);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_TextDiffParallelThresholdKilobytesLessThanOne_ReturnsError(int value)
+        {
+            var config = new ConfigSettings { TextDiffParallelThresholdKilobytes = value };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_TextDiffChunkSizeKilobytesLessThanOne_ReturnsError(int value)
+        {
+            var config = new ConfigSettings { TextDiffChunkSizeKilobytes = value };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [InlineData(64, 64)]   // equal
+        [InlineData(128, 64)]  // chunk > threshold
+        public void Validate_ChunkSizeGreaterThanOrEqualToThreshold_ReturnsError(int chunkKb, int thresholdKb)
+        {
+            var config = new ConfigSettings
+            {
+                TextDiffChunkSizeKilobytes = chunkKb,
+                TextDiffParallelThresholdKilobytes = thresholdKb,
+            };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e =>
+                e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal) &&
+                e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Validate_ChunkSizeSmallerThanThreshold_IsValid()
+        {
+            var config = new ConfigSettings
+            {
+                TextDiffChunkSizeKilobytes = 63,
+                TextDiffParallelThresholdKilobytes = 64,
+            };
+
+            var result = config.Validate();
+
+            Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        public void Validate_MultipleErrors_ReturnsAllErrors()
+        {
+            var config = new ConfigSettings
+            {
+                MaxLogGenerations = 0,
+                TextDiffParallelThresholdKilobytes = 0,
+                TextDiffChunkSizeKilobytes = 0,
+            };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Equal(3, result.Errors.Count);
+        }
+
         private static void AssertMatchesDefaults(ConfigSettings config)
         {
             Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
