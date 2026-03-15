@@ -17,12 +17,39 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private const int MAX_PARALLEL_NETWORK_LIMIT = 8;
 
+        /// <summary>
+        /// アプリケーション設定。
+        /// </summary>
         private readonly ConfigSettings _config;
+
+        /// <summary>
+        /// 差分結果を蓄積するオブジェクト（無視ファイルの記録に使用）。
+        /// </summary>
         private readonly FileDiffResultLists _fileDiffResultLists;
+
+        /// <summary>
+        /// ファイルシステム操作の抽象。
+        /// </summary>
         private readonly IFileSystemService _fileSystem;
+
+        /// <summary>
+        /// 比較元フォルダの絶対パス（相対パス算出用）。
+        /// </summary>
         private readonly string _oldFolderAbsolutePath;
+
+        /// <summary>
+        /// 比較先フォルダの絶対パス（相対パス算出用）。
+        /// </summary>
         private readonly string _newFolderAbsolutePath;
+
+        /// <summary>
+        /// ネットワーク共有向け最適化フラグ（並列度上限の調整に使用）。
+        /// </summary>
         private readonly bool _optimizeForNetworkShares;
+
+        /// <summary>
+        /// 除外対象の拡張子セット（大文字小文字を無視）。
+        /// </summary>
         private readonly HashSet<string> _ignoredExtensions;
 
         /// <summary>

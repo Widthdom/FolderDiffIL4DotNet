@@ -40,6 +40,11 @@ namespace FolderDiffIL4DotNet
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
 
+        /// <summary>
+        /// 依存サービスを受け取り初期化します。
+        /// </summary>
+        /// <param name="logger">ログ出力サービス。</param>
+        /// <param name="configService">設定読み込みサービス。</param>
         public ProgramRunner(ILoggerService logger, ConfigService configService)
         {
             ArgumentNullException.ThrowIfNull(logger);
@@ -49,6 +54,11 @@ namespace FolderDiffIL4DotNet
             _configService = configService;
         }
 
+        /// <summary>
+        /// アプリケーションのメインフローを実行し、終了コードを返します。
+        /// </summary>
+        /// <param name="args">コマンドライン引数。</param>
+        /// <returns>プロセス終了コード。</returns>
         public async Task<int> RunAsync(string[] args)
         {
             var result = await RunWithResultAsync(args);

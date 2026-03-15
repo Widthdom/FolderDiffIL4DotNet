@@ -150,6 +150,15 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
+        /// <summary>
+        /// old/new の .NET アセンブリを同一逆アセンブラで逆アセンブルし、MVID などの除外行を適用したうえで IL を比較します。
+        /// <paramref name="shouldOutputIlText"/> が true の場合は IL テキストをファイルに出力します。
+        /// </summary>
+        /// <param name="fileRelativePath">フォルダ基準の相対パス。</param>
+        /// <param name="oldFolderAbsolutePath">比較元フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">比較先フォルダの絶対パス。</param>
+        /// <param name="shouldOutputIlText">IL テキストをファイル出力するかどうか。</param>
+        /// <returns>IL が一致するかと、使用した逆アセンブラ表示ラベルのタプル。</returns>
         public async Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
         {
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
