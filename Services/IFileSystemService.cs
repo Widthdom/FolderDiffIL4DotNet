@@ -9,7 +9,10 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public interface IFileSystemService
     {
-        IEnumerable<string> GetFiles(string rootFolderAbsolutePath, string searchPattern, SearchOption searchOption);
+        /// <summary>
+        /// 指定ルート配下のファイルを遅延列挙します。
+        /// </summary>
+        IEnumerable<string> EnumerateFiles(string rootFolderAbsolutePath, string searchPattern, SearchOption searchOption);
 
         void CreateDirectory(string path);
 

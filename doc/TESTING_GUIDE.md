@@ -19,7 +19,7 @@ Related documents:
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
-Current tree has `219` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`).
+Current tree has `221` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ Current tree has `219` passing tests in the latest full run (`dotnet test Folder
 Testability-related structure:
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) exercise the thin `Program.Main` entry point while the execution orchestration lives in [`ProgramRunner`](../ProgramRunner.cs), which reduces static-state coupling.
 - Diff pipeline services now expose interface seams ([`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), [`IFolderDiffService`](../Services/IFolderDiffService.cs), [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs), [`IILTextOutputService`](../Services/ILOutput/IILTextOutputService.cs)) so tests can replace collaborators directly.
-- [`FolderDiffService`](../Services/FolderDiffService.cs) also accepts [`IFileSystemService`](../Services/IFileSystemService.cs), which lets unit tests simulate enumeration failures, output-directory I/O failures, and large file sets without creating real directories.
+- [`FolderDiffService`](../Services/FolderDiffService.cs) also accepts [`IFileSystemService`](../Services/IFileSystemService.cs), which lets unit tests simulate enumeration failures, streaming discovery via `EnumerateFiles(...)`, output-directory I/O failures, and large file sets without creating real directories.
 - [`FileDiffService`](../Services/FileDiffService.cs) also accepts [`IFileComparisonService`](../Services/IFileComparisonService.cs), which lets unit tests simulate hash permission failures, IL-output write failures, and large-text chunk reads without creating real files.
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) carries per-run paths and network-mode flags, which keeps test setup explicit and avoids mutating shared global state.
 - [`FolderDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) and [`FileDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs) are marked with `Trait("Category", "Unit")`, while the temp-directory-backed [`FolderDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceTests.cs) and [`FileDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceTests.cs) are marked with `Trait("Category", "Integration")` to keep the boundary explicit.
@@ -157,7 +157,7 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 <a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`）では `219` 件が成功しています。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false`）では `221` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
@@ -171,7 +171,7 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 テスタビリティに関する構成:
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) は薄い `Program.Main` を対象にしつつ、実行オーケストレーション本体は [`ProgramRunner`](../ProgramRunner.cs) に分離されています。これにより静的状態への結合を減らしています。
 - 差分パイプラインの主要サービスは [`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), [`IFolderDiffService`](../Services/IFolderDiffService.cs), [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs), [`IILTextOutputService`](../Services/ILOutput/IILTextOutputService.cs) の差し替えポイントを持ちます。
-- [`FolderDiffService`](../Services/FolderDiffService.cs) は [`IFileSystemService`](../Services/IFileSystemService.cs) も受け取れるため、ユニットテストでは実ファイルを作らずに列挙失敗・出力先 I/O 失敗・大量ファイル入力を再現できます。
+- [`FolderDiffService`](../Services/FolderDiffService.cs) は [`IFileSystemService`](../Services/IFileSystemService.cs) も受け取れるため、ユニットテストでは実ファイルを作らずに列挙失敗・`EnumerateFiles(...)` ベースの遅延列挙・出力先 I/O 失敗・大量ファイル入力を再現できます。
 - [`FileDiffService`](../Services/FileDiffService.cs) は [`IFileComparisonService`](../Services/IFileComparisonService.cs) も受け取れるため、ユニットテストでは実ファイルを作らずにハッシュ権限エラー・IL 出力失敗・大きいテキスト比較のチャンク読み出しを再現できます。
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) が実行単位のパスやネットワークモードを保持するため、テストセットアップで共有グローバル状態を書き換える必要がありません。
 - [`FolderDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) と [`FileDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs) には `Trait("Category", "Unit")`、実ディレクトリを使う [`FolderDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceTests.cs) と [`FileDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceTests.cs) には `Trait("Category", "Integration")` を付け、境界を明示しています。

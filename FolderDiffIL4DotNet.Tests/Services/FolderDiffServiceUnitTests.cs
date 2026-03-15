@@ -78,8 +78,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var fileSystem = new FakeFileSystemService
             {
-                GetFilesExceptionRoot = oldDir,
-                GetFilesException = new UnauthorizedAccessException("access denied")
+                EnumerateFilesExceptionRoot = oldDir,
+                EnumerateFilesException = new UnauthorizedAccessException("access denied")
             };
             var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
             var resultLists = new FileDiffResultLists();
@@ -102,6 +102,48 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_ConsumesStreamingFileEnumerationAndStillFiltersIgnoredFiles()
+        {
+            const string oldDir = "/virtual/old-stream";
+            const string newDir = "/virtual/new-stream";
+            const string reportDir = "/virtual/report-stream";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir,
+                Path.Combine(oldDir, "same.txt"),
+                Path.Combine(oldDir, "ignored.pdb"));
+            fileSystem.SetFiles(newDir,
+                Path.Combine(newDir, "same.txt"),
+                Path.Combine(newDir, "ignored.pdb"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["same.txt"] = true
+            });
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService();
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Contains(oldDir, fileSystem.EnumerateFilesCalls);
+            Assert.Contains(newDir, fileSystem.EnumerateFilesCalls);
+            Assert.Equal(4, fileSystem.YieldedFileCount);
+            Assert.Single(resultLists.UnchangedFilesRelativePath, "same.txt");
+            Assert.Equal(
+                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New,
+                resultLists.IgnoredFilesRelativePathToLocation["ignored.pdb"]);
         }
 
         [Fact]
@@ -239,9 +281,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             private readonly Dictionary<string, IReadOnlyList<string>> _filesByRoot = new(StringComparer.OrdinalIgnoreCase);
 
-            public string GetFilesExceptionRoot { get; init; }
+            public string EnumerateFilesExceptionRoot { get; init; }
 
-            public Exception GetFilesException { get; init; }
+            public Exception EnumerateFilesException { get; init; }
 
             public string CreateDirectoryExceptionPath { get; init; }
 
@@ -249,21 +291,38 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public List<string> CreatedDirectories { get; } = new();
 
+            public List<string> EnumerateFilesCalls { get; } = new();
+
             public Dictionary<string, DateTime> LastWriteTimesUtc { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+            public int YieldedFileCount { get; private set; }
 
             public void SetFiles(string rootFolderAbsolutePath, params string[] files)
                 => _filesByRoot[rootFolderAbsolutePath] = files;
 
-            public IEnumerable<string> GetFiles(string rootFolderAbsolutePath, string searchPattern, SearchOption searchOption)
+            public IEnumerable<string> EnumerateFiles(string rootFolderAbsolutePath, string searchPattern, SearchOption searchOption)
             {
-                if (string.Equals(rootFolderAbsolutePath, GetFilesExceptionRoot, StringComparison.OrdinalIgnoreCase) && GetFilesException != null)
+                if (string.Equals(rootFolderAbsolutePath, EnumerateFilesExceptionRoot, StringComparison.OrdinalIgnoreCase) && EnumerateFilesException != null)
                 {
-                    throw GetFilesException;
+                    throw EnumerateFilesException;
                 }
 
-                return _filesByRoot.TryGetValue(rootFolderAbsolutePath, out var files)
-                    ? files
-                    : Array.Empty<string>();
+                EnumerateFilesCalls.Add(rootFolderAbsolutePath);
+                return EnumerateFilesIterator(rootFolderAbsolutePath);
+            }
+
+            private IEnumerable<string> EnumerateFilesIterator(string rootFolderAbsolutePath)
+            {
+                if (!_filesByRoot.TryGetValue(rootFolderAbsolutePath, out var files))
+                {
+                    yield break;
+                }
+
+                foreach (var file in files)
+                {
+                    YieldedFileCount++;
+                    yield return file;
+                }
             }
 
             public void CreateDirectory(string path)

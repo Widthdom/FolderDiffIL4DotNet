@@ -462,7 +462,7 @@ namespace FolderDiffIL4DotNet.Services
         private List<string> EnumerateIncludedFiles(string rootFolderAbsolutePath, HashSet<string> ignoredExtensions, FileDiffResultLists.IgnoredFileLocation locationFlag)
         {
             var includedFiles = new List<string>();
-            foreach (var fileAbsolutePath in _fileSystem.GetFiles(rootFolderAbsolutePath, "*", SearchOption.AllDirectories))
+            foreach (var fileAbsolutePath in _fileSystem.EnumerateFiles(rootFolderAbsolutePath, "*", SearchOption.AllDirectories))
             {
                 if (ignoredExtensions.Contains(Path.GetExtension(fileAbsolutePath)))
                 {
@@ -473,6 +473,8 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     continue;
                 }
+
+                // Directory.EnumerateFiles ベースの遅延列挙を活かし、比較対象だけを収集する。
                 includedFiles.Add(fileAbsolutePath);
             }
             return includedFiles;

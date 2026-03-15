@@ -9,8 +9,8 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class FileSystemService : IFileSystemService
     {
-        public IEnumerable<string> GetFiles(string rootFolderAbsolutePath, string searchPattern, SearchOption searchOption)
-            => Directory.GetFiles(rootFolderAbsolutePath, searchPattern, searchOption);
+        public IEnumerable<string> EnumerateFiles(string rootFolderAbsolutePath, string searchPattern, SearchOption searchOption)
+            => Directory.EnumerateFiles(rootFolderAbsolutePath, searchPattern, searchOption);
 
         public void CreateDirectory(string path)
             => Directory.CreateDirectory(path);
