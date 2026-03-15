@@ -416,8 +416,11 @@ Guardrails:
 <a id="guide-en-ci-release"></a>
 ## CI and Release Notes
 
-Workflow file:
+Workflow/config files:
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
+- [.github/workflows/release.yml](../.github/workflows/release.yml)
+- [.github/workflows/codeql.yml](../.github/workflows/codeql.yml)
+- [.github/dependabot.yml](../.github/dependabot.yml)
 
 Current CI behavior:
 - Runs on `push` and `pull_request` targeting `main`, plus `workflow_dispatch`
@@ -430,6 +433,17 @@ Current CI behavior:
 - Enforces total coverage thresholds of `73%` line and `71%` branch from the generated Cobertura XML
 - Publishes build output and uploads it as `FolderDiffIL4DotNet`
 - Uploads TRX and coverage files as `TestAndCoverage`
+
+Release automation:
+- `release.yml` runs for pushed `v*` tags and manual dispatch with an explicit existing tag input
+- Rebuilds, reruns coverage-gated tests, regenerates DocFX output, publishes the app, and removes `*.pdb`
+- Creates zipped publish/docs artifacts plus SHA-256 checksum files
+- Creates a GitHub Release from the existing tag with generated release notes
+
+Security automation:
+- `codeql.yml` analyzes both `csharp` and `actions` on `push`, `pull_request`, weekly schedule, and `workflow_dispatch`
+- `dependabot.yml` opens weekly update PRs for both `nuget` dependencies and GitHub Actions
+- [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) protects the expected CI/release/security file presence and key settings from accidental removal
 
 Versioning:
 - [`version.json`](../version.json) uses Nerdbank.GitVersioning
@@ -463,7 +477,7 @@ Before merging behavior changes, check:
 7. If performance behavior changed, have local and network-share modes both been considered?
 8. Did [`README.md`](../README.md), this guide, and [`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md) stay in sync with user-visible behavior?
 9. Were tests added or updated for the changed execution path?
-10. If CI assumptions changed, was [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) updated too?
+10. If CI, release, or security assumptions changed, were [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml), [`.github/workflows/release.yml`](../.github/workflows/release.yml), [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml), [`.github/dependabot.yml`](../.github/dependabot.yml), and [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) updated together?
 
 ## Debugging Tips
 
@@ -892,8 +906,11 @@ API リファレンス生成とサイト構築には DocFX を使います。
 <a id="guide-ja-ci-release"></a>
 ## CI とリリースまわり
 
-ワークフロー:
+ワークフロー/設定:
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
+- [.github/workflows/release.yml](../.github/workflows/release.yml)
+- [.github/workflows/codeql.yml](../.github/workflows/codeql.yml)
+- [.github/dependabot.yml](../.github/dependabot.yml)
 
 現在の CI 挙動:
 - `main` 向け `push` / `pull_request` と `workflow_dispatch` で実行
@@ -906,6 +923,17 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - 生成された Cobertura XML から total 行 `73%` / 分岐 `71%` のしきい値を強制する
 - publish 出力を `FolderDiffIL4DotNet` としてアップロード
 - TRX とカバレッジ関連を `TestAndCoverage` としてアップロード
+
+リリース自動化:
+- `release.yml` は `v*` タグ push と、既存タグを明示指定する `workflow_dispatch` で実行します
+- 再ビルド、カバレッジゲート付き再テスト、DocFX 再生成、アプリ publish、`*.pdb` 除去まで行います
+- publish 出力 ZIP、ドキュメント ZIP、SHA-256 チェックサムを生成します
+- 既存タグから GitHub Release を作成し、自動生成リリースノートを付けます
+
+セキュリティ自動化:
+- `codeql.yml` は `csharp` と `actions` を対象に、`push` / `pull_request` / 週次スケジュール / `workflow_dispatch` で解析します
+- `dependabot.yml` は `nuget` 依存関係と GitHub Actions の更新 PR を週次で作成します
+- [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) で CI / リリース / セキュリティ設定ファイルの存在と主要設定の剥がれを検知します
 
 バージョニング:
 - [`version.json`](../version.json) で Nerdbank.GitVersioning を利用
@@ -939,7 +967,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 7. 性能挙動を変えた場合、ローカルモードとネットワーク共有モードの両方を検討したか。
 8. [`README.md`](../README.md)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md) がユーザー向け挙動と同期しているか。
 9. 変更した実行経路に対するテストを追加・更新したか。
-10. CI 前提が変わったなら [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) も更新したか。
+10. CI / リリース / セキュリティ前提が変わったなら、[`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)、[`.github/workflows/release.yml`](../.github/workflows/release.yml)、[`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml)、[`.github/dependabot.yml`](../.github/dependabot.yml)、[`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) をまとめて更新したか。
 
 ## デバッグのコツ
 

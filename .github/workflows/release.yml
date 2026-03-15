@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: Existing v* tag to release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag_name || github.ref }}
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore FolderDiffIL4DotNet.sln
+
+      - name: Build
+        run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
+
+      - name: Install DocFX
+        run: dotnet tool update --global docfx --version '2.*'
+
+      - name: Generate documentation site
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          docfx metadata docfx.json
+          docfx build docfx.json
+
+      - name: Install real disassembler for E2E tests
+        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        run: |
+          dotnet tool install --global dotnet-ildasm
+          DOTNET_ROLL_FORWARD=Major dotnet-ildasm --version
+
+      - name: Test with coverage
+        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        env:
+          DOTNET_ROLL_FORWARD: Major
+        run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+
+      - name: Enforce coverage thresholds
+        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        run: |
+          python3 - <<'PY'
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
+
+          line_threshold = 73.0
+          branch_threshold = 71.0
+
+          matches = glob.glob("TestResults/**/coverage.cobertura.xml", recursive=True)
+          if not matches:
+            print("coverage.cobertura.xml was not found.", file=sys.stderr)
+            sys.exit(1)
+
+          root = ET.parse(matches[0]).getroot()
+          line_rate = float(root.attrib["line-rate"]) * 100.0
+          branch_rate = float(root.attrib["branch-rate"]) * 100.0
+
+          print(f"Total line coverage : {line_rate:.2f}% (threshold {line_threshold:.2f}%)")
+          print(f"Total branch coverage: {branch_rate:.2f}% (threshold {branch_threshold:.2f}%)")
+
+          failures = []
+          if line_rate < line_threshold:
+            failures.append(f"line coverage {line_rate:.2f}% < {line_threshold:.2f}%")
+          if branch_rate < branch_threshold:
+            failures.append(f"branch coverage {branch_rate:.2f}% < {branch_threshold:.2f}%")
+
+          if failures:
+            print("Coverage threshold check failed:", file=sys.stderr)
+            for failure in failures:
+              print(f"  - {failure}", file=sys.stderr)
+            sys.exit(1)
+          PY
+
+      - name: Publish
+        run: dotnet publish FolderDiffIL4DotNet.csproj --configuration Release --no-build --output publish
+
+      - name: Remove debugging symbols
+        run: find publish -name '*.pdb' -delete
+
+      - name: Archive release artifacts
+        env:
+          TAG_NAME: ${{ inputs.tag_name || github.ref_name }}
+        run: |
+          mkdir -p artifacts
+          tag_name="${TAG_NAME}"
+          zip -rq "artifacts/FolderDiffIL4DotNet-${tag_name}.zip" publish
+          zip -rq "artifacts/DocumentationSite-${tag_name}.zip" _site
+          sha256sum artifacts/*.zip > "artifacts/sha256-${tag_name}.txt"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ReleaseArtifacts
+          path: artifacts/**
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ inputs.tag_name || github.ref_name }}
+        run: |
+          gh release create "${TAG_NAME}" \
+            artifacts/*.zip \
+            artifacts/*.txt \
+            --verify-tag \
+            --generate-notes

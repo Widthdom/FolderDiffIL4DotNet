@@ -19,7 +19,7 @@ Related documents:
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
-Current tree has `240` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`).
+Current tree has `243` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ Current tree has `240` passing tests in the latest full run (`dotnet test Folder
 | Caching | [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs) | memory/disk cache semantics, same-key updates at capacity, eviction coordination, keying behavior |
 | Reporting/logging/progress | [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs), [`LoggerServiceTests`](../FolderDiffIL4DotNet.Tests/Services/LoggerServiceTests.cs), [`ProgressReportServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ProgressReportServiceTests.cs) | report sections/summary formatting, report-only warning responsibility, log output behavior, shared log-file/date formats, progress reporting lifecycle |
 | Core utility layer | [`FileComparerTests`](../FolderDiffIL4DotNet.Tests/Core/IO/FileComparerTests.cs), [`FileSystemUtilityTests`](../FolderDiffIL4DotNet.Tests/Core/IO/FileSystemUtilityTests.cs), [`PathValidatorTests`](../FolderDiffIL4DotNet.Tests/Core/IO/PathValidatorTests.cs), [`ProcessHelperTests`](../FolderDiffIL4DotNet.Tests/Core/Diagnostics/ProcessHelperTests.cs), [`TextSanitizerTests`](../FolderDiffIL4DotNet.Tests/Core/Text/TextSanitizerTests.cs) | hashing/text compare, shared report-timestamp formatting, path/network detection, command tokenization, file-name/path sanitization, and the reusable helper contract now housed in `FolderDiffIL4DotNet.Core` |
-| Architecture boundary | [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs) | utility types stay in the `FolderDiffIL4DotNet.Core` assembly and the main assembly no longer defines the legacy `FolderDiffIL4DotNet.Utils` namespace |
+| Architecture boundary | [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs), [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) | utility types stay in the `FolderDiffIL4DotNet.Core` assembly, the main assembly no longer defines the legacy `FolderDiffIL4DotNet.Utils` namespace, and repository automation keeps coverage gates, release workflow, CodeQL, and Dependabot configured |
 
 Testability-related structure:
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) exercise the thin `Program.Main` entry point, and [`ProgramRunnerTests`](../FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) pin phase ordering inside [`ProgramRunner`](../ProgramRunner.cs), which reduces the risk of refactors accidentally loading config before argument validation fails.
@@ -39,6 +39,7 @@ Testability-related structure:
 - [`FileDiffService`](../Services/FileDiffService.cs) also accepts [`IFileComparisonService`](../Services/IFileComparisonService.cs), which lets unit tests simulate hash permission failures, IL-output write failures, and large-text chunk reads without creating real files.
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) carries per-run paths and network-mode flags, which keeps test setup explicit and avoids mutating shared global state.
 - Core helper tests now live under [`FolderDiffIL4DotNet.Tests/Core/`](../FolderDiffIL4DotNet.Tests/Core/), and [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs) locks the assembly boundary so future refactors do not slide reusable helpers back into the executable project.
+- [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) reads the checked-in GitHub workflow/config files directly, so removing coverage gates, tag-based release automation, CodeQL analysis, or Dependabot updates requires an explicit test update in the same change.
 - [`FolderDiffExecutionStrategyTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs), [`FolderDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs), and [`FileDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs) are marked with `Trait("Category", "Unit")`, the temp-directory-backed [`FolderDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceTests.cs) and [`FileDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceTests.cs) are marked with `Trait("Category", "Integration")`, and [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) is marked with `Trait("Category", "E2E")` so the boundary stays explicit.
 
 Recommended starting points by change type:
@@ -118,7 +119,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 <a id="testing-en-ci-notes"></a>
 ## CI Integration Notes
 
-Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
+Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml), [`.github/workflows/release.yml`](../.github/workflows/release.yml), [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml), [`.github/dependabot.yml`](../.github/dependabot.yml)
 
 - DocFX site generation runs before tests and publishes `_site/` as the `DocumentationSite` artifact.
 - Tests and coverage run only when [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) exists.
@@ -126,6 +127,10 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 - `TestAndCoverage` artifact includes TRX and coverage outputs.
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
 - A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `73%` line or `71%` branch.
+- `release.yml` runs on `v*` tags, rebuilds/tests/publishes the app, archives publish/docs output, and creates a GitHub Release from the pushed tag.
+- `codeql.yml` runs CodeQL for both `csharp` and `actions` on code changes plus a weekly schedule.
+- `dependabot.yml` enables weekly update PRs for NuGet and GitHub Actions.
+- [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) keeps those repository-automation files under automated regression coverage.
 
 <a id="testing-en-isolation"></a>
 ## Test Isolation and Environment Notes
@@ -145,7 +150,8 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 - Use unique temp roots per test class or test case.
 - Always restore environment variables and temporary config files changed during tests.
 - Prefer asserting observable behavior (result classification/report content/log side-effects) over internal implementation details.
-- If test project path/name changes, update [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) test and coverage conditions accordingly.
+- If test project path/name changes, update [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) test/coverage conditions and any repository-automation assertions in [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs).
+- If release or security automation changes, update [`.github/workflows/release.yml`](../.github/workflows/release.yml), [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml), [`.github/dependabot.yml`](../.github/dependabot.yml), and [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) in the same change.
 - If the public API surface changes, regenerate the DocFX site and make sure XML comments still describe the new members correctly.
 - If user-visible execution behavior changes, also update [`README.md`](../README.md) and [`doc/DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) in the same change.
 - If the runtime lifecycle or service boundaries change, confirm the terminology in tests still matches the developer guide.
@@ -173,7 +179,7 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 <a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）では `240` 件が成功しています。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）では `243` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
@@ -184,7 +190,7 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 | キャッシュ | [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs) | メモリ/ディスクキャッシュの保持、同一キー再保存、退避時の連動削除、キー生成 |
 | レポート/ログ/進捗 | [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs), [`LoggerServiceTests`](../FolderDiffIL4DotNet.Tests/Services/LoggerServiceTests.cs), [`ProgressReportServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ProgressReportServiceTests.cs) | レポート出力内容、ログ動作、共有ログ書式、進捗報告ライフサイクル |
 | Core ユーティリティ層 | [`FileComparerTests`](../FolderDiffIL4DotNet.Tests/Core/IO/FileComparerTests.cs), [`FileSystemUtilityTests`](../FolderDiffIL4DotNet.Tests/Core/IO/FileSystemUtilityTests.cs), [`PathValidatorTests`](../FolderDiffIL4DotNet.Tests/Core/IO/PathValidatorTests.cs), [`ProcessHelperTests`](../FolderDiffIL4DotNet.Tests/Core/Diagnostics/ProcessHelperTests.cs), [`TextSanitizerTests`](../FolderDiffIL4DotNet.Tests/Core/Text/TextSanitizerTests.cs) | ハッシュ/テキスト比較、共有タイムスタンプ書式、パス/ネットワーク判定、コマンド分解、ファイル名/パス整形、`FolderDiffIL4DotNet.Core` に移した再利用 helper の契約確認 |
-| アーキテクチャ境界 | [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs) | utility 型が `FolderDiffIL4DotNet.Core` アセンブリに残り、実行ファイル側へ旧 `FolderDiffIL4DotNet.Utils` 名前空間が戻らないこと |
+| アーキテクチャ境界 | [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs), [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) | utility 型が `FolderDiffIL4DotNet.Core` アセンブリに残り、実行ファイル側へ旧 `FolderDiffIL4DotNet.Utils` 名前空間が戻らないことに加え、カバレッジゲート、リリースワークフロー、CodeQL、Dependabot の設定が維持されること |
 
 テスタビリティに関する構成:
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) は薄い `Program.Main` を対象にし、[`ProgramRunnerTests`](../FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) は [`ProgramRunner`](../ProgramRunner.cs) 内のフェーズ順序を固定します。これにより、引数検証より先に設定読込へ進んでしまう回帰を防ぎつつ、静的状態への結合を減らしています。
@@ -193,6 +199,7 @@ Workflow: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
 - [`FileDiffService`](../Services/FileDiffService.cs) は [`IFileComparisonService`](../Services/IFileComparisonService.cs) も受け取れるため、ユニットテストでは実ファイルを作らずにハッシュ権限エラー・IL 出力失敗・大きいテキスト比較のチャンク読み出しを再現できます。
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) が実行単位のパスやネットワークモードを保持するため、テストセットアップで共有グローバル状態を書き換える必要がありません。
 - Core helper のテストは [`FolderDiffIL4DotNet.Tests/Core/`](../FolderDiffIL4DotNet.Tests/Core/) へまとめ、[`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs) でアセンブリ境界も固定しています。これにより、再利用 helper が再び実行ファイル側へ混ざる回帰を防ぎます。
+- [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) は、コミット済みの GitHub 設定ファイルを直接読んで検証します。これにより、カバレッジゲート、タグ起点のリリース自動化、CodeQL、Dependabot を外す変更は、同じ差分でテスト更新が必要になります。
 - [`FolderDiffExecutionStrategyTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs)、[`FolderDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs)、[`FileDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs) には `Trait("Category", "Unit")`、実ディレクトリを使う [`FolderDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceTests.cs) と [`FileDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceTests.cs) には `Trait("Category", "Integration")`、実逆アセンブラを使う [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) には `Trait("Category", "E2E")` を付け、境界を明示しています。
 
 変更種別ごとの出発点:
@@ -272,7 +279,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 <a id="testing-ja-ci-notes"></a>
 ## CI 連携メモ
 
-ワークフロー: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)
+ワークフロー/設定: [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml), [`.github/workflows/release.yml`](../.github/workflows/release.yml), [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml), [`.github/dependabot.yml`](../.github/dependabot.yml)
 
 - テスト前に DocFX サイト生成を実行し、`_site/` を `DocumentationSite` artifact として公開します。
 - [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) が存在する場合のみテスト/カバレッジを実行します。
@@ -280,6 +287,10 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 - `TestAndCoverage` アーティファクトに TRX とカバレッジ関連ファイルを格納します。
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
 - 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `73%` / 分岐 `71%` を下回るとワークフローを失敗させます。
+- `release.yml` は `v*` タグで実行し、再ビルド/再テスト/publish 後に publish 出力とドキュメントをアーカイブし、push されたタグから GitHub Release を作成します。
+- `codeql.yml` は `csharp` と `actions` に対する CodeQL をコード変更時と週次で実行します。
+- `dependabot.yml` は NuGet と GitHub Actions の更新 PR を週次で有効化します。
+- [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) が、これらの設定ファイルも回帰テスト対象に含めます。
 
 <a id="testing-ja-isolation"></a>
 ## テスト分離と実行環境の注意
@@ -299,7 +310,8 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 - テストごとに一意の一時ディレクトリを使って干渉を防いでください。
 - 変更した環境変数や一時設定ファイルは必ず復元してください。
 - 内部実装より、分類結果・レポート内容・ログ副作用など観測可能な振る舞いを優先して検証してください。
-- テストプロジェクトの場所/名称を変更した場合は [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) の条件とコマンドを更新してください。
+- テストプロジェクトの場所/名称を変更した場合は [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) の条件とコマンド、および [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) の検証内容を更新してください。
+- リリースまたはセキュリティ自動化を変える場合は、[`.github/workflows/release.yml`](../.github/workflows/release.yml)、[`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml)、[`.github/dependabot.yml`](../.github/dependabot.yml)、[`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) を同じ差分で更新してください。
 - public API を変更した場合は、DocFX サイトを再生成し、XML コメントが新しいメンバーを正しく説明しているか確認してください。
 - ユーザーから見える実行挙動が変わった場合は、[`README.md`](../README.md) と [`doc/DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md) も同じ変更で更新してください。
 - 実行ライフサイクルやサービス境界を変えた場合は、テスト名や説明に使っている用語も開発者ガイドと揃っているか確認してください。

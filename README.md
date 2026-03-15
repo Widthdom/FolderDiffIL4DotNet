@@ -342,6 +342,14 @@ Generated outputs:
 
 CI also generates the same site and uploads it as the `DocumentationSite` artifact.
 
+<a id="readme-en-ci-automation"></a>
+## CI/CD and Security Automation
+
+- [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) builds, tests, generates DocFX output, uploads artifacts, and already enforces total coverage thresholds of `73%` line and `71%` branch.
+- [`.github/workflows/release.yml`](.github/workflows/release.yml) creates a GitHub Release when a `v*` tag is pushed and attaches zipped publish output, zipped documentation, and SHA-256 checksums.
+- [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) runs scheduled and on-change CodeQL analysis for both C# and GitHub Actions workflows.
+- [`.github/dependabot.yml`](.github/dependabot.yml) enables weekly update PRs for NuGet packages and GitHub Actions.
+
 ## License
 
 - [MIT License](LICENSE)
@@ -694,6 +702,14 @@ docfx build docfx.json
 - API メタデータ中間生成物: `api/*.yml`
 
 CI でも同じサイトを生成し、`DocumentationSite` artifact としてアップロードします。
+
+<a id="readme-ja-ci-automation"></a>
+## CI/CD とセキュリティ自動化
+
+- [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) はビルド、テスト、DocFX 生成、artifact 公開を行い、すでに total 行 `73%` / 分岐 `71%` のカバレッジしきい値も強制しています。
+- [`.github/workflows/release.yml`](.github/workflows/release.yml) は `v*` タグ push 時に GitHub Release を作成し、publish 出力 ZIP、ドキュメント ZIP、SHA-256 チェックサムを添付します。
+- [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) は C# と GitHub Actions を対象に、変更時と定期実行の CodeQL 解析を行います。
+- [`.github/dependabot.yml`](.github/dependabot.yml) は NuGet と GitHub Actions の更新 PR を週次で作成します。
 
 ## ライセンス
 
