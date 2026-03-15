@@ -151,6 +151,59 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.IsType<ArgumentOutOfRangeException>(warningLog.Exception);
         }
 
+        /// <summary>
+        /// 数 MiB 級の実ファイルでも逐次フォールバックなしでチャンク比較できることを確認します。
+        /// </summary>
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenLargeTextFilesExceedMegabytes_CompletesChunkComparisonWithoutFallback()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-large-real");
+            var newDir = Path.Combine(_rootDir, "new-large-real");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+
+            const string fileRelativePath = "huge.txt";
+            var oldFileAbsolutePath = Path.Combine(oldDir, fileRelativePath);
+            var newFileAbsolutePath = Path.Combine(newDir, fileRelativePath);
+            File.WriteAllText(oldFileAbsolutePath, new string('A', 2 * 1024 * 1024));
+            File.WriteAllText(newFileAbsolutePath, new string('B', 2 * 1024 * 1024));
+
+            var config = new ConfigSettings
+            {
+                TextFileExtensions = new List<string> { ".txt" },
+                IgnoredExtensions = new List<string>(),
+                ShouldOutputILText = false,
+                EnableILCache = false,
+                OptimizeForNetworkShares = false,
+                TextDiffParallelThresholdKilobytes = 64,
+                TextDiffChunkSizeKilobytes = 32
+            };
+
+            var logger = new TestLogger();
+            var resultLists = new FileDiffResultLists();
+            var executionContext = new DiffExecutionContext(
+                oldDir,
+                newDir,
+                Path.Combine(_rootDir, "report-large-real"),
+                optimizeForNetworkShares: false,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
+
+            var ilTextOutputService = new ILTextOutputService(executionContext, logger);
+            var dotNetDisassembleService = new DotNetDisassembleService(config, ilCache: null, resultLists, logger, new DotNetDisassemblerCache(logger));
+            var ilOutputService = new ILOutputService(config, executionContext, ilTextOutputService, dotNetDisassembleService, ilCache: null, logger);
+            var service = new FileDiffService(config, ilOutputService, executionContext, resultLists, logger);
+
+            var areEqual = await service.FilesAreEqualAsync(fileRelativePath, maxParallel: 2);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
+            Assert.DoesNotContain(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal));
+        }
+
         private sealed class TestLogger : ILoggerService
         {
             private readonly Action<LogEntry> _onEntry;

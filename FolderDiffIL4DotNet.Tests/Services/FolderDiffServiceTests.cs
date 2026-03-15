@@ -218,6 +218,41 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(_resultLists.NewFileTimestampOlderThanOldWarnings);
         }
 
+        /// <summary>
+        /// シンボリックリンク経由のファイルも列挙・比較して相対パス分類できることを確認します。
+        /// </summary>
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenComparingFileSymlinks_ClassifiesUsingLinkedContents()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-symlink");
+            var newDir = Path.Combine(_rootDir, "new-symlink");
+            var reportDir = Path.Combine(_rootDir, "report-symlink");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            if (!TryCreateFileSymbolicLink(
+                    sourceFileAbsolutePath: Path.Combine(oldDir, "target.txt"),
+                    linkFileAbsolutePath: Path.Combine(oldDir, "linked.txt"),
+                    content: "same")
+                || !TryCreateFileSymbolicLink(
+                    sourceFileAbsolutePath: Path.Combine(newDir, "target.txt"),
+                    linkFileAbsolutePath: Path.Combine(newDir, "linked.txt"),
+                    content: "same"))
+            {
+                return;
+            }
+
+            var config = CreateConfig(maxParallelism: 1);
+            using var progressReporter = new ProgressReportService();
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Contains("linked.txt", _resultLists.UnchangedFilesRelativePath);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _resultLists.FileRelativePathToDiffDetailDictionary["linked.txt"]);
+        }
+
         private static ConfigSettings CreateConfig(int maxParallelism) => new()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
@@ -259,6 +294,35 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Directory.CreateDirectory(parentDir);
             }
             File.WriteAllText(absolutePath, content);
+        }
+
+        /// <summary>
+        /// 実ファイルを作成したうえで、そのファイルを指すシンボリックリンクを生成します。
+        /// </summary>
+        /// <param name="sourceFileAbsolutePath">リンク先として使う実ファイルの絶対パスです。</param>
+        /// <param name="linkFileAbsolutePath">生成するシンボリックリンクの絶対パスです。</param>
+        /// <param name="content">実ファイルへ書き込む内容です。</param>
+        /// <returns>リンク生成に成功した場合は true、権限やプラットフォーム制約で生成できない場合は false です。</returns>
+        private static bool TryCreateFileSymbolicLink(string sourceFileAbsolutePath, string linkFileAbsolutePath, string content)
+        {
+            try
+            {
+                File.WriteAllText(sourceFileAbsolutePath, content);
+                File.CreateSymbolicLink(linkFileAbsolutePath, sourceFileAbsolutePath);
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return false;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
         }
     }
 }
