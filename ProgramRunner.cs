@@ -567,13 +567,19 @@ namespace FolderDiffIL4DotNet
                 ilCacheMaxDiskMegabytes: config.ILCacheMaxDiskMegabytes);
         }
 
-        private static string FormatElapsedTime(TimeSpan elapsed)
+        /// <summary>
+        /// 経過時間を人間が判読しやすい形式（例: <c>0h 5m 30.1s</c>）に変換します。
+        /// 秒は小数点以下 1 桁（1/10 秒単位、切り捨て）まで表示します。
+        /// </summary>
+        /// <param name="elapsed">変換する経過時間。</param>
+        /// <returns><c>{h}h {m}m {s.d}s</c> 形式の文字列。</returns>
+        internal static string FormatElapsedTime(TimeSpan elapsed)
         {
-            string hourString = $"{(int)Math.Floor(elapsed.TotalHours):00}";
-            string minuteString = $"{elapsed.Minutes:00}";
-            string secondString = $"{elapsed.Seconds:00}";
-            string millisecondString = $"{elapsed.Milliseconds:000}";
-            return $"{hourString}:{minuteString}:{secondString}.{millisecondString}";
+            int hours = (int)Math.Floor(elapsed.TotalHours);
+            int minutes = elapsed.Minutes;
+            int seconds = elapsed.Seconds;
+            int tenths = elapsed.Milliseconds / 100;
+            return $"{hours}h {minutes}m {seconds}.{tenths}s";
         }
 
         /// <summary>

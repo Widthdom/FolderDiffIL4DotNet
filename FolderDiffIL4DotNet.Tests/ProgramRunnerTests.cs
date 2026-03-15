@@ -538,6 +538,28 @@ namespace FolderDiffIL4DotNet.Tests
             }
         }
 
+        // -----------------------------------------------------------------------
+        // FormatElapsedTime
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData(0, 0, 0, 0, "0h 0m 0.0s")]
+        [InlineData(0, 0, 1, 234, "0h 0m 1.2s")]
+        [InlineData(0, 5, 30, 100, "0h 5m 30.1s")]
+        [InlineData(1, 23, 45, 600, "1h 23m 45.6s")]
+        [InlineData(1, 0, 0, 0, "1h 0m 0.0s")]
+        [InlineData(0, 0, 1, 999, "0h 0m 1.9s")]  // truncates, does not round up
+        [InlineData(100, 59, 59, 900, "100h 59m 59.9s")]
+        public void FormatElapsedTime_VariousInputs_ReturnsExpectedString(
+            int hours, int minutes, int seconds, int milliseconds, string expected)
+        {
+            var elapsed = new TimeSpan(0, hours, minutes, seconds, milliseconds);
+
+            var result = ProgramRunner.FormatElapsedTime(elapsed);
+
+            Assert.Equal(expected, result);
+        }
+
         private static ILCache InvokeCreateIlCache(ConfigSettings config, ILoggerService logger)
         {
             var method = typeof(ProgramRunner).GetMethod("CreateIlCache", BindingFlags.Static | BindingFlags.NonPublic);

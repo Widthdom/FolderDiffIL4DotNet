@@ -118,7 +118,7 @@ Example `diff_report.md` (trimmed):
 - Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
 - Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
 - IL Disassembler: dotnet-ildasm (version: 0.12.2)
-- Elapsed Time: 00:00:01.234
+- Elapsed Time: 0h 0m 1.2s
 - Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
 - Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
 - Legend:
@@ -513,7 +513,7 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 - Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
 - Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
 - IL Disassembler: dotnet-ildasm (version: 0.12.2)
-- Elapsed Time: 00:00:01.234
+- Elapsed Time: 0h 0m 1.2s
 - Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
 - Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
 - Legend:
