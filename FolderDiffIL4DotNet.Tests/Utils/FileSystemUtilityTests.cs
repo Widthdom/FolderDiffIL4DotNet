@@ -163,5 +163,17 @@ namespace FolderDiffIL4DotNet.Tests.Utils
 
             Assert.Equal("tmpfs", Assert.IsType<string>(result));
         }
+
+        [Fact]
+        public void GetBestMatchingMountFileSystemType_NullInputs_ReturnsNull()
+        {
+            var method = typeof(FileSystemUtility).GetMethod(
+                "GetBestMatchingMountFileSystemType",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            Assert.Null(method.Invoke(null, new object[] { null, new[] { "tmpfs /tmp tmpfs rw 0 0" } }));
+            Assert.Null(method.Invoke(null, new object[] { "/tmp/file.txt", null }));
+        }
     }
 }

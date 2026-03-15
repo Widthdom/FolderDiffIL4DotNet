@@ -142,6 +142,8 @@ sequenceDiagram
 9. Generate `diff_report.md` from aggregated results.
 10. Return `0` on success; on exception, log it and return `1`.
 
+The implementation keeps `RunAsync()` short by treating those steps as explicit phases and delegating each phase to focused private helpers.
+
 Failure behavior:
 - Any unhandled exception in diffing or report generation results in exit code `1`.
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
@@ -601,6 +603,8 @@ sequenceDiagram
 8. フォルダ比較を実行し、進捗表示を終了します。
 9. 集約結果から `diff_report.md` を生成します。
 10. 成功なら `0`、例外ならログに出力して `1` を返します。
+
+実装上は、`RunAsync()` 自体を短く保つため、これらを明示的なフェーズとして private helper へ分割しています。
 
 失敗時の扱い:
 - 差分処理やレポート生成で未処理例外が出ると終了コードは `1` です。

@@ -11,11 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Refactored [`ProgramRunner.RunAsync()`](ProgramRunner.cs) into phase-oriented helpers for logger startup, argument validation, configuration/runtime preparation, diff execution, report generation, and exit prompting, reducing the main orchestration method without changing observable behavior.
+- Split OS-specific network-path detection branches out of [`FileSystemUtility.IsLikelyNetworkPath()`](Utils/FileSystemUtility.cs) and extracted report-write/protection helpers from [`ReportGenerateService.GenerateDiffReport()`](Services/ReportGenerateService.cs), improving readability while keeping behavior stable.
+- Added focused regression coverage in [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) for validation-before-config-loading ordering, added a null-input case to [`FileSystemUtilityTests`](FolderDiffIL4DotNet.Tests/Utils/FileSystemUtilityTests.cs), and updated the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md) to reflect the refactor and latest passing test count (`230`).
 - Refactored discovery filtering and auto-parallelism policy out of [`FolderDiffService`](Services/FolderDiffService.cs) into [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs), reducing orchestration sprawl while keeping runtime behavior stable.
-- Added focused unit coverage in [`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs) for ignored-file filtering, relative-path union counting, and network-aware auto-parallelism, and updated the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md) to reflect the new boundary and latest passing test count (`227`).
+- Added focused unit coverage in [`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs) for ignored-file filtering, relative-path union counting, and network-aware auto-parallelism, and updated the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md) to reflect the new boundary and latest passing test count (`230`).
 - Refactored [`ILCache`](Services/Caching/ILCache.cs) into a thinner coordinator backed by [`ILMemoryCache`](Services/Caching/ILMemoryCache.cs) and [`ILDiskCache`](Services/Caching/ILDiskCache.cs), keeping the public API stable while separating in-memory retention from disk persistence/quota handling.
 - Added regression coverage in [`ILCacheTests`](FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs) for same-key updates at memory-capacity limits and for coordinated disk cleanup when LRU eviction removes an entry.
-- Updated the [developer guide](doc/DEVELOPER_GUIDE.md) and [testing guide](doc/TESTING_GUIDE.md) to describe the split cache internals and reflect the latest passing test count (`227`).
+- Updated the [developer guide](doc/DEVELOPER_GUIDE.md) and [testing guide](doc/TESTING_GUIDE.md) to describe the split cache internals and reflect the latest passing test count (`230`).
 - Replaced eager `Directory.GetFiles(...)` usage in [`FolderDiffService`](Services/FolderDiffService.cs) with lazy `Directory.EnumerateFiles(...)` behind [`IFileSystemService`](Services/IFileSystemService.cs), reducing discovery-side allocations for large trees and network shares while keeping folder-diff behavior unchanged.
 - Added unit-test coverage for streaming file discovery in [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) and updated the [README](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md) accordingly.
 - Fixed missing link to [Developer Guide](doc/DEVELOPER_GUIDE.md).
@@ -228,11 +231,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 変更
 
+- [`ProgramRunner.RunAsync()`](ProgramRunner.cs) を、ロガー起動、引数検証、設定/実行準備、差分実行、レポート生成、終了プロンプトの各 helper へ分割し、外部挙動を変えずに主オーケストレーションの見通しを改善しました。
+- [`FileSystemUtility.IsLikelyNetworkPath()`](Utils/FileSystemUtility.cs) から OS 別のネットワークパス判定を切り出し、[`ReportGenerateService.GenerateDiffReport()`](Services/ReportGenerateService.cs) でもレポート書き出しと読み取り専用保護の helper を抽出して、挙動を維持したまま可読性を上げました。
+- [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) を追加して「引数検証が設定読込より先に失敗すること」を回帰テスト化し、[`FileSystemUtilityTests`](FolderDiffIL4DotNet.Tests/Utils/FileSystemUtilityTests.cs) に null 入力ケースを追加しました。あわせて [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) を更新し、最新の通過テスト件数（`230` 件）を反映しました。
 - [`FolderDiffService`](Services/FolderDiffService.cs) に埋め込まれていた列挙フィルタと自動並列度決定を [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs) へ抽出し、実行時挙動を変えずにオーケストレーション責務を整理しました。
-- [`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs) を追加し、無視ファイルの扱い、相対パス和集合件数、自動並列度のネットワーク考慮を回帰テスト化しました。あわせて [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) を更新し、最新の通過テスト件数（`227` 件）を反映しました。
+- [`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs) を追加し、無視ファイルの扱い、相対パス和集合件数、自動並列度のネットワーク考慮を回帰テスト化しました。あわせて [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) を更新し、最新の通過テスト件数（`230` 件）を反映しました。
 - [`ILCache`](Services/Caching/ILCache.cs) を、公開 API を維持したまま [`ILMemoryCache`](Services/Caching/ILMemoryCache.cs) と [`ILDiskCache`](Services/Caching/ILDiskCache.cs) を使う薄い調停役へ整理し、メモリ保持とディスク永続化/クォータ制御の責務を分離しました。
 - [`ILCacheTests`](FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs) に、メモリ上限到達時の同一キー再保存と、LRU 退避時のディスクキャッシュ連動削除に対する回帰テストを追加しました。
-- [開発者ガイド](doc/DEVELOPER_GUIDE.md) と [テストガイド](doc/TESTING_GUIDE.md) を更新し、キャッシュ内部の分離方針と最新の通過テスト件数（`227` 件）を反映しました。
+- [開発者ガイド](doc/DEVELOPER_GUIDE.md) と [テストガイド](doc/TESTING_GUIDE.md) を更新し、キャッシュ内部の分離方針と最新の通過テスト件数（`230` 件）を反映しました。
 - [`FolderDiffService`](Services/FolderDiffService.cs) 内で使っていた即時配列化の `Directory.GetFiles(...)` 相当を、[`IFileSystemService`](Services/IFileSystemService.cs) 越しの遅延列挙 `Directory.EnumerateFiles(...)` へ置き換えました。これにより、大量ファイルやネットワーク共有上の列挙で不要な配列確保を減らしつつ、フォルダ差分の振る舞いは維持しています。
 - [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) にストリーミング列挙のテストを追加し、あわせて [README](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) を更新しました。
 - [開発者ガイド](doc/DEVELOPER_GUIDE.md)のリンク付与漏れを修正しました。

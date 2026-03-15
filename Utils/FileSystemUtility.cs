@@ -246,92 +246,120 @@ namespace FolderDiffIL4DotNet.Utils
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (absolutePath.StartsWith(WINDOWS_UNC_PREFIX, StringComparison.Ordinal) || absolutePath.StartsWith(WINDOWS_UNC_DEVICE_PREFIX, StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-
-                string root;
-                try
-                {
-                    root = Path.GetPathRoot(absolutePath);
-                }
-                catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
-                {
-                    return false;
-                }
-
-                if (!string.IsNullOrEmpty(root))
-                {
-                    try
-                    {
-                        var di = new DriveInfo(root);
-                        if (di.DriveType == DriveType.Network)
-                        {
-                            return true;
-                        }
-                    }
-                    catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
-                    {
-                        // ignore recoverable detection errors and fall through.
-                    }
-                }
-                return false;
+                return IsLikelyWindowsNetworkPath(absolutePath);
             }
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                if (TryGetFileSystemInfoOnMac(absolutePath, out var fsTypeMac, out var flagsMac))
-                {
-                    if ((flagsMac & MNT_LOCAL) == 0)
-                    {
-                        return true;
-                    }
-                    if (!string.IsNullOrEmpty(fsTypeMac) && s_macNetworkFsTypes.Contains(fsTypeMac))
-                    {
-                        return true;
-                    }
-                }
+                return IsLikelyMacNetworkPath(absolutePath);
+            }
+
+            return IsLikelyUnixNetworkPath(absolutePath);
+        }
+
+        private static bool IsLikelyWindowsNetworkPath(string absolutePath)
+        {
+            if (absolutePath.StartsWith(WINDOWS_UNC_PREFIX, StringComparison.Ordinal)
+                || absolutePath.StartsWith(WINDOWS_UNC_DEVICE_PREFIX, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            string root = TryGetPathRoot(absolutePath);
+            return !string.IsNullOrEmpty(root) && IsNetworkDrive(root);
+        }
+
+        private static string TryGetPathRoot(string absolutePath)
+        {
+            try
+            {
+                return Path.GetPathRoot(absolutePath);
+            }
+            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+            {
+                return null;
+            }
+        }
+
+        private static bool IsNetworkDrive(string root)
+        {
+            try
+            {
+                return new DriveInfo(root).DriveType == DriveType.Network;
+            }
+            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+            {
+                return false;
+            }
+        }
+
+        private static bool IsLikelyMacNetworkPath(string absolutePath)
+        {
+            if (!TryGetFileSystemInfoOnMac(absolutePath, out var fsTypeMac, out var flagsMac))
+            {
                 return false;
             }
 
-            string mountsFile = null;
-            if (File.Exists(PROC_MOUNTS_PATH))
-            {
-                mountsFile = PROC_MOUNTS_PATH;
-            }
-            else if (File.Exists(ETC_MTAB_PATH))
-            {
-                mountsFile = ETC_MTAB_PATH;
-            }
+            return (flagsMac & MNT_LOCAL) == 0
+                || (!string.IsNullOrEmpty(fsTypeMac) && s_macNetworkFsTypes.Contains(fsTypeMac));
+        }
+
+        private static bool IsLikelyUnixNetworkPath(string absolutePath)
+        {
+            string mountsFile = GetUnixMountsFilePath();
             if (mountsFile == null)
             {
                 return false;
             }
 
-            string fullPath;
-            try
-            {
-                fullPath = Path.GetFullPath(absolutePath);
-            }
-            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+            string fullPath = TryGetFullPath(absolutePath);
+            if (fullPath == null)
             {
                 return false;
             }
 
-            IEnumerable<string> mountLines;
-            try
-            {
-                mountLines = File.ReadLines(mountsFile);
-            }
-            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+            var mountLines = TryReadMountLines(mountsFile);
+            if (mountLines == null)
             {
                 return false;
             }
 
             string bestFsType = GetBestMatchingMountFileSystemType(fullPath, mountLines);
-
             return !string.IsNullOrEmpty(bestFsType) && s_unixNetworkFsTypes.Contains(bestFsType);
+        }
+
+        private static string GetUnixMountsFilePath()
+        {
+            if (File.Exists(PROC_MOUNTS_PATH))
+            {
+                return PROC_MOUNTS_PATH;
+            }
+
+            return File.Exists(ETC_MTAB_PATH) ? ETC_MTAB_PATH : null;
+        }
+
+        private static string TryGetFullPath(string absolutePath)
+        {
+            try
+            {
+                return Path.GetFullPath(absolutePath);
+            }
+            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+            {
+                return null;
+            }
+        }
+
+        private static IEnumerable<string> TryReadMountLines(string mountsFile)
+        {
+            try
+            {
+                return File.ReadLines(mountsFile);
+            }
+            catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
+            {
+                return null;
+            }
         }
     }
 }

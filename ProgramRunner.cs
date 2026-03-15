@@ -60,63 +60,12 @@ namespace FolderDiffIL4DotNet
             #pragma warning disable CA1031 // Top-level application boundary converts unexpected failures into exit codes after logging.
             try
             {
-                Console.WriteLine(INITIALIZING_LOGGER);
-                _logger.Initialize();
-                _logger.LogMessage(AppLogLevel.Info, LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
-
-                var appVersion = SystemInfo.GetAppVersion(typeof(Program));
-                _logger.LogMessage(AppLogLevel.Info, $"Application version: {appVersion}", shouldOutputMessageToConsole: true);
-
+                var appVersion = InitializeLoggerAndGetAppVersion();
                 var computerName = SystemInfo.GetComputerName();
-
-                _logger.LogMessage(AppLogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
                 var runArguments = ValidateAndBuildRunArguments(args);
-
-                _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
-
-                ConsoleBanner.Print();
-                Directory.CreateDirectory(runArguments.ReportsFolderAbsolutePath);
-
-                _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
-                var config = await _configService.LoadConfigAsync();
-                _logger.LogMessage(AppLogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
-
-                _logger.CleanupOldLogFiles(config.MaxLogGenerations);
-                TimestampCache.Clear();
-                _logger.LogMessage(AppLogLevel.Info, LOG_APP_STARTING, shouldOutputMessageToConsole: true);
-
-                var executionContext = BuildExecutionContext(runArguments, config);
-                using var runProvider = BuildRunServiceProvider(config, executionContext);
-                using var scope = runProvider.CreateScope();
-                var scopedProvider = scope.ServiceProvider;
-                var progressReporter = scopedProvider.GetRequiredService<ProgressReportService>();
-                var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
-
-                string elapsedTimeString;
-                try
-                {
-                    var stopwatch = Stopwatch.StartNew();
-                    await scopedProvider.GetRequiredService<IFolderDiffService>().ExecuteFolderDiffAsync();
-                    stopwatch.Stop();
-                    elapsedTimeString = FormatElapsedTime(stopwatch.Elapsed);
-                    _logger.LogMessage(AppLogLevel.Info, $"Elapsed Time: {elapsedTimeString}", shouldOutputMessageToConsole: true);
-                }
-                finally
-                {
-                    progressReporter.Dispose();
-                }
-
-                hasMd5MismatchWarnings = resultLists.HasAnyMd5Mismatch;
-                hasTimestampRegressionWarnings = resultLists.HasAnyNewFileTimestampOlderThanOldWarning;
-
-                scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(
-                    executionContext.OldFolderAbsolutePath,
-                    executionContext.NewFolderAbsolutePath,
-                    executionContext.ReportsFolderAbsolutePath,
-                    appVersion,
-                    elapsedTimeString,
-                    computerName,
-                    config);
+                var completionState = await RunPipelineAsync(runArguments, appVersion, computerName);
+                hasMd5MismatchWarnings = completionState.HasMd5MismatchWarnings;
+                hasTimestampRegressionWarnings = completionState.HasTimestampRegressionWarnings;
 
                 _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
             }
@@ -130,33 +79,21 @@ namespace FolderDiffIL4DotNet
             finally
             {
                 OutputCompletionWarnings(hasMd5MismatchWarnings, hasTimestampRegressionWarnings);
-
-                if ((args?.Any(arg => string.Equals(arg, NO_PAUSE, StringComparison.OrdinalIgnoreCase)) ?? false)
-                    || Console.IsInputRedirected
-                    || Console.IsOutputRedirected
-                    || Console.IsErrorRedirected)
-                {
-                    // do nothing
-                }
-                else
-                {
-                    try
-                    {
-                        Console.WriteLine(PRESS_ANY_KEY);
-                        Console.ReadKey(true);
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
-                    }
-                    catch (IOException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
-                    }
-                }
+                PromptForExitKeyIfNeeded(args);
             }
 
             return exitCode;
+        }
+
+        private string InitializeLoggerAndGetAppVersion()
+        {
+            Console.WriteLine(INITIALIZING_LOGGER);
+            _logger.Initialize();
+            _logger.LogMessage(AppLogLevel.Info, LOGGER_INITIALIZED, shouldOutputMessageToConsole: true);
+
+            var appVersion = SystemInfo.GetAppVersion(typeof(Program));
+            _logger.LogMessage(AppLogLevel.Info, $"Application version: {appVersion}", shouldOutputMessageToConsole: true);
+            return appVersion;
         }
 
         private void OutputCompletionWarnings(bool hasMd5MismatchWarnings, bool hasTimestampRegressionWarnings)
@@ -176,12 +113,28 @@ namespace FolderDiffIL4DotNet
 
         private RunArguments ValidateAndBuildRunArguments(string[] args)
         {
+            _logger.LogMessage(AppLogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
+            ValidateRequiredArguments(args);
+
+            var oldFolderAbsolutePath = args[0];
+            var newFolderAbsolutePath = args[1];
+            var reportLabel = args[2];
+            ValidateReportLabel(reportLabel);
+            string reportsFolderAbsolutePath = GetReportsFolderAbsolutePath(reportLabel);
+            ValidateRunDirectories(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
+            _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
+            return new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
+        }
+
+        private static void ValidateRequiredArguments(string[] args)
+        {
             try
             {
                 if (args == null || args.Length < 3)
                 {
                     throw new ArgumentException(ERROR_INSUFFICIENT_ARGUMENTS);
                 }
+
                 if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]) || string.IsNullOrWhiteSpace(args[2]))
                 {
                     throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
@@ -191,11 +144,10 @@ namespace FolderDiffIL4DotNet
             {
                 throw new ArgumentException(ERROR_INVALID_ARGUMENTS_USAGE, ex);
             }
+        }
 
-            var oldFolderAbsolutePath = args[0];
-            var newFolderAbsolutePath = args[1];
-            var reportLabel = args[2];
-
+        private void ValidateReportLabel(string reportLabel)
+        {
             try
             {
                 PathValidator.ValidateFolderNameOrThrow(reportLabel, nameof(reportLabel));
@@ -205,25 +157,31 @@ namespace FolderDiffIL4DotNet
                 _logger.LogMessage(AppLogLevel.Error, $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name.", shouldOutputMessageToConsole: true);
                 throw;
             }
+        }
 
+        private static string GetReportsFolderAbsolutePath(string reportLabel)
+        {
             string reportsRootDirAbsolutePath = Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
             Directory.CreateDirectory(reportsRootDirAbsolutePath);
-            string reportsFolderAbsolutePath = Path.Combine(reportsRootDirAbsolutePath, reportLabel);
+            return Path.Combine(reportsRootDirAbsolutePath, reportLabel);
+        }
 
+        private static void ValidateRunDirectories(string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath)
+        {
             if (!Directory.Exists(oldFolderAbsolutePath))
             {
                 throw new DirectoryNotFoundException($"The old folder path does not exist: {oldFolderAbsolutePath}");
             }
+
             if (!Directory.Exists(newFolderAbsolutePath))
             {
                 throw new DirectoryNotFoundException($"The new folder path does not exist: {newFolderAbsolutePath}");
             }
+
             if (Directory.Exists(reportsFolderAbsolutePath))
             {
                 throw new ArgumentException($"The report folder already exists: {reportsFolderAbsolutePath}. Provide a different report label.");
             }
-
-            return new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
         }
 
         private DiffExecutionContext BuildExecutionContext(RunArguments runArguments, ConfigSettings config)
@@ -263,6 +221,110 @@ namespace FolderDiffIL4DotNet
             return services.BuildServiceProvider();
         }
 
+        private async Task<RunCompletionState> RunPipelineAsync(RunArguments runArguments, string appVersion, string computerName)
+        {
+            PrepareReportsDirectory(runArguments.ReportsFolderAbsolutePath);
+            var config = await LoadConfigurationAsync();
+            var executionContext = BuildExecutionContext(runArguments, config);
+            using var runProvider = BuildRunServiceProvider(config, executionContext);
+            using var scope = runProvider.CreateScope();
+            return await ExecuteScopedRunAsync(scope.ServiceProvider, executionContext, appVersion, computerName, config);
+        }
+
+        private static void PrepareReportsDirectory(string reportsFolderAbsolutePath)
+        {
+            ConsoleBanner.Print();
+            Directory.CreateDirectory(reportsFolderAbsolutePath);
+        }
+
+        private async Task<ConfigSettings> LoadConfigurationAsync()
+        {
+            _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
+            var config = await _configService.LoadConfigAsync();
+            _logger.LogMessage(AppLogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
+            _logger.CleanupOldLogFiles(config.MaxLogGenerations);
+            TimestampCache.Clear();
+            _logger.LogMessage(AppLogLevel.Info, LOG_APP_STARTING, shouldOutputMessageToConsole: true);
+            return config;
+        }
+
+        private async Task<RunCompletionState> ExecuteScopedRunAsync(
+            IServiceProvider scopedProvider,
+            DiffExecutionContext executionContext,
+            string appVersion,
+            string computerName,
+            ConfigSettings config)
+        {
+            var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
+            var elapsedTimeString = await ExecuteDiffAsync(scopedProvider);
+            GenerateReport(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config);
+            return new RunCompletionState(resultLists.HasAnyMd5Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);
+        }
+
+        private async Task<string> ExecuteDiffAsync(IServiceProvider scopedProvider)
+        {
+            var progressReporter = scopedProvider.GetRequiredService<ProgressReportService>();
+            try
+            {
+                var stopwatch = Stopwatch.StartNew();
+                await scopedProvider.GetRequiredService<IFolderDiffService>().ExecuteFolderDiffAsync();
+                stopwatch.Stop();
+                var elapsedTimeString = FormatElapsedTime(stopwatch.Elapsed);
+                _logger.LogMessage(AppLogLevel.Info, $"Elapsed Time: {elapsedTimeString}", shouldOutputMessageToConsole: true);
+                return elapsedTimeString;
+            }
+            finally
+            {
+                progressReporter.Dispose();
+            }
+        }
+
+        private static void GenerateReport(
+            IServiceProvider scopedProvider,
+            DiffExecutionContext executionContext,
+            string appVersion,
+            string elapsedTimeString,
+            string computerName,
+            ConfigSettings config)
+        {
+            scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(
+                executionContext.OldFolderAbsolutePath,
+                executionContext.NewFolderAbsolutePath,
+                executionContext.ReportsFolderAbsolutePath,
+                appVersion,
+                elapsedTimeString,
+                computerName,
+                config);
+        }
+
+        private void PromptForExitKeyIfNeeded(string[] args)
+        {
+            if (ShouldSkipExitPrompt(args))
+            {
+                return;
+            }
+
+            try
+            {
+                Console.WriteLine(PRESS_ANY_KEY);
+                Console.ReadKey(true);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
+            }
+            catch (IOException ex)
+            {
+                _logger.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
+            }
+        }
+
+        private static bool ShouldSkipExitPrompt(string[] args)
+            => (args?.Any(arg => string.Equals(arg, NO_PAUSE, StringComparison.OrdinalIgnoreCase)) ?? false)
+                || Console.IsInputRedirected
+                || Console.IsOutputRedirected
+                || Console.IsErrorRedirected;
+
         private static ILCache CreateIlCache(ConfigSettings config, ILoggerService logger)
         {
             if (!config.EnableILCache)
@@ -290,5 +352,7 @@ namespace FolderDiffIL4DotNet
         }
 
         private sealed record RunArguments(string OldFolderAbsolutePath, string NewFolderAbsolutePath, string ReportsFolderAbsolutePath);
+
+        private sealed record RunCompletionState(bool HasMd5MismatchWarnings, bool HasTimestampRegressionWarnings);
     }
 }

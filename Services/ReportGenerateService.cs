@@ -232,75 +232,136 @@ namespace FolderDiffIL4DotNet.Services
             string computerName,
             ConfigSettings config)
         {
-            string diffReportAbsolutePath = Path.Combine(reportsFolderAbsolutePath, DIFF_REPORT_FILE_NAME);
+            string diffReportAbsolutePath = GetDiffReportAbsolutePath(reportsFolderAbsolutePath);
             bool hasMd5Mismatch = _fileDiffResultLists.HasAnyMd5Mismatch;
             bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT);
             var reportGenerated = false;
             try
             {
-                PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
-                File.Delete(diffReportAbsolutePath);
-
-                using (var streamWriter = new StreamWriter(diffReportAbsolutePath))
-                {
-                    WriteReportHeader(streamWriter, oldFolderAbsolutePath, newFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config);
-                    WriteLegend(streamWriter);
-                    WriteIgnoredFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
-                    WriteUnchangedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
-                    WriteAddedFilesSection(streamWriter, config);
-                    WriteRemovedFilesSection(streamWriter, config);
-                    WriteModifiedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
-                    WriteSummarySection(streamWriter, config);
-                    WriteWarningsSection(streamWriter, hasMd5Mismatch, hasTimestampRegressionWarning);
-                }
+                WriteDiffReport(
+                    diffReportAbsolutePath,
+                    oldFolderAbsolutePath,
+                    newFolderAbsolutePath,
+                    appVersion,
+                    elapsedTimeString,
+                    computerName,
+                    config,
+                    hasMd5Mismatch,
+                    hasTimestampRegressionWarning);
                 reportGenerated = true;
             }
             catch (ArgumentException)
             {
-                _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+                LogReportOutputFailure(diffReportAbsolutePath);
                 throw;
             }
             catch (IOException)
             {
-                _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+                LogReportOutputFailure(diffReportAbsolutePath);
                 throw;
             }
             catch (UnauthorizedAccessException)
             {
-                _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+                LogReportOutputFailure(diffReportAbsolutePath);
                 throw;
             }
             catch (NotSupportedException)
             {
-                _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+                LogReportOutputFailure(diffReportAbsolutePath);
                 throw;
             }
             finally
             {
-                // レポートファイルの読み取り専用属性を設定（失敗した場合は警告を出力し、処理は継続）
-                try
-                {
-                    FileSystemUtility.TrySetReadOnly(diffReportAbsolutePath);
-                }
-                catch (ArgumentException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
-                }
-                catch (IOException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
-                }
-                catch (NotSupportedException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
-                }
+                TrySetReportReadOnly(diffReportAbsolutePath);
                 spinner.Complete(reportGenerated ? LOG_REPORT_GENERATION_COMPLETED : null);
             }
+        }
+
+        private static string GetDiffReportAbsolutePath(string reportsFolderAbsolutePath)
+            => Path.Combine(reportsFolderAbsolutePath, DIFF_REPORT_FILE_NAME);
+
+        private void WriteDiffReport(
+            string diffReportAbsolutePath,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath,
+            string appVersion,
+            string elapsedTimeString,
+            string computerName,
+            ConfigSettings config,
+            bool hasMd5Mismatch,
+            bool hasTimestampRegressionWarning)
+        {
+            PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
+            File.Delete(diffReportAbsolutePath);
+
+            using var streamWriter = new StreamWriter(diffReportAbsolutePath);
+            WriteReportSections(
+                streamWriter,
+                oldFolderAbsolutePath,
+                newFolderAbsolutePath,
+                appVersion,
+                elapsedTimeString,
+                computerName,
+                config,
+                hasMd5Mismatch,
+                hasTimestampRegressionWarning);
+        }
+
+        private void WriteReportSections(
+            StreamWriter streamWriter,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath,
+            string appVersion,
+            string elapsedTimeString,
+            string computerName,
+            ConfigSettings config,
+            bool hasMd5Mismatch,
+            bool hasTimestampRegressionWarning)
+        {
+            WriteReportHeader(streamWriter, oldFolderAbsolutePath, newFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config);
+            WriteLegend(streamWriter);
+            WriteIgnoredFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
+            WriteUnchangedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
+            WriteAddedFilesSection(streamWriter, config);
+            WriteRemovedFilesSection(streamWriter, config);
+            WriteModifiedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
+            WriteSummarySection(streamWriter, config);
+            WriteWarningsSection(streamWriter, hasMd5Mismatch, hasTimestampRegressionWarning);
+        }
+
+        private void LogReportOutputFailure(string diffReportAbsolutePath)
+        {
+            _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+        }
+
+        private void TrySetReportReadOnly(string diffReportAbsolutePath)
+        {
+            try
+            {
+                FileSystemUtility.TrySetReadOnly(diffReportAbsolutePath);
+            }
+            catch (ArgumentException ex)
+            {
+                LogReportProtectionWarning(ex);
+            }
+            catch (IOException ex)
+            {
+                LogReportProtectionWarning(ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogReportProtectionWarning(ex);
+            }
+            catch (NotSupportedException ex)
+            {
+                LogReportProtectionWarning(ex);
+            }
+        }
+
+        private void LogReportProtectionWarning(Exception ex)
+        {
+            _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
         }
 
         /// <summary>
