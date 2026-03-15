@@ -26,16 +26,45 @@ namespace FolderDiffIL4DotNet
         private const string VALIDATING_ARGS = "Validating command line arguments...";
         private const string ERROR_INSUFFICIENT_ARGUMENTS = "Insufficient arguments.";
         private const string ERROR_ARGUMENTS_NULL_OR_EMPTY = "One or more required arguments are null or empty.";
-        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + $" <oldFolderAbsolutePath> <newFolderAbsolutePath> <reportLabel> [{NO_PAUSE}]";
+        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + " <oldFolderAbsolutePath> <newFolderAbsolutePath> <reportLabel> [options]";
         private const string LOG_ARGS_VALIDATION_COMPLETED = "Command line arguments validation completed.";
         private const string LOG_LOADING_CONFIGURATION = "Loading configuration...";
         private const string LOG_CONFIGURATION_LOADED = "Configuration loaded successfully.";
         private const string LOG_APP_STARTING = "Starting " + Constants.APP_NAME + "...";
         private const string LOG_APP_FINISHED = Constants.APP_NAME + " finished without errors. See Reports folder for details.";
         private const string NO_PAUSE = "--no-pause";
+        private const string OPT_HELP_LONG = "--help";
+        private const string OPT_HELP_SHORT = "-h";
+        private const string OPT_VERSION = "--version";
+        private const string OPT_CONFIG = "--config";
+        private const string OPT_THREADS = "--threads";
+        private const string OPT_NO_IL_CACHE = "--no-il-cache";
+        private const string OPT_SKIP_IL = "--skip-il";
+        private const string OPT_NO_TIMESTAMP_WARNINGS = "--no-timestamp-warnings";
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in 'new' have older last-modified timestamps than the corresponding files in 'old'. See diff_report.md for details.";
+        private const string HELP_TEXT =
+            "Usage: " + Constants.APP_NAME + " <oldFolder> <newFolder> <reportLabel> [options]\n\n" +
+            "Arguments:\n" +
+            "  <oldFolder>    Absolute path to the baseline (old) folder.\n" +
+            "  <newFolder>    Absolute path to the comparison (new) folder.\n" +
+            "  <reportLabel>  Label used as the subfolder name under Reports/.\n\n" +
+            "Options:\n" +
+            "  --help, -h                  Show this help message and exit.\n" +
+            "  --version                   Show the application version and exit.\n" +
+            "  --no-pause                  Skip key-wait at process end.\n" +
+            "  --config <path>             Path to config.json (default: <exe>/config.json).\n" +
+            "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
+            "  --no-il-cache               Disable the IL cache for this run.\n" +
+            "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
+            "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n\n" +
+            "Exit codes:\n" +
+            "  0  Success.\n" +
+            "  2  Invalid arguments or input paths.\n" +
+            "  3  Configuration load or parse error.\n" +
+            "  4  Diff execution or report generation failure.\n" +
+            "  1  Unexpected internal error.";
 
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
@@ -61,9 +90,23 @@ namespace FolderDiffIL4DotNet
         /// <returns>プロセス終了コード。</returns>
         public async Task<int> RunAsync(string[] args)
         {
-            var result = await RunWithResultAsync(args);
+            var opts = ParseCliOptions(args);
+
+            if (opts.ShowHelp)
+            {
+                Console.WriteLine(HELP_TEXT);
+                return 0;
+            }
+
+            if (opts.ShowVersion)
+            {
+                Console.WriteLine(SystemInfo.GetAppVersion(typeof(Program)));
+                return 0;
+            }
+
+            var result = await RunWithResultAsync(args, opts);
             OutputCompletionWarnings(result.HasMd5MismatchWarnings, result.HasTimestampRegressionWarnings);
-            PromptForExitKeyIfNeeded(args);
+            PromptForExitKeyIfNeeded(opts);
             return (int)result.ExitCode;
         }
 
@@ -71,8 +114,9 @@ namespace FolderDiffIL4DotNet
         /// 実行全体を型付き結果へ変換し、公開 API である終了コードへ写像する境界処理です。
         /// </summary>
         /// <param name="args">コマンドライン引数。</param>
+        /// <param name="opts">解析済み CLI オプション。</param>
         /// <returns>成功/失敗種別と補助情報を含む実行結果。</returns>
-        private async Task<ProgramRunResult> RunWithResultAsync(string[] args)
+        private async Task<ProgramRunResult> RunWithResultAsync(string[] args, CliOptions opts)
         {
             #pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
             try
@@ -80,7 +124,7 @@ namespace FolderDiffIL4DotNet
                 var appVersion = InitializeLoggerAndGetAppVersion();
                 var computerName = SystemInfo.GetComputerName();
 
-                var runArgumentsResult = TryValidateAndBuildRunArguments(args);
+                var runArgumentsResult = TryValidateAndBuildRunArguments(args, opts);
                 if (!runArgumentsResult.IsSuccess)
                 {
                     return runArgumentsResult.Failure;
@@ -93,13 +137,16 @@ namespace FolderDiffIL4DotNet
                     return prepareReportsDirectoryResult.Failure;
                 }
 
-                var configResult = await TryLoadConfigurationAsync();
+                var configResult = await TryLoadConfigurationAsync(opts.ConfigPath);
                 if (!configResult.IsSuccess)
                 {
                     return configResult.Failure;
                 }
 
-                var completionStateResult = await TryExecuteRunAsync(runArguments, configResult.Value, appVersion, computerName);
+                var config = configResult.Value;
+                ApplyCliOverrides(config, opts);
+
+                var completionStateResult = await TryExecuteRunAsync(runArguments, config, appVersion, computerName);
                 if (!completionStateResult.IsSuccess)
                 {
                     return completionStateResult.Failure;
@@ -145,12 +192,18 @@ namespace FolderDiffIL4DotNet
         /// CLI 引数検証フェーズを型付き結果として返します。
         /// </summary>
         /// <param name="args">コマンドライン引数。</param>
+        /// <param name="opts">解析済み CLI オプション。</param>
         /// <returns>成功時は実行引数、失敗時は入力不正の実行結果。</returns>
-        private StepResult<RunArguments> TryValidateAndBuildRunArguments(string[] args)
+        private StepResult<RunArguments> TryValidateAndBuildRunArguments(string[] args, CliOptions opts)
         {
             try
             {
                 _logger.LogMessage(AppLogLevel.Info, VALIDATING_ARGS, shouldOutputMessageToConsole: true);
+                if (opts.ParseError != null)
+                {
+                    throw new ArgumentException(opts.ParseError);
+                }
+
                 ValidateRequiredArguments(args);
 
                 var oldFolderAbsolutePath = args[0];
@@ -300,12 +353,13 @@ namespace FolderDiffIL4DotNet
         /// <summary>
         /// 設定読込フェーズを型付き結果として返します。
         /// </summary>
+        /// <param name="configPath">config.json の絶対パス。null の場合は既定パスを使用。</param>
         /// <returns>成功時は読み込んだ設定、失敗時は設定不正の実行結果。</returns>
-        private async Task<StepResult<ConfigSettings>> TryLoadConfigurationAsync()
+        private async Task<StepResult<ConfigSettings>> TryLoadConfigurationAsync(string configPath)
         {
             try
             {
-                var config = await LoadConfigurationAsync();
+                var config = await LoadConfigurationAsync(configPath);
                 return StepResult<ConfigSettings>.FromValue(config);
             }
             catch (FileNotFoundException ex)
@@ -406,10 +460,10 @@ namespace FolderDiffIL4DotNet
             Directory.CreateDirectory(reportsFolderAbsolutePath);
         }
 
-        private async Task<ConfigSettings> LoadConfigurationAsync()
+        private async Task<ConfigSettings> LoadConfigurationAsync(string configPath)
         {
             _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
-            var config = await _configService.LoadConfigAsync();
+            var config = await _configService.LoadConfigAsync(configPath);
             _logger.LogMessage(AppLogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
             _logger.CleanupOldLogFiles(config.MaxLogGenerations);
             TimestampCache.Clear();
@@ -466,9 +520,9 @@ namespace FolderDiffIL4DotNet
                 config);
         }
 
-        private void PromptForExitKeyIfNeeded(string[] args)
+        private void PromptForExitKeyIfNeeded(CliOptions opts)
         {
-            if (ShouldSkipExitPrompt(args))
+            if (ShouldSkipExitPrompt(opts))
             {
                 return;
             }
@@ -488,8 +542,8 @@ namespace FolderDiffIL4DotNet
             }
         }
 
-        private static bool ShouldSkipExitPrompt(string[] args)
-            => (args?.Any(arg => string.Equals(arg, NO_PAUSE, StringComparison.OrdinalIgnoreCase)) ?? false)
+        private static bool ShouldSkipExitPrompt(CliOptions opts)
+            => opts.NoPause
                 || Console.IsInputRedirected
                 || Console.IsOutputRedirected
                 || Console.IsErrorRedirected;
@@ -522,9 +576,151 @@ namespace FolderDiffIL4DotNet
             return $"{hourString}:{minuteString}:{secondString}.{millisecondString}";
         }
 
+        /// <summary>
+        /// コマンドライン引数を走査して CLI オプションを解析します。
+        /// 未知のフラグが見つかった場合は <see cref="CliOptions.ParseError"/> に詳細を格納します。
+        /// </summary>
+        /// <param name="args">コマンドライン引数配列。</param>
+        /// <returns>解析済み CLI オプション。</returns>
+        internal static CliOptions ParseCliOptions(string[] args)
+        {
+            bool showHelp = false, showVersion = false, noPause = false;
+            bool noIlCache = false, skipIl = false, noTimestampWarnings = false;
+            string configPath = null;
+            int? threadsOverride = null;
+            string parseError = null;
+
+            if (args == null)
+            {
+                return new CliOptions(false, false, false, null, null, false, false, false, null);
+            }
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                string arg = args[i];
+                if (arg == null)
+                {
+                    continue;
+                }
+
+                switch (arg.ToLowerInvariant())
+                {
+                    case OPT_HELP_LONG:
+                    case OPT_HELP_SHORT:
+                        showHelp = true;
+                        break;
+                    case OPT_VERSION:
+                        showVersion = true;
+                        break;
+                    case NO_PAUSE:
+                        noPause = true;
+                        break;
+                    case OPT_CONFIG:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            configPath = args[++i];
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_CONFIG}' requires a file path argument.";
+                        }
+                        break;
+                    case OPT_THREADS:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            string threadArg = args[++i];
+                            if (int.TryParse(threadArg, out int n) && n >= 0)
+                            {
+                                threadsOverride = n;
+                            }
+                            else
+                            {
+                                parseError ??= $"'{OPT_THREADS}' requires a non-negative integer. Got: '{threadArg}'.";
+                            }
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_THREADS}' requires an integer argument.";
+                        }
+                        break;
+                    case OPT_NO_IL_CACHE:
+                        noIlCache = true;
+                        break;
+                    case OPT_SKIP_IL:
+                        skipIl = true;
+                        break;
+                    case OPT_NO_TIMESTAMP_WARNINGS:
+                        noTimestampWarnings = true;
+                        break;
+                    default:
+                        // Flags (starting with --) that are not positional arguments and not recognised.
+                        if (arg.StartsWith("--", StringComparison.Ordinal)
+                            || (arg.StartsWith("-", StringComparison.Ordinal) && arg.Length == 2))
+                        {
+                            parseError ??= $"Unknown option: '{arg}'.";
+                        }
+                        break;
+                }
+            }
+
+            return new CliOptions(showHelp, showVersion, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, parseError);
+        }
+
+        /// <summary>
+        /// CLI オプションの値で <see cref="ConfigSettings"/> を上書きします。
+        /// config.json よりも CLI フラグを優先させます。
+        /// </summary>
+        /// <param name="config">対象の設定オブジェクト。</param>
+        /// <param name="opts">解析済み CLI オプション。</param>
+        private static void ApplyCliOverrides(ConfigSettings config, CliOptions opts)
+        {
+            if (opts.ThreadsOverride.HasValue)
+            {
+                config.MaxParallelism = opts.ThreadsOverride.Value;
+            }
+
+            if (opts.NoIlCache)
+            {
+                config.EnableILCache = false;
+            }
+
+            if (opts.SkipIL)
+            {
+                config.SkipIL = true;
+            }
+
+            if (opts.NoTimestampWarnings)
+            {
+                config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
+            }
+        }
+
         private sealed record RunArguments(string OldFolderAbsolutePath, string NewFolderAbsolutePath, string ReportsFolderAbsolutePath);
 
         private sealed record RunCompletionState(bool HasMd5MismatchWarnings, bool HasTimestampRegressionWarnings);
+
+        /// <summary>
+        /// 解析済みの CLI オプションを保持するレコードです。
+        /// </summary>
+        /// <param name="ShowHelp">--help/-h が指定された場合 true。</param>
+        /// <param name="ShowVersion">--version が指定された場合 true。</param>
+        /// <param name="NoPause">--no-pause が指定された場合 true。</param>
+        /// <param name="ConfigPath">--config で指定されたパス。未指定の場合 null。</param>
+        /// <param name="ThreadsOverride">--threads で指定されたスレッド数。未指定の場合 null。</param>
+        /// <param name="NoIlCache">--no-il-cache が指定された場合 true。</param>
+        /// <param name="SkipIL">--skip-il が指定された場合 true。</param>
+        /// <param name="NoTimestampWarnings">--no-timestamp-warnings が指定された場合 true。</param>
+        /// <param name="ParseError">解析エラーのメッセージ。エラーがない場合 null。</param>
+        internal sealed record CliOptions(
+            bool ShowHelp,
+            bool ShowVersion,
+            bool NoPause,
+            string ConfigPath,
+            int? ThreadsOverride,
+            bool NoIlCache,
+            bool SkipIL,
+            bool NoTimestampWarnings,
+            string ParseError);
 
         /// <summary>
         /// コンソールアプリの公開終了コードを定義します。

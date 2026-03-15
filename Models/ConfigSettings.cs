@@ -189,6 +189,14 @@ namespace FolderDiffIL4DotNet.Models
         public bool AutoDetectNetworkShares { get; set; } = true;
 
         /// <summary>
+        /// .NET アセンブリの IL 比較をスキップするかどうか。
+        /// true の場合、.NET アセンブリの IL 逆アセンブルおよび IL 差分比較を省略し、
+        /// MD5 不一致のアセンブリはそのままバイナリ差分として扱います。
+        /// CLI オプション --skip-il でも設定できます。
+        /// </summary>
+        public bool SkipIL { get; set; }
+
+        /// <summary>
         /// 設定値の整合性を検証し、結果を返します。
         /// </summary>
         /// <returns>バリデーション結果。エラーがある場合は <see cref="ConfigValidationResult.IsValid"/> が false になります。</returns>

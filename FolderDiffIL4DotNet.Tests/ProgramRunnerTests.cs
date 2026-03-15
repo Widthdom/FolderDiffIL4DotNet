@@ -151,6 +151,253 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Equal(TimeSpan.FromSeconds(Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS), statsLogInterval);
         }
 
+        // -----------------------------------------------------------------------
+        // --help / --version early-exit tests
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_HelpFlag_ExitsZeroWithoutInitializingLogger()
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("Usage:", output, StringComparison.Ordinal);
+                Assert.Contains("--config", output, StringComparison.Ordinal);
+                Assert.Contains("--skip-il", output, StringComparison.Ordinal);
+                // Logger should NOT have been initialized (no log messages)
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Theory]
+        [InlineData("-h")]
+        [InlineData("--help")]
+        public async Task RunAsync_HelpFlagVariants_AllExitZero(string flag)
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { flag });
+                Assert.Equal(0, exitCode);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_VersionFlag_ExitsZeroWithVersionOutput()
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--version" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString().Trim();
+                Assert.False(string.IsNullOrWhiteSpace(output), "Version output should not be empty.");
+                // Logger should NOT have been initialized
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Unknown flag -> exit code 2 (InvalidArguments)
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_UnknownFlag_ReturnsInvalidArgumentsExitCode()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-unknown-flag-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "lbl_unknown_" + Guid.NewGuid().ToString("N"), "--unknown-flag", "--no-pause" });
+
+                    Assert.Equal(2, exitCode);
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // --config <path> – points to custom config file
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_ConfigFlagWithValidCustomPath_LoadsCustomConfig()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-config-flag-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            var customConfigPath = Path.Combine(tempRoot, "custom.json");
+            const string customConfigJson = """{ "MaxLogGenerations": 7 }""";
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            await File.WriteAllTextAsync(customConfigPath, customConfigJson);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithMissingConfigFileAsync(async () =>
+                {
+                    // Without --config this would fail with "Config file not found".
+                    // With --config pointing to our custom file it should reach config-loaded step.
+                    var exitCode = await runner.RunAsync(new[]
+                    {
+                        oldDir, newDir, "lbl_cfg_" + Guid.NewGuid().ToString("N"),
+                        "--config", customConfigPath,
+                        "--no-pause"
+                    });
+
+                    // Config loaded successfully (diff may have no files = exit 0, or execution phase)
+                    Assert.NotEqual(3, exitCode);
+                    Assert.Contains(logger.Messages, m => m.Contains("Configuration loaded", StringComparison.Ordinal));
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ConfigFlagPointingToMissingFile_ReturnsConfigurationError()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-config-missing-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[]
+                {
+                    oldDir, newDir, "lbl_cfg_miss_" + Guid.NewGuid().ToString("N"),
+                    "--config", "/nonexistent/path/config.json",
+                    "--no-pause"
+                });
+
+                Assert.Equal(3, exitCode);
+                Assert.Contains(logger.Messages, m => m.Contains("Config file not found", StringComparison.Ordinal));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // --threads override
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_ThreadsFlag_OverridesMaxParallelismInConfig()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-threads-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    // Just verify it doesn't blow up with config error and reaches execution phase
+                    var exitCode = await runner.RunAsync(new[]
+                    {
+                        oldDir, newDir, "lbl_thr_" + Guid.NewGuid().ToString("N"),
+                        "--threads", "2",
+                        "--no-pause"
+                    });
+
+                    Assert.NotEqual(3, exitCode); // config phase succeeded
+                    Assert.Contains(logger.Messages, m => m.Contains("Configuration loaded", StringComparison.Ordinal));
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ThreadsFlagWithInvalidValue_ReturnsInvalidArgumentsExitCode()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-threads-bad-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[]
+                    {
+                        oldDir, newDir, "lbl_thr_bad_" + Guid.NewGuid().ToString("N"),
+                        "--threads", "notanumber",
+                        "--no-pause"
+                    });
+
+                    Assert.Equal(2, exitCode);
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
         private static async Task WithMissingConfigFileAsync(Func<Task> assertion)
         {
             var backupExists = File.Exists(ConfigFilePath);

@@ -173,6 +173,67 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
         }
 
+        // -----------------------------------------------------------------------
+        // configFilePath parameter tests
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task LoadConfigAsync_CustomConfigFilePath_LoadsFromSpecifiedPath()
+        {
+            var customConfigPath = Path.Combine(Path.GetTempPath(), $"test-custom-{Guid.NewGuid():N}.json");
+            const string json = """{ "MaxLogGenerations": 99 }""";
+            await File.WriteAllTextAsync(customConfigPath, json);
+
+            try
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync(customConfigPath);
+
+                Assert.NotNull(config);
+                Assert.Equal(99, config.MaxLogGenerations);
+            }
+            finally
+            {
+                if (File.Exists(customConfigPath))
+                {
+                    File.Delete(customConfigPath);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_CustomConfigFilePathMissing_ThrowsFileNotFoundException()
+        {
+            var service = new ConfigService();
+
+            await Assert.ThrowsAsync<FileNotFoundException>(
+                () => service.LoadConfigAsync("/nonexistent/path/to/config.json"));
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_NullConfigFilePath_FallsBackToDefaultPath()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync(null);
+
+                Assert.NotNull(config);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EmptyConfigFilePath_FallsBackToDefaultPath()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync(string.Empty);
+
+                Assert.NotNull(config);
+            });
+        }
+
         private static async Task WithConfigFileAsync(string content, Func<Task> assertion, bool deleteConfig = false)
         {
             var backupExists = File.Exists(ConfigFilePath);

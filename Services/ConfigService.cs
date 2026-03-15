@@ -28,19 +28,25 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// config.jsonファイルから設定情報を非同期で読み込みます。
-        /// このメソッドは、アプリケーションのベースディレクトリにあるJSONファイルを読み取り、
-        /// その内容を<see cref="ConfigSettings"/>オブジェクトにデシリアライズして返します。
+        /// このメソッドは、指定されたパス（または既定のアプリケーションベースディレクトリ）にある
+        /// JSONファイルを読み取り、その内容を<see cref="ConfigSettings"/>オブジェクトにデシリアライズして返します。
         /// デシリアライズ後に設定値の整合性を検証します。
         /// </summary>
+        /// <param name="configFilePath">
+        /// 読み込む config.json の絶対パス。null または空文字列の場合は、アプリケーション実行ディレクトリ直下の
+        /// config.json を使用します。
+        /// </param>
         /// <returns>設定データを含む<see cref="ConfigSettings"/>オブジェクト</returns>
         /// <exception cref="FileNotFoundException">config.jsonファイルが指定された場所に存在しない場合にスローされます。</exception>
         /// <exception cref="InvalidDataException">config.jsonファイルが無効なJSON形式のため解析できない場合、または設定値が不正な場合にスローされます。</exception>
         /// <exception cref="IOException">config.jsonファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
-        public async Task<ConfigSettings> LoadConfigAsync()
+        public async Task<ConfigSettings> LoadConfigAsync(string configFilePath = null)
         {
             try
             {
-                string configFileAbsolutePath = Path.Combine(AppContext.BaseDirectory, CONFIG_FILE_NAME);
+                string configFileAbsolutePath = string.IsNullOrWhiteSpace(configFilePath)
+                    ? Path.Combine(AppContext.BaseDirectory, CONFIG_FILE_NAME)
+                    : configFilePath;
                 if (!File.Exists(configFileAbsolutePath))
                 {
                     throw new FileNotFoundException($"Config file not found: {configFileAbsolutePath}");

@@ -66,7 +66,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "ILCacheMaxDiskMegabytes": 20,
                   "ILPrecomputeBatchSize": 512,
                   "OptimizeForNetworkShares": true,
-                  "AutoDetectNetworkShares": false
+                  "AutoDetectNetworkShares": false,
+                  "SkipIL": true
                 }
                 """;
 
@@ -95,6 +96,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(512, config.ILPrecomputeBatchSize);
             Assert.True(config.OptimizeForNetworkShares);
             Assert.False(config.AutoDetectNetworkShares);
+            Assert.True(config.SkipIL);
         }
 
         [Fact]
@@ -248,6 +250,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(2048, config.ILPrecomputeBatchSize);
             Assert.False(config.OptimizeForNetworkShares);
             Assert.True(config.AutoDetectNetworkShares);
+            Assert.False(config.SkipIL);
         }
     }
 }

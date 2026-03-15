@@ -52,6 +52,13 @@ Debugging a local run:
 
 ```bash
 dotnet run -- "/absolute/path/to/old" "/absolute/path/to/new" "dev-run" --no-pause
+
+# Quick help / version check
+dotnet run -- --help
+dotnet run -- --version
+
+# Override threads, skip IL, use custom config
+dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
 
 Generated during a run:
@@ -134,22 +141,25 @@ sequenceDiagram
 
 ### What happens inside `RunAsync`
 
-1. Initialize logging and print application version.
-2. Validate `old`, `new`, and `reportLabel` arguments.
-3. Create `Reports/<label>` early and fail if the label already exists.
-4. Load [`config.json`](../config.json) from [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs). Immediately after deserialization, [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) is called; if any value is out of range, the run fails with exit code `3` and an error message that lists every invalid setting.
-5. Clear transient shared helpers such as [`TimestampCache`](../Services/Caching/TimestampCache.cs).
-6. Compute [`DiffExecutionContext`](../Services/DiffExecutionContext.cs), including network-share decisions.
-7. Build the run-scoped DI container.
-8. Run the folder diff and finish progress display.
-9. Generate `diff_report.md` from aggregated results.
-10. Convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse/validation failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors.
+1. Parse CLI options (`--help`, `--version`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`).
+2. If `--help` or `--version` is present, print and exit immediately with code `0` — no logger initialization occurs.
+3. Initialize logging and print application version.
+4. Validate `old`, `new`, and `reportLabel` arguments. Unknown CLI flags surface here as exit code `2`.
+5. Create `Reports/<label>` early and fail if the label already exists.
+6. Load the config file — from the path given to `--config` if supplied, otherwise from [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) — and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs). Immediately after deserialization, [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) is called; if any value is out of range, the run fails with exit code `3`.
+7. Apply CLI overrides on top of the loaded config: `--threads` sets `MaxParallelism`; `--no-il-cache` sets `EnableILCache = false`; `--skip-il` sets `SkipIL = true`; `--no-timestamp-warnings` sets `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false`.
+8. Clear transient shared helpers such as [`TimestampCache`](../Services/Caching/TimestampCache.cs).
+9. Compute [`DiffExecutionContext`](../Services/DiffExecutionContext.cs), including network-share decisions.
+10. Build the run-scoped DI container.
+11. Run the folder diff and finish progress display.
+12. Generate `diff_report.md` from aggregated results.
+13. Convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse/validation failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors.
 
 The implementation keeps `RunAsync()` short by treating those steps as explicit phases and delegating each phase to focused private helpers.
 
 Failure behavior:
 - [`ProgramRunner`](../ProgramRunner.cs) now uses small typed step results at the application boundary instead of flattening every failure into one catch-all exit code.
-- Argument validation and missing input paths map to exit code `2`.
+- Argument validation, unknown flags, and missing input paths map to exit code `2`.
 - [`ConfigService`](../Services/ConfigService.cs) failures such as missing `config.json`, parse failures, config-read I/O errors, or settings that fail [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) map to exit code `3`.
 - Diff execution and report-generation failures, including fatal IL comparison failures surfaced as [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0), map to exit code `4`.
 - Exit code `1` is reserved for unexpected internal errors that escape the explicit phase classification.
@@ -552,6 +562,13 @@ docfx build docfx.json
 
 ```bash
 dotnet run -- "/absolute/path/to/old" "/absolute/path/to/new" "dev-run" --no-pause
+
+# ヘルプ / バージョン確認
+dotnet run -- --help
+dotnet run -- --version
+
+# スレッド数指定・IL スキップ・カスタム設定ファイル
+dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
 
 実行時に生成される主な成果物:
@@ -633,22 +650,25 @@ sequenceDiagram
 
 ### `RunAsync` の中で起きること
 
-1. ログを初期化し、アプリのバージョンを表示します。
-2. `old`、`new`、`reportLabel` 引数を検証します。
-3. `Reports/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。
-4. [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) から [`config.json`](../config.json) を読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。デシリアライズ直後に [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) を呼び出し、範囲外の値がある場合は全エラーを列挙したエラーメッセージとともに終了コード `3` で失敗させます。
-5. [`TimestampCache`](../Services/Caching/TimestampCache.cs) などの一時共有ヘルパーをクリアします。
-6. ネットワーク共有判定を含む [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) を組み立てます。
-7. 実行単位の DI コンテナを構築します。
-8. フォルダ比較を実行し、進捗表示を終了します。
-9. 集約結果から `diff_report.md` を生成します。
-10. フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析/バリデーション失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。
+1. CLI オプション（`--help`、`--version`、`--no-pause`、`--config`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`）を解析します。
+2. `--help` または `--version` がある場合は、ロガー初期化を一切行わずに即座に出力してコード `0` で終了します。
+3. ログを初期化し、アプリのバージョンを表示します。
+4. `old`、`new`、`reportLabel` 引数を検証します。未知の CLI フラグはここで終了コード `2` として検出されます。
+5. `Reports/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。
+6. `--config` で指定されたパス（未指定なら [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0)）から設定ファイルを読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。デシリアライズ直後に [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) を呼び出し、範囲外の値がある場合は終了コード `3` で失敗させます。
+7. CLI オプションをコンフィグに上書き適用します。`--threads` → `MaxParallelism`、`--no-il-cache` → `EnableILCache = false`、`--skip-il` → `SkipIL = true`、`--no-timestamp-warnings` → `ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false`。
+8. [`TimestampCache`](../Services/Caching/TimestampCache.cs) などの一時共有ヘルパーをクリアします。
+9. ネットワーク共有判定を含む [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) を組み立てます。
+10. 実行単位の DI コンテナを構築します。
+11. フォルダ比較を実行し、進捗表示を終了します。
+12. 集約結果から `diff_report.md` を生成します。
+13. フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析/バリデーション失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。
 
 実装上は、`RunAsync()` 自体を短く保つため、これらを明示的なフェーズとして private helper へ分割しています。
 
 失敗時の扱い:
 - [`ProgramRunner`](../ProgramRunner.cs) はアプリ境界で小さな型付き Result を使い、すべての失敗を 1 つの終了コードへ潰さないようにしています。
-- 引数検証エラーや入力パス不足/不正は終了コード `2` です。
+- 引数検証エラー、未知フラグ、入力パス不足/不正は終了コード `2` です。
 - [`ConfigService`](../Services/ConfigService.cs) の `config.json` 未検出、解析失敗、設定読込 I/O 失敗、または [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) が失敗した場合は終了コード `3` です。
 - 差分実行やレポート生成の失敗、さらに IL 比較由来の致命的な [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は終了コード `4` です。
 - 明示分類から漏れた想定外の内部エラーだけを終了コード `1` として扱います。

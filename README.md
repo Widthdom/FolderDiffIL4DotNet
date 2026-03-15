@@ -60,16 +60,40 @@ dotnet tool install --global ilspycmd
 <a id="readme-en-usage"></a>
 ## Usage
 
-1. Place [`config.json`](config.json) next to the executable.
-2. Run with arguments:
-- old folder absolute path
-- new folder absolute path
-- report label
-3. Add `--no-pause` if you want to skip key-wait at process end.
+```
+FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
+```
+
+**Arguments:**
+
+| Argument | Description |
+|---|---|
+| `<oldFolder>` | Absolute path to the baseline (old) folder. |
+| `<newFolder>` | Absolute path to the comparison (new) folder. |
+| `<reportLabel>` | Label used as the subfolder name under `Reports/`. |
+
+**Options:**
+
+| Option | Description |
+|---|---|
+| `--help`, `-h` | Show help and exit (code `0`). |
+| `--version` | Show the application version and exit (code `0`). |
+| `--no-pause` | Skip key-wait at process end. |
+| `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
+| `--threads <N>` | Override `MaxParallelism` for this run (`0` = auto). |
+| `--no-il-cache` | Disable the IL cache for this run. |
+| `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
+| `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
 
 ```bash
 dotnet build
 dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" --no-pause
+
+# Override threads and skip IL for a quick diff
+dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
+
+# Use a custom config file
+dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pause
 ```
 
 Main output:
@@ -304,6 +328,11 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>Auto-detects network paths and enables optimization mode as needed.</td>
     </tr>
+    <tr id="config-en-skipil">
+      <td><code>SkipIL</code></td>
+      <td><code>false</code></td>
+      <td>When <code>true</code>, skips IL decompilation and IL diff for .NET assemblies. MD5-mismatched assemblies are treated as binary diffs. Equivalent to the <code>--skip-il</code> CLI flag.</td>
+    </tr>
   </tbody>
 </table>
 
@@ -426,16 +455,40 @@ dotnet tool install --global ilspycmd
 <a id="readme-ja-usage"></a>
 ## 使い方
 
-1. 実行ファイルと同じ場所に [`config.json`](config.json) を配置します。
-2. 次の引数で実行します。
-- 旧フォルダ（比較元）の絶対パス
-- 新フォルダ（比較先）の絶対パス
-- レポートラベル
-3. 終了時のキー待ちを省略する場合は `--no-pause` を付けます。
+```
+FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
+```
+
+**引数:**
+
+| 引数 | 説明 |
+|---|---|
+| `<oldFolder>` | 比較元（旧）フォルダの絶対パス。 |
+| `<newFolder>` | 比較先（新）フォルダの絶対パス。 |
+| `<reportLabel>` | `Reports/` 配下のサブフォルダ名に使うラベル。 |
+
+**オプション:**
+
+| オプション | 説明 |
+|---|---|
+| `--help`, `-h` | 使い方を表示してコード `0` で終了します。 |
+| `--version` | アプリバージョンを表示してコード `0` で終了します。 |
+| `--no-pause` | 終了時のキー待ちをスキップします。 |
+| `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
+| `--threads <N>` | 今回の実行に限り `MaxParallelism` を上書きします（`0` = 自動）。 |
+| `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
+| `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
+| `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
 
 ```bash
 dotnet build
 dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" --no-pause
+
+# スレッド数指定・IL スキップで高速差分
+dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
+
+# カスタム設定ファイルを指定
+dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pause
 ```
 
 主な出力:
@@ -668,6 +721,11 @@ flowchart TD
       <td><code>AutoDetectNetworkShares</code></td>
       <td><code>true</code></td>
       <td>ネットワーク共有を自動検出して最適化モードを必要時に有効化。</td>
+    </tr>
+    <tr id="config-ja-skipil">
+      <td><code>SkipIL</code></td>
+      <td><code>false</code></td>
+      <td><code>true</code> の場合、.NET アセンブリの IL 逆アセンブルと IL 差分比較をまるごとスキップします。MD5 不一致のアセンブリはバイナリ差分として扱います。CLI フラグ <code>--skip-il</code> と同等。</td>
     </tr>
   </tbody>
 </table>
