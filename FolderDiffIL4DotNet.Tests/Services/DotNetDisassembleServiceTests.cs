@@ -378,24 +378,52 @@ exit 1
         [Fact]
         public async Task PrefetchIlCacheAsync_WhenSeededCacheExists_IncrementsHitCounter()
         {
-            var cacheDir = Path.Combine(_rootDir, "prefetch-hit-cache");
-            var ilCache = new ILCache(cacheDir, _logger);
-            var service = CreateService(CreateConfig(enableIlCache: true), ilCache);
+            if (OperatingSystem.IsWindows()) { return; }
 
-            var assemblyPath = Path.Combine(_rootDir, "prefetch-target.dll");
-            await File.WriteAllTextAsync(assemblyPath, "dummy");
+            var binDir = Path.Combine(_rootDir, "prefetch-hit-bin");
+            Directory.CreateDirectory(binDir);
+            WriteExecutable(binDir, "dotnet-ildasm", """
+                #!/bin/sh
+                if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
+                  echo "1.2.3"
+                  exit 0
+                fi
+                exit 1
+                """);
+            WriteExecutable(binDir, "dotnet", "#!/bin/sh\nexit 1\n");
+            WriteExecutable(binDir, "ilspycmd", "#!/bin/sh\nexit 1\n");
 
-            const string version = "1.2.3";
-            SeedDisassemblerVersionCache(Constants.DOTNET_ILDASM, version);
-            SeedDisassemblerVersionCache($"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL}", version);
-            SeedDisassemblerVersionCache(Constants.ILSPY_CMD, version);
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+            var oldHome = Environment.GetEnvironmentVariable("HOME");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", binDir + Path.PathSeparator + oldPath);
+                Environment.SetEnvironmentVariable("HOME", _rootDir);
 
-            var label = $"{Constants.DOTNET_ILDASM} {Path.GetFileName(assemblyPath)} (version: {version})";
-            await ilCache.SetILAsync(assemblyPath, label, "CACHED_IL");
+                var cacheDir = Path.Combine(_rootDir, "prefetch-hit-cache");
+                var ilCache = new ILCache(cacheDir, _logger);
+                var service = CreateService(CreateConfig(enableIlCache: true), ilCache);
 
-            await service.PrefetchIlCacheAsync(new[] { assemblyPath }, maxParallel: 1);
+                var assemblyPath = Path.Combine(_rootDir, "prefetch-target.dll");
+                await File.WriteAllTextAsync(assemblyPath, "dummy");
 
-            Assert.True(service.IlCacheHits >= 1);
+                const string version = "1.2.3";
+                SeedDisassemblerVersionCache(Constants.DOTNET_ILDASM, version);
+                SeedDisassemblerVersionCache($"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL}", version);
+                SeedDisassemblerVersionCache(Constants.ILSPY_CMD, version);
+
+                var label = $"{Constants.DOTNET_ILDASM} {Path.GetFileName(assemblyPath)} (version: {version})";
+                await ilCache.SetILAsync(assemblyPath, label, "CACHED_IL");
+
+                await service.PrefetchIlCacheAsync(new[] { assemblyPath }, maxParallel: 1);
+
+                Assert.True(service.IlCacheHits >= 1);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                Environment.SetEnvironmentVariable("HOME", oldHome);
+            }
         }
 
         private static ConfigSettings CreateConfig(bool enableIlCache) => new()

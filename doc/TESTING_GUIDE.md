@@ -19,7 +19,7 @@ Related documents:
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
-Current tree has `248` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`).
+Current tree has `251` passing tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -128,7 +128,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
 - A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `73%` line or `71%` branch.
 - `release.yml` runs on `v*` tags, rebuilds/tests/publishes the app, archives publish/docs output, and creates a GitHub Release from the pushed tag.
-- `codeql.yml` runs CodeQL for both `csharp` and `actions` on code changes plus a weekly schedule.
+- `codeql.yml` runs CodeQL for both `csharp` and `actions` on code changes plus a weekly schedule; uses `fetch-depth: 0` on checkout for Nerdbank.GitVersioning and `continue-on-error: true` on the Analyze step to tolerate the Default Setup conflict.
 - `dependabot.yml` enables weekly update PRs for NuGet and GitHub Actions.
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) keeps those repository-automation files under automated regression coverage.
 
@@ -137,7 +137,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 
 - Most tests create unique temporary directories under `Path.GetTempPath()` and clean them up in `Dispose`/`finally`.
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) temporarily writes `config.json` under [`AppContext.BaseDirectory`](https://learn.microsoft.com/en-us/dotNet/API/system.appcontext.basedirectory?view=net-8.0) and restores original content.
-- [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) temporarily rewires `PATH`/`HOME` and uses scripted fake tools to test fallback/blacklist logic deterministically.
+- [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) temporarily rewires `PATH`/`HOME` and uses scripted fake tools to test fallback/blacklist logic deterministically; any test that pre-seeds a specific disassembler version into the version cache must also prepend a matching fake tool to `PATH` so that `GetVersionWithFallbacksAsync` finds the fake before the real tool installed on the CI runner, which would otherwise overwrite the seeded entry.
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) builds throwaway class libraries under temp directories and pins the E2E assertion to `dotnet-ildasm`; CI ensures that prerequisite and sets `DOTNET_ROLL_FORWARD=Major` for the test step.
 - Some disassembler tests are skipped on Windows (`OperatingSystem.IsWindows()` guard).
 - Unit tests do not require globally installed real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) for most scenarios because test doubles are used.
@@ -179,7 +179,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 <a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）では `248` 件が成功しています。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）では `251` 件が成功しています。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
@@ -288,7 +288,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
 - 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `73%` / 分岐 `71%` を下回るとワークフローを失敗させます。
 - `release.yml` は `v*` タグで実行し、再ビルド/再テスト/publish 後に publish 出力とドキュメントをアーカイブし、push されたタグから GitHub Release を作成します。
-- `codeql.yml` は `csharp` と `actions` に対する CodeQL をコード変更時と週次で実行します。
+- `codeql.yml` は `csharp` と `actions` に対する CodeQL をコード変更時と週次で実行します。Nerdbank.GitVersioning 向けに Checkout で `fetch-depth: 0` を指定し、Default Setup との競合を吸収するため Analyze ステップに `continue-on-error: true` を設定しています。
 - `dependabot.yml` は NuGet と GitHub Actions の更新 PR を週次で有効化します。
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) が、これらの設定ファイルも回帰テスト対象に含めます。
 
@@ -297,7 +297,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 
 - 多くのテストは `Path.GetTempPath()` 配下に一意ディレクトリを作成し、`Dispose`/`finally` で後始末します。
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) は [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) 配下の `config.json` を一時書き換えし、必ず復元します。
-- [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) は `PATH`/`HOME` を一時変更し、擬似ツールスクリプトでフォールバック/ブラックリスト挙動を決定的に検証します。
+- [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) は `PATH`/`HOME` を一時変更し、擬似ツールスクリプトでフォールバック/ブラックリスト挙動を決定的に検証します。バージョンキャッシュに特定バージョンを事前投入するテストは、`GetVersionWithFallbacksAsync` が実ツールより先に擬似ツールを解決できるよう、同じバージョンを返す偽スクリプトも `PATH` に追加する必要があります（CI ランナーに実ツールがインストールされているため、追加しないとキャッシュ投入値が上書きされます）。
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) は temp ディレクトリ上に一時クラスライブラリをビルドし、`dotnet-ildasm` 固定で E2E 検証します。CI では `dotnet-ildasm` のインストールと `DOTNET_ROLL_FORWARD=Major` でこの前提を満たします。
 - 逆アセンブラ関連の一部テストは Windows ではスキップされます（`OperatingSystem.IsWindows()` ガード）。
 - 多くの単体テストは実ツールのグローバルインストールを不要とします（テストダブル利用）。

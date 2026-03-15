@@ -384,6 +384,90 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(6, allPrecomputeTargets.Distinct(StringComparer.OrdinalIgnoreCase).Count());
         }
 
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenOldAndNewDirsAreSame_DeduplicatesAbsolutePathsAcrossPrecomputeBatches()
+        {
+            const string sameDir = "/virtual/same-dir";
+            const string reportDir = "/virtual/report-dedup";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(
+                sameDir,
+                Path.Combine(sameDir, "alpha.txt"),
+                Path.Combine(sameDir, "beta.txt"),
+                Path.Combine(sameDir, "gamma.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["alpha.txt"] = true,
+                ["beta.txt"] = true,
+                ["gamma.txt"] = true
+            });
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService();
+            // old dir == new dir → same absolute paths appear in both OldFilesAbsolutePath and NewFilesAbsolutePath
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
+                progressReporter,
+                CreateExecutionContext(sameDir, sameDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            // 3 distinct files even though each appears in both old and new lists
+            // With batch size 2: batches [alpha, beta] and [gamma] = 2 PrecomputeAsync calls
+            Assert.Equal(2, fileDiffService.PrecomputeCalls.Count);
+            var allPrecomputeTargets = fileDiffService.PrecomputeCalls.SelectMany(call => call.FilesAbsolutePath).ToArray();
+            Assert.Equal(3, allPrecomputeTargets.Length);
+            Assert.Equal(3, allPrecomputeTargets.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        }
+
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenILPrecomputeBatchSizeIsZero_UsesDefaultBatchSizeAndCallsPrecomputeOnce()
+        {
+            const string oldDir = "/virtual/old-zerobatch";
+            const string newDir = "/virtual/new-zerobatch";
+            const string reportDir = "/virtual/report-zerobatch";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir,
+                Path.Combine(oldDir, "file1.txt"),
+                Path.Combine(oldDir, "file2.txt"),
+                Path.Combine(oldDir, "file3.txt"));
+            fileSystem.SetFiles(newDir,
+                Path.Combine(newDir, "file1.txt"),
+                Path.Combine(newDir, "file2.txt"),
+                Path.Combine(newDir, "file3.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["file1.txt"] = true,
+                ["file2.txt"] = true,
+                ["file3.txt"] = true
+            });
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService();
+            // ilPrecomputeBatchSize = 0 → falls back to default (2048) → all 6 paths in one batch
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 0),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            var precomputeCall = Assert.Single(fileDiffService.PrecomputeCalls);
+            Assert.Equal(6, precomputeCall.FilesAbsolutePath.Count);
+        }
+
         private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = 2048) => new()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
