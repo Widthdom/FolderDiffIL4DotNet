@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- Added [`ConfigSettings.Validate()`](Models/ConfigSettings.cs) and the companion `ConfigValidationResult` class; [`ConfigService.LoadConfigAsync()`](Services/ConfigService.cs) now calls `Validate()` immediately after deserialization and throws [`InvalidDataException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.invaliddataexception?view=net-8.0) listing all invalid settings when validation fails, so misconfigured runs are caught at startup with a clear error message instead of failing silently or causing undefined behavior later. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; and `TextDiffChunkSizeKilobytes < TextDiffParallelThresholdKilobytes`. Added validation unit tests to [`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs) (7 cases) and validation integration tests to [`ConfigServiceTests`](FolderDiffIL4DotNet.Tests/Services/ConfigServiceTests.cs) (5 cases).
+
 #### Fixed
 
 - Fixed three CI pipeline failures: applied `PATH`/`HOME` isolation to `PrefetchIlCacheAsync_WhenSeededCacheExists_IncrementsHitCounter` in [`DotNetDisassembleServiceTests`](FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) so that the real `dotnet-ildasm` installed on the CI runner no longer overwrites the pre-seeded version cache entry; added `fetch-depth: 0` to the Checkout step in [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) so Nerdbank.GitVersioning can compute version height from the full commit history during the `csharp` autobuild; and added `continue-on-error: true` to the Analyze step to tolerate the SARIF upload rejection that occurs when the repository's GitHub Default Setup code scanning is also active for the `actions` language.
@@ -241,6 +245,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- [`ConfigSettings.Validate()`](Models/ConfigSettings.cs) と `ConfigValidationResult` クラスを追加しました。[`ConfigService.LoadConfigAsync()`](Services/ConfigService.cs) はデシリアライズ直後に `Validate()` を呼び出し、バリデーションが失敗した場合は全エラーを列挙した [`InvalidDataException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.invaliddataexception?view=net-8.0) をスローします。これにより、設定不正な実行は後から無言で失敗したり未定義の振る舞いを引き起こしたりする代わりに、起動時に分かりやすいエラーメッセージとして検出されます。検証対象の制約: `MaxLogGenerations >= 1`、`TextDiffParallelThresholdKilobytes >= 1`、`TextDiffChunkSizeKilobytes >= 1`、`TextDiffChunkSizeKilobytes < TextDiffParallelThresholdKilobytes`。あわせて [`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs) にバリデーション単体テスト（7 件）、[`ConfigServiceTests`](FolderDiffIL4DotNet.Tests/Services/ConfigServiceTests.cs) にバリデーション統合テスト（5 件）を追加しました。
 
 #### 修正
 
