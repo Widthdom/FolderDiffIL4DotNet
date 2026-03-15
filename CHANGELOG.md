@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- Consolidated the duplicate `"// MVID:"` literal into a single [`Constants.IL_MVID_LINE_PREFIX`](Common/Constants.cs) constant and removed the now-redundant `private const string MVID_PREFIX` definitions from both [`ReportGenerateService`](Services/ReportGenerateService.cs) and [`ILOutputService`](Services/ILOutputService.cs). No behaviour change; the string value is identical in both call sites.
+
 #### Added
 
 - Filled four test gaps in [`FolderDiffIL4DotNet.Tests`](FolderDiffIL4DotNet.Tests/): (1) added `IsLikelyWindowsNetworkPath_ForwardSlashIpUncPath_ReturnsTrue` to [`FileSystemUtilityTests`](FolderDiffIL4DotNet.Tests/Core/IO/FileSystemUtilityTests.cs) and fixed [`FileSystemUtility.IsLikelyWindowsNetworkPath()`](FolderDiffIL4DotNet.Core/IO/FileSystemUtility.cs) to also detect `//`-format IP-based UNC paths (e.g. `//192.168.1.1/share`) as network paths on Windows; (2) added `ExecuteFolderDiffAsync_WhenEnumeratingFilesThrowsIOExceptionDueToSymlinkLoop_LogsAndRethrows` to [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs), verifying that an `IOException` raised during directory enumeration (e.g. an `ELOOP` error from a symlink cycle) is logged as an error and re-thrown; (3) added `ExecuteFolderDiffAsync_WhenNewFileDeletedBeforeComparison_ClassifiesAsRemovedWithWarning` (sequential and parallel variants) to [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs) and changed [`FolderDiffService`](Services/FolderDiffService.cs) to catch `FileNotFoundException` during per-file comparison, emit a warning, and classify the file as Removed rather than propagating the exception; (4) added `DisassembleAsync_AfterBlacklistTtlExpiry_RetriesToolAndSucceeds` to [`DotNetDisassembleServiceTests`](FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs), verifying that a blacklisted disassembler tool whose 10-minute TTL has expired is removed from the blacklist and retried on the next call.
@@ -250,6 +254,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- `"// MVID:"` リテラルの重複定義を解消し、[`Constants.IL_MVID_LINE_PREFIX`](Common/Constants.cs) に一元化しました。[`ReportGenerateService`](Services/ReportGenerateService.cs) と [`ILOutputService`](Services/ILOutputService.cs) の両ファイルに存在していた `private const string MVID_PREFIX` を削除し、各参照箇所を `Constants.IL_MVID_LINE_PREFIX` に置き換えました。文字列値は同一のため動作変更はありません。
 
 #### 追加
 

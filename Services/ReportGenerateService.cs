@@ -43,11 +43,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string DIFF_REPORT_FILE_NAME = "diff_report.md";
 
         /// <summary>
-        /// IL 出力から比較時に除外する MVID 行の接頭辞。MVID は再ビルドごとに変わり得る Module Version ID メタデータで、実行される IL 差分を直接意味しません。
-        /// </summary>
-        private const string MVID_PREFIX = "// MVID:";
-
-        /// <summary>
         /// レポート生成スピナーのラベル。
         /// </summary>
         private const string SPINNER_LABEL_GENERATING_REPORT = "Generating report";
@@ -70,7 +65,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// MVID行スキップの但し書き（存在する場合のみ対象）。
         /// </summary>
-        private const string NOTE_MVID_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines starting with \"{MVID_PREFIX}\" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.";
+        private const string NOTE_MVID_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines starting with \"{Constants.IL_MVID_LINE_PREFIX}\" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.";
 
         /// <summary>
         /// 部分一致除外が有効だが、文字列設定が空の場合の但し書き。

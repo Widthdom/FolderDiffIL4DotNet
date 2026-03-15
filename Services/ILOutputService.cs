@@ -22,11 +22,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
 
         /// <summary>
-        /// IL 出力から比較時に除外する MVID 行の接頭辞。MVID は再ビルドごとに変わり得る Module Version ID メタデータで、実行される IL 差分を直接意味しません。
-        /// </summary>
-        private const string MVID_PREFIX = "// MVID:";
-
-        /// <summary>
         /// バージョンラベル接頭辞。
         /// </summary>
         private const string VERSION_LABEL_PREFIX = " (version: ";
@@ -203,7 +198,7 @@ namespace FolderDiffIL4DotNet.Services
                 return false;
             }
 
-            if (line.StartsWith(MVID_PREFIX, StringComparison.Ordinal))
+            if (line.StartsWith(Constants.IL_MVID_LINE_PREFIX, StringComparison.Ordinal))
             {
                 return true;
             }
