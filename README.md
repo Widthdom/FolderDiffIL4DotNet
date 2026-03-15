@@ -132,18 +132,6 @@ Example `diff_report.md` (trimmed):
   - payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
 ```
 
-<a id="readme-en-runtime-composition"></a>
-## Runtime Composition
-
-- [`Program.cs`](Program.cs) is intentionally thin and only resolves [`ProgramRunner`](ProgramRunner.cs).
-- [`ProgramRunner`](ProgramRunner.cs) keeps `RunAsync()` as a phase-oriented coordinator by delegating logger initialization, argument validation, configuration loading, run-scope creation, diff execution, and report generation to focused helpers, while converting each phase into a typed result before mapping it to a process exit code.
-- [`ProgramRunner`](ProgramRunner.cs) also owns aggregated end-of-run console warnings such as `MD5Mismatch` and timestamp-regression notices.
-- [`DiffExecutionContext`](Services/DiffExecutionContext.cs) carries run-specific paths and network-mode decisions.
-- Domain-independent console, diagnostics, I/O, and text helpers now live under [`FolderDiffIL4DotNet.Core/`](FolderDiffIL4DotNet.Core/), so the main executable project stays focused on folder-diff behavior.
-- [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs) owns discovery filtering and auto-parallelism policy, so [`FolderDiffService`](Services/FolderDiffService.cs) can stay focused on progress, orchestration, and result routing.
-- [`FolderDiffService`](Services/FolderDiffService.cs) uses [`IFileSystemService`](Services/IFileSystemService.cs) for discovery/output I/O, including lazy file enumeration via `EnumerateFiles(...)` plus batched IL-precompute target enumeration for large trees, and [`FileDiffService`](Services/FileDiffService.cs) uses [`IFileComparisonService`](Services/IFileComparisonService.cs) for hash, text, and chunk-read operations while honoring an optional text-diff memory budget, which keeps permission and disk-failure paths unit-testable without changing runtime behavior.
-- Core pipeline services ([`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)) depend on interfaces and injected context rather than static fields or `ActivatorUtilities.CreateInstance`, which keeps behavior stable while improving test substitution.
-
 <a id="readme-en-comparison-flow"></a>
 ## Comparison Flow
 
@@ -172,7 +160,6 @@ Important details:
 - `Added`, `Removed`, `Unchanged`, and `Modified` are decided by relative path, not by file name alone.
 - IL comparison always ignores `// MVID:` lines, so build-specific assembly noise does not create false differences.
 - If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-en) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
-- Text files may use different internal strategies depending on size, runtime mode, and optional memory budget. If [`TextDiffParallelMemoryLimitMegabytes`](#configuration-table-en) is set, the run logs the current managed-heap size when it reduces chunk-parallel workers or falls back to sequential text comparison. If chunk-parallel comparison for a large local file throws, the run logs a warning and retries with sequential text comparison.
 - Warm-up, cache cleanup, and post-write read-only protection are best-effort paths that log warnings and continue. Folder enumeration, matched-pair comparison, and report writing log and rethrow expected runtime exceptions because they affect correctness or required output.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
@@ -327,7 +314,6 @@ Notes:
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#configuration-table-en).
 - Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
 - If any file ends as `MD5Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion.
-- Internal IL cache defaults that are not exposed in [`config.json`](config.json) are currently `2000` in-memory entries, `12` hours TTL, and `60` seconds for internal stats logging; [`ProgramRunner`](ProgramRunner.cs) keeps them as shared code defaults to balance reuse against console-tool memory/log growth.
 
 <a id="readme-en-generated-artifacts"></a>
 ## Generated Artifacts
@@ -511,18 +497,6 @@ dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" 
   - payload.bin (updated_old: 2026-03-15 08:59:00.000 +09:00, updated_new: 2026-03-15 08:54:00.000 +09:00)
 ```
 
-<a id="readme-ja-runtime-composition"></a>
-## 実行時構成
-
-- [`Program.cs`](Program.cs) は薄いエントリーポイントで、[`ProgramRunner`](ProgramRunner.cs) の解決だけを行います。
-- [`ProgramRunner`](ProgramRunner.cs) は `RunAsync()` をフェーズ調停役に絞り、ロガー初期化、引数検証、設定読込、実行スコープ生成、差分実行、レポート生成を専用 helper へ委譲しつつ、各フェーズを型付き結果に変換してからプロセス終了コードへ写像します。
-- [`ProgramRunner`](ProgramRunner.cs) は `MD5Mismatch` や更新日時逆転のような集約後の終了時コンソール警告も担当します。
-- [`DiffExecutionContext`](Services/DiffExecutionContext.cs) が実行ごとのパスやネットワークモード判定を保持します。
-- ドメイン非依存の console / diagnostics / I/O / text helper は [`FolderDiffIL4DotNet.Core/`](FolderDiffIL4DotNet.Core/) へ分離し、実行ファイル側のプロジェクトはフォルダ差分の振る舞いへ集中させています。
-- [`FolderDiffExecutionStrategy`](Services/FolderDiffExecutionStrategy.cs) が、ファイル探索時の除外ルール適用と自動並列度の決定を担当し、[`FolderDiffService`](Services/FolderDiffService.cs) は進捗・実行制御・結果振り分けへ寄せています。
-- [`FolderDiffService`](Services/FolderDiffService.cs) は列挙/出力系 I/O を [`IFileSystemService`](Services/IFileSystemService.cs) に委譲しており、ファイル列挙も `EnumerateFiles(...)` による遅延列挙に加えて大量ツリー向けの IL 事前計算対象バッチ化で扱います。[`FileDiffService`](Services/FileDiffService.cs) はハッシュ/テキスト/チャンク読み出し系 I/O を [`IFileComparisonService`](Services/IFileComparisonService.cs) に委譲しつつ、必要に応じてテキスト比較のメモリ予算も適用するため、権限エラーやディスク系失敗の経路も実ファイルなしでユニットテストできます。
-- 主要パイプラインサービス（[`FolderDiffService`](Services/FolderDiffService.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ILOutputService`](Services/ILOutputService.cs)）は、静的フィールドや `ActivatorUtilities.CreateInstance` ではなく、インターフェースとコンテキスト注入に依存します。これにより既存動作を維持したままテスト差し替え性を高めています。
-
 <a id="readme-ja-comparison-flow"></a>
 ## 比較フロー
 
@@ -550,7 +524,6 @@ flowchart TD
 重要な点:
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
 - [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-ja) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
-- テキスト比較の内部実装はファイルサイズ、実行モード、任意のメモリ予算で変わることがあります。[`TextDiffParallelMemoryLimitMegabytes`](#configuration-table-ja) を設定すると、並列ワーカー数を下げるか逐次比較へ切り替える際に、その時点の managed heap 使用量をログへ残します。大きいローカルファイルの並列比較で例外が出た場合は warning を記録し、逐次比較へフォールバックします。
 - ウォームアップ、キャッシュ削除、書き込み後の読み取り専用化は best-effort として warning を記録して継続します。一方、フォルダ列挙、対応ファイル比較、レポート書き込みは正しさや成果物に直結するため、想定される実行時例外でもログ出力のうえ再スローします。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
@@ -705,7 +678,6 @@ flowchart TD
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#configuration-table-ja) に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。
 - `MD5Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。
-- [`config.json`](config.json) に公開していない内部 IL キャッシュ既定値は、現在メモリ `2000` 件、TTL `12` 時間、内部統計ログ `60` 秒です。[`ProgramRunner`](ProgramRunner.cs) で共通既定値として管理し、再利用効率とコンソールツールとしてのメモリ/ログ増加のバランスを取っています。
 
 <a id="readme-ja-generated-artifacts"></a>
 ## 生成物
