@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json;
 using FolderDiffIL4DotNet.Models;
 using Xunit;
