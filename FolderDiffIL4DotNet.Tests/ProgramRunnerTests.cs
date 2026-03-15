@@ -398,6 +398,100 @@ namespace FolderDiffIL4DotNet.Tests
             }
         }
 
+        // -----------------------------------------------------------------------
+        // ApplyCliOverrides coverage: --no-il-cache, --skip-il, --no-timestamp-warnings
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_NoIlCacheFlag_DisablesILCacheForRun()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-no-ilcache-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[]
+                    {
+                        oldDir, newDir, "lbl_noilcache_" + Guid.NewGuid().ToString("N"),
+                        "--no-il-cache", "--no-pause"
+                    });
+                    Assert.NotEqual(3, exitCode);
+                    Assert.Contains(logger.Messages, m => m.Contains("Configuration loaded", StringComparison.Ordinal));
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_SkipILFlag_SetsSkipILForRun()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-skipil-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[]
+                    {
+                        oldDir, newDir, "lbl_skipil_" + Guid.NewGuid().ToString("N"),
+                        "--skip-il", "--no-pause"
+                    });
+                    Assert.NotEqual(3, exitCode);
+                    Assert.Contains(logger.Messages, m => m.Contains("Configuration loaded", StringComparison.Ordinal));
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_NoTimestampWarningsFlag_SuppressesWarningsForRun()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-notswarn-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[]
+                    {
+                        oldDir, newDir, "lbl_notswarn_" + Guid.NewGuid().ToString("N"),
+                        "--no-timestamp-warnings", "--no-pause"
+                    });
+                    Assert.NotEqual(3, exitCode);
+                    Assert.Contains(logger.Messages, m => m.Contains("Configuration loaded", StringComparison.Ordinal));
+                });
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
         private static async Task WithMissingConfigFileAsync(Func<Task> assertion)
         {
             var backupExists = File.Exists(ConfigFilePath);

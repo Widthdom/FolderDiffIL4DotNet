@@ -288,6 +288,62 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 
+        [Fact]
+        public async Task PrecomputeAsync_WhenSkipILIsTrue_DoesNotCallILOutputService()
+        {
+            var ilOutputService = new FakeILOutputService();
+            var fileComparisonService = new FakeFileComparisonService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.SkipIL = true);
+
+            await service.PrecomputeAsync(new[] { "/virtual/old/assembly.dll" }, maxParallel: 1);
+
+            Assert.Equal(0, ilOutputService.PrecomputeCallCount);
+        }
+
+        [Fact]
+        public async Task PrecomputeAsync_WhenSkipILIsFalse_DelegatesToILOutputService()
+        {
+            var ilOutputService = new FakeILOutputService();
+            var fileComparisonService = new FakeFileComparisonService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.SkipIL = false);
+
+            await service.PrecomputeAsync(new[] { "/virtual/old/assembly.dll" }, maxParallel: 1);
+
+            Assert.Equal(1, ilOutputService.PrecomputeCallCount);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenSkipILIsTrueAndDotNetAssembly_SkipsILAndFallsThroughToTextOrBinaryDiff()
+        {
+            const string relativePath = "assembly.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                // Would normally trigger IL comparison:
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable),
+                // Not a text extension, so neither text nor IL → falls through to no-match
+                TextDiffResult = false
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.SkipIL = true);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            // IL was skipped
+            Assert.Empty(ilOutputService.DiffCalls);
+            Assert.Empty(fileComparisonService.DotNetDetectionCalls);
+            Assert.False(areEqual);
+        }
+
         private static FileDiffService CreateService(
             FakeFileComparisonService fileComparisonService,
             FakeILOutputService ilOutputService,
@@ -418,8 +474,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public List<DiffCall> DiffCalls { get; } = new();
 
+            public int PrecomputeCallCount { get; private set; }
+
             public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
-                => Task.CompletedTask;
+            {
+                PrecomputeCallCount++;
+                return Task.CompletedTask;
+            }
 
             public Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
             {

@@ -228,6 +228,20 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // Null element in args array
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_NullElementInArgs_IsSkipped()
+        {
+            var opts = ProgramRunner.ParseCliOptions(new[] { "--no-pause", null, "--skip-il" });
+
+            Assert.True(opts.NoPause);
+            Assert.True(opts.SkipIL);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // Combined flags
         // -----------------------------------------------------------------------
 
