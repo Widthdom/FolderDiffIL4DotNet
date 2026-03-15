@@ -213,6 +213,49 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task FilesAreEqualAsync_WhenTextDiffMemoryBudgetPartiallyLimitsParallelism_ReducesParallelismWithoutFallingBack()
+        {
+            const string relativePath = "partial-limit.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+            };
+            var oldFileAbsolutePath = Path.Combine("/virtual/old", relativePath);
+            var newFileAbsolutePath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldFileAbsolutePath, new string('D', 2048));
+            fileComparisonService.SetFileContent(newFileAbsolutePath, new string('D', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    // 1 MB chunk: bytesPerWorker = 2 MB, budget 4 MB → maxWorkers = 2 < requestedMaxParallel (8)
+                    config.TextDiffChunkSizeKilobytes = 1024;
+                    config.TextDiffParallelMemoryLimitMegabytes = 4;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 8);
+
+            Assert.True(areEqual);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            Assert.NotEmpty(fileComparisonService.ReadChunkCalls);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Info
+                    && entry.Message.Contains("Text diff memory budget applied", StringComparison.Ordinal)
+                    && entry.Message.Contains("Reducing chunk-parallel", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public async Task FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows()
         {
             const string relativePath = "locked.txt";
