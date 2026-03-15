@@ -225,6 +225,7 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         /// <param name="toolName">ツール名。</param>
         /// <param name="version">バージョン文字列（省略可）。</param>
+        /// <param name="fromCache">キャッシュ経由の場合は <see langword="true"/>。</param>
         public void RecordDisassemblerToolVersion(string toolName, string version, bool fromCache = false)
         {
             if (string.IsNullOrWhiteSpace(toolName))
