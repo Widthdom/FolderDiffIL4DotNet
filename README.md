@@ -150,6 +150,14 @@ Example `diff_report.md` (trimmed):
 - Modified  : 2
 - Compared  : 5 (Old) vs 5 (New)
 
+## IL Cache Stats
+- Hits    : 42
+- Misses  : 8
+- Hit Rate: 84.0%
+- Stores  : 8
+- Evicted : 0
+- Expired : 0
+
 ## Warnings
 - **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
 - **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
@@ -203,7 +211,8 @@ Override only the settings you want to change. For example:
   "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_"],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
-  "ShouldIncludeIgnoredFiles": false
+  "ShouldIncludeIgnoredFiles": false,
+  "ShouldIncludeILCacheStatsInReport": true
 }
 ```
 
@@ -242,6 +251,11 @@ Override only the settings you want to change. For example:
       <td><code>ShouldIncludeIgnoredFiles</code></td>
       <td><code>true</code></td>
       <td>Includes <code>Ignored Files</code> section before <code>Unchanged</code>.</td>
+    </tr>
+    <tr id="config-en-shouldincludeilcachestatsInreport">
+      <td><code>ShouldIncludeILCacheStatsInReport</code></td>
+      <td><code>false</code></td>
+      <td>When <code>true</code>, appends an <code>IL Cache Stats</code> section (hits, misses, hit-rate, stores, evicted, expired) between <code>Summary</code> and <code>Warnings</code>. Has no effect when <code>EnableILCache</code> is <code>false</code>.</td>
     </tr>
     <tr id="config-en-shouldoutputiltext">
       <td><code>ShouldOutputILText</code></td>
@@ -545,6 +559,14 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 - Modified  : 2
 - Compared  : 5 (Old) vs 5 (New)
 
+## IL Cache Stats
+- Hits    : 42
+- Misses  : 8
+- Hit Rate: 84.0%
+- Stores  : 8
+- Evicted : 0
+- Expired : 0
+
 ## Warnings
 - **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
 - **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
@@ -597,7 +619,8 @@ flowchart TD
   "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_"],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
-  "ShouldIncludeIgnoredFiles": false
+  "ShouldIncludeIgnoredFiles": false,
+  "ShouldIncludeILCacheStatsInReport": true
 }
 ```
 
@@ -636,6 +659,11 @@ flowchart TD
       <td><code>ShouldIncludeIgnoredFiles</code></td>
       <td><code>true</code></td>
       <td>レポートに <code>Ignored Files</code> セクションを出力するか。</td>
+    </tr>
+    <tr id="config-ja-shouldincludeilcachestatsInreport">
+      <td><code>ShouldIncludeILCacheStatsInReport</code></td>
+      <td><code>false</code></td>
+      <td><code>true</code> の場合、<code>Summary</code> と <code>Warnings</code> の間に <code>IL Cache Stats</code> セクション（ヒット数・ミス数・ヒット率・保存数・退避数・期限切れ数）を出力します。<code>EnableILCache</code> が <code>false</code> の場合は本設定が <code>true</code> でも出力されません。</td>
     </tr>
     <tr id="config-ja-shouldoutputiltext">
       <td><code>ShouldOutputILText</code></td>

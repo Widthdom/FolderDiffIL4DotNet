@@ -6,6 +6,7 @@ using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Services.Caching;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -197,6 +198,11 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_SECTION_SUMMARY = REPORT_SECTION_PREFIX + "Summary";
 
         /// <summary>
+        /// レポートセクション: IL Cache Stats
+        /// </summary>
+        private const string REPORT_SECTION_IL_CACHE_STATS = REPORT_SECTION_PREFIX + "IL Cache Stats";
+
+        /// <summary>
         /// new 側の更新日時逆転警告文言
         /// </summary>
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.";
@@ -220,6 +226,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="elapsedTimeString">経過時間文字列 (null 可)</param>
         /// <param name="computerName">実行コンピュータ名</param>
         /// <param name="config">設定オブジェクト</param>
+        /// <param name="ilCache">IL キャッシュインスタンス（null の場合は IL Cache Stats セクションを出力しない）</param>
         /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
         /// <exception cref="IOException">レポートファイルの削除または書き込みに失敗した場合。</exception>
         /// <exception cref="UnauthorizedAccessException">レポート出力先へのアクセス権が不足している場合。</exception>
@@ -231,7 +238,8 @@ namespace FolderDiffIL4DotNet.Services
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config)
+            ConfigSettings config,
+            ILCache ilCache = null)
         {
             string diffReportAbsolutePath = GetDiffReportAbsolutePath(reportsFolderAbsolutePath);
             bool hasMd5Mismatch = _fileDiffResultLists.HasAnyMd5Mismatch;
@@ -250,7 +258,8 @@ namespace FolderDiffIL4DotNet.Services
                     computerName,
                     config,
                     hasMd5Mismatch,
-                    hasTimestampRegressionWarning);
+                    hasTimestampRegressionWarning,
+                    ilCache);
                 reportGenerated = true;
             }
             catch (ArgumentException)
@@ -293,7 +302,8 @@ namespace FolderDiffIL4DotNet.Services
             string computerName,
             ConfigSettings config,
             bool hasMd5Mismatch,
-            bool hasTimestampRegressionWarning)
+            bool hasTimestampRegressionWarning,
+            ILCache ilCache)
         {
             PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
             File.Delete(diffReportAbsolutePath);
@@ -308,7 +318,8 @@ namespace FolderDiffIL4DotNet.Services
                 computerName,
                 config,
                 hasMd5Mismatch,
-                hasTimestampRegressionWarning);
+                hasTimestampRegressionWarning,
+                ilCache);
         }
 
         private void WriteReportSections(
@@ -320,7 +331,8 @@ namespace FolderDiffIL4DotNet.Services
             string computerName,
             ConfigSettings config,
             bool hasMd5Mismatch,
-            bool hasTimestampRegressionWarning)
+            bool hasTimestampRegressionWarning,
+            ILCache ilCache)
         {
             WriteReportHeader(streamWriter, oldFolderAbsolutePath, newFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config);
             WriteLegend(streamWriter);
@@ -330,6 +342,7 @@ namespace FolderDiffIL4DotNet.Services
             WriteRemovedFilesSection(streamWriter, config);
             WriteModifiedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
             WriteSummarySection(streamWriter, config);
+            WriteILCacheStatsSection(streamWriter, config, ilCache);
             WriteWarningsSection(streamWriter, hasMd5Mismatch, hasTimestampRegressionWarning);
         }
 
@@ -588,6 +601,31 @@ namespace FolderDiffIL4DotNet.Services
             streamWriter.WriteLine($"- {REPORT_LABEL_REMOVED,-10}: {_fileDiffResultLists.RemovedFilesAbsolutePath.Count}");
             streamWriter.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {_fileDiffResultLists.ModifiedFilesRelativePath.Count}");
             streamWriter.WriteLine($"- {REPORT_LABEL_COMPARED,-10}: {_fileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
+            streamWriter.WriteLine();
+        }
+
+        /// <summary>
+        /// IL Cache Stats セクションを書き込みます。
+        /// <see cref="ConfigSettings.ShouldIncludeILCacheStatsInReport"/> が true かつ <paramref name="ilCache"/> が非 null の場合のみ出力されます。
+        /// </summary>
+        /// <param name="streamWriter">出力先ライター。</param>
+        /// <param name="config">設定オブジェクト。</param>
+        /// <param name="ilCache">IL キャッシュインスタンス（null の場合はスキップ）。</param>
+        private static void WriteILCacheStatsSection(StreamWriter streamWriter, ConfigSettings config, ILCache ilCache)
+        {
+            if (!config.ShouldIncludeILCacheStatsInReport || ilCache == null)
+            {
+                return;
+            }
+
+            var stats = ilCache.GetReportStats();
+            streamWriter.WriteLine(REPORT_SECTION_IL_CACHE_STATS);
+            streamWriter.WriteLine($"- Hits    : {stats.Hits}");
+            streamWriter.WriteLine($"- Misses  : {stats.Misses}");
+            streamWriter.WriteLine($"- Hit Rate: {stats.HitRatePct:F1}%");
+            streamWriter.WriteLine($"- Stores  : {stats.Stores}");
+            streamWriter.WriteLine($"- Evicted : {stats.Evicted}");
+            streamWriter.WriteLine($"- Expired : {stats.Expired}");
             streamWriter.WriteLine();
         }
 

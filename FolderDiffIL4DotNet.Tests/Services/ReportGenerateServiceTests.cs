@@ -4,6 +4,7 @@ using System.IO;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Services.Caching;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -408,6 +409,83 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(
                 reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal) <
                 reportText.IndexOf("files in `new` have older last-modified timestamps", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void GenerateDiffReport_ILCacheStats_NotIncludedByDefault()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ilcs-default");
+            var newDir = Path.Combine(_rootDir, "new-ilcs-default");
+            var reportDir = Path.Combine(_rootDir, "report-ilcs-default");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.DoesNotContain("## IL Cache Stats", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_ILCacheStats_NotOutputWhenEnabled_ButCacheIsNull()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ilcs-null");
+            var newDir = Path.Combine(_rootDir, "new-ilcs-null");
+            var reportDir = Path.Combine(_rootDir, "report-ilcs-null");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            config.ShouldIncludeILCacheStatsInReport = true;
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config, ilCache: null);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.DoesNotContain("## IL Cache Stats", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_ILCacheStats_OutputBetweenSummaryAndWarnings_WhenEnabledWithCache()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ilcs-full");
+            var newDir = Path.Combine(_rootDir, "new-ilcs-full");
+            var reportDir = Path.Combine(_rootDir, "report-ilcs-full");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            config.ShouldIncludeILCacheStatsInReport = true;
+            var ilCache = new ILCache(ilCacheDirectoryAbsolutePath: string.Empty);
+
+            _resultLists.RecordDiffDetail("some.dll", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config, ilCache);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("## IL Cache Stats", reportText);
+            Assert.Contains("- Hits    :", reportText);
+            Assert.Contains("- Misses  :", reportText);
+            Assert.Contains("- Hit Rate:", reportText);
+            Assert.Contains("- Stores  :", reportText);
+            Assert.Contains("- Evicted :", reportText);
+            Assert.Contains("- Expired :", reportText);
+            // IL Cache Stats section must appear between Summary and Warnings
+            int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);
+            int ilCacheIdx = reportText.IndexOf("## IL Cache Stats", StringComparison.Ordinal);
+            int warningsIdx = reportText.IndexOf("## Warnings", StringComparison.Ordinal);
+            Assert.True(summaryIdx < ilCacheIdx);
+            Assert.True(ilCacheIdx < warningsIdx);
         }
 
         private static ConfigSettings CreateConfig() => new()

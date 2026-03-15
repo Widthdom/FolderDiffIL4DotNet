@@ -510,6 +510,7 @@ namespace FolderDiffIL4DotNet
             string computerName,
             ConfigSettings config)
         {
+            var ilCache = scopedProvider.GetService<ILCache>();
             scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(
                 executionContext.OldFolderAbsolutePath,
                 executionContext.NewFolderAbsolutePath,
@@ -517,7 +518,8 @@ namespace FolderDiffIL4DotNet
                 appVersion,
                 elapsedTimeString,
                 computerName,
-                config);
+                config,
+                ilCache);
         }
 
         private void PromptForExitKeyIfNeeded(CliOptions opts)

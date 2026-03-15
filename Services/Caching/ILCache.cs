@@ -67,6 +67,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private long _internalStores = 0;
 
         /// <summary>
+        /// 統計ログのためのアクセスミスカウンタ（メモリ・ディスク両方でキャッシュ未ヒットの件数）
+        /// </summary>
+        private long _internalMisses = 0;
+
+        /// <summary>
         /// 統計ログの最終出力時刻（Ticks）
         /// </summary>
         private long _lastStatsLogTicks = 0;
@@ -75,6 +80,19 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// 現在までの削除統計 (Evicted: LRU, Expired: TTL)
         /// </summary>
         public (long Evicted, long Expired) Stats => _memoryCache.Stats;
+
+        /// <summary>
+        /// レポート出力用の IL キャッシュ統計情報を返します。
+        /// </summary>
+        /// <returns>ヒット数・ミス数・保存数・退避数などを含む統計情報。</returns>
+        public ILCacheReportStats GetReportStats()
+        {
+            var (evicted, expired) = _memoryCache.Stats;
+            long hits = Interlocked.Read(ref _internalHits);
+            long misses = Interlocked.Read(ref _internalMisses);
+            long stores = Interlocked.Read(ref _internalStores);
+            return new ILCacheReportStats(hits, misses, stores, evicted, expired);
+        }
 
         /// <summary>
         /// コンストラクタ。
@@ -161,6 +179,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var diskHit = await _diskCache.TryReadAsync(ilCacheKey);
             if (diskHit == null)
             {
+                Interlocked.Increment(ref _internalMisses);
                 return null;
             }
 
@@ -320,8 +339,24 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var (evicted, expired) = _memoryCache.Stats;
             _logger.LogMessage(
                 AppLogLevel.Info,
-                $"IL cache stats: hits={_internalHits}, stores={_internalStores}, evicted={evicted}, expired={expired}",
+                $"IL cache stats: hits={_internalHits}, misses={_internalMisses}, stores={_internalStores}, evicted={evicted}, expired={expired}",
                 shouldOutputMessageToConsole: true);
         }
+    }
+
+    /// <summary>
+    /// レポートに出力する IL キャッシュ統計情報を保持するレコード。
+    /// </summary>
+    /// <param name="Hits">キャッシュヒット数（メモリ + ディスク）。</param>
+    /// <param name="Misses">キャッシュミス数（メモリ・ディスク両方で未ヒット）。</param>
+    /// <param name="Stores">キャッシュ保存数。</param>
+    /// <param name="Evicted">LRU により退避されたエントリ数。</param>
+    /// <param name="Expired">TTL 期限切れにより削除されたエントリ数。</param>
+    public sealed record ILCacheReportStats(long Hits, long Misses, long Stores, long Evicted, long Expired)
+    {
+        /// <summary>
+        /// キャッシュヒット率（%）。アクセスが 0 件の場合は 0.0。
+        /// </summary>
+        public double HitRatePct => (Hits + Misses) == 0 ? 0.0 : Hits * 100.0 / (Hits + Misses);
     }
 }

@@ -89,6 +89,13 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldIncludeIgnoredFiles { get; set; } = true;
 
         /// <summary>
+        /// IL キャッシュの統計情報（ヒット数・ミス数・ヒット率など）を差分レポートに出力するかどうか。
+        /// true の場合、Summary セクションと Warnings セクションの間に IL Cache Stats セクションを追加します。
+        /// なお、IL キャッシュが無効（EnableILCache = false）の場合は本設定が true でもセクションは出力されません。
+        /// </summary>
+        public bool ShouldIncludeILCacheStatsInReport { get; set; } = false;
+
+        /// <summary>
         /// IL全文を出力するか否か
         /// </summary>
         public bool ShouldOutputILText { get; set; } = true;
