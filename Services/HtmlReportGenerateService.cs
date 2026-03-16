@@ -744,12 +744,18 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  function downloadReviewed() {");
             sb.AppendLine("    var state   = collectState();");
             sb.AppendLine("    var slug    = 'diff_report_' + __reportDate__;");
-            sb.AppendLine("    // Close all <details> so the downloaded file starts with diffs collapsed");
+            sb.AppendLine("    var root    = document.documentElement;");
+            sb.AppendLine("    // 1. Close all <details> so exported file starts with diffs collapsed");
             sb.AppendLine("    var openDetails = Array.from(document.querySelectorAll('details[open]'));");
             sb.AppendLine("    openDetails.forEach(function(d){ d.removeAttribute('open'); });");
+            sb.AppendLine("    // 2. Reset column widths to defaults so exported file starts at initial layout");
+            sb.AppendLine("    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w'];");
+            sb.AppendLine("    var savedColVars = {};");
+            sb.AppendLine("    colVarNames.forEach(function(v){ savedColVars[v] = root.style.getPropertyValue(v); root.style.removeProperty(v); });");
             sb.AppendLine("    var html    = document.documentElement.outerHTML;");
-            sb.AppendLine("    // Restore open state in the live page");
-            sb.AppendLine("    openDetails.forEach(function(d){ d.setAttribute('open', ''); });
+            sb.AppendLine("    // Restore column widths and open details in the live page");
+            sb.AppendLine("    colVarNames.forEach(function(v){ if (savedColVars[v]) root.style.setProperty(v, savedColVars[v]); });");
+            sb.AppendLine("    openDetails.forEach(function(d){ d.setAttribute('open', ''); });");
             sb.AppendLine("    // Embed state");
             sb.AppendLine("    html = html.replace('const __savedState__  = null;',");
             sb.AppendLine("      'const __savedState__  = ' + JSON.stringify(state) + ';');");
@@ -773,6 +779,11 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    if (!confirm('Clear all checkboxes and text inputs?')) return;");
             sb.AppendLine("    document.querySelectorAll('input[type=\"checkbox\"]').forEach(function(cb){ cb.checked=false; });");
             sb.AppendLine("    document.querySelectorAll('input[type=\"text\"], textarea').forEach(function(inp){ inp.value=''; });");
+            sb.AppendLine("    // Reset column widths to defaults");
+            sb.AppendLine("    var root = document.documentElement;");
+            sb.AppendLine("    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w'].forEach(function(v){ root.style.removeProperty(v); });");
+            sb.AppendLine("    // Close all open diff/IL-diff details");
+            sb.AppendLine("    document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });");
             sb.AppendLine("    localStorage.removeItem(__storageKey__);");
             sb.AppendLine("    var status = document.getElementById('save-status');");
             sb.AppendLine("    if (status) status.textContent = 'Cleared.';");
@@ -859,7 +870,7 @@ namespace FolderDiffIL4DotNet.Services
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 20em; }
-    col.col-no-g     { width: 2.5em; }
+    col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
     col.col-reason-g { width: var(--col-reason-w); }
     col.col-notes-g  { width: var(--col-notes-w); }
@@ -869,8 +880,8 @@ namespace FolderDiffIL4DotNet.Services
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
-    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: auto; margin-bottom: 0; }
-    th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
+    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: max-content; margin-bottom: 0; }
+    th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
     .col-resize-handle {
@@ -879,13 +890,13 @@ namespace FolderDiffIL4DotNet.Services
     }
     .col-resize-handle:hover, .col-resize-handle:active { background: rgba(0,0,0,0.18); }
     td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; font-size: 12px; }
-    td.col-no   { width: 2.5em; text-align: right; color: #aaa;
+    td.col-no   { width: 3.2em; text-align: right; color: #aaa;
                   font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; }
     td.col-notes  { overflow: hidden; }
     td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    td.col-ts   { white-space: nowrap; width: 22em; }
+    td.col-ts   { white-space: nowrap; width: 22em; overflow: hidden; }
     td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                   font-size: 12px; white-space: nowrap; min-width: 20em; }
     td.col-reason input[type=""text""], td.col-notes input[type=""text""] {
@@ -894,6 +905,7 @@ namespace FolderDiffIL4DotNet.Services
     td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    input[type=""checkbox""][disabled] { accent-color: #007aff; opacity: 1; cursor: default; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
     table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
