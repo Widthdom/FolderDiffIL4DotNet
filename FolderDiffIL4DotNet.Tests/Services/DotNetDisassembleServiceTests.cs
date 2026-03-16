@@ -46,13 +46,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DisassembleAsync_UsesPerFileFallback_WhenPrimaryToolFailsForSpecificFile()
         {
-            if (OperatingSystem.IsWindows())
-            {
-                return;
-            }
+            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
 
             var binDir = Path.Combine(_rootDir, "bin");
             Directory.CreateDirectory(binDir);
@@ -151,13 +148,10 @@ exit 0
             Assert.Contains("dotnet dotnet-ildasm /tmp/sample.dll", labelList);
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DisassemblePairWithSameDisassemblerAsync_UsesSingleFallbackToolForBothSides()
         {
-            if (OperatingSystem.IsWindows())
-            {
-                return;
-            }
+            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
 
             _resultLists.DisassemblerToolVersions.Clear();
             _resultLists.DisassemblerToolVersionsFromCache.Clear();
@@ -221,13 +215,10 @@ exit 0
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DisassembleAsync_BlacklistsConsecutiveFailures_AndSkipsFailedTool()
         {
-            if (OperatingSystem.IsWindows())
-            {
-                return;
-            }
+            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
 
             var binDir = Path.Combine(_rootDir, "bin2");
             Directory.CreateDirectory(binDir);
@@ -306,13 +297,10 @@ exit 0
         /// _disassembleFailCountAndTime に "失敗回数 >= 閾値 かつ 最終失敗時刻が 11 分前" のエントリを直接挿入し、
         /// TTL 失効でエントリが消去されてから逆アセンブルが成功することを検証します。
         /// </summary>
-        [Fact]
+        [SkippableFact]
         public async Task DisassembleAsync_AfterBlacklistTtlExpiry_RetriesToolAndSucceeds()
         {
-            if (OperatingSystem.IsWindows())
-            {
-                return;
-            }
+            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
 
             var binDir = Path.Combine(_rootDir, "bin-ttl");
             Directory.CreateDirectory(binDir);
@@ -370,13 +358,10 @@ exit 1
             }
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DisassembleAsync_WhenVersionLookupFails_UsesFingerprintAndAvoidsCrossVersionCacheMix()
         {
-            if (OperatingSystem.IsWindows())
-            {
-                return;
-            }
+            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
 
             var binDir = Path.Combine(_rootDir, "bin3");
             Directory.CreateDirectory(binDir);
@@ -444,10 +429,10 @@ exit 1
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.PrefetchIlCacheAsync(new[] { "dummy.dll" }, maxParallel: 0));
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task PrefetchIlCacheAsync_WhenSeededCacheExists_IncrementsHitCounter()
         {
-            if (OperatingSystem.IsWindows()) { return; }
+            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
 
             var binDir = Path.Combine(_rootDir, "prefetch-hit-bin");
             Directory.CreateDirectory(binDir);

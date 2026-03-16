@@ -62,18 +62,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
         /// <summary>
         /// dotnet-ildasm で非決定的に再ビルドした同一アセンブリを比較し、IL 一致として扱えることを確認します。
         /// </summary>
-        [Fact]
+        [SkippableFact]
         public async Task FilesAreEqualAsync_WhenDotNetIldasmComparesNonDeterministicRebuilds_ReturnsIlMatch()
         {
+            Skip.If(!CanRunDotNetIldasm(), "dotnet-ildasm is not available in this environment.");
             var previousRollForward = Environment.GetEnvironmentVariable("DOTNET_ROLL_FORWARD");
             Environment.SetEnvironmentVariable("DOTNET_ROLL_FORWARD", "Major");
             try
             {
-                if (!CanRunDotNetIldasm())
-                {
-                    return;
-                }
-
                 var oldDir = Path.Combine(_rootDir, "old");
                 var newDir = Path.Combine(_rootDir, "new");
                 Directory.CreateDirectory(oldDir);

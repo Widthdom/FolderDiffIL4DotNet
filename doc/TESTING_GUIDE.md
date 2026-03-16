@@ -11,9 +11,10 @@ Related documents:
 ## Test Stack
 
 - Test project: [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj)
-- Framework: [`xUnit` `2.9.3`](https://www.nuget.org/packages/xunit/2.9.3) (`[Fact]` / `[Theory]`)
+- Framework: [`xUnit` `2.9.3`](https://www.nuget.org/packages/xunit/2.9.3) (`[Fact]` / `[Theory]` / `[SkippableFact]`)
 - Runner: [`Microsoft.NET.Test.Sdk` `17.12.0`](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/17.12.0)
 - Coverage collector: [`coverlet.collector` `6.0.4`](https://www.nuget.org/packages/coverlet.collector/6.0.4) (`XPlat Code Coverage`)
+- Dynamic skip support: [`Xunit.SkippableFact` `1.5.23`](https://www.nuget.org/packages/Xunit.SkippableFact/1.5.23) (`[SkippableFact]` + `Skip.If`)
 - Target framework: [`.NET 8` / `net8.0`](https://learn.microsoft.com/en-us/dotnet/standard/frameworks)
 
 <a id="testing-en-scope-map"></a>
@@ -139,7 +140,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) temporarily writes `config.json` under [`AppContext.BaseDirectory`](https://learn.microsoft.com/en-us/dotNet/API/system.appcontext.basedirectory?view=net-8.0) and restores original content.
 - [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) temporarily rewires `PATH`/`HOME` and uses scripted fake tools to test fallback/blacklist logic deterministically; any test that pre-seeds a specific disassembler version into the version cache must also prepend a matching fake tool to `PATH` so that `GetVersionWithFallbacksAsync` finds the fake before the real tool installed on the CI runner, which would otherwise overwrite the seeded entry.
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) builds throwaway class libraries under temp directories and pins the E2E assertion to `dotnet-ildasm`; CI ensures that prerequisite and sets `DOTNET_ROLL_FORWARD=Major` for the test step.
-- Some disassembler tests are skipped on Windows (`OperatingSystem.IsWindows()` guard).
+- Some disassembler tests are skipped on Windows using `[SkippableFact]` + `Skip.If(OperatingSystem.IsWindows(), ...)`, which reports them as **Skipped** in the test runner rather than silently passing. The [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) test is similarly skipped with `Skip.If(!CanRunDotNetIldasm(), ...)` when the tool is unavailable.
 - Unit tests do not require globally installed real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) for most scenarios because test doubles are used.
 - Avoid adding static mutable test hooks. Prefer constructor injection plus [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) for per-run values.
 
@@ -171,9 +172,10 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 ## テストスタック
 
 - テストプロジェクト: [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj)
-- フレームワーク: [`xUnit` `2.9.3`](https://www.nuget.org/packages/xunit/2.9.3)（`[Fact]` / `[Theory]`）
+- フレームワーク: [`xUnit` `2.9.3`](https://www.nuget.org/packages/xunit/2.9.3)（`[Fact]` / `[Theory]` / `[SkippableFact]`）
 - ランナー: [`Microsoft.NET.Test.Sdk` `17.12.0`](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/17.12.0)
 - カバレッジ収集: [`coverlet.collector` `6.0.4`](https://www.nuget.org/packages/coverlet.collector/6.0.4)（`XPlat Code Coverage`）
+- 動的スキップ: [`Xunit.SkippableFact` `1.5.23`](https://www.nuget.org/packages/Xunit.SkippableFact/1.5.23)（`[SkippableFact]` + `Skip.If`）
 - 対象フレームワーク: [`.NET 8` / `net8.0`](https://learn.microsoft.com/ja-jp/dotnet/standard/frameworks)
 
 <a id="testing-ja-scope-map"></a>
@@ -299,7 +301,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) は [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) 配下の `config.json` を一時書き換えし、必ず復元します。
 - [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) は `PATH`/`HOME` を一時変更し、擬似ツールスクリプトでフォールバック/ブラックリスト挙動を決定的に検証します。バージョンキャッシュに特定バージョンを事前投入するテストは、`GetVersionWithFallbacksAsync` が実ツールより先に擬似ツールを解決できるよう、同じバージョンを返す偽スクリプトも `PATH` に追加する必要があります（CI ランナーに実ツールがインストールされているため、追加しないとキャッシュ投入値が上書きされます）。
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) は temp ディレクトリ上に一時クラスライブラリをビルドし、`dotnet-ildasm` 固定で E2E 検証します。CI では `dotnet-ildasm` のインストールと `DOTNET_ROLL_FORWARD=Major` でこの前提を満たします。
-- 逆アセンブラ関連の一部テストは Windows ではスキップされます（`OperatingSystem.IsWindows()` ガード）。
+- 逆アセンブラ関連の一部テストは Windows では `[SkippableFact]` + `Skip.If(OperatingSystem.IsWindows(), ...)` によりスキップされます。これにより、テストが「成功」扱いで素通りするのではなく、テストランナー上で**Skipped（スキップ）**として明示的に報告されます。[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) も同様に、ツールが存在しない場合は `Skip.If(!CanRunDotNetIldasm(), ...)` でスキップします。
 - 多くの単体テストは実ツールのグローバルインストールを不要とします（テストダブル利用）。
 - 静的な可変テストフックは追加せず、実行単位の値はコンストラクタ注入と [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) で渡してください。
 
