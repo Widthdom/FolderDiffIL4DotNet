@@ -8,9 +8,9 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
            font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
-    h1 { font-size: 1.3rem; padding: 1rem 0 0.4rem; }
+    h1 { font-size: 2.0rem; padding: 1rem 0 0.4rem; }
     h2 { font-size: 1rem; margin: 1.4rem 0 0.35rem; }
-    h3 { font-size: 0.95rem; margin: 1.2rem 0 0.3rem; }
+    h2.section-heading { font-size: 1.55rem; margin: 1.6rem 0 0.4rem; }
     code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
            font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
     ul.meta { margin: 0.4rem 0 0.8rem 1.4rem; }
@@ -22,10 +22,16 @@
       position: sticky; top: 0;
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
-      background: rgba(255,255,255,0.72);
+      background: rgba(255,255,255,0.45);
       border-bottom: 1px solid rgba(0,0,0,0.1);
       padding: 0.65rem 2rem; margin: 0 -2rem;
       display: flex; gap: 0.8rem; align-items: center; z-index: 100;
+    }
+    .reviewed-banner {
+      position: sticky; top: 0;
+      background: #e8f5e9; border-bottom: 1px solid #a5d6a7;
+      padding: 0.5rem 2rem; margin: 0 -2rem;
+      font-size: 13px; color: #2d7a2d; font-weight: 500; z-index: 100;
     }
     /* ── Apple-style buttons ─────────────────────────────────────────────── */
     .btn {
@@ -43,17 +49,29 @@
     .btn-clear:hover { background: #f5f5f7; }
     .save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
+    /* ── Column width CSS variables ──────────────────────────────────────── */
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; }
+    col.col-reason-g { width: var(--col-reason-w); }
+    col.col-notes-g  { width: var(--col-notes-w); }
+    col.col-path-g   { width: var(--col-path-w); }
+    col.col-ts-g     { width: 22em; }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
          border: 1px solid #bbb; color: #000; }
+    th.th-resizable { position: relative; }
+    .col-resize-handle {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
+      cursor: col-resize; background: transparent;
+    }
+    .col-resize-handle:hover, .col-resize-handle:active { background: rgba(0,0,0,0.18); }
     td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; font-size: 12px; }
     td.col-no   { width: 2.5em; text-align: right; color: #aaa;
                   font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
     td.col-cb   { width: 2.2em; text-align: center; }
-    td.col-reason { min-width: 8em; resize: horizontal; overflow: auto; }
-    td.col-notes  { min-width: 8em; resize: horizontal; overflow: auto; }
-    td.col-path { white-space: nowrap; min-width: 15em; resize: horizontal; overflow: auto; }
+    td.col-reason { overflow: hidden; }
+    td.col-notes  { overflow: hidden; }
+    td.col-path { white-space: nowrap; overflow: hidden; }
     td.col-ts   { white-space: nowrap; width: 22em; }
     td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                   font-size: 12px; white-space: nowrap; min-width: 12em; }
@@ -64,15 +82,18 @@
       background: #fffff8; outline: 1px solid #aaa; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
-    table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; }
+    table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
     table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
     table.stat-table td.stat-label { color: #444; white-space: nowrap; }
-    table.stat-table td.stat-value { text-align: right;
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
+    table.stat-table td.stat-value { text-align: right; }
     ul.warnings { margin: 0.3rem 0 0 1rem; }
     ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
+    .warn-icon { color: #f5a623; font-size: 1.1em; }
     /* ── Inline diff ─────────────────────────────────────────────────────── */
+    tr.diff-row { background: #eef5ff; }
     tr.diff-row > td { padding: 0; border-top: none; }
+    .diff-added-cnt { color: #22863a; font-weight: 600; }
+    .diff-removed-cnt { color: #b31d28; font-weight: 600; }
     summary.diff-summary {
       display: inline-flex; align-items: center; gap: 0.4em;
       cursor: pointer; font-size: 12px; color: #0051c3;
@@ -111,7 +132,7 @@
 </div>
 <!--/CTRL-->
 <main>
-<h1>diff_report</h1>
+<h1>Folder Diff Report</h1>
 <ul class="meta">
   <li>App Version: FolderDiffIL4DotNet 1.0.0</li>
   <li>Computer: dev-machine</li>
@@ -123,7 +144,7 @@
   <li>Elapsed Time: 0h 0m 1.2s</li>
   <li>Timestamps (timezone): +09:00</li>
   <li>Note: When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>
-  <li>Note: When diffing IL, lines containing any of the configured strings are ignored: <code>&quot;buildserver1_&quot;</code>, <code>&quot;buildserver2_&quot;</code>.</li>
+  <li>Note: When diffing IL, lines containing any of the configured strings are ignored: &quot;buildserver1_&quot;, &quot;buildserver2_&quot;.</li>
   <li>Legend:
     <ul>
       <li><code>MD5Match</code> / <code>MD5Mismatch</code>: MD5 hash match / mismatch</li>
@@ -134,12 +155,21 @@
 </ul>
 <h2>[ x ] Ignored Files (3)</h2>
 <table>
+<colgroup>
+  <col class="col-no-g">
+  <col class="col-cb-g">
+  <col class="col-reason-g">
+  <col class="col-notes-g">
+  <col class="col-path-g">
+  <col class="col-ts-g">
+  <col class="col-diff-g">
+</colgroup>
 <thead><tr style="background:#fafafa">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th>OK Reason</th>
-  <th>Notes</th>
-  <th>File Path</th>
+  <th class="th-resizable" data-col-var="--col-reason-w">OK Reason</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Location</th>
 </tr></thead>
@@ -174,12 +204,21 @@
 </tbody></table>
 <h2>[ = ] Unchanged Files (5)</h2>
 <table>
+<colgroup>
+  <col class="col-no-g">
+  <col class="col-cb-g">
+  <col class="col-reason-g">
+  <col class="col-notes-g">
+  <col class="col-path-g">
+  <col class="col-ts-g">
+  <col class="col-diff-g">
+</colgroup>
 <thead><tr style="background:#fafafa">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th>OK Reason</th>
-  <th>Notes</th>
-  <th>File Path</th>
+  <th class="th-resizable" data-col-var="--col-reason-w">OK Reason</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
 </tr></thead>
@@ -232,12 +271,21 @@
 </tbody></table>
 <h2 style="color:#2d7a2d">[ + ] Added Files (1)</h2>
 <table>
+<colgroup>
+  <col class="col-no-g">
+  <col class="col-cb-g">
+  <col class="col-reason-g">
+  <col class="col-notes-g">
+  <col class="col-path-g">
+  <col class="col-ts-g">
+  <col class="col-diff-g">
+</colgroup>
 <thead><tr style="background:#e8f5e9">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th>OK Reason</th>
-  <th>Notes</th>
-  <th>File Path</th>
+  <th class="th-resizable" data-col-var="--col-reason-w">OK Reason</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
 </tr></thead>
@@ -254,12 +302,21 @@
 </tbody></table>
 <h2 style="color:#b00020">[ - ] Removed Files (1)</h2>
 <table>
+<colgroup>
+  <col class="col-no-g">
+  <col class="col-cb-g">
+  <col class="col-reason-g">
+  <col class="col-notes-g">
+  <col class="col-path-g">
+  <col class="col-ts-g">
+  <col class="col-diff-g">
+</colgroup>
 <thead><tr style="background:#ffebee">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th>OK Reason</th>
-  <th>Notes</th>
-  <th>File Path</th>
+  <th class="th-resizable" data-col-var="--col-reason-w">OK Reason</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
 </tr></thead>
@@ -276,12 +333,21 @@
 </tbody></table>
 <h2 style="color:#0051c3">[ * ] Modified Files (5)</h2>
 <table>
+<colgroup>
+  <col class="col-no-g">
+  <col class="col-cb-g">
+  <col class="col-reason-g">
+  <col class="col-notes-g">
+  <col class="col-path-g">
+  <col class="col-ts-g">
+  <col class="col-diff-g">
+</colgroup>
 <thead><tr style="background:#e3f2fd">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th>OK Reason</th>
-  <th>Notes</th>
-  <th>File Path</th>
+  <th class="th-resizable" data-col-var="--col-reason-w">OK Reason</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
 </tr></thead>
@@ -298,7 +364,7 @@
 <tr class="diff-row">
   <td colspan="7">
     <details id="diff_mod_0">
-      <summary class="diff-summary">Show diff (+2 / -1)</summary>
+      <summary class="diff-summary">Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-1</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -349,7 +415,7 @@
 <tr class="diff-row">
   <td colspan="7">
     <details id="diff_mod_2">
-      <summary class="diff-summary">Show diff (+3 / -2)</summary>
+      <summary class="diff-summary">Show IL diff (<span class="diff-added-cnt">+3</span> / <span class="diff-removed-cnt">-2</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -401,7 +467,7 @@
 <tr class="diff-row">
   <td colspan="7">
     <details id="diff_mod_3">
-      <summary class="diff-summary">Show diff (+2 / -2)</summary>
+      <summary class="diff-summary">Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -448,7 +514,7 @@
 <tr class="diff-row">
   <td colspan="7">
     <details id="diff_mod_4">
-      <summary class="diff-summary">Show diff (+1 / -1)</summary>
+      <summary class="diff-summary">Show diff (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -474,7 +540,7 @@
   </td>
 </tr>
 </tbody></table>
-<h2>Summary</h2>
+<h2 class="section-heading">Summary</h2>
 <table class="stat-table">
   <tbody>
     <tr><td class="stat-label">Ignored</td><td class="stat-value">3</td></tr>
@@ -485,7 +551,7 @@
     <tr><td class="stat-label">Compared</td><td class="stat-value">14 (Old) vs 14 (New)</td></tr>
   </tbody>
 </table>
-<h2>IL Cache Stats</h2>
+<h2 class="section-heading">IL Cache Stats</h2>
 <table class="stat-table">
   <tbody>
     <tr><td class="stat-label">Hits</td><td class="stat-value">42</td></tr>
@@ -496,19 +562,28 @@
     <tr><td class="stat-label">Expired</td><td class="stat-value">0</td></tr>
   </tbody>
 </table>
-<h2>Warnings</h2>
+<h2 class="section-heading">Warnings</h2>
 <ul class="warnings">
-  <li><strong>WARNING:</strong> One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible.</li>
-  <li><strong>WARNING:</strong> One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>
+  <li><span class="warn-icon">&#x26A0;</span> One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible.</li>
+  <li><span class="warn-icon">&#x26A0;</span> One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>
 </ul>
-<h3 style="color:#0051c3">[ ! ] Modified Files &#x2014; Timestamps Regressed (1)</h3>
+<h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; Timestamps Regressed (1)</h2>
 <table>
+<colgroup>
+  <col class="col-no-g">
+  <col class="col-cb-g">
+  <col class="col-reason-g">
+  <col class="col-notes-g">
+  <col class="col-path-g">
+  <col class="col-ts-g">
+  <col class="col-diff-g">
+</colgroup>
 <thead><tr style="background:#e3f2fd">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th>OK Reason</th>
-  <th>Notes</th>
-  <th>File Path</th>
+  <th class="th-resizable" data-col-var="--col-reason-w">OK Reason</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
 </tr></thead>
@@ -555,6 +630,7 @@
         el.addEventListener('input',  autoSave);
       });
     }
+    initColResize();
   });
 
   function collectState() {
@@ -581,8 +657,9 @@
     // Update title
     html = html.replace('<title>diff_report</title>',
       '<title>' + slug + '_reviewed</title>');
-    // Strip controls bar
-    html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g, '');
+    // Replace controls bar with reviewed banner
+    html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
+      '<div class="reviewed-banner">&#x1F512; Reviewed &#x2014; read-only</div>');
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a    = document.createElement('a');
     a.href   = URL.createObjectURL(blob);
@@ -600,6 +677,33 @@
     localStorage.removeItem(__storageKey__);
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
+  }
+
+  function initColResize() {
+    document.querySelectorAll('th.th-resizable').forEach(function(th) {
+      var handle = document.createElement('div');
+      handle.className = 'col-resize-handle';
+      th.appendChild(handle);
+      var varName = th.dataset.colVar;
+      handle.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        var startX = e.clientX;
+        var root   = document.documentElement;
+        var emPx   = parseFloat(getComputedStyle(root).fontSize) || 16;
+        var cur    = root.style.getPropertyValue(varName) || getComputedStyle(root).getPropertyValue(varName);
+        var startPx = (parseFloat(cur) || 10) * emPx;
+        function onMove(ev) {
+          var newPx = Math.max(48, startPx + (ev.clientX - startX));
+          root.style.setProperty(varName, (newPx / emPx).toFixed(2) + 'em');
+        }
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    });
   }
 </script>
 </body>

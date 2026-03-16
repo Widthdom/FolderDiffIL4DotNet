@@ -233,7 +233,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("<h2>Warnings</h2>", html);
+            Assert.Contains("section-heading\">Warnings</h2>", html);
             Assert.Contains("MD5Mismatch", html);
         }
 
