@@ -138,11 +138,8 @@ Example `diff_report.md` (trimmed):
 - [ x ] bin/App.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
 
 ## [ = ] Unchanged Files
-<!-- Timestamps are supplementary only — comparison results are determined solely by file content. -->
-<!-- Single timestamp: old and new are identical (same content and same last-modified time). -->
 - [ = ] vendor/lib.dll [2026-03-15 09:00:00] `MD5Match`
 - [ = ] appsettings.json [2026-03-15 09:00:00] `TextMatch`
-<!-- Two timestamps (old → new): content is the same but last-modified times differ. -->
 - [ = ] data/schema.bin [2026-03-15 08:30:00 → 2026-03-15 09:00:00] `MD5Match`
 - [ = ] docs/notes.md [2026-03-15 08:00:00 → 2026-03-15 09:00:00] `TextMatch`
 - [ = ] util/Helper.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMatch` `dotnet-ildasm (version: 0.12.2)`
@@ -568,11 +565,8 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 - [ x ] bin/App.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
 
 ## [ = ] Unchanged Files
-<!-- 更新日時は補助情報であり、比較判定（Unchanged / Modified 等）はファイル内容のみで決まります。 -->
-<!-- タイムスタンプ 1 個: old と new で内容も更新日時も同じ。 -->
 - [ = ] vendor/lib.dll [2026-03-15 09:00:00] `MD5Match`
 - [ = ] appsettings.json [2026-03-15 09:00:00] `TextMatch`
-<!-- タイムスタンプ 2 個（old → new）: 内容は同じだが更新日時が異なる。 -->
 - [ = ] data/schema.bin [2026-03-15 08:30:00 → 2026-03-15 09:00:00] `MD5Match`
 - [ = ] docs/notes.md [2026-03-15 08:00:00 → 2026-03-15 09:00:00] `TextMatch`
 - [ = ] util/Helper.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMatch` `dotnet-ildasm (version: 0.12.2)`
