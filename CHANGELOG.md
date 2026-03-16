@@ -12,10 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Added
 
 - Added `DiffSummaryStatistics` record and `SummaryStatistics` computed property to [`FileDiffResultLists`](Models/FileDiffResultLists.cs). The property returns a single `DiffSummaryStatistics(AddedCount, RemovedCount, ModifiedCount, UnchangedCount, IgnoredCount)` snapshot instead of requiring callers to access five separate concurrent collections. Updated [`ReportGenerateService.WriteSummarySection()`](Services/ReportGenerateService.cs) to use `SummaryStatistics` instead of direct `.Count` accesses on each queue/dictionary. Added 4 unit tests to [`FileDiffResultListsTests`](FolderDiffIL4DotNet.Tests/Models/FileDiffResultListsTests.cs).
+- Added `SpinnerFrames` to [`ConfigSettings`](Models/ConfigSettings.cs) — a `List<string>` where each element is one spinner animation frame, letting users replace the default four-frame `| / - \` rotation with any sequence including multi-character strings (e.g. block characters, emoji). [`ConsoleSpinner`](FolderDiffIL4DotNet.Core/Console/ConsoleSpinner.cs) changed its internal frame array from `char[]` to `string[]` to support multi-character frames; [`ProgressReportService`](Services/ProgressReportService.cs) and [`ReportGenerateService`](Services/ReportGenerateService.cs) now accept a `ConfigSettings` constructor parameter so they can read the configured frames at startup. Validation enforces at least one frame. Updated bilingual [README.md](README.md), [developer guide](doc/DEVELOPER_GUIDE.md), and [testing guide](doc/TESTING_GUIDE.md).
 
 #### Changed
 
 - Consolidated the duplicate `"// MVID:"` literal into a single [`Constants.IL_MVID_LINE_PREFIX`](Common/Constants.cs) constant and removed the now-redundant `private const string MVID_PREFIX` definitions from both [`ReportGenerateService`](Services/ReportGenerateService.cs) and [`ILOutputService`](Services/ILOutputService.cs). No behaviour change; the string value is identical in both call sites.
+- Improved timestamp display in `diff_report.md`: the format changed from `yyyy-MM-dd HH:mm:ss.fff zzz` (per-entry milliseconds and timezone offset) to `yyyy-MM-dd HH:mm:ss` (seconds only), the timezone offset is now written once in the report header as `Timestamps (timezone): +09:00` when `ShouldOutputFileTimestamps` is `true`, and each entry uses a bracket-and-arrow style — `[old → new]` for two timestamps and `[timestamp]` for a single timestamp — replacing the previous `<u>(updated_old: ..., updated_new: ...)</u>` markup. The `Warnings` section follows the same bracket-and-arrow format. Updated bilingual [README.md](README.md) and related tests.
 
 #### Added
 
@@ -262,10 +264,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 追加
 
 - [`FileDiffResultLists`](Models/FileDiffResultLists.cs) に `DiffSummaryStatistics` レコードと `SummaryStatistics` 計算プロパティを追加しました。このプロパティは `DiffSummaryStatistics(AddedCount, RemovedCount, ModifiedCount, UnchangedCount, IgnoredCount)` として 5 つのカウントをまとめて返し、呼び出し側が 5 つの並行コレクションを個別に参照する必要をなくします。あわせて [`ReportGenerateService.WriteSummarySection()`](Services/ReportGenerateService.cs) を `SummaryStatistics` プロパティを使うように更新し、キュー/辞書への個別 `.Count` 呼び出しを削減しました。[`FileDiffResultListsTests`](FolderDiffIL4DotNet.Tests/Models/FileDiffResultListsTests.cs) にユニットテスト 4 件を追加しました。
+- [`ConfigSettings`](Models/ConfigSettings.cs) に `SpinnerFrames`（`List<string>`）を追加しました。各要素がスピナーの 1 フレームとなり、デフォルトの `| / - \` 4 フレームローテーションをブロック文字や絵文字など複数文字を含む任意の文字列シーケンスに置き換えられます。[`ConsoleSpinner`](FolderDiffIL4DotNet.Core/Console/ConsoleSpinner.cs) の内部フレーム配列を `char[]` から `string[]` に変更して複数文字フレームに対応しました。[`ProgressReportService`](Services/ProgressReportService.cs) と [`ReportGenerateService`](Services/ReportGenerateService.cs) のコンストラクタに `ConfigSettings` パラメータを追加し、起動時に設定済みフレームを読み込めるようにしました。バリデーションは 1 件以上のフレームを必須とします。日英 [README.md](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md)、[テストガイド](doc/TESTING_GUIDE.md) を更新しました。
 
 #### 変更
 
 - `"// MVID:"` リテラルの重複定義を解消し、[`Constants.IL_MVID_LINE_PREFIX`](Common/Constants.cs) に一元化しました。[`ReportGenerateService`](Services/ReportGenerateService.cs) と [`ILOutputService`](Services/ILOutputService.cs) の両ファイルに存在していた `private const string MVID_PREFIX` を削除し、各参照箇所を `Constants.IL_MVID_LINE_PREFIX` に置き換えました。文字列値は同一のため動作変更はありません。
+- `diff_report.md` のタイムスタンプ表示を改善しました。フォーマットを `yyyy-MM-dd HH:mm:ss.fff zzz`（エントリごとにミリ秒＋タイムゾーンオフセット）から `yyyy-MM-dd HH:mm:ss`（秒精度）に変更し、タイムゾーンオフセットは `ShouldOutputFileTimestamps` が `true` の場合にレポートヘッダで `Timestamps (timezone): +09:00` として一括表示するようにしました。各エントリの表示は以前の `<u>(updated_old: ..., updated_new: ...)</u>` 形式からブラケット＋矢印形式（新旧両方: `[old → new]`、単一: `[timestamp]`）に統一しました。`Warnings` セクションも同様にブラケット＋矢印形式に統一しました。日英 [README.md](README.md) および関連テストを更新しました。
 
 #### 追加
 
