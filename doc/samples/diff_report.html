@@ -771,7 +771,7 @@
       '<title>' + slug + '_reviewed</title>');
     // Replace controls bar with reviewed banner
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
-      '<div class="reviewed-banner">&#x1F512; Reviewed &#x2014; read-only &nbsp;&bull;&nbsp; ' + formatTs(new Date()) + '</div>');
+      '<div class="reviewed-banner">&#x1F512; Reviewed on ' + formatTs(new Date()) + ' &#x2014; read-only</div>');
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a    = document.createElement('a');
     a.href   = URL.createObjectURL(blob);

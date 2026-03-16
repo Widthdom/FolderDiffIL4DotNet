@@ -753,7 +753,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      '<title>' + slug + '_reviewed</title>');");
             sb.AppendLine("    // Replace controls bar with reviewed banner");
             sb.AppendLine("    html = html.replace(/<!--CTRL-->[\\s\\S]*?<!--\\/CTRL-->/g,");
-            sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed &#x2014; read-only &nbsp;&bull;&nbsp; ' + formatTs(new Date()) + '</div>');");
+            sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed on ' + formatTs(new Date()) + ' &#x2014; read-only</div>');");
             sb.AppendLine("    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });");
             sb.AppendLine("    var a    = document.createElement('a');");
             sb.AppendLine("    a.href   = URL.createObjectURL(blob);");
