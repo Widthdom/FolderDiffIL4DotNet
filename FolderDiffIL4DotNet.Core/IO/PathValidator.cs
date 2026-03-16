@@ -7,6 +7,13 @@ namespace FolderDiffIL4DotNet.Core.IO
     /// <summary>
     /// パスおよびフォルダ名の妥当性検証を提供するクラス
     /// </summary>
+    /// <remarks>
+    /// <b>Security note:</b> <see cref="ValidateFolderNameOrThrow"/> is the primary defence against
+    /// path-traversal attacks when a user-supplied string (such as a report label) is used to
+    /// construct a file-system path.  The method rejects every character that could be used to
+    /// escape a known base directory: directory separators (<c>/</c>, <c>\</c>), the dot-only
+    /// names <c>.</c> and <c>..</c>, and control characters including the null byte.
+    /// </remarks>
     public static class PathValidator
     {
         /// <summary>
