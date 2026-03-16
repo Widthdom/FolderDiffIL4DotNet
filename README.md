@@ -221,7 +221,7 @@ Override only the settings you want to change. For example:
 }
 ```
 
-### Configuration Table EN
+### Configuration Table
 
 <table>
   <thead>
@@ -639,7 +639,7 @@ flowchart TD
 }
 ```
 
-### Configuration Table JA
+### 設定項目一覧
 
 <table>
   <thead>
