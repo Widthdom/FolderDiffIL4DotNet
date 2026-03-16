@@ -49,6 +49,14 @@ namespace FolderDiffIL4DotNet.Services
         /// diff_report.html を生成して <paramref name="reportsFolderAbsolutePath"/> へ書き込みます。
         /// <see cref="ConfigSettings.ShouldGenerateHtmlReport"/> が <see langword="false"/> の場合は何もしません。
         /// </summary>
+        /// <param name="oldFolderAbsolutePath">比較元フォルダの絶対パス。レポートヘッダに表示されます。</param>
+        /// <param name="newFolderAbsolutePath">比較先フォルダの絶対パス。レポートヘッダに表示されます。</param>
+        /// <param name="reportsFolderAbsolutePath">レポート出力先フォルダの絶対パス。diff_report.html はここに書き込まれます。</param>
+        /// <param name="appVersion">アプリケーションバージョン文字列。レポートフッタに表示されます。</param>
+        /// <param name="elapsedTimeString">実行時間の整形済み文字列。レポートフッタに表示されます。</param>
+        /// <param name="computerName">実行マシン名。レポートヘッダに表示されます。</param>
+        /// <param name="config">実行時設定。<see cref="ConfigSettings.ShouldGenerateHtmlReport"/> などを参照します。</param>
+        /// <param name="ilCache">インライン差分生成に使用する IL キャッシュ。<see langword="null"/> の場合は IL インライン差分を省略します。</param>
         public void GenerateDiffReportHtml(
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
