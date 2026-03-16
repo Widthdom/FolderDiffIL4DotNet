@@ -70,7 +70,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "AutoDetectNetworkShares": false,
                   "SkipIL": true,
                   "ShouldIncludeILCacheStatsInReport": true,
-                  "SpinnerFrames": [">", ">>", ">>>"]
+                  "SpinnerFrames": [">", ">>", ">>>"],
+                  "DisassemblerBlacklistTtlMinutes": 25
                 }
                 """;
 
@@ -102,6 +103,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.True(config.SkipIL);
             Assert.True(config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { ">", ">>", ">>>" }, config.SpinnerFrames);
+            Assert.Equal(25, config.DisassemblerBlacklistTtlMinutes);
         }
 
         [Fact]
@@ -252,6 +254,76 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(3, result.Errors.Count);
         }
 
+        // B-1: DisassemblerBlacklistTtlMinutes cross-validation
+
+        [Fact]
+        public void Constructor_DisassemblerBlacklistTtlMinutes_DefaultIsTen()
+        {
+            var config = new ConfigSettings();
+            Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
+        }
+
+        [Fact]
+        public void JsonDeserialize_DisassemblerBlacklistTtlMinutes_IsApplied()
+        {
+            const string json = """{ "DisassemblerBlacklistTtlMinutes": 30 }""";
+            var config = System.Text.Json.JsonSerializer.Deserialize<ConfigSettings>(json);
+            Assert.NotNull(config);
+            Assert.Equal(30, config.DisassemblerBlacklistTtlMinutes);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(60)]
+        public void Validate_DisassemblerBlacklistTtlMinutes_PositiveValues_IsValid(int minutes)
+        {
+            var config = new ConfigSettings { DisassemblerBlacklistTtlMinutes = minutes };
+            var result = config.Validate();
+            Assert.True(result.IsValid);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void Validate_DisassemblerBlacklistTtlMinutes_NonPositive_UsesDefault_IsValid(int minutes)
+        {
+            // 0 以下は既定値（10 分）として扱われるため Validate エラーにならない
+            var config = new ConfigSettings { DisassemblerBlacklistTtlMinutes = minutes };
+            var result = config.Validate();
+            Assert.True(result.IsValid);
+        }
+
+        // B-1: TextDiffChunkSizeKilobytes boundary at exactly threshold - 1 (valid edge)
+        [Fact]
+        public void Validate_ChunkSizeExactlyOneBeforeThreshold_IsValid()
+        {
+            var config = new ConfigSettings
+            {
+                TextDiffChunkSizeKilobytes = 511,
+                TextDiffParallelThresholdKilobytes = 512,
+            };
+            var result = config.Validate();
+            Assert.True(result.IsValid);
+            Assert.Empty(result.Errors);
+        }
+
+        // B-1: TextDiffChunkSizeKilobytes equal to threshold is invalid
+        [Fact]
+        public void Validate_ChunkSizeEqualToThreshold_ReturnsError()
+        {
+            var config = new ConfigSettings
+            {
+                TextDiffChunkSizeKilobytes = 512,
+                TextDiffParallelThresholdKilobytes = 512,
+            };
+            var result = config.Validate();
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e =>
+                e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal) &&
+                e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
+        }
+
         private static void AssertMatchesDefaults(ConfigSettings config)
         {
             Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
@@ -280,6 +352,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(config.SkipIL);
             Assert.False(config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
+            Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
         }
     }
 }

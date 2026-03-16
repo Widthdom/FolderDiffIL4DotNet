@@ -487,6 +487,109 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(ilCacheIdx < warningsIdx);
         }
 
+        // B-2: Unicode filename report output
+
+        [Fact]
+        public void GenerateDiffReport_UnicodeFileNames_AreIncludedInReport()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-unicode");
+            var newDir = Path.Combine(_rootDir, "new-unicode");
+            var reportDir = Path.Combine(_rootDir, "report-unicode");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // Simulate modified files with Unicode relative paths
+            var unicodePaths = new[]
+            {
+                Path.Combine("サブディレクトリ", "ファイル名.dll"),
+                Path.Combine("Ünïcödé", "tëst.txt"),
+                Path.Combine("中文目录", "测试文件.config"),
+            };
+
+            foreach (var relPath in unicodePaths)
+            {
+                _resultLists.AddModifiedFileRelativePath(relPath);
+                _resultLists.RecordDiffDetail(relPath, FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            }
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            foreach (var relPath in unicodePaths)
+            {
+                Assert.Contains(relPath, reportText, StringComparison.Ordinal);
+            }
+        }
+
+        [Fact]
+        public void GenerateDiffReport_UnicodeFileNames_InUnchangedSection()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-unicode-unch");
+            var newDir = Path.Combine(_rootDir, "new-unicode-unch");
+            var reportDir = Path.Combine(_rootDir, "report-unicode-unch");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var unicodePath = Path.Combine("日本語", "変更なし.dll");
+            _resultLists.AddUnchangedFileRelativePath(unicodePath);
+            _resultLists.RecordDiffDetail(unicodePath, FileDiffResultLists.DiffDetailResult.MD5Match);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains(unicodePath, reportText, StringComparison.Ordinal);
+        }
+
+        // B-3: Large file count DiffSummaryStatistics snapshot
+
+        [Fact]
+        public void GenerateDiffReport_LargeFileCount_SummaryStatisticsAreCorrect()
+        {
+            const int fileCount = 10500;
+            var oldDir = Path.Combine(_rootDir, "old-large");
+            var newDir = Path.Combine(_rootDir, "new-large");
+            var reportDir = Path.Combine(_rootDir, "report-large");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var oldFiles = new List<string>();
+            var newFiles = new List<string>();
+            for (int i = 0; i < fileCount; i++)
+            {
+                var relPath = $"file{i:D5}.bin";
+                oldFiles.Add(Path.Combine(oldDir, relPath));
+                newFiles.Add(Path.Combine(newDir, relPath));
+                _resultLists.AddUnchangedFileRelativePath(relPath);
+                _resultLists.RecordDiffDetail(relPath, FileDiffResultLists.DiffDetailResult.MD5Match);
+            }
+            _resultLists.SetOldFilesAbsolutePath(oldFiles);
+            _resultLists.SetNewFilesAbsolutePath(newFiles);
+
+            var config = CreateConfig();
+            config.ShouldIncludeUnchangedFiles = false; // skip writing 10k lines to report
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Summary counts must match (label is left-padded to 10 chars: "Unchanged " = 9+1, "Compared  " = 8+2)
+            Assert.Contains($"- {"Unchanged",-10}: {fileCount}", reportText, StringComparison.Ordinal);
+            Assert.Contains($"- {"Compared",-10}: {fileCount} (Old) vs {fileCount} (New)", reportText, StringComparison.Ordinal);
+        }
+
         private static ConfigSettings CreateConfig() => new()
         {
             IgnoredExtensions = new List<string>(),

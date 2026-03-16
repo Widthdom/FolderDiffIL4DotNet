@@ -199,6 +199,13 @@ namespace FolderDiffIL4DotNet.Models
         public bool AutoDetectNetworkShares { get; set; } = true;
 
         /// <summary>
+        /// 逆アセンブラツールのブラックリスト有効期間（分）。既定値は 10 分。
+        /// 連続失敗が閾値を超えたツールをこの期間スキップし、期間経過後に自動復旧します。
+        /// 0 以下または未指定で既定値（10 分）を使用します。
+        /// </summary>
+        public int DisassemblerBlacklistTtlMinutes { get; set; } = 10;
+
+        /// <summary>
         /// .NET アセンブリの IL 比較をスキップするかどうか。
         /// true の場合、.NET アセンブリの IL 逆アセンブルおよび IL 差分比較を省略し、
         /// MD5 不一致のアセンブリはそのままバイナリ差分として扱います。

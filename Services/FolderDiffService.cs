@@ -48,6 +48,12 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// キープアライブの出力間隔（秒）。
+        /// <para>
+        /// CI 環境や SSH セッションは無出力が 10～30 秒続くとタイムアウトすることが多いため、
+        /// それより十分小さい 5 秒間隔とすることで安全マージンを確保しています。
+        /// Keep-alive output interval in seconds. Set to 5s so that CI environments
+        /// and SSH sessions with 10–30s no-output timeouts receive a heartbeat well within the limit.
+        /// </para>
         /// </summary>
         private const int KEEP_ALIVE_INTERVAL_SECONDS = 5;
 
@@ -58,6 +64,14 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// 大規模フォルダとして追加ログを出す和集合件数の閾値。
+        /// <para>
+        /// 数千ファイルまでは通常の進捗表示で十分ですが、1 万件を超えると
+        /// 発見フェーズ自体が数秒を要し始めるため、この閾値を超えた場合に追加の
+        /// 進捗ログを出力してユーザーへ処理中であることを知らせます。
+        /// Threshold at which discovery-phase file count is considered "large" and
+        /// warrants an extra log line. Above 10,000 entries the enumeration itself
+        /// can take several seconds, so we notify the user proactively.
+        /// </para>
         /// </summary>
         private const int LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD = 10000;
         /// <summary>

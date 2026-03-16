@@ -311,12 +311,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var config = CreateConfig(enableIlCache: false);
                 var service = CreateService(config, null);
 
-                // TTL 失効済みエントリ（失敗回数 = 閾値 = 3、最終失敗 = 11 分前）を直接挿入
-                var failField = typeof(DotNetDisassembleService).GetField("_disassembleFailCountAndTime", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
-                Assert.NotNull(failField);
-                var dict = failField.GetValue(null) as System.Collections.Concurrent.ConcurrentDictionary<string, (int FailCount, DateTime LastFailUtc)>;
-                Assert.NotNull(dict);
-                dict[FolderDiffIL4DotNet.Common.Constants.DOTNET_ILDASM] = (FailCount: 3, LastFailUtc: DateTime.UtcNow.AddMinutes(-11));
+                // TTL 失効済みエントリ（失敗回数 = 閾値 = 3、最終失敗 = 11 分前）を _blacklist 経由で直接挿入
+                var blacklistField = typeof(DotNetDisassembleService).GetField("_blacklist", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.NotNull(blacklistField);
+                var blacklist = blacklistField.GetValue(service) as DisassemblerBlacklist;
+                Assert.NotNull(blacklist);
+                blacklist.InjectEntry(Constants.DOTNET_ILDASM, failCount: 3, lastFailUtc: DateTime.UtcNow.AddMinutes(-11));
 
                 var dllPath = Path.Combine(_rootDir, "ttl-target.dll");
                 await File.WriteAllTextAsync(dllPath, "dummy");
@@ -325,8 +325,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var (_, command) = await service.DisassembleAsync(dllPath);
 
                 Assert.Contains("dotnet-ildasm", command, StringComparison.OrdinalIgnoreCase);
-                // エントリは IsDisassemblerBlacklisted 内で削除されているはず
-                Assert.False(dict.ContainsKey(FolderDiffIL4DotNet.Common.Constants.DOTNET_ILDASM));
+                // エントリは IsBlacklisted 内で削除されているはず
+                Assert.False(blacklist.ContainsEntry(Constants.DOTNET_ILDASM));
             }
             finally
             {
@@ -556,11 +556,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static void ResetDisassemblerFailureState()
         {
-            var field = typeof(DotNetDisassembleService).GetField("_disassembleFailCountAndTime", BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.NotNull(field);
-            var dictionary = field.GetValue(null) as ConcurrentDictionary<string, (int FailCount, DateTime LastFailUtc)>;
-            Assert.NotNull(dictionary);
-            dictionary.Clear();
+            // DisassemblerBlacklist is now per-instance, so there is no shared static state to clear.
+            // This method is kept as a no-op for symmetry with Dispose.
         }
 
         private void ResetDisassemblerVersionCacheState()

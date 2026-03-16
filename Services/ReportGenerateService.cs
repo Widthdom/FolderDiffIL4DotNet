@@ -325,6 +325,23 @@ namespace FolderDiffIL4DotNet.Services
                 ilCache);
         }
 
+        /// <summary>
+        /// レポートに書き込む全セクションのリスト（順序通りに出力されます）。
+        /// </summary>
+        private static readonly IReadOnlyList<IReportSectionWriter> _sectionWriters = new IReportSectionWriter[]
+        {
+            new HeaderSectionWriter(),
+            new LegendSectionWriter(),
+            new IgnoredFilesSectionWriter(),
+            new UnchangedFilesSectionWriter(),
+            new AddedFilesSectionWriter(),
+            new RemovedFilesSectionWriter(),
+            new ModifiedFilesSectionWriter(),
+            new SummarySectionWriter(),
+            new ILCacheStatsSectionWriter(),
+            new WarningsSectionWriter(),
+        };
+
         private void WriteReportSections(
             StreamWriter streamWriter,
             string oldFolderAbsolutePath,
@@ -337,22 +354,27 @@ namespace FolderDiffIL4DotNet.Services
             bool hasTimestampRegressionWarning,
             ILCache ilCache)
         {
-            WriteReportHeader(streamWriter, oldFolderAbsolutePath, newFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config);
-            WriteLegend(streamWriter);
-            WriteIgnoredFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
-            WriteUnchangedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
-            WriteAddedFilesSection(streamWriter, config);
-            WriteRemovedFilesSection(streamWriter, config);
-            WriteModifiedFilesSection(streamWriter, config, oldFolderAbsolutePath, newFolderAbsolutePath);
-            WriteSummarySection(streamWriter, config);
-            WriteILCacheStatsSection(streamWriter, config, ilCache);
-            WriteWarningsSection(streamWriter, hasMd5Mismatch, hasTimestampRegressionWarning);
+            var context = new ReportWriteContext
+            {
+                OldFolderAbsolutePath = oldFolderAbsolutePath,
+                NewFolderAbsolutePath = newFolderAbsolutePath,
+                AppVersion = appVersion,
+                ElapsedTimeString = elapsedTimeString,
+                ComputerName = computerName,
+                Config = config,
+                HasMd5Mismatch = hasMd5Mismatch,
+                HasTimestampRegressionWarning = hasTimestampRegressionWarning,
+                IlCache = ilCache,
+                FileDiffResultLists = _fileDiffResultLists,
+            };
+            foreach (var sectionWriter in _sectionWriters)
+            {
+                sectionWriter.Write(streamWriter, context);
+            }
         }
 
         private void LogReportOutputFailure(string diffReportAbsolutePath)
-        {
-            _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
-        }
+            => _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
 
         private void TrySetReportReadOnly(string diffReportAbsolutePath)
         {
@@ -383,312 +405,17 @@ namespace FolderDiffIL4DotNet.Services
             _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
         }
 
-        /// <summary>
-        /// レポートのヘッダ部（タイトル・実行情報・IL比較の注記）を書き込みます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
-        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
-        /// <param name="appVersion">アプリケーションバージョン。</param>
-        /// <param name="elapsedTimeString">経過時間文字列。</param>
-        /// <param name="computerName">実行コンピュータ名。</param>
-        /// <param name="config">設定オブジェクト。</param>
-        private void WriteReportHeader(
-            StreamWriter streamWriter,
-            string oldFolderAbsolutePath,
-            string newFolderAbsolutePath,
-            string appVersion,
-            string elapsedTimeString,
-            string computerName,
-            ConfigSettings config)
-        {
-            streamWriter.WriteLine(REPORT_TITLE);
-            streamWriter.WriteLine($"- App Version: FolderDiffIL4DotNet {appVersion}");
-            streamWriter.WriteLine($"- Computer: {computerName}");
-            streamWriter.WriteLine($"- Old: {oldFolderAbsolutePath}");
-            streamWriter.WriteLine($"- New: {newFolderAbsolutePath}");
-            streamWriter.WriteLine($"- Ignored Extensions: {string.Join(REPORT_LIST_SEPARATOR, config.IgnoredExtensions)}");
-            streamWriter.WriteLine($"- Text File Extensions: {string.Join(REPORT_LIST_SEPARATOR, config.TextFileExtensions)}");
-            var disassemblerText = BuildDisassemblerHeaderText();
-            streamWriter.WriteLine($"- IL Disassembler: {disassemblerText}");
-            if (!string.IsNullOrWhiteSpace(elapsedTimeString))
-            {
-                streamWriter.WriteLine($"- Elapsed Time: {elapsedTimeString}");
-            }
-            if (config.ShouldOutputFileTimestamps)
-            {
-                streamWriter.WriteLine($"- Timestamps (timezone): {DateTimeOffset.Now:zzz}");
-            }
-            streamWriter.WriteLine("- " + NOTE_MVID_SKIP);
-            if (!config.ShouldIgnoreILLinesContainingConfiguredStrings)
-            {
-                return;
-            }
+        // ── Private static helpers used by section writers ──────────────────────
 
-            var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(config);
-            streamWriter.WriteLine("- " + (ilIgnoreContainingStrings.Count == 0
-                ? NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY
-                : $"Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored: {string.Join(REPORT_LIST_SEPARATOR, ilIgnoreContainingStrings.Select(value => $"\"{value}\""))}."));
-        }
-
-        /// <summary>
-        /// 判定根拠ラベルの凡例（Legend）を書き込みます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        private static void WriteLegend(StreamWriter streamWriter)
-        {
-            streamWriter.WriteLine(REPORT_LEGEND_HEADER);
-            streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}`: MD5 hash match / mismatch");
-            streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}`: IL(Intermediate Language) match / mismatch");
-            streamWriter.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}`: Text match / mismatch");
-        }
-
-        /// <summary>
-        /// Ignored Files セクションを書き込みます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        /// <param name="config">設定オブジェクト。</param>
-        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
-        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
-        private void WriteIgnoredFilesSection(StreamWriter streamWriter, ConfigSettings config, string oldFolderAbsolutePath, string newFolderAbsolutePath)
-        {
-            // Ignored Files はアプリ設定（ShouldIncludeIgnoredFiles）が true の場合のみ出力。
-            // ShouldOutputFileTimestamps が true なら旧/新それぞれの存在箇所に応じた最終更新日時を併記し、
-            // 旧/新のどちらに存在したかもラベル（(old)/(new)/(old/new)）で明示します。
-            if (!config.ShouldIncludeIgnoredFiles || _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count == 0)
-            {
-                return;
-            }
-
-            streamWriter.WriteLine(REPORT_SECTION_IGNORED_FILES);
-            foreach (var entry in _fileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
-            {
-                var line = $"- [ x ] {entry.Key}";
-                var locationLabel = GetIgnoredFileLocationLabel(entry.Value);
-                if (!string.IsNullOrEmpty(locationLabel))
-                {
-                    line += " " + locationLabel;
-                }
-
-                if (config.ShouldOutputFileTimestamps)
-                {
-                    var timestampInfo = BuildIgnoredFileTimestampInfo(entry, oldFolderAbsolutePath, newFolderAbsolutePath);
-                    if (!string.IsNullOrEmpty(timestampInfo))
-                    {
-                        line += $" {timestampInfo}";
-                    }
-                }
-
-                streamWriter.WriteLine(line);
-            }
-        }
-
-        /// <summary>
-        /// Unchanged Files セクションを書き込みます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        /// <param name="config">設定オブジェクト。</param>
-        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
-        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
-        private void WriteUnchangedFilesSection(StreamWriter streamWriter, ConfigSettings config, string oldFolderAbsolutePath, string newFolderAbsolutePath)
-        {
-            // Unchanged Files はアプリ設定で出力可否を制御。
-            // ShouldOutputFileTimestamps が true の場合のみ、
-            // 判定根拠が ILMatch のときは新旧両方の最終更新日時を、
-            // それ以外は新の最終更新日時を併記します。
-            if (!config.ShouldIncludeUnchangedFiles)
-            {
-                return;
-            }
-
-            streamWriter.WriteLine(REPORT_SECTION_UNCHANGED_FILES);
-            foreach (var fileRelativePath in _fileDiffResultLists.UnchangedFilesRelativePath)
-            {
-                var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
-                var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
-                if (config.ShouldOutputFileTimestamps)
-                {
-                    string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
-                    string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
-                    string updateInfo = oldFileTimestamp != newFileTimestamp
-                        ? $"[{oldFileTimestamp}{REPORT_TIMESTAMP_ARROW}{newFileTimestamp}]"
-                        : $"[{newFileTimestamp}]";
-                    streamWriter.WriteLine($"- [ = ] {fileRelativePath} {updateInfo} {diffDetailDisplay}");
-                }
-                else
-                {
-                    streamWriter.WriteLine($"- [ = ] {fileRelativePath} {diffDetailDisplay}");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Added Files セクションを書き込みます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        /// <param name="config">設定オブジェクト。</param>
-        private void WriteAddedFilesSection(StreamWriter streamWriter, ConfigSettings config)
-        {
-            streamWriter.WriteLine(REPORT_SECTION_ADDED_FILES);
-            foreach (var newFileAbsolutePath in _fileDiffResultLists.AddedFilesAbsolutePath)
-            {
-                if (config.ShouldOutputFileTimestamps)
-                {
-                    streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath} [{Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)}]");
-                }
-                else
-                {
-                    streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath}");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Removed Files セクションを書き込みます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        /// <param name="config">設定オブジェクト。</param>
-        private void WriteRemovedFilesSection(StreamWriter streamWriter, ConfigSettings config)
-        {
-            streamWriter.WriteLine(REPORT_SECTION_REMOVED_FILES);
-            foreach (var oldFileAbsolutePath in _fileDiffResultLists.RemovedFilesAbsolutePath)
-            {
-                if (config.ShouldOutputFileTimestamps)
-                {
-                    streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath} [{Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)}]");
-                }
-                else
-                {
-                    streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath}");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Modified Files セクションを書き込みます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        /// <param name="config">設定オブジェクト。</param>
-        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
-        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
-        private void WriteModifiedFilesSection(StreamWriter streamWriter, ConfigSettings config, string oldFolderAbsolutePath, string newFolderAbsolutePath)
-        {
-            streamWriter.WriteLine(REPORT_SECTION_MODIFIED_FILES);
-            foreach (var fileRelativePath in _fileDiffResultLists.ModifiedFilesRelativePath)
-            {
-                var diffDetail = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
-                var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail);
-                if (config.ShouldOutputFileTimestamps)
-                {
-                    string oldTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
-                    string newTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
-                    streamWriter.WriteLine($"- [ * ] {fileRelativePath} [{oldTimestamp}{REPORT_TIMESTAMP_ARROW}{newTimestamp}] {diffDetailDisplay}");
-                }
-                else
-                {
-                    streamWriter.WriteLine($"- [ * ] {fileRelativePath} {diffDetailDisplay}");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Summary セクションを書き込みます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        /// <param name="config">設定オブジェクト。</param>
-        private void WriteSummarySection(StreamWriter streamWriter, ConfigSettings config)
-        {
-            streamWriter.WriteLine(REPORT_SECTION_SUMMARY);
-            var stats = _fileDiffResultLists.SummaryStatistics;
-            if (config.ShouldIncludeIgnoredFiles)
-            {
-                streamWriter.WriteLine($"- {REPORT_LABEL_IGNORED,-10}: {stats.IgnoredCount}");
-            }
-            streamWriter.WriteLine($"- {REPORT_LABEL_UNCHANGED,-10}: {stats.UnchangedCount}");
-            streamWriter.WriteLine($"- {REPORT_LABEL_ADDED,-10}: {stats.AddedCount}");
-            streamWriter.WriteLine($"- {REPORT_LABEL_REMOVED,-10}: {stats.RemovedCount}");
-            streamWriter.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {stats.ModifiedCount}");
-            streamWriter.WriteLine($"- {REPORT_LABEL_COMPARED,-10}: {_fileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
-            streamWriter.WriteLine();
-        }
-
-        /// <summary>
-        /// IL Cache Stats セクションを書き込みます。
-        /// <see cref="ConfigSettings.ShouldIncludeILCacheStatsInReport"/> が true かつ <paramref name="ilCache"/> が非 null の場合のみ出力されます。
-        /// </summary>
-        /// <param name="streamWriter">出力先ライター。</param>
-        /// <param name="config">設定オブジェクト。</param>
-        /// <param name="ilCache">IL キャッシュインスタンス（null の場合はスキップ）。</param>
-        private static void WriteILCacheStatsSection(StreamWriter streamWriter, ConfigSettings config, ILCache ilCache)
-        {
-            if (!config.ShouldIncludeILCacheStatsInReport || ilCache == null)
-            {
-                return;
-            }
-
-            var stats = ilCache.GetReportStats();
-            streamWriter.WriteLine(REPORT_SECTION_IL_CACHE_STATS);
-            streamWriter.WriteLine($"- Hits    : {stats.Hits}");
-            streamWriter.WriteLine($"- Misses  : {stats.Misses}");
-            streamWriter.WriteLine($"- Hit Rate: {stats.HitRatePct:F1}%");
-            streamWriter.WriteLine($"- Stores  : {stats.Stores}");
-            streamWriter.WriteLine($"- Evicted : {stats.Evicted}");
-            streamWriter.WriteLine($"- Expired : {stats.Expired}");
-            streamWriter.WriteLine();
-        }
-
-        /// <summary>
-        /// 追加の警告セクションを書き込みます。
-        /// </summary>
-        private void WriteWarningsSection(StreamWriter streamWriter, bool hasMd5Mismatch, bool hasTimestampRegressionWarning)
-        {
-            if (!hasMd5Mismatch && !hasTimestampRegressionWarning)
-            {
-                return;
-            }
-
-            streamWriter.WriteLine(REPORT_SECTION_WARNINGS);
-            if (hasMd5Mismatch)
-            {
-                streamWriter.WriteLine($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}");
-            }
-
-            if (!hasTimestampRegressionWarning)
-            {
-                return;
-            }
-
-            streamWriter.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
-            foreach (var warning in _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
-                .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
-            {
-                streamWriter.WriteLine($"  - {warning.FileRelativePath} [{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}]");
-            }
-        }
-
-        /// <summary>
-        /// Ignored ファイルの所在フラグから表示ラベルを返します。
-        /// </summary>
-        /// <param name="location">旧/新の所在フラグ。</param>
-        /// <returns>表示ラベル文字列。</returns>
         private static string GetIgnoredFileLocationLabel(FileDiffResultLists.IgnoredFileLocation location)
-        {
-            return location switch
+            => location switch
             {
                 FileDiffResultLists.IgnoredFileLocation.Old => REPORT_LOCATION_OLD,
                 FileDiffResultLists.IgnoredFileLocation.New => REPORT_LOCATION_NEW,
                 FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New => REPORT_LOCATION_BOTH,
                 _ => string.Empty
             };
-        }
 
-        /// <summary>
-        /// Ignored ファイル行に表示する更新日時情報を組み立てます。
-        /// </summary>
-        /// <param name="entry">相対パスと所在フラグの組。</param>
-        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス。</param>
-        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス。</param>
-        /// <returns>更新日時情報。取得対象がない場合は null。</returns>
         private static string BuildIgnoredFileTimestampInfo(
             KeyValuePair<string, FileDiffResultLists.IgnoredFileLocation> entry,
             string oldFolderAbsolutePath,
@@ -712,14 +439,10 @@ namespace FolderDiffIL4DotNet.Services
             return $"[{ts}]";
         }
 
-        /// <summary>
-        /// レポート冒頭に記載する逆アセンブラ一覧を組み立てます。
-        /// 実際に観測されたラベル（実行/キャッシュ経由）だけを表示します。
-        /// </summary>
-        private string BuildDisassemblerHeaderText()
+        private static string BuildDisassemblerHeaderText(FileDiffResultLists fileDiffResultLists)
         {
-            var observedLabels = _fileDiffResultLists.DisassemblerToolVersions.Keys
-                .Concat(_fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
+            var observedLabels = fileDiffResultLists.DisassemblerToolVersions.Keys
+                .Concat(fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
                 .Where(label => !string.IsNullOrWhiteSpace(label))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(GetDisassemblerDisplayOrder)
@@ -732,48 +455,26 @@ namespace FolderDiffIL4DotNet.Services
                 : string.Join(REPORT_LIST_SEPARATOR, observedLabels);
         }
 
-        /// <summary>
-        /// 表示ラベルを既知ツール順（dotnet-ildasm / ildasm / ilspycmd）で並べるためのソートキーを返します。
-        /// </summary>
         private static int GetDisassemblerDisplayOrder(string label)
         {
             var toolName = ExtractToolName(label);
-            if (string.Equals(toolName, Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase))
-            {
-                return 0;
-            }
-            if (string.Equals(toolName, Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase))
-            {
-                return 1;
-            }
-            if (string.Equals(toolName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase))
-            {
-                return 2;
-            }
+            if (string.Equals(toolName, Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase)) return 0;
+            if (string.Equals(toolName, Constants.ILDASM_LABEL, StringComparison.OrdinalIgnoreCase)) return 1;
+            if (string.Equals(toolName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase)) return 2;
             return 3;
         }
 
-        /// <summary>
-        /// 表示ラベルからツール名部分を抽出します。
-        /// </summary>
         private static string ExtractToolName(string label)
         {
-            if (string.IsNullOrWhiteSpace(label))
-            {
-                return string.Empty;
-            }
-
+            if (string.IsNullOrWhiteSpace(label)) return string.Empty;
             var versionIndex = label.IndexOf(" (version:", StringComparison.OrdinalIgnoreCase);
             return versionIndex >= 0 ? label.Substring(0, versionIndex).Trim() : label.Trim();
         }
 
-        /// <summary>
-        /// 判定根拠表示を組み立てます。IL 判定の場合は逆アセンブラ情報を追記します。
-        /// </summary>
-        private string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail)
+        private static string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
         {
             if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch || diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&
-                _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
+                fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
                 !string.IsNullOrWhiteSpace(label))
             {
                 return $"`{diffDetail}` `{label}`";
@@ -781,21 +482,226 @@ namespace FolderDiffIL4DotNet.Services
             return $"`{diffDetail}`";
         }
 
-        /// <summary>
-        /// IL 比較時に「含む」判定で除外対象とする文字列を正規化します（null/空白除外、trim、重複排除）。
-        /// </summary>
         private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
         {
-            if (config?.ILIgnoreLineContainingStrings == null)
-            {
-                return new List<string>();
-            }
-
+            if (config?.ILIgnoreLineContainingStrings == null) return new List<string>();
             return config.ILIgnoreLineContainingStrings
                 .Where(value => !string.IsNullOrWhiteSpace(value))
                 .Select(value => value.Trim())
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
+        }
+
+        // ── Nested section writer implementations ────────────────────────────
+
+        /// <summary>レポートのヘッダ部（タイトル・実行情報・IL比較の注記）を書き込みます。</summary>
+        private sealed class HeaderSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                writer.WriteLine(REPORT_TITLE);
+                writer.WriteLine($"- App Version: FolderDiffIL4DotNet {ctx.AppVersion}");
+                writer.WriteLine($"- Computer: {ctx.ComputerName}");
+                writer.WriteLine($"- Old: {ctx.OldFolderAbsolutePath}");
+                writer.WriteLine($"- New: {ctx.NewFolderAbsolutePath}");
+                writer.WriteLine($"- Ignored Extensions: {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.IgnoredExtensions)}");
+                writer.WriteLine($"- Text File Extensions: {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.TextFileExtensions)}");
+                writer.WriteLine($"- IL Disassembler: {BuildDisassemblerHeaderText(ctx.FileDiffResultLists)}");
+                if (!string.IsNullOrWhiteSpace(ctx.ElapsedTimeString))
+                {
+                    writer.WriteLine($"- Elapsed Time: {ctx.ElapsedTimeString}");
+                }
+                if (ctx.Config.ShouldOutputFileTimestamps)
+                {
+                    writer.WriteLine($"- Timestamps (timezone): {DateTimeOffset.Now:zzz}");
+                }
+                writer.WriteLine("- " + NOTE_MVID_SKIP);
+                if (!ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings) return;
+
+                var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
+                writer.WriteLine("- " + (ilIgnoreStrings.Count == 0
+                    ? NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY
+                    : $"Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored: {string.Join(REPORT_LIST_SEPARATOR, ilIgnoreStrings.Select(v => $"\"{v}\""))}."));
+            }
+        }
+
+        /// <summary>判定根拠ラベルの凡例（Legend）を書き込みます。</summary>
+        private sealed class LegendSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                writer.WriteLine(REPORT_LEGEND_HEADER);
+                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}`: MD5 hash match / mismatch");
+                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}`: IL(Intermediate Language) match / mismatch");
+                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}`: Text match / mismatch");
+            }
+        }
+
+        /// <summary>Ignored Files セクションを書き込みます。</summary>
+        private sealed class IgnoredFilesSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                if (!ctx.Config.ShouldIncludeIgnoredFiles || ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count == 0) return;
+
+                writer.WriteLine(REPORT_SECTION_IGNORED_FILES);
+                foreach (var entry in ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    var line = $"- [ x ] {entry.Key}";
+                    var locationLabel = GetIgnoredFileLocationLabel(entry.Value);
+                    if (!string.IsNullOrEmpty(locationLabel)) line += " " + locationLabel;
+
+                    if (ctx.Config.ShouldOutputFileTimestamps)
+                    {
+                        var timestampInfo = BuildIgnoredFileTimestampInfo(entry, ctx.OldFolderAbsolutePath, ctx.NewFolderAbsolutePath);
+                        if (!string.IsNullOrEmpty(timestampInfo)) line += $" {timestampInfo}";
+                    }
+                    writer.WriteLine(line);
+                }
+            }
+        }
+
+        /// <summary>Unchanged Files セクションを書き込みます。</summary>
+        private sealed class UnchangedFilesSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                if (!ctx.Config.ShouldIncludeUnchangedFiles) return;
+
+                writer.WriteLine(REPORT_SECTION_UNCHANGED_FILES);
+                foreach (var fileRelativePath in ctx.FileDiffResultLists.UnchangedFilesRelativePath)
+                {
+                    var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                    var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    if (ctx.Config.ShouldOutputFileTimestamps)
+                    {
+                        string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.OldFolderAbsolutePath, fileRelativePath));
+                        string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
+                        string updateInfo = oldTs != newTs ? $"[{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}]" : $"[{newTs}]";
+                        writer.WriteLine($"- [ = ] {fileRelativePath} {updateInfo} {diffDetailDisplay}");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"- [ = ] {fileRelativePath} {diffDetailDisplay}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>Added Files セクションを書き込みます。</summary>
+        private sealed class AddedFilesSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                writer.WriteLine(REPORT_SECTION_ADDED_FILES);
+                foreach (var newFileAbsolutePath in ctx.FileDiffResultLists.AddedFilesAbsolutePath)
+                {
+                    writer.WriteLine(ctx.Config.ShouldOutputFileTimestamps
+                        ? $"- [ + ] {newFileAbsolutePath} [{Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)}]"
+                        : $"- [ + ] {newFileAbsolutePath}");
+                }
+            }
+        }
+
+        /// <summary>Removed Files セクションを書き込みます。</summary>
+        private sealed class RemovedFilesSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                writer.WriteLine(REPORT_SECTION_REMOVED_FILES);
+                foreach (var oldFileAbsolutePath in ctx.FileDiffResultLists.RemovedFilesAbsolutePath)
+                {
+                    writer.WriteLine(ctx.Config.ShouldOutputFileTimestamps
+                        ? $"- [ - ] {oldFileAbsolutePath} [{Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)}]"
+                        : $"- [ - ] {oldFileAbsolutePath}");
+                }
+            }
+        }
+
+        /// <summary>Modified Files セクションを書き込みます。</summary>
+        private sealed class ModifiedFilesSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                writer.WriteLine(REPORT_SECTION_MODIFIED_FILES);
+                foreach (var fileRelativePath in ctx.FileDiffResultLists.ModifiedFilesRelativePath)
+                {
+                    var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                    var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    if (ctx.Config.ShouldOutputFileTimestamps)
+                    {
+                        string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.OldFolderAbsolutePath, fileRelativePath));
+                        string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
+                        writer.WriteLine($"- [ * ] {fileRelativePath} [{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}] {diffDetailDisplay}");
+                    }
+                    else
+                    {
+                        writer.WriteLine($"- [ * ] {fileRelativePath} {diffDetailDisplay}");
+                    }
+                }
+            }
+        }
+
+        /// <summary>Summary セクションを書き込みます。</summary>
+        private sealed class SummarySectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                writer.WriteLine(REPORT_SECTION_SUMMARY);
+                var stats = ctx.FileDiffResultLists.SummaryStatistics;
+                if (ctx.Config.ShouldIncludeIgnoredFiles)
+                {
+                    writer.WriteLine($"- {REPORT_LABEL_IGNORED,-10}: {stats.IgnoredCount}");
+                }
+                writer.WriteLine($"- {REPORT_LABEL_UNCHANGED,-10}: {stats.UnchangedCount}");
+                writer.WriteLine($"- {REPORT_LABEL_ADDED,-10}: {stats.AddedCount}");
+                writer.WriteLine($"- {REPORT_LABEL_REMOVED,-10}: {stats.RemovedCount}");
+                writer.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {stats.ModifiedCount}");
+                writer.WriteLine($"- {REPORT_LABEL_COMPARED,-10}: {ctx.FileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {ctx.FileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
+                writer.WriteLine();
+            }
+        }
+
+        /// <summary>IL Cache Stats セクションを書き込みます（設定有効かつ ilCache 非 null の場合のみ）。</summary>
+        private sealed class ILCacheStatsSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                if (!ctx.Config.ShouldIncludeILCacheStatsInReport || ctx.IlCache == null) return;
+
+                var stats = ctx.IlCache.GetReportStats();
+                writer.WriteLine(REPORT_SECTION_IL_CACHE_STATS);
+                writer.WriteLine($"- Hits    : {stats.Hits}");
+                writer.WriteLine($"- Misses  : {stats.Misses}");
+                writer.WriteLine($"- Hit Rate: {stats.HitRatePct:F1}%");
+                writer.WriteLine($"- Stores  : {stats.Stores}");
+                writer.WriteLine($"- Evicted : {stats.Evicted}");
+                writer.WriteLine($"- Expired : {stats.Expired}");
+                writer.WriteLine();
+            }
+        }
+
+        /// <summary>警告セクションを書き込みます。</summary>
+        private sealed class WarningsSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                if (!ctx.HasMd5Mismatch && !ctx.HasTimestampRegressionWarning) return;
+
+                writer.WriteLine(REPORT_SECTION_WARNINGS);
+                if (ctx.HasMd5Mismatch)
+                {
+                    writer.WriteLine($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}");
+                }
+                if (!ctx.HasTimestampRegressionWarning) return;
+
+                writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
+                foreach (var warning in ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
+                    .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
+                {
+                    writer.WriteLine($"  - {warning.FileRelativePath} [{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}]");
+                }
+            }
         }
     }
 }

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -24,6 +23,13 @@ namespace FolderDiffIL4DotNet.Services
     {
         /// <summary>
         /// ブラックリスト化判定に用いる連続失敗閾値。
+        /// <para>
+        /// 1〜2 回の失敗は一時的な競合やファイルロックによるものが多いため、
+        /// 誤ブラックリスト化を避けるため 3 回連続失敗を閾値としています。
+        /// Threshold of consecutive failures before a disassembler tool is blacklisted.
+        /// Set to 3 to tolerate transient errors (file locks, brief resource contention)
+        /// while still reacting promptly to a broken tool.
+        /// </para>
         /// </summary>
         private const int DISASSEMBLE_FAIL_THRESHOLD = 3;
 
@@ -73,10 +79,9 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private const string RUN_FINGERPRINT_PREFIX = "run:";
         /// <summary>
-        /// ブラックリスト化有効期間。
+        /// ブラックリスト化有効期間の既定値（分）。設定未指定またはゼロ以下の場合に使用。
         /// </summary>
-        private static readonly TimeSpan _toolBlackListDuration = TimeSpan.FromMinutes(10);
-
+        private const int DEFAULT_BLACKLIST_TTL_MINUTES = 10;
         /// <summary>
         /// 設定値。IL 出力やキャッシュ利用可否、キャッシュパラメータ等を保持する <see cref="ConfigSettings"/>。
         /// </summary>
@@ -88,9 +93,9 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILCache _ilCache;
 
         /// <summary>
-        /// ツール毎の連続失敗回数と最終失敗時刻(協定世界時刻)。閾値超過で一定時間ブラックリスト化するために利用。
+        /// 逆アセンブラツールのブラックリスト管理。TTL と失敗閾値に基づいてツールを一時スキップします。
         /// </summary>
-        private static readonly ConcurrentDictionary<string, (int FailCount, DateTime LastFailUtc)> _disassembleFailCountAndTime = new();
+        private readonly DisassemblerBlacklist _blacklist;
 
         /// <summary>
         /// 実行単位フォールバック識別子。ツール実体を解決できない場合でも前回実行のキャッシュと混ざらないようにする。
@@ -150,6 +155,10 @@ namespace FolderDiffIL4DotNet.Services
         {
             ArgumentNullException.ThrowIfNull(config);
             _config = config;
+            var ttlMinutes = config.DisassemblerBlacklistTtlMinutes > 0
+                ? config.DisassemblerBlacklistTtlMinutes
+                : DEFAULT_BLACKLIST_TTL_MINUTES;
+            _blacklist = new DisassemblerBlacklist(DISASSEMBLE_FAIL_THRESHOLD, TimeSpan.FromMinutes(ttlMinutes));
             _ilCache = ilCache;
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
@@ -926,60 +935,22 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// 指定ツールがブラックリスト化されているかを判定。一定期間内に失敗が閾値を超えた場合は解除
+        /// 指定ツールがブラックリスト化されているかを判定。TTL 満了時は自動解除。
         /// </summary>
-        /// <param name="disassembleCommand"></param>
-        /// <returns></returns>
-        private static bool IsDisassemblerBlacklisted(string disassembleCommand)
-        {
-            if (string.IsNullOrWhiteSpace(disassembleCommand))
-            {
-                return false;
-            }
-            if (!_disassembleFailCountAndTime.TryGetValue(disassembleCommand, out var info))
-            {
-                return false;
-            }
-            if (info.FailCount < DISASSEMBLE_FAIL_THRESHOLD)
-            {
-                return false;
-            }
-            if ((DateTime.UtcNow - info.LastFailUtc) > _toolBlackListDuration)
-            {
-                _disassembleFailCountAndTime.TryRemove(disassembleCommand, out _);
-                return false;
-            }
-            return true;
-        }
+        private bool IsDisassemblerBlacklisted(string disassembleCommand)
+            => _blacklist.IsBlacklisted(disassembleCommand);
 
         /// <summary>
-        /// 指定ツールの失敗回数をインクリメントし、ブラックリスト判定に利用するデータを更新。
+        /// 指定ツールの失敗回数をインクリメントします。
         /// </summary>
-        /// <param name="disassembleCommand">コマンド名</param>
-        private static void RegisterDisassembleFailure(string disassembleCommand)
-        {
-            if (string.IsNullOrWhiteSpace(disassembleCommand))
-            {
-                return;
-            }
-            _disassembleFailCountAndTime.AddOrUpdate(
-                disassembleCommand,
-                _ => (1, DateTime.UtcNow),
-                (_, old) => (old.FailCount + 1, DateTime.UtcNow));
-        }
+        private void RegisterDisassembleFailure(string disassembleCommand)
+            => _blacklist.RegisterFailure(disassembleCommand);
 
         /// <summary>
-        /// 指定ツールの失敗カウントをリセット（ブラックリスト解除）。
+        /// 指定ツールの失敗カウントをリセット（ブラックリスト解除）します。
         /// </summary>
-        /// <param name="disassembleCommand">コマンド名</param>
-        private static void ResetDisassembleFailure(string disassembleCommand)
-        {
-            if (string.IsNullOrWhiteSpace(disassembleCommand))
-            {
-                return;
-            }
-            _disassembleFailCountAndTime.TryRemove(disassembleCommand, out _);
-        }
+        private void ResetDisassembleFailure(string disassembleCommand)
+            => _blacklist.ResetFailure(disassembleCommand);
 
         /// <summary>
         /// ユーザーの .NET グローバルツールディレクトリ（例: C:\Users\&lt;name&gt;\.dotnet\tools）。
