@@ -236,6 +236,136 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("MD5Mismatch", html);
         }
 
+        // ── Inline diff ───────────────────────────────────────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_TextMismatch_WithRealFiles_ShowsInlineDiff()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-basic");
+
+            // Create actual text files so inline diff can read them
+            File.WriteAllLines(Path.Combine(oldDir, "app.txt"), new[] { "line1", "old-line2", "line3" });
+            File.WriteAllLines(Path.Combine(newDir, "app.txt"), new[] { "line1", "new-line2", "line3" });
+
+            _resultLists.AddModifiedFileRelativePath("app.txt");
+            _resultLists.RecordDiffDetail("app.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("<details", html);
+            Assert.Contains("diff-summary", html);
+            Assert.Contains("diff-del-td", html);
+            Assert.Contains("diff-add-td", html);
+            Assert.Contains("old-line2", html);
+            Assert.Contains("new-line2", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_TextMismatch_EnableInlineDiffFalse_NoDetailsElement()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-disabled");
+
+            File.WriteAllLines(Path.Combine(oldDir, "app.txt"), new[] { "line1", "old-line2" });
+            File.WriteAllLines(Path.Combine(newDir, "app.txt"), new[] { "line1", "new-line2" });
+
+            _resultLists.AddModifiedFileRelativePath("app.txt");
+            _resultLists.RecordDiffDetail("app.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: false);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.DoesNotContain("diff-summary", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ILMismatch_NoInlineDiff()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-il");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            var config = CreateConfig(enableInlineDiff: true);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // ILMismatch は inline diff 非対象
+            Assert.DoesNotContain("diff-summary", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_TextMismatch_FileTooLarge_ShowsSkippedMessage()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-large");
+
+            // 行数が maxInput を超えるファイルを用意 (maxInput=2 に設定)
+            File.WriteAllLines(Path.Combine(oldDir, "big.txt"), new[] { "L1", "L2", "L3" });
+            File.WriteAllLines(Path.Combine(newDir, "big.txt"), new[] { "L1", "L2", "L3-changed" });
+
+            _resultLists.AddModifiedFileRelativePath("big.txt");
+            _resultLists.RecordDiffDetail("big.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true);
+            config.InlineDiffMaxInputLines = 2;  // 3行 > 2 → スキップ
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("diff-skipped", html);
+            Assert.Contains("InlineDiffMaxInputLines", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_TextMismatch_MissingFile_SkipsGracefully()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-missing");
+
+            // ファイルを作成しない → IO エラー → 差分行なし（クラッシュしない）
+            _resultLists.AddModifiedFileRelativePath("ghost.txt");
+            _resultLists.RecordDiffDetail("ghost.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            // クラッシュせずレポートが生成される
+            Assert.True(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_TextMismatch_InlineDiff_SummaryContainsAddedRemoved()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-summary");
+
+            File.WriteAllLines(Path.Combine(oldDir, "f.txt"), new[] { "removed-line", "common" });
+            File.WriteAllLines(Path.Combine(newDir, "f.txt"), new[] { "added-line", "common" });
+
+            _resultLists.AddModifiedFileRelativePath("f.txt");
+            _resultLists.RecordDiffDetail("f.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // summary に +N / -M が含まれる
+            Assert.Contains("+1", html);
+            Assert.Contains("-1", html);
+        }
+
         // Helpers
 
         private (string oldDir, string newDir, string reportDir) MakeDirs(string label)
@@ -249,7 +379,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             return (old, @new, report);
         }
 
-        private static ConfigSettings CreateConfig() => new()
+        private static ConfigSettings CreateConfig(bool enableInlineDiff = true) => new()
         {
             IgnoredExtensions = new List<string>(),
             TextFileExtensions = new List<string>(),
@@ -257,7 +387,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             ShouldIncludeIgnoredFiles = false,
             ShouldOutputFileTimestamps = false,
             ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false,
-            ShouldGenerateHtmlReport = true
+            ShouldGenerateHtmlReport = true,
+            EnableInlineDiff = enableInlineDiff
         };
     }
 }

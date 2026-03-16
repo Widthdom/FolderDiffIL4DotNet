@@ -324,6 +324,63 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
         }
 
+        // ── InlineDiff ────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Constructor_InlineDiffDefaults_AreCorrect()
+        {
+            var config = new ConfigSettings();
+
+            Assert.True(config.EnableInlineDiff);
+            Assert.Equal(3, config.InlineDiffContextLines);
+            Assert.Equal(1000, config.InlineDiffMaxInputLines);
+            Assert.Equal(500, config.InlineDiffMaxOutputLines);
+        }
+
+        [Fact]
+        public void JsonDeserialize_InlineDiffOverrides_AreApplied()
+        {
+            const string json = """
+                {
+                  "EnableInlineDiff": false,
+                  "InlineDiffContextLines": 5,
+                  "InlineDiffMaxInputLines": 2000,
+                  "InlineDiffMaxOutputLines": 300
+                }
+                """;
+
+            var config = System.Text.Json.JsonSerializer.Deserialize<ConfigSettings>(json);
+
+            Assert.NotNull(config);
+            Assert.False(config.EnableInlineDiff);
+            Assert.Equal(5, config.InlineDiffContextLines);
+            Assert.Equal(2000, config.InlineDiffMaxInputLines);
+            Assert.Equal(300, config.InlineDiffMaxOutputLines);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_InlineDiffContextLines_Negative_ReturnsError(int value)
+        {
+            var config = new ConfigSettings { InlineDiffContextLines = value };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("InlineDiffContextLines", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Validate_InlineDiffContextLines_Zero_IsValid()
+        {
+            var config = new ConfigSettings { InlineDiffContextLines = 0 };
+
+            var result = config.Validate();
+
+            Assert.True(result.IsValid);
+        }
+
         private static void AssertMatchesDefaults(ConfigSettings config)
         {
             Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
@@ -353,6 +410,10 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
             Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
+            Assert.True(config.EnableInlineDiff);
+            Assert.Equal(3, config.InlineDiffContextLines);
+            Assert.Equal(1000, config.InlineDiffMaxInputLines);
+            Assert.Equal(500, config.InlineDiffMaxOutputLines);
         }
     }
 }

@@ -1,0 +1,268 @@
+using System;
+using System.Linq;
+using FolderDiffIL4DotNet.Core.Text;
+using Xunit;
+
+namespace FolderDiffIL4DotNet.Tests.Core.Text
+{
+    public sealed class TextDifferTests
+    {
+        // ── 完全一致 ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_IdenticalLines_ReturnsEmpty()
+        {
+            var old = new[] { "line1", "line2", "line3" };
+            var @new = new[] { "line1", "line2", "line3" };
+
+            var result = TextDiffer.Compute(old, @new);
+
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public void Compute_BothEmpty_ReturnsEmpty()
+        {
+            var result = TextDiffer.Compute(Array.Empty<string>(), Array.Empty<string>());
+
+            Assert.Empty(result);
+        }
+
+        // ── 追加のみ ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_OldEmpty_AllAdded()
+        {
+            var old = Array.Empty<string>();
+            var @new = new[] { "a", "b" };
+
+            var result = TextDiffer.Compute(old, @new);
+
+            Assert.Contains(result, l => l.Kind == TextDiffer.HunkHeader);
+            var added = result.Where(l => l.Kind == TextDiffer.Added).ToList();
+            Assert.Equal(2, added.Count);
+            Assert.Equal("a", added[0].Text);
+            Assert.Equal("b", added[1].Text);
+            Assert.All(result.Where(l => l.Kind == TextDiffer.Added), l => Assert.Equal(0, l.OldLineNo));
+        }
+
+        // ── 削除のみ ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_NewEmpty_AllRemoved()
+        {
+            var old = new[] { "x", "y" };
+            var @new = Array.Empty<string>();
+
+            var result = TextDiffer.Compute(old, @new);
+
+            var removed = result.Where(l => l.Kind == TextDiffer.Removed).ToList();
+            Assert.Equal(2, removed.Count);
+            Assert.Equal("x", removed[0].Text);
+            Assert.Equal("y", removed[1].Text);
+            Assert.All(result.Where(l => l.Kind == TextDiffer.Removed), l => Assert.Equal(0, l.NewLineNo));
+        }
+
+        // ── 単一行変更 ────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_SingleLineChanged_ProducesRemoveAndAdd()
+        {
+            var old = new[] { "hello" };
+            var @new = new[] { "world" };
+
+            var result = TextDiffer.Compute(old, @new);
+
+            Assert.Contains(result, l => l.Kind == TextDiffer.Removed && l.Text == "hello");
+            Assert.Contains(result, l => l.Kind == TextDiffer.Added && l.Text == "world");
+        }
+
+        // ── 行番号 ────────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_LineNumbers_AreOneBasedAndCorrect()
+        {
+            var old = new[] { "ctx1", "ctx2", "old3", "ctx4", "ctx5" };
+            var @new = new[] { "ctx1", "ctx2", "new3", "ctx4", "ctx5" };
+
+            var result = TextDiffer.Compute(old, @new, contextLines: 2);
+
+            var removedLine = result.Single(l => l.Kind == TextDiffer.Removed);
+            var addedLine = result.Single(l => l.Kind == TextDiffer.Added);
+
+            Assert.Equal(3, removedLine.OldLineNo);
+            Assert.Equal(0, removedLine.NewLineNo);
+            Assert.Equal(0, addedLine.OldLineNo);
+            Assert.Equal(3, addedLine.NewLineNo);
+        }
+
+        // ── コンテキスト行 ───────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_ContextLines_AroundChange()
+        {
+            var old = new[] { "a", "b", "c", "d", "e" };
+            var @new = new[] { "a", "b", "X", "d", "e" };
+
+            var result = TextDiffer.Compute(old, @new, contextLines: 1);
+
+            var contextLines = result.Where(l => l.Kind == TextDiffer.Context).ToList();
+            // context=1 → 変更行(line3)の前後1行: "b"(2) と "d"(4)
+            Assert.Equal(2, contextLines.Count);
+            Assert.Contains(contextLines, l => l.Text == "b");
+            Assert.Contains(contextLines, l => l.Text == "d");
+            // 最初の "a" と最後の "e" は含まれない
+            Assert.DoesNotContain(contextLines, l => l.Text == "a");
+            Assert.DoesNotContain(contextLines, l => l.Text == "e");
+        }
+
+        [Fact]
+        public void Compute_ContextLines_Zero_NoContextLines()
+        {
+            var old = new[] { "a", "changed", "c" };
+            var @new = new[] { "a", "changed2", "c" };
+
+            var result = TextDiffer.Compute(old, @new, contextLines: 0);
+
+            Assert.DoesNotContain(result, l => l.Kind == TextDiffer.Context);
+        }
+
+        // ── ハンクヘッダ ─────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_HunkHeader_HasCorrectFormat()
+        {
+            var old = new[] { "line1" };
+            var @new = new[] { "changed" };
+
+            var result = TextDiffer.Compute(old, @new);
+
+            var hunk = result.Single(l => l.Kind == TextDiffer.HunkHeader);
+            Assert.StartsWith("@@", hunk.Text);
+            Assert.Contains("-1,", hunk.Text);
+            Assert.Contains("+1,", hunk.Text);
+            Assert.EndsWith("@@", hunk.Text.TrimEnd());
+        }
+
+        // ── 複数ハンク ────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_MultipleHunks_TwoHunkHeaders()
+        {
+            // 変更箇所が離れていれば2ハンクになる
+            var old = new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+            var @new = new[] { "X", "2", "3", "4", "5", "6", "7", "8", "9", "Y" };
+
+            var result = TextDiffer.Compute(old, @new, contextLines: 1);
+
+            var hunkHeaders = result.Where(l => l.Kind == TextDiffer.HunkHeader).ToList();
+            Assert.Equal(2, hunkHeaders.Count);
+        }
+
+        // ── 出力上限による打ち切り ──────────────────────────────────────────
+
+        [Fact]
+        public void Compute_MaxOutputLines_TruncatesWithTruncatedLine()
+        {
+            var old = Enumerable.Range(1, 20).Select(i => $"old{i}").ToArray();
+            var @new = Enumerable.Range(1, 20).Select(i => $"new{i}").ToArray();
+
+            var result = TextDiffer.Compute(old, @new, contextLines: 0, maxOutputLines: 5);
+
+            Assert.Contains(result, l => l.Kind == TextDiffer.Truncated);
+            // 打ち切り行より前の行数は maxOutputLines 以下
+            int truncIdx = result.ToList().FindIndex(l => l.Kind == TextDiffer.Truncated);
+            Assert.True(truncIdx <= 5);
+        }
+
+        // ── 入力行数超過 ─────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_InputExceedsLcsLimit_ReturnsTruncatedMessage()
+        {
+            // 4M セル超え: 3000 × 2000 = 6M
+            var old = Enumerable.Range(1, 3000).Select(i => $"line{i}").ToArray();
+            var @new = Enumerable.Range(1, 2000).Select(i => $"line{i}").ToArray();
+
+            var result = TextDiffer.Compute(old, @new);
+
+            Assert.Single(result);
+            Assert.Equal(TextDiffer.Truncated, result[0].Kind);
+            Assert.Contains("too large", result[0].Text, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // ── null 引数 ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_NullOld_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => TextDiffer.Compute(null, new[] { "a" }));
+        }
+
+        [Fact]
+        public void Compute_NullNew_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>(() => TextDiffer.Compute(new[] { "a" }, null));
+        }
+
+        // ── Unicode ──────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_UnicodeLines_HandledCorrectly()
+        {
+            var old = new[] { "日本語", "変更前", "中文" };
+            var @new = new[] { "日本語", "変更後", "中文" };
+
+            var result = TextDiffer.Compute(old, @new);
+
+            Assert.Contains(result, l => l.Kind == TextDiffer.Removed && l.Text == "変更前");
+            Assert.Contains(result, l => l.Kind == TextDiffer.Added && l.Text == "変更後");
+        }
+
+        // ── 行頭空白 ─────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Compute_WhitespaceOnlyDiff_DetectsChange()
+        {
+            var old = new[] { "  indented" };
+            var @new = new[] { "    indented" };  // extra spaces
+
+            var result = TextDiffer.Compute(old, @new);
+
+            Assert.Contains(result, l => l.Kind == TextDiffer.Removed);
+            Assert.Contains(result, l => l.Kind == TextDiffer.Added);
+        }
+
+        // ── HunkHeader の OldLineNo/NewLineNo ────────────────────────────────
+
+        [Fact]
+        public void Compute_HunkHeaderLine_HasZeroLineNumbers()
+        {
+            var old = new[] { "a" };
+            var @new = new[] { "b" };
+
+            var result = TextDiffer.Compute(old, @new);
+
+            var hunk = result.Single(l => l.Kind == TextDiffer.HunkHeader);
+            Assert.Equal(0, hunk.OldLineNo);
+            Assert.Equal(0, hunk.NewLineNo);
+        }
+
+        // ── コンテキスト行の行番号整合性 ─────────────────────────────────────
+
+        [Fact]
+        public void Compute_ContextLines_BothLineNumbersSet()
+        {
+            var old = new[] { "ctx", "changed", "ctx2" };
+            var @new = new[] { "ctx", "new",     "ctx2" };
+
+            var result = TextDiffer.Compute(old, @new, contextLines: 1);
+
+            foreach (var line in result.Where(l => l.Kind == TextDiffer.Context))
+            {
+                Assert.True(line.OldLineNo > 0, "Context line should have OldLineNo > 0");
+                Assert.True(line.NewLineNo > 0, "Context line should have NewLineNo > 0");
+            }
+        }
+    }
+}

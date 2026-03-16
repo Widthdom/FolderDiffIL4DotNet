@@ -222,6 +222,32 @@ namespace FolderDiffIL4DotNet.Models
         public bool SkipIL { get; set; }
 
         /// <summary>
+        /// HTML レポートの Modified セクションにインライン差分（GitHub スタイルの unified diff）を表示するかどうか。
+        /// テキスト差分 (TextMismatch) のファイルのみ対象です。デフォルトは折りたたみ表示。
+        /// false にするとインライン差分は生成されません。
+        /// </summary>
+        public bool EnableInlineDiff { get; set; } = true;
+
+        /// <summary>
+        /// インライン差分の前後に表示するコンテキスト行数。既定値は 3。
+        /// </summary>
+        public int InlineDiffContextLines { get; set; } = 3;
+
+        /// <summary>
+        /// インライン差分の計算対象とする最大入力行数（old/new それぞれ）。
+        /// いずれかのファイルがこの行数を超える場合は差分計算をスキップします。既定値は 1000。
+        /// 0 以下にすると既定値（1000）を使用します。
+        /// </summary>
+        public int InlineDiffMaxInputLines { get; set; } = 1000;
+
+        /// <summary>
+        /// HTML レポートに出力するインライン差分の最大行数（ハンクヘッダを含む）。
+        /// 超過分は打ち切り表示になります。既定値は 500。
+        /// 0 以下にすると既定値（500）を使用します。
+        /// </summary>
+        public int InlineDiffMaxOutputLines { get; set; } = 500;
+
+        /// <summary>
         /// コンソールスピナーのフレーム文字列リスト。各要素が 1 フレームになります。
         /// 既定値は <c>["|", "/", "-", "\\"]</c>（縦棒・スラッシュ・横棒・バックスラッシュの 4 フレーム回転）。
         /// 複数文字のフレーム（例: ブロック文字、絵文字）も指定できます。
@@ -263,6 +289,11 @@ namespace FolderDiffIL4DotNet.Models
             if (SpinnerFrames == null || SpinnerFrames.Count == 0)
             {
                 errors.Add("SpinnerFrames must contain at least one frame.");
+            }
+
+            if (InlineDiffContextLines < 0)
+            {
+                errors.Add($"InlineDiffContextLines must be 0 or greater (current value: {InlineDiffContextLines}).");
             }
 
             return new ConfigValidationResult(errors);

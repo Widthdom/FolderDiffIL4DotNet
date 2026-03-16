@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
 
@@ -320,9 +321,139 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
                 AppendFileRow(sb, "mod", idx, path, ts, diffDetail.ToString(), asm ?? "");
+
+                if (config.EnableInlineDiff &&
+                    diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch)
+                {
+                    AppendInlineDiffRow(sb, idx, path, oldFolderAbsolutePath, newFolderAbsolutePath, config);
+                }
+
                 idx++;
             }
             sb.AppendLine("</tbody></table>");
+        }
+
+        private void AppendInlineDiffRow(
+            StringBuilder sb,
+            int idx,
+            string relPath,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath,
+            ConfigSettings config)
+        {
+            int maxInput = config.InlineDiffMaxInputLines > 0 ? config.InlineDiffMaxInputLines : 1000;
+            int maxOutput = config.InlineDiffMaxOutputLines > 0 ? config.InlineDiffMaxOutputLines : 500;
+            int contextLines = config.InlineDiffContextLines >= 0 ? config.InlineDiffContextLines : 3;
+
+            string oldAbsPath = Path.Combine(oldFolderAbsolutePath, relPath);
+            string newAbsPath = Path.Combine(newFolderAbsolutePath, relPath);
+
+            string[] oldLines, newLines;
+            try
+            {
+                oldLines = File.ReadAllLines(oldAbsPath);
+                newLines = File.ReadAllLines(newAbsPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                // ファイル読み込み失敗時は差分行を表示しない
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Inline diff skipped for '{relPath}': {ex.Message}",
+                    shouldOutputMessageToConsole: false, ex);
+                return;
+            }
+
+            if (oldLines.Length > maxInput || newLines.Length > maxInput)
+            {
+                sb.AppendLine("<tr class=\"diff-row\">");
+                sb.AppendLine($"  <td colspan=\"7\"><p class=\"diff-skipped\">Inline diff skipped: file too large " +
+                    $"({oldLines.Length} vs {newLines.Length} lines; limit is {maxInput}). " +
+                    "Increase <code>InlineDiffMaxInputLines</code> in config to enable.</p></td>");
+                sb.AppendLine("</tr>");
+                return;
+            }
+
+            IReadOnlyList<TextDiffer.DiffLine> diffLines;
+            try
+            {
+                diffLines = TextDiffer.Compute(oldLines, newLines, contextLines, maxOutput);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Inline diff computation failed for '{relPath}': {ex.Message}",
+                    shouldOutputMessageToConsole: false, ex);
+                return;
+            }
+
+            if (diffLines.Count == 0) return;
+
+            int addedCount = 0, removedCount = 0;
+            foreach (var line in diffLines)
+            {
+                if (line.Kind == TextDiffer.Added) addedCount++;
+                else if (line.Kind == TextDiffer.Removed) removedCount++;
+            }
+
+            string summaryText = $"Show diff (+{addedCount} / -{removedCount})";
+            string detailsId = $"diff_mod_{idx}";
+
+            sb.AppendLine("<tr class=\"diff-row\">");
+            sb.AppendLine("  <td colspan=\"7\">");
+            sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
+            sb.AppendLine($"      <summary class=\"diff-summary\">{HtmlEncode(summaryText)}</summary>");
+            sb.AppendLine("      <div class=\"diff-view\">");
+            sb.AppendLine("        <table class=\"diff-table\">");
+            sb.AppendLine("          <tbody>");
+
+            foreach (var line in diffLines)
+            {
+                switch (line.Kind)
+                {
+                    case TextDiffer.HunkHeader:
+                        sb.AppendLine("            <tr class=\"diff-hunk-tr\">");
+                        sb.AppendLine("              <td class=\"diff-ln\"></td>");
+                        sb.AppendLine("              <td class=\"diff-ln\"></td>");
+                        sb.AppendLine($"              <td class=\"diff-hunk-td\">{HtmlEncode(line.Text)}</td>");
+                        sb.AppendLine("            </tr>");
+                        break;
+                    case TextDiffer.Removed:
+                        sb.AppendLine("            <tr class=\"diff-del-tr\">");
+                        sb.AppendLine($"              <td class=\"diff-ln diff-old-ln\">{line.OldLineNo}</td>");
+                        sb.AppendLine("              <td class=\"diff-ln diff-new-ln\"></td>");
+                        sb.AppendLine($"              <td class=\"diff-del-td\">-{HtmlEncode(line.Text)}</td>");
+                        sb.AppendLine("            </tr>");
+                        break;
+                    case TextDiffer.Added:
+                        sb.AppendLine("            <tr class=\"diff-add-tr\">");
+                        sb.AppendLine("              <td class=\"diff-ln diff-old-ln\"></td>");
+                        sb.AppendLine($"              <td class=\"diff-ln diff-new-ln\">{line.NewLineNo}</td>");
+                        sb.AppendLine($"              <td class=\"diff-add-td\">+{HtmlEncode(line.Text)}</td>");
+                        sb.AppendLine("            </tr>");
+                        break;
+                    case TextDiffer.Context:
+                        sb.AppendLine("            <tr class=\"diff-ctx-tr\">");
+                        sb.AppendLine($"              <td class=\"diff-ln diff-old-ln\">{line.OldLineNo}</td>");
+                        sb.AppendLine($"              <td class=\"diff-ln diff-new-ln\">{line.NewLineNo}</td>");
+                        sb.AppendLine($"              <td class=\"diff-ctx-td\"> {HtmlEncode(line.Text)}</td>");
+                        sb.AppendLine("            </tr>");
+                        break;
+                    case TextDiffer.Truncated:
+                        sb.AppendLine("            <tr class=\"diff-trunc-tr\">");
+                        sb.AppendLine("              <td class=\"diff-ln\"></td>");
+                        sb.AppendLine("              <td class=\"diff-ln\"></td>");
+                        sb.AppendLine($"              <td class=\"diff-trunc-td\">{HtmlEncode(line.Text)}</td>");
+                        sb.AppendLine("            </tr>");
+                        break;
+                }
+            }
+
+            sb.AppendLine("          </tbody>");
+            sb.AppendLine("        </table>");
+            sb.AppendLine("      </div>");
+            sb.AppendLine("    </details>");
+            sb.AppendLine("  </td>");
+            sb.AppendLine("</tr>");
         }
 
         private void AppendSummarySection(StringBuilder sb, ConfigSettings config)
@@ -565,7 +696,37 @@ namespace FolderDiffIL4DotNet.Services
                  font-family: monospace; font-size: 13px; }
     ul.summary li { line-height: 1.8; }
     ul.warnings { margin: 0.3rem 0 0 1rem; }
-    ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }";
+    ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
+    /* ── Inline diff ───────────────────────────────────────────────────── */
+    tr.diff-row > td { padding: 0; border-top: none; }
+    details.diff-details { }
+    summary.diff-summary {
+      display: inline-flex; align-items: center; gap: 0.4em;
+      cursor: pointer; font-size: 12px; color: #0000cc;
+      padding: 3px 6px; user-select: none; list-style: none; }
+    summary.diff-summary::-webkit-details-marker { display: none; }
+    summary.diff-summary::before { content: '▶'; font-size: 10px; transition: transform 0.15s; }
+    details[open] > summary.diff-summary::before { transform: rotate(90deg); }
+    .diff-view { overflow-x: auto; margin: 0 0 4px 0; }
+    table.diff-table { border-collapse: collapse; width: 100%; margin: 0;
+                       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+                       font-size: 12px; }
+    table.diff-table td { padding: 1px 6px; border: none; white-space: pre; }
+    td.diff-ln { width: 3.5em; min-width: 2.5em; text-align: right;
+                 color: #999; background: #f6f8fa; border-right: 1px solid #e0e0e0;
+                 user-select: none; font-size: 11px; padding: 1px 4px; }
+    tr.diff-hunk-tr { background: #f1f8ff; }
+    td.diff-hunk-td { color: #0057ae; padding: 1px 8px; }
+    tr.diff-del-tr { background: #ffeef0; }
+    td.diff-del-td { color: #b31d28; background: #ffeef0; }
+    tr.diff-add-tr { background: #e6ffed; }
+    td.diff-add-td { color: #22863a; background: #e6ffed; }
+    tr.diff-ctx-tr { background: #fff; }
+    td.diff-ctx-td { color: #24292e; background: #fff; }
+    tr.diff-trunc-tr { background: #fffbdd; }
+    td.diff-trunc-td { color: #735c0f; padding: 2px 8px; font-style: italic; }
+    p.diff-skipped { color: #735c0f; font-size: 12px; padding: 4px 8px;
+                     background: #fffbdd; margin: 0; }";
         }
 
         // ── Utilities ────────────────────────────────────────────────────────
