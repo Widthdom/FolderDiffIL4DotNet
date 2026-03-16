@@ -100,9 +100,9 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>
         /// diff_report.md と同内容のインタラクティブ HTML レポート (diff_report.html) を生成するかどうか。
-        /// true の場合、Removed / Added / Modified の各ファイル行にチェックボックス・OK 理由・備考列が付き、
+        /// true の場合、Removed / Added / Modified の各ファイル行にチェックボックス・Justification（根拠）・Notes 列が付き、
         /// レビュー状態をブラウザの localStorage に自動保存します。
-        /// レビュー完了後に「Download reviewed version」ボタンで状態込みの HTML をダウンロードできます。
+        /// レビュー完了後に「Download as reviewed」ボタンで状態込みの HTML をダウンロードできます。
         /// </summary>
         public bool ShouldGenerateHtmlReport { get; set; } = true;
 

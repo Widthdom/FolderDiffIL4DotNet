@@ -12,7 +12,7 @@ namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// 差分結果のインタラクティブ HTML レポート (<see cref="DIFF_REPORT_HTML_FILE_NAME"/>) を生成するサービス。
-    /// Removed / Added / Modified の各ファイル行にチェックボックス・OK 理由・備考列を持ち、
+    /// Removed / Added / Modified の各ファイル行にチェックボックス・Justification（根拠）・Notes 列を持ち、
     /// localStorage による自動保存と「レビュー済みとして保存」ダウンロード機能を提供します。
     /// </summary>
     public sealed class HtmlReportGenerateService

@@ -98,6 +98,7 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 
 Main output:
 - `Reports/<label>/diff_report.md`
+- `Reports/<label>/diff_report.html` (disable with `"ShouldGenerateHtmlReport": false` in `config.json`)
 - Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#configuration-table-en) is `true`
 
 Process exit codes:
@@ -124,7 +125,7 @@ The HTML report is a self-contained single file that opens in any browser — no
 | Column | Description |
 |---|---|
 | ✓ | Checkbox to mark a file as reviewed |
-| OK Reason | Free-text input — explain why the change is expected |
+| Justification | Free-text input — explain why the change is expected |
 | Notes | Free-text input — additional remarks |
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
@@ -142,9 +143,9 @@ See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live samp
      ☑ check the checkbox, type the OK reason, add notes if needed.
 3. State is auto-saved to the browser's localStorage as you type
      — close the tab and reopen the same file to resume.
-4. When all rows are reviewed, click "Download reviewed version".
+4. When all rows are reviewed, click "Download as reviewed".
      A new file (e.g. diff_report_20260315_reviewed.html) is downloaded
-     with the current checkbox and text state embedded in the HTML source.
+     with the current checkbox, justification, and notes state embedded in the HTML source.
 5. Archive or share the downloaded file as the sign-off record,
      or print it to PDF for a hard-copy audit trail.
 ```
@@ -353,41 +354,15 @@ Notes:
 ## Generated Artifacts
 
 - `Reports/<label>/diff_report.md`
+- `Reports/<label>/diff_report.html` (unless `ShouldGenerateHtmlReport` is `false`)
 - `Logs/log_YYYYMMDD.log`
 - Optional: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
 Report and IL-text creation are treated as required output, so write failures stop the run. After writing, the files are set to read-only when possible, and that protection step remains warning-only.
 
-<a id="readme-en-api-docs"></a>
-## API Documentation
-
-API reference pages are generated with DocFX from the XML documentation comments emitted by both [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) and [`FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj).
-
-Local refresh:
-
-```bash
-dotnet build FolderDiffIL4DotNet.sln --configuration Release
-dotnet tool update --global docfx --version '2.*'
-export PATH="$PATH:$HOME/.dotnet/tools"
-docfx metadata docfx.json
-docfx build docfx.json
-```
-
-Generated outputs:
-- Site root: `_site/index.html`
-- API metadata intermediate files: `api/*.yml`
-
-CI also generates the same site and uploads it as the `DocumentationSite` artifact.
-
-<a id="readme-en-ci-automation"></a>
-## CI/CD and Security Automation
-
-- [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) builds, tests, generates DocFX output, uploads artifacts, and already enforces total coverage thresholds of `73%` line and `71%` branch.
-- [`.github/workflows/release.yml`](.github/workflows/release.yml) creates a GitHub Release when a `v*` tag is pushed and attaches zipped publish output, zipped documentation, and SHA-256 checksums.
-- [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) runs scheduled and on-change CodeQL analysis for both C# and GitHub Actions workflows.
-- [`.github/dependabot.yml`](.github/dependabot.yml) enables weekly update PRs for NuGet packages and GitHub Actions.
-
 Some tests show as **Skipped** when running locally — this is expected and safe. See [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-skipped-tests) for details.
+
+For API documentation generation, CI/CD pipeline details, and release automation, see [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-ci-release).
 
 ## License
 
@@ -499,6 +474,7 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 
 主な出力:
 - `Reports/<label>/diff_report.md`
+- `Reports/<label>/diff_report.html`（`config.json` で `"ShouldGenerateHtmlReport": false` を指定すると無効化可）
 - [`ShouldOutputILText`](#configuration-table-ja) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
 
 プロセス終了コード:
@@ -525,7 +501,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | 列 | 説明 |
 |---|---|
 | ✓ | チェックボックス（確認済みマーク） |
-| OK Reason | 自由テキスト入力 — 変更が想定内である理由を記入 |
+| Justification | 自由テキスト入力 — 変更が想定内である理由を記入 |
 | Notes | 自由テキスト入力 — 補足メモ |
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
@@ -540,10 +516,10 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 ```
 1. ブラウザで diff_report.html を開く（ファイルをダブルクリック）。
 2. Modified / Added / Removed の各行を確認する:
-     ☑ チェックを入れ、OK 理由を入力し、必要なら備考も追記。
+     ☑ チェックを入れ、Justification（根拠）を入力し、必要なら備考も追記。
 3. 入力のたびにブラウザの localStorage へ自動保存される
      — タブを閉じても同じファイルを再度開けば再開可能。
-4. 全行確認後、「Download reviewed version」ボタンをクリック。
+4. 全行確認後、「Download as reviewed」ボタンをクリック。
      現在のチェック状態とテキストを埋め込んだ新しい HTML がダウンロードされる
      （例: diff_report_20260315_reviewed.html）。
 5. ダウンロードしたファイルをサインオフ記録として保管・共有、
@@ -753,41 +729,15 @@ flowchart TD
 ## 生成物
 
 - `Reports/<label>/diff_report.md`
+- `Reports/<label>/diff_report.html`（`ShouldGenerateHtmlReport` が `false` の場合は生成されません）
 - `Logs/log_YYYYMMDD.log`
 - 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
 レポート本体と IL テキストの生成は必須成果物として扱うため、書き込み失敗時は実行を停止します。生成後の読み取り専用化は可能な範囲で行い、失敗しても警告のみです。
 
-<a id="readme-ja-api-docs"></a>
-## API ドキュメント
-
-API リファレンスは、[`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) と [`FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) が出力する XML ドキュメントコメントを DocFX で収集して生成します。
-
-ローカル更新手順:
-
-```bash
-dotnet build FolderDiffIL4DotNet.sln --configuration Release
-dotnet tool update --global docfx --version '2.*'
-export PATH="$PATH:$HOME/.dotnet/tools"
-docfx metadata docfx.json
-docfx build docfx.json
-```
-
-生成物:
-- サイト本体: `_site/index.html`
-- API メタデータ中間生成物: `api/*.yml`
-
-CI でも同じサイトを生成し、`DocumentationSite` artifact としてアップロードします。
-
-<a id="readme-ja-ci-automation"></a>
-## CI/CD とセキュリティ自動化
-
-- [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) はビルド、テスト、DocFX 生成、artifact 公開を行い、すでに total 行 `73%` / 分岐 `71%` のカバレッジしきい値も強制しています。
-- [`.github/workflows/release.yml`](.github/workflows/release.yml) は `v*` タグ push 時に GitHub Release を作成し、publish 出力 ZIP、ドキュメント ZIP、SHA-256 チェックサムを添付します。
-- [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) は C# と GitHub Actions を対象に、変更時と定期実行の CodeQL 解析を行います。
-- [`.github/dependabot.yml`](.github/dependabot.yml) は NuGet と GitHub Actions の更新 PR を週次で作成します。
-
 ローカルでテストを実行すると一部が **Skipped（スキップ）** と表示されることがありますが、問題ありません。詳細は [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-skipped-tests) を参照してください。
+
+API ドキュメントの生成手順、CI/CD パイプラインの詳細、リリース自動化については [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-ci-release) を参照してください。
 
 ## ライセンス
 
