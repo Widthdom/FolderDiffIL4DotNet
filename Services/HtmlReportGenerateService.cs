@@ -132,7 +132,7 @@ namespace FolderDiffIL4DotNet.Services
             if (config.ShouldIncludeILCacheStatsInReport && ilCache != null)
                 AppendILCacheStatsSection(sb, ilCache);
 
-            AppendWarningsSection(sb);
+            AppendWarningsSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, config, ilCache);
 
             sb.AppendLine("</main>");
             AppendJs(sb, storageKey, reportDate);
@@ -367,7 +367,8 @@ namespace FolderDiffIL4DotNet.Services
             ConfigSettings config,
             FileDiffResultLists.DiffDetailResult diffDetail,
             string disassemblerLabel,
-            ILCache ilCache)
+            ILCache ilCache,
+            string sectionPrefix = "mod")
         {
             int maxInput   = config.InlineDiffMaxInputLines  > 0 ? config.InlineDiffMaxInputLines  : 1000;
             int maxOutput  = config.InlineDiffMaxOutputLines > 0 ? config.InlineDiffMaxOutputLines : 500;
@@ -435,7 +436,7 @@ namespace FolderDiffIL4DotNet.Services
                 else if (line.Kind == TextDiffer.Removed) removedCount++;
             }
 
-            string detailsId = $"diff_mod_{idx}";
+            string detailsId = $"diff_{sectionPrefix}_{idx}";
 
             sb.AppendLine("<tr class=\"diff-row\">");
             sb.AppendLine("  <td colspan=\"7\">");
@@ -529,7 +530,12 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</table>");
         }
 
-        private void AppendWarningsSection(StringBuilder sb)
+        private void AppendWarningsSection(
+            StringBuilder sb,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath,
+            ConfigSettings config,
+            ILCache ilCache)
         {
             bool hasMd5 = _fileDiffResultLists.HasAnyMd5Mismatch;
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
@@ -554,7 +560,19 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var w in warnings)
                 {
                     string ts = $"[{HtmlEncode(w.OldTimestamp)}{TIMESTAMP_ARROW}{HtmlEncode(w.NewTimestamp)}]";
-                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, "");
+                    _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var diffDetail);
+                    _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(w.FileRelativePath, out var asm);
+                    string col6 = BuildDiffDetailDisplay(w.FileRelativePath, diffDetail, _fileDiffResultLists);
+                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6);
+
+                    if (config.EnableInlineDiff &&
+                        (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||
+                         diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch))
+                    {
+                        AppendInlineDiffRow(sb, idx, w.FileRelativePath, oldFolderAbsolutePath, newFolderAbsolutePath,
+                            config, diffDetail, asm ?? "", ilCache, sectionPrefix: "tsw");
+                    }
+
                     idx++;
                 }
                 sb.AppendLine("</tbody></table>");
@@ -583,7 +601,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<thead><tr style=\"background:{bg}\">");
             sb.AppendLine($"  <th class=\"col-no\">#</th>");
             sb.AppendLine($"  <th class=\"col-cb\">&#x2713;</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-reason-w\">OK Reason</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-reason-w\">Justification</th>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-notes-w\">Notes</th>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">File Path</th>");
             sb.AppendLine($"  <th>Timestamp</th>");
@@ -734,7 +752,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      '<title>' + slug + '_reviewed</title>');");
             sb.AppendLine("    // Replace controls bar with reviewed banner");
             sb.AppendLine("    html = html.replace(/<!--CTRL-->[\\s\\S]*?<!--\\/CTRL-->/g,");
-            sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed &#x2014; read-only</div>');");
+            sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed &#x2014; read-only &nbsp;&bull;&nbsp; ' + formatTs(new Date()) + '</div>');");
             sb.AppendLine("    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });");
             sb.AppendLine("    var a    = document.createElement('a');");
             sb.AppendLine("    a.href   = URL.createObjectURL(blob);");
@@ -805,14 +823,15 @@ namespace FolderDiffIL4DotNet.Services
       position: sticky; top: 0;
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
-      background: rgba(255,255,255,0.45);
-      border-bottom: 1px solid rgba(0,0,0,0.1);
+      background: rgba(255,255,255,0.1);
       padding: 0.65rem 2rem; margin: 0 -2rem;
       display: flex; gap: 0.8rem; align-items: center; z-index: 100;
     }
     .reviewed-banner {
       position: sticky; top: 0;
-      background: #e8f5e9; border-bottom: 1px solid #a5d6a7;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(255,255,255,0.1);
       padding: 0.5rem 2rem; margin: 0 -2rem;
       font-size: 13px; color: #2d7a2d; font-weight: 500; z-index: 100;
     }
@@ -857,7 +876,7 @@ namespace FolderDiffIL4DotNet.Services
     td.col-path { white-space: nowrap; overflow: hidden; }
     td.col-ts   { white-space: nowrap; width: 22em; }
     td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-                  font-size: 12px; white-space: nowrap; min-width: 12em; }
+                  font-size: 12px; white-space: nowrap; min-width: 20em; }
     td.col-reason input[type=""text""], td.col-notes input[type=""text""] {
       width: 100%; border: none; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; font-family: inherit; }
@@ -869,11 +888,11 @@ namespace FolderDiffIL4DotNet.Services
     table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
     table.stat-table td.stat-label { color: #444; white-space: nowrap; }
     table.stat-table td.stat-value { text-align: right; }
-    ul.warnings { margin: 0.3rem 0 0 1rem; }
+    ul.warnings { margin: 0.3rem 0 0 1.4rem; }
     ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
     .warn-icon { color: #f5a623; font-size: 1.1em; }
     /* ── Inline diff ─────────────────────────────────────────────────────── */
-    tr.diff-row { background: #eef5ff; }
+    tr.diff-row { background: #f6f8fa; }
     tr.diff-row > td { padding: 0; border-top: none; }
     .diff-added-cnt { color: #22863a; font-weight: 600; }
     .diff-removed-cnt { color: #b31d28; font-weight: 600; }

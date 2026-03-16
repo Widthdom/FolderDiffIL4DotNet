@@ -33,11 +33,12 @@
 ## [ - ] Removed Files (1)
 - [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
 
-## [ * ] Modified Files (5)
+## [ * ] Modified Files (6)
 - [ * ] config/app.config [2026-03-15 08:56:00 → 2026-03-15 09:01:00] `TextMismatch`
 - [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
 - [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
 - [ * ] src/Main.cs [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `TextMismatch`
+- [ * ] src/Service.dll [2026-03-15 09:05:00 → 2026-03-15 09:00:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
 - [ * ] src/Utils.cs [2026-03-15 08:57:00 → 2026-03-15 09:03:00] `TextMismatch`
 
 ## Summary
@@ -45,8 +46,8 @@
 - Unchanged : 5
 - Added     : 1
 - Removed   : 1
-- Modified  : 5
-- Compared  : 14 (Old) vs 14 (New)
+- Modified  : 6
+- Compared  : 15 (Old) vs 15 (New)
 
 ## IL Cache Stats
 - Hits    : 42
@@ -60,3 +61,4 @@
 - **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
 - **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
   - payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00]
+  - src/Service.dll [2026-03-15 09:05:00 → 2026-03-15 09:00:00]
