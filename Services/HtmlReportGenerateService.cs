@@ -915,7 +915,7 @@ namespace FolderDiffIL4DotNet.Services
     td.diff-ln { width: 3.5em; min-width: 2.5em; text-align: right;
                  color: #999; background: #f6f8fa; border-right: 1px solid #e0e0e0;
                  user-select: none; font-size: 11px; padding: 1px 4px; }
-    tr.diff-hunk-tr { background: #f1f8ff; }
+    tr.diff-hunk-tr { background: #f6f8fa; }
     td.diff-hunk-td { color: #0057ae; padding: 1px 8px; }
     tr.diff-del-tr { background: #ffeef0; }
     td.diff-del-td { color: #b31d28; background: #ffeef0; }
