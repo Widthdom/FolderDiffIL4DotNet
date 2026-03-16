@@ -1,55 +1,81 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Diff Report - report</title>
+  <title>diff_report</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
            font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
-    h1 { font-size: 1.4rem; padding: 1rem 0 0.5rem; }
-    h2 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+    h1 { font-size: 1.3rem; padding: 1rem 0 0.4rem; }
+    h2 { font-size: 1rem; margin: 1.4rem 0 0.35rem; }
+    h3 { font-size: 0.95rem; margin: 1.2rem 0 0.3rem; }
     code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
            font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
-    ul.meta { margin: 0.4rem 0 0.8rem 1.2rem; }
-    ul.meta li { margin-bottom: 2px; line-height: 1.6; }
-    ul.meta li.note { color: #555; font-size: 12px; }
-    .legend { margin: 0.4rem 0 0.8rem; font-size: 13px; }
-    .controls { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd;
-                padding: 0.5rem 0; display: flex; gap: 0.8rem; align-items: center; z-index: 100; }
-    .btn { padding: 0.3rem 0.8rem; cursor: pointer; border: 1px solid #aaa;
-           background: #f5f5f5; font-size: 13px; border-radius: 3px; }
-    .btn:hover { background: #e8e8e8; }
-    .save-status { font-size: 12px; color: #777; }
+    ul.meta { margin: 0.4rem 0 0.8rem 1.4rem; }
+    ul.meta li { margin-bottom: 3px; line-height: 1.65; }
+    ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
+    ul.meta ul li { margin-bottom: 1px; }
+    /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
+    .controls {
+      position: sticky; top: 0;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(255,255,255,0.72);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      padding: 0.65rem 2rem; margin: 0 -2rem;
+      display: flex; gap: 0.8rem; align-items: center; z-index: 100;
+    }
+    /* ── Apple-style buttons ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.35em;
+      padding: 0.45rem 1.1rem; cursor: pointer;
+      background: #1d1d1f; color: #fff;
+      border: 1.5px solid #1d1d1f; font-size: 13px; border-radius: 980px;
+      font-family: inherit; letter-spacing: -0.01em;
+      transition: background 0.12s, color 0.12s; white-space: nowrap; line-height: 1;
+    }
+    .btn:hover { background: #424245; border-color: #424245; }
+    .btn-clear {
+      background: transparent; color: #1d1d1f;
+    }
+    .btn-clear:hover { background: #f5f5f7; }
+    .save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
+    /* ── Data tables ─────────────────────────────────────────────────────── */
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
-         border: 1px solid #bbb; background: #fafafa; }
-    td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; }
-    td.col-cb { width: 2.2em; text-align: center; }
-    td.col-reason { min-width: 8em; }
-    td.col-notes  { min-width: 8em; }
-    td.col-path { font-family: monospace; font-size: 12px; word-break: break-all; min-width: 15em; }
-    td.col-ts   { font-family: monospace; font-size: 12px; white-space: nowrap; width: 22em; }
-    td.col-diff { font-family: monospace; font-size: 12px; white-space: nowrap; width: 11em; }
-    td.col-asm  { font-family: monospace; font-size: 12px; white-space: nowrap; width: 20em; }
+         border: 1px solid #bbb; color: #000; }
+    td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; font-size: 12px; }
+    td.col-no   { width: 2.5em; text-align: right; color: #aaa;
+                  font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
+    td.col-cb   { width: 2.2em; text-align: center; }
+    td.col-reason { min-width: 8em; resize: horizontal; overflow: auto; }
+    td.col-notes  { min-width: 8em; resize: horizontal; overflow: auto; }
+    td.col-path { white-space: nowrap; min-width: 15em; resize: horizontal; overflow: auto; }
+    td.col-ts   { white-space: nowrap; width: 22em; }
+    td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+                  font-size: 12px; white-space: nowrap; min-width: 12em; }
     td.col-reason input[type="text"], td.col-notes input[type="text"] {
-        width: 100%; border: 1px solid #ccc; padding: 2px 5px; font-size: 13px; outline: none; }
+      width: 100%; border: none; padding: 2px 4px; font-size: 12px;
+      background: transparent; outline: none; font-family: inherit; }
     td.col-reason input[type="text"]:focus, td.col-notes input[type="text"]:focus {
-        border-color: #666; background: #fffff8; }
+      background: #fffff8; outline: 1px solid #aaa; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
-    ul.summary { list-style: none; margin: 0.3rem 0 1rem 1rem;
-                 font-family: monospace; font-size: 13px; }
-    ul.summary li { line-height: 1.8; }
+    /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
+    table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; }
+    table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
+    table.stat-table td.stat-label { color: #444; white-space: nowrap; }
+    table.stat-table td.stat-value { text-align: right;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
     ul.warnings { margin: 0.3rem 0 0 1rem; }
     ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
-    /* ── Inline diff ───────────────────────────────────────────────────── */
+    /* ── Inline diff ─────────────────────────────────────────────────────── */
     tr.diff-row > td { padding: 0; border-top: none; }
-    details.diff-details { }
     summary.diff-summary {
       display: inline-flex; align-items: center; gap: 0.4em;
-      cursor: pointer; font-size: 12px; color: #0000cc;
+      cursor: pointer; font-size: 12px; color: #0051c3;
       padding: 3px 6px; user-select: none; list-style: none; }
     summary.diff-summary::-webkit-details-marker { display: none; }
     summary.diff-summary::before { content: '▶'; font-size: 10px; transition: transform 0.15s; }
@@ -77,420 +103,369 @@
   </style>
 </head>
 <body>
+<!--CTRL-->
 <div class="controls">
-  <button class="btn" onclick="downloadReviewed()">&#x1F4BE; Download reviewed version</button>
+  <button class="btn" onclick="downloadReviewed()">&#x21E9; Download reviewed version</button>
   <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
   <span id="save-status" class="save-status"></span>
 </div>
+<!--/CTRL-->
 <main>
-<h1>Folder Diff Report</h1>
+<h1>diff_report</h1>
 <ul class="meta">
-  <li>App Version: FolderDiffIL4DotNet FolderDiffIL4DotNet 1.0.0</li>
+  <li>App Version: FolderDiffIL4DotNet 1.0.0</li>
   <li>Computer: dev-machine</li>
-  <li>Old: <code>/tmp/fd-sample-gen-133a2a6a4fc24fa3b1cb813663e339eb/old</code></li>
-  <li>New: <code>/tmp/fd-sample-gen-133a2a6a4fc24fa3b1cb813663e339eb/new</code></li>
+  <li>Old: /Users/UserA/workspace/old</li>
+  <li>New: /Users/UserA/workspace/new</li>
   <li>Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb</li>
-  <li>Text File Extensions: .cs, .json, .md, .txt, .xml, .config, .yaml, .yml</li>
+  <li>Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml</li>
   <li>IL Disassembler: dotnet-ildasm (version: 0.12.2)</li>
   <li>Elapsed Time: 0h 0m 1.2s</li>
-  <li>Timestamps (timezone): +00:00</li>
-  <li class="note">Note: When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>
+  <li>Timestamps (timezone): +09:00</li>
+  <li>Note: When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>
+  <li>Note: When diffing IL, lines containing any of the configured strings are ignored: <code>&quot;buildserver1_&quot;</code>, <code>&quot;buildserver2_&quot;</code>.</li>
+  <li>Legend:
+    <ul>
+      <li><code>MD5Match</code> / <code>MD5Mismatch</code>: MD5 hash match / mismatch</li>
+      <li><code>ILMatch</code> / <code>ILMismatch</code>: IL(Intermediate Language) match / mismatch</li>
+      <li><code>TextMatch</code> / <code>TextMismatch</code>: Text match / mismatch</li>
+    </ul>
+  </li>
 </ul>
-<div class="legend">
-  <strong>Legend:</strong>&nbsp;
-  <code>MD5Match</code>&nbsp;/&nbsp;<code>MD5Mismatch</code>: MD5 hash match / mismatch
-  &nbsp;|&nbsp;
-  <code>ILMatch</code>&nbsp;/&nbsp;<code>ILMismatch</code>: IL(Intermediate Language) match / mismatch
-  &nbsp;|&nbsp;
-  <code>TextMatch</code>&nbsp;/&nbsp;<code>TextMismatch</code>: Text match / mismatch
-</div>
 <h2>[ x ] Ignored Files (3)</h2>
 <table>
-<thead><tr>
+<thead><tr style="background:#fafafa">
+  <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
   <th>OK Reason</th>
   <th>Notes</th>
   <th>File Path</th>
   <th>Timestamp</th>
   <th>Location</th>
-  <th>Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
+  <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_ign_0"></td>
-  <td class="col-reason"><input type="text" id="reason_ign_0" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_ign_0" placeholder="Notes"></td>
-  <td class="col-path"><code>bin/App.pdb</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00 → 1601-01-01 00:00:00]</code></td>
-  <td class="col-diff"><code>old/new</code></td>
-  <td class="col-asm"><code></code></td>
-</tr>
-<tr>
-  <td class="col-cb"><input type="checkbox" id="cb_ign_1"></td>
-  <td class="col-reason"><input type="text" id="reason_ign_1" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_ign_1" placeholder="Notes"></td>
-  <td class="col-path"><code>logs/debug.log</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
+  <td class="col-reason"><input type="text" id="reason_ign_0"></td>
+  <td class="col-notes"><input type="text" id="notes_ign_0"></td>
+  <td class="col-path">/Users/UserA/workspace/old/logs/debug.log</td>
+  <td class="col-ts">[2026-03-15 08:50:00]</td>
   <td class="col-diff"><code>old</code></td>
-  <td class="col-asm"><code></code></td>
 </tr>
 <tr>
-  <td class="col-cb"><input type="checkbox" id="cb_ign_2"></td>
-  <td class="col-reason"><input type="text" id="reason_ign_2" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_ign_2" placeholder="Notes"></td>
-  <td class="col-path"><code>obj/build.cache</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
+  <td class="col-no">2</td>
+  <td class="col-cb"><input type="checkbox" id="cb_ign_1"></td>
+  <td class="col-reason"><input type="text" id="reason_ign_1"></td>
+  <td class="col-notes"><input type="text" id="notes_ign_1"></td>
+  <td class="col-path">/Users/UserA/workspace/new/obj/build.cache</td>
+  <td class="col-ts">[2026-03-15 09:05:00]</td>
   <td class="col-diff"><code>new</code></td>
-  <td class="col-asm"><code></code></td>
+</tr>
+<tr>
+  <td class="col-no">3</td>
+  <td class="col-cb"><input type="checkbox" id="cb_ign_2"></td>
+  <td class="col-reason"><input type="text" id="reason_ign_2"></td>
+  <td class="col-notes"><input type="text" id="notes_ign_2"></td>
+  <td class="col-path">bin/App.pdb</td>
+  <td class="col-ts">[2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00]</td>
+  <td class="col-diff"><code>old/new</code></td>
 </tr>
 </tbody></table>
 <h2>[ = ] Unchanged Files (5)</h2>
 <table>
-<thead><tr>
+<thead><tr style="background:#fafafa">
+  <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
   <th>OK Reason</th>
   <th>Notes</th>
   <th>File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
-  <th>Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
+  <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_0"></td>
-  <td class="col-reason"><input type="text" id="reason_unch_0" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_unch_0" placeholder="Notes"></td>
-  <td class="col-path"><code>appsettings.json</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
+  <td class="col-reason"><input type="text" id="reason_unch_0"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_0"></td>
+  <td class="col-path">appsettings.json</td>
+  <td class="col-ts">[2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>TextMatch</code></td>
-  <td class="col-asm"><code></code></td>
 </tr>
 <tr>
+  <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_1"></td>
-  <td class="col-reason"><input type="text" id="reason_unch_1" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_unch_1" placeholder="Notes"></td>
-  <td class="col-path"><code>data/schema.bin</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
+  <td class="col-reason"><input type="text" id="reason_unch_1"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_1"></td>
+  <td class="col-path">data/schema.bin</td>
+  <td class="col-ts">[2026-03-15 08:30:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>MD5Match</code></td>
-  <td class="col-asm"><code></code></td>
 </tr>
 <tr>
+  <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_2"></td>
-  <td class="col-reason"><input type="text" id="reason_unch_2" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_unch_2" placeholder="Notes"></td>
-  <td class="col-path"><code>docs/notes.md</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
+  <td class="col-reason"><input type="text" id="reason_unch_2"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_2"></td>
+  <td class="col-path">docs/notes.md</td>
+  <td class="col-ts">[2026-03-15 08:00:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>TextMatch</code></td>
-  <td class="col-asm"><code></code></td>
 </tr>
 <tr>
+  <td class="col-no">4</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_3"></td>
-  <td class="col-reason"><input type="text" id="reason_unch_3" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_unch_3" placeholder="Notes"></td>
-  <td class="col-path"><code>util/Helper.dll</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
-  <td class="col-diff"><code>ILMatch</code></td>
-  <td class="col-asm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+  <td class="col-reason"><input type="text" id="reason_unch_3"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_3"></td>
+  <td class="col-path">util/Helper.dll</td>
+  <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
+  <td class="col-diff"><code>ILMatch dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr>
+  <td class="col-no">5</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_4"></td>
-  <td class="col-reason"><input type="text" id="reason_unch_4" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_unch_4" placeholder="Notes"></td>
-  <td class="col-path"><code>vendor/lib.dll</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
+  <td class="col-reason"><input type="text" id="reason_unch_4"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_4"></td>
+  <td class="col-path">vendor/lib.dll</td>
+  <td class="col-ts">[2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>MD5Match</code></td>
-  <td class="col-asm"><code></code></td>
 </tr>
 </tbody></table>
-<h2 style="color:#006600">[ + ] Added Files (1)</h2>
+<h2 style="color:#2d7a2d">[ + ] Added Files (1)</h2>
 <table>
-<thead><tr>
-  <th class="col-cb" style="color:#006600">&#x2713;</th>
-  <th style="color:#006600">OK Reason</th>
-  <th style="color:#006600">Notes</th>
-  <th style="color:#006600">File Path</th>
-  <th style="color:#006600">Timestamp</th>
-  <th style="color:#006600">Diff Reason</th>
-  <th style="color:#006600">Disassembler</th>
+<thead><tr style="background:#e8f5e9">
+  <th class="col-no">#</th>
+  <th class="col-cb">&#x2713;</th>
+  <th>OK Reason</th>
+  <th>Notes</th>
+  <th>File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
 </tr></thead>
 <tbody>
 <tr>
+  <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_add_0"></td>
-  <td class="col-reason"><input type="text" id="reason_add_0" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_add_0" placeholder="Notes"></td>
-  <td class="col-path"><code>/tmp/fd-sample-gen-133a2a6a4fc24fa3b1cb813663e339eb/new/docs/guide.md</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
+  <td class="col-reason"><input type="text" id="reason_add_0"></td>
+  <td class="col-notes"><input type="text" id="notes_add_0"></td>
+  <td class="col-path">/Users/UserA/workspace/new/docs/guide.md</td>
+  <td class="col-ts">[2026-03-15 09:01:00]</td>
   <td class="col-diff"><code></code></td>
-  <td class="col-asm"><code></code></td>
 </tr>
 </tbody></table>
-<h2 style="color:#cc0000">[ - ] Removed Files (1)</h2>
+<h2 style="color:#b00020">[ - ] Removed Files (1)</h2>
 <table>
-<thead><tr>
-  <th class="col-cb" style="color:#cc0000">&#x2713;</th>
-  <th style="color:#cc0000">OK Reason</th>
-  <th style="color:#cc0000">Notes</th>
-  <th style="color:#cc0000">File Path</th>
-  <th style="color:#cc0000">Timestamp</th>
-  <th style="color:#cc0000">Diff Reason</th>
-  <th style="color:#cc0000">Disassembler</th>
+<thead><tr style="background:#ffebee">
+  <th class="col-no">#</th>
+  <th class="col-cb">&#x2713;</th>
+  <th>OK Reason</th>
+  <th>Notes</th>
+  <th>File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
 </tr></thead>
 <tbody>
 <tr>
+  <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_rem_0"></td>
-  <td class="col-reason"><input type="text" id="reason_rem_0" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_rem_0" placeholder="Notes"></td>
-  <td class="col-path"><code>/tmp/fd-sample-gen-133a2a6a4fc24fa3b1cb813663e339eb/old/legacy/old-tool.txt</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00]</code></td>
+  <td class="col-reason"><input type="text" id="reason_rem_0"></td>
+  <td class="col-notes"><input type="text" id="notes_rem_0"></td>
+  <td class="col-path">/Users/UserA/workspace/old/legacy/old-tool.txt</td>
+  <td class="col-ts">[2026-03-15 08:55:00]</td>
   <td class="col-diff"><code></code></td>
-  <td class="col-asm"><code></code></td>
 </tr>
 </tbody></table>
-<h2 style="color:#0000cc">[ * ] Modified Files (3)</h2>
+<h2 style="color:#0051c3">[ * ] Modified Files (5)</h2>
 <table>
-<thead><tr>
-  <th class="col-cb" style="color:#0000cc">&#x2713;</th>
-  <th style="color:#0000cc">OK Reason</th>
-  <th style="color:#0000cc">Notes</th>
-  <th style="color:#0000cc">File Path</th>
-  <th style="color:#0000cc">Timestamp</th>
-  <th style="color:#0000cc">Diff Reason</th>
-  <th style="color:#0000cc">Disassembler</th>
+<thead><tr style="background:#e3f2fd">
+  <th class="col-no">#</th>
+  <th class="col-cb">&#x2713;</th>
+  <th>OK Reason</th>
+  <th>Notes</th>
+  <th>File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
 </tr></thead>
 <tbody>
 <tr>
+  <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
-  <td class="col-reason"><input type="text" id="reason_mod_0" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_mod_0" placeholder="Notes"></td>
-  <td class="col-path"><code>payload.bin</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00 → 1601-01-01 00:00:00]</code></td>
-  <td class="col-diff"><code>MD5Mismatch</code></td>
-  <td class="col-asm"><code></code></td>
-</tr>
-<tr>
-  <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
-  <td class="col-reason"><input type="text" id="reason_mod_1" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_mod_1" placeholder="Notes"></td>
-  <td class="col-path"><code>src/App.dll</code></td>
-  <td class="col-ts"><code>[1601-01-01 00:00:00 → 1601-01-01 00:00:00]</code></td>
-  <td class="col-diff"><code>ILMismatch</code></td>
-  <td class="col-asm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
-</tr>
-<tr>
-  <td class="col-cb"><input type="checkbox" id="cb_mod_2"></td>
-  <td class="col-reason"><input type="text" id="reason_mod_2" placeholder="OK reason"></td>
-  <td class="col-notes"><input type="text" id="notes_mod_2" placeholder="Notes"></td>
-  <td class="col-path"><code>src/Main.cs</code></td>
-  <td class="col-ts"><code>[2026-03-16 16:02:45 → 2026-03-16 16:02:45]</code></td>
+  <td class="col-reason"><input type="text" id="reason_mod_0"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_0"></td>
+  <td class="col-path">config/app.config</td>
+  <td class="col-ts">[2026-03-15 08:56:00 &#x2192; 2026-03-15 09:01:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
-  <td class="col-asm"><code></code></td>
 </tr>
 <tr class="diff-row">
   <td colspan="7">
-    <details id="diff_mod_2">
-      <summary class="diff-summary">Show diff (+9 / -6)</summary>
+    <details id="diff_mod_0">
+      <summary class="diff-summary">Show diff (+2 / -1)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
             <tr class="diff-hunk-tr">
               <td class="diff-ln"></td>
               <td class="diff-ln"></td>
-              <td class="diff-hunk-td">@@ -1,30 +1,33 @@</td>
+              <td class="diff-hunk-td">@@ -3 +3,2 @@</td>
             </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">1</td>
-              <td class="diff-ln diff-new-ln">1</td>
-              <td class="diff-ctx-td"> using System;</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">2</td>
-              <td class="diff-ln diff-new-ln">2</td>
-              <td class="diff-ctx-td"> using System.Collections.Generic;</td>
+            <tr class="diff-del-tr">
+              <td class="diff-ln diff-old-ln">3</td>
+              <td class="diff-ln diff-new-ln"></td>
+              <td class="diff-del-td">-  &lt;add key=&quot;Environment&quot; value=&quot;staging&quot; /&gt;</td>
             </tr>
             <tr class="diff-add-tr">
               <td class="diff-ln diff-old-ln"></td>
               <td class="diff-ln diff-new-ln">3</td>
-              <td class="diff-add-td">+using System.IO;</td>
+              <td class="diff-add-td">+  &lt;add key=&quot;Environment&quot; value=&quot;production&quot; /&gt;</td>
             </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">3</td>
+            <tr class="diff-add-tr">
+              <td class="diff-ln diff-old-ln"></td>
               <td class="diff-ln diff-new-ln">4</td>
-              <td class="diff-ctx-td"> </td>
+              <td class="diff-add-td">+  &lt;add key=&quot;LogLevel&quot; value=&quot;Warning&quot; /&gt;</td>
             </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">4</td>
-              <td class="diff-ln diff-new-ln">5</td>
-              <td class="diff-ctx-td"> namespace MyApp</td>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </td>
+</tr>
+<tr>
+  <td class="col-no">2</td>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_1"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_1"></td>
+  <td class="col-path">payload.bin</td>
+  <td class="col-ts">[2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00]</td>
+  <td class="col-diff"><code>MD5Mismatch</code></td>
+</tr>
+<tr>
+  <td class="col-no">3</td>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_2"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_2"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_2"></td>
+  <td class="col-path">src/App.dll</td>
+  <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
+  <td class="col-diff"><code>ILMismatch dotnet-ildasm (version: 0.12.2)</code></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="7">
+    <details id="diff_mod_2">
+      <summary class="diff-summary">Show diff (+3 / -2)</summary>
+      <div class="diff-view">
+        <table class="diff-table">
+          <tbody>
+            <tr class="diff-hunk-tr">
+              <td class="diff-ln"></td>
+              <td class="diff-ln"></td>
+              <td class="diff-hunk-td">@@ -12,2 +12,3 @@</td>
             </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">5</td>
-              <td class="diff-ln diff-new-ln">6</td>
-              <td class="diff-ctx-td"> {</td>
+            <tr class="diff-del-tr">
+              <td class="diff-ln diff-old-ln">12</td>
+              <td class="diff-ln diff-new-ln"></td>
+              <td class="diff-del-td">-    IL_0004: ldc.i4.s   42</td>
             </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">6</td>
-              <td class="diff-ln diff-new-ln">7</td>
-              <td class="diff-ctx-td">     internal static class Program</td>
+            <tr class="diff-del-tr">
+              <td class="diff-ln diff-old-ln">13</td>
+              <td class="diff-ln diff-new-ln"></td>
+              <td class="diff-del-td">-    IL_0006: stloc.0</td>
             </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">7</td>
-              <td class="diff-ln diff-new-ln">8</td>
-              <td class="diff-ctx-td">     {</td>
+            <tr class="diff-add-tr">
+              <td class="diff-ln diff-old-ln"></td>
+              <td class="diff-ln diff-new-ln">12</td>
+              <td class="diff-add-td">+    IL_0004: ldc.i4.s   100</td>
+            </tr>
+            <tr class="diff-add-tr">
+              <td class="diff-ln diff-old-ln"></td>
+              <td class="diff-ln diff-new-ln">13</td>
+              <td class="diff-add-td">+    IL_0006: stloc.0</td>
+            </tr>
+            <tr class="diff-add-tr">
+              <td class="diff-ln diff-old-ln"></td>
+              <td class="diff-ln diff-new-ln">14</td>
+              <td class="diff-add-td">+    IL_0007: nop</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </td>
+</tr>
+<tr>
+  <td class="col-no">4</td>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_3"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_3"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_3"></td>
+  <td class="col-path">src/Main.cs</td>
+  <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
+  <td class="col-diff"><code>TextMismatch</code></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="7">
+    <details id="diff_mod_3">
+      <summary class="diff-summary">Show diff (+2 / -2)</summary>
+      <div class="diff-view">
+        <table class="diff-table">
+          <tbody>
+            <tr class="diff-hunk-tr">
+              <td class="diff-ln"></td>
+              <td class="diff-ln"></td>
+              <td class="diff-hunk-td">@@ -8,2 +8,2 @@</td>
             </tr>
             <tr class="diff-del-tr">
               <td class="diff-ln diff-old-ln">8</td>
               <td class="diff-ln diff-new-ln"></td>
-              <td class="diff-del-td">-        private const int MaxRetries = 3;</td>
+              <td class="diff-del-td">-        Console.WriteLine(&quot;Hello, World!&quot;);</td>
+            </tr>
+            <tr class="diff-del-tr">
+              <td class="diff-ln diff-old-ln">9</td>
+              <td class="diff-ln diff-new-ln"></td>
+              <td class="diff-del-td">-        return 0;</td>
+            </tr>
+            <tr class="diff-add-tr">
+              <td class="diff-ln diff-old-ln"></td>
+              <td class="diff-ln diff-new-ln">8</td>
+              <td class="diff-add-td">+        Console.WriteLine(&quot;Hello, Release!&quot;);</td>
             </tr>
             <tr class="diff-add-tr">
               <td class="diff-ln diff-old-ln"></td>
               <td class="diff-ln diff-new-ln">9</td>
-              <td class="diff-add-td">+        private const int MaxRetries = 5;</td>
+              <td class="diff-add-td">+        return ExitCode.Success;</td>
             </tr>
-            <tr class="diff-add-tr">
-              <td class="diff-ln diff-old-ln"></td>
-              <td class="diff-ln diff-new-ln">10</td>
-              <td class="diff-add-td">+        private const string DefaultOutput = &quot;output.txt&quot;;</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">9</td>
-              <td class="diff-ln diff-new-ln">11</td>
-              <td class="diff-ctx-td"> </td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">10</td>
-              <td class="diff-ln diff-new-ln">12</td>
-              <td class="diff-ctx-td">         static int Main(string[] args)</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">11</td>
-              <td class="diff-ln diff-new-ln">13</td>
-              <td class="diff-ctx-td">         {</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">12</td>
-              <td class="diff-ln diff-new-ln">14</td>
-              <td class="diff-ctx-td">             if (args.Length == 0)</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">13</td>
-              <td class="diff-ln diff-new-ln">15</td>
-              <td class="diff-ctx-td">             {</td>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </td>
+</tr>
+<tr>
+  <td class="col-no">5</td>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_4"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_4"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_4"></td>
+  <td class="col-path">src/Utils.cs</td>
+  <td class="col-ts">[2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00]</td>
+  <td class="col-diff"><code>TextMismatch</code></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="7">
+    <details id="diff_mod_4">
+      <summary class="diff-summary">Show diff (+1 / -1)</summary>
+      <div class="diff-view">
+        <table class="diff-table">
+          <tbody>
+            <tr class="diff-hunk-tr">
+              <td class="diff-ln"></td>
+              <td class="diff-ln"></td>
+              <td class="diff-hunk-td">@@ -15 +15 @@</td>
             </tr>
             <tr class="diff-del-tr">
-              <td class="diff-ln diff-old-ln">14</td>
-              <td class="diff-ln diff-new-ln"></td>
-              <td class="diff-del-td">-                Console.Error.WriteLine(&quot;Usage: myapp &lt;input&gt;&quot;);</td>
-            </tr>
-            <tr class="diff-add-tr">
-              <td class="diff-ln diff-old-ln"></td>
-              <td class="diff-ln diff-new-ln">16</td>
-              <td class="diff-add-td">+                Console.Error.WriteLine(&quot;Usage: myapp &lt;input&gt; [output]&quot;);</td>
-            </tr>
-            <tr class="diff-ctx-tr">
               <td class="diff-ln diff-old-ln">15</td>
-              <td class="diff-ln diff-new-ln">17</td>
-              <td class="diff-ctx-td">                 return 1;</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">16</td>
-              <td class="diff-ln diff-new-ln">18</td>
-              <td class="diff-ctx-td">             }</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">17</td>
-              <td class="diff-ln diff-new-ln">19</td>
-              <td class="diff-ctx-td"> </td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">18</td>
-              <td class="diff-ln diff-new-ln">20</td>
-              <td class="diff-ctx-td">             var items = LoadItems(args[0]);</td>
-            </tr>
-            <tr class="diff-del-tr">
-              <td class="diff-ln diff-old-ln">19</td>
               <td class="diff-ln diff-new-ln"></td>
-              <td class="diff-del-td">-            foreach (var item in items)</td>
-            </tr>
-            <tr class="diff-del-tr">
-              <td class="diff-ln diff-old-ln">20</td>
-              <td class="diff-ln diff-new-ln"></td>
-              <td class="diff-del-td">-            {</td>
-            </tr>
-            <tr class="diff-del-tr">
-              <td class="diff-ln diff-old-ln">21</td>
-              <td class="diff-ln diff-new-ln"></td>
-              <td class="diff-del-td">-                Console.WriteLine(item);</td>
-            </tr>
-            <tr class="diff-del-tr">
-              <td class="diff-ln diff-old-ln">22</td>
-              <td class="diff-ln diff-new-ln"></td>
-              <td class="diff-del-td">-            }</td>
+              <td class="diff-del-td">-        private const int MaxRetry = 3;</td>
             </tr>
             <tr class="diff-add-tr">
               <td class="diff-ln diff-old-ln"></td>
-              <td class="diff-ln diff-new-ln">21</td>
-              <td class="diff-add-td">+            string outputPath = args.Length &gt; 1 ? args[1] : DefaultOutput;</td>
-            </tr>
-            <tr class="diff-add-tr">
-              <td class="diff-ln diff-old-ln"></td>
-              <td class="diff-ln diff-new-ln">22</td>
-              <td class="diff-add-td">+            File.WriteAllLines(outputPath, items);</td>
-            </tr>
-            <tr class="diff-add-tr">
-              <td class="diff-ln diff-old-ln"></td>
-              <td class="diff-ln diff-new-ln">23</td>
-              <td class="diff-add-td">+            Console.WriteLine($&quot;Wrote {items.Count} items to {outputPath}&quot;);</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">23</td>
-              <td class="diff-ln diff-new-ln">24</td>
-              <td class="diff-ctx-td">             return 0;</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">24</td>
-              <td class="diff-ln diff-new-ln">25</td>
-              <td class="diff-ctx-td">         }</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">25</td>
-              <td class="diff-ln diff-new-ln">26</td>
-              <td class="diff-ctx-td"> </td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">26</td>
-              <td class="diff-ln diff-new-ln">27</td>
-              <td class="diff-ctx-td">         private static List&lt;string&gt; LoadItems(string path)</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">27</td>
-              <td class="diff-ln diff-new-ln">28</td>
-              <td class="diff-ctx-td">         {</td>
-            </tr>
-            <tr class="diff-add-tr">
-              <td class="diff-ln diff-old-ln"></td>
-              <td class="diff-ln diff-new-ln">29</td>
-              <td class="diff-add-td">+            if (!File.Exists(path))</td>
-            </tr>
-            <tr class="diff-add-tr">
-              <td class="diff-ln diff-old-ln"></td>
-              <td class="diff-ln diff-new-ln">30</td>
-              <td class="diff-add-td">+                throw new FileNotFoundException($&quot;Input file not found: {path}&quot;);</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">28</td>
-              <td class="diff-ln diff-new-ln">31</td>
-              <td class="diff-ctx-td">             return new List&lt;string&gt;(File.ReadAllLines(path));</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">29</td>
-              <td class="diff-ln diff-new-ln">32</td>
-              <td class="diff-ctx-td">         }</td>
-            </tr>
-            <tr class="diff-ctx-tr">
-              <td class="diff-ln diff-old-ln">30</td>
-              <td class="diff-ln diff-new-ln">33</td>
-              <td class="diff-ctx-td">     }</td>
+              <td class="diff-ln diff-new-ln">15</td>
+              <td class="diff-add-td">+        private const int MaxRetry = 5;</td>
             </tr>
           </tbody>
         </table>
@@ -500,35 +475,64 @@
 </tr>
 </tbody></table>
 <h2>Summary</h2>
-<ul class="summary">
-  <li>Ignored   : 3</li>
-  <li>Unchanged : 5</li>
-  <li>Added     : 1</li>
-  <li>Removed   : 1</li>
-  <li>Modified  : 3</li>
-  <li>Compared  : 9 (Old) vs 9 (New)</li>
-</ul>
+<table class="stat-table">
+  <tbody>
+    <tr><td class="stat-label">Ignored</td><td class="stat-value">3</td></tr>
+    <tr><td class="stat-label">Unchanged</td><td class="stat-value">5</td></tr>
+    <tr><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
+    <tr><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
+    <tr><td class="stat-label">Modified</td><td class="stat-value">5</td></tr>
+    <tr><td class="stat-label">Compared</td><td class="stat-value">14 (Old) vs 14 (New)</td></tr>
+  </tbody>
+</table>
 <h2>IL Cache Stats</h2>
-<ul class="summary">
-  <li>Hits    : 0</li>
-  <li>Misses  : 0</li>
-  <li>Hit Rate: 0.0%</li>
-  <li>Stores  : 0</li>
-  <li>Evicted : 0</li>
-  <li>Expired : 0</li>
-</ul>
+<table class="stat-table">
+  <tbody>
+    <tr><td class="stat-label">Hits</td><td class="stat-value">42</td></tr>
+    <tr><td class="stat-label">Misses</td><td class="stat-value">8</td></tr>
+    <tr><td class="stat-label">Hit Rate</td><td class="stat-value">84.0%</td></tr>
+    <tr><td class="stat-label">Stores</td><td class="stat-value">8</td></tr>
+    <tr><td class="stat-label">Evicted</td><td class="stat-value">0</td></tr>
+    <tr><td class="stat-label">Expired</td><td class="stat-value">0</td></tr>
+  </tbody>
+</table>
 <h2>Warnings</h2>
 <ul class="warnings">
-  <li><strong>WARNING:</strong> One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.</li>
-  <li><strong>WARNING:</strong> One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.
-    <ul>
-      <li><code>payload.bin</code> [2026-03-15 08:59:00 → 2026-03-15 08:54:00]</li>
-    </ul></li>
+  <li><strong>WARNING:</strong> One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible.</li>
+  <li><strong>WARNING:</strong> One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>
 </ul>
+<h3 style="color:#0051c3">[ ! ] Modified Files &#x2014; Timestamps Regressed (1)</h3>
+<table>
+<thead><tr style="background:#e3f2fd">
+  <th class="col-no">#</th>
+  <th class="col-cb">&#x2713;</th>
+  <th>OK Reason</th>
+  <th>Notes</th>
+  <th>File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td class="col-no">1</td>
+  <td class="col-cb"><input type="checkbox" id="cb_tsw_0"></td>
+  <td class="col-reason"><input type="text" id="reason_tsw_0"></td>
+  <td class="col-notes"><input type="text" id="notes_tsw_0"></td>
+  <td class="col-path">payload.bin</td>
+  <td class="col-ts">[2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00]</td>
+  <td class="col-diff"><code></code></td>
+</tr>
+</tbody></table>
 </main>
 <script>
-  const __storageKey__ = 'folderdiff-report';
-  const __savedState__ = null;
+  const __storageKey__  = 'folderdiff-release';
+  const __reportDate__  = '20260315';
+  const __savedState__  = null;
+
+  function formatTs(d) {
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+      +' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+  }
 
   document.addEventListener('DOMContentLoaded', function() {
     var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');
@@ -540,10 +544,17 @@
         else el.value = String(entry[1] || '');
       });
     }
-    document.querySelectorAll('input, textarea').forEach(function(el) {
-      el.addEventListener('change', autoSave);
-      el.addEventListener('input', autoSave);
-    });
+    if (__savedState__ !== null) {
+      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.disabled=true; });
+      document.querySelectorAll('input[type="text"]').forEach(function(inp){
+        inp.readOnly=true; inp.style.cursor='default'; inp.style.userSelect='text';
+      });
+    } else {
+      document.querySelectorAll('input, textarea').forEach(function(el) {
+        el.addEventListener('change', autoSave);
+        el.addEventListener('input',  autoSave);
+      });
+    }
   });
 
   function collectState() {
@@ -557,29 +568,35 @@
   function autoSave() {
     localStorage.setItem(__storageKey__, JSON.stringify(collectState()));
     var status = document.getElementById('save-status');
-    if (status) status.textContent = 'Auto-saved at ' + new Date().toLocaleTimeString();
+    if (status) status.textContent = 'Auto-saved at ' + formatTs(new Date());
   }
 
   function downloadReviewed() {
-    var state = collectState();
-    var html = document.documentElement.outerHTML;
-    html = html.replace('const __savedState__ = null;',
-      'const __savedState__ = ' + JSON.stringify(state) + ';');
+    var state   = collectState();
+    var slug    = 'diff_report_' + __reportDate__;
+    var html    = document.documentElement.outerHTML;
+    // Embed state
+    html = html.replace('const __savedState__  = null;',
+      'const __savedState__  = ' + JSON.stringify(state) + ';');
+    // Update title
+    html = html.replace('<title>diff_report</title>',
+      '<title>' + slug + '_reviewed</title>');
+    // Strip controls bar
+    html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g, '');
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (document.title || 'diff_report')
-      .replace(/[^a-zA-Z0-9._\-]/g, '_') + '_reviewed.html';
+    var a    = document.createElement('a');
+    a.href   = URL.createObjectURL(blob);
+    a.download = slug + '_reviewed.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
   }
 
   function clearAll() {
     if (!confirm('Clear all checkboxes and text inputs?')) return;
-    document.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
-    document.querySelectorAll('input[type="text"], textarea').forEach(function(inp) { inp.value = ''; });
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked=false; });
+    document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     localStorage.removeItem(__storageKey__);
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';

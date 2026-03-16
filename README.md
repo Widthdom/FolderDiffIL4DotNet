@@ -126,10 +126,9 @@ The HTML report is a self-contained single file that opens in any browser — no
 | ✓ | Checkbox to mark a file as reviewed |
 | OK Reason | Free-text input — explain why the change is expected |
 | Notes | Free-text input — additional remarks |
-| File Path | Path label (relative for Modified/Unchanged/Ignored, absolute for Added/Removed) |
+| File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
-| Diff Reason | `MD5Mismatch`, `ILMatch`, `TextMismatch`, etc. |
-| Disassembler | Tool label for IL-compared files (e.g. `dotnet-ildasm (version: 0.12.2)`) |
+| Diff Reason | `MD5Mismatch`, `ILMatch`, `TextMismatch`, tool label for IL files (e.g. `ILMismatch dotnet-ildasm (version: 0.12.2)`), etc. |
 
 Section heading and column header colours indicate the type of change: **red** for Removed, **green** for Added, **blue** for Modified. Ignored and Unchanged use the default colour.
 
@@ -144,7 +143,7 @@ See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live samp
 3. State is auto-saved to the browser's localStorage as you type
      — close the tab and reopen the same file to resume.
 4. When all rows are reviewed, click "Download reviewed version".
-     A new file (e.g. Diff_Report_-_release_20260315_reviewed.html) is downloaded
+     A new file (e.g. diff_report_20260315_reviewed.html) is downloaded
      with the current checkbox and text state embedded in the HTML source.
 5. Archive or share the downloaded file as the sign-off record,
      or print it to PDF for a hard-copy audit trail.
@@ -528,10 +527,9 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | ✓ | チェックボックス（確認済みマーク） |
 | OK Reason | 自由テキスト入力 — 変更が想定内である理由を記入 |
 | Notes | 自由テキスト入力 — 補足メモ |
-| File Path | パスラベル（Modified/Unchanged/Ignored は相対、Added/Removed は絶対） |
+| File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
-| Diff Reason | `MD5Mismatch`・`ILMatch`・`TextMismatch` など |
-| Disassembler | IL 比較を行ったファイルのツールラベル（例: `dotnet-ildasm (version: 0.12.2)`） |
+| Diff Reason | `MD5Mismatch`・`ILMatch`・`TextMismatch`、IL 比較ファイルはツールラベル付き（例: `ILMismatch dotnet-ildasm (version: 0.12.2)`）など |
 
 セクション見出しと列ヘッダの文字色は変更種別を示します: Removed は**赤**、Added は**緑**、Modified は**青**。Ignored・Unchanged はデフォルト色です。
 
@@ -547,7 +545,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
      — タブを閉じても同じファイルを再度開けば再開可能。
 4. 全行確認後、「Download reviewed version」ボタンをクリック。
      現在のチェック状態とテキストを埋め込んだ新しい HTML がダウンロードされる
-     （例: Diff_Report_-_release_20260315_reviewed.html）。
+     （例: diff_report_20260315_reviewed.html）。
 5. ダウンロードしたファイルをサインオフ記録として保管・共有、
      または PDF 印刷して書面の監査証跡として利用。
 ```
