@@ -183,7 +183,7 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
         /// <summary>
         /// 指定されたファイルの最終更新日時を取得し、
-        /// 「yyyy-MM-dd HH:mm:ss.fff zzz」形式の文字列（ミリ秒精度・タイムゾーン付き）で返します。
+        /// 「yyyy-MM-dd HH:mm:ss」形式の文字列（秒精度）で返します。
         /// </summary>
         public static string GetTimestamp(string fileAbsolutepath)
         {

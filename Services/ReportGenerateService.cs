@@ -191,9 +191,9 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_LOCATION_BOTH = "(old/new)";
 
         /// <summary>
-        /// タイムスタンプ結合時の区切り
+        /// タイムスタンプ新旧区切り（矢印）
         /// </summary>
-        private const string REPORT_TIMESTAMP_SEPARATOR = ", ";
+        private const string REPORT_TIMESTAMP_ARROW = " → ";
 
         /// <summary>
         /// レポートフッタ: Summary セクション
@@ -415,6 +415,10 @@ namespace FolderDiffIL4DotNet.Services
             {
                 streamWriter.WriteLine($"- Elapsed Time: {elapsedTimeString}");
             }
+            if (config.ShouldOutputFileTimestamps)
+            {
+                streamWriter.WriteLine($"- Timestamps (timezone): {DateTimeOffset.Now:zzz}");
+            }
             streamWriter.WriteLine("- " + NOTE_MVID_SKIP);
             if (!config.ShouldIgnoreILLinesContainingConfiguredStrings)
             {
@@ -471,7 +475,7 @@ namespace FolderDiffIL4DotNet.Services
                     var timestampInfo = BuildIgnoredFileTimestampInfo(entry, oldFolderAbsolutePath, newFolderAbsolutePath);
                     if (!string.IsNullOrEmpty(timestampInfo))
                     {
-                        line += $" <u>({timestampInfo})</u>";
+                        line += $" {timestampInfo}";
                     }
                 }
 
@@ -507,9 +511,9 @@ namespace FolderDiffIL4DotNet.Services
                     string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
                     string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
                     string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
-                        ? $"(updated_old: {oldFileTimestamp}, updated_new: {newFileTimestamp})"
-                        : $"(updated: {newFileTimestamp})";
-                    streamWriter.WriteLine($"- [ = ] {fileRelativePath} <u>{updateInfo}</u> {diffDetailDisplay}");
+                        ? $"[{oldFileTimestamp}{REPORT_TIMESTAMP_ARROW}{newFileTimestamp}]"
+                        : $"[{newFileTimestamp}]";
+                    streamWriter.WriteLine($"- [ = ] {fileRelativePath} {updateInfo} {diffDetailDisplay}");
                 }
                 else
                 {
@@ -530,7 +534,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (config.ShouldOutputFileTimestamps)
                 {
-                    streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)})</u>");
+                    streamWriter.WriteLine($"- [ + ] {newFileAbsolutePath} [{Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)}]");
                 }
                 else
                 {
@@ -551,7 +555,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (config.ShouldOutputFileTimestamps)
                 {
-                    streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath} <u>(updated: {Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)})</u>");
+                    streamWriter.WriteLine($"- [ - ] {oldFileAbsolutePath} [{Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)}]");
                 }
                 else
                 {
@@ -578,7 +582,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string oldTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
                     string newTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
-                    streamWriter.WriteLine($"- [ * ] {fileRelativePath} <u>(updated_old: {oldTimestamp}, updated_new: {newTimestamp})</u> {diffDetailDisplay}");
+                    streamWriter.WriteLine($"- [ * ] {fileRelativePath} [{oldTimestamp}{REPORT_TIMESTAMP_ARROW}{newTimestamp}] {diffDetailDisplay}");
                 }
                 else
                 {
@@ -658,7 +662,7 @@ namespace FolderDiffIL4DotNet.Services
             foreach (var warning in _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                 .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
             {
-                streamWriter.WriteLine($"  - {warning.FileRelativePath} (updated_old: {warning.OldTimestamp}, updated_new: {warning.NewTimestamp})");
+                streamWriter.WriteLine($"  - {warning.FileRelativePath} [{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}]");
             }
         }
 
@@ -690,16 +694,22 @@ namespace FolderDiffIL4DotNet.Services
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath)
         {
-            var timestampParts = new List<string>();
-            if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0)
+            bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
+            bool hasNew = (entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0;
+            if (!hasOld && !hasNew)
             {
-                timestampParts.Add($"updated_old: {Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))}");
+                return null;
             }
-            if ((entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0)
+            if (hasOld && hasNew)
             {
-                timestampParts.Add($"updated_new: {Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key))}");
+                var oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key));
+                var newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key));
+                return $"[{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}]";
             }
-            return timestampParts.Count > 0 ? string.Join(REPORT_TIMESTAMP_SEPARATOR, timestampParts) : null;
+            var ts = hasOld
+                ? Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))
+                : Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key));
+            return $"[{ts}]";
         }
 
         /// <summary>

@@ -11,8 +11,9 @@ namespace FolderDiffIL4DotNet.Core.Common
         public const int BYTES_PER_KILOBYTE = 1024;
 
         /// <summary>
-        /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、ミリ秒、UTC オフセット付き）。
+        /// レポートやファイル一覧で使うタイムスタンプ形式（ローカル時刻、秒精度）。
+        /// タイムゾーンはレポートヘッダに一括表示するため、個別エントリには含めません。
         /// </summary>
-        public const string TIMESTAMP_WITH_TIME_ZONE_FORMAT = "yyyy-MM-dd HH:mm:ss.fff zzz";
+        public const string TIMESTAMP_WITH_TIME_ZONE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     }
 }

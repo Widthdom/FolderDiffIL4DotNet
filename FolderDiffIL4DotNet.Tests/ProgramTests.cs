@@ -178,8 +178,7 @@ namespace FolderDiffIL4DotNet.Tests
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
                 Assert.Contains("## Warnings", reportText);
                 Assert.Contains("sample.txt", reportText);
-                Assert.Contains("updated_old:", reportText);
-                Assert.Contains("updated_new:", reportText);
+                Assert.Contains(" → ", reportText);
             }
             finally
             {

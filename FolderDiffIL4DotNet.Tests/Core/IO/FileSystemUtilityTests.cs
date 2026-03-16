@@ -61,7 +61,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
 
             Assert.False(string.IsNullOrWhiteSpace(timestamp));
             Assert.True(
-                DateTimeOffset.TryParseExact(timestamp, Constants.TIMESTAMP_WITH_TIME_ZONE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                DateTime.TryParseExact(timestamp, Constants.TIMESTAMP_WITH_TIME_ZONE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
                 $"Unexpected timestamp format: {timestamp}");
         }
 

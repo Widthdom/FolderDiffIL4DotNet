@@ -174,12 +174,12 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void RecordNewFileTimestampOlderThanOldWarning_NewEntry_Stored()
         {
-            _sut.RecordNewFileTimestampOlderThanOldWarning("nested/file.txt", "2026-03-14 10:00:00.000 +09:00", "2026-03-14 09:00:00.000 +09:00");
+            _sut.RecordNewFileTimestampOlderThanOldWarning("nested/file.txt", "2026-03-14 10:00:00", "2026-03-14 09:00:00");
 
             Assert.True(_sut.HasAnyNewFileTimestampOlderThanOldWarning);
             Assert.True(_sut.NewFileTimestampOlderThanOldWarnings.ContainsKey("nested/file.txt"));
-            Assert.Equal("2026-03-14 10:00:00.000 +09:00", _sut.NewFileTimestampOlderThanOldWarnings["nested/file.txt"].OldTimestamp);
-            Assert.Equal("2026-03-14 09:00:00.000 +09:00", _sut.NewFileTimestampOlderThanOldWarnings["nested/file.txt"].NewTimestamp);
+            Assert.Equal("2026-03-14 10:00:00", _sut.NewFileTimestampOlderThanOldWarnings["nested/file.txt"].OldTimestamp);
+            Assert.Equal("2026-03-14 09:00:00", _sut.NewFileTimestampOlderThanOldWarnings["nested/file.txt"].NewTimestamp);
         }
 
         [Theory]
