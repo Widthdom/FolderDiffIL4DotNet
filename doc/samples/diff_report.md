@@ -1,0 +1,60 @@
+# Folder Diff Report
+- App Version: FolderDiffIL4DotNet 1.0.0
+- Computer: dev-machine
+- Old: /Users/UserA/workspace/old
+- New: /Users/UserA/workspace/new
+- Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
+- Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
+- IL Disassembler: dotnet-ildasm (version: 0.12.2)
+- Elapsed Time: 0h 0m 1.2s
+- Timestamps (timezone): +09:00
+- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
+- Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
+- Legend:
+  - `MD5Match` / `MD5Mismatch`: MD5 hash match / mismatch
+  - `ILMatch` / `ILMismatch`: IL(Intermediate Language) match / mismatch
+  - `TextMatch` / `TextMismatch`: Text match / mismatch
+
+## [ x ] Ignored Files
+- [ x ] logs/debug.log (old) [2026-03-15 08:50:00]
+- [ x ] obj/build.cache (new) [2026-03-15 09:05:00]
+- [ x ] bin/App.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
+
+## [ = ] Unchanged Files
+- [ = ] vendor/lib.dll [2026-03-15 09:00:00] `MD5Match`
+- [ = ] appsettings.json [2026-03-15 09:00:00] `TextMatch`
+- [ = ] data/schema.bin [2026-03-15 08:30:00 → 2026-03-15 09:00:00] `MD5Match`
+- [ = ] docs/notes.md [2026-03-15 08:00:00 → 2026-03-15 09:00:00] `TextMatch`
+- [ = ] util/Helper.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMatch` `dotnet-ildasm (version: 0.12.2)`
+
+## [ + ] Added Files
+- [ + ] /Users/UserA/workspace/new/docs/guide.md [2026-03-15 09:01:00]
+
+## [ - ] Removed Files
+- [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
+
+## [ * ] Modified Files
+- [ * ] src/Main.cs [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `TextMismatch`
+- [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
+- [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
+
+## Summary
+- Ignored   : 3
+- Unchanged : 5
+- Added     : 1
+- Removed   : 1
+- Modified  : 3
+- Compared  : 12 (Old) vs 12 (New)
+
+## IL Cache Stats
+- Hits    : 42
+- Misses  : 8
+- Hit Rate: 84.0%
+- Stores  : 8
+- Evicted : 0
+- Expired : 0
+
+## Warnings
+- **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
+- **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
+  - payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00]

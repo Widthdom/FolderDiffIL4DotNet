@@ -99,6 +99,14 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldIncludeILCacheStatsInReport { get; set; } = false;
 
         /// <summary>
+        /// diff_report.md と同内容のインタラクティブ HTML レポート (diff_report.html) を生成するかどうか。
+        /// true の場合、Removed / Added / Modified の各ファイル行にチェックボックス・OK 理由・備考列が付き、
+        /// レビュー状態をブラウザの localStorage に自動保存します。
+        /// レビュー完了後に「Download reviewed version」ボタンで状態込みの HTML をダウンロードできます。
+        /// </summary>
+        public bool ShouldGenerateHtmlReport { get; set; } = true;
+
+        /// <summary>
         /// IL全文を出力するか否か
         /// </summary>
         public bool ShouldOutputILText { get; set; } = true;

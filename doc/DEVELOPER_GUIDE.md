@@ -63,6 +63,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 
 Generated during a run:
 - `Reports/<label>/diff_report.md`
+- `Reports/<label>/diff_report.html` when [`ShouldGenerateHtmlReport`](../README.md#configuration-table-en) is `true` (default)
 - `Reports/<label>/IL/old/*.txt` and `Reports/<label>/IL/new/*.txt` when [`ShouldOutputILText`](../README.md#configuration-table-en) is `true`
 - `Logs/log_YYYYMMDD.log`
 - `ILCache/` under the app base directory when disk cache is enabled and no custom cache directory is configured
@@ -153,7 +154,8 @@ sequenceDiagram
 10. Build the run-scoped DI container.
 11. Run the folder diff and finish progress display.
 12. Generate `diff_report.md` from aggregated results.
-13. Convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse/validation failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors.
+13. Generate `diff_report.html` from aggregated results when [`ShouldGenerateHtmlReport`](../README.md#configuration-table-en) is `true` (default). The HTML file is a self-contained interactive review document with localStorage auto-save and a download function that bakes the current review state into a portable snapshot.
+14. Convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse/validation failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors.
 
 The implementation keeps `RunAsync()` short by treating those steps as explicit phases and delegating each phase to focused private helpers.
 
@@ -192,6 +194,7 @@ Registered in [`ProgramRunner.BuildRunServiceProvider(...)`](../ProgramRunner.cs
 - [`ILCache`](../Services/Caching/ILCache.cs) (nullable when disabled)
 - [`ProgressReportService`](../Services/ProgressReportService.cs)
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs)
+- [`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs)
 - [`IFileSystemService`](../Services/IFileSystemService.cs) / [`FileSystemService`](../Services/FileSystemService.cs)
 - [`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs) / [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs)
 - [`IFileComparisonService`](../Services/IFileComparisonService.cs) / [`FileComparisonService`](../Services/FileComparisonService.cs)
@@ -227,6 +230,7 @@ Why this matters:
 | [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | Disk persistence and quota enforcement for IL cache files | Owns cache-file I/O and trimming |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads `FileDiffResultLists` only; iterates `_sectionWriters` via `IReportSectionWriter` |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside `ReportGenerateService` |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads `FileDiffResultLists` only; produces a self-contained `diff_report.html` with checkboxes, text inputs, localStorage auto-save, and download function; skipped when `ShouldGenerateHtmlReport` is `false` |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object |
 
 <a id="guide-en-comparison-pipeline"></a>
@@ -596,6 +600,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 
 実行時に生成される主な成果物:
 - `Reports/<label>/diff_report.md`
+- [`ShouldGenerateHtmlReport`](../README.md#configuration-table-ja) が `true`（既定）のとき `Reports/<label>/diff_report.html`
 - [`ShouldOutputILText`](../README.md#configuration-table-ja) が `true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
 - `Logs/log_YYYYMMDD.log`
 - ディスクキャッシュ有効かつカスタム保存先未指定時はアプリ基準ディレクトリ配下の `ILCache/`
@@ -685,7 +690,8 @@ sequenceDiagram
 10. 実行単位の DI コンテナを構築します。
 11. フォルダ比較を実行し、進捗表示を終了します。
 12. 集約結果から `diff_report.md` を生成します。
-13. フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析/バリデーション失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。
+13. [`ShouldGenerateHtmlReport`](../README.md#configuration-table-ja) が `true`（既定）のとき、集約結果から `diff_report.html` を生成します。HTML ファイルは localStorage 自動保存とダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。
+14. フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析/バリデーション失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。
 
 実装上は、`RunAsync()` 自体を短く保つため、これらを明示的なフェーズとして private helper へ分割しています。
 
@@ -724,6 +730,7 @@ sequenceDiagram
 - [`ILCache`](../Services/Caching/ILCache.cs)（無効時は `null`）
 - [`ProgressReportService`](../Services/ProgressReportService.cs)
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs)
+- [`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs)
 - [`IFileSystemService`](../Services/IFileSystemService.cs) / [`FileSystemService`](../Services/FileSystemService.cs)
 - [`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs) / [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs)
 - [`IFileComparisonService`](../Services/IFileComparisonService.cs) / [`FileComparisonService`](../Services/FileComparisonService.cs)
@@ -759,6 +766,7 @@ sequenceDiagram
 | [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | IL キャッシュのディスク永続化とクォータ制御 | キャッシュファイル I/O とトリミングを担当 |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | `FileDiffResultLists` を読むだけ；`_sectionWriters` を `IReportSectionWriter` 経由で反復 |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | `ReportGenerateService` 内に 10 個のプライベートネストクラスで実装 |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | `FileDiffResultLists` を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 `diff_report.html` を生成；`ShouldGenerateHtmlReport` が `false` のときはスキップ |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態 |
 
 <a id="guide-ja-comparison-pipeline"></a>

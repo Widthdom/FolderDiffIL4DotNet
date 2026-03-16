@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diff Report - release_20260315</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; padding: 1rem 0 0.5rem; }
+    h2 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+    code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+           font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
+    ul.meta { margin: 0.4rem 0 0.8rem 1.2rem; }
+    ul.meta li { margin-bottom: 2px; line-height: 1.6; }
+    ul.meta li.note { color: #555; font-size: 12px; }
+    .legend { margin: 0.4rem 0 0.8rem; font-size: 13px; }
+    .controls { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd;
+                padding: 0.5rem 0; display: flex; gap: 0.8rem; align-items: center; z-index: 100; }
+    .btn { padding: 0.3rem 0.8rem; cursor: pointer; border: 1px solid #aaa;
+           background: #f5f5f5; font-size: 13px; border-radius: 3px; }
+    .btn:hover { background: #e8e8e8; }
+    .save-status { font-size: 12px; color: #777; }
+    .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
+    th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
+         border: 1px solid #bbb; background: #fafafa; }
+    td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; }
+    td.col-cb { width: 2.2em; text-align: center; }
+    td.col-reason { min-width: 8em; }
+    td.col-notes  { min-width: 8em; }
+    td.col-path { font-family: monospace; font-size: 12px; word-break: break-all; min-width: 15em; }
+    td.col-ts   { font-family: monospace; font-size: 12px; white-space: nowrap; width: 22em; }
+    td.col-diff { font-family: monospace; font-size: 12px; white-space: nowrap; width: 11em; }
+    td.col-asm  { font-family: monospace; font-size: 12px; white-space: nowrap; width: 20em; }
+    td.col-reason input[type="text"], td.col-notes input[type="text"] {
+        width: 100%; border: 1px solid #ccc; padding: 2px 5px; font-size: 13px; outline: none; }
+    td.col-reason input[type="text"]:focus, td.col-notes input[type="text"]:focus {
+        border-color: #666; background: #fffff8; }
+    input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    ul.summary { list-style: none; margin: 0.3rem 0 1rem 1rem;
+                 font-family: monospace; font-size: 13px; }
+    ul.summary li { line-height: 1.8; }
+    ul.warnings { margin: 0.3rem 0 0 1rem; }
+    ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+<div class="controls">
+  <button class="btn" onclick="downloadReviewed()">&#x1F4BE; Download reviewed version</button>
+  <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
+  <span id="save-status" class="save-status"></span>
+</div>
+<main>
+
+<h1>Folder Diff Report</h1>
+<ul class="meta">
+  <li>App Version: FolderDiffIL4DotNet 1.0.0</li>
+  <li>Computer: dev-machine</li>
+  <li>Old: <code>/Users/UserA/workspace/old</code></li>
+  <li>New: <code>/Users/UserA/workspace/new</code></li>
+  <li>Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb</li>
+  <li>Text File Extensions: .cs, .json, .md, .xml, .yml ...</li>
+  <li>IL Disassembler: dotnet-ildasm (version: 0.12.2)</li>
+  <li>Elapsed Time: 0h 0m 1.2s</li>
+  <li>Timestamps (timezone): +09:00</li>
+  <li class="note">Note: When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>
+</ul>
+
+<div class="legend">
+  <strong>Legend:</strong>&nbsp;
+  <code>MD5Match</code>&nbsp;/&nbsp;<code>MD5Mismatch</code>: MD5 hash match / mismatch
+  &nbsp;|&nbsp;
+  <code>ILMatch</code>&nbsp;/&nbsp;<code>ILMismatch</code>: IL(Intermediate Language) match / mismatch
+  &nbsp;|&nbsp;
+  <code>TextMatch</code>&nbsp;/&nbsp;<code>TextMismatch</code>: Text match / mismatch
+</div>
+
+<h2>[ x ] Ignored Files (3)</h2>
+<table>
+<thead><tr>
+  <th class="col-cb">&#x2713;</th>
+  <th>OK Reason</th>
+  <th>Notes</th>
+  <th>File Path</th>
+  <th>Timestamp</th>
+  <th>Location</th>
+  <th>Disassembler</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_ign_0"></td>
+  <td class="col-reason"><input type="text" id="reason_ign_0" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_ign_0" placeholder="Notes"></td>
+  <td class="col-path"><code>logs/debug.log</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:50:00]</code></td>
+  <td class="col-diff"><code>old</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_ign_1"></td>
+  <td class="col-reason"><input type="text" id="reason_ign_1" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_ign_1" placeholder="Notes"></td>
+  <td class="col-path"><code>obj/build.cache</code></td>
+  <td class="col-ts"><code>[2026-03-15 09:05:00]</code></td>
+  <td class="col-diff"><code>new</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_ign_2"></td>
+  <td class="col-reason"><input type="text" id="reason_ign_2" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_ign_2" placeholder="Notes"></td>
+  <td class="col-path"><code>bin/App.pdb</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:57:00 → 2026-03-15 09:03:00]</code></td>
+  <td class="col-diff"><code>old/new</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+</tbody></table>
+
+<h2>[ = ] Unchanged Files (5)</h2>
+<table>
+<thead><tr>
+  <th class="col-cb">&#x2713;</th>
+  <th>OK Reason</th>
+  <th>Notes</th>
+  <th>File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
+  <th>Disassembler</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_unch_0"></td>
+  <td class="col-reason"><input type="text" id="reason_unch_0" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_0" placeholder="Notes"></td>
+  <td class="col-path"><code>appsettings.json</code></td>
+  <td class="col-ts"><code>[2026-03-15 09:00:00]</code></td>
+  <td class="col-diff"><code>TextMatch</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_unch_1"></td>
+  <td class="col-reason"><input type="text" id="reason_unch_1" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_1" placeholder="Notes"></td>
+  <td class="col-path"><code>data/schema.bin</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:30:00 → 2026-03-15 09:00:00]</code></td>
+  <td class="col-diff"><code>MD5Match</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_unch_2"></td>
+  <td class="col-reason"><input type="text" id="reason_unch_2" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_2" placeholder="Notes"></td>
+  <td class="col-path"><code>docs/notes.md</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:00:00 → 2026-03-15 09:00:00]</code></td>
+  <td class="col-diff"><code>TextMatch</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_unch_3"></td>
+  <td class="col-reason"><input type="text" id="reason_unch_3" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_3" placeholder="Notes"></td>
+  <td class="col-path"><code>util/Helper.dll</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:58:00 → 2026-03-15 09:02:00]</code></td>
+  <td class="col-diff"><code>ILMatch</code></td>
+  <td class="col-asm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+</tr>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_unch_4"></td>
+  <td class="col-reason"><input type="text" id="reason_unch_4" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_unch_4" placeholder="Notes"></td>
+  <td class="col-path"><code>vendor/lib.dll</code></td>
+  <td class="col-ts"><code>[2026-03-15 09:00:00]</code></td>
+  <td class="col-diff"><code>MD5Match</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+</tbody></table>
+
+<h2 style="color:#006600">[ + ] Added Files (1)</h2>
+<table>
+<thead><tr>
+  <th class="col-cb" style="color:#006600">&#x2713;</th>
+  <th style="color:#006600">OK Reason</th>
+  <th style="color:#006600">Notes</th>
+  <th style="color:#006600">File Path</th>
+  <th style="color:#006600">Timestamp</th>
+  <th style="color:#006600">Diff Reason</th>
+  <th style="color:#006600">Disassembler</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_add_0"></td>
+  <td class="col-reason"><input type="text" id="reason_add_0" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_add_0" placeholder="Notes"></td>
+  <td class="col-path"><code>/Users/UserA/workspace/new/docs/guide.md</code></td>
+  <td class="col-ts"><code>[2026-03-15 09:01:00]</code></td>
+  <td class="col-diff"><code></code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+</tbody></table>
+
+<h2 style="color:#cc0000">[ - ] Removed Files (1)</h2>
+<table>
+<thead><tr>
+  <th class="col-cb" style="color:#cc0000">&#x2713;</th>
+  <th style="color:#cc0000">OK Reason</th>
+  <th style="color:#cc0000">Notes</th>
+  <th style="color:#cc0000">File Path</th>
+  <th style="color:#cc0000">Timestamp</th>
+  <th style="color:#cc0000">Diff Reason</th>
+  <th style="color:#cc0000">Disassembler</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_rem_0"></td>
+  <td class="col-reason"><input type="text" id="reason_rem_0" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_rem_0" placeholder="Notes"></td>
+  <td class="col-path"><code>/Users/UserA/workspace/old/legacy/old-tool.txt</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:55:00]</code></td>
+  <td class="col-diff"><code></code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+</tbody></table>
+
+<h2 style="color:#0000cc">[ * ] Modified Files (3)</h2>
+<table>
+<thead><tr>
+  <th class="col-cb" style="color:#0000cc">&#x2713;</th>
+  <th style="color:#0000cc">OK Reason</th>
+  <th style="color:#0000cc">Notes</th>
+  <th style="color:#0000cc">File Path</th>
+  <th style="color:#0000cc">Timestamp</th>
+  <th style="color:#0000cc">Diff Reason</th>
+  <th style="color:#0000cc">Disassembler</th>
+</tr></thead>
+<tbody>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_0" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_0" placeholder="Notes"></td>
+  <td class="col-path"><code>payload.bin</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:59:00 → 2026-03-15 08:54:00]</code></td>
+  <td class="col-diff"><code>MD5Mismatch</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_1" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_1" placeholder="Notes"></td>
+  <td class="col-path"><code>src/App.dll</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:58:00 → 2026-03-15 09:02:00]</code></td>
+  <td class="col-diff"><code>ILMismatch</code></td>
+  <td class="col-asm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+</tr>
+<tr>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_2"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_2" placeholder="OK reason"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_2" placeholder="Notes"></td>
+  <td class="col-path"><code>src/Main.cs</code></td>
+  <td class="col-ts"><code>[2026-03-15 08:58:00 → 2026-03-15 09:02:00]</code></td>
+  <td class="col-diff"><code>TextMismatch</code></td>
+  <td class="col-asm"><code></code></td>
+</tr>
+</tbody></table>
+
+<h2>Summary</h2>
+<ul class="summary">
+  <li>Ignored   : 3</li>
+  <li>Unchanged : 5</li>
+  <li>Added     : 1</li>
+  <li>Removed   : 1</li>
+  <li>Modified  : 3</li>
+  <li>Compared  : 12 (Old) vs 12 (New)</li>
+</ul>
+
+<h2>IL Cache Stats</h2>
+<ul class="summary">
+  <li>Hits    : 42</li>
+  <li>Misses  : 8</li>
+  <li>Hit Rate: 84.0%</li>
+  <li>Stores  : 8</li>
+  <li>Evicted : 0</li>
+  <li>Expired : 0</li>
+</ul>
+
+<h2>Warnings</h2>
+<ul class="warnings">
+  <li><strong>WARNING:</strong> One or more files were classified as <code>MD5Mismatch</code>. Manual review is recommended because only an MD5 hash comparison was possible.</li>
+  <li><strong>WARNING:</strong> One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.
+    <ul>
+      <li><code>payload.bin</code> [2026-03-15 08:59:00 → 2026-03-15 08:54:00]</li>
+    </ul></li>
+</ul>
+
+</main>
+<script>
+  const __storageKey__ = 'folderdiff-release_20260315';
+  const __savedState__ = null;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');
+    if (toRestore) {
+      Object.entries(toRestore).forEach(function(entry) {
+        var el = document.getElementById(entry[0]);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = Boolean(entry[1]);
+        else el.value = String(entry[1] || '');
+      });
+    }
+    document.querySelectorAll('input, textarea').forEach(function(el) {
+      el.addEventListener('change', autoSave);
+      el.addEventListener('input', autoSave);
+    });
+  });
+
+  function collectState() {
+    var s = {};
+    document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
+      s[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
+    });
+    return s;
+  }
+
+  function autoSave() {
+    localStorage.setItem(__storageKey__, JSON.stringify(collectState()));
+    var status = document.getElementById('save-status');
+    if (status) status.textContent = 'Auto-saved at ' + new Date().toLocaleTimeString();
+  }
+
+  function downloadReviewed() {
+    var state = collectState();
+    var html = document.documentElement.outerHTML;
+    html = html.replace('const __savedState__ = null;',
+      'const __savedState__ = ' + JSON.stringify(state) + ';');
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title || 'diff_report')
+      .replace(/[^a-zA-Z0-9._\-]/g, '_') + '_reviewed.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function clearAll() {
+    if (!confirm('Clear all checkboxes and text inputs?')) return;
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+    document.querySelectorAll('input[type="text"], textarea').forEach(function(inp) { inp.value = ''; });
+    localStorage.removeItem(__storageKey__);
+    var status = document.getElementById('save-status');
+    if (status) status.textContent = 'Cleared.';
+  }
+</script>
+</body>
+</html>

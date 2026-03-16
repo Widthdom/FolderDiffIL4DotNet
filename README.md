@@ -112,69 +112,42 @@ Before loading configuration, three preflight checks run against the reports out
 2. **Disk space** — at least 100 MB of free space is required on the drive that will hold the reports folder. The check is best-effort and skips silently when drive information is unavailable (e.g., network shares).
 3. **Write permission** — a temporary probe file is created and deleted in the `Reports/` parent directory to verify that the process has write access before any actual output is produced.
 
-Example `diff_report.md` (trimmed):
+See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample of the Markdown report.
 
-```md
-# Folder Diff Report
-- App Version: FolderDiffIL4DotNet 1.0.0
-- Computer: dev-machine
-- Old: /Users/UserA/workspace/old
-- New: /Users/UserA/workspace/new
-- Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
-- Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
-- IL Disassembler: dotnet-ildasm (version: 0.12.2)
-- Elapsed Time: 0h 0m 1.2s
-- Timestamps (timezone): +09:00
-- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
-- Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
-- Legend:
-  - `MD5Match` / `MD5Mismatch`: MD5 hash match / mismatch
-  - `ILMatch` / `ILMismatch`: IL(Intermediate Language) match / mismatch
-  - `TextMatch` / `TextMismatch`: Text match / mismatch
+<a id="readme-en-html-report"></a>
+## Interactive HTML Review Report
 
-## [ x ] Ignored Files
-- [ x ] logs/debug.log (old) [2026-03-15 08:50:00]
-- [ x ] obj/build.cache (new) [2026-03-15 09:05:00]
-- [ x ] bin/App.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
+Each run also produces **`diff_report.html`** alongside `diff_report.md` (disable with `"ShouldGenerateHtmlReport": false` in `config.json`).
 
-## [ = ] Unchanged Files
-- [ = ] vendor/lib.dll [2026-03-15 09:00:00] `MD5Match`
-- [ = ] appsettings.json [2026-03-15 09:00:00] `TextMatch`
-- [ = ] data/schema.bin [2026-03-15 08:30:00 → 2026-03-15 09:00:00] `MD5Match`
-- [ = ] docs/notes.md [2026-03-15 08:00:00 → 2026-03-15 09:00:00] `TextMatch`
-- [ = ] util/Helper.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMatch` `dotnet-ildasm (version: 0.12.2)`
+The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. Every file entry is displayed in a table with interactive columns for sign-off:
 
-## [ + ] Added Files
-- [ + ] /Users/UserA/workspace/new/docs/guide.md [2026-03-15 09:01:00]
+| Column | Description |
+|---|---|
+| ✓ | Checkbox to mark a file as reviewed |
+| OK Reason | Free-text input — explain why the change is expected |
+| Notes | Free-text input — additional remarks |
+| File Path | Path label (relative for Modified/Unchanged/Ignored, absolute for Added/Removed) |
+| Timestamp | Old → New last-modified times (or single value for Added/Removed) |
+| Diff Reason | `MD5Mismatch`, `ILMatch`, `TextMismatch`, etc. |
+| Disassembler | Tool label for IL-compared files (e.g. `dotnet-ildasm (version: 0.12.2)`) |
 
-## [ - ] Removed Files
-- [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
+Section heading and column header colours indicate the type of change: **red** for Removed, **green** for Added, **blue** for Modified. Ignored and Unchanged use the default colour.
 
-## [ * ] Modified Files
-- [ * ] src/Main.cs [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `TextMismatch`
-- [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
-- [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
+See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live sample (open in a browser).
 
-## Summary
-- Ignored   : 3
-- Unchanged : 5
-- Added     : 1
-- Removed   : 1
-- Modified  : 3
-- Compared  : 12 (Old) vs 12 (New)
+### Review workflow
 
-## IL Cache Stats
-- Hits    : 42
-- Misses  : 8
-- Hit Rate: 84.0%
-- Stores  : 8
-- Evicted : 0
-- Expired : 0
-
-## Warnings
-- **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
-- **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
-  - payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00]
+```
+1. Open diff_report.html in a browser (double-click the file).
+2. Work through each Modified / Added / Removed row:
+     ☑ check the checkbox, type the OK reason, add notes if needed.
+3. State is auto-saved to the browser's localStorage as you type
+     — close the tab and reopen the same file to resume.
+4. When all rows are reviewed, click "Download reviewed version".
+     A new file (e.g. Diff_Report_-_release_20260315_reviewed.html) is downloaded
+     with the current checkbox and text state embedded in the HTML source.
+5. Archive or share the downloaded file as the sign-off record,
+     or print it to PDF for a hard-copy audit trail.
 ```
 
 <a id="readme-en-comparison-flow"></a>
@@ -541,69 +514,42 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 2. **ディスク空き容量** — レポートフォルダを作成するドライブに 100 MB 以上の空き容量があること。ドライブ情報を取得できない場合（ネットワーク共有など）は best-effort でスキップします。
 3. **書き込み権限** — `Reports/` 親ディレクトリに一時プローブファイルを作成・削除して、プロセスが書き込み権限を持つことを確認します。
 
-`diff_report.md` の簡単な例:
+Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samples/diff_report.md) を参照してください。
 
-```md
-# Folder Diff Report
-- App Version: FolderDiffIL4DotNet 1.0.0
-- Computer: dev-machine
-- Old: /Users/UserA/workspace/old
-- New: /Users/UserA/workspace/new
-- Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
-- Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
-- IL Disassembler: dotnet-ildasm (version: 0.12.2)
-- Elapsed Time: 0h 0m 1.2s
-- Timestamps (timezone): +09:00
-- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
-- Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
-- Legend:
-  - `MD5Match` / `MD5Mismatch`: MD5 hash match / mismatch
-  - `ILMatch` / `ILMismatch`: IL(Intermediate Language) match / mismatch
-  - `TextMatch` / `TextMismatch`: Text match / mismatch
+<a id="readme-ja-html-report"></a>
+## インタラクティブ HTML レビューレポート
 
-## [ x ] Ignored Files
-- [ x ] logs/debug.log (old) [2026-03-15 08:50:00]
-- [ x ] obj/build.cache (new) [2026-03-15 09:05:00]
-- [ x ] bin/App.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
+実行のたびに `diff_report.md` と並行して **`diff_report.html`** も生成されます（`config.json` で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
-## [ = ] Unchanged Files
-- [ = ] vendor/lib.dll [2026-03-15 09:00:00] `MD5Match`
-- [ = ] appsettings.json [2026-03-15 09:00:00] `TextMatch`
-- [ = ] data/schema.bin [2026-03-15 08:30:00 → 2026-03-15 09:00:00] `MD5Match`
-- [ = ] docs/notes.md [2026-03-15 08:00:00 → 2026-03-15 09:00:00] `TextMatch`
-- [ = ] util/Helper.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMatch` `dotnet-ildasm (version: 0.12.2)`
+HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 
-## [ + ] Added Files
-- [ + ] /Users/UserA/workspace/new/docs/guide.md [2026-03-15 09:01:00]
+| 列 | 説明 |
+|---|---|
+| ✓ | チェックボックス（確認済みマーク） |
+| OK Reason | 自由テキスト入力 — 変更が想定内である理由を記入 |
+| Notes | 自由テキスト入力 — 補足メモ |
+| File Path | パスラベル（Modified/Unchanged/Ignored は相対、Added/Removed は絶対） |
+| Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
+| Diff Reason | `MD5Mismatch`・`ILMatch`・`TextMismatch` など |
+| Disassembler | IL 比較を行ったファイルのツールラベル（例: `dotnet-ildasm (version: 0.12.2)`） |
 
-## [ - ] Removed Files
-- [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
+セクション見出しと列ヘッダの文字色は変更種別を示します: Removed は**赤**、Added は**緑**、Modified は**青**。Ignored・Unchanged はデフォルト色です。
 
-## [ * ] Modified Files
-- [ * ] src/Main.cs [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `TextMismatch`
-- [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
-- [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
+ライブサンプルは [doc/samples/diff_report.html](doc/samples/diff_report.html) を参照してください（ブラウザで開いてください）。
 
-## Summary
-- Ignored   : 3
-- Unchanged : 5
-- Added     : 1
-- Removed   : 1
-- Modified  : 3
-- Compared  : 12 (Old) vs 12 (New)
+### レビュー手順
 
-## IL Cache Stats
-- Hits    : 42
-- Misses  : 8
-- Hit Rate: 84.0%
-- Stores  : 8
-- Evicted : 0
-- Expired : 0
-
-## Warnings
-- **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
-- **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
-  - payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00]
+```
+1. ブラウザで diff_report.html を開く（ファイルをダブルクリック）。
+2. Modified / Added / Removed の各行を確認する:
+     ☑ チェックを入れ、OK 理由を入力し、必要なら備考も追記。
+3. 入力のたびにブラウザの localStorage へ自動保存される
+     — タブを閉じても同じファイルを再度開けば再開可能。
+4. 全行確認後、「Download reviewed version」ボタンをクリック。
+     現在のチェック状態とテキストを埋め込んだ新しい HTML がダウンロードされる
+     （例: Diff_Report_-_release_20260315_reviewed.html）。
+5. ダウンロードしたファイルをサインオフ記録として保管・共有、
+     または PDF 印刷して書面の監査証跡として利用。
 ```
 
 <a id="readme-ja-comparison-flow"></a>

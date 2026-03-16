@@ -435,6 +435,15 @@ namespace FolderDiffIL4DotNet
                 computerName,
                 config,
                 ilCache);
+            scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(
+                executionContext.OldFolderAbsolutePath,
+                executionContext.NewFolderAbsolutePath,
+                executionContext.ReportsFolderAbsolutePath,
+                appVersion,
+                elapsedTimeString,
+                computerName,
+                config,
+                ilCache);
         }
 
         private void PromptForExitKeyIfNeeded(CliOptions opts)

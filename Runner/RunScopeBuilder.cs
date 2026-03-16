@@ -51,6 +51,7 @@ namespace FolderDiffIL4DotNet.Runner
             services.AddScoped<ILCache>(sp => CreateIlCache(config, sp.GetRequiredService<ILoggerService>()));
             services.AddScoped<ProgressReportService>();
             services.AddScoped<ReportGenerateService>();
+            services.AddScoped<HtmlReportGenerateService>();
             services.AddScoped<IFileSystemService, FileSystemService>();
             services.AddScoped<IFolderDiffExecutionStrategy, FolderDiffExecutionStrategy>();
             services.AddScoped<IFileComparisonService, FileComparisonService>();
