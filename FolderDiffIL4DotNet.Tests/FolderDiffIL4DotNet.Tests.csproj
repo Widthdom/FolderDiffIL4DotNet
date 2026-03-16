@@ -36,17 +36,22 @@
     </ProjectReference>
   </ItemGroup>
 
-  <!-- Copy the FakeDisassembler binary to the test output directory after build -->
+  <!-- Copy the FakeDisassembler binary (and required runtime files) to the test output directory after build -->
   <Target Name="CopyFakeDisassembler" AfterTargets="Build">
     <PropertyGroup>
       <!-- FakeDisassembler.csproj uses AppendTargetFrameworkToOutputPath=false, so output is bin/$(Configuration)/ -->
-      <_FakeDisassemblerDir>$(MSBuildThisFileDirectory)Helpers\bin\$(Configuration)</_FakeDisassemblerDir>
-      <_FakeDisassemblerSrc Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(_FakeDisassemblerDir)\FakeDisassembler.exe</_FakeDisassemblerSrc>
+      <_FakeDisassemblerDir>$(MSBuildThisFileDirectory)Helpers/bin/$(Configuration)</_FakeDisassemblerDir>
+      <_FakeDisassemblerSrc Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(_FakeDisassemblerDir)/FakeDisassembler.exe</_FakeDisassemblerSrc>
       <_FakeDisassemblerSrc Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(_FakeDisassemblerDir)/FakeDisassembler</_FakeDisassemblerSrc>
       <_FakeDisassemblerDest Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(OutputPath)FakeDisassembler.exe</_FakeDisassemblerDest>
       <_FakeDisassemblerDest Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(OutputPath)FakeDisassembler</_FakeDisassemblerDest>
     </PropertyGroup>
+    <!-- Copy the AppHost native stub -->
     <Copy SourceFiles="$(_FakeDisassemblerSrc)" DestinationFiles="$(_FakeDisassemblerDest)" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerSrc)')" />
+    <!-- Copy the managed DLL and runtime configuration files required by the AppHost -->
+    <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.dll" DestinationFiles="$(OutputPath)FakeDisassembler.dll" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.dll')" />
+    <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.runtimeconfig.json" DestinationFiles="$(OutputPath)FakeDisassembler.runtimeconfig.json" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.runtimeconfig.json')" />
+    <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.deps.json" DestinationFiles="$(OutputPath)FakeDisassembler.deps.json" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.deps.json')" />
   </Target>
 
 </Project>

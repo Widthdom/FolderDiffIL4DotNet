@@ -2,8 +2,10 @@ using System;
 using System.IO;
 using System.Linq;
 
-// Determine tool name from argv[0]
-var toolName = Path.GetFileNameWithoutExtension(Environment.GetCommandLineArgs()[0])
+// Determine tool name from the process executable path (AppHost name),
+// falling back to argv[0] (managed DLL path) if ProcessPath is unavailable.
+var execPath = Environment.ProcessPath ?? Environment.GetCommandLineArgs()[0];
+var toolName = Path.GetFileNameWithoutExtension(execPath)
     .ToUpperInvariant()
     .Replace("-", "_");
 

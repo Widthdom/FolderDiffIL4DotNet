@@ -510,6 +510,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 File.SetUnixFileMode(destPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             }
 
+            // Copy the managed DLL and runtime config alongside the AppHost so it can execute.
+            foreach (var suffix in new[] { ".dll", ".runtimeconfig.json", ".deps.json" })
+            {
+                var runtimeFile = Path.Combine(AppContext.BaseDirectory, "FakeDisassembler" + suffix);
+                if (File.Exists(runtimeFile))
+                {
+                    File.Copy(runtimeFile, Path.Combine(binDir, "FakeDisassembler" + suffix), overwrite: true);
+                }
+            }
+
             var prefix = GetEnvPrefix(toolName);
             configureEnv(prefix);
         }
