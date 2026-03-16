@@ -791,6 +791,11 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine();
             sb.AppendLine("  function initColResize() {");
             sb.AppendLine("    document.querySelectorAll('th.th-resizable').forEach(function(th) {");
+            sb.AppendLine("      // Wrap text in a block span so overflow:hidden clips reliably at column boundary");
+            sb.AppendLine("      var label = document.createElement('span');");
+            sb.AppendLine("      label.className = 'th-label';");
+            sb.AppendLine("      while (th.childNodes.length) label.appendChild(th.childNodes[0]);");
+            sb.AppendLine("      th.appendChild(label);");
             sb.AppendLine("      var handle = document.createElement('div');");
             sb.AppendLine("      handle.className = 'col-resize-handle';");
             sb.AppendLine("      th.appendChild(handle);");
@@ -884,6 +889,7 @@ namespace FolderDiffIL4DotNet.Services
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
+    .th-label { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .col-resize-handle {
       position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
       cursor: col-resize; background: transparent;
