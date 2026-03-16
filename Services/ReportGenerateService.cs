@@ -26,16 +26,24 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILoggerService _logger;
 
         /// <summary>
+        /// レポート生成スピナーのフレーム文字配列。
+        /// </summary>
+        private readonly char[] _spinnerFrames;
+
+        /// <summary>
         /// コンストラクタ。
         /// </summary>
         /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
         /// <param name="logger">ログ出力サービス。</param>
-        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger)
+        /// <param name="config">設定。スピナーフレームの取得に使用します。</param>
+        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, ConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
+            ArgumentNullException.ThrowIfNull(config);
+            _spinnerFrames = config.SpinnerFrames.ToCharArray();
         }
         /// <summary>
         /// フォルダ差分の概要を出力する Markdown レポートのファイル名
@@ -239,7 +247,7 @@ namespace FolderDiffIL4DotNet.Services
             string diffReportAbsolutePath = GetDiffReportAbsolutePath(reportsFolderAbsolutePath);
             bool hasMd5Mismatch = _fileDiffResultLists.HasAnyMd5Mismatch;
             bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
-            using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT);
+            using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT, frames: _spinnerFrames);
             var reportGenerated = false;
             try
             {

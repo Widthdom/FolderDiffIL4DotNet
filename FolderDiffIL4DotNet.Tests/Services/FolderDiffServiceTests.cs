@@ -62,7 +62,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             WriteFile(newDir, "ignored.pdb", "ignore-new");
 
             var config = CreateConfig(maxParallelism: 1);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -95,7 +95,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             WriteFile(newDir, Path.Combine("nested", "added.txt"), "added");
 
             var config = CreateConfig(maxParallelism: 2);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig(maxParallelism: 1);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -152,7 +152,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig(maxParallelism: 1);
             config.TextFileExtensions = new List<string> { ".TXT" };
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -181,7 +181,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.SetLastWriteTimeUtc(newFile, new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
 
             var config = CreateConfig(maxParallelism: 1);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -210,7 +210,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig(maxParallelism: 1);
             config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();
@@ -244,7 +244,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
 
             var config = CreateConfig(maxParallelism: 1);
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
             await service.ExecuteFolderDiffAsync();

@@ -352,13 +352,18 @@ Override only the settings you want to change. For example:
       <td><code>false</code></td>
       <td>When <code>true</code>, skips IL decompilation and IL diff for .NET assemblies. MD5-mismatched assemblies are treated as binary diffs. Equivalent to the <code>--skip-il</code> CLI flag.</td>
     </tr>
+    <tr id="config-en-spinnerframes">
+      <td><code>SpinnerFrames</code></td>
+      <td><code>"|/-\"</code></td>
+      <td>Characters used for the console spinner animation. Each character is one frame in the rotation. Must be a non-empty string. Setting <code>null</code> restores the default.</td>
+    </tr>
   </tbody>
 </table>
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#configuration-table-en) and [`TextFileExtensions`](#configuration-table-en) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
 - Cross-project byte-size and timestamp literals are defined in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](FolderDiffIL4DotNet.Core/Common/CoreConstants.cs), and app-level constants remain in [`Common/Constants.cs`](Common/Constants.cs), so shared formats do not drift independently across projects.
-- After loading `config.json`, settings are validated by [`ConfigSettings.Validate()`](Models/ConfigSettings.cs). If any value is out of range, the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; and `TextDiffChunkSizeKilobytes` must be less than `TextDiffParallelThresholdKilobytes`.
+- After loading `config.json`, settings are validated by [`ConfigSettings.Validate()`](Models/ConfigSettings.cs). If any value is out of range, the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; `TextDiffChunkSizeKilobytes` must be less than `TextDiffParallelThresholdKilobytes`; and `SpinnerFrames` must be a non-empty string.
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#configuration-table-en).
 - Timestamp-regression warnings are evaluated only for files that exist in both `old` and `new`.
@@ -765,13 +770,18 @@ flowchart TD
       <td><code>false</code></td>
       <td><code>true</code> の場合、.NET アセンブリの IL 逆アセンブルと IL 差分比較をまるごとスキップします。MD5 不一致のアセンブリはバイナリ差分として扱います。CLI フラグ <code>--skip-il</code> と同等。</td>
     </tr>
+    <tr id="config-ja-spinnerframes">
+      <td><code>SpinnerFrames</code></td>
+      <td><code>"|/-\"</code></td>
+      <td>コンソールスピナーアニメーションに使用する文字列。各文字が 1 フレームになります。空文字列は無効です。<code>null</code> を指定すると既定値に戻ります。</td>
+    </tr>
   </tbody>
 </table>
 
 補足:
 - [`IgnoredExtensions`](#configuration-table-ja) と [`TextFileExtensions`](#configuration-table-ja) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
 - プロジェクト横断で使うバイト換算値や日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) に置き、アプリ固有の定数は [`Common/Constants.cs`](Common/Constants.cs) で管理しているため、共有書式がプロジェクトごとにずれません。
-- `config.json` の読み込み後、[`ConfigSettings.Validate()`](Models/ConfigSettings.cs) で設定値を検証します。範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: `MaxLogGenerations >= 1`、`TextDiffParallelThresholdKilobytes >= 1`、`TextDiffChunkSizeKilobytes >= 1`、`TextDiffChunkSizeKilobytes` は `TextDiffParallelThresholdKilobytes` 未満であること。
+- `config.json` の読み込み後、[`ConfigSettings.Validate()`](Models/ConfigSettings.cs) で設定値を検証します。範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: `MaxLogGenerations >= 1`、`TextDiffParallelThresholdKilobytes >= 1`、`TextDiffChunkSizeKilobytes >= 1`、`TextDiffChunkSizeKilobytes` は `TextDiffParallelThresholdKilobytes` 未満であること、`SpinnerFrames` は空文字列でないこと。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#configuration-table-ja) に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、`old` と `new` の両方に存在する同一相対パスのファイルだけを対象に判定します。

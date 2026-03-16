@@ -39,7 +39,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var executionContext = CreateExecutionContext(oldDir, newDir, reportDir);
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
@@ -87,7 +87,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -130,7 +130,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -173,7 +173,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 2),
                 progressReporter,
@@ -205,7 +205,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -246,7 +246,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -292,7 +292,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -336,7 +336,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -373,7 +373,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -441,7 +441,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var fileDiffService = new FakeFileDiffService(equalityByRelativePath);
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 4),
                 progressReporter,
@@ -486,7 +486,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
                 progressReporter,
@@ -526,7 +526,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             // old dir == new dir → same absolute paths appear in both OldFilesAbsolutePath and NewFilesAbsolutePath
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
@@ -572,7 +572,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             // ilPrecomputeBatchSize = 0 → falls back to default (2048) → all 6 paths in one batch
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 0),

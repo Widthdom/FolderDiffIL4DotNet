@@ -54,6 +54,7 @@ namespace FolderDiffIL4DotNet.Models
         private List<string> _textFileExtensions = CreateDefaultTextFileExtensions();
         private List<string> _ilIgnoreLineContainingStrings = new();
         private string _ilCacheDirectoryAbsolutePath = string.Empty;
+        private string _spinnerFrames = "|/-\\";
 
         /// <summary>
         /// 無視する拡張子のリスト
@@ -204,6 +205,17 @@ namespace FolderDiffIL4DotNet.Models
         public bool SkipIL { get; set; }
 
         /// <summary>
+        /// コンソールスピナーのフレーム文字列。各文字が 1 フレームになります。
+        /// 既定値は <c>"|/-\"</c>（縦棒・スラッシュ・横棒・バックスラッシュの 4 フレーム回転）。
+        /// null を指定した場合は既定値に正規化されます。空文字列は無効です。
+        /// </summary>
+        public string SpinnerFrames
+        {
+            get => _spinnerFrames;
+            set => _spinnerFrames = value ?? "|/-\\";
+        }
+
+        /// <summary>
         /// 設定値の整合性を検証し、結果を返します。
         /// </summary>
         /// <returns>バリデーション結果。エラーがある場合は <see cref="ConfigValidationResult.IsValid"/> が false になります。</returns>
@@ -228,6 +240,11 @@ namespace FolderDiffIL4DotNet.Models
             else if (TextDiffParallelThresholdKilobytes >= 1 && TextDiffChunkSizeKilobytes >= TextDiffParallelThresholdKilobytes)
             {
                 errors.Add($"TextDiffChunkSizeKilobytes ({TextDiffChunkSizeKilobytes}) must be less than TextDiffParallelThresholdKilobytes ({TextDiffParallelThresholdKilobytes}).");
+            }
+
+            if (string.IsNullOrEmpty(SpinnerFrames))
+            {
+                errors.Add("SpinnerFrames must be a non-empty string.");
             }
 
             return new ConfigValidationResult(errors);

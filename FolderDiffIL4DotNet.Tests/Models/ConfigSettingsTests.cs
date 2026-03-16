@@ -69,7 +69,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "OptimizeForNetworkShares": true,
                   "AutoDetectNetworkShares": false,
                   "SkipIL": true,
-                  "ShouldIncludeILCacheStatsInReport": true
+                  "ShouldIncludeILCacheStatsInReport": true,
+                  "SpinnerFrames": "oO0o"
                 }
                 """;
 
@@ -100,6 +101,29 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(config.AutoDetectNetworkShares);
             Assert.True(config.SkipIL);
             Assert.True(config.ShouldIncludeILCacheStatsInReport);
+            Assert.Equal("oO0o", config.SpinnerFrames);
+        }
+
+        [Fact]
+        public void JsonDeserialize_NullSpinnerFrames_FallsBackToDefault()
+        {
+            const string json = """{ "SpinnerFrames": null }""";
+
+            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+
+            Assert.NotNull(config);
+            Assert.Equal("|/-\\", config.SpinnerFrames);
+        }
+
+        [Fact]
+        public void Validate_EmptySpinnerFrames_ReturnsError()
+        {
+            var config = new ConfigSettings { SpinnerFrames = "" };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("SpinnerFrames", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -255,6 +279,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.True(config.AutoDetectNetworkShares);
             Assert.False(config.SkipIL);
             Assert.False(config.ShouldIncludeILCacheStatsInReport);
+            Assert.Equal("|/-\\", config.SpinnerFrames);
         }
     }
 }

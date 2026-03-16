@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-report-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
-            _service = new ReportGenerateService(_resultLists, _logger);
+            _service = new ReportGenerateService(_resultLists, _logger, new ConfigSettings());
             ClearResultLists();
         }
 
@@ -357,8 +357,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
 
             var logger = new TestLogger();
-            var service = new ReportGenerateService(_resultLists, logger);
             var config = CreateConfig();
+            var service = new ReportGenerateService(_resultLists, logger, config);
             service.GenerateDiffReport(
                 oldDir,
                 newDir,
