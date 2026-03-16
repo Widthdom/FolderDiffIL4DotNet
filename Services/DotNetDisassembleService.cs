@@ -202,12 +202,7 @@ namespace FolderDiffIL4DotNet.Services
             throw new InvalidOperationException($"Failed to execute ildasm for file: {dotNetAssemblyfileAbsolutePath}. {GUIDANCE_INSTALL_DISASSEMBLER}{innerMsg}", lastError);
         }
 
-        /// <summary>
-        /// old/new の両アセンブリを同一逆アセンブラ（同一バージョン識別）で逆アセンブルします。
-        /// </summary>
-        /// <param name="oldDotNetAssemblyFileAbsolutePath">old 側 .NET アセンブリの絶対パス。</param>
-        /// <param name="newDotNetAssemblyFileAbsolutePath">new 側 .NET アセンブリの絶対パス。</param>
-        /// <returns>old/new の IL テキストと、各逆アセンブル実行ラベル。</returns>
+        /// <inheritdoc />
         public async Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
             string oldDotNetAssemblyFileAbsolutePath,
             string newDotNetAssemblyFileAbsolutePath)
@@ -271,13 +266,7 @@ namespace FolderDiffIL4DotNet.Services
                 lastError);
         }
 
-        /// <summary>
-        /// 指定された .NET アセンブリ群に対して代表的な逆アセンブラコマンド × 引数パターンを総当たりし、
-        /// 既存 IL キャッシュにヒットするかを事前確認するプリフェッチ的処理。
-        /// ハッシュ連続アクセス負荷を避けるため、入力列挙を <see cref="ICollection{T}"/> に引き上げて件数 0 なら即帰還し、
-        /// その後のログ出力や Parallel.ForEach 初期化を省略します。
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 1 未満の場合。</exception>
-        /// </summary>
+        /// <inheritdoc />
         public async Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel)
         {
             // IL キャッシュ無効 or null、または入力の null といった前提が揃わない場合は早期終了。
