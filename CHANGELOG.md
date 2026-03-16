@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Changed
 
 - Consolidated the duplicate `"// MVID:"` literal into a single [`Constants.IL_MVID_LINE_PREFIX`](Common/Constants.cs) constant and removed the now-redundant `private const string MVID_PREFIX` definitions from both [`ReportGenerateService`](Services/ReportGenerateService.cs) and [`ILOutputService`](Services/ILOutputService.cs). No behaviour change; the string value is identical in both call sites.
-- Improved timestamp display in `diff_report.md`: the format changed from `yyyy-MM-dd HH:mm:ss.fff zzz` (per-entry milliseconds and timezone offset) to `yyyy-MM-dd HH:mm:ss` (seconds only), the timezone offset is now written once in the report header as `Timestamps (timezone): +09:00` when `ShouldOutputFileTimestamps` is `true`, and each entry uses a bracket-and-arrow style — `[old → new]` for two timestamps and `[timestamp]` for a single timestamp — replacing the previous `<u>(updated_old: ..., updated_new: ...)</u>` markup. The `Warnings` section follows the same bracket-and-arrow format. Updated bilingual [README.md](README.md) and related tests.
+- Improved timestamp display in `diff_report.md`: the format changed from `yyyy-MM-dd HH:mm:ss.fff zzz` (per-entry milliseconds and timezone offset) to `yyyy-MM-dd HH:mm:ss` (seconds only), the timezone offset is now written once in the report header as `Timestamps (timezone): +09:00` when `ShouldOutputFileTimestamps` is `true`, and each entry uses a bracket-and-arrow style — `[old → new]` for two timestamps and `[timestamp]` for a single timestamp — replacing the previous `<u>(updated_old: ..., updated_new: ...)</u>` markup. The `Warnings` section follows the same bracket-and-arrow format. For Unchanged files, two timestamps are now shown whenever old and new last-modified times differ, regardless of diff type (previously only `ILMatch` entries showed two timestamps). Updated bilingual [README.md](README.md) and related tests.
 
 #### Added
 
@@ -269,7 +269,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 変更
 
 - `"// MVID:"` リテラルの重複定義を解消し、[`Constants.IL_MVID_LINE_PREFIX`](Common/Constants.cs) に一元化しました。[`ReportGenerateService`](Services/ReportGenerateService.cs) と [`ILOutputService`](Services/ILOutputService.cs) の両ファイルに存在していた `private const string MVID_PREFIX` を削除し、各参照箇所を `Constants.IL_MVID_LINE_PREFIX` に置き換えました。文字列値は同一のため動作変更はありません。
-- `diff_report.md` のタイムスタンプ表示を改善しました。フォーマットを `yyyy-MM-dd HH:mm:ss.fff zzz`（エントリごとにミリ秒＋タイムゾーンオフセット）から `yyyy-MM-dd HH:mm:ss`（秒精度）に変更し、タイムゾーンオフセットは `ShouldOutputFileTimestamps` が `true` の場合にレポートヘッダで `Timestamps (timezone): +09:00` として一括表示するようにしました。各エントリの表示は以前の `<u>(updated_old: ..., updated_new: ...)</u>` 形式からブラケット＋矢印形式（新旧両方: `[old → new]`、単一: `[timestamp]`）に統一しました。`Warnings` セクションも同様にブラケット＋矢印形式に統一しました。日英 [README.md](README.md) および関連テストを更新しました。
+- `diff_report.md` のタイムスタンプ表示を改善しました。フォーマットを `yyyy-MM-dd HH:mm:ss.fff zzz`（エントリごとにミリ秒＋タイムゾーンオフセット）から `yyyy-MM-dd HH:mm:ss`（秒精度）に変更し、タイムゾーンオフセットは `ShouldOutputFileTimestamps` が `true` の場合にレポートヘッダで `Timestamps (timezone): +09:00` として一括表示するようにしました。各エントリの表示は以前の `<u>(updated_old: ..., updated_new: ...)</u>` 形式からブラケット＋矢印形式（新旧両方: `[old → new]`、単一: `[timestamp]`）に統一しました。`Warnings` セクションも同様にブラケット＋矢印形式に統一しました。Unchanged ファイルについては、判定結果（`MD5Match` / `TextMatch` / `ILMatch`）によらず old と new の更新日時が異なる場合に新旧両方を表示するよう修正しました（従来は `ILMatch` のみ両方表示）。日英 [README.md](README.md) および関連テストを更新しました。
 
 #### 追加
 

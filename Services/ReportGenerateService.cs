@@ -510,7 +510,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string oldFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, fileRelativePath));
                     string newFileTimestamp = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, fileRelativePath));
-                    string updateInfo = diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch
+                    string updateInfo = oldFileTimestamp != newFileTimestamp
                         ? $"[{oldFileTimestamp}{REPORT_TIMESTAMP_ARROW}{newFileTimestamp}]"
                         : $"[{newFileTimestamp}]";
                     streamWriter.WriteLine($"- [ = ] {fileRelativePath} {updateInfo} {diffDetailDisplay}");

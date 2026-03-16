@@ -133,10 +133,19 @@ Example `diff_report.md` (trimmed):
   - `TextMatch` / `TextMismatch`: Text match / mismatch
 
 ## [ x ] Ignored Files
-- [ x ] bin/MyApp.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
+- [ x ] logs/debug.log (old) [2026-03-15 08:50:00]
+- [ x ] obj/build.cache (new) [2026-03-15 09:05:00]
+- [ x ] bin/App.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
 
 ## [ = ] Unchanged Files
+<!-- Timestamps are supplementary only — comparison results are determined solely by file content. -->
+<!-- Single timestamp: old and new are identical (same content and same last-modified time). -->
+- [ = ] vendor/lib.dll [2026-03-15 09:00:00] `MD5Match`
 - [ = ] appsettings.json [2026-03-15 09:00:00] `TextMatch`
+<!-- Two timestamps (old → new): content is the same but last-modified times differ. -->
+- [ = ] data/schema.bin [2026-03-15 08:30:00 → 2026-03-15 09:00:00] `MD5Match`
+- [ = ] docs/notes.md [2026-03-15 08:00:00 → 2026-03-15 09:00:00] `TextMatch`
+- [ = ] util/Helper.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMatch` `dotnet-ildasm (version: 0.12.2)`
 
 ## [ + ] Added Files
 - [ + ] /Users/UserA/workspace/new/docs/guide.md [2026-03-15 09:01:00]
@@ -145,16 +154,17 @@ Example `diff_report.md` (trimmed):
 - [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
 
 ## [ * ] Modified Files
-- [ * ] src/MyApp.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
+- [ * ] src/Main.cs [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `TextMismatch`
+- [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
 - [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
 
 ## Summary
-- Ignored   : 1
-- Unchanged : 1
+- Ignored   : 3
+- Unchanged : 5
 - Added     : 1
 - Removed   : 1
-- Modified  : 2
-- Compared  : 5 (Old) vs 5 (New)
+- Modified  : 3
+- Compared  : 12 (Old) vs 12 (New)
 
 ## IL Cache Stats
 - Hits    : 42
@@ -553,10 +563,19 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
   - `TextMatch` / `TextMismatch`: Text match / mismatch
 
 ## [ x ] Ignored Files
-- [ x ] bin/MyApp.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
+- [ x ] logs/debug.log (old) [2026-03-15 08:50:00]
+- [ x ] obj/build.cache (new) [2026-03-15 09:05:00]
+- [ x ] bin/App.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
 
 ## [ = ] Unchanged Files
+<!-- 更新日時は補助情報であり、比較判定（Unchanged / Modified 等）はファイル内容のみで決まります。 -->
+<!-- タイムスタンプ 1 個: old と new で内容も更新日時も同じ。 -->
+- [ = ] vendor/lib.dll [2026-03-15 09:00:00] `MD5Match`
 - [ = ] appsettings.json [2026-03-15 09:00:00] `TextMatch`
+<!-- タイムスタンプ 2 個（old → new）: 内容は同じだが更新日時が異なる。 -->
+- [ = ] data/schema.bin [2026-03-15 08:30:00 → 2026-03-15 09:00:00] `MD5Match`
+- [ = ] docs/notes.md [2026-03-15 08:00:00 → 2026-03-15 09:00:00] `TextMatch`
+- [ = ] util/Helper.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMatch` `dotnet-ildasm (version: 0.12.2)`
 
 ## [ + ] Added Files
 - [ + ] /Users/UserA/workspace/new/docs/guide.md [2026-03-15 09:01:00]
@@ -565,16 +584,17 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 - [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
 
 ## [ * ] Modified Files
-- [ * ] src/MyApp.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
+- [ * ] src/Main.cs [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `TextMismatch`
+- [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
 - [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
 
 ## Summary
-- Ignored   : 1
-- Unchanged : 1
+- Ignored   : 3
+- Unchanged : 5
 - Added     : 1
 - Removed   : 1
-- Modified  : 2
-- Compared  : 5 (Old) vs 5 (New)
+- Modified  : 3
+- Compared  : 12 (Old) vs 12 (New)
 
 ## IL Cache Stats
 - Hits    : 42
