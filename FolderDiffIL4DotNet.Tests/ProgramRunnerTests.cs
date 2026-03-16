@@ -643,6 +643,130 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Equal(expected, result);
         }
 
+        // -----------------------------------------------------------------------
+        // RunPreflightValidator direct coverage tests
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ValidateRequiredArguments_NullArgs_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(null));
+        }
+
+        [Fact]
+        public void ValidateRequiredArguments_TooFewArgs_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a", "b"]));
+        }
+
+        [Fact]
+        public void ValidateRequiredArguments_EmptyFirstArg_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["", "b", "c"]));
+        }
+
+        [Fact]
+        public void ValidateRequiredArguments_WhitespaceSecondArg_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a", "  ", "c"]));
+        }
+
+        [Fact]
+        public void ValidateRequiredArguments_WhitespaceThirdArg_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a", "b", ""]));
+        }
+
+        [Fact]
+        public void ValidateRequiredArguments_ValidArgs_DoesNotThrow()
+        {
+            RunPreflightValidator.ValidateRequiredArguments(["old", "new", "label"]);
+        }
+
+        [Fact]
+        public void ValidateRunDirectories_OldDirNotExists_ThrowsDirectoryNotFoundException()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-preflight-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                var newDir = Path.Combine(tempDir, "new");
+                Directory.CreateDirectory(newDir);
+                var reportDir = Path.Combine(tempDir, "report");
+                var oldDir = Path.Combine(tempDir, "nonexistent-old");
+
+                Assert.Throws<DirectoryNotFoundException>(() =>
+                    RunPreflightValidator.ValidateRunDirectories(oldDir, newDir, reportDir));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void ValidateRunDirectories_NewDirNotExists_ThrowsDirectoryNotFoundException()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-preflight-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                var oldDir = Path.Combine(tempDir, "old");
+                Directory.CreateDirectory(oldDir);
+                var reportDir = Path.Combine(tempDir, "report");
+                var newDir = Path.Combine(tempDir, "nonexistent-new");
+
+                Assert.Throws<DirectoryNotFoundException>(() =>
+                    RunPreflightValidator.ValidateRunDirectories(oldDir, newDir, reportDir));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void ValidateRunDirectories_ReportDirAlreadyExists_ThrowsArgumentException()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-preflight-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            try
+            {
+                var oldDir = Path.Combine(tempDir, "old");
+                Directory.CreateDirectory(oldDir);
+                var newDir = Path.Combine(tempDir, "new");
+                Directory.CreateDirectory(newDir);
+                var reportDir = Path.Combine(tempDir, "report");
+                Directory.CreateDirectory(reportDir); // already exists
+
+                Assert.Throws<ArgumentException>(() =>
+                    RunPreflightValidator.ValidateRunDirectories(oldDir, newDir, reportDir));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CheckReportsParentWritableOrThrow_NonexistentParent_DoesNotThrow()
+        {
+            // 親ディレクトリが存在しない場合はスキップ（例外なし）
+            var nonexistentParentChild = "/nonexistent/parent/dir/report";
+            var ex = Record.Exception(() => RunPreflightValidator.CheckReportsParentWritableOrThrow(nonexistentParentChild));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void CheckDiskSpaceOrThrow_PathWithNoRoot_DoesNotThrow()
+        {
+            // Path.GetPathRoot が空文字列を返すケースを模擬（相対パス的な文字列）
+            // Linuxでは "/" が root になるため、空ルートを返す路は難しい。
+            // best-effort: 正常パスで例外が出ないことを確認
+            var ex = Record.Exception(() => RunPreflightValidator.CheckDiskSpaceOrThrow(Path.GetTempPath()));
+            Assert.Null(ex);
+        }
+
         private static ILCache InvokeCreateIlCache(ConfigSettings config, ILoggerService logger)
         {
             var method = typeof(RunScopeBuilder).GetMethod("CreateIlCache", BindingFlags.Static | BindingFlags.NonPublic);

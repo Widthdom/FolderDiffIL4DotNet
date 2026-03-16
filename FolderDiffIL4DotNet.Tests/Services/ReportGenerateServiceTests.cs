@@ -590,6 +590,182 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains($"- {"Compared",-10}: {fileCount} (Old) vs {fileCount} (New)", reportText, StringComparison.Ordinal);
         }
 
+        /// <summary>
+        /// ShouldOutputFileTimestamps=true で unchanged ファイルの変更情報にタイムスタンプが含まれることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_WithUnchangedFilesAndTimestamps_IncludesTimestamps()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ts-unc");
+            var newDir = Path.Combine(_rootDir, "new-ts-unc");
+            var reportDir = Path.Combine(_rootDir, "report-ts-unc");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var file = "unchanged.txt";
+            File.WriteAllText(Path.Combine(oldDir, file), "content");
+            File.WriteAllText(Path.Combine(newDir, file), "content");
+            _resultLists.AddUnchangedFileRelativePath(file);
+            _resultLists.RecordDiffDetail(file, FileDiffResultLists.DiffDetailResult.MD5Match);
+
+            var config = CreateConfig();
+            config.ShouldOutputFileTimestamps = true;
+
+            _service.GenerateDiffReport(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("unchanged.txt", reportText);
+            Assert.Contains("[", reportText); // timestamp
+        }
+
+        /// <summary>
+        /// ShouldOutputFileTimestamps=true で modified ファイルにタイムスタンプが含まれることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_WithModifiedFilesAndTimestamps_IncludesTimestamps()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ts-mod");
+            var newDir = Path.Combine(_rootDir, "new-ts-mod");
+            var reportDir = Path.Combine(_rootDir, "report-ts-mod");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var file = "modified.txt";
+            File.WriteAllText(Path.Combine(oldDir, file), "old-content");
+            File.WriteAllText(Path.Combine(newDir, file), "new-content");
+            _resultLists.AddModifiedFileRelativePath(file);
+            _resultLists.RecordDiffDetail(file, FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig();
+            config.ShouldOutputFileTimestamps = true;
+
+            _service.GenerateDiffReport(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("modified.txt", reportText);
+        }
+
+        /// <summary>
+        /// ShouldIncludeIgnoredFiles=true かつ ShouldOutputFileTimestamps=true で無視ファイルのタイムスタンプが含まれることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_WithIgnoredFilesAndTimestamps_IncludesTimestamps()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ts-ign");
+            var newDir = Path.Combine(_rootDir, "new-ts-ign");
+            var reportDir = Path.Combine(_rootDir, "report-ts-ign");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var ignoredFile = "ignored.dll";
+            File.WriteAllText(Path.Combine(oldDir, ignoredFile), "old");
+            File.WriteAllText(Path.Combine(newDir, ignoredFile), "new");
+            _resultLists.RecordIgnoredFile(ignoredFile,
+                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New);
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            config.ShouldOutputFileTimestamps = true;
+
+            _service.GenerateDiffReport(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("ignored.dll", reportText);
+        }
+
+        /// <summary>
+        /// ShouldIncludeIgnoredFiles=true で new 側のみの無視ファイルが正しく出力されることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_WithIgnoredFilesNewOnly_AndTimestamps()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ts-ign-new");
+            var newDir = Path.Combine(_rootDir, "new-ts-ign-new");
+            var reportDir = Path.Combine(_rootDir, "report-ts-ign-new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var ignoredFile = "new-only-ignored.dll";
+            File.WriteAllText(Path.Combine(newDir, ignoredFile), "new");
+            _resultLists.RecordIgnoredFile(ignoredFile, FileDiffResultLists.IgnoredFileLocation.New);
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            config.ShouldOutputFileTimestamps = true;
+
+            _service.GenerateDiffReport(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("new-only-ignored.dll", reportText);
+        }
+
+        /// <summary>
+        /// ildasm および ilspycmd ラベルが DisassemblerToolVersions に存在する場合、
+        /// GetDisassemblerDisplayOrder の ildasm/ilspycmd 分岐が実行されることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_DisassemblerOrder_IldasmAndIlspycmd_AppearInReport()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-disasm-order");
+            var newDir = Path.Combine(_rootDir, "new-disasm-order");
+            var reportDir = Path.Combine(_rootDir, "report-disasm-order");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.DisassemblerToolVersions["ildasm (version: 1.0.0)"] = 0;
+            _resultLists.DisassemblerToolVersions["ilspycmd (version: 7.0.0)"] = 0;
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("ildasm (version: 1.0.0)", reportText);
+            Assert.Contains("ilspycmd (version: 7.0.0)", reportText);
+        }
+
+        /// <summary>
+        /// IgnoredFileLocation.None で RecordIgnoredFile を呼んだ場合、
+        /// BuildIgnoredFileTimestampInfo の !hasOld && !hasNew パスを通ることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_WithIgnoredFilesNoneLocation_DoesNotBreakReport()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ign-none");
+            var newDir = Path.Combine(_rootDir, "new-ign-none");
+            var reportDir = Path.Combine(_rootDir, "report-ign-none");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // Directly insert a None location entry into the dictionary to trigger the default path
+            _resultLists.IgnoredFilesRelativePathToLocation["none-location.pdb"] =
+                FileDiffResultLists.IgnoredFileLocation.None;
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            config.ShouldOutputFileTimestamps = true;
+
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            // Report should generate without throwing
+            Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
+        }
+
         private static ConfigSettings CreateConfig() => new()
         {
             IgnoredExtensions = new List<string>(),

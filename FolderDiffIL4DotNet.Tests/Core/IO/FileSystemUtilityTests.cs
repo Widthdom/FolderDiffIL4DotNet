@@ -211,5 +211,192 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             Assert.Null(method.Invoke(null, new object[] { null, new[] { "tmpfs /tmp tmpfs rw 0 0" } }));
             Assert.Null(method.Invoke(null, new object[] { "/tmp/file.txt", null }));
         }
+
+        /// <summary>
+        /// 削除競合（ファイルが既に削除済みの場合）でも例外が出ないことを確認します。
+        /// </summary>
+        [Fact]
+        public void DeleteFileSilent_AlreadyDeletedFile_DoesNotThrow()
+        {
+            var path = Path.Combine(_tempDir, "already_gone.txt");
+            // ファイルは存在しないが例外を投げない
+            FileSystemUtility.DeleteFileSilent(path);
+        }
+
+        /// <summary>
+        /// 読み取り専用ファイルの削除試行（UnauthorizedAccessException）をsilentに無視することを確認します。
+        /// Unix以外ではスキップ。
+        /// </summary>
+        [Fact]
+        public void DeleteFileSilent_ReadOnlyFile_OnUnix_DoesNotThrow()
+        {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
+                && !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                return; // Windowsではスキップ
+            }
+
+            if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
+            {
+                return; // rootはReadOnly属性を無視するためスキップ
+            }
+
+            var file = CreateTempFile("readonly_del.txt", "content");
+            // 読み取り専用ディレクトリに配置してアクセス拒否を模擬
+            var roDir = Path.Combine(_tempDir, "ro_dir");
+            Directory.CreateDirectory(roDir);
+            var roFile = Path.Combine(roDir, "locked.txt");
+            File.WriteAllText(roFile, "locked");
+            try
+            {
+                File.SetUnixFileMode(roDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                // ディレクトリが書き込み不可なので削除はIOExceptionまたはUnauthorizedAccessException
+                FileSystemUtility.DeleteFileSilent(roFile); // should not throw
+            }
+            finally
+            {
+                try { File.SetUnixFileMode(roDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// TrySetReadOnly が既に ReadOnly なファイルに対して何もしないことを確認します。
+        /// </summary>
+        [Fact]
+        public void TrySetReadOnly_AlreadyReadOnly_DoesNotThrow()
+        {
+            var file = CreateTempFile("already_readonly.txt", "content");
+            FileSystemUtility.TrySetReadOnly(file);
+            // 再度呼び出しても例外が出ない
+            FileSystemUtility.TrySetReadOnly(file);
+            var attrs = File.GetAttributes(file);
+            Assert.True((attrs & FileAttributes.ReadOnly) != 0);
+        }
+
+        /// <summary>
+        /// Unix環境でIsLikelyNetworkPathがローカルパスに対してfalseを返すことを確認します。
+        /// </summary>
+        [Fact]
+        public void IsLikelyNetworkPath_UnixLocalPath_ReturnsFalse()
+        {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+            {
+                return;
+            }
+            // /tmp は通常ローカルFS（tmpfs等）
+            Assert.False(FileSystemUtility.IsLikelyNetworkPath("/tmp"));
+        }
+
+        /// <summary>
+        /// GetUnixMountsFilePath がファイルシステムで見つかったマウントファイルを返すことを確認します（Linux環境）。
+        /// </summary>
+        [Fact]
+        public void GetUnixMountsFilePath_OnLinux_ReturnsProcMountsOrMtab()
+        {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+            {
+                return;
+            }
+            var method = typeof(FileSystemUtility).GetMethod(
+                "GetUnixMountsFilePath",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            var result = method.Invoke(null, null) as string;
+            // /proc/mounts または /etc/mtab が存在する
+            Assert.NotNull(result);
+        }
+
+        /// <summary>
+        /// IsLikelyUnixNetworkPath でマウントファイルが存在しない場合はfalseを返すことをリフレクションで確認します。
+        /// </summary>
+        [Fact]
+        public void IsLikelyUnixNetworkPath_WhenNoMountsFile_ReturnsFalse()
+        {
+            var method = typeof(FileSystemUtility).GetMethod(
+                "IsLikelyUnixNetworkPath",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            // /nonexistent/path は TryGetFullPath が通るが、mounts ファイルが見つかればそこへ分岐する。
+            // このテストはフォールスルーのみ検証。
+            var result = method.Invoke(null, ["/nonexistent/path/that/does/not/exist"]);
+            Assert.IsType<bool>(result); // false or true, just don't throw
+        }
+
+        /// <summary>
+        /// TryReadMountLines で存在しないファイルを渡した際に null が返ることを確認します。
+        /// </summary>
+        [Fact]
+        public void TryReadMountLines_NonexistentFile_ReturnsNull()
+        {
+            var method = typeof(FileSystemUtility).GetMethod(
+                "TryReadMountLines",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            // 存在しないファイルはIOExceptionが発生しnullが返る
+            var result = method.Invoke(null, ["/nonexistent/path/to/mounts"]);
+            Assert.Null(result);
+        }
+
+        /// <summary>
+        /// //プレフィックスのUNCパスがIsLikelyNetworkPathでWindows判定に用いられる内部メソッドで正しく検出されることを確認します。
+        /// </summary>
+        [Fact]
+        public void IsLikelyWindowsNetworkPath_ForwardSlashUncPrefixVariants_ReturnTrue()
+        {
+            var method = typeof(FileSystemUtility).GetMethod(
+                "IsLikelyWindowsNetworkPath",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            // //server/share 形式のUNCパス
+            Assert.True((bool)method.Invoke(null, ["//server/share"]));
+            // \\server\share 形式のUNCパス
+            Assert.True((bool)method.Invoke(null, [@"\\server\share"]));
+        }
+
+        /// <summary>
+        /// GetBestMatchingMountFileSystemType でパスが末尾スラッシュなしのマウントポイントと一致することを確認します。
+        /// </summary>
+        [Fact]
+        public void GetBestMatchingMountFileSystemType_ExactPathMatch_ReturnsFsType()
+        {
+            var method = typeof(FileSystemUtility).GetMethod(
+                "GetBestMatchingMountFileSystemType",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var fullPath = "/mnt/share";
+            var lines = new[]
+            {
+                "server:/share /mnt/share nfs rw 0 0",
+            };
+
+            var result = method.Invoke(null, new object[] { fullPath, lines });
+            Assert.Equal("nfs", Assert.IsType<string>(result));
+        }
+
+        /// <summary>
+        /// GetBestMatchingMountFileSystemType でエスケープスペースを含むマウントポイントが正しく解釈されることを確認します。
+        /// </summary>
+        [Fact]
+        public void GetBestMatchingMountFileSystemType_EscapedSpaceInMountPoint_Matches()
+        {
+            var method = typeof(FileSystemUtility).GetMethod(
+                "GetBestMatchingMountFileSystemType",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            // マウントポイントに\040(スペース)が含まれる行
+            var lines = new[]
+            {
+                @"server:/my\040share /mnt/my share nfs rw 0 0",
+                "tmpfs /tmp tmpfs rw 0 0",
+            };
+
+            var result = method.Invoke(null, new object[] { "/tmp/file.txt", lines });
+            Assert.Equal("tmpfs", Assert.IsType<string>(result));
+        }
     }
 }

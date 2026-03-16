@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Services.Caching;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -281,7 +282,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.DoesNotContain("diff-summary", html);
+            Assert.DoesNotContain("<details", html);
         }
 
         [Fact]
@@ -299,7 +300,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // ILMismatch は inline diff 非対象
-            Assert.DoesNotContain("diff-summary", html);
+            Assert.DoesNotContain("<details", html);
         }
 
         [Fact]
@@ -377,6 +378,120 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(@new);
             Directory.CreateDirectory(report);
             return (old, @new, report);
+        }
+
+        /// <summary>
+        /// ShouldIncludeILCacheStatsInReport=true かつ ILCache を渡した場合、IL Cache Stats セクションが出力されることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_WithILCacheStats_IncludesILCacheStatsSection()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("il-cache-stats");
+            var config = CreateConfig();
+            config.ShouldIncludeILCacheStatsInReport = true;
+            var ilCache = new ILCache(ilCacheDirectoryAbsolutePath: null);
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config, ilCache);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("IL Cache Stats", html);
+            Assert.Contains("Hit Rate", html);
+        }
+
+        /// <summary>
+        /// ShouldIncludeIgnoredFiles=true で無視ファイルがある場合、無視ファイルセクションにコンテンツが出力されることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_WithIgnoredFiles_IncludesIgnoredSection()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("ignored-files");
+            var ignoredFile = "ignored.txt";
+            File.WriteAllText(Path.Combine(oldDir, ignoredFile), "content");
+            _resultLists.RecordIgnoredFile(ignoredFile, FileDiffResultLists.IgnoredFileLocation.Old);
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("ignored.txt", html);
+        }
+
+        /// <summary>
+        /// ShouldIncludeIgnoredFiles=true かつ ShouldOutputFileTimestamps=true で、
+        /// old/new 両方に存在する無視ファイルのタイムスタンプが出力されることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_WithIgnoredFilesBothSides_AndTimestamps_IncludesTimestamp()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("ignored-timestamps");
+            var ignoredFile = "ts-ignored.txt";
+            File.WriteAllText(Path.Combine(oldDir, ignoredFile), "old-content");
+            File.WriteAllText(Path.Combine(newDir, ignoredFile), "new-content");
+            _resultLists.RecordIgnoredFile(ignoredFile,
+                FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New);
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            config.ShouldOutputFileTimestamps = true;
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("ts-ignored.txt", html);
+        }
+
+        /// <summary>
+        /// ShouldOutputFileTimestamps=true で unchanged ファイルのタイムスタンプが出力されることを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_WithUnchangedFilesAndTimestamps_IncludesTimestamps()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("unchanged-timestamps");
+            var file = "same.txt";
+            File.WriteAllText(Path.Combine(oldDir, file), "content");
+            File.WriteAllText(Path.Combine(newDir, file), "content");
+            _resultLists.AddUnchangedFileRelativePath(file);
+
+            var config = CreateConfig();
+            config.ShouldOutputFileTimestamps = true;
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("same.txt", html);
+        }
+
+        /// <summary>
+        /// ShouldIncludeIgnoredFiles=true で new 側のみに無視ファイルがある場合のタイムスタンプ出力を確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_WithIgnoredFileNewSideOnly_AndTimestamps()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("ignored-new-only");
+            var ignoredFile = "new-only-ignored.txt";
+            File.WriteAllText(Path.Combine(newDir, ignoredFile), "new-content");
+            _resultLists.RecordIgnoredFile(ignoredFile, FileDiffResultLists.IgnoredFileLocation.New);
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            config.ShouldOutputFileTimestamps = true;
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("new-only-ignored.txt", html);
         }
 
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true) => new()

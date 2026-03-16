@@ -112,5 +112,84 @@ namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
             var file = CreateTempFile("native.exe", pe);
             Assert.False(DotNetDetector.IsDotNetExecutable(file));
         }
+
+        /// <summary>
+        /// MZ ヘッダはあるが、PE ヘッダオフセットがファイルサイズを超えている場合は NotDotNetExecutable を返します。
+        /// </summary>
+        [Fact]
+        public void DetectDotNetExecutable_PEOffsetOutOfRange_ReturnsNotDotNet()
+        {
+            var bytes = new byte[64];
+            // MZ magic
+            bytes[0] = 0x4D; bytes[1] = 0x5A;
+            // PE offset at 0x3C = 0xFF (way beyond end of file)
+            bytes[0x3C] = 0xFF;
+            var file = CreateTempFile("bad-offset.exe", bytes);
+
+            var result = DotNetDetector.DetectDotNetExecutable(file);
+            Assert.Equal(DotNetExecutableDetectionStatus.NotDotNetExecutable, result.Status);
+        }
+
+        /// <summary>
+        /// MZ ヘッダはあり PE ヘッダオフセットは正常だが、PE シグネチャが "PE\0\0" でない場合は NotDotNetExecutable を返します。
+        /// </summary>
+        [Fact]
+        public void DetectDotNetExecutable_WrongPESignature_ReturnsNotDotNet()
+        {
+            var pe = new byte[256];
+            // MZ magic
+            pe[0] = 0x4D; pe[1] = 0x5A;
+            // PE header at offset 0x40
+            pe[0x3C] = 0x40;
+            // Wrong PE signature (not "PE\0\0")
+            pe[0x40] = 0x4E; pe[0x41] = 0x45; pe[0x42] = 0x00; pe[0x43] = 0x00;
+            var file = CreateTempFile("wrong-sig.exe", pe);
+
+            var result = DotNetDetector.DetectDotNetExecutable(file);
+            Assert.Equal(DotNetExecutableDetectionStatus.NotDotNetExecutable, result.Status);
+        }
+
+        /// <summary>
+        /// PE32+（64 bit）ファイルの CLR ヘッダが全て 0 の場合は NotDotNetExecutable を返します。
+        /// </summary>
+        [Fact]
+        public void DetectDotNetExecutable_PE32Plus_NoCLR_ReturnsNotDotNet()
+        {
+            var pe = new byte[512];
+            // MZ magic
+            pe[0] = 0x4D; pe[1] = 0x5A;
+            // PE header at 0x80
+            pe[0x3C] = 0x80;
+            // PE signature at 0x80
+            pe[0x80] = 0x50; pe[0x81] = 0x45; pe[0x82] = 0x00; pe[0x83] = 0x00;
+            // Optional Header magic = PE32+ (0x020B) at 0x80 + 4 + 20 = 0x98
+            pe[0x98] = 0x0B; pe[0x99] = 0x02;
+            // CLR header for PE32+ is at optionalHeaderStart + 0x80 (= 0x98 + 0x80 = 0x118), all zeros = no CLR
+            var file = CreateTempFile("native64.exe", pe);
+
+            var result = DotNetDetector.DetectDotNetExecutable(file);
+            Assert.Equal(DotNetExecutableDetectionStatus.NotDotNetExecutable, result.Status);
+        }
+
+        /// <summary>
+        /// Optional Header の Magic が PE32/PE32+ 以外の未知の値の場合は NotDotNetExecutable を返します。
+        /// </summary>
+        [Fact]
+        public void DetectDotNetExecutable_UnknownOptionalHeaderMagic_ReturnsNotDotNet()
+        {
+            var pe = new byte[512];
+            // MZ magic
+            pe[0] = 0x4D; pe[1] = 0x5A;
+            // PE header at 0x80
+            pe[0x3C] = 0x80;
+            // PE signature
+            pe[0x80] = 0x50; pe[0x81] = 0x45; pe[0x82] = 0x00; pe[0x83] = 0x00;
+            // Unknown optional header magic (0xFFFF)
+            pe[0x98] = 0xFF; pe[0x99] = 0xFF;
+            var file = CreateTempFile("unknown-magic.exe", pe);
+
+            var result = DotNetDetector.DetectDotNetExecutable(file);
+            Assert.Equal(DotNetExecutableDetectionStatus.NotDotNetExecutable, result.Status);
+        }
     }
 }
