@@ -242,7 +242,7 @@ namespace FolderDiffIL4DotNet.Services
                 AppendFileRow(sb, "ign", idx, displayPath, ts, location);
                 idx++;
             }
-            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</tbody></table></div>");
         }
 
         private void AppendUnchangedSection(
@@ -273,7 +273,7 @@ namespace FolderDiffIL4DotNet.Services
                 AppendFileRow(sb, "unch", idx, path, ts, col6);
                 idx++;
             }
-            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</tbody></table></div>");
         }
 
         private void AppendAddedSection(StringBuilder sb, ConfigSettings config)
@@ -293,7 +293,7 @@ namespace FolderDiffIL4DotNet.Services
                 AppendFileRow(sb, "add", idx, absPath, ts, "");
                 idx++;
             }
-            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</tbody></table></div>");
         }
 
         private void AppendRemovedSection(StringBuilder sb, ConfigSettings config)
@@ -313,7 +313,7 @@ namespace FolderDiffIL4DotNet.Services
                 AppendFileRow(sb, "rem", idx, absPath, ts, "");
                 idx++;
             }
-            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</tbody></table></div>");
         }
 
         private void AppendModifiedSection(
@@ -355,7 +355,7 @@ namespace FolderDiffIL4DotNet.Services
 
                 idx++;
             }
-            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</tbody></table></div>");
         }
 
         private void AppendInlineDiffRow(
@@ -575,7 +575,7 @@ namespace FolderDiffIL4DotNet.Services
 
                     idx++;
                 }
-                sb.AppendLine("</tbody></table>");
+                sb.AppendLine("</tbody></table></div>");
                 return;
             }
             sb.AppendLine("</ul>");
@@ -588,6 +588,7 @@ namespace FolderDiffIL4DotNet.Services
         private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header)
         {
             string bg = headerBgColor ?? TH_BG_DEFAULT;
+            sb.AppendLine("<div class=\"table-scroll\">");
             sb.AppendLine("<table>");
             sb.AppendLine("<colgroup>");
             sb.AppendLine("  <col class=\"col-no-g\">");
@@ -861,8 +862,9 @@ namespace FolderDiffIL4DotNet.Services
     col.col-ts-g     { width: 22em; }
     col.col-diff-g   { width: var(--col-diff-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
+    .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
-    table:not(.stat-table):not(.diff-table) { table-layout: fixed; }
+    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: auto; margin-bottom: 0; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }

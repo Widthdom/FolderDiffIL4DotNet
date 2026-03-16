@@ -60,8 +60,9 @@
     col.col-ts-g     { width: 22em; }
     col.col-diff-g   { width: var(--col-diff-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
+    .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
-    table:not(.stat-table):not(.diff-table) { table-layout: fixed; }
+    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: auto; margin-bottom: 0; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
@@ -159,6 +160,7 @@
   </li>
 </ul>
 <h2>[ x ] Ignored Files (3)</h2>
+<div class="table-scroll">
 <table>
 <colgroup>
   <col class="col-no-g">
@@ -207,7 +209,9 @@
   <td class="col-diff"><code>old/new</code></td>
 </tr>
 </tbody></table>
+</div>
 <h2>[ = ] Unchanged Files (5)</h2>
+<div class="table-scroll">
 <table>
 <colgroup>
   <col class="col-no-g">
@@ -274,7 +278,9 @@
   <td class="col-diff"><code>MD5Match</code></td>
 </tr>
 </tbody></table>
+</div>
 <h2 style="color:#2d7a2d">[ + ] Added Files (1)</h2>
+<div class="table-scroll">
 <table>
 <colgroup>
   <col class="col-no-g">
@@ -305,7 +311,9 @@
   <td class="col-diff"><code></code></td>
 </tr>
 </tbody></table>
+</div>
 <h2 style="color:#b00020">[ - ] Removed Files (1)</h2>
+<div class="table-scroll">
 <table>
 <colgroup>
   <col class="col-no-g">
@@ -336,7 +344,9 @@
   <td class="col-diff"><code></code></td>
 </tr>
 </tbody></table>
+</div>
 <h2 style="color:#0051c3">[ * ] Modified Files (6)</h2>
+<div class="table-scroll">
 <table>
 <colgroup>
   <col class="col-no-g">
@@ -592,6 +602,7 @@
   </td>
 </tr>
 </tbody></table>
+</div>
 <h2 class="section-heading">Summary</h2>
 <table class="stat-table">
   <tbody>
@@ -620,6 +631,7 @@
   <li>One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>
 </ul>
 <h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; Timestamps Regressed (2)</h2>
+<div class="table-scroll">
 <table>
 <colgroup>
   <col class="col-no-g">
@@ -697,6 +709,7 @@
   </td>
 </tr>
 </tbody></table>
+</div>
 </main>
 <script>
   const __storageKey__  = 'folderdiff-release';
