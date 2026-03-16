@@ -415,6 +415,8 @@ CI also generates the same site and uploads it as the `DocumentationSite` artifa
 - [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) runs scheduled and on-change CodeQL analysis for both C# and GitHub Actions workflows.
 - [`.github/dependabot.yml`](.github/dependabot.yml) enables weekly update PRs for NuGet packages and GitHub Actions.
 
+Some tests show as **Skipped** when running locally — this is expected and safe. See [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-skipped-tests) for details.
+
 ## License
 
 - [MIT License](LICENSE)
@@ -840,6 +842,8 @@ CI でも同じサイトを生成し、`DocumentationSite` artifact としてア
 - [`.github/workflows/release.yml`](.github/workflows/release.yml) は `v*` タグ push 時に GitHub Release を作成し、publish 出力 ZIP、ドキュメント ZIP、SHA-256 チェックサムを添付します。
 - [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml) は C# と GitHub Actions を対象に、変更時と定期実行の CodeQL 解析を行います。
 - [`.github/dependabot.yml`](.github/dependabot.yml) は NuGet と GitHub Actions の更新 PR を週次で作成します。
+
+ローカルでテストを実行すると一部が **Skipped（スキップ）** と表示されることがありますが、問題ありません。詳細は [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-skipped-tests) を参照してください。
 
 ## ライセンス
 

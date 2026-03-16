@@ -473,6 +473,22 @@ Versioning:
 - [`version.json`](../version.json) uses Nerdbank.GitVersioning
 - Informational version is embedded and later included in the generated report
 
+<a id="guide-en-skipped-tests"></a>
+## Skipped Tests in Local Runs
+
+Some tests report as **Skipped** when run locally. This is intentional and does not indicate a bug.
+
+Which tests skip and why:
+- **`DotNetDisassembleServiceTests`** (six tests) — these exercise fallback and blacklist logic using fake `#!/bin/sh` shell scripts created by [`WriteExecutable`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs). `File.SetUnixFileMode` and shell script execution are not available on Windows, so the tests call `Skip.If(OperatingSystem.IsWindows(), ...)` and report Skipped there.
+- **`RealDisassemblerE2ETests`** (one test) — this builds the same tiny class library twice with `Deterministic=false` and verifies that `dotnet-ildasm` produces `ILMatch` after MVID filtering. It calls `Skip.If(!CanRunDotNetIldasm(), ...)` and reports Skipped whenever `dotnet-ildasm` (or `dotnet ildasm`) is absent from `PATH`.
+
+Why this is safe:
+- CI runs on Linux and installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) before the test step, so every test that skips locally runs in full on every push. A local Skipped result reflects a missing prerequisite in that environment, not a test failure.
+- The skippable tests use [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) from `Xunit.SkippableFact`, so the runner counts them as Skipped rather than Passed, making the distinction visible.
+- If a previously Skipped test appears as **Failed**, that is a real issue and should be investigated. Skipped and Failed are distinct outcomes.
+
+For the complete list of affected tests and the `Skip.If` pattern, see [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-en-isolation).
+
 ## Extension Points
 
 Typical safe extension points:
@@ -986,6 +1002,22 @@ API リファレンス生成とサイト構築には DocFX を使います。
 バージョニング:
 - [`version.json`](../version.json) で Nerdbank.GitVersioning を利用
 - Informational Version が埋め込まれ、生成レポートにも出力されます
+
+<a id="guide-ja-skipped-tests"></a>
+## ローカル実行でのスキップ（Skipped）テスト
+
+ローカルで実行すると一部テストが **Skipped** と表示されることがあります。これは意図した挙動であり、バグではありません。
+
+スキップされるテストとその理由:
+- **`DotNetDisassembleServiceTests`**（6 件）— 偽の `#!/bin/sh` シェルスクリプトを [`WriteExecutable`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) で生成し、フォールバック・ブラックリスト挙動を決定的に検証します。`File.SetUnixFileMode` およびシェルスクリプトの実行は Windows では使えないため、`Skip.If(OperatingSystem.IsWindows(), ...)` を呼び出して Skipped を報告します。
+- **`RealDisassemblerE2ETests`**（1 件）— `Deterministic=false` で 2 回ビルドした同一クラスライブラリを `dotnet-ildasm` が MVID 除外後に `ILMatch` と判定することを確認します。`PATH` に `dotnet-ildasm`（または `dotnet ildasm`）が見つからない場合は `Skip.If(!CanRunDotNetIldasm(), ...)` を呼び出して Skipped を報告します。
+
+なぜ安全か:
+- CI は Linux 上で動き、テストステップの前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールします。そのため、ローカルでスキップされるテストはすべて push のたびにフルで実行されます。ローカルの Skipped はその環境で前提条件が欠けていることを示すだけで、テストの失敗ではありません。
+- スキップ対象のテストは `Xunit.SkippableFact` の [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) を使うため、ランナーは Passed ではなく Skipped として別カウントで表示し、区別が明確になっています。
+- これまで Skipped だったテストが **Failed** になった場合は実際の問題であり、調査が必要です。Skipped と Failed は異なる結果です。
+
+スキップ対象テストの一覧と `Skip.If` パターンの詳細は [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-ja-isolation) を参照してください。
 
 ## 拡張ポイント
 
