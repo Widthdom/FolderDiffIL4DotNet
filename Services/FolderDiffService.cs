@@ -370,21 +370,7 @@ namespace FolderDiffIL4DotNet.Services
             int precomputeBatchSize = GetEffectiveIlPrecomputeBatchSize();
             // 事前計算が長引いても進捗が止まって見えないよう、定期的に 0% を流すキープアライブを起動。
             using var keepAliveCts = new CancellationTokenSource();
-            var keepAliveTask = Task.Run(async () =>
-            {
-                try
-                {
-                    while (!keepAliveCts.Token.IsCancellationRequested)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL_SECONDS), keepAliveCts.Token);
-                        _progressReporter.ReportProgress(0.0);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    // expected when the keep-alive loop is stopped
-                }
-            });
+            var keepAliveTask = CreateKeepAliveTask(keepAliveCts);
 
             try
             {
@@ -431,6 +417,34 @@ namespace FolderDiffIL4DotNet.Services
                 _progressReporter.ReportProgress(0.0);
             }
         }
+
+        /// <summary>
+        /// 事前計算フェーズ中に進捗表示が止まって見えないよう、<see cref="KEEP_ALIVE_INTERVAL_SECONDS"/> 秒ごとに
+        /// <see cref="ProgressReportService.ReportProgress"/> へ 0% を送り続けるバックグラウンドタスクを起動します。
+        /// <para>
+        /// Starts a background task that periodically reports 0% progress to keep the spinner alive
+        /// during the IL pre-compute phase.  The loop exits cleanly when the returned
+        /// <see cref="CancellationTokenSource"/> is cancelled.
+        /// </para>
+        /// </summary>
+        /// <param name="cts">タスクのキャンセルに使用する <see cref="CancellationTokenSource"/>。</param>
+        /// <returns>キープアライブループを実行している <see cref="Task"/>。</returns>
+        private Task CreateKeepAliveTask(CancellationTokenSource cts)
+            => Task.Run(async () =>
+            {
+                try
+                {
+                    while (!cts.Token.IsCancellationRequested)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL_SECONDS), cts.Token);
+                        _progressReporter.ReportProgress(0.0);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // expected when the keep-alive loop is stopped
+                }
+            });
 
         private void LogExpectedFolderDiffFailure(Exception exception)
         {

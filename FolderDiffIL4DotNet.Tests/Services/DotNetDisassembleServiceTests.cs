@@ -131,7 +131,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildPrefetchCacheKeyPatterns_DotnetMuxer_IncludesCanonicalAndLegacyLabels()
         {
-            var method = typeof(DotNetDisassembleService).GetMethod("BuildPrefetchCacheKeyPatterns", BindingFlags.Static | BindingFlags.NonPublic);
+            // BuildPrefetchCacheKeyPatterns は ILCachePrefetcher へ移動しました。
+            // BuildPrefetchCacheKeyPatterns has been moved to ILCachePrefetcher.
+            var method = typeof(ILCachePrefetcher).GetMethod("BuildPrefetchCacheKeyPatterns", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
             var resultObject = method.Invoke(null, ["dotnet", "dotnet", "/tmp/sample.dll", "sample.dll"]);
