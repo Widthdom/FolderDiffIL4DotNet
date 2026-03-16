@@ -24,14 +24,16 @@ namespace FolderDiffIL4DotNet.Services
         internal const string DIFF_REPORT_HTML_FILE_NAME = "diff_report.html";
 
         private const string TIMESTAMP_ARROW = " → ";
-        private const string COLOR_REMOVED = "#cc0000";
-        private const string COLOR_ADDED = "#006600";
-        private const string COLOR_MODIFIED = "#0000cc";
+        private const string COLOR_ADDED   = "#2d7a2d";
+        private const string COLOR_REMOVED = "#b00020";
+        private const string COLOR_MODIFIED = "#0051c3";
+
+        private const string TH_BG_ADDED    = "#e8f5e9";
+        private const string TH_BG_REMOVED  = "#ffebee";
+        private const string TH_BG_MODIFIED = "#e3f2fd";
+        private const string TH_BG_DEFAULT  = "#fafafa";
 
         /// <summary>コンストラクタ。</summary>
-        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
-        /// <param name="logger">ログ出力サービス。</param>
-        /// <param name="config">設定（将来の拡張のために受け取りますが、現バージョンでは直接使用しません）。</param>
         public HtmlReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, ConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
@@ -40,6 +42,8 @@ namespace FolderDiffIL4DotNet.Services
             _logger = logger;
             ArgumentNullException.ThrowIfNull(config);
         }
+
+        // ── Public entry point ───────────────────────────────────────────────
 
         /// <summary>
         /// diff_report.html を生成して <paramref name="reportsFolderAbsolutePath"/> へ書き込みます。
@@ -93,19 +97,26 @@ namespace FolderDiffIL4DotNet.Services
         {
             string label = Path.GetFileName(
                 reportsFolderAbsolutePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "diff";
-            // Storage key: sanitise to a safe JS string literal value
             string storageKey = "folderdiff-" + label
                 .Replace("'", "-").Replace("\"", "-").Replace("\\", "-").Replace("`", "-");
+            string reportDate = DateTime.Now.ToString("yyyyMMdd");
 
-            var sb = new StringBuilder(capacity: 65536);
-            AppendHtmlHead(sb, label, storageKey);
+            var sb = new StringBuilder(capacity: 131072);
+            AppendHtmlHead(sb);
             sb.AppendLine("<body>");
-            AppendControlBar(sb);
-            sb.AppendLine("<main>");
 
+            // Controls bar (markers allow stripping in downloadReviewed)
+            sb.AppendLine("<!--CTRL-->");
+            sb.AppendLine("<div class=\"controls\">");
+            sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x21E9; Download reviewed version</button>");
+            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; Clear all</button>");
+            sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
+            sb.AppendLine("</div>");
+            sb.AppendLine("<!--/CTRL-->");
+
+            sb.AppendLine("<main>");
             AppendHeaderSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath,
                 appVersion, elapsedTimeString, computerName, config);
-            AppendLegendSection(sb);
 
             if (config.ShouldIncludeIgnoredFiles)
                 AppendIgnoredSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, config);
@@ -115,7 +126,7 @@ namespace FolderDiffIL4DotNet.Services
 
             AppendAddedSection(sb, config);
             AppendRemovedSection(sb, config);
-            AppendModifiedSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, config);
+            AppendModifiedSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, config, ilCache);
             AppendSummarySection(sb, config);
 
             if (config.ShouldIncludeILCacheStatsInReport && ilCache != null)
@@ -124,35 +135,26 @@ namespace FolderDiffIL4DotNet.Services
             AppendWarningsSection(sb);
 
             sb.AppendLine("</main>");
-            AppendJs(sb, storageKey);
+            AppendJs(sb, storageKey, reportDate);
             sb.AppendLine("</body>");
             sb.AppendLine("</html>");
             return sb.ToString();
         }
 
-        // ── Head / Controls ──────────────────────────────────────────────────
+        // ── Head ─────────────────────────────────────────────────────────────
 
-        private static void AppendHtmlHead(StringBuilder sb, string label, string storageKey)
+        private static void AppendHtmlHead(StringBuilder sb)
         {
             sb.AppendLine("<!DOCTYPE html>");
             sb.AppendLine("<html lang=\"en\">");
             sb.AppendLine("<head>");
             sb.AppendLine("  <meta charset=\"UTF-8\">");
             sb.AppendLine("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-            sb.AppendLine($"  <title>Diff Report - {HtmlEncode(label)}</title>");
+            sb.AppendLine("  <title>diff_report</title>");
             sb.AppendLine("  <style>");
             sb.AppendLine(GetCss());
             sb.AppendLine("  </style>");
             sb.AppendLine("</head>");
-        }
-
-        private static void AppendControlBar(StringBuilder sb)
-        {
-            sb.AppendLine("<div class=\"controls\">");
-            sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x1F4BE; Download reviewed version</button>");
-            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; Clear all</button>");
-            sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
-            sb.AppendLine("</div>");
         }
 
         // ── Report sections ──────────────────────────────────────────────────
@@ -166,12 +168,12 @@ namespace FolderDiffIL4DotNet.Services
             string computerName,
             ConfigSettings config)
         {
-            sb.AppendLine("<h1>Folder Diff Report</h1>");
+            sb.AppendLine("<h1>diff_report</h1>");
             sb.AppendLine("<ul class=\"meta\">");
             sb.AppendLine($"  <li>App Version: FolderDiffIL4DotNet {HtmlEncode(appVersion)}</li>");
             sb.AppendLine($"  <li>Computer: {HtmlEncode(computerName)}</li>");
-            sb.AppendLine($"  <li>Old: <code>{HtmlEncode(oldFolderAbsolutePath)}</code></li>");
-            sb.AppendLine($"  <li>New: <code>{HtmlEncode(newFolderAbsolutePath)}</code></li>");
+            sb.AppendLine($"  <li>Old: {HtmlEncode(oldFolderAbsolutePath)}</li>");
+            sb.AppendLine($"  <li>New: {HtmlEncode(newFolderAbsolutePath)}</li>");
             sb.AppendLine($"  <li>Ignored Extensions: {HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</li>");
             sb.AppendLine($"  <li>Text File Extensions: {HtmlEncode(string.Join(", ", config.TextFileExtensions))}</li>");
             sb.AppendLine($"  <li>IL Disassembler: {HtmlEncode(BuildDisassemblerHeaderText())}</li>");
@@ -179,20 +181,34 @@ namespace FolderDiffIL4DotNet.Services
                 sb.AppendLine($"  <li>Elapsed Time: {HtmlEncode(elapsedTimeString)}</li>");
             if (config.ShouldOutputFileTimestamps)
                 sb.AppendLine($"  <li>Timestamps (timezone): {HtmlEncode(DateTimeOffset.Now.ToString("zzz"))}</li>");
-            sb.AppendLine($"  <li class=\"note\">Note: When diffing IL, lines starting with <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>");
-            sb.AppendLine("</ul>");
-        }
 
-        private static void AppendLegendSection(StringBuilder sb)
-        {
-            sb.AppendLine("<div class=\"legend\">");
-            sb.AppendLine("  <strong>Legend:</strong>&nbsp;");
-            sb.AppendLine("  <code>MD5Match</code>&nbsp;/&nbsp;<code>MD5Mismatch</code>: MD5 hash match / mismatch");
-            sb.AppendLine("  &nbsp;|&nbsp;");
-            sb.AppendLine("  <code>ILMatch</code>&nbsp;/&nbsp;<code>ILMismatch</code>: IL(Intermediate Language) match / mismatch");
-            sb.AppendLine("  &nbsp;|&nbsp;");
-            sb.AppendLine("  <code>TextMatch</code>&nbsp;/&nbsp;<code>TextMismatch</code>: Text match / mismatch");
-            sb.AppendLine("</div>");
+            // MVID note (same style as other meta items)
+            sb.AppendLine($"  <li>Note: When diffing IL, lines starting with <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>");
+
+            // IL contains-ignore note
+            if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
+            {
+                var ilIgnoreStrings = GetNormalizedIlIgnoreStrings(config);
+                if (ilIgnoreStrings.Count == 0)
+                {
+                    sb.AppendLine("  <li>Note: IL line-ignore-by-contains is enabled, but no non-empty strings are configured.</li>");
+                }
+                else
+                {
+                    var codeItems = string.Join(", ", ilIgnoreStrings.Select(s => $"<code>{HtmlEncode($"\"{s}\"")}</code>"));
+                    sb.AppendLine($"  <li>Note: When diffing IL, lines containing any of the configured strings are ignored: {codeItems}.</li>");
+                }
+            }
+
+            // Legend (as meta bullet items)
+            sb.AppendLine("  <li>Legend:");
+            sb.AppendLine("    <ul>");
+            sb.AppendLine($"      <li><code>MD5Match</code> / <code>MD5Mismatch</code>: MD5 hash match / mismatch</li>");
+            sb.AppendLine($"      <li><code>ILMatch</code> / <code>ILMismatch</code>: IL(Intermediate Language) match / mismatch</li>");
+            sb.AppendLine($"      <li><code>TextMatch</code> / <code>TextMismatch</code>: Text match / mismatch</li>");
+            sb.AppendLine("    </ul>");
+            sb.AppendLine("  </li>");
+            sb.AppendLine("</ul>");
         }
 
         private void AppendIgnoredSection(
@@ -206,17 +222,24 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h2>[ x ] Ignored Files ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine("<p class=\"empty\">(none)</p>"); return; }
 
-            AppendTableStart(sb, null, "Location");
+            AppendTableStart(sb, TH_BG_DEFAULT, "Location");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var entry in items)
             {
                 bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
                 bool hasNew = (entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0;
+
+                // 3-2: absolute path for single-side, relative for both-sides
+                string displayPath = (hasOld && hasNew)
+                    ? entry.Key
+                    : hasOld ? Path.Combine(oldFolderAbsolutePath, entry.Key)
+                             : Path.Combine(newFolderAbsolutePath, entry.Key);
+
                 string ts = BuildIgnoredTimestamp(entry.Key, hasOld, hasNew,
                     oldFolderAbsolutePath, newFolderAbsolutePath, config.ShouldOutputFileTimestamps);
                 string location = (hasOld && hasNew) ? "old/new" : hasOld ? "old" : "new";
-                AppendFileRow(sb, "ign", idx, entry.Key, ts, location, "");
+                AppendFileRow(sb, "ign", idx, displayPath, ts, location);
                 idx++;
             }
             sb.AppendLine("</tbody></table>");
@@ -233,7 +256,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h2>[ = ] Unchanged Files ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine("<p class=\"empty\">(none)</p>"); return; }
 
-            AppendTableStart(sb, null, "Diff Reason");
+            AppendTableStart(sb, TH_BG_DEFAULT, "Diff Reason");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
@@ -243,13 +266,11 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, path));
                     string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, path));
-                    ts = oldTs != newTs
-                        ? $"[{oldTs}{TIMESTAMP_ARROW}{newTs}]"
-                        : $"[{newTs}]";
+                    ts = oldTs != newTs ? $"[{oldTs}{TIMESTAMP_ARROW}{newTs}]" : $"[{newTs}]";
                 }
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
-                _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
-                AppendFileRow(sb, "unch", idx, path, ts, diffDetail.ToString(), asm ?? "");
+                string col6 = BuildDiffDetailDisplay(path, diffDetail, _fileDiffResultLists);
+                AppendFileRow(sb, "unch", idx, path, ts, col6);
                 idx++;
             }
             sb.AppendLine("</tbody></table>");
@@ -262,14 +283,14 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] Added Files ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine("<p class=\"empty\">(none)</p>"); return; }
 
-            AppendTableStart(sb, COLOR_ADDED, "Diff Reason");
+            AppendTableStart(sb, TH_BG_ADDED, "Diff Reason");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
             {
                 string ts = config.ShouldOutputFileTimestamps
                     ? $"[{Caching.TimestampCache.GetOrAdd(absPath)}]" : "";
-                AppendFileRow(sb, "add", idx, absPath, ts, "", "");
+                AppendFileRow(sb, "add", idx, absPath, ts, "");
                 idx++;
             }
             sb.AppendLine("</tbody></table>");
@@ -282,14 +303,14 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] Removed Files ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine("<p class=\"empty\">(none)</p>"); return; }
 
-            AppendTableStart(sb, COLOR_REMOVED, "Diff Reason");
+            AppendTableStart(sb, TH_BG_REMOVED, "Diff Reason");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
             {
                 string ts = config.ShouldOutputFileTimestamps
                     ? $"[{Caching.TimestampCache.GetOrAdd(absPath)}]" : "";
-                AppendFileRow(sb, "rem", idx, absPath, ts, "", "");
+                AppendFileRow(sb, "rem", idx, absPath, ts, "");
                 idx++;
             }
             sb.AppendLine("</tbody></table>");
@@ -299,14 +320,15 @@ namespace FolderDiffIL4DotNet.Services
             StringBuilder sb,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
-            ConfigSettings config)
+            ConfigSettings config,
+            ILCache ilCache)
         {
             var items = _fileDiffResultLists.ModifiedFilesRelativePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
             sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] Modified Files ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine("<p class=\"empty\">(none)</p>"); return; }
 
-            AppendTableStart(sb, COLOR_MODIFIED, "Diff Reason");
+            AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
@@ -320,12 +342,15 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
-                AppendFileRow(sb, "mod", idx, path, ts, diffDetail.ToString(), asm ?? "");
+                string col6 = BuildDiffDetailDisplay(path, diffDetail, _fileDiffResultLists);
+                AppendFileRow(sb, "mod", idx, path, ts, col6);
 
                 if (config.EnableInlineDiff &&
-                    diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch)
+                    (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||
+                     diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch))
                 {
-                    AppendInlineDiffRow(sb, idx, path, oldFolderAbsolutePath, newFolderAbsolutePath, config);
+                    AppendInlineDiffRow(sb, idx, path, oldFolderAbsolutePath, newFolderAbsolutePath,
+                        config, diffDetail, asm ?? "", ilCache);
                 }
 
                 idx++;
@@ -339,28 +364,43 @@ namespace FolderDiffIL4DotNet.Services
             string relPath,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
-            ConfigSettings config)
+            ConfigSettings config,
+            FileDiffResultLists.DiffDetailResult diffDetail,
+            string disassemblerLabel,
+            ILCache ilCache)
         {
-            int maxInput = config.InlineDiffMaxInputLines > 0 ? config.InlineDiffMaxInputLines : 1000;
-            int maxOutput = config.InlineDiffMaxOutputLines > 0 ? config.InlineDiffMaxOutputLines : 500;
-            int contextLines = config.InlineDiffContextLines >= 0 ? config.InlineDiffContextLines : 3;
-
-            string oldAbsPath = Path.Combine(oldFolderAbsolutePath, relPath);
-            string newAbsPath = Path.Combine(newFolderAbsolutePath, relPath);
+            int maxInput   = config.InlineDiffMaxInputLines  > 0 ? config.InlineDiffMaxInputLines  : 1000;
+            int maxOutput  = config.InlineDiffMaxOutputLines > 0 ? config.InlineDiffMaxOutputLines : 500;
+            int contextLines = config.InlineDiffContextLines >= 0 ? config.InlineDiffContextLines : 0;
 
             string[] oldLines, newLines;
-            try
+
+            if (diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch)
             {
-                oldLines = File.ReadAllLines(oldAbsPath);
-                newLines = File.ReadAllLines(newAbsPath);
+                // ILMismatch: fetch IL text from cache (synchronous wrapper)
+                string oldAbsPath = Path.Combine(oldFolderAbsolutePath, relPath);
+                string newAbsPath = Path.Combine(newFolderAbsolutePath, relPath);
+                string oldIL = ilCache?.TryGetILAsync(oldAbsPath, disassemblerLabel).GetAwaiter().GetResult();
+                string newIL = ilCache?.TryGetILAsync(newAbsPath, disassemblerLabel).GetAwaiter().GetResult();
+                if (oldIL == null || newIL == null) return; // IL not in cache; skip
+                oldLines = oldIL.Split('\n');
+                newLines = newIL.Split('\n');
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            else
             {
-                // ファイル読み込み失敗時は差分行を表示しない
-                _logger.LogMessage(AppLogLevel.Warning,
-                    $"Inline diff skipped for '{relPath}': {ex.Message}",
-                    shouldOutputMessageToConsole: false, ex);
-                return;
+                // TextMismatch: read from disk
+                try
+                {
+                    oldLines = File.ReadAllLines(Path.Combine(oldFolderAbsolutePath, relPath));
+                    newLines = File.ReadAllLines(Path.Combine(newFolderAbsolutePath, relPath));
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        $"Inline diff skipped for '{relPath}': {ex.Message}",
+                        shouldOutputMessageToConsole: false, ex);
+                    return;
+                }
             }
 
             if (oldLines.Length > maxInput || newLines.Length > maxInput)
@@ -459,36 +499,40 @@ namespace FolderDiffIL4DotNet.Services
         private void AppendSummarySection(StringBuilder sb, ConfigSettings config)
         {
             sb.AppendLine("<h2>Summary</h2>");
-            sb.AppendLine("<ul class=\"summary\">");
+            sb.AppendLine("<table class=\"stat-table\">");
+            sb.AppendLine("  <tbody>");
             var stats = _fileDiffResultLists.SummaryStatistics;
             if (config.ShouldIncludeIgnoredFiles)
-                sb.AppendLine($"  <li>Ignored   : {stats.IgnoredCount}</li>");
-            sb.AppendLine($"  <li>Unchanged : {stats.UnchangedCount}</li>");
-            sb.AppendLine($"  <li>Added     : {stats.AddedCount}</li>");
-            sb.AppendLine($"  <li>Removed   : {stats.RemovedCount}</li>");
-            sb.AppendLine($"  <li>Modified  : {stats.ModifiedCount}</li>");
-            sb.AppendLine($"  <li>Compared  : {_fileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} (New)</li>");
-            sb.AppendLine("</ul>");
+                sb.AppendLine($"    <tr><td class=\"stat-label\">Ignored</td><td class=\"stat-value\">{stats.IgnoredCount}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Unchanged</td><td class=\"stat-value\">{stats.UnchangedCount}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Added</td><td class=\"stat-value\">{stats.AddedCount}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Removed</td><td class=\"stat-value\">{stats.RemovedCount}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Modified</td><td class=\"stat-value\">{stats.ModifiedCount}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Compared</td><td class=\"stat-value\">{_fileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} (New)</td></tr>");
+            sb.AppendLine("  </tbody>");
+            sb.AppendLine("</table>");
         }
 
         private static void AppendILCacheStatsSection(StringBuilder sb, ILCache ilCache)
         {
             var stats = ilCache.GetReportStats();
             sb.AppendLine("<h2>IL Cache Stats</h2>");
-            sb.AppendLine("<ul class=\"summary\">");
-            sb.AppendLine($"  <li>Hits    : {stats.Hits}</li>");
-            sb.AppendLine($"  <li>Misses  : {stats.Misses}</li>");
-            sb.AppendLine($"  <li>Hit Rate: {stats.HitRatePct:F1}%</li>");
-            sb.AppendLine($"  <li>Stores  : {stats.Stores}</li>");
-            sb.AppendLine($"  <li>Evicted : {stats.Evicted}</li>");
-            sb.AppendLine($"  <li>Expired : {stats.Expired}</li>");
-            sb.AppendLine("</ul>");
+            sb.AppendLine("<table class=\"stat-table\">");
+            sb.AppendLine("  <tbody>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Hits</td><td class=\"stat-value\">{stats.Hits}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Misses</td><td class=\"stat-value\">{stats.Misses}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Hit Rate</td><td class=\"stat-value\">{stats.HitRatePct:F1}%</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Stores</td><td class=\"stat-value\">{stats.Stores}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Evicted</td><td class=\"stat-value\">{stats.Evicted}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">Expired</td><td class=\"stat-value\">{stats.Expired}</td></tr>");
+            sb.AppendLine("  </tbody>");
+            sb.AppendLine("</table>");
         }
 
         private void AppendWarningsSection(StringBuilder sb)
         {
             bool hasMd5 = _fileDiffResultLists.HasAnyMd5Mismatch;
-            bool hasTs = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
+            bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             if (!hasMd5 && !hasTs) return;
 
             sb.AppendLine("<h2>Warnings</h2>");
@@ -497,38 +541,44 @@ namespace FolderDiffIL4DotNet.Services
                 sb.AppendLine($"  <li><strong>WARNING:</strong> {HtmlEncode(Constants.WARNING_MD5_MISMATCH)}</li>");
             if (hasTs)
             {
-                sb.AppendLine("  <li><strong>WARNING:</strong> One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.");
-                sb.AppendLine("    <ul>");
-                foreach (var w in _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
-                    .OrderBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase))
+                var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
+                    .OrderBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
+                sb.AppendLine($"  <li><strong>WARNING:</strong> One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>");
+                sb.AppendLine("</ul>");
+
+                // Timestamp-regressed files table (same style as Modified Files)
+                sb.AppendLine($"<h3 style=\"color:{COLOR_MODIFIED}\">[ ! ] Modified Files — Timestamps Regressed ({warnings.Count})</h3>");
+                AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
+                sb.AppendLine("<tbody>");
+                int idx = 0;
+                foreach (var w in warnings)
                 {
-                    sb.AppendLine($"      <li><code>{HtmlEncode(w.FileRelativePath)}</code> [{HtmlEncode(w.OldTimestamp)}{TIMESTAMP_ARROW}{HtmlEncode(w.NewTimestamp)}]</li>");
+                    string ts = $"[{HtmlEncode(w.OldTimestamp)}{TIMESTAMP_ARROW}{HtmlEncode(w.NewTimestamp)}]";
+                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, "");
+                    idx++;
                 }
-                sb.AppendLine("    </ul></li>");
+                sb.AppendLine("</tbody></table>");
+                return;
             }
             sb.AppendLine("</ul>");
         }
 
         // ── Table helpers ────────────────────────────────────────────────────
 
-        /// <summary>
-        /// セクション用テーブルの開始タグと見出し行を追加します。
-        /// </summary>
-        /// <param name="sb">書き込み先 <see cref="StringBuilder"/>。</param>
-        /// <param name="thColor">見出し文字色。null の場合はデフォルト色。</param>
+        /// <param name="headerBgColor">ヘッダ行の背景色。null の場合はデフォルト色。</param>
         /// <param name="col6Header">6 列目（差異理由 / 所在）のヘッダラベル。</param>
-        private static void AppendTableStart(StringBuilder sb, string thColor, string col6Header)
+        private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header)
         {
-            string colorStyle = thColor != null ? $" style=\"color:{thColor}\"" : "";
+            string bg = headerBgColor ?? TH_BG_DEFAULT;
             sb.AppendLine("<table>");
-            sb.AppendLine($"<thead><tr>");
-            sb.AppendLine($"  <th class=\"col-cb\"{colorStyle}>&#x2713;</th>");
-            sb.AppendLine($"  <th{colorStyle}>OK Reason</th>");
-            sb.AppendLine($"  <th{colorStyle}>Notes</th>");
-            sb.AppendLine($"  <th{colorStyle}>File Path</th>");
-            sb.AppendLine($"  <th{colorStyle}>Timestamp</th>");
-            sb.AppendLine($"  <th{colorStyle}>{HtmlEncode(col6Header)}</th>");
-            sb.AppendLine($"  <th{colorStyle}>Disassembler</th>");
+            sb.AppendLine($"<thead><tr style=\"background:{bg}\">");
+            sb.AppendLine($"  <th class=\"col-no\">#</th>");
+            sb.AppendLine($"  <th class=\"col-cb\">&#x2713;</th>");
+            sb.AppendLine($"  <th>OK Reason</th>");
+            sb.AppendLine($"  <th>Notes</th>");
+            sb.AppendLine($"  <th>File Path</th>");
+            sb.AppendLine($"  <th>Timestamp</th>");
+            sb.AppendLine($"  <th>{HtmlEncode(col6Header)}</th>");
             sb.AppendLine("</tr></thead>");
         }
 
@@ -538,29 +588,27 @@ namespace FolderDiffIL4DotNet.Services
             int idx,
             string path,
             string timestamp,
-            string col6,
-            string disassembler)
+            string col6)
         {
-            string cbId = $"cb_{sectionPrefix}_{idx}";
+            string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
-            string notesId = $"notes_{sectionPrefix}_{idx}";
+            string notesId  = $"notes_{sectionPrefix}_{idx}";
+            int recordNo    = idx + 1;
             sb.AppendLine("<tr>");
+            sb.AppendLine($"  <td class=\"col-no\">{recordNo}</td>");
             sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td>");
-            sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\" placeholder=\"OK reason\"></td>");
-            sb.AppendLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\" placeholder=\"Notes\"></td>");
-            sb.AppendLine($"  <td class=\"col-path\"><code>{HtmlEncode(path)}</code></td>");
-            sb.AppendLine($"  <td class=\"col-ts\"><code>{HtmlEncode(timestamp)}</code></td>");
+            sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\"></td>");
+            sb.AppendLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\"></td>");
+            sb.AppendLine($"  <td class=\"col-path\">{HtmlEncode(path)}</td>");
+            sb.AppendLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
             sb.AppendLine($"  <td class=\"col-diff\"><code>{HtmlEncode(col6)}</code></td>");
-            sb.AppendLine($"  <td class=\"col-asm\"><code>{HtmlEncode(disassembler)}</code></td>");
             sb.AppendLine("</tr>");
         }
 
         private static string BuildIgnoredTimestamp(
             string relPath,
-            bool hasOld,
-            bool hasNew,
-            string oldFolder,
-            string newFolder,
+            bool hasOld, bool hasNew,
+            string oldFolder, string newFolder,
             bool shouldOutput)
         {
             if (!shouldOutput) return "";
@@ -586,15 +634,45 @@ namespace FolderDiffIL4DotNet.Services
             return labels.Count == 0 ? "N/A" : string.Join(", ", labels);
         }
 
+        private static string BuildDiffDetailDisplay(
+            string fileRelativePath,
+            FileDiffResultLists.DiffDetailResult diffDetail,
+            FileDiffResultLists lists)
+        {
+            if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch ||
+                 diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&
+                lists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
+                !string.IsNullOrWhiteSpace(label))
+            {
+                return $"{diffDetail} {label}";
+            }
+            return diffDetail.ToString();
+        }
+
+        private static List<string> GetNormalizedIlIgnoreStrings(ConfigSettings config)
+        {
+            if (config?.ILIgnoreLineContainingStrings == null) return new List<string>();
+            return config.ILIgnoreLineContainingStrings
+                .Where(v => !string.IsNullOrWhiteSpace(v))
+                .Select(v => v.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+        }
+
         // ── JavaScript ───────────────────────────────────────────────────────
 
-        private static void AppendJs(StringBuilder sb, string storageKey)
+        private static void AppendJs(StringBuilder sb, string storageKey, string reportDate)
         {
             sb.AppendLine("<script>");
-            // NOTE: 'const __savedState__ = null;' is a sentinel that downloadReviewed() replaces
-            // with the serialised review state. Do not change the exact whitespace.
-            sb.AppendLine($"  const __storageKey__ = '{storageKey}';");
-            sb.AppendLine("  const __savedState__ = null;");
+            sb.AppendLine($"  const __storageKey__  = '{storageKey}';");
+            sb.AppendLine($"  const __reportDate__  = '{reportDate}';");
+            // NOTE: 'const __savedState__ = null;' is replaced by downloadReviewed(). Do not change whitespace.
+            sb.AppendLine("  const __savedState__  = null;");
+            sb.AppendLine();
+            sb.AppendLine("  function formatTs(d) {");
+            sb.AppendLine("    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')");
+            sb.AppendLine("      +' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');");
+            sb.AppendLine("  }");
             sb.AppendLine();
             sb.AppendLine("  document.addEventListener('DOMContentLoaded', function() {");
             sb.AppendLine("    var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');");
@@ -606,10 +684,18 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("        else el.value = String(entry[1] || '');");
             sb.AppendLine("      });");
             sb.AppendLine("    }");
-            sb.AppendLine("    document.querySelectorAll('input, textarea').forEach(function(el) {");
-            sb.AppendLine("      el.addEventListener('change', autoSave);");
-            sb.AppendLine("      el.addEventListener('input', autoSave);");
-            sb.AppendLine("    });");
+            // If this is a reviewed/downloaded copy, lock all inputs
+            sb.AppendLine("    if (__savedState__ !== null) {");
+            sb.AppendLine("      document.querySelectorAll('input[type=\"checkbox\"]').forEach(function(cb){ cb.disabled=true; });");
+            sb.AppendLine("      document.querySelectorAll('input[type=\"text\"]').forEach(function(inp){");
+            sb.AppendLine("        inp.readOnly=true; inp.style.cursor='default'; inp.style.userSelect='text';");
+            sb.AppendLine("      });");
+            sb.AppendLine("    } else {");
+            sb.AppendLine("      document.querySelectorAll('input, textarea').forEach(function(el) {");
+            sb.AppendLine("        el.addEventListener('change', autoSave);");
+            sb.AppendLine("        el.addEventListener('input',  autoSave);");
+            sb.AppendLine("      });");
+            sb.AppendLine("    }");
             sb.AppendLine("  });");
             sb.AppendLine();
             sb.AppendLine("  function collectState() {");
@@ -623,29 +709,35 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  function autoSave() {");
             sb.AppendLine("    localStorage.setItem(__storageKey__, JSON.stringify(collectState()));");
             sb.AppendLine("    var status = document.getElementById('save-status');");
-            sb.AppendLine("    if (status) status.textContent = 'Auto-saved at ' + new Date().toLocaleTimeString();");
+            sb.AppendLine("    if (status) status.textContent = 'Auto-saved at ' + formatTs(new Date());");
             sb.AppendLine("  }");
             sb.AppendLine();
             sb.AppendLine("  function downloadReviewed() {");
-            sb.AppendLine("    var state = collectState();");
-            sb.AppendLine("    var html = document.documentElement.outerHTML;");
-            sb.AppendLine("    html = html.replace('const __savedState__ = null;',");
-            sb.AppendLine("      'const __savedState__ = ' + JSON.stringify(state) + ';');");
+            sb.AppendLine("    var state   = collectState();");
+            sb.AppendLine("    var slug    = 'diff_report_' + __reportDate__;");
+            sb.AppendLine("    var html    = document.documentElement.outerHTML;");
+            sb.AppendLine("    // Embed state");
+            sb.AppendLine("    html = html.replace('const __savedState__  = null;',");
+            sb.AppendLine("      'const __savedState__  = ' + JSON.stringify(state) + ';');");
+            sb.AppendLine("    // Update title");
+            sb.AppendLine("    html = html.replace('<title>diff_report</title>',");
+            sb.AppendLine("      '<title>' + slug + '_reviewed</title>');");
+            sb.AppendLine("    // Strip controls bar");
+            sb.AppendLine("    html = html.replace(/<!--CTRL-->[\\s\\S]*?<!--\\/CTRL-->/g, '');");
             sb.AppendLine("    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });");
-            sb.AppendLine("    var a = document.createElement('a');");
-            sb.AppendLine("    a.href = URL.createObjectURL(blob);");
-            sb.AppendLine("    a.download = (document.title || 'diff_report')");
-            sb.AppendLine("      .replace(/[^a-zA-Z0-9._\\-]/g, '_') + '_reviewed.html';");
+            sb.AppendLine("    var a    = document.createElement('a');");
+            sb.AppendLine("    a.href   = URL.createObjectURL(blob);");
+            sb.AppendLine("    a.download = slug + '_reviewed.html';");
             sb.AppendLine("    document.body.appendChild(a);");
             sb.AppendLine("    a.click();");
             sb.AppendLine("    document.body.removeChild(a);");
-            sb.AppendLine("    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);");
+            sb.AppendLine("    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);");
             sb.AppendLine("  }");
             sb.AppendLine();
             sb.AppendLine("  function clearAll() {");
             sb.AppendLine("    if (!confirm('Clear all checkboxes and text inputs?')) return;");
-            sb.AppendLine("    document.querySelectorAll('input[type=\"checkbox\"]').forEach(function(cb) { cb.checked = false; });");
-            sb.AppendLine("    document.querySelectorAll('input[type=\"text\"], textarea').forEach(function(inp) { inp.value = ''; });");
+            sb.AppendLine("    document.querySelectorAll('input[type=\"checkbox\"]').forEach(function(cb){ cb.checked=false; });");
+            sb.AppendLine("    document.querySelectorAll('input[type=\"text\"], textarea').forEach(function(inp){ inp.value=''; });");
             sb.AppendLine("    localStorage.removeItem(__storageKey__);");
             sb.AppendLine("    var status = document.getElementById('save-status');");
             sb.AppendLine("    if (status) status.textContent = 'Cleared.';");
@@ -661,48 +753,74 @@ namespace FolderDiffIL4DotNet.Services
 @"    * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
            font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
-    h1 { font-size: 1.4rem; padding: 1rem 0 0.5rem; }
-    h2 { font-size: 1.05rem; margin: 1.4rem 0 0.4rem; }
+    h1 { font-size: 1.3rem; padding: 1rem 0 0.4rem; }
+    h2 { font-size: 1rem; margin: 1.4rem 0 0.35rem; }
+    h3 { font-size: 0.95rem; margin: 1.2rem 0 0.3rem; }
     code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
            font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
-    ul.meta { margin: 0.4rem 0 0.8rem 1.2rem; }
-    ul.meta li { margin-bottom: 2px; line-height: 1.6; }
-    ul.meta li.note { color: #555; font-size: 12px; }
-    .legend { margin: 0.4rem 0 0.8rem; font-size: 13px; }
-    .controls { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd;
-                padding: 0.5rem 0; display: flex; gap: 0.8rem; align-items: center; z-index: 100; }
-    .btn { padding: 0.3rem 0.8rem; cursor: pointer; border: 1px solid #aaa;
-           background: #f5f5f5; font-size: 13px; border-radius: 3px; }
-    .btn:hover { background: #e8e8e8; }
-    .save-status { font-size: 12px; color: #777; }
+    ul.meta { margin: 0.4rem 0 0.8rem 1.4rem; }
+    ul.meta li { margin-bottom: 3px; line-height: 1.65; }
+    ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
+    ul.meta ul li { margin-bottom: 1px; }
+    /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
+    .controls {
+      position: sticky; top: 0;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(255,255,255,0.72);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+      padding: 0.65rem 2rem; margin: 0 -2rem;
+      display: flex; gap: 0.8rem; align-items: center; z-index: 100;
+    }
+    /* ── Apple-style buttons ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.35em;
+      padding: 0.45rem 1.1rem; cursor: pointer;
+      background: #1d1d1f; color: #fff;
+      border: 1.5px solid #1d1d1f; font-size: 13px; border-radius: 980px;
+      font-family: inherit; letter-spacing: -0.01em;
+      transition: background 0.12s, color 0.12s; white-space: nowrap; line-height: 1;
+    }
+    .btn:hover { background: #424245; border-color: #424245; }
+    .btn-clear {
+      background: transparent; color: #1d1d1f;
+    }
+    .btn-clear:hover { background: #f5f5f7; }
+    .save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
+    /* ── Data tables ─────────────────────────────────────────────────────── */
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
-         border: 1px solid #bbb; background: #fafafa; }
-    td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; }
-    td.col-cb { width: 2.2em; text-align: center; }
-    td.col-reason { min-width: 8em; }
-    td.col-notes  { min-width: 8em; }
-    td.col-path { font-family: monospace; font-size: 12px; word-break: break-all; min-width: 15em; }
-    td.col-ts   { font-family: monospace; font-size: 12px; white-space: nowrap; width: 22em; }
-    td.col-diff { font-family: monospace; font-size: 12px; white-space: nowrap; width: 11em; }
-    td.col-asm  { font-family: monospace; font-size: 12px; white-space: nowrap; width: 20em; }
+         border: 1px solid #bbb; color: #000; }
+    td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; font-size: 12px; }
+    td.col-no   { width: 2.5em; text-align: right; color: #aaa;
+                  font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
+    td.col-cb   { width: 2.2em; text-align: center; }
+    td.col-reason { min-width: 8em; resize: horizontal; overflow: auto; }
+    td.col-notes  { min-width: 8em; resize: horizontal; overflow: auto; }
+    td.col-path { white-space: nowrap; min-width: 15em; resize: horizontal; overflow: auto; }
+    td.col-ts   { white-space: nowrap; width: 22em; }
+    td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+                  font-size: 12px; white-space: nowrap; min-width: 12em; }
     td.col-reason input[type=""text""], td.col-notes input[type=""text""] {
-        width: 100%; border: 1px solid #ccc; padding: 2px 5px; font-size: 13px; outline: none; }
+      width: 100%; border: none; padding: 2px 4px; font-size: 12px;
+      background: transparent; outline: none; font-family: inherit; }
     td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
-        border-color: #666; background: #fffff8; }
+      background: #fffff8; outline: 1px solid #aaa; }
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
-    ul.summary { list-style: none; margin: 0.3rem 0 1rem 1rem;
-                 font-family: monospace; font-size: 13px; }
-    ul.summary li { line-height: 1.8; }
+    /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
+    table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; }
+    table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
+    table.stat-table td.stat-label { color: #444; white-space: nowrap; }
+    table.stat-table td.stat-value { text-align: right;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
     ul.warnings { margin: 0.3rem 0 0 1rem; }
     ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
-    /* ── Inline diff ───────────────────────────────────────────────────── */
+    /* ── Inline diff ─────────────────────────────────────────────────────── */
     tr.diff-row > td { padding: 0; border-top: none; }
-    details.diff-details { }
     summary.diff-summary {
       display: inline-flex; align-items: center; gap: 0.4em;
-      cursor: pointer; font-size: 12px; color: #0000cc;
+      cursor: pointer; font-size: 12px; color: #0051c3;
       padding: 3px 6px; user-select: none; list-style: none; }
     summary.diff-summary::-webkit-details-marker { display: none; }
     summary.diff-summary::before { content: '▶'; font-size: 10px; transition: transform 0.15s; }

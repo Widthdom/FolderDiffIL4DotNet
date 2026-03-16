@@ -544,10 +544,19 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (!ctx.Config.ShouldIncludeIgnoredFiles || ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count == 0) return;
 
-                writer.WriteLine(REPORT_SECTION_IGNORED_FILES);
+                int count = ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count;
+                writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_IGNORED} {REPORT_LABEL_IGNORED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 foreach (var entry in ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
                 {
-                    var line = $"- [ x ] {entry.Key}";
+                    bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
+                    bool hasNew = (entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0;
+                    string displayPath = (hasOld && hasNew)
+                        ? entry.Key
+                        : hasOld
+                            ? Path.Combine(ctx.OldFolderAbsolutePath, entry.Key)
+                            : Path.Combine(ctx.NewFolderAbsolutePath, entry.Key);
+
+                    var line = $"- [ x ] {displayPath}";
                     var locationLabel = GetIgnoredFileLocationLabel(entry.Value);
                     if (!string.IsNullOrEmpty(locationLabel)) line += " " + locationLabel;
 
@@ -568,7 +577,8 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (!ctx.Config.ShouldIncludeUnchangedFiles) return;
 
-                writer.WriteLine(REPORT_SECTION_UNCHANGED_FILES);
+                int count = ctx.FileDiffResultLists.UnchangedFilesRelativePath.Count;
+                writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_UNCHANGED} {REPORT_LABEL_UNCHANGED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 foreach (var fileRelativePath in ctx.FileDiffResultLists.UnchangedFilesRelativePath)
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
@@ -593,7 +603,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                writer.WriteLine(REPORT_SECTION_ADDED_FILES);
+                int count = ctx.FileDiffResultLists.AddedFilesAbsolutePath.Count;
+                writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_ADDED} {REPORT_LABEL_ADDED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 foreach (var newFileAbsolutePath in ctx.FileDiffResultLists.AddedFilesAbsolutePath)
                 {
                     writer.WriteLine(ctx.Config.ShouldOutputFileTimestamps
@@ -608,7 +619,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                writer.WriteLine(REPORT_SECTION_REMOVED_FILES);
+                int count = ctx.FileDiffResultLists.RemovedFilesAbsolutePath.Count;
+                writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_REMOVED} {REPORT_LABEL_REMOVED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 foreach (var oldFileAbsolutePath in ctx.FileDiffResultLists.RemovedFilesAbsolutePath)
                 {
                     writer.WriteLine(ctx.Config.ShouldOutputFileTimestamps
@@ -623,7 +635,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                writer.WriteLine(REPORT_SECTION_MODIFIED_FILES);
+                int count = ctx.FileDiffResultLists.ModifiedFilesRelativePath.Count;
+                writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_MODIFIED} {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 foreach (var fileRelativePath in ctx.FileDiffResultLists.ModifiedFilesRelativePath)
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];

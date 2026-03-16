@@ -130,10 +130,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("Unchanged : 1", html);
-            Assert.Contains("Added     : 1", html);
-            Assert.Contains("Removed   : 1", html);
-            Assert.Contains("Modified  : 1", html);
+            Assert.Contains("stat-label\">Unchanged</td><td class=\"stat-value\">1</td>", html);
+            Assert.Contains("stat-label\">Added</td><td class=\"stat-value\">1</td>", html);
+            Assert.Contains("stat-label\">Removed</td><td class=\"stat-value\">1</td>", html);
+            Assert.Contains("stat-label\">Modified</td><td class=\"stat-value\">1</td>", html);
             Assert.Contains("3 (Old) vs 3 (New)", html);
         }
 
@@ -150,7 +150,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("#006600", html);
+            Assert.Contains("#2d7a2d", html);
             Assert.Contains("[ + ] Added Files", html);
         }
 
@@ -167,7 +167,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("#cc0000", html);
+            Assert.Contains("#b00020", html);
             Assert.Contains("[ - ] Removed Files", html);
         }
 
@@ -182,7 +182,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("const __savedState__ = null;", html);
+            Assert.Contains("const __savedState__  = null;", html);
             Assert.Contains("downloadReviewed", html);
             Assert.Contains("localStorage", html);
         }
@@ -299,7 +299,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // ILMismatch は inline diff 非対象
+            // ILMismatch without ILCache: IL text not available, so no inline diff rendered
             Assert.DoesNotContain("<details", html);
         }
 

@@ -332,7 +332,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             var config = new ConfigSettings();
 
             Assert.True(config.EnableInlineDiff);
-            Assert.Equal(3, config.InlineDiffContextLines);
+            Assert.Equal(0, config.InlineDiffContextLines);
             Assert.Equal(1000, config.InlineDiffMaxInputLines);
             Assert.Equal(500, config.InlineDiffMaxOutputLines);
         }
@@ -411,7 +411,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
             Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
             Assert.True(config.EnableInlineDiff);
-            Assert.Equal(3, config.InlineDiffContextLines);
+            Assert.Equal(0, config.InlineDiffContextLines);
             Assert.Equal(1000, config.InlineDiffMaxInputLines);
             Assert.Equal(500, config.InlineDiffMaxOutputLines);
         }

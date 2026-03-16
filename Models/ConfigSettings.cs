@@ -229,9 +229,9 @@ namespace FolderDiffIL4DotNet.Models
         public bool EnableInlineDiff { get; set; } = true;
 
         /// <summary>
-        /// インライン差分の前後に表示するコンテキスト行数。既定値は 3。
+        /// インライン差分の前後に表示するコンテキスト行数。既定値は 0。
         /// </summary>
-        public int InlineDiffContextLines { get; set; } = 3;
+        public int InlineDiffContextLines { get; set; } = 0;
 
         /// <summary>
         /// インライン差分の計算対象とする最大入力行数（old/new それぞれ）。
