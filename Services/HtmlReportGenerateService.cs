@@ -629,7 +629,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\"></td>");
             sb.AppendLine($"  <td class=\"col-path\">{HtmlEncode(path)}</td>");
             sb.AppendLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
-            sb.AppendLine($"  <td class=\"col-diff\"><code>{HtmlEncode(col6)}</code></td>");
+            string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
+            sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
             sb.AppendLine("</tr>");
         }
 
