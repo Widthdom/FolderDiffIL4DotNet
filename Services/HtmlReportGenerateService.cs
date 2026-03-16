@@ -852,11 +852,12 @@ namespace FolderDiffIL4DotNet.Services
     .save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; }
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 20em; }
     col.col-reason-g { width: var(--col-reason-w); }
     col.col-notes-g  { width: var(--col-notes-w); }
     col.col-path-g   { width: var(--col-path-w); }
     col.col-ts-g     { width: 22em; }
+    col.col-diff-g   { width: var(--col-diff-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
