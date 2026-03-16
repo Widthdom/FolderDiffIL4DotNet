@@ -745,7 +745,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    var state   = collectState();");
             sb.AppendLine("    var slug    = 'diff_report_' + __reportDate__;");
             sb.AppendLine("    var root    = document.documentElement;");
-            sb.AppendLine("    // 1. Close all <details> so exported file starts with diffs collapsed");
+            sb.AppendLine("    // 1. Collapse all diff-detail elements so exported file starts with diffs closed");
             sb.AppendLine("    var openDetails = Array.from(document.querySelectorAll('details[open]'));");
             sb.AppendLine("    openDetails.forEach(function(d){ d.removeAttribute('open'); });");
             sb.AppendLine("    // 2. Reset column widths to defaults so exported file starts at initial layout");

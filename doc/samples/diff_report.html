@@ -764,7 +764,7 @@
     var state   = collectState();
     var slug    = 'diff_report_' + __reportDate__;
     var root    = document.documentElement;
-    // 1. Close all <details> so exported file starts with diffs collapsed
+    // 1. Collapse all diff-detail elements so exported file starts with diffs closed
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
     // 2. Reset column widths to defaults so exported file starts at initial layout
