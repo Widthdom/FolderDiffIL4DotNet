@@ -110,7 +110,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_WithCustomSpinnerFrames_UsesFirstConfiguredFrame()
         {
-            var config = new ConfigSettings { SpinnerFrames = "ABC" };
+            var config = new ConfigSettings { SpinnerFrames = [">>", "<<", "=="] };
             var service = new ProgressReportService(config);
 
             var result = InvokePrivate<string>(
@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 true);
 
             Assert.Contains("50.00%", result);
-            Assert.EndsWith("A", result);
+            Assert.EndsWith(">>", result);
         }
 
         private static T GetPrivateField<T>(object target, string fieldName)

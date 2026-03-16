@@ -26,9 +26,9 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILoggerService _logger;
 
         /// <summary>
-        /// レポート生成スピナーのフレーム文字配列。
+        /// レポート生成スピナーのフレーム文字列配列。
         /// </summary>
-        private readonly char[] _spinnerFrames;
+        private readonly string[] _spinnerFrames;
 
         /// <summary>
         /// コンストラクタ。
@@ -43,7 +43,7 @@ namespace FolderDiffIL4DotNet.Services
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
             ArgumentNullException.ThrowIfNull(config);
-            _spinnerFrames = config.SpinnerFrames.ToCharArray();
+            _spinnerFrames = config.SpinnerFrames.ToArray();
         }
         /// <summary>
         /// フォルダ差分の概要を出力する Markdown レポートのファイル名

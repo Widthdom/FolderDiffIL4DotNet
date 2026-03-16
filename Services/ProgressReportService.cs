@@ -39,7 +39,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// 進捗停滞時の簡易スピナーフレーム。<see cref="ConfigSettings.SpinnerFrames"/> から初期化されます。
         /// </summary>
-        private readonly char[] _keepAliveFrames;
+        private readonly string[] _keepAliveFrames;
 
         /// <summary>
         /// 直前に出力したF2フォーマットの文字列（重複出力抑止用）
@@ -117,7 +117,7 @@ namespace FolderDiffIL4DotNet.Services
         public ProgressReportService(ConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(config);
-            _keepAliveFrames = config.SpinnerFrames.ToCharArray();
+            _keepAliveFrames = config.SpinnerFrames.ToArray();
         }
 
         /// <summary>
@@ -275,7 +275,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             if (showKeepAlive)
             {
-                char frame = _keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length];
+                string frame = _keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length];
                 return $"[{bar}] {percentText} {frame}";
             }
             return $"[{bar}] {percentText}";

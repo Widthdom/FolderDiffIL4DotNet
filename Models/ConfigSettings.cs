@@ -50,11 +50,13 @@ namespace FolderDiffIL4DotNet.Models
             ".txt", ".vb", ".vbproj", ".vue", ".xaml", ".xml", ".yaml", ".yml"
         };
 
+        private static readonly string[] DefaultSpinnerFramesValues = ["|", "/", "-", "\\"];
+
         private List<string> _ignoredExtensions = CreateDefaultIgnoredExtensions();
         private List<string> _textFileExtensions = CreateDefaultTextFileExtensions();
         private List<string> _ilIgnoreLineContainingStrings = new();
         private string _ilCacheDirectoryAbsolutePath = string.Empty;
-        private string _spinnerFrames = "|/-\\";
+        private List<string> _spinnerFrames = CreateDefaultSpinnerFrames();
 
         /// <summary>
         /// 無視する拡張子のリスト
@@ -205,14 +207,15 @@ namespace FolderDiffIL4DotNet.Models
         public bool SkipIL { get; set; }
 
         /// <summary>
-        /// コンソールスピナーのフレーム文字列。各文字が 1 フレームになります。
-        /// 既定値は <c>"|/-\"</c>（縦棒・スラッシュ・横棒・バックスラッシュの 4 フレーム回転）。
-        /// null を指定した場合は既定値に正規化されます。空文字列は無効です。
+        /// コンソールスピナーのフレーム文字列リスト。各要素が 1 フレームになります。
+        /// 既定値は <c>["|", "/", "-", "\\"]</c>（縦棒・スラッシュ・横棒・バックスラッシュの 4 フレーム回転）。
+        /// 複数文字のフレーム（例: ブロック文字、絵文字）も指定できます。
+        /// null を指定した場合は既定値に正規化されます。空リストは無効です。
         /// </summary>
-        public string SpinnerFrames
+        public List<string> SpinnerFrames
         {
             get => _spinnerFrames;
-            set => _spinnerFrames = value ?? "|/-\\";
+            set => _spinnerFrames = value ?? CreateDefaultSpinnerFrames();
         }
 
         /// <summary>
@@ -242,9 +245,9 @@ namespace FolderDiffIL4DotNet.Models
                 errors.Add($"TextDiffChunkSizeKilobytes ({TextDiffChunkSizeKilobytes}) must be less than TextDiffParallelThresholdKilobytes ({TextDiffParallelThresholdKilobytes}).");
             }
 
-            if (string.IsNullOrEmpty(SpinnerFrames))
+            if (SpinnerFrames == null || SpinnerFrames.Count == 0)
             {
-                errors.Add("SpinnerFrames must be a non-empty string.");
+                errors.Add("SpinnerFrames must contain at least one frame.");
             }
 
             return new ConfigValidationResult(errors);
@@ -253,5 +256,7 @@ namespace FolderDiffIL4DotNet.Models
         private static List<string> CreateDefaultIgnoredExtensions() => new(DefaultIgnoredExtensionsValues);
 
         private static List<string> CreateDefaultTextFileExtensions() => new(DefaultTextFileExtensionsValues);
+
+        private static List<string> CreateDefaultSpinnerFrames() => new(DefaultSpinnerFramesValues);
     }
 }

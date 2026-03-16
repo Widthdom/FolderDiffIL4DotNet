@@ -22,7 +22,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// <summary>
         /// デフォルトのスピナーフレーム。
         /// </summary>
-        private static readonly char[] DefaultFrames = ['|', '/', '-', '\\'];
+        private static readonly string[] DefaultFrames = ["|", "/", "-", "\\"];
 
         /// <summary>
         /// スピナー前に表示するラベル。
@@ -32,7 +32,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// <summary>
         /// スピナーに使用するフレーム集合。
         /// </summary>
-        private readonly char[] _frames;
+        private readonly string[] _frames;
 
         /// <summary>
         /// フレーム更新間隔。
@@ -68,8 +68,8 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// </summary>
         /// <param name="label">スピナーの前に表示するラベル。</param>
         /// <param name="intervalMilliseconds">フレーム更新間隔（ミリ秒）。</param>
-        /// <param name="frames">スピナーで使用するフレーム文字（省略時は | / - \）。</param>
-        public ConsoleSpinner(string label, int intervalMilliseconds = DEFAULT_INTERVAL_MILLISECONDS, char[] frames = null)
+        /// <param name="frames">スピナーで使用するフレーム文字列配列（省略時は | / - \）。各要素が 1 フレームになるため複数文字も指定できます。</param>
+        public ConsoleSpinner(string label, int intervalMilliseconds = DEFAULT_INTERVAL_MILLISECONDS, string[] frames = null)
         {
             _label = label;
             _frames = frames ?? DefaultFrames;
