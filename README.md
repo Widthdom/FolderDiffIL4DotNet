@@ -281,7 +281,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-shouldoutputfiletimestamps">
       <td><code>ShouldOutputFileTimestamps</code></td>
       <td><code>true</code></td>
-      <td>Adds last-modified timestamps to report entries.</td>
+      <td>Adds last-modified timestamps to report entries as supplementary information. Timestamps are not used in comparison; results (Unchanged / Modified / etc.) are determined solely by file content.</td>
     </tr>
     <tr id="config-en-shouldwarnwhennewfiletimestampisolderthanoldfiletimestamp">
       <td><code>ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp</code></td>
@@ -700,7 +700,7 @@ flowchart TD
     <tr id="config-ja-shouldoutputfiletimestamps">
       <td><code>ShouldOutputFileTimestamps</code></td>
       <td><code>true</code></td>
-      <td>レポート各行に更新日時を併記するか。</td>
+      <td>レポート各行に更新日時を補助情報として併記するか。更新日時は比較には使用しない。Unchanged / Modified 等の判定はあくまでファイル内容のみで行われる。</td>
     </tr>
     <tr id="config-ja-shouldwarnwhennewfiletimestampisolderthanoldfiletimestamp">
       <td><code>ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp</code></td>
