@@ -7,6 +7,11 @@
     <NoWarn>$(NoWarn);CA1031</NoWarn>
   </PropertyGroup>
 
+  <!-- Exclude FakeDisassembler helper sources from being compiled into the test project -->
+  <ItemGroup>
+    <Compile Remove="Helpers\**\*.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -24,6 +29,24 @@
   <ItemGroup>
     <ProjectReference Include="..\FolderDiffIL4DotNet.Core\FolderDiffIL4DotNet.Core.csproj" />
     <ProjectReference Include="..\FolderDiffIL4DotNet.csproj" />
+    <!-- FakeDisassembler is a helper executable used by DotNetDisassembleServiceTests -->
+    <ProjectReference Include="Helpers\FakeDisassembler.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
+
+  <!-- Copy the FakeDisassembler binary to the test output directory after build -->
+  <Target Name="CopyFakeDisassembler" AfterTargets="Build">
+    <PropertyGroup>
+      <!-- FakeDisassembler.csproj uses AppendTargetFrameworkToOutputPath=false, so output is bin/$(Configuration)/ -->
+      <_FakeDisassemblerDir>$(MSBuildThisFileDirectory)Helpers\bin\$(Configuration)</_FakeDisassemblerDir>
+      <_FakeDisassemblerSrc Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(_FakeDisassemblerDir)\FakeDisassembler.exe</_FakeDisassemblerSrc>
+      <_FakeDisassemblerSrc Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(_FakeDisassemblerDir)/FakeDisassembler</_FakeDisassemblerSrc>
+      <_FakeDisassemblerDest Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(OutputPath)FakeDisassembler.exe</_FakeDisassemblerDest>
+      <_FakeDisassemblerDest Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(OutputPath)FakeDisassembler</_FakeDisassemblerDest>
+    </PropertyGroup>
+    <Copy SourceFiles="$(_FakeDisassemblerSrc)" DestinationFiles="$(_FakeDisassemblerDest)" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerSrc)')" />
+  </Target>
 
 </Project>
