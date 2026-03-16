@@ -132,7 +132,7 @@
 <body>
 <!--CTRL-->
 <div class="controls">
-  <button class="btn" onclick="downloadReviewed()">&#x21E9; Download reviewed version</button>
+  <button class="btn" onclick="downloadReviewed()">&#x2913; Download as reviewed</button>
   <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
   <span id="save-status" class="save-status"></span>
 </div>
@@ -762,7 +762,12 @@
   function downloadReviewed() {
     var state   = collectState();
     var slug    = 'diff_report_' + __reportDate__;
+    // Close all <details> so the downloaded file starts with diffs collapsed
+    var openDetails = Array.from(document.querySelectorAll('details[open]'));
+    openDetails.forEach(function(d){ d.removeAttribute('open'); });
     var html    = document.documentElement.outerHTML;
+    // Restore open state in the live page
+    openDetails.forEach(function(d){ d.setAttribute('open', ''); });
     // Embed state
     html = html.replace('const __savedState__  = null;',
       'const __savedState__  = ' + JSON.stringify(state) + ';');
@@ -771,7 +776,7 @@
       '<title>' + slug + '_reviewed</title>');
     // Replace controls bar with reviewed banner
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
-      '<div class="reviewed-banner">&#x1F512; Reviewed on ' + formatTs(new Date()) + ' &#x2014; read-only</div>');
+      '<div class="reviewed-banner">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</div>');
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a    = document.createElement('a');
     a.href   = URL.createObjectURL(blob);

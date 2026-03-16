@@ -108,7 +108,7 @@ namespace FolderDiffIL4DotNet.Services
             // Controls bar (markers allow stripping in downloadReviewed)
             sb.AppendLine("<!--CTRL-->");
             sb.AppendLine("<div class=\"controls\">");
-            sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x21E9; Download reviewed version</button>");
+            sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; Download as reviewed</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; Clear all</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
@@ -744,7 +744,12 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  function downloadReviewed() {");
             sb.AppendLine("    var state   = collectState();");
             sb.AppendLine("    var slug    = 'diff_report_' + __reportDate__;");
+            sb.AppendLine("    // Close all <details> so the downloaded file starts with diffs collapsed");
+            sb.AppendLine("    var openDetails = Array.from(document.querySelectorAll('details[open]'));");
+            sb.AppendLine("    openDetails.forEach(function(d){ d.removeAttribute('open'); });");
             sb.AppendLine("    var html    = document.documentElement.outerHTML;");
+            sb.AppendLine("    // Restore open state in the live page");
+            sb.AppendLine("    openDetails.forEach(function(d){ d.setAttribute('open', ''); });
             sb.AppendLine("    // Embed state");
             sb.AppendLine("    html = html.replace('const __savedState__  = null;',");
             sb.AppendLine("      'const __savedState__  = ' + JSON.stringify(state) + ';');");
@@ -753,7 +758,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      '<title>' + slug + '_reviewed</title>');");
             sb.AppendLine("    // Replace controls bar with reviewed banner");
             sb.AppendLine("    html = html.replace(/<!--CTRL-->[\\s\\S]*?<!--\\/CTRL-->/g,");
-            sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed on ' + formatTs(new Date()) + ' &#x2014; read-only</div>');");
+            sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</div>');");
             sb.AppendLine("    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });");
             sb.AppendLine("    var a    = document.createElement('a');");
             sb.AppendLine("    a.href   = URL.createObjectURL(blob);");
