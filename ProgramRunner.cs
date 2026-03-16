@@ -8,6 +8,7 @@ using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
@@ -20,35 +21,17 @@ namespace FolderDiffIL4DotNet
     /// </summary>
     public sealed class ProgramRunner
     {
-        private const string REPORTS_ROOT_DIR_NAME = "Reports";
         private const string INITIALIZING_LOGGER = "Initializing logger...";
         private const string LOGGER_INITIALIZED = "Logger initialized.";
         private const string VALIDATING_ARGS = "Validating command line arguments...";
-        private const string ERROR_INSUFFICIENT_ARGUMENTS = "Insufficient arguments.";
-        private const string ERROR_ARGUMENTS_NULL_OR_EMPTY = "One or more required arguments are null or empty.";
-        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + " <oldFolderAbsolutePath> <newFolderAbsolutePath> <reportLabel> [options]";
         private const string LOG_ARGS_VALIDATION_COMPLETED = "Command line arguments validation completed.";
         private const string LOG_LOADING_CONFIGURATION = "Loading configuration...";
         private const string LOG_CONFIGURATION_LOADED = "Configuration loaded successfully.";
         private const string LOG_APP_STARTING = "Starting " + Constants.APP_NAME + "...";
         private const string LOG_APP_FINISHED = Constants.APP_NAME + " finished without errors. See Reports folder for details.";
-        private const string NO_PAUSE = "--no-pause";
-        private const string OPT_HELP_LONG = "--help";
-        private const string OPT_HELP_SHORT = "-h";
-        private const string OPT_VERSION = "--version";
-        private const string OPT_CONFIG = "--config";
-        private const string OPT_THREADS = "--threads";
-        private const string OPT_NO_IL_CACHE = "--no-il-cache";
-        private const string OPT_SKIP_IL = "--skip-il";
-        private const string OPT_NO_TIMESTAMP_WARNINGS = "--no-timestamp-warnings";
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in 'new' have older last-modified timestamps than the corresponding files in 'old'. See diff_report.md for details.";
-
-        /// <summary>
-        /// プリフライトチェック: レポートドライブに要求する最低空き容量（MB）。
-        /// </summary>
-        private const long PREFLIGHT_MIN_FREE_DISK_MEGABYTES = 100L;
         private const string HELP_TEXT =
             "Usage: " + Constants.APP_NAME + " <oldFolder> <newFolder> <reportLabel> [options]\n\n" +
             "Arguments:\n" +
@@ -95,7 +78,7 @@ namespace FolderDiffIL4DotNet
         /// <returns>プロセス終了コード。</returns>
         public async Task<int> RunAsync(string[] args)
         {
-            var opts = ParseCliOptions(args);
+            var opts = CliParser.Parse(args);
 
             if (opts.ShowHelp)
             {
@@ -209,14 +192,14 @@ namespace FolderDiffIL4DotNet
                     throw new ArgumentException(opts.ParseError);
                 }
 
-                ValidateRequiredArguments(args);
+                RunPreflightValidator.ValidateRequiredArguments(args);
 
                 var oldFolderAbsolutePath = args[0];
                 var newFolderAbsolutePath = args[1];
                 var reportLabel = args[2];
-                ValidateReportLabel(reportLabel);
-                string reportsFolderAbsolutePath = GetReportsFolderAbsolutePath(reportLabel);
-                ValidateRunDirectories(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
+                RunPreflightValidator.ValidateReportLabel(_logger, reportLabel);
+                string reportsFolderAbsolutePath = RunPreflightValidator.GetReportsFolderAbsolutePath(reportLabel);
+                RunPreflightValidator.ValidateRunDirectories(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
                 return StepResult<RunArguments>.FromValue(new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath));
             }
@@ -238,192 +221,18 @@ namespace FolderDiffIL4DotNet
             }
         }
 
-        private static void ValidateRequiredArguments(string[] args)
+        private static DiffExecutionContext BuildExecutionContext(RunArguments runArguments, ConfigSettings config)
         {
-            try
-            {
-                if (args == null || args.Length < 3)
-                {
-                    throw new ArgumentException(ERROR_INSUFFICIENT_ARGUMENTS);
-                }
-
-                if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]) || string.IsNullOrWhiteSpace(args[2]))
-                {
-                    throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
-                }
-            }
-            catch (ArgumentException ex)
-            {
-                throw new ArgumentException(ERROR_INVALID_ARGUMENTS_USAGE, ex);
-            }
-        }
-
-        private void ValidateReportLabel(string reportLabel)
-        {
-            try
-            {
-                PathValidator.ValidateFolderNameOrThrow(reportLabel, nameof(reportLabel));
-            }
-            catch (ArgumentException)
-            {
-                _logger.LogMessage(AppLogLevel.Error, $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name.", shouldOutputMessageToConsole: true);
-                throw;
-            }
-        }
-
-        private static string GetReportsFolderAbsolutePath(string reportLabel)
-        {
-            string reportsRootDirAbsolutePath = Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
-            Directory.CreateDirectory(reportsRootDirAbsolutePath);
-            return Path.Combine(reportsRootDirAbsolutePath, reportLabel);
-        }
-
-        private static void ValidateRunDirectories(string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath)
-        {
-            // 1. パス長チェック（OS 制限を超えていないか）
-            //    レポートフォルダはアプリが構築するパスなので、実際にアクセスする前に検証する。
-            PathValidator.ValidateAbsolutePathLengthOrThrow(reportsFolderAbsolutePath, nameof(reportsFolderAbsolutePath));
-
-            // 2. 旧/新フォルダの存在確認
-            if (!Directory.Exists(oldFolderAbsolutePath))
-            {
-                throw new DirectoryNotFoundException($"The old folder path does not exist: {oldFolderAbsolutePath}");
-            }
-
-            if (!Directory.Exists(newFolderAbsolutePath))
-            {
-                throw new DirectoryNotFoundException($"The new folder path does not exist: {newFolderAbsolutePath}");
-            }
-
-            // 3. レポートフォルダが既に存在しないことの確認
-            if (Directory.Exists(reportsFolderAbsolutePath))
-            {
-                throw new ArgumentException($"The report folder already exists: {reportsFolderAbsolutePath}. Provide a different report label.");
-            }
-
-            // 4. ディスク空き容量チェック（best-effort）
-            CheckDiskSpaceOrThrow(reportsFolderAbsolutePath);
-
-            // 5. レポート親ディレクトリへの書き込み権限チェック
-            CheckReportsParentWritableOrThrow(reportsFolderAbsolutePath);
-        }
-
-        /// <summary>
-        /// レポートフォルダを作成するドライブに十分な空き容量があることを確認します。
-        /// ドライブ情報を取得できない場合（ネットワーク共有や仮想ドライブ等）は best-effort でスキップします。
-        /// </summary>
-        /// <param name="reportsFolderAbsolutePath">レポートフォルダの絶対パス。</param>
-        /// <exception cref="IOException">空き容量が <see cref="PREFLIGHT_MIN_FREE_DISK_MEGABYTES"/> MB 未満の場合。</exception>
-        internal static void CheckDiskSpaceOrThrow(string reportsFolderAbsolutePath)
-        {
-            DriveInfo drive;
-            try
-            {
-                var root = Path.GetPathRoot(reportsFolderAbsolutePath);
-                if (string.IsNullOrEmpty(root))
-                {
-                    return;
-                }
-
-                drive = new DriveInfo(root);
-            }
-            catch (ArgumentException)
-            {
-                return; // ドライブ情報を取得できない場合はスキップ
-            }
-            catch (IOException)
-            {
-                return; // ドライブが利用不可の場合はスキップ
-            }
-
-            long availableMb = drive.AvailableFreeSpace / (1024L * 1024L);
-            if (availableMb < PREFLIGHT_MIN_FREE_DISK_MEGABYTES)
-            {
-                throw new IOException(
-                    $"Insufficient disk space on '{drive.RootDirectory.FullName}': {availableMb} MB available, at least {PREFLIGHT_MIN_FREE_DISK_MEGABYTES} MB required.");
-            }
-        }
-
-        /// <summary>
-        /// レポートフォルダの親ディレクトリへの書き込み権限を一時プローブファイルで確認します。
-        /// 親ディレクトリが存在しない場合は確認をスキップします。
-        /// </summary>
-        /// <param name="reportsFolderAbsolutePath">レポートフォルダの絶対パス。</param>
-        /// <exception cref="UnauthorizedAccessException">書き込み権限がない場合。</exception>
-        internal static void CheckReportsParentWritableOrThrow(string reportsFolderAbsolutePath)
-        {
-            var parent = Path.GetDirectoryName(reportsFolderAbsolutePath);
-            if (string.IsNullOrEmpty(parent) || !Directory.Exists(parent))
-            {
-                return;
-            }
-
-            var probePath = Path.Combine(parent, "." + Guid.NewGuid().ToString("N") + ".tmp");
-            try
-            {
-                File.WriteAllBytes(probePath, Array.Empty<byte>());
-            }
-            catch (UnauthorizedAccessException)
-            {
-                throw new UnauthorizedAccessException(
-                    $"The reports parent directory is not writable: '{parent}'. Ensure the process has write permission.");
-            }
-            catch (IOException)
-            {
-                return; // I/O エラーはディスク容量チェック側で捕捉済みのためスキップ
-            }
-            finally
-            {
-                try
-                {
-                    File.Delete(probePath);
-                }
-                catch (IOException)
-                {
-                    // プローブファイルの削除失敗は best-effort
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // プローブファイルの削除失敗は best-effort
-                }
-            }
-        }
-
-        private DiffExecutionContext BuildExecutionContext(RunArguments runArguments, ConfigSettings config)
-        {
-            bool detectedNetworkOld = config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(runArguments.OldFolderAbsolutePath);
-            bool detectedNetworkNew = config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(runArguments.NewFolderAbsolutePath);
-            bool optimizeForNetworkShares = config.OptimizeForNetworkShares || detectedNetworkOld || detectedNetworkNew;
-
-            return new DiffExecutionContext(
+            return RunScopeBuilder.BuildExecutionContext(
                 runArguments.OldFolderAbsolutePath,
                 runArguments.NewFolderAbsolutePath,
                 runArguments.ReportsFolderAbsolutePath,
-                optimizeForNetworkShares,
-                detectedNetworkOld,
-                detectedNetworkNew);
+                config);
         }
 
         private ServiceProvider BuildRunServiceProvider(ConfigSettings config, DiffExecutionContext executionContext)
         {
-            var services = new ServiceCollection();
-            services.AddSingleton<ILoggerService>(_logger);
-            services.AddSingleton(config);
-            services.AddSingleton(executionContext);
-            services.AddScoped<FileDiffResultLists>();
-            services.AddScoped<DotNetDisassemblerCache>();
-            services.AddScoped<ILCache>(sp => CreateIlCache(config, sp.GetRequiredService<ILoggerService>()));
-            services.AddScoped<ProgressReportService>();
-            services.AddScoped<ReportGenerateService>();
-            services.AddScoped<IFileSystemService, FileSystemService>();
-            services.AddScoped<IFolderDiffExecutionStrategy, FolderDiffExecutionStrategy>();
-            services.AddScoped<IFileComparisonService, FileComparisonService>();
-            services.AddScoped<IILTextOutputService, ILTextOutputService>();
-            services.AddScoped<IDotNetDisassembleService, DotNetDisassembleService>();
-            services.AddScoped<IILOutputService, ILOutputService>();
-            services.AddScoped<IFileDiffService, FileDiffService>();
-            services.AddScoped<IFolderDiffService, FolderDiffService>();
-            return services.BuildServiceProvider();
+            return RunScopeBuilder.Build(config, executionContext, _logger);
         }
 
         /// <summary>
@@ -658,21 +467,7 @@ namespace FolderDiffIL4DotNet
 
         private static ILCache CreateIlCache(ConfigSettings config, ILoggerService logger)
         {
-            if (!config.EnableILCache)
-            {
-                return null;
-            }
-
-            // 起動引数や config.json では露出していないメモリ件数と TTL は、
-            // コンソール実行の再利用効率と常駐コストのバランスを取る共通既定値を使う。
-            return new ILCache(
-                string.IsNullOrWhiteSpace(config.ILCacheDirectoryAbsolutePath) ? Path.Combine(AppContext.BaseDirectory, Constants.DEFAULT_IL_CACHE_DIR_NAME) : config.ILCacheDirectoryAbsolutePath,
-                logger,
-                ilCacheMaxMemoryEntries: Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT,
-                timeToLive: TimeSpan.FromHours(Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS),
-                statsLogIntervalSeconds: config.ILCacheStatsLogIntervalSeconds <= 0 ? Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS : config.ILCacheStatsLogIntervalSeconds,
-                ilCacheMaxDiskFileCount: config.ILCacheMaxDiskFileCount,
-                ilCacheMaxDiskMegabytes: config.ILCacheMaxDiskMegabytes);
+            return RunScopeBuilder.CreateIlCache(config, logger);
         }
 
         /// <summary>
@@ -688,96 +483,6 @@ namespace FolderDiffIL4DotNet
             int seconds = elapsed.Seconds;
             int tenths = elapsed.Milliseconds / 100;
             return $"{hours}h {minutes}m {seconds}.{tenths}s";
-        }
-
-        /// <summary>
-        /// コマンドライン引数を走査して CLI オプションを解析します。
-        /// 未知のフラグが見つかった場合は <see cref="CliOptions.ParseError"/> に詳細を格納します。
-        /// </summary>
-        /// <param name="args">コマンドライン引数配列。</param>
-        /// <returns>解析済み CLI オプション。</returns>
-        internal static CliOptions ParseCliOptions(string[] args)
-        {
-            bool showHelp = false, showVersion = false, noPause = false;
-            bool noIlCache = false, skipIl = false, noTimestampWarnings = false;
-            string configPath = null;
-            int? threadsOverride = null;
-            string parseError = null;
-
-            if (args == null)
-            {
-                return new CliOptions(false, false, false, null, null, false, false, false, null);
-            }
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                string arg = args[i];
-                if (arg == null)
-                {
-                    continue;
-                }
-
-                switch (arg.ToLowerInvariant())
-                {
-                    case OPT_HELP_LONG:
-                    case OPT_HELP_SHORT:
-                        showHelp = true;
-                        break;
-                    case OPT_VERSION:
-                        showVersion = true;
-                        break;
-                    case NO_PAUSE:
-                        noPause = true;
-                        break;
-                    case OPT_CONFIG:
-                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
-                        {
-                            configPath = args[++i];
-                        }
-                        else
-                        {
-                            parseError ??= $"'{OPT_CONFIG}' requires a file path argument.";
-                        }
-                        break;
-                    case OPT_THREADS:
-                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
-                        {
-                            string threadArg = args[++i];
-                            if (int.TryParse(threadArg, out int n) && n >= 0)
-                            {
-                                threadsOverride = n;
-                            }
-                            else
-                            {
-                                parseError ??= $"'{OPT_THREADS}' requires a non-negative integer. Got: '{threadArg}'.";
-                            }
-                        }
-                        else
-                        {
-                            parseError ??= $"'{OPT_THREADS}' requires an integer argument.";
-                        }
-                        break;
-                    case OPT_NO_IL_CACHE:
-                        noIlCache = true;
-                        break;
-                    case OPT_SKIP_IL:
-                        skipIl = true;
-                        break;
-                    case OPT_NO_TIMESTAMP_WARNINGS:
-                        noTimestampWarnings = true;
-                        break;
-                    default:
-                        // Flags (starting with --) that are not positional arguments and not recognised.
-                        if (arg.StartsWith("--", StringComparison.Ordinal)
-                            || (arg.StartsWith("-", StringComparison.Ordinal) && arg.Length == 2))
-                        {
-                            parseError ??= $"Unknown option: '{arg}'.";
-                        }
-                        break;
-                }
-            }
-
-            return new CliOptions(showHelp, showVersion, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, parseError);
         }
 
         /// <summary>
@@ -812,29 +517,6 @@ namespace FolderDiffIL4DotNet
         private sealed record RunArguments(string OldFolderAbsolutePath, string NewFolderAbsolutePath, string ReportsFolderAbsolutePath);
 
         private sealed record RunCompletionState(bool HasMd5MismatchWarnings, bool HasTimestampRegressionWarnings);
-
-        /// <summary>
-        /// 解析済みの CLI オプションを保持するレコードです。
-        /// </summary>
-        /// <param name="ShowHelp">--help/-h が指定された場合 true。</param>
-        /// <param name="ShowVersion">--version が指定された場合 true。</param>
-        /// <param name="NoPause">--no-pause が指定された場合 true。</param>
-        /// <param name="ConfigPath">--config で指定されたパス。未指定の場合 null。</param>
-        /// <param name="ThreadsOverride">--threads で指定されたスレッド数。未指定の場合 null。</param>
-        /// <param name="NoIlCache">--no-il-cache が指定された場合 true。</param>
-        /// <param name="SkipIL">--skip-il が指定された場合 true。</param>
-        /// <param name="NoTimestampWarnings">--no-timestamp-warnings が指定された場合 true。</param>
-        /// <param name="ParseError">解析エラーのメッセージ。エラーがない場合 null。</param>
-        internal sealed record CliOptions(
-            bool ShowHelp,
-            bool ShowVersion,
-            bool NoPause,
-            string ConfigPath,
-            int? ThreadsOverride,
-            bool NoIlCache,
-            bool SkipIL,
-            bool NoTimestampWarnings,
-            string ParseError);
 
         /// <summary>
         /// コンソールアプリの公開終了コードを定義します。

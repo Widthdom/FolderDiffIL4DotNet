@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using Xunit;
@@ -531,7 +532,7 @@ namespace FolderDiffIL4DotNet.Tests
         public void CheckDiskSpaceOrThrow_WithSufficientFreeSpace_DoesNotThrow()
         {
             // Verifies that the disk-space check passes silently on a normal system.
-            var ex = Record.Exception(() => ProgramRunner.CheckDiskSpaceOrThrow(Path.GetTempPath()));
+            var ex = Record.Exception(() => RunPreflightValidator.CheckDiskSpaceOrThrow(Path.GetTempPath()));
             Assert.Null(ex);
         }
 
@@ -559,7 +560,7 @@ namespace FolderDiffIL4DotNet.Tests
 
                 // Pass a path whose parent is `dir` — the check probes a file inside `dir`
                 Assert.Throws<UnauthorizedAccessException>(() =>
-                    ProgramRunner.CheckReportsParentWritableOrThrow(Path.Combine(dir, "label")));
+                    RunPreflightValidator.CheckReportsParentWritableOrThrow(Path.Combine(dir, "label")));
             }
             finally
             {
@@ -644,7 +645,7 @@ namespace FolderDiffIL4DotNet.Tests
 
         private static ILCache InvokeCreateIlCache(ConfigSettings config, ILoggerService logger)
         {
-            var method = typeof(ProgramRunner).GetMethod("CreateIlCache", BindingFlags.Static | BindingFlags.NonPublic);
+            var method = typeof(RunScopeBuilder).GetMethod("CreateIlCache", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
             return Assert.IsType<ILCache>(method.Invoke(null, new object[] { config, logger }));
         }

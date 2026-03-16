@@ -1,3 +1,4 @@
+using FolderDiffIL4DotNet.Runner;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests
@@ -11,7 +12,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_NullArgs_ReturnsAllDefaults()
         {
-            var opts = ProgramRunner.ParseCliOptions(null);
+            var opts = CliParser.Parse(null);
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
@@ -27,7 +28,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_EmptyArgs_ReturnsAllDefaults()
         {
-            var opts = ProgramRunner.ParseCliOptions(System.Array.Empty<string>());
+            var opts = CliParser.Parse(System.Array.Empty<string>());
 
             Assert.False(opts.ShowHelp);
             Assert.Null(opts.ParseError);
@@ -36,7 +37,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_PositionalArgsOnly_ReturnsAllDefaultFlags()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "/old", "/new", "label" });
+            var opts = CliParser.Parse(new[] { "/old", "/new", "label" });
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
@@ -60,7 +61,7 @@ namespace FolderDiffIL4DotNet.Tests
         [InlineData("-H")]
         public void ParseCliOptions_HelpFlag_SetsShowHelp(string helpArg)
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { helpArg });
+            var opts = CliParser.Parse(new[] { helpArg });
 
             Assert.True(opts.ShowHelp);
             Assert.Null(opts.ParseError);
@@ -75,7 +76,7 @@ namespace FolderDiffIL4DotNet.Tests
         [InlineData("--VERSION")]
         public void ParseCliOptions_VersionFlag_SetsShowVersion(string arg)
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { arg });
+            var opts = CliParser.Parse(new[] { arg });
 
             Assert.True(opts.ShowVersion);
             Assert.Null(opts.ParseError);
@@ -88,7 +89,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_NoPauseFlag_SetsNoPause()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--no-pause" });
+            var opts = CliParser.Parse(new[] { "--no-pause" });
 
             Assert.True(opts.NoPause);
             Assert.Null(opts.ParseError);
@@ -101,7 +102,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_ConfigWithPath_SetsConfigPath()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "/old", "/new", "lbl", "--config", "/tmp/my-config.json" });
+            var opts = CliParser.Parse(new[] { "/old", "/new", "lbl", "--config", "/tmp/my-config.json" });
 
             Assert.Equal("/tmp/my-config.json", opts.ConfigPath);
             Assert.Null(opts.ParseError);
@@ -110,7 +111,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_ConfigWithoutPath_SetsParseError()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--config" });
+            var opts = CliParser.Parse(new[] { "--config" });
 
             Assert.NotNull(opts.ParseError);
             Assert.Contains("--config", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
@@ -119,7 +120,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_ConfigFollowedByAnotherFlag_SetsParseError()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--config", "--no-pause" });
+            var opts = CliParser.Parse(new[] { "--config", "--no-pause" });
 
             Assert.NotNull(opts.ParseError);
         }
@@ -135,7 +136,7 @@ namespace FolderDiffIL4DotNet.Tests
         [InlineData("64", 64)]
         public void ParseCliOptions_ThreadsWithValidValue_SetsThreadsOverride(string value, int expected)
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--threads", value });
+            var opts = CliParser.Parse(new[] { "--threads", value });
 
             Assert.Equal(expected, opts.ThreadsOverride);
             Assert.Null(opts.ParseError);
@@ -147,7 +148,7 @@ namespace FolderDiffIL4DotNet.Tests
         [InlineData("3.5")]
         public void ParseCliOptions_ThreadsWithInvalidValue_SetsParseError(string value)
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--threads", value });
+            var opts = CliParser.Parse(new[] { "--threads", value });
 
             Assert.NotNull(opts.ParseError);
             Assert.Contains("--threads", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
@@ -156,7 +157,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_ThreadsWithoutValue_SetsParseError()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--threads" });
+            var opts = CliParser.Parse(new[] { "--threads" });
 
             Assert.NotNull(opts.ParseError);
         }
@@ -168,7 +169,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_NoIlCacheFlag_SetsNoIlCache()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--no-il-cache" });
+            var opts = CliParser.Parse(new[] { "--no-il-cache" });
 
             Assert.True(opts.NoIlCache);
             Assert.Null(opts.ParseError);
@@ -181,7 +182,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_SkipILFlag_SetsSkipIL()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--skip-il" });
+            var opts = CliParser.Parse(new[] { "--skip-il" });
 
             Assert.True(opts.SkipIL);
             Assert.Null(opts.ParseError);
@@ -194,7 +195,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_NoTimestampWarningsFlag_SetsNoTimestampWarnings()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--no-timestamp-warnings" });
+            var opts = CliParser.Parse(new[] { "--no-timestamp-warnings" });
 
             Assert.True(opts.NoTimestampWarnings);
             Assert.Null(opts.ParseError);
@@ -209,7 +210,7 @@ namespace FolderDiffIL4DotNet.Tests
         [InlineData("--xyz")]
         public void ParseCliOptions_UnknownFlag_SetsParseError(string flag)
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { flag });
+            var opts = CliParser.Parse(new[] { flag });
 
             Assert.NotNull(opts.ParseError);
             Assert.Contains(flag, opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
@@ -218,7 +219,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_UnknownFlagAfterKnownFlag_ParseErrorCapturesFirst()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--no-pause", "--bogus", "--also-bogus" });
+            var opts = CliParser.Parse(new[] { "--no-pause", "--bogus", "--also-bogus" });
 
             Assert.True(opts.NoPause);
             Assert.NotNull(opts.ParseError);
@@ -234,7 +235,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_NullElementInArgs_IsSkipped()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[] { "--no-pause", null, "--skip-il" });
+            var opts = CliParser.Parse(new[] { "--no-pause", null, "--skip-il" });
 
             Assert.True(opts.NoPause);
             Assert.True(opts.SkipIL);
@@ -248,7 +249,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ParseCliOptions_AllFlagsCombined_ParsedCorrectly()
         {
-            var opts = ProgramRunner.ParseCliOptions(new[]
+            var opts = CliParser.Parse(new[]
             {
                 "/old", "/new", "label",
                 "--no-pause",
