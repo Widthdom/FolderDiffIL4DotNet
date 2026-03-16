@@ -46,39 +46,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        [SkippableFact]
+        [Fact]
         public async Task DisassembleAsync_UsesPerFileFallback_WhenPrimaryToolFailsForSpecificFile()
         {
-            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
-
             var binDir = Path.Combine(_rootDir, "bin");
             Directory.CreateDirectory(binDir);
 
-            WriteExecutable(binDir, "dotnet-ildasm", """
-#!/bin/sh
-if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
-  echo "dotnet ildasm 0.12.0"
-  exit 0
-fi
-case "$1" in
-  *bad.dll) exit 90 ;;
-esac
-echo "IL_FROM_DOTNET_ILDASM"
-exit 0
-""");
-            WriteExecutable(binDir, "dotnet", """
-#!/bin/sh
-exit 1
-""");
-            WriteExecutable(binDir, "ilspycmd", """
-#!/bin/sh
-if [ "$1" = "--version" ] || [ "$1" = "-v" ] || [ "$1" = "-h" ]; then
-  echo "ilspycmd 9.1.0"
-  exit 0
-fi
-echo "IL_FROM_ILSPY"
-exit 0
-""");
+            // dotnet-ildasm: version succeeds, disassembly fails for files ending with "bad.dll"
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 0.12.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT", "IL_FROM_DOTNET_ILDASM");
+                Environment.SetEnvironmentVariable(prefix + "FAIL_PATTERN", "bad.dll");
+                Environment.SetEnvironmentVariable(prefix + "FAIL_EXIT", "90");
+            });
+            // dotnet muxer: always fails
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_EXIT", "1");
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            // ilspycmd: always succeeds
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "ilspycmd 9.1.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT", "IL_FROM_ILSPY");
+            });
 
             var oldPath = Environment.GetEnvironmentVariable("PATH");
             var oldHome = Environment.GetEnvironmentVariable("HOME");
@@ -105,6 +98,9 @@ exit 0
             {
                 Environment.SetEnvironmentVariable("PATH", oldPath);
                 Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
             }
         }
 
@@ -148,42 +144,31 @@ exit 0
             Assert.Contains("dotnet dotnet-ildasm /tmp/sample.dll", labelList);
         }
 
-        [SkippableFact]
+        [Fact]
         public async Task DisassemblePairWithSameDisassemblerAsync_UsesSingleFallbackToolForBothSides()
         {
-            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
-
             _resultLists.DisassemblerToolVersions.Clear();
             _resultLists.DisassemblerToolVersionsFromCache.Clear();
 
             var binDir = Path.Combine(_rootDir, "bin-pair");
             Directory.CreateDirectory(binDir);
 
-            WriteExecutable(binDir, "dotnet-ildasm", """
-#!/bin/sh
-if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
-  echo "dotnet ildasm 0.12.0"
-  exit 0
-fi
-case "$1" in
-  *bad.dll) exit 90 ;;
-esac
-echo "IL_FROM_DOTNET_ILDASM"
-exit 0
-""");
-            WriteExecutable(binDir, "dotnet", """
-#!/bin/sh
-exit 1
-""");
-            WriteExecutable(binDir, "ilspycmd", """
-#!/bin/sh
-if [ "$1" = "--version" ] || [ "$1" = "-v" ] || [ "$1" = "-h" ]; then
-  echo "ilspycmd 9.1.0"
-  exit 0
-fi
-echo "IL_FROM_ILSPY"
-exit 0
-""");
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 0.12.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT", "IL_FROM_DOTNET_ILDASM");
+                Environment.SetEnvironmentVariable(prefix + "FAIL_PATTERN", "bad.dll");
+                Environment.SetEnvironmentVariable(prefix + "FAIL_EXIT", "90");
+            });
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "ilspycmd 9.1.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT", "IL_FROM_ILSPY");
+            });
 
             var oldPath = Environment.GetEnvironmentVariable("PATH");
             var oldHome = Environment.GetEnvironmentVariable("HOME");
@@ -212,40 +197,35 @@ exit 0
             {
                 Environment.SetEnvironmentVariable("PATH", oldPath);
                 Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
             }
         }
 
-        [SkippableFact]
+        [Fact]
         public async Task DisassembleAsync_BlacklistsConsecutiveFailures_AndSkipsFailedTool()
         {
-            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
-
             var binDir = Path.Combine(_rootDir, "bin2");
             Directory.CreateDirectory(binDir);
             var counterPath = Path.Combine(_rootDir, "dotnet_ildasm_count.txt");
 
-            WriteExecutable(binDir, "dotnet-ildasm", $"""
-#!/bin/sh
-if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
-  echo "dotnet ildasm 0.12.0"
-  exit 0
-fi
-echo x >> "{counterPath}"
-exit 91
-""");
-            WriteExecutable(binDir, "dotnet", """
-#!/bin/sh
-exit 1
-""");
-            WriteExecutable(binDir, "ilspycmd", """
-#!/bin/sh
-if [ "$1" = "--version" ] || [ "$1" = "-v" ] || [ "$1" = "-h" ]; then
-  echo "ilspycmd 9.1.0"
-  exit 0
-fi
-echo "IL_FROM_ILSPY"
-exit 0
-""");
+            // dotnet-ildasm: version succeeds but disassembly always fails (exit 91)
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 0.12.0");
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "91");
+                Environment.SetEnvironmentVariable(prefix + "COUNTER_PATH", counterPath);
+            });
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "ilspycmd 9.1.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT", "IL_FROM_ILSPY");
+            });
 
             var oldPath = Environment.GetEnvironmentVariable("PATH");
             var oldHome = Environment.GetEnvironmentVariable("HOME");
@@ -289,6 +269,9 @@ exit 0
             {
                 Environment.SetEnvironmentVariable("PATH", oldPath);
                 Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
             }
         }
 
@@ -297,32 +280,26 @@ exit 0
         /// _disassembleFailCountAndTime に "失敗回数 >= 閾値 かつ 最終失敗時刻が 11 分前" のエントリを直接挿入し、
         /// TTL 失効でエントリが消去されてから逆アセンブルが成功することを検証します。
         /// </summary>
-        [SkippableFact]
+        [Fact]
         public async Task DisassembleAsync_AfterBlacklistTtlExpiry_RetriesToolAndSucceeds()
         {
-            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
-
             var binDir = Path.Combine(_rootDir, "bin-ttl");
             Directory.CreateDirectory(binDir);
 
-            // dotnet-ildasm は常に成功するスクリプト
-            WriteExecutable(binDir, "dotnet-ildasm", """
-#!/bin/sh
-if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
-  echo "dotnet ildasm 1.0.0"
-  exit 0
-fi
-echo "IL_FROM_DOTNET_ILDASM"
-exit 0
-""");
-            WriteExecutable(binDir, "dotnet", """
-#!/bin/sh
-exit 1
-""");
-            WriteExecutable(binDir, "ilspycmd", """
-#!/bin/sh
-exit 1
-""");
+            // dotnet-ildasm: always succeeds
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 1.0.0");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT", "IL_FROM_DOTNET_ILDASM");
+            });
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
 
             var oldPath = Environment.GetEnvironmentVariable("PATH");
             var oldHome = Environment.GetEnvironmentVariable("HOME");
@@ -355,28 +332,36 @@ exit 1
             {
                 Environment.SetEnvironmentVariable("PATH", oldPath);
                 Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
             }
         }
 
-        [SkippableFact]
+        [Fact]
         public async Task DisassembleAsync_WhenVersionLookupFails_UsesFingerprintAndAvoidsCrossVersionCacheMix()
         {
-            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
-
             var binDir = Path.Combine(_rootDir, "bin3");
             Directory.CreateDirectory(binDir);
             var cacheDir = Path.Combine(_rootDir, "ilcache");
             var counterPath = Path.Combine(_rootDir, "dotnet_ildasm_counter.txt");
 
-            WriteExecutable(binDir, "dotnet-ildasm", BuildVersionFailingDisassemblerScript(counterPath, "#REV-A"));
-            WriteExecutable(binDir, "dotnet", """
-#!/bin/sh
-exit 1
-""");
-            WriteExecutable(binDir, "ilspycmd", """
-#!/bin/sh
-exit 1
-""");
+            // First tool: version fails (exit 2), disassembly succeeds with counter
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_EXIT", "2");
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "");
+                Environment.SetEnvironmentVariable(prefix + "OUTPUT", "IL_FROM_VERSION_FAILING_TOOL");
+                Environment.SetEnvironmentVariable(prefix + "COUNTER_PATH", counterPath);
+            });
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
 
             var oldPath = Environment.GetEnvironmentVariable("PATH");
             var oldHome = Environment.GetEnvironmentVariable("HOME");
@@ -395,9 +380,10 @@ exit 1
                 Assert.Contains("fingerprint:", command1, StringComparison.OrdinalIgnoreCase);
                 Assert.True(countAfterFirstRun > 0);
 
-                // 実体更新（サイズ/更新時刻を変える）を模擬
+                // Simulate tool binary update (touch the mtime to change fingerprint)
                 await Task.Delay(1100);
-                WriteExecutable(binDir, "dotnet-ildasm", BuildVersionFailingDisassemblerScript(counterPath, "#REV-B-LONGER"));
+                var binaryPath = GetInstalledFakeBinaryPath(binDir, "dotnet-ildasm");
+                File.SetLastWriteTimeUtc(binaryPath, DateTime.UtcNow);
 
                 var service2 = CreateService(config, new ILCache(cacheDir, _logger));
                 var (_, command2) = await service2.DisassembleAsync(dllPath);
@@ -411,6 +397,9 @@ exit 1
             {
                 Environment.SetEnvironmentVariable("PATH", oldPath);
                 Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
             }
         }
 
@@ -429,23 +418,26 @@ exit 1
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.PrefetchIlCacheAsync(new[] { "dummy.dll" }, maxParallel: 0));
         }
 
-        [SkippableFact]
+        [Fact]
         public async Task PrefetchIlCacheAsync_WhenSeededCacheExists_IncrementsHitCounter()
         {
-            Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require a Unix/Linux environment.");
-
             var binDir = Path.Combine(_rootDir, "prefetch-hit-bin");
             Directory.CreateDirectory(binDir);
-            WriteExecutable(binDir, "dotnet-ildasm", """
-                #!/bin/sh
-                if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
-                  echo "1.2.3"
-                  exit 0
-                fi
-                exit 1
-                """);
-            WriteExecutable(binDir, "dotnet", "#!/bin/sh\nexit 1\n");
-            WriteExecutable(binDir, "ilspycmd", "#!/bin/sh\nexit 1\n");
+
+            // dotnet-ildasm: version succeeds, disassembly fails
+            InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "1.2.3");
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "dotnet", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
+            InstallFakeTool(binDir, "ilspycmd", prefix =>
+            {
+                Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
+            });
 
             var oldPath = Environment.GetEnvironmentVariable("PATH");
             var oldHome = Environment.GetEnvironmentVariable("HOME");
@@ -477,8 +469,15 @@ exit 1
             {
                 Environment.SetEnvironmentVariable("PATH", oldPath);
                 Environment.SetEnvironmentVariable("HOME", oldHome);
+                ClearFakeToolEnvVars("dotnet-ildasm");
+                ClearFakeToolEnvVars("dotnet");
+                ClearFakeToolEnvVars("ilspycmd");
             }
         }
+
+        // -----------------------------------------------------------------------
+        // Helpers
+        // -----------------------------------------------------------------------
 
         private static ConfigSettings CreateConfig(bool enableIlCache) => new()
         {
@@ -487,13 +486,50 @@ exit 1
             TextFileExtensions = new()
         };
 
-        private static void WriteExecutable(string directory, string fileName, string content)
+        /// <summary>
+        /// Installs the FakeDisassembler binary into binDir with the given toolName and sets
+        /// environment variables for the fake tool's behavior.
+        /// </summary>
+        private static void InstallFakeTool(string binDir, string toolName, Action<string> configureEnv)
         {
-            var path = Path.Combine(directory, fileName);
-            File.WriteAllText(path, content);
+            var exeName = OperatingSystem.IsWindows() ? "FakeDisassembler.exe" : "FakeDisassembler";
+            var srcPath = Path.Combine(AppContext.BaseDirectory, exeName);
+
+            // If the FakeDisassembler binary isn't available (e.g. in non-test-runner contexts), skip.
+            if (!File.Exists(srcPath))
+            {
+                return;
+            }
+
+            var destName = OperatingSystem.IsWindows() ? toolName + ".exe" : toolName;
+            var destPath = Path.Combine(binDir, destName);
+            File.Copy(srcPath, destPath, overwrite: true);
+
             if (!OperatingSystem.IsWindows())
             {
-                File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                File.SetUnixFileMode(destPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+
+            var prefix = GetEnvPrefix(toolName);
+            configureEnv(prefix);
+        }
+
+        private static string GetEnvPrefix(string toolName)
+            => "FD_FAKE_" + toolName.ToUpperInvariant().Replace("-", "_") + "_";
+
+        private static string GetInstalledFakeBinaryPath(string binDir, string toolName)
+        {
+            var destName = OperatingSystem.IsWindows() ? toolName + ".exe" : toolName;
+            return Path.Combine(binDir, destName);
+        }
+
+        private static void ClearFakeToolEnvVars(string toolName)
+        {
+            var prefix = GetEnvPrefix(toolName);
+            foreach (var suffix in new[] { "VERSION_EXIT", "VERSION_OUTPUT", "OUTPUT", "EXIT",
+                                           "FAIL_PATTERN", "FAIL_EXIT", "COUNTER_PATH" })
+            {
+                Environment.SetEnvironmentVariable(prefix + suffix, null);
             }
         }
 
@@ -507,17 +543,6 @@ exit 1
             }
             return count;
         }
-
-        private static string BuildVersionFailingDisassemblerScript(string counterPath, string revisionMarker) => $"""
-#!/bin/sh
-if [ "$1" = "--version" ] || [ "$1" = "-v" ]; then
-  exit 2
-fi
-echo x >> "{counterPath}"
-echo "IL_FROM_VERSION_FAILING_TOOL"
-exit 0
-{revisionMarker}
-""";
 
         private static void ResetDisassemblerFailureState()
         {
