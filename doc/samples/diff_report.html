@@ -62,7 +62,7 @@
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
-    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: max-content; margin-bottom: 0; }
+    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
@@ -88,7 +88,6 @@
     td.col-reason input[type="text"]:focus, td.col-notes input[type="text"]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
-    input[type="checkbox"][disabled] { accent-color: #007aff; opacity: 1; cursor: default; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
     table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
@@ -281,7 +280,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#2d7a2d">[ + ] Added Files (1)</h2>
+<h2 style="color:#22863a">[ + ] Added Files (1)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -293,7 +292,7 @@
   <col class="col-ts-g">
   <col class="col-diff-g">
 </colgroup>
-<thead><tr style="background:#e8f5e9">
+<thead><tr style="background:#e6ffed">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -314,7 +313,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#b00020">[ - ] Removed Files (1)</h2>
+<h2 style="color:#b31d28">[ - ] Removed Files (1)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -326,7 +325,7 @@
   <col class="col-ts-g">
   <col class="col-diff-g">
 </colgroup>
-<thead><tr style="background:#ffebee">
+<thead><tr style="background:#ffeef0">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -734,7 +733,7 @@
       });
     }
     if (__savedState__ !== null) {
-      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.disabled=true; });
+      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
       document.querySelectorAll('input[type="text"]').forEach(function(inp){
         inp.readOnly=true; inp.style.cursor='default'; inp.style.userSelect='text';
       });
@@ -745,6 +744,7 @@
       });
     }
     initColResize();
+    syncTableWidths();
   });
 
   function collectState() {
@@ -802,11 +802,27 @@
     // Reset column widths to defaults
     var root = document.documentElement;
     ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w'].forEach(function(v){ root.style.removeProperty(v); });
+    syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
     localStorage.removeItem(__storageKey__);
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
+  }
+
+  function syncTableWidths() {
+    var root = document.documentElement;
+    var emPx = parseFloat(getComputedStyle(root).fontSize) || 16;
+    var px = function(v, fb) {
+      var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
+      return (parseFloat(s) || fb) * emPx;
+    };
+    var w = (3.2 + 2.2 + 22) * emPx
+          + px('--col-reason-w', 10) + px('--col-notes-w', 10)
+          + px('--col-path-w', 22)   + px('--col-diff-w', 20);
+    document.querySelectorAll('table:not(.stat-table):not(.diff-table)').forEach(function(t) {
+      t.style.width = w + 'px';
+    });
   }
 
   function initColResize() {
@@ -830,6 +846,7 @@
         function onMove(ev) {
           var newPx = Math.max(48, startPx + (ev.clientX - startX));
           root.style.setProperty(varName, (newPx / emPx).toFixed(2) + 'em');
+          syncTableWidths();
         }
         function onUp() {
           document.removeEventListener('mousemove', onMove);

@@ -24,12 +24,12 @@ namespace FolderDiffIL4DotNet.Services
         internal const string DIFF_REPORT_HTML_FILE_NAME = "diff_report.html";
 
         private const string TIMESTAMP_ARROW = " → ";
-        private const string COLOR_ADDED   = "#2d7a2d";
-        private const string COLOR_REMOVED = "#b00020";
+        private const string COLOR_ADDED   = "#22863a";
+        private const string COLOR_REMOVED = "#b31d28";
         private const string COLOR_MODIFIED = "#0051c3";
 
-        private const string TH_BG_ADDED    = "#e8f5e9";
-        private const string TH_BG_REMOVED  = "#ffebee";
+        private const string TH_BG_ADDED    = "#e6ffed";
+        private const string TH_BG_REMOVED  = "#ffeef0";
         private const string TH_BG_MODIFIED = "#e3f2fd";
         private const string TH_BG_DEFAULT  = "#fafafa";
 
@@ -714,7 +714,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    }");
             // If this is a reviewed/downloaded copy, lock all inputs
             sb.AppendLine("    if (__savedState__ !== null) {");
-            sb.AppendLine("      document.querySelectorAll('input[type=\"checkbox\"]').forEach(function(cb){ cb.disabled=true; });");
+            sb.AppendLine("      document.querySelectorAll('input[type=\"checkbox\"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });");
             sb.AppendLine("      document.querySelectorAll('input[type=\"text\"]').forEach(function(inp){");
             sb.AppendLine("        inp.readOnly=true; inp.style.cursor='default'; inp.style.userSelect='text';");
             sb.AppendLine("      });");
@@ -725,6 +725,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      });");
             sb.AppendLine("    }");
             sb.AppendLine("    initColResize();");
+            sb.AppendLine("    syncTableWidths();");
             sb.AppendLine("  });");
             sb.AppendLine();
             sb.AppendLine("  function collectState() {");
@@ -782,11 +783,27 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    // Reset column widths to defaults");
             sb.AppendLine("    var root = document.documentElement;");
             sb.AppendLine("    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w'].forEach(function(v){ root.style.removeProperty(v); });");
+            sb.AppendLine("    syncTableWidths();");
             sb.AppendLine("    // Close all open diff/IL-diff details");
             sb.AppendLine("    document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });");
             sb.AppendLine("    localStorage.removeItem(__storageKey__);");
             sb.AppendLine("    var status = document.getElementById('save-status');");
             sb.AppendLine("    if (status) status.textContent = 'Cleared.';");
+            sb.AppendLine("  }");
+            sb.AppendLine();
+            sb.AppendLine("  function syncTableWidths() {");
+            sb.AppendLine("    var root = document.documentElement;");
+            sb.AppendLine("    var emPx = parseFloat(getComputedStyle(root).fontSize) || 16;");
+            sb.AppendLine("    var px = function(v, fb) {");
+            sb.AppendLine("      var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);");
+            sb.AppendLine("      return (parseFloat(s) || fb) * emPx;");
+            sb.AppendLine("    };");
+            sb.AppendLine("    var w = (3.2 + 2.2 + 22) * emPx");
+            sb.AppendLine("          + px('--col-reason-w', 10) + px('--col-notes-w', 10)");
+            sb.AppendLine("          + px('--col-path-w', 22)   + px('--col-diff-w', 20);");
+            sb.AppendLine("    document.querySelectorAll('table:not(.stat-table):not(.diff-table)').forEach(function(t) {");
+            sb.AppendLine("      t.style.width = w + 'px';");
+            sb.AppendLine("    });");
             sb.AppendLine("  }");
             sb.AppendLine();
             sb.AppendLine("  function initColResize() {");
@@ -810,6 +827,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("        function onMove(ev) {");
             sb.AppendLine("          var newPx = Math.max(48, startPx + (ev.clientX - startX));");
             sb.AppendLine("          root.style.setProperty(varName, (newPx / emPx).toFixed(2) + 'em');");
+            sb.AppendLine("          syncTableWidths();");
             sb.AppendLine("        }");
             sb.AppendLine("        function onUp() {");
             sb.AppendLine("          document.removeEventListener('mousemove', onMove);");
@@ -885,7 +903,7 @@ namespace FolderDiffIL4DotNet.Services
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
-    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: max-content; margin-bottom: 0; }
+    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
@@ -911,7 +929,6 @@ namespace FolderDiffIL4DotNet.Services
     td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
-    input[type=""checkbox""][disabled] { accent-color: #007aff; opacity: 1; cursor: default; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
     table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }

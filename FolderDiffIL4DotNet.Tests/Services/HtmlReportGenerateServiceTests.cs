@@ -150,7 +150,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("#2d7a2d", html);
+            Assert.Contains("#22863a", html);
             Assert.Contains("[ + ] Added Files", html);
         }
 
@@ -167,7 +167,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("#b00020", html);
+            Assert.Contains("#b31d28", html);
             Assert.Contains("[ - ] Removed Files", html);
         }
 
