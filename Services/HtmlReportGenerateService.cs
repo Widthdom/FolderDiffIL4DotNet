@@ -541,15 +541,15 @@ namespace FolderDiffIL4DotNet.Services
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             if (!hasMd5 && !hasTs) return;
 
-            sb.AppendLine("<h2 class=\"section-heading\">Warnings</h2>");
+            sb.AppendLine("<h2 class=\"section-heading\"><span class=\"warn-icon\">&#x26A0;</span> Warnings</h2>");
             sb.AppendLine("<ul class=\"warnings\">");
             if (hasMd5)
-                sb.AppendLine($"  <li><span class=\"warn-icon\">&#x26A0;</span> {HtmlEncode(Constants.WARNING_MD5_MISMATCH)}</li>");
+                sb.AppendLine($"  <li>{HtmlEncode(Constants.WARNING_MD5_MISMATCH)}</li>");
             if (hasTs)
             {
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
-                sb.AppendLine($"  <li><span class=\"warn-icon\">&#x26A0;</span> One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>");
+                sb.AppendLine($"  <li>One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>");
                 sb.AppendLine("</ul>");
 
                 // Timestamp-regressed files table (same style as Modified Files)
@@ -853,6 +853,8 @@ namespace FolderDiffIL4DotNet.Services
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 20em; }
+    col.col-no-g     { width: 2.5em; }
+    col.col-cb-g     { width: 2.2em; }
     col.col-reason-g { width: var(--col-reason-w); }
     col.col-notes-g  { width: var(--col-notes-w); }
     col.col-path-g   { width: var(--col-path-w); }
@@ -860,6 +862,7 @@ namespace FolderDiffIL4DotNet.Services
     col.col-diff-g   { width: var(--col-diff-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
+    table:not(.stat-table):not(.diff-table) { table-layout: fixed; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
@@ -874,7 +877,7 @@ namespace FolderDiffIL4DotNet.Services
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; }
     td.col-notes  { overflow: hidden; }
-    td.col-path { white-space: nowrap; overflow: hidden; }
+    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td.col-ts   { white-space: nowrap; width: 22em; }
     td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                   font-size: 12px; white-space: nowrap; min-width: 20em; }
