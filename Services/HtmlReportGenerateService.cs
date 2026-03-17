@@ -133,13 +133,13 @@ namespace FolderDiffIL4DotNet.Services
 
             AppendAddedSection(sb, config);
             AppendRemovedSection(sb, config);
-            AppendModifiedSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, config, ilCache);
+            AppendModifiedSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
             AppendSummarySection(sb, config);
 
             if (config.ShouldIncludeILCacheStatsInReport && ilCache != null)
                 AppendILCacheStatsSection(sb, ilCache);
 
-            AppendWarningsSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, config, ilCache);
+            AppendWarningsSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
 
             sb.AppendLine("</main>");
             AppendJs(sb, storageKey, reportDate);
@@ -327,6 +327,7 @@ namespace FolderDiffIL4DotNet.Services
             StringBuilder sb,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
+            string reportsFolderAbsolutePath,
             ConfigSettings config,
             ILCache ilCache)
         {
@@ -357,7 +358,7 @@ namespace FolderDiffIL4DotNet.Services
                      diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch))
                 {
                     AppendInlineDiffRow(sb, idx, path, oldFolderAbsolutePath, newFolderAbsolutePath,
-                        config, diffDetail, asm ?? "", ilCache);
+                        reportsFolderAbsolutePath, config, diffDetail, asm ?? "", ilCache);
                 }
 
                 idx++;
@@ -371,6 +372,7 @@ namespace FolderDiffIL4DotNet.Services
             string relPath,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
+            string reportsFolderAbsolutePath,
             ConfigSettings config,
             FileDiffResultLists.DiffDetailResult diffDetail,
             string disassemblerLabel,
@@ -385,14 +387,13 @@ namespace FolderDiffIL4DotNet.Services
 
             if (diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch)
             {
-                // ILMismatch: fetch IL text from cache (synchronous wrapper)
-                string oldAbsPath = Path.Combine(oldFolderAbsolutePath, relPath);
-                string newAbsPath = Path.Combine(newFolderAbsolutePath, relPath);
-                string oldIL = ilCache?.TryGetILAsync(oldAbsPath, disassemblerLabel).GetAwaiter().GetResult();
-                string newIL = ilCache?.TryGetILAsync(newAbsPath, disassemblerLabel).GetAwaiter().GetResult();
-                if (oldIL == null || newIL == null) return; // IL not in cache; skip
-                oldLines = oldIL.Split('\n');
-                newLines = newIL.Split('\n');
+                // ILMismatch: read IL text from the *_IL.txt files written during comparison
+                string ilFileName = TextSanitizer.Sanitize(relPath) + "_" + Constants.LABEL_IL + ".txt";
+                string oldILPath = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "old", ilFileName);
+                string newILPath = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "new", ilFileName);
+                if (!File.Exists(oldILPath) || !File.Exists(newILPath)) return; // IL text not written; skip
+                oldLines = File.ReadAllLines(oldILPath);
+                newLines = File.ReadAllLines(newILPath);
             }
             else
             {
@@ -552,6 +553,7 @@ namespace FolderDiffIL4DotNet.Services
             StringBuilder sb,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
+            string reportsFolderAbsolutePath,
             ConfigSettings config,
             ILCache ilCache)
         {
@@ -588,7 +590,7 @@ namespace FolderDiffIL4DotNet.Services
                          diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch))
                     {
                         AppendInlineDiffRow(sb, idx, w.FileRelativePath, oldFolderAbsolutePath, newFolderAbsolutePath,
-                            config, diffDetail, asm ?? "", ilCache, sectionPrefix: "tsw");
+                            reportsFolderAbsolutePath, config, diffDetail, asm ?? "", ilCache, sectionPrefix: "tsw");
                     }
 
                     idx++;

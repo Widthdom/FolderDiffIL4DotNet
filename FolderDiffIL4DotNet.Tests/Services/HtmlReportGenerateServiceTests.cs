@@ -301,8 +301,36 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // ILMismatch without ILCache: IL text not available, so no inline diff rendered
+            // ILMismatch without IL.txt files: IL text not available, so no inline diff rendered
             Assert.DoesNotContain("<details", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ILMismatch_WithILTextFiles_ShowsInlineDiff()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-il-with-files");
+
+            // Create IL.txt files in the expected location (Reports/IL/old and /new)
+            string ilOldDir = Path.Combine(reportDir, "IL", "old");
+            string ilNewDir = Path.Combine(reportDir, "IL", "new");
+            Directory.CreateDirectory(ilOldDir);
+            Directory.CreateDirectory(ilNewDir);
+            File.WriteAllLines(Path.Combine(ilOldDir, "lib.dll_IL.txt"), new[] { "old-il-line1", "common-line" });
+            File.WriteAllLines(Path.Combine(ilNewDir, "lib.dll_IL.txt"), new[] { "new-il-line1", "common-line" });
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            var config = CreateConfig(enableInlineDiff: true);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("<details", html);
+            Assert.Contains("Show IL diff", html);
+            Assert.Contains("old-il-line1", html);
+            Assert.Contains("new-il-line1", html);
         }
 
         [Fact]
