@@ -4,6 +4,31 @@ using FolderDiffIL4DotNet.Common;
 namespace FolderDiffIL4DotNet.Models
 {
     /// <summary>
+    /// <see cref="ConfigSettings"/> のバリデーション結果を表します。
+    /// </summary>
+    public sealed class ConfigValidationResult
+    {
+        /// <summary>
+        /// バリデーションが成功したかどうか。
+        /// </summary>
+        public bool IsValid => Errors.Count == 0;
+
+        /// <summary>
+        /// バリデーションエラーのリスト。IsValid が true の場合は空。
+        /// </summary>
+        public IReadOnlyList<string> Errors { get; }
+
+        /// <summary>
+        /// バリデーション結果を初期化します。
+        /// </summary>
+        public ConfigValidationResult(IReadOnlyList<string> errors)
+        {
+            Errors = errors;
+        }
+    }
+
+
+    /// <summary>
     /// config.jsonの設定を保持するモデルクラス。
     /// </summary>
     public sealed class ConfigSettings
@@ -25,10 +50,13 @@ namespace FolderDiffIL4DotNet.Models
             ".txt", ".vb", ".vbproj", ".vue", ".xaml", ".xml", ".yaml", ".yml"
         };
 
+        private static readonly string[] DefaultSpinnerFramesValues = ["|", "/", "-", "\\"];
+
         private List<string> _ignoredExtensions = CreateDefaultIgnoredExtensions();
         private List<string> _textFileExtensions = CreateDefaultTextFileExtensions();
         private List<string> _ilIgnoreLineContainingStrings = new();
         private string _ilCacheDirectoryAbsolutePath = string.Empty;
+        private List<string> _spinnerFrames = CreateDefaultSpinnerFrames();
 
         /// <summary>
         /// 無視する拡張子のリスト
@@ -62,6 +90,21 @@ namespace FolderDiffIL4DotNet.Models
         /// IgnoredExtensions に該当し比較対象から除外されたファイルもレポートへ出力するか否か。
         /// </summary>
         public bool ShouldIncludeIgnoredFiles { get; set; } = true;
+
+        /// <summary>
+        /// IL キャッシュの統計情報（ヒット数・ミス数・ヒット率など）を差分レポートに出力するかどうか。
+        /// true の場合、Summary セクションと Warnings セクションの間に IL Cache Stats セクションを追加します。
+        /// なお、IL キャッシュが無効（EnableILCache = false）の場合は本設定が true でもセクションは出力されません。
+        /// </summary>
+        public bool ShouldIncludeILCacheStatsInReport { get; set; } = false;
+
+        /// <summary>
+        /// diff_report.md と同内容のインタラクティブ HTML レポート (diff_report.html) を生成するかどうか。
+        /// true の場合、Removed / Added / Modified の各ファイル行にチェックボックス・Justification（根拠）・Notes 列が付き、
+        /// レビュー状態をブラウザの localStorage に自動保存します。
+        /// レビュー完了後に「Download as reviewed」ボタンで状態込みの HTML をダウンロードできます。
+        /// </summary>
+        public bool ShouldGenerateHtmlReport { get; set; } = true;
 
         /// <summary>
         /// IL全文を出力するか否か
@@ -163,8 +206,111 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public bool AutoDetectNetworkShares { get; set; } = true;
 
+        /// <summary>
+        /// 逆アセンブラツールのブラックリスト有効期間（分）。既定値は 10 分。
+        /// 連続失敗が閾値を超えたツールをこの期間スキップし、期間経過後に自動復旧します。
+        /// 0 以下または未指定で既定値（10 分）を使用します。
+        /// </summary>
+        public int DisassemblerBlacklistTtlMinutes { get; set; } = 10;
+
+        /// <summary>
+        /// .NET アセンブリの IL 比較をスキップするかどうか。
+        /// true の場合、.NET アセンブリの IL 逆アセンブルおよび IL 差分比較を省略し、
+        /// MD5 不一致のアセンブリはそのままバイナリ差分として扱います。
+        /// CLI オプション --skip-il でも設定できます。
+        /// </summary>
+        public bool SkipIL { get; set; }
+
+        /// <summary>
+        /// HTML レポートの Modified セクションにインライン差分（GitHub スタイルの unified diff）を表示するかどうか。
+        /// テキスト差分 (TextMismatch) のファイルのみ対象です。デフォルトは折りたたみ表示。
+        /// false にするとインライン差分は生成されません。
+        /// </summary>
+        public bool EnableInlineDiff { get; set; } = true;
+
+        /// <summary>
+        /// インライン差分の前後に表示するコンテキスト行数。既定値は 0。
+        /// </summary>
+        public int InlineDiffContextLines { get; set; } = 0;
+
+        /// <summary>
+        /// インライン差分の計算に許容する最大編集距離（挿入行数 + 削除行数の合計）。
+        /// 実際の差分がこの値を超える場合はインライン差分の表示をスキップします。既定値は 4000。
+        /// 0 以下にすると既定値（4000）を使用します。
+        /// ファイルサイズに依らず差分が小さければインライン表示されます（Myers diff アルゴリズム使用）。
+        /// </summary>
+        public int InlineDiffMaxEditDistance { get; set; } = 4000;
+
+        /// <summary>
+        /// インライン差分の計算結果の行数上限。差分計算後、差分出力行数（ハンクヘッダを含む）がこの値を超える場合は
+        /// インライン差分の表示をスキップします。既定値は 10000。
+        /// 0 以下にすると既定値（10000）を使用します。
+        /// </summary>
+        public int InlineDiffMaxDiffLines { get; set; } = 10000;
+
+        /// <summary>
+        /// HTML レポートに出力するインライン差分の最大行数（ハンクヘッダを含む）。
+        /// 超過分は打ち切り表示になります。既定値は 10000。
+        /// 0 以下にすると既定値（10000）を使用します。
+        /// </summary>
+        public int InlineDiffMaxOutputLines { get; set; } = 10000;
+
+        /// <summary>
+        /// コンソールスピナーのフレーム文字列リスト。各要素が 1 フレームになります。
+        /// 既定値は <c>["|", "/", "-", "\\"]</c>（縦棒・スラッシュ・横棒・バックスラッシュの 4 フレーム回転）。
+        /// 複数文字のフレーム（例: ブロック文字、絵文字）も指定できます。
+        /// null を指定した場合は既定値に正規化されます。空リストは無効です。
+        /// </summary>
+        public List<string> SpinnerFrames
+        {
+            get => _spinnerFrames;
+            set => _spinnerFrames = value ?? CreateDefaultSpinnerFrames();
+        }
+
+        /// <summary>
+        /// 設定値の整合性を検証し、結果を返します。
+        /// </summary>
+        /// <returns>バリデーション結果。エラーがある場合は <see cref="ConfigValidationResult.IsValid"/> が false になります。</returns>
+        public ConfigValidationResult Validate()
+        {
+            var errors = new List<string>();
+
+            if (MaxLogGenerations < 1)
+            {
+                errors.Add($"MaxLogGenerations must be 1 or greater (current value: {MaxLogGenerations}).");
+            }
+
+            if (TextDiffParallelThresholdKilobytes < 1)
+            {
+                errors.Add($"TextDiffParallelThresholdKilobytes must be 1 or greater (current value: {TextDiffParallelThresholdKilobytes}).");
+            }
+
+            if (TextDiffChunkSizeKilobytes < 1)
+            {
+                errors.Add($"TextDiffChunkSizeKilobytes must be 1 or greater (current value: {TextDiffChunkSizeKilobytes}).");
+            }
+            else if (TextDiffParallelThresholdKilobytes >= 1 && TextDiffChunkSizeKilobytes >= TextDiffParallelThresholdKilobytes)
+            {
+                errors.Add($"TextDiffChunkSizeKilobytes ({TextDiffChunkSizeKilobytes}) must be less than TextDiffParallelThresholdKilobytes ({TextDiffParallelThresholdKilobytes}).");
+            }
+
+            if (SpinnerFrames == null || SpinnerFrames.Count == 0)
+            {
+                errors.Add("SpinnerFrames must contain at least one frame.");
+            }
+
+            if (InlineDiffContextLines < 0)
+            {
+                errors.Add($"InlineDiffContextLines must be 0 or greater (current value: {InlineDiffContextLines}).");
+            }
+
+            return new ConfigValidationResult(errors);
+        }
+
         private static List<string> CreateDefaultIgnoredExtensions() => new(DefaultIgnoredExtensionsValues);
 
         private static List<string> CreateDefaultTextFileExtensions() => new(DefaultTextFileExtensionsValues);
+
+        private static List<string> CreateDefaultSpinnerFrames() => new(DefaultSpinnerFramesValues);
     }
 }

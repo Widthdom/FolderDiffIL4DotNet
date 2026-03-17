@@ -106,5 +106,39 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             var tooLongPath = "/" + new string('a', limit + 1);
             Assert.Throws<ArgumentException>(() => PathValidator.ValidateAbsolutePathLengthOrThrow(tooLongPath));
         }
+
+        // -----------------------------------------------------------------------
+        // Path traversal prevention
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("../etc/passwd")]          // forward slash already invalid
+        [InlineData("..\\windows\\system32")] // backslash already invalid
+        [InlineData("../../root")]
+        [InlineData("a/../../b")]
+        public void ValidateFolderNameOrThrow_PathTraversalAttempts_ThrowsArgumentException(string name)
+        {
+            // Path traversal via report label is blocked because '/', '\', and ".." components
+            // are all rejected by the character or dot-name checks.
+            Assert.Throws<ArgumentException>(() => PathValidator.ValidateFolderNameOrThrow(name));
+        }
+
+        [Theory]
+        [InlineData("foo\0bar")]   // null byte - control char
+        [InlineData("\0")]         // lone null byte
+        public void ValidateFolderNameOrThrow_NullByteInName_ThrowsArgumentException(string name)
+        {
+            Assert.Throws<ArgumentException>(() => PathValidator.ValidateFolderNameOrThrow(name));
+        }
+
+        [Theory]
+        [InlineData("/etc/passwd")]      // starts with / (absolute path)
+        [InlineData("/tmp/evil")]
+        public void ValidateFolderNameOrThrow_AbsolutePathAsLabel_ThrowsArgumentException(string name)
+        {
+            // An absolute-path string used as a report label would escape the Reports/ directory.
+            // The leading '/' (or '\') is caught by the invalid-character check.
+            Assert.Throws<ArgumentException>(() => PathValidator.ValidateFolderNameOrThrow(name));
+        }
     }
 }

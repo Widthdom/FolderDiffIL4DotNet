@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading;
 using FolderDiffIL4DotNet.Core.Console;
+using FolderDiffIL4DotNet.Models;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -36,9 +37,9 @@ namespace FolderDiffIL4DotNet.Services
         private const int FIXED_BAR_WIDTH = 32;
 
         /// <summary>
-        /// 進捗停滞時の簡易スピナーフレーム。
+        /// 進捗停滞時の簡易スピナーフレーム。<see cref="ConfigSettings.SpinnerFrames"/> から初期化されます。
         /// </summary>
-        private static readonly char[] KeepAliveFrames = ['|', '/', '-', '\\'];
+        private readonly string[] _keepAliveFrames;
 
         /// <summary>
         /// 直前に出力したF2フォーマットの文字列（重複出力抑止用）
@@ -108,6 +109,16 @@ namespace FolderDiffIL4DotNet.Services
         /// 破棄済みフラグ。
         /// </summary>
         private bool _disposed;
+
+        /// <summary>
+        /// コンストラクタ。
+        /// </summary>
+        /// <param name="config">設定。スピナーフレームの取得に使用します。</param>
+        public ProgressReportService(ConfigSettings config)
+        {
+            ArgumentNullException.ThrowIfNull(config);
+            _keepAliveFrames = config.SpinnerFrames.ToArray();
+        }
 
         /// <summary>
         /// 進捗率をコンソールに表示します。小数点以下2桁（F2）で出力します。
@@ -259,12 +270,12 @@ namespace FolderDiffIL4DotNet.Services
             var prefix = string.IsNullOrEmpty(_labelPrefix) ? string.Empty : _labelPrefix + " ";
             if (!string.IsNullOrEmpty(_labelPrefix))
             {
-                var spinnerSegment = $"{KeepAliveFrames[_keepAliveFrameIndex++ % KeepAliveFrames.Length]} ";
+                var spinnerSegment = $"{_keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length]} ";
                 return $"{prefix}{spinnerSegment}[{bar}] {percentText}";
             }
             if (showKeepAlive)
             {
-                char frame = KeepAliveFrames[_keepAliveFrameIndex++ % KeepAliveFrames.Length];
+                string frame = _keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length];
                 return $"[{bar}] {percentText} {frame}";
             }
             return $"[{bar}] {percentText}";

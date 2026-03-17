@@ -39,7 +39,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var executionContext = CreateExecutionContext(oldDir, newDir, reportDir);
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
@@ -69,6 +69,127 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(executionContext.IlOutputFolderAbsolutePath, Assert.Single(fileSystem.CreatedDirectories));
         }
 
+        /// <summary>
+        /// シンボリックリンクループ（ELOOP）が発生した場合、列挙時の IOException がエラーログとともに再スローされることを確認します。
+        /// </summary>
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenEnumeratingFilesThrowsIOExceptionDueToSymlinkLoop_LogsAndRethrows()
+        {
+            const string oldDir = "/virtual/old-symlink-loop";
+            const string newDir = "/virtual/new-symlink-loop";
+            const string reportDir = "/virtual/report-symlink-loop";
+
+            var fileSystem = new FakeFileSystemService
+            {
+                EnumerateFilesExceptionRoot = oldDir,
+                EnumerateFilesException = new IOException("Too many levels of symbolic links")
+            };
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            var exception = await Assert.ThrowsAsync<IOException>(() => service.ExecuteFolderDiffAsync());
+
+            Assert.Equal("Too many levels of symbolic links", exception.Message);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Exception is IOException
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// new 側のファイルが列挙後・比較前に削除された場合、FileNotFoundException を握りつぶして Removed に分類されることを確認します。
+        /// </summary>
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenNewFileDeletedBeforeComparison_ClassifiesAsRemovedWithWarning()
+        {
+            const string oldDir = "/virtual/old-deleted-new";
+            const string newDir = "/virtual/new-deleted-new";
+            const string reportDir = "/virtual/report-deleted-new";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir,
+                Path.Combine(oldDir, "ghost.txt"));
+            fileSystem.SetFiles(newDir,
+                Path.Combine(newDir, "ghost.txt"));
+
+            // FilesAreEqualAsync が FileNotFoundException をスローすることで「比較前に削除」を模擬する
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal))
+            {
+                FilesAreEqualException = new FileNotFoundException("File not found: ghost.txt")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Contains(Path.Combine(oldDir, "ghost.txt"), resultLists.RemovedFilesAbsolutePath);
+            Assert.Empty(resultLists.ModifiedFilesRelativePath);
+            Assert.Empty(resultLists.UnchangedFilesRelativePath);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("ghost.txt", StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// 並列モードで new 側のファイルが列挙後・比較前に削除された場合も、Removed に分類されることを確認します。
+        /// </summary>
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenNewFileDeletedBeforeComparison_ParallelMode_ClassifiesAsRemovedWithWarning()
+        {
+            const string oldDir = "/virtual/old-deleted-parallel";
+            const string newDir = "/virtual/new-deleted-parallel";
+            const string reportDir = "/virtual/report-deleted-parallel";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir,
+                Path.Combine(oldDir, "gone.txt"));
+            fileSystem.SetFiles(newDir,
+                Path.Combine(newDir, "gone.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal))
+            {
+                FilesAreEqualException = new FileNotFoundException("File not found: gone.txt")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 2),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Contains(Path.Combine(oldDir, "gone.txt"), resultLists.RemovedFilesAbsolutePath);
+            Assert.Empty(resultLists.ModifiedFilesRelativePath);
+            Assert.Empty(resultLists.UnchangedFilesRelativePath);
+        }
+
         [Fact]
         public async Task ExecuteFolderDiffAsync_WhenEnumeratingFilesThrowsUnauthorizedAccessException_LogsAndRethrows()
         {
@@ -84,7 +205,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -125,7 +246,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -171,7 +292,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -215,7 +336,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -252,7 +373,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -320,7 +441,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var fileDiffService = new FakeFileDiffService(equalityByRelativePath);
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 4),
                 progressReporter,
@@ -365,7 +486,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
                 progressReporter,
@@ -405,7 +526,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             // old dir == new dir → same absolute paths appear in both OldFilesAbsolutePath and NewFilesAbsolutePath
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
@@ -451,7 +572,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
             // ilPrecomputeBatchSize = 0 → falls back to default (2048) → all 6 paths in one batch
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 0),

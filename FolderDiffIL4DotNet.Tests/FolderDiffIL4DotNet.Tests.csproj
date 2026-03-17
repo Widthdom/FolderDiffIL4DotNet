@@ -7,6 +7,11 @@
     <NoWarn>$(NoWarn);CA1031</NoWarn>
   </PropertyGroup>
 
+  <!-- Exclude FakeDisassembler helper sources from being compiled into the test project -->
+  <ItemGroup>
+    <Compile Remove="Helpers\**\*.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -14,6 +19,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="Xunit.SkippableFact" Version="1.5.23" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -23,6 +29,29 @@
   <ItemGroup>
     <ProjectReference Include="..\FolderDiffIL4DotNet.Core\FolderDiffIL4DotNet.Core.csproj" />
     <ProjectReference Include="..\FolderDiffIL4DotNet.csproj" />
+    <!-- FakeDisassembler is a helper executable used by DotNetDisassembleServiceTests -->
+    <ProjectReference Include="Helpers\FakeDisassembler.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <Private>false</Private>
+    </ProjectReference>
   </ItemGroup>
+
+  <!-- Copy the FakeDisassembler binary (and required runtime files) to the test output directory after build -->
+  <Target Name="CopyFakeDisassembler" AfterTargets="Build">
+    <PropertyGroup>
+      <!-- FakeDisassembler.csproj uses AppendTargetFrameworkToOutputPath=false, so output is bin/$(Configuration)/ -->
+      <_FakeDisassemblerDir>$(MSBuildThisFileDirectory)Helpers/bin/$(Configuration)</_FakeDisassemblerDir>
+      <_FakeDisassemblerSrc Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(_FakeDisassemblerDir)/FakeDisassembler.exe</_FakeDisassemblerSrc>
+      <_FakeDisassemblerSrc Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(_FakeDisassemblerDir)/FakeDisassembler</_FakeDisassemblerSrc>
+      <_FakeDisassemblerDest Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(OutputPath)FakeDisassembler.exe</_FakeDisassemblerDest>
+      <_FakeDisassemblerDest Condition="!$([MSBuild]::IsOSPlatform('Windows'))">$(OutputPath)FakeDisassembler</_FakeDisassemblerDest>
+    </PropertyGroup>
+    <!-- Copy the AppHost native stub -->
+    <Copy SourceFiles="$(_FakeDisassemblerSrc)" DestinationFiles="$(_FakeDisassemblerDest)" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerSrc)')" />
+    <!-- Copy the managed DLL and runtime configuration files required by the AppHost -->
+    <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.dll" DestinationFiles="$(OutputPath)FakeDisassembler.dll" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.dll')" />
+    <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.runtimeconfig.json" DestinationFiles="$(OutputPath)FakeDisassembler.runtimeconfig.json" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.runtimeconfig.json')" />
+    <Copy SourceFiles="$(_FakeDisassemblerDir)/FakeDisassembler.deps.json" DestinationFiles="$(OutputPath)FakeDisassembler.deps.json" SkipUnchangedFiles="true" Condition="Exists('$(_FakeDisassemblerDir)/FakeDisassembler.deps.json')" />
+  </Target>
 
 </Project>

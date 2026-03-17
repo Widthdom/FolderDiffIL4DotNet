@@ -195,6 +195,52 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        /// <summary>
+        /// CleanupOldLogFiles でログディレクトリが読み取り専用の場合、UnauthorizedAccessException をキャッチして継続します（Linux/非root のみ）。
+        /// </summary>
+        [Fact]
+        public void CleanupOldLogFiles_ReadOnlyDirectory_LogsWarningAndDoesNotThrow()
+        {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
+                && !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                return;
+            }
+            if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+
+            // ログファイルを複数作成してジェネレーション超過状態にする
+            var log1 = Path.Combine(tempDir, "log_20240101.log");
+            var log2 = Path.Combine(tempDir, "log_20240102.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(log1, "a");
+            File.WriteAllText(log2, "b");
+            File.WriteAllText(active, "c");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                // ディレクトリを読み取り専用にしてファイル削除を阻止
+                File.SetUnixFileMode(tempDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+                // IOException または UnauthorizedAccessException をキャッチして継続することを確認
+                var ex = Record.Exception(() => logger.CleanupOldLogFiles(maxLogGenerations: 1));
+                Assert.Null(ex);
+            }
+            finally
+            {
+                try { File.SetUnixFileMode(tempDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch { }
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
         private static void SetPrivateField(object target, string fieldName, string value)
         {
             var fieldInfo = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);

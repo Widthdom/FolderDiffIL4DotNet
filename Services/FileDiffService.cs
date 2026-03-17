@@ -121,6 +121,11 @@ namespace FolderDiffIL4DotNet.Services
         public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel)
         {
             ArgumentNullException.ThrowIfNull(filesAbsolutePath);
+            if (_config.SkipIL)
+            {
+                return Task.CompletedTask;
+            }
+
             return _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel);
         }
 
@@ -150,8 +155,11 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
-                var dotNetDetectionResult = _fileComparisonService.DetectDotNetExecutable(file1AbsolutePath);
-                if (dotNetDetectionResult.IsFailure)
+                //    SkipIL が true の場合は IL 比較をスキップしてテキスト/バイナリ比較に進む。
+                var dotNetDetectionResult = _config.SkipIL
+                    ? default
+                    : _fileComparisonService.DetectDotNetExecutable(file1AbsolutePath);
+                if (!_config.SkipIL && dotNetDetectionResult.IsFailure)
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
@@ -160,7 +168,7 @@ namespace FolderDiffIL4DotNet.Services
                         dotNetDetectionResult.Exception);
                 }
 
-                if (dotNetDetectionResult.IsDotNetExecutable)
+                if (!_config.SkipIL && dotNetDetectionResult.IsDotNetExecutable)
                 {
                     try
                     {
@@ -173,7 +181,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (InvalidOperationException ex)
                     {
-                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}'.", shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}'. {ex.Message}", shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
@@ -225,22 +233,7 @@ namespace FolderDiffIL4DotNet.Services
                             }
                         }
                     }
-                    catch (ArgumentOutOfRangeException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                    }
-                    catch (IOException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                    }
-                    catch (UnauthorizedAccessException ex)
-                    {
-                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                    }
-                    catch (NotSupportedException ex)
+                    catch (Exception ex) when (ex is ArgumentOutOfRangeException or IOException or UnauthorizedAccessException or NotSupportedException)
                     {
                         _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
                         areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);

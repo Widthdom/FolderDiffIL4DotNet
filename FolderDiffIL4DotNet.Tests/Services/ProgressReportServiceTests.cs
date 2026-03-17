@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
 
@@ -10,7 +11,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void Dispose_StopsTimer_AndFurtherCallsAreIgnored()
         {
-            var service = new ProgressReportService();
+            var service = new ProgressReportService(new ConfigSettings());
             service.SetLabel("test");
             service.ReportProgress(0.0);
 
@@ -28,14 +29,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [InlineData(100.01)]
         public void ReportProgress_OutOfRange_Throws(double invalidPercentage)
         {
-            var service = new ProgressReportService();
+            var service = new ProgressReportService(new ConfigSettings());
             Assert.Throws<ArgumentOutOfRangeException>(() => service.ReportProgress(invalidPercentage));
         }
 
         [Fact]
         public void ReportProgress_WhenProgressGoesBackward_IgnoresUpdate()
         {
-            var service = new ProgressReportService();
+            var service = new ProgressReportService(new ConfigSettings());
 
             service.ReportProgress(10.0);
             service.ReportProgress(5.0);
@@ -47,7 +48,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void SetLabel_TrimsWhitespace_AndBlankResetsLabel()
         {
-            var service = new ProgressReportService();
+            var service = new ProgressReportService(new ConfigSettings());
 
             service.SetLabel("  diffing  ");
             Assert.Equal("diffing", GetPrivateField<string>(service, "_labelPrefix"));
@@ -59,7 +60,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildRedirectedProgressLine_UsesLabelAndKeepAliveFormat()
         {
-            var service = new ProgressReportService();
+            var service = new ProgressReportService(new ConfigSettings());
             service.SetLabel("Phase1");
 
             var result = InvokePrivate<string>(
@@ -74,7 +75,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_WithLabel_ContainsSpinnerAndPercentage()
         {
-            var service = new ProgressReportService();
+            var service = new ProgressReportService(new ConfigSettings());
             service.SetLabel("Scan");
 
             var result = InvokePrivate<string>(
@@ -93,7 +94,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_WithoutLabelAndKeepAlive_AppendsSpinnerFrame()
         {
-            var service = new ProgressReportService();
+            var service = new ProgressReportService(new ConfigSettings());
 
             var result = InvokePrivate<string>(
                 service,
@@ -104,6 +105,104 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Contains("12.34%", result);
             Assert.EndsWith("|", result);
+        }
+
+        [Fact]
+        public void BuildProgressBarLine_WithCustomSpinnerFrames_UsesFirstConfiguredFrame()
+        {
+            var config = new ConfigSettings { SpinnerFrames = [">>", "<<", "=="] };
+            var service = new ProgressReportService(config);
+
+            var result = InvokePrivate<string>(
+                service,
+                "BuildProgressBarLine",
+                "50.00",
+                50.0,
+                true);
+
+            Assert.Contains("50.00%", result);
+            Assert.EndsWith(">>", result);
+        }
+
+        [Fact]
+        public void BuildProgressBarLine_NegativePercentage_ClampsFilledToZero()
+        {
+            var service = new ProgressReportService(new ConfigSettings());
+
+            // Pass a negative percentage (bypasses ReportProgress validation via reflection)
+            var result = InvokePrivate<string>(
+                service,
+                "BuildProgressBarLine",
+                "0.00",
+                -5.0,
+                false);
+
+            Assert.Contains("[", result);
+            Assert.DoesNotContain("=", result); // no filled portion
+        }
+
+        [Fact]
+        public void BuildProgressBarLine_OverHundredPercent_ClampsFilledToBarWidth()
+        {
+            var service = new ProgressReportService(new ConfigSettings());
+
+            var result = InvokePrivate<string>(
+                service,
+                "BuildProgressBarLine",
+                "100.00",
+                999.0,
+                false);
+
+            Assert.Contains("[", result);
+            Assert.DoesNotContain("-", result); // fully filled
+        }
+
+        [Fact]
+        public void BuildProgressBarLine_WithoutLabelAndNoKeepAlive_ReturnsSimpleLine()
+        {
+            var service = new ProgressReportService(new ConfigSettings());
+
+            var result = InvokePrivate<string>(
+                service,
+                "BuildProgressBarLine",
+                "50.00",
+                50.0,
+                false);
+
+            Assert.Contains("50.00%", result);
+            Assert.EndsWith("50.00%", result.Trim());
+        }
+
+        [Fact]
+        public void BuildProgressBarLine_CalledTwice_UsesCachedBarWidth()
+        {
+            var service = new ProgressReportService(new ConfigSettings());
+
+            var first = InvokePrivate<string>(service, "BuildProgressBarLine", "30.00", 30.0, false);
+            var second = InvokePrivate<string>(service, "BuildProgressBarLine", "60.00", 60.0, false);
+
+            Assert.Contains("30.00%", first);
+            Assert.Contains("60.00%", second);
+        }
+
+        [Fact]
+        public void ReportProgress_SamePercentageTwice_WithStalledConsoleWrite_EmitsKeepAlive()
+        {
+            var service = new ProgressReportService(new ConfigSettings());
+
+            // First call to set _lastFormattedPercentage
+            service.ReportProgress(50.0);
+
+            // Set _lastConsoleWriteUtc to a very old value so shouldEmitKeepAlive is true
+            var field = typeof(ProgressReportService).GetField("_lastConsoleWriteUtc", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            field.SetValue(service, DateTime.UtcNow.AddHours(-1));
+
+            // Second call with same value: hasChanged = false, shouldEmitKeepAlive = true
+            service.ReportProgress(50.0);
+
+            // If we get here without exception, the keepAlive path was exercised
+            service.Dispose();
         }
 
         private static T GetPrivateField<T>(object target, string fieldName)

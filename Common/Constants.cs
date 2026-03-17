@@ -91,5 +91,11 @@ namespace FolderDiffIL4DotNet.Common
         /// </summary>
         public const int IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS = 12;
 
+        /// <summary>
+        /// IL 出力から比較時に除外する MVID 行の接頭辞。
+        /// MVID は再ビルドごとに変わり得る Module Version ID メタデータで、実行される IL 差分を直接意味しません。
+        /// </summary>
+        public const string IL_MVID_LINE_PREFIX = "// MVID:";
+
     }
 }

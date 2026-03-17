@@ -50,9 +50,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private string _logFileAbsolutePath;
 
-        /// <summary>
-        /// ログファイルの絶対パス（未初期化時は null）。
-        /// </summary>
+        /// <inheritdoc />
         public string LogFileAbsolutePath => _logFileAbsolutePath;
 
         /// <summary>
@@ -82,15 +80,11 @@ namespace FolderDiffIL4DotNet.Services
             PathValidator.ValidateAbsolutePathLengthOrThrow(_logFileAbsolutePath);
         }
 
-        /// <summary>
-        /// メッセージをログファイルに追記し、必要に応じてコンソールにも出力します。
-        /// </summary>
+        /// <inheritdoc />
         public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
             => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
 
-        /// <summary>
-        /// メッセージをログファイルに追記し、必要に応じてコンソールにも指定色で出力します。
-        /// </summary>
+        /// <inheritdoc />
         public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
         {
             string formattedMessage = FormatMessage(message, logLevel);
@@ -152,9 +146,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>
-        /// ログディレクトリ内のローテーション済みログ (<c>log_*.log</c>) を世代保持数に従い整理します。
-        /// </summary>
+        /// <inheritdoc />
         public void CleanupOldLogFiles(int maxLogGenerations)
         {
             if (string.IsNullOrWhiteSpace(_logDirectoryAbsolutePath))

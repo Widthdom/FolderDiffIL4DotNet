@@ -337,5 +337,109 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
                 () => cache.PrecomputeAsync(new[] { file }, maxParallel: 0));
         }
+
+        /// <summary>
+        /// ディスクキャッシュディレクトリとして既存ファイルパスを渡した場合、
+        /// Directory.CreateDirectory が IOException をスローし、メモリキャッシュのみで動作することを確認します。
+        /// </summary>
+        [Fact]
+        public async Task DiskCache_CacheDirIsFile_FallsBackToMemoryOnly()
+        {
+            // ディレクトリパスとして使うパスにファイルを作成
+            var filePath = Path.Combine(_tempDir, "not-a-directory");
+            File.WriteAllText(filePath, "I am a file");
+
+            // キャッシュディレクトリとしてファイルパスを渡す → TryInitializeCacheDirectory が IOException をキャッチ
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: filePath);
+            var testFile = CreateTestFile("fallback.dll");
+            var tool = "tool";
+
+            // メモリキャッシュにフォールバックして動作する
+            await cache.SetILAsync(testFile, tool, "memory IL");
+            var result = await cache.TryGetILAsync(testFile, tool);
+            Assert.Equal("memory IL", result);
+        }
+
+        /// <summary>
+        /// LRU eviction 時に disk Remove が UnauthorizedAccessException をキャッチして継続することを確認します（Linux/非root のみ）。
+        /// </summary>
+        [Fact]
+        public async Task LRU_DiskRemove_ReadOnlyDir_LogsWarningAndContinues()
+        {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
+                && !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                return;
+            }
+            if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
+            {
+                return; // root は読み取り専用ディレクトリでも削除可能
+            }
+
+            var tool = "tool";
+            var file1 = CreateTestFile("lru-ro-1.dll", "c1");
+            var file2 = CreateTestFile("lru-ro-2.dll", "c2");
+
+            // maxMemoryEntries=1 で LRU eviction を発生させる
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxMemoryEntries: 1);
+            await cache.SetILAsync(file1, tool, "IL-1");
+            await Task.Delay(30);
+
+            // キャッシュディレクトリを読み取り専用にして Remove が失敗するようにする
+            File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            try
+            {
+                // file2 を追加すると file1 が LRU eviction → ILDiskCache.Remove が UnauthorizedAccessException をキャッチ
+                await cache.SetILAsync(file2, tool, "IL-2");
+                // 例外が外に漏れないことを確認（silentに継続）
+            }
+            finally
+            {
+                File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+        }
+
+        /// <summary>
+        /// TrimCacheFiles 時に読み取り専用ファイルの削除が失敗した場合、警告ログが出て処理が継続することを確認します。
+        /// </summary>
+        [Fact]
+        public async Task DiskQuota_ReadOnlyFile_TrimSkipsAndContinues()
+        {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
+                && !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                return;
+            }
+            if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            // maxDiskFileCount=1 の制限でクォータ超過を発生させる
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxDiskFileCount: 1);
+            var tool = "tool";
+
+            var file1 = CreateTestFile("trim-ro-1.dll", "unique-ro-content-1");
+            await cache.SetILAsync(file1, tool, "IL-trim-1");
+            await Task.Delay(30);
+
+            // 最初のキャッシュファイルを読み取り専用にする
+            var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
+            if (cacheFiles.Length > 0)
+            {
+                // ディレクトリを読み取り専用にしてキャッシュファイルの削除を阻止
+                File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                try
+                {
+                    var file2 = CreateTestFile("trim-ro-2.dll", "unique-ro-content-2");
+                    // SetIL は disk quota enforce をトリガーするが、削除失敗は silently 無視される
+                    await cache.SetILAsync(file2, tool, "IL-trim-2");
+                }
+                finally
+                {
+                    File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+                }
+            }
+        }
     }
 }

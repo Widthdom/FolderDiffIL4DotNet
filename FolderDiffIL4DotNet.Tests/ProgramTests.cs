@@ -133,8 +133,8 @@ namespace FolderDiffIL4DotNet.Tests
             var fileRelativePath = "sample.txt";
             var oldFile = Path.Combine(oldDir, fileRelativePath);
             var newFile = Path.Combine(newDir, fileRelativePath);
-            await File.WriteAllTextAsync(oldFile, "same");
-            await File.WriteAllTextAsync(newFile, "same");
+            await File.WriteAllTextAsync(oldFile, "old content");
+            await File.WriteAllTextAsync(newFile, "new content");
             File.SetLastWriteTimeUtc(oldFile, new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
             File.SetLastWriteTimeUtc(newFile, new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
 
@@ -178,8 +178,7 @@ namespace FolderDiffIL4DotNet.Tests
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
                 Assert.Contains("## Warnings", reportText);
                 Assert.Contains("sample.txt", reportText);
-                Assert.Contains("updated_old:", reportText);
-                Assert.Contains("updated_new:", reportText);
+                Assert.Contains(" → ", reportText);
             }
             finally
             {

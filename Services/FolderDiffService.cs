@@ -32,6 +32,11 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
 
         /// <summary>
+        /// 比較中にファイルが削除された場合の警告ログフォーマット。
+        /// </summary>
+        private const string LOG_FILE_DELETED_DURING_COMPARISON = "File '{0}' was deleted from the new folder after enumeration; classifying as Removed.";
+
+        /// <summary>
         /// ローカルモードの表示名。
         /// </summary>
         private const string MODE_LOCAL_OPTIMIZED = "Local-optimized";
@@ -43,6 +48,12 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// キープアライブの出力間隔（秒）。
+        /// <para>
+        /// CI 環境や SSH セッションは無出力が 10～30 秒続くとタイムアウトすることが多いため、
+        /// それより十分小さい 5 秒間隔とすることで安全マージンを確保しています。
+        /// Keep-alive output interval in seconds. Set to 5s so that CI environments
+        /// and SSH sessions with 10–30s no-output timeouts receive a heartbeat well within the limit.
+        /// </para>
         /// </summary>
         private const int KEEP_ALIVE_INTERVAL_SECONDS = 5;
 
@@ -53,6 +64,14 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// 大規模フォルダとして追加ログを出す和集合件数の閾値。
+        /// <para>
+        /// 数千ファイルまでは通常の進捗表示で十分ですが、1 万件を超えると
+        /// 発見フェーズ自体が数秒を要し始めるため、この閾値を超えた場合に追加の
+        /// 進捗ログを出力してユーザーへ処理中であることを知らせます。
+        /// Threshold at which discovery-phase file count is considered "large" and
+        /// warrants an extra log line. Above 10,000 entries the enumeration itself
+        /// can take several seconds, so we notify the user proactively.
+        /// </para>
         /// </summary>
         private const int LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD = 10000;
         /// <summary>
@@ -351,21 +370,7 @@ namespace FolderDiffIL4DotNet.Services
             int precomputeBatchSize = GetEffectiveIlPrecomputeBatchSize();
             // 事前計算が長引いても進捗が止まって見えないよう、定期的に 0% を流すキープアライブを起動。
             using var keepAliveCts = new CancellationTokenSource();
-            var keepAliveTask = Task.Run(async () =>
-            {
-                try
-                {
-                    while (!keepAliveCts.Token.IsCancellationRequested)
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL_SECONDS), keepAliveCts.Token);
-                        _progressReporter.ReportProgress(0.0);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                    // expected when the keep-alive loop is stopped
-                }
-            });
+            var keepAliveTask = CreateKeepAliveTask(keepAliveCts);
 
             try
             {
@@ -413,6 +418,34 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
+        /// <summary>
+        /// 事前計算フェーズ中に進捗表示が止まって見えないよう、<see cref="KEEP_ALIVE_INTERVAL_SECONDS"/> 秒ごとに
+        /// <see cref="ProgressReportService.ReportProgress"/> へ 0% を送り続けるバックグラウンドタスクを起動します。
+        /// <para>
+        /// Starts a background task that periodically reports 0% progress to keep the spinner alive
+        /// during the IL pre-compute phase.  The loop exits cleanly when the returned
+        /// <see cref="CancellationTokenSource"/> is cancelled.
+        /// </para>
+        /// </summary>
+        /// <param name="cts">タスクのキャンセルに使用する <see cref="CancellationTokenSource"/>。</param>
+        /// <returns>キープアライブループを実行している <see cref="Task"/>。</returns>
+        private Task CreateKeepAliveTask(CancellationTokenSource cts)
+            => Task.Run(async () =>
+            {
+                try
+                {
+                    while (!cts.Token.IsCancellationRequested)
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(KEEP_ALIVE_INTERVAL_SECONDS), cts.Token);
+                        _progressReporter.ReportProgress(0.0);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // expected when the keep-alive loop is stopped
+                }
+            });
+
         private void LogExpectedFolderDiffFailure(Exception exception)
         {
             _logger.LogMessage(
@@ -449,8 +482,21 @@ namespace FolderDiffIL4DotNet.Services
                 if (remainingNewFilesAbsolutePathHashSet.Contains(newFileAbsolutePath))
                 {
                     remainingNewFilesAbsolutePathHashSet.Remove(newFileAbsolutePath);
-                    RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
-                    if (await _fileDiffService.FilesAreEqualAsync(fileRelativePath))
+                    bool areEqual;
+                    try
+                    {
+                        areEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // 列挙後に new 側ファイルが削除された場合は Removed として扱い、警告を記録して継続する。
+                        _logger.LogMessage(AppLogLevel.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_FILE_DELETED_DURING_COMPARISON, fileRelativePath), shouldOutputMessageToConsole: true);
+                        _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
+                        processedFileCountSoFar++;
+                        _progressReporter.ReportProgress((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount);
+                        continue;
+                    }
+                    if (areEqual)
                     {
                         // - Unchanged -
                         _fileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
@@ -459,6 +505,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         // - Modified -
                         _fileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
+                        RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
                     }
                 }
                 else
@@ -508,9 +555,21 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 if (hasMatchingFileInNewFilesAbsolutePathHashSet)
                 {
-                    RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
                     // 比較本体はロック外で実行（I/O / 計算を含むため）
-                    bool areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel);
+                    bool areFilesEqual;
+                    try
+                    {
+                        areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel);
+                    }
+                    catch (FileNotFoundException)
+                    {
+                        // 列挙後に new 側ファイルが削除された場合は Removed として扱い、警告を記録して継続する。
+                        _logger.LogMessage(AppLogLevel.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_FILE_DELETED_DURING_COMPARISON, fileRelativePath), shouldOutputMessageToConsole: true);
+                        _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
+                        var doneOnDelete = Interlocked.Increment(ref processedFileCount);
+                        _progressReporter.ReportProgress((double)doneOnDelete * 100.0 / totalFilesRelativePathCount);
+                        return;
+                    }
                     if (areFilesEqual)
                     {
                         // - Unchanged -
@@ -520,6 +579,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         // - Modified -
                         _fileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
+                        RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
                     }
                 }
                 else
@@ -634,7 +694,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// old/new の両方に存在するファイルについて、new 側の更新日時が old 側より古い場合に警告情報を記録します。
+        /// Modified と判定されたファイルについて、new 側の更新日時が old 側より古い場合に警告情報を記録します。
         /// </summary>
         private void RecordNewFileTimestampOlderThanOldWarningIfNeeded(string fileRelativePath, string oldFileAbsolutePath, string newFileAbsolutePath)
         {

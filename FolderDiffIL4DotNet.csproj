@@ -6,7 +6,6 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);FolderDiffIL4DotNet.Tests/**;FolderDiffIL4DotNet.Core/**</DefaultItemExcludes>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
-    <NoWarn>$(NoWarn);1572;1573;1574;1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -14,6 +14,13 @@ namespace FolderDiffIL4DotNet.Services
     {
         /// <summary>
         /// ネットワーク最適化時の自動並列度上限。
+        /// <para>
+        /// NAS/SMB 環境では同時接続数が多すぎるとサーバー側でスロットリングや
+        /// エラーが発生するため、実測で安定するとされる 8 並列を上限として設定しています。
+        /// Maximum parallelism when network-share optimisation is active. Limited to 8
+        /// because NAS/SMB servers typically throttle or error with too many simultaneous
+        /// connections; empirical testing shows 8 concurrent workers as a stable upper bound.
+        /// </para>
         /// </summary>
         private const int MAX_PARALLEL_NETWORK_LIMIT = 8;
 

@@ -15,12 +15,18 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public enum DiffDetailResult
         {
-            MD5Match, // MD5ハッシュが一致
-            MD5Mismatch, // MD5ハッシュが不一致
-            ILMatch, // IL（中間言語）ベースで一致（ビルド固有情報の差異は無視）
-            ILMismatch, // IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視）
-            TextMatch, // テキストベースで一致
-            TextMismatch // テキストベースで不一致
+            /// <summary>MD5 ハッシュが一致。<para>Files match by MD5 hash.</para></summary>
+            MD5Match,
+            /// <summary>MD5 ハッシュが不一致。<para>Files differ by MD5 hash.</para></summary>
+            MD5Mismatch,
+            /// <summary>IL（中間言語）ベースで一致（ビルド固有情報の差異は無視）。<para>Files match at the IL level (build-specific differences ignored).</para></summary>
+            ILMatch,
+            /// <summary>IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視）。<para>Files differ at the IL level (build-specific differences ignored).</para></summary>
+            ILMismatch,
+            /// <summary>テキストベースで一致。<para>Files match as text.</para></summary>
+            TextMatch,
+            /// <summary>テキストベースで不一致。<para>Files differ as text.</para></summary>
+            TextMismatch
         }
 
         /// <summary>
@@ -29,10 +35,28 @@ namespace FolderDiffIL4DotNet.Models
         [Flags]
         public enum IgnoredFileLocation
         {
+            /// <summary>フォルダを特定しない初期値（0）。<para>Default value indicating no folder (0).</para></summary>
             None = 0,
+            /// <summary>旧バージョン側（比較元）フォルダに存在。<para>File exists in the old (source) folder.</para></summary>
             Old = 1,
+            /// <summary>新バージョン側（比較先）フォルダに存在。<para>File exists in the new (target) folder.</para></summary>
             New = 2
         }
+
+        /// <summary>
+        /// サマリーセクション向けのファイル件数の集計値を保持するレコード。
+        /// </summary>
+        /// <param name="AddedCount">new 側にのみ存在するファイルの件数。</param>
+        /// <param name="RemovedCount">old 側にのみ存在するファイルの件数。</param>
+        /// <param name="ModifiedCount">old/new 両側に存在し内容が異なるファイルの件数。</param>
+        /// <param name="UnchangedCount">old/new 両側に存在し内容が一致するファイルの件数。</param>
+        /// <param name="IgnoredCount">IgnoredExtensions により除外されたファイルの件数。</param>
+        public sealed record DiffSummaryStatistics(
+            int AddedCount,
+            int RemovedCount,
+            int ModifiedCount,
+            int UnchangedCount,
+            int IgnoredCount);
         /// <summary>
         /// 旧バージョン側（比較元）ファイルの絶対パスのリスト
         /// </summary>
@@ -94,14 +118,25 @@ namespace FolderDiffIL4DotNet.Models
         public ConcurrentDictionary<string, byte> DisassemblerToolVersionsFromCache { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// new 側の更新日時が old 側より古いファイルの警告一覧。
+        /// Modified と判定されたファイルのうち、new 側の更新日時が old 側より古いものの警告一覧。
         /// </summary>
         public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// 1 件以上のファイルで new 側の更新日時が old 側より古いかどうか。
+        /// Modified と判定されたファイルの中に、new 側の更新日時が old 側より古いものが 1 件以上あるかどうか。
         /// </summary>
         public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
+
+        /// <summary>
+        /// サマリーセクション向けのファイル件数を一括で返す計算プロパティ。
+        /// Added / Removed / Modified / Unchanged / Ignored の各カウントを <see cref="DiffSummaryStatistics"/> にまとめて返します。
+        /// </summary>
+        public DiffSummaryStatistics SummaryStatistics => new(
+            AddedCount: AddedFilesAbsolutePath.Count,
+            RemovedCount: RemovedFilesAbsolutePath.Count,
+            ModifiedCount: ModifiedFilesRelativePath.Count,
+            UnchangedCount: UnchangedFilesRelativePath.Count,
+            IgnoredCount: IgnoredFilesRelativePathToLocation.Count);
 
         /// <summary>
         /// 旧バージョン側（比較元）ファイルの絶対パス一覧を置き換えます。
@@ -225,6 +260,7 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         /// <param name="toolName">ツール名。</param>
         /// <param name="version">バージョン文字列（省略可）。</param>
+        /// <param name="fromCache">キャッシュ経由の場合は <see langword="true"/>。</param>
         public void RecordDisassemblerToolVersion(string toolName, string version, bool fromCache = false)
         {
             if (string.IsNullOrWhiteSpace(toolName))
@@ -237,7 +273,7 @@ namespace FolderDiffIL4DotNet.Models
         }
 
         /// <summary>
-        /// new 側の更新日時が old 側より古いファイルの警告を記録します。
+        /// Modified と判定されたファイルについて、new 側の更新日時が old 側より古い場合の警告を記録します。
         /// </summary>
         /// <param name="fileRelativePath">ファイルの相対パス。</param>
         /// <param name="oldTimestamp">old 側の更新日時。</param>

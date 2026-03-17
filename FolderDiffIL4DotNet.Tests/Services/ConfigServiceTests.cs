@@ -29,6 +29,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var service = new ConfigService();
                 var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
                 Assert.IsType<JsonException>(ex.InnerException);
+                Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_TrailingCommaInObject_ThrowsInvalidDataExceptionWithHint()
+        {
+            // よくあるミス: オブジェクトの最後のプロパティ後にカンマを入れてしまう
+            // Common mistake: trailing comma after the last property in a JSON object
+            await WithConfigFileAsync("{ \"MaxLogGenerations\": 5, }", async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.IsType<JsonException>(ex.InnerException);
+                Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_TrailingCommaInArray_ThrowsInvalidDataExceptionWithHint()
+        {
+            // よくあるミス: 配列の最後の要素後にカンマを入れてしまう
+            // Common mistake: trailing comma after the last element in a JSON array
+            await WithConfigFileAsync("{ \"IgnoredExtensions\": [\".pdb\", \".log\",] }", async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.IsType<JsonException>(ex.InnerException);
+                Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_TrailingCommaError_MessageIncludesLineNumber()
+        {
+            // 行番号情報がメッセージに含まれることを確認
+            // Verify that line number information is included in the error message
+            const string json = """
+                {
+                  "MaxLogGenerations": 5,
+                }
+                """;
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.IsType<JsonException>(ex.InnerException);
+                // 行番号が含まれている（1以上の整数）
+                Assert.Matches(@"line \d+", ex.Message);
             });
         }
 
@@ -89,6 +140,148 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 var service = new ConfigService();
                 await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_InvalidMaxLogGenerations_ThrowsInvalidDataExceptionWithDetails()
+        {
+            const string json = """{ "MaxLogGenerations": 0 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
+                Assert.Contains("MaxLogGenerations", ex.Message, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_InvalidTextDiffThreshold_ThrowsInvalidDataExceptionWithDetails()
+        {
+            const string json = """{ "TextDiffParallelThresholdKilobytes": -1 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_ChunkSizeEqualToThreshold_ThrowsInvalidDataExceptionWithDetails()
+        {
+            const string json = """{ "TextDiffChunkSizeKilobytes": 64, "TextDiffParallelThresholdKilobytes": 64 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffChunkSizeKilobytes", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_MultipleInvalidSettings_ThrowsWithAllErrorDetails()
+        {
+            const string json = """{ "MaxLogGenerations": 0, "TextDiffParallelThresholdKilobytes": 0, "TextDiffChunkSizeKilobytes": 0 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
+                Assert.Contains("MaxLogGenerations", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
+                Assert.Contains("TextDiffChunkSizeKilobytes", ex.Message, StringComparison.Ordinal);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_ValidCustomSettings_ReturnsSettings()
+        {
+            const string json = """
+                {
+                  "MaxLogGenerations": 3,
+                  "TextDiffParallelThresholdKilobytes": 256,
+                  "TextDiffChunkSizeKilobytes": 32
+                }
+                """;
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync();
+
+                Assert.Equal(3, config.MaxLogGenerations);
+                Assert.Equal(256, config.TextDiffParallelThresholdKilobytes);
+                Assert.Equal(32, config.TextDiffChunkSizeKilobytes);
+            });
+        }
+
+        // -----------------------------------------------------------------------
+        // configFilePath parameter tests
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task LoadConfigAsync_CustomConfigFilePath_LoadsFromSpecifiedPath()
+        {
+            var customConfigPath = Path.Combine(Path.GetTempPath(), $"test-custom-{Guid.NewGuid():N}.json");
+            const string json = """{ "MaxLogGenerations": 99 }""";
+            await File.WriteAllTextAsync(customConfigPath, json);
+
+            try
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync(customConfigPath);
+
+                Assert.NotNull(config);
+                Assert.Equal(99, config.MaxLogGenerations);
+            }
+            finally
+            {
+                if (File.Exists(customConfigPath))
+                {
+                    File.Delete(customConfigPath);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_CustomConfigFilePathMissing_ThrowsFileNotFoundException()
+        {
+            var service = new ConfigService();
+
+            await Assert.ThrowsAsync<FileNotFoundException>(
+                () => service.LoadConfigAsync("/nonexistent/path/to/config.json"));
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_NullConfigFilePath_FallsBackToDefaultPath()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync(null);
+
+                Assert.NotNull(config);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EmptyConfigFilePath_FallsBackToDefaultPath()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                var service = new ConfigService();
+                var config = await service.LoadConfigAsync(string.Empty);
+
+                Assert.NotNull(config);
             });
         }
 

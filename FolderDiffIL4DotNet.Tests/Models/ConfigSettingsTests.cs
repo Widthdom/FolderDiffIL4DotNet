@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json;
 using FolderDiffIL4DotNet.Models;
 using Xunit;
@@ -66,7 +67,11 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "ILCacheMaxDiskMegabytes": 20,
                   "ILPrecomputeBatchSize": 512,
                   "OptimizeForNetworkShares": true,
-                  "AutoDetectNetworkShares": false
+                  "AutoDetectNetworkShares": false,
+                  "SkipIL": true,
+                  "ShouldIncludeILCacheStatsInReport": true,
+                  "SpinnerFrames": [">", ">>", ">>>"],
+                  "DisassemblerBlacklistTtlMinutes": 25
                 }
                 """;
 
@@ -95,6 +100,32 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(512, config.ILPrecomputeBatchSize);
             Assert.True(config.OptimizeForNetworkShares);
             Assert.False(config.AutoDetectNetworkShares);
+            Assert.True(config.SkipIL);
+            Assert.True(config.ShouldIncludeILCacheStatsInReport);
+            Assert.Equal(new[] { ">", ">>", ">>>" }, config.SpinnerFrames);
+            Assert.Equal(25, config.DisassemblerBlacklistTtlMinutes);
+        }
+
+        [Fact]
+        public void JsonDeserialize_NullSpinnerFrames_FallsBackToDefault()
+        {
+            const string json = """{ "SpinnerFrames": null }""";
+
+            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+
+            Assert.NotNull(config);
+            Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
+        }
+
+        [Fact]
+        public void Validate_EmptySpinnerFrames_ReturnsError()
+        {
+            var config = new ConfigSettings { SpinnerFrames = new System.Collections.Generic.List<string>() };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("SpinnerFrames", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -117,6 +148,237 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
             Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
+        }
+
+        [Fact]
+        public void Validate_DefaultSettings_IsValid()
+        {
+            var config = new ConfigSettings();
+
+            var result = config.Validate();
+
+            Assert.True(result.IsValid);
+            Assert.Empty(result.Errors);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_MaxLogGenerationsLessThanOne_ReturnsError(int value)
+        {
+            var config = new ConfigSettings { MaxLogGenerations = value };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Single(result.Errors);
+            Assert.Contains("MaxLogGenerations", result.Errors[0], StringComparison.Ordinal);
+            Assert.Contains(value.ToString(), result.Errors[0], StringComparison.Ordinal);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_TextDiffParallelThresholdKilobytesLessThanOne_ReturnsError(int value)
+        {
+            var config = new ConfigSettings { TextDiffParallelThresholdKilobytes = value };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_TextDiffChunkSizeKilobytesLessThanOne_ReturnsError(int value)
+        {
+            var config = new ConfigSettings { TextDiffChunkSizeKilobytes = value };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal));
+        }
+
+        [Theory]
+        [InlineData(64, 64)]   // equal
+        [InlineData(128, 64)]  // chunk > threshold
+        public void Validate_ChunkSizeGreaterThanOrEqualToThreshold_ReturnsError(int chunkKb, int thresholdKb)
+        {
+            var config = new ConfigSettings
+            {
+                TextDiffChunkSizeKilobytes = chunkKb,
+                TextDiffParallelThresholdKilobytes = thresholdKb,
+            };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e =>
+                e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal) &&
+                e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Validate_ChunkSizeSmallerThanThreshold_IsValid()
+        {
+            var config = new ConfigSettings
+            {
+                TextDiffChunkSizeKilobytes = 63,
+                TextDiffParallelThresholdKilobytes = 64,
+            };
+
+            var result = config.Validate();
+
+            Assert.True(result.IsValid);
+        }
+
+        [Fact]
+        public void Validate_MultipleErrors_ReturnsAllErrors()
+        {
+            var config = new ConfigSettings
+            {
+                MaxLogGenerations = 0,
+                TextDiffParallelThresholdKilobytes = 0,
+                TextDiffChunkSizeKilobytes = 0,
+            };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Equal(3, result.Errors.Count);
+        }
+
+        // B-1: DisassemblerBlacklistTtlMinutes cross-validation
+
+        [Fact]
+        public void Constructor_DisassemblerBlacklistTtlMinutes_DefaultIsTen()
+        {
+            var config = new ConfigSettings();
+            Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
+        }
+
+        [Fact]
+        public void JsonDeserialize_DisassemblerBlacklistTtlMinutes_IsApplied()
+        {
+            const string json = """{ "DisassemblerBlacklistTtlMinutes": 30 }""";
+            var config = System.Text.Json.JsonSerializer.Deserialize<ConfigSettings>(json);
+            Assert.NotNull(config);
+            Assert.Equal(30, config.DisassemblerBlacklistTtlMinutes);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(60)]
+        public void Validate_DisassemblerBlacklistTtlMinutes_PositiveValues_IsValid(int minutes)
+        {
+            var config = new ConfigSettings { DisassemblerBlacklistTtlMinutes = minutes };
+            var result = config.Validate();
+            Assert.True(result.IsValid);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void Validate_DisassemblerBlacklistTtlMinutes_NonPositive_UsesDefault_IsValid(int minutes)
+        {
+            // 0 以下は既定値（10 分）として扱われるため Validate エラーにならない
+            var config = new ConfigSettings { DisassemblerBlacklistTtlMinutes = minutes };
+            var result = config.Validate();
+            Assert.True(result.IsValid);
+        }
+
+        // B-1: TextDiffChunkSizeKilobytes boundary at exactly threshold - 1 (valid edge)
+        [Fact]
+        public void Validate_ChunkSizeExactlyOneBeforeThreshold_IsValid()
+        {
+            var config = new ConfigSettings
+            {
+                TextDiffChunkSizeKilobytes = 511,
+                TextDiffParallelThresholdKilobytes = 512,
+            };
+            var result = config.Validate();
+            Assert.True(result.IsValid);
+            Assert.Empty(result.Errors);
+        }
+
+        // B-1: TextDiffChunkSizeKilobytes equal to threshold is invalid
+        [Fact]
+        public void Validate_ChunkSizeEqualToThreshold_ReturnsError()
+        {
+            var config = new ConfigSettings
+            {
+                TextDiffChunkSizeKilobytes = 512,
+                TextDiffParallelThresholdKilobytes = 512,
+            };
+            var result = config.Validate();
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e =>
+                e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal) &&
+                e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
+        }
+
+        // ── InlineDiff ────────────────────────────────────────────────────────
+
+        [Fact]
+        public void Constructor_InlineDiffDefaults_AreCorrect()
+        {
+            var config = new ConfigSettings();
+
+            Assert.True(config.EnableInlineDiff);
+            Assert.Equal(0, config.InlineDiffContextLines);
+            Assert.Equal(10000, config.InlineDiffMaxDiffLines);
+            Assert.Equal(10000, config.InlineDiffMaxOutputLines);
+        }
+
+        [Fact]
+        public void JsonDeserialize_InlineDiffOverrides_AreApplied()
+        {
+            const string json = """
+                {
+                  "EnableInlineDiff": false,
+                  "InlineDiffContextLines": 5,
+                  "InlineDiffMaxDiffLines": 2000,
+                  "InlineDiffMaxOutputLines": 300
+                }
+                """;
+
+            var config = System.Text.Json.JsonSerializer.Deserialize<ConfigSettings>(json);
+
+            Assert.NotNull(config);
+            Assert.False(config.EnableInlineDiff);
+            Assert.Equal(5, config.InlineDiffContextLines);
+            Assert.Equal(2000, config.InlineDiffMaxDiffLines);
+            Assert.Equal(300, config.InlineDiffMaxOutputLines);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_InlineDiffContextLines_Negative_ReturnsError(int value)
+        {
+            var config = new ConfigSettings { InlineDiffContextLines = value };
+
+            var result = config.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("InlineDiffContextLines", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void Validate_InlineDiffContextLines_Zero_IsValid()
+        {
+            var config = new ConfigSettings { InlineDiffContextLines = 0 };
+
+            var result = config.Validate();
+
+            Assert.True(result.IsValid);
         }
 
         private static void AssertMatchesDefaults(ConfigSettings config)
@@ -144,6 +406,14 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(2048, config.ILPrecomputeBatchSize);
             Assert.False(config.OptimizeForNetworkShares);
             Assert.True(config.AutoDetectNetworkShares);
+            Assert.False(config.SkipIL);
+            Assert.False(config.ShouldIncludeILCacheStatsInReport);
+            Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
+            Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
+            Assert.True(config.EnableInlineDiff);
+            Assert.Equal(0, config.InlineDiffContextLines);
+            Assert.Equal(10000, config.InlineDiffMaxDiffLines);
+            Assert.Equal(10000, config.InlineDiffMaxOutputLines);
         }
     }
 }

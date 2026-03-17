@@ -39,8 +39,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         /// <summary>
         /// コンストラクタ
         /// </summary>
-        /// <param name="ilOldFolderAbsolutePath">旧 IL フォルダの絶対パス</param>
-        /// <param name="ilNewFolderAbsolutePath">新 IL フォルダの絶対パス</param>
+        /// <param name="executionContext">実行コンテキスト。旧/新 IL フォルダのパスを提供します。</param>
         /// <param name="logger">ログ出力サービス。</param>
         public ILTextOutputService(DiffExecutionContext executionContext, ILoggerService logger)
         {

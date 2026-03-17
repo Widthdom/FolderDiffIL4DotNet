@@ -8,8 +8,22 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
     /// </summary>
     public enum DotNetExecutableDetectionStatus
     {
+        /// <summary>
+        /// 対象ファイルが .NET 実行可能形式ではないと判定されました。
+        /// <para>The target file was determined not to be a .NET executable.</para>
+        /// </summary>
         NotDotNetExecutable,
+
+        /// <summary>
+        /// 対象ファイルが .NET 実行可能形式であると判定されました。
+        /// <para>The target file was determined to be a .NET executable.</para>
+        /// </summary>
         DotNetExecutable,
+
+        /// <summary>
+        /// 判定中に例外が発生し、結果を確定できませんでした。
+        /// <para>An exception occurred during detection; the result could not be determined.</para>
+        /// </summary>
         Failed
     }
 
