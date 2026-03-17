@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## English
 
+### [Unreleased]
+
+#### Fixed
+
+- Fixed HTML report inline diff numbering in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs): the `#N` prefix shown before `Show diff` / `Show IL diff` and inline-diff skip messages now uses the same one-based row number as the leftmost `#` column instead of the internal zero-based index. Added test `GenerateDiffReportHtml_InlineDiffSummary_UsesSameOneBasedNumberAsLeftmostColumn` to [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs), and updated [README.md](README.md) plus [testing guide](doc/TESTING_GUIDE.md).
+
 ### [1.3.0] - 2026-03-17
 
 #### Changed
@@ -316,6 +322,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 前半は英語、後半は日本語です。
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
+
+### [Unreleased]
+
+#### 修正
+
+- [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs) の HTML レポートにおけるインライン差分の番号表示を修正しました。`Show diff` / `Show IL diff` の前や、インライン差分スキップ文言に表示される `#N` が内部の 0 始まりインデックスではなく、左端 `#` 列と同じ 1 始まりの行番号になるよう統一しました。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) にテスト `GenerateDiffReportHtml_InlineDiffSummary_UsesSameOneBasedNumberAsLeftmostColumn` を追加し、[README.md](README.md) と [テストガイド](doc/TESTING_GUIDE.md) も更新しました。
 
 ### [1.3.0] - 2026-03-17
 

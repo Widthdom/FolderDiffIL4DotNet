@@ -425,6 +425,34 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("-1", html);
         }
 
+        [Fact]
+        public void GenerateDiffReportHtml_InlineDiffSummary_UsesSameOneBasedNumberAsLeftmostColumn()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-numbering");
+
+            File.WriteAllLines(Path.Combine(oldDir, "a.txt"), new[] { "old-a" });
+            File.WriteAllLines(Path.Combine(newDir, "a.txt"), new[] { "new-a" });
+            File.WriteAllLines(Path.Combine(oldDir, "b.txt"), new[] { "old-b" });
+            File.WriteAllLines(Path.Combine(newDir, "b.txt"), new[] { "new-b" });
+
+            _resultLists.AddModifiedFileRelativePath("a.txt");
+            _resultLists.RecordDiffDetail("a.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+            _resultLists.AddModifiedFileRelativePath("b.txt");
+            _resultLists.RecordDiffDetail("b.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("<td class=\"col-no\">1</td>", html);
+            Assert.Contains("<td class=\"col-no\">2</td>", html);
+            Assert.Contains("#1 Show diff", html);
+            Assert.Contains("#2 Show diff", html);
+            Assert.DoesNotContain("#0 Show diff", html);
+        }
+
         /// <summary>
         /// DIFF REASON・Location・Timestamp 列ボディセルに text-align: center が設定され、Notes 列には設定されていないことを確認します。
         /// </summary>

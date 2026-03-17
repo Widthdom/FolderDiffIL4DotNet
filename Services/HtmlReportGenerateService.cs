@@ -383,6 +383,7 @@ namespace FolderDiffIL4DotNet.Services
             int maxOutput       = config.InlineDiffMaxOutputLines  > 0 ? config.InlineDiffMaxOutputLines  : 10000;
             int contextLines    = config.InlineDiffContextLines   >= 0 ? config.InlineDiffContextLines   : 0;
             int maxEditDistance = config.InlineDiffMaxEditDistance  > 0 ? config.InlineDiffMaxEditDistance : 4000;
+            int recordNo = idx + 1;
 
             string[] oldLines, newLines;
 
@@ -434,7 +435,7 @@ namespace FolderDiffIL4DotNet.Services
             if (diffLines.Count == 1 && diffLines[0].Kind == TextDiffer.Truncated)
             {
                 sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{idx} {HtmlEncode(diffLines[0].Text)}</p></td>");
+                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} {HtmlEncode(diffLines[0].Text)}</p></td>");
                 sb.AppendLine("</tr>");
                 return;
             }
@@ -442,7 +443,7 @@ namespace FolderDiffIL4DotNet.Services
             if (diffLines.Count > maxDiffLines)
             {
                 sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{idx} Inline diff skipped: diff too large " +
+                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
                     $"({diffLines.Count} diff lines; limit is {maxDiffLines}). " +
                     "Increase <code>InlineDiffMaxDiffLines</code> in config to enable.</p></td>");
                 sb.AppendLine("</tr>");
@@ -462,7 +463,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <td colspan=\"8\">");
             sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
             string diffLabel = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "Show IL diff" : "Show diff";
-            sb.AppendLine($"      <summary class=\"diff-summary\">#{idx} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>");
+            sb.AppendLine($"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>");
             sb.AppendLine("      <div class=\"diff-view\">");
             sb.AppendLine("        <table class=\"diff-table\">");
             sb.AppendLine("          <tbody>");
