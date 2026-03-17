@@ -305,19 +305,19 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReportHtml_TextMismatch_FileTooLarge_ShowsSkippedMessage()
+        public void GenerateDiffReportHtml_TextMismatch_DiffTooLarge_ShowsSkippedMessage()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-large");
 
-            // 行数が maxInput を超えるファイルを用意 (maxInput=2 に設定)
-            File.WriteAllLines(Path.Combine(oldDir, "big.txt"), new[] { "L1", "L2", "L3" });
-            File.WriteAllLines(Path.Combine(newDir, "big.txt"), new[] { "L1", "L2", "L3-changed" });
+            // diff行数が maxDiffLines を超えるファイルを用意 (maxDiffLines=1 に設定、変更行は2行)
+            File.WriteAllLines(Path.Combine(oldDir, "big.txt"), new[] { "A", "B" });
+            File.WriteAllLines(Path.Combine(newDir, "big.txt"), new[] { "A-changed", "B-changed" });
 
             _resultLists.AddModifiedFileRelativePath("big.txt");
             _resultLists.RecordDiffDetail("big.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true);
-            config.InlineDiffMaxInputLines = 2;  // 3行 > 2 → スキップ
+            config.InlineDiffMaxDiffLines = 1;  // diff 2行 > 1 → スキップ
 
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null,
@@ -325,7 +325,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("diff-skipped", html);
-            Assert.Contains("InlineDiffMaxInputLines", html);
+            Assert.Contains("InlineDiffMaxDiffLines", html);
         }
 
         [Fact]

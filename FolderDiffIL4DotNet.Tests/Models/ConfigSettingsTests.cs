@@ -333,7 +333,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
 
             Assert.True(config.EnableInlineDiff);
             Assert.Equal(0, config.InlineDiffContextLines);
-            Assert.Equal(1000, config.InlineDiffMaxInputLines);
+            Assert.Equal(1000, config.InlineDiffMaxDiffLines);
             Assert.Equal(500, config.InlineDiffMaxOutputLines);
         }
 
@@ -344,7 +344,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 {
                   "EnableInlineDiff": false,
                   "InlineDiffContextLines": 5,
-                  "InlineDiffMaxInputLines": 2000,
+                  "InlineDiffMaxDiffLines": 2000,
                   "InlineDiffMaxOutputLines": 300
                 }
                 """;
@@ -354,7 +354,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.NotNull(config);
             Assert.False(config.EnableInlineDiff);
             Assert.Equal(5, config.InlineDiffContextLines);
-            Assert.Equal(2000, config.InlineDiffMaxInputLines);
+            Assert.Equal(2000, config.InlineDiffMaxDiffLines);
             Assert.Equal(300, config.InlineDiffMaxOutputLines);
         }
 
@@ -412,7 +412,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
             Assert.True(config.EnableInlineDiff);
             Assert.Equal(0, config.InlineDiffContextLines);
-            Assert.Equal(1000, config.InlineDiffMaxInputLines);
+            Assert.Equal(1000, config.InlineDiffMaxDiffLines);
             Assert.Equal(500, config.InlineDiffMaxOutputLines);
         }
     }

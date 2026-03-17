@@ -56,7 +56,7 @@ namespace FolderDiffIL4DotNet.Core.Text
                 {
                     new DiffLine(Truncated,
                         $"Inline diff skipped: file too large for LCS ({m} vs {n} lines). " +
-                        "Reduce InlineDiffMaxInputLines or disable EnableInlineDiff to suppress this message.")
+                        "Disable EnableInlineDiff to suppress this message.")
                 };
             }
 

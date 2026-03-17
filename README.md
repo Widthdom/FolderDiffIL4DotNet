@@ -348,10 +348,10 @@ Override only the settings you want to change. For example:
       <td><code>0</code></td>
       <td>Number of unchanged context lines to show above and below each changed hunk in inline diffs. <code>0</code> shows only the changed lines themselves.</td>
     </tr>
-    <tr id="config-en-inlinediffmaxinputlines">
-      <td><code>InlineDiffMaxInputLines</code></td>
+    <tr id="config-en-inlinediffmaxdifflines">
+      <td><code>InlineDiffMaxDiffLines</code></td>
       <td><code>1000</code></td>
-      <td>Maximum line count of either file before inline diff is skipped for that entry. Guards against very large files causing slow HTML rendering.</td>
+      <td>Maximum number of diff output lines (added + removed + context + hunk headers) before the inline diff display is suppressed for that entry. The diff is computed first; if the result exceeds this threshold the entry is skipped. Guards against very large diffs causing slow HTML rendering.</td>
     </tr>
     <tr id="config-en-inlinediffmaxoutputlines">
       <td><code>InlineDiffMaxOutputLines</code></td>
@@ -754,10 +754,10 @@ flowchart TD
       <td><code>0</code></td>
       <td>インライン差分で各変更ハンクの前後に表示する未変更コンテキスト行数。<code>0</code> では変更行のみを表示します。</td>
     </tr>
-    <tr id="config-ja-inlinediffmaxinputlines">
-      <td><code>InlineDiffMaxInputLines</code></td>
+    <tr id="config-ja-inlinediffmaxdifflines">
+      <td><code>InlineDiffMaxDiffLines</code></td>
       <td><code>1000</code></td>
-      <td>いずれかのファイルの行数がこの値を超えた場合、そのエントリのインライン差分をスキップします。非常に大きいファイルによる HTML レンダリングの遅延を防ぎます。</td>
+      <td>差分の出力行数（追加・削除・コンテキスト・ハンクヘッダを含む）がこの値を超えた場合、そのエントリのインライン差分表示をスキップします。差分を計算した後で判定するため、元ファイルの行数ではなく実際の差分量に応じてスキップが制御されます。非常に大きい差分による HTML レンダリングの遅延を防ぎます。</td>
     </tr>
     <tr id="config-ja-inlinediffmaxoutputlines">
       <td><code>InlineDiffMaxOutputLines</code></td>
