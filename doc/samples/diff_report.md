@@ -33,21 +33,23 @@
 ## [ - ] Removed Files (1)
 - [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
 
-## [ * ] Modified Files (6)
+## [ * ] Modified Files (8)
 - [ * ] config/app.config [2026-03-15 08:56:00 → 2026-03-15 09:01:00] `TextMismatch`
 - [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
 - [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
 - [ * ] src/Main.cs [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `TextMismatch`
 - [ * ] src/Service.dll [2026-03-15 09:05:00 → 2026-03-15 09:00:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
 - [ * ] src/Utils.cs [2026-03-15 08:57:00 → 2026-03-15 09:03:00] `TextMismatch`
+- [ * ] src/BigSchema.cs [2026-03-15 08:55:00 → 2026-03-15 09:04:00] `TextMismatch`
+- [ * ] src/LargeConfig.xml [2026-03-15 08:54:00 → 2026-03-15 09:05:00] `TextMismatch`
 
 ## Summary
 - Ignored   : 3
 - Unchanged : 5
 - Added     : 1
 - Removed   : 1
-- Modified  : 6
-- Compared  : 15 (Old) vs 15 (New)
+- Modified  : 8
+- Compared  : 17 (Old) vs 17 (New)
 
 ## IL Cache Stats
 - Hits    : 42

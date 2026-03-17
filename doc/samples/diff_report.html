@@ -51,14 +51,15 @@
     .save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 20em; }
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em; }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
     col.col-reason-g { width: var(--col-reason-w); }
     col.col-notes-g  { width: var(--col-notes-w); }
     col.col-path-g   { width: var(--col-path-w); }
-    col.col-ts-g     { width: 22em; }
+    col.col-ts-g     { width: 16em; }
     col.col-diff-g   { width: var(--col-diff-w); }
+    col.col-disasm-g { width: var(--col-disasm-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
@@ -79,9 +80,11 @@
     td.col-reason { overflow: hidden; }
     td.col-notes  { overflow: hidden; }
     td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    td.col-ts   { white-space: nowrap; width: 22em; overflow: hidden; }
+    td.col-ts   { white-space: nowrap; width: 16em; overflow: hidden; }
     td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-                  font-size: 12px; white-space: nowrap; min-width: 20em; }
+                  font-size: 12px; white-space: nowrap; overflow: hidden; }
+    td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     td.col-reason input[type="text"], td.col-notes input[type="text"] {
       width: 100%; border: none; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; font-family: inherit; }
@@ -171,6 +174,7 @@
   <col class="col-path-g">
   <col class="col-ts-g">
   <col class="col-diff-g">
+  <col class="col-disasm-g">
 </colgroup>
 <thead><tr style="background:#fafafa">
   <th class="col-no">#</th>
@@ -180,6 +184,7 @@
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Location</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -190,6 +195,7 @@
   <td class="col-path">/Users/UserA/workspace/old/logs/debug.log</td>
   <td class="col-ts">[2026-03-15 08:50:00]</td>
   <td class="col-diff"><code>old</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr>
   <td class="col-no">2</td>
@@ -199,6 +205,7 @@
   <td class="col-path">/Users/UserA/workspace/new/obj/build.cache</td>
   <td class="col-ts">[2026-03-15 09:05:00]</td>
   <td class="col-diff"><code>new</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr>
   <td class="col-no">3</td>
@@ -208,6 +215,7 @@
   <td class="col-path">bin/App.pdb</td>
   <td class="col-ts">[2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00]</td>
   <td class="col-diff"><code>old/new</code></td>
+  <td class="col-disasm"></td>
 </tr>
 </tbody></table>
 </div>
@@ -222,6 +230,7 @@
   <col class="col-path-g">
   <col class="col-ts-g">
   <col class="col-diff-g">
+  <col class="col-disasm-g">
 </colgroup>
 <thead><tr style="background:#fafafa">
   <th class="col-no">#</th>
@@ -231,6 +240,7 @@
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -241,6 +251,7 @@
   <td class="col-path">appsettings.json</td>
   <td class="col-ts">[2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>TextMatch</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr>
   <td class="col-no">2</td>
@@ -250,6 +261,7 @@
   <td class="col-path">data/schema.bin</td>
   <td class="col-ts">[2026-03-15 08:30:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>MD5Match</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr>
   <td class="col-no">3</td>
@@ -259,6 +271,7 @@
   <td class="col-path">docs/notes.md</td>
   <td class="col-ts">[2026-03-15 08:00:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>TextMatch</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr>
   <td class="col-no">4</td>
@@ -267,7 +280,8 @@
   <td class="col-notes"><input type="text" id="notes_unch_3"></td>
   <td class="col-path">util/Helper.dll</td>
   <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
-  <td class="col-diff"><code>ILMatch dotnet-ildasm (version: 0.12.2)</code></td>
+  <td class="col-diff"><code>ILMatch</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr>
   <td class="col-no">5</td>
@@ -277,6 +291,7 @@
   <td class="col-path">vendor/lib.dll</td>
   <td class="col-ts">[2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>MD5Match</code></td>
+  <td class="col-disasm"></td>
 </tr>
 </tbody></table>
 </div>
@@ -291,6 +306,7 @@
   <col class="col-path-g">
   <col class="col-ts-g">
   <col class="col-diff-g">
+  <col class="col-disasm-g">
 </colgroup>
 <thead><tr style="background:#e6ffed">
   <th class="col-no">#</th>
@@ -300,6 +316,7 @@
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -310,6 +327,7 @@
   <td class="col-path">/Users/UserA/workspace/new/docs/guide.md</td>
   <td class="col-ts">[2026-03-15 09:01:00]</td>
   <td class="col-diff"></td>
+  <td class="col-disasm"></td>
 </tr>
 </tbody></table>
 </div>
@@ -324,6 +342,7 @@
   <col class="col-path-g">
   <col class="col-ts-g">
   <col class="col-diff-g">
+  <col class="col-disasm-g">
 </colgroup>
 <thead><tr style="background:#ffeef0">
   <th class="col-no">#</th>
@@ -333,6 +352,7 @@
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -343,10 +363,11 @@
   <td class="col-path">/Users/UserA/workspace/old/legacy/old-tool.txt</td>
   <td class="col-ts">[2026-03-15 08:55:00]</td>
   <td class="col-diff"></td>
+  <td class="col-disasm"></td>
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#0051c3">[ * ] Modified Files (6)</h2>
+<h2 style="color:#0051c3">[ * ] Modified Files (8)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -357,6 +378,7 @@
   <col class="col-path-g">
   <col class="col-ts-g">
   <col class="col-diff-g">
+  <col class="col-disasm-g">
 </colgroup>
 <thead><tr style="background:#e3f2fd">
   <th class="col-no">#</th>
@@ -366,6 +388,7 @@
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -376,11 +399,12 @@
   <td class="col-path">config/app.config</td>
   <td class="col-ts">[2026-03-15 08:56:00 &#x2192; 2026-03-15 09:01:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
-  <td colspan="7">
+  <td colspan="8">
     <details id="diff_mod_0">
-      <summary class="diff-summary">Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-1</span>)</summary>
+      <summary class="diff-summary">#1 Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-1</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -418,6 +442,7 @@
   <td class="col-path">payload.bin</td>
   <td class="col-ts">[2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00]</td>
   <td class="col-diff"><code>MD5Mismatch</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr>
   <td class="col-no">3</td>
@@ -426,12 +451,13 @@
   <td class="col-notes"><input type="text" id="notes_mod_2"></td>
   <td class="col-path">src/App.dll</td>
   <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
-  <td class="col-diff"><code>ILMismatch dotnet-ildasm (version: 0.12.2)</code></td>
+  <td class="col-diff"><code>ILMismatch</code></td>
+  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">
-  <td colspan="7">
+  <td colspan="8">
     <details id="diff_mod_2">
-      <summary class="diff-summary">Show IL diff (<span class="diff-added-cnt">+3</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+      <summary class="diff-summary">#3 Show IL diff (<span class="diff-added-cnt">+3</span> / <span class="diff-removed-cnt">-2</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -479,11 +505,12 @@
   <td class="col-path">src/Main.cs</td>
   <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
-  <td colspan="7">
+  <td colspan="8">
     <details id="diff_mod_3">
-      <summary class="diff-summary">Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+      <summary class="diff-summary">#4 Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -525,12 +552,13 @@
   <td class="col-notes"><input type="text" id="notes_mod_4"></td>
   <td class="col-path">src/Service.dll</td>
   <td class="col-ts">[2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00]</td>
-  <td class="col-diff"><code>ILMismatch dotnet-ildasm (version: 0.12.2)</code></td>
+  <td class="col-diff"><code>ILMismatch</code></td>
+  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">
-  <td colspan="7">
+  <td colspan="8">
     <details id="diff_mod_4">
-      <summary class="diff-summary">Show IL diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+      <summary class="diff-summary">#5 Show IL diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -573,11 +601,12 @@
   <td class="col-path">src/Utils.cs</td>
   <td class="col-ts">[2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
-  <td colspan="7">
+  <td colspan="8">
     <details id="diff_mod_5">
-      <summary class="diff-summary">Show diff (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
+      <summary class="diff-summary">#6 Show diff (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -602,6 +631,32 @@
     </details>
   </td>
 </tr>
+<tr>
+  <td class="col-no">7</td>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_6"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_6"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_6"></td>
+  <td class="col-path">src/BigSchema.cs</td>
+  <td class="col-ts">[2026-03-15 08:55:00 &#x2192; 2026-03-15 09:04:00]</td>
+  <td class="col-diff"><code>TextMismatch</code></td>
+  <td class="col-disasm"></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8"><p class="diff-skipped">Inline diff skipped: file too large for LCS (2001 vs 2001 lines). Disable EnableInlineDiff to suppress this message.</p></td>
+</tr>
+<tr>
+  <td class="col-no">8</td>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_7"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_7"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_7"></td>
+  <td class="col-path">src/LargeConfig.xml</td>
+  <td class="col-ts">[2026-03-15 08:54:00 &#x2192; 2026-03-15 09:05:00]</td>
+  <td class="col-diff"><code>TextMismatch</code></td>
+  <td class="col-disasm"></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8"><p class="diff-skipped">Inline diff skipped: diff too large (1250 diff lines; limit is 1000). Increase <code>InlineDiffMaxDiffLines</code> in config to enable.</p></td>
+</tr>
 </tbody></table>
 </div>
 <h2 class="section-heading">Summary</h2>
@@ -611,8 +666,8 @@
     <tr><td class="stat-label">Unchanged</td><td class="stat-value">5</td></tr>
     <tr><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
     <tr><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
-    <tr><td class="stat-label">Modified</td><td class="stat-value">6</td></tr>
-    <tr><td class="stat-label">Compared</td><td class="stat-value">15 (Old) vs 15 (New)</td></tr>
+    <tr><td class="stat-label">Modified</td><td class="stat-value">8</td></tr>
+    <tr><td class="stat-label">Compared</td><td class="stat-value">17 (Old) vs 17 (New)</td></tr>
   </tbody>
 </table>
 <h2 class="section-heading">IL Cache Stats</h2>
@@ -642,6 +697,7 @@
   <col class="col-path-g">
   <col class="col-ts-g">
   <col class="col-diff-g">
+  <col class="col-disasm-g">
 </colgroup>
 <thead><tr style="background:#e3f2fd">
   <th class="col-no">#</th>
@@ -651,6 +707,7 @@
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -661,6 +718,7 @@
   <td class="col-path">payload.bin</td>
   <td class="col-ts">[2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00]</td>
   <td class="col-diff"><code>MD5Mismatch</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr>
   <td class="col-no">2</td>
@@ -669,12 +727,13 @@
   <td class="col-notes"><input type="text" id="notes_tsw_1"></td>
   <td class="col-path">src/Service.dll</td>
   <td class="col-ts">[2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00]</td>
-  <td class="col-diff"><code>ILMismatch dotnet-ildasm (version: 0.12.2)</code></td>
+  <td class="col-diff"><code>ILMismatch</code></td>
+  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">
-  <td colspan="7">
+  <td colspan="8">
     <details id="diff_tsw_1">
-      <summary class="diff-summary">Show IL diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+      <summary class="diff-summary">#2 Show IL diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
       <div class="diff-view">
         <table class="diff-table">
           <tbody>
@@ -769,7 +828,7 @@
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
     // 2. Reset column widths to defaults so exported file starts at initial layout
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w'];
     var savedColVars = {};
     colVarNames.forEach(function(v){ savedColVars[v] = root.style.getPropertyValue(v); root.style.removeProperty(v); });
     var html    = document.documentElement.outerHTML;
@@ -801,7 +860,7 @@
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
@@ -817,9 +876,10 @@
       var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
       return (parseFloat(s) || fb) * emPx;
     };
-    var w = (3.2 + 2.2 + 22) * emPx
+    var w = (3.2 + 2.2 + 16) * emPx
           + px('--col-reason-w', 10) + px('--col-notes-w', 10)
-          + px('--col-path-w', 22)   + px('--col-diff-w', 20);
+          + px('--col-path-w', 22)   + px('--col-diff-w', 9)
+          + px('--col-disasm-w', 28);
     document.querySelectorAll('table:not(.stat-table):not(.diff-table)').forEach(function(t) {
       t.style.width = w + 'px';
     });

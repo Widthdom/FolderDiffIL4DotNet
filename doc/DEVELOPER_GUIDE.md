@@ -389,6 +389,18 @@ Additional internal defaults:
 - [`ProgramRunner`](../ProgramRunner.cs) currently applies non-configurable IL cache defaults from [`Common/Constants.cs`](../Common/Constants.cs): `2000` memory entries, `12` hours TTL, and `60` seconds for internal stats logs. Cross-project byte/timestamp literals reused by both projects live in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs).
 - Those values are intentionally documented in code because they trade off same-day rerun reuse against unbounded memory or log growth in a short-lived console process.
 
+### Inline diff skip behaviour
+
+The inline diff can be suppressed in three ways, each producing a visible `diff-skipped` notice in the HTML report (no expand arrow):
+
+| Trigger | Setting | Condition | Message shown |
+| --- | --- | --- | --- |
+| LCS table too large | `EnableInlineDiff` | `oldLines × newLines > 4,000,000` — building the LCS DP table would require too much memory | `Inline diff skipped: file too large for LCS (M vs N lines). Disable EnableInlineDiff to suppress this message.` |
+| Output lines capped mid-compute | `InlineDiffMaxOutputLines` (default `500`) | `TextDiffer.Compute` reached the output-line budget; a `Truncated` row is appended and the partial diff is shown | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
+| Diff result too large | `InlineDiffMaxDiffLines` (default `1000`) | Total diff output (including hunk headers) exceeds the threshold *after* compute | `Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
+
+The LCS guard and the single-Truncated case both render as a plain row (no `<details>` element), so the notice is visible without any click. The `InlineDiffMaxOutputLines` truncation renders *inside* the `<details>` block after a partial diff.
+
 ### Runtime mode resolution
 
 ```mermaid
@@ -937,6 +949,18 @@ catch (Exception ex)
 補足の内部既定値:
 - [`ProgramRunner`](../ProgramRunner.cs) は、[`Common/Constants.cs`](../Common/Constants.cs) で定義した IL キャッシュ内部既定値として、メモリ `2000` 件、TTL `12` 時間、内部統計ログ `60` 秒を使います。両プロジェクトで共通利用するバイト換算値と日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) にあります。
 - これらは同日中の再実行で再利用を効かせつつ、短命なコンソールプロセスとしてメモリ消費やログ肥大を抑えるため、コード側で理由付きの既定値として維持しています。
+
+### インライン差分スキップの挙動
+
+インライン差分は 3 通りの条件で抑制されます。いずれの場合も HTML レポートに `diff-skipped` スタイルの通知が直接表示されます（展開矢印なし）。
+
+| トリガー | 設定 | 条件 | 表示メッセージ |
+| --- | --- | --- | --- |
+| LCS テーブルが大きすぎる | `EnableInlineDiff` | `旧行数 × 新行数 > 4,000,000` — LCS の DP テーブルが大きくなりすぎる | `Inline diff skipped: file too large for LCS (M vs N lines). Disable EnableInlineDiff to suppress this message.` |
+| 出力行数が計算途中で上限に達した | `InlineDiffMaxOutputLines`（既定 `500`） | `TextDiffer.Compute` が出力行数予算に達し、`Truncated` 行を末尾に追加して部分差分を返す | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
+| 差分結果が大きすぎる | `InlineDiffMaxDiffLines`（既定 `1000`） | 計算後の差分出力行数合計（ハンクヘッダ含む）が閾値を超えた | `Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
+
+LCS 超過と単一 Truncated 行のケースはいずれも `<details>` ラッパーなしのプレーン行としてレンダリングされるため、クリック不要でメッセージが見えます。`InlineDiffMaxOutputLines` による打ち切りは `<details>` ブロック内に部分差分の末尾として表示されます。
 
 ### 実行モードの決定
 
