@@ -457,7 +457,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <td colspan=\"8\">");
             sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
             string diffLabel = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "Show IL diff" : "Show diff";
-            sb.AppendLine($"      <summary class=\"diff-summary\">{HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>");
+            sb.AppendLine($"      <summary class=\"diff-summary\">#{idx} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>");
             sb.AppendLine("      <div class=\"diff-view\">");
             sb.AppendLine("        <table class=\"diff-table\">");
             sb.AppendLine("          <tbody>");
