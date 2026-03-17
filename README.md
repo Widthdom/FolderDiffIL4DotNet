@@ -194,7 +194,7 @@ Override only the settings you want to change. For example:
 ```json
 {
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
-  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_"],
+  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x"],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
   "ShouldIncludeIgnoredFiles": false,
@@ -595,7 +595,7 @@ flowchart TD
 ```json
 {
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
-  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_"],
+  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x"],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
   "ShouldIncludeIgnoredFiles": false,

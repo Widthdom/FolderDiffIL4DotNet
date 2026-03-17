@@ -9,7 +9,7 @@
 - Elapsed Time: 0h 0m 1.2s
 - Timestamps (timezone): +09:00
 - Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
-- Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_".
+- Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x".
 - Legend:
   - `MD5Match` / `MD5Mismatch`: MD5 hash match / mismatch
   - `ILMatch` / `ILMismatch`: IL(Intermediate Language) match / mismatch
