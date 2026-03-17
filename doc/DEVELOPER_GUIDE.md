@@ -62,8 +62,8 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 ```
 
 Generated during a run:
-- `Reports/<label>/diff_report.md`
-- `Reports/<label>/diff_report.html` when [`ShouldGenerateHtmlReport`](../README.md#configuration-table-en) is `true` (default)
+- `Reports/<label>/[`diff_report.md`](samples/diff_report.md)`
+- `Reports/<label>/[`diff_report.html`](samples/diff_report.html)` when [`ShouldGenerateHtmlReport`](../README.md#configuration-table-en) is `true` (default)
 - `Reports/<label>/IL/old/*.txt` and `Reports/<label>/IL/new/*.txt` when [`ShouldOutputILText`](../README.md#configuration-table-en) is `true`
 - `Logs/log_YYYYMMDD.log`
 - `ILCache/` under the app base directory when disk cache is enabled and no custom cache directory is configured
@@ -74,7 +74,7 @@ Keep internal formatting choices simple and local:
 - Prefer interpolated strings for fixed-format messages that are only used once.
 - Keep shared format templates only when the same message shape is intentionally reused in multiple places.
 - Place domain-independent helpers under [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) and keep [`FolderDiffIL4DotNet/Services`](../Services/) focused on folder-diff behavior.
-- Promote cross-project byte-size and timestamp literals into [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs), while keeping app-specific literals in [`Common/Constants.cs`](../Common/Constants.cs). IL-domain string constants such as `Constants.IL_MVID_LINE_PREFIX` belong in `Common/Constants.cs` and must not be duplicated across service files.
+- Promote cross-project byte-size and timestamp literals into [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs), while keeping app-specific literals in [`Common/Constants.cs`](../Common/Constants.cs). IL-domain string constants such as [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs) belong in [`Common/Constants.cs`](../Common/Constants.cs) and must not be duplicated across service files.
 - Avoid adding new `#region` blocks unless they solve a concrete readability problem that file structure and naming do not already solve.
 
 ## Architecture Overview
@@ -102,6 +102,7 @@ flowchart TD
     L --> O["ILTextOutputService"]
     F --> P["FileDiffResultLists"]
     G --> P
+    click P href "../Models/FileDiffResultLists.cs" "Open FileDiffResultLists"
 ```
 
 Design intent:
@@ -110,7 +111,7 @@ Design intent:
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) carries immutable run-specific paths and mode decisions.
 - [`FolderDiffIL4DotNet.Core`](../FolderDiffIL4DotNet.Core/) is the reusable helper-library boundary for console rendering, diagnostics, filesystem helpers, and text sanitization with no folder-diff domain policy.
 - Core pipeline services use constructor injection and interfaces instead of static mutable state or ad hoc object creation.
-- [`IFileSystemService`](../Services/IFileSystemService.cs) and [`IFileComparisonService`](../Services/IFileComparisonService.cs) are the low-level seams that keep discovery/compare I/O unit-testable without changing the production decision tree. `IFileSystemService.EnumerateFiles(...)` specifically preserves lazy discovery so large trees do not require an eager `string[]` snapshot before filtering.
+- [`IFileSystemService`](../Services/IFileSystemService.cs) and [`IFileComparisonService`](../Services/IFileComparisonService.cs) are the low-level seams that keep discovery/compare I/O unit-testable without changing the production decision tree. [`IFileSystemService.EnumerateFiles(...)`](../Services/IFileSystemService.cs) specifically preserves lazy discovery so large trees do not require an eager `string[]` snapshot before filtering.
 - [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) centralizes inclusion filtering, ignored-file recording, and auto-parallelism policy so those rules are no longer embedded directly inside [`FolderDiffService`](../Services/FolderDiffService.cs).
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) is the run-scoped aggregation hub shared by diffing and reporting.
 - [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) is responsible for disassembly execution and cache hit/store tracking. IL-cache prefetch is delegated to [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs), which encapsulates the prefetch-only responsibility. Shared static helpers (command identification, candidate enumeration, executable path resolution) live in [`DisassemblerHelper`](../Services/DisassemblerHelper.cs) to avoid duplication between the two classes.
@@ -139,11 +140,13 @@ sequenceDiagram
     Runner->>Runner: build DiffExecutionContext
     Runner->>Scope: BuildRunServiceProvider()
     Runner->>Diff: ExecuteFolderDiffAsync()
-    Diff-->>Runner: results in FileDiffResultLists
+    Diff-->>Runner: return aggregated diff results
     Runner->>Report: GenerateDiffReport(...)
     Runner->>Runner: output aggregated completion warnings
     Runner-->>CLI: typed exit code (0/2/3/4/1)
 ```
+
+The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs), which is then consumed by report generation and completion-warning output.
 
 ### What happens inside `RunAsync`
 
@@ -158,8 +161,8 @@ sequenceDiagram
 9. Compute [`DiffExecutionContext`](../Services/DiffExecutionContext.cs), including network-share decisions.
 10. Build the run-scoped DI container.
 11. Run the folder diff and finish progress display.
-12. Generate `diff_report.md` from aggregated results.
-13. Generate `diff_report.html` from aggregated results when [`ShouldGenerateHtmlReport`](../README.md#configuration-table-en) is `true` (default). The HTML file is a self-contained interactive review document with localStorage auto-save and a download function that bakes the current review state into a portable snapshot.
+12. Generate [`diff_report.md`](samples/diff_report.md) from aggregated results.
+13. Generate [`diff_report.html`](samples/diff_report.html) from aggregated results when [`ShouldGenerateHtmlReport`](../README.md#configuration-table-en) is `true` (default). The HTML file is a self-contained interactive review document with localStorage auto-save and a download function that bakes the current review state into a portable snapshot.
 14. Convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse/validation failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors.
 
 The implementation keeps `RunAsync()` short by treating those steps as explicit phases and delegating each phase to focused private helpers.
@@ -167,11 +170,11 @@ The implementation keeps `RunAsync()` short by treating those steps as explicit 
 Failure behavior:
 - [`ProgramRunner`](../ProgramRunner.cs) now uses small typed step results at the application boundary instead of flattening every failure into one catch-all exit code.
 - Argument validation, unknown flags, and missing input paths map to exit code `2`.
-- [`ConfigService`](../Services/ConfigService.cs) failures such as missing `config.json`, parse failures, config-read I/O errors, or settings that fail [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) map to exit code `3`.
+- [`ConfigService`](../Services/ConfigService.cs) failures such as missing [`config.json`](../config.json), parse failures, config-read I/O errors, or settings that fail [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) map to exit code `3`.
 - Diff execution and report-generation failures, including fatal IL comparison failures surfaced as [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0), map to exit code `4`.
 - Exit code `1` is reserved for unexpected internal errors that escape the explicit phase classification.
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
-- `FolderDiffService.ExecuteFolderDiffAsync()` logs and rethrows expected runtime exceptions such as path-validation errors, [`DirectoryNotFoundException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.directorynotfoundexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), and [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0); only truly unexpected exceptions use the separate "unexpected error" log wording.
+- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) logs and rethrows expected runtime exceptions such as path-validation errors, [`DirectoryNotFoundException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.directorynotfoundexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), and [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0); only truly unexpected exceptions use the separate "unexpected error" log wording.
 - Read-only protection on output files remains best-effort and warning-only.
 
 <a id="guide-en-di-layout"></a>
@@ -228,16 +231,16 @@ Why this matters:
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | Per-file decision tree | MD5 -> IL -> text -> fallback |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL compare flow, line filtering, optional IL dump writing | Enforces same disassembler identity |
-| [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | Tool probing, disassembly execution, cache hit/store tracking, blacklist handling | Central tool boundary; delegates prefetch to `ILCachePrefetcher` |
-| [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL-cache prefetch (pre-hit verification for all candidate command/arg patterns) | Extracted from `DotNetDisassembleService`; owns its own hit counter |
-| [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | Shared static helpers: command identification, candidate enumeration, executable path resolution | Used by both `DotNetDisassembleService` and `ILCachePrefetcher`; no instance state |
-| [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | Per-tool fail-count tracking and configurable TTL blacklist | Thread-safe `ConcurrentDictionary`; TTL defaults to `DisassemblerBlacklistTtlMinutes` from config |
+| [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | Tool probing, disassembly execution, cache hit/store tracking, blacklist handling | Central tool boundary; delegates prefetch to [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) |
+| [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL-cache prefetch (pre-hit verification for all candidate command/arg patterns) | Extracted from [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs); owns its own hit counter |
+| [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | Shared static helpers: command identification, candidate enumeration, executable path resolution | Used by both [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) and [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs); no instance state |
+| [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | Per-tool fail-count tracking and configurable TTL blacklist | Thread-safe [`ConcurrentDictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0); TTL defaults to `DisassemblerBlacklistTtlMinutes` from config |
 | [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | Public cache facade and coordinator for IL artifacts | Delegates memory/disk details to focused cache components |
 | [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | In-memory IL/MD5 cache with LRU and TTL | Owns transient retention policy |
 | [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | Disk persistence and quota enforcement for IL cache files | Owns cache-file I/O and trimming |
-| [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads `FileDiffResultLists` only; iterates `_sectionWriters` via `IReportSectionWriter` |
-| [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside `ReportGenerateService` |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads `FileDiffResultLists` only; produces a self-contained `diff_report.html` with checkboxes, text inputs, localStorage auto-save, and download function; skipped when `ShouldGenerateHtmlReport` is `false` |
+| [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; iterates `_sectionWriters` via [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) |
+| [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside [`ReportGenerateService`](../Services/ReportGenerateService.cs) |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; skipped when `ShouldGenerateHtmlReport` is `false` |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object |
 
 <a id="guide-en-comparison-pipeline"></a>
@@ -264,7 +267,7 @@ flowchart TD
 
 Implementation notes:
 - [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) clears run-scoped aggregates, then asks [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) to enumerate old/new files with [`IgnoredExtensions`](../README.md#configuration-table-en) already applied and to compute progress from the union of relative paths.
-- Discovery now flows through `IFileSystemService.EnumerateFiles(...)`, so ignored extensions are filtered while entries are streamed instead of first materializing the entire directory tree into an array.
+- Discovery now flows through [`IFileSystemService.EnumerateFiles(...)`](../Services/IFileSystemService.cs), so ignored extensions are filtered while entries are streamed instead of first materializing the entire directory tree into an array.
 - `PrecomputeIlCachesAsync()` runs before per-file classification so disassembler/cache warm-up does not distort the later decision path. It now streams distinct old/new absolute paths in configurable batches instead of building one extra all-files list first, which reduces peak memory pressure on very large trees.
 - The old side is the driving set. Missing matches in `new` become `Removed`, while leftovers in `remainingNewFilesAbsolutePathHashSet` become `Added` after old-side traversal completes.
 - Parallel mode only changes processing order. Because each relative path is removed from the remaining-new set before the expensive compare starts, the final classification rules are the same as in sequential execution.
@@ -292,7 +295,7 @@ flowchart TD
 Rules that are easy to break:
 - The first successful classification for a file is the final classification for that file.
 - IL comparison is only attempted after MD5 mismatch and only for files detected as .NET executables.
-- IL comparison ignores lines starting with `Constants.IL_MVID_LINE_PREFIX` (`// MVID:`) unconditionally because they are disassembler-emitted Module Version ID metadata and can change on rebuild without reflecting an executable IL change.
+- IL comparison ignores lines starting with [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs) (`// MVID:`) unconditionally because they are disassembler-emitted Module Version ID metadata and can change on rebuild without reflecting an executable IL change.
 - Additional IL ignore rules are substring-based and case-sensitive (`StringComparison.Ordinal`).
 - IL comparison must use the same disassembler identity and version label for old/new.
 - Text comparison can fall back from chunk-parallel mode to sequential mode on error, but only because chunk-parallel exceptions are allowed to bubble to `FilesAreEqualAsync(...)`.
@@ -303,9 +306,9 @@ Per-file mechanics:
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) distinguishes `NotDotNetExecutable` from `Failed`; [`FileDiffService`](../Services/FileDiffService.cs) logs a warning on `Failed` before skipping the IL path.
 - Once MD5 matches, the code records `MD5Match` and returns immediately; no IL comparison or text comparison runs after that.
 - The IL path delegates to [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs), which disassembles old/new via `DisassemblePairWithSameDisassemblerAsync(...)`, normalizes the comparison label, filters lines, optionally writes filtered IL text, and returns both equality and the disassembler label.
-- [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) covers this boundary with the preferred tool path: it builds the same tiny class library twice with `Deterministic=false`, confirms the DLL bytes differ, and then verifies that `dotnet-ildasm` still returns `ILMatch` after filtering.
+- [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) covers this boundary with the preferred tool path: it builds the same tiny class library twice with `Deterministic=false`, confirms the DLL bytes differ, and then verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) still returns `ILMatch` after filtering.
 - `BuildComparisonDisassemblerLabel(...)` is part of correctness. If old/new produce different tool identities or version labels, the code rejects that comparison and raises [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0).
-- `ShouldExcludeIlLine(...)` always strips lines starting with `Constants.IL_MVID_LINE_PREFIX` (`// MVID:`). If [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-en) is `true`, it also strips any substring from [`ILIgnoreLineContainingStrings`](../README.md#configuration-table-en) after trimming and deduplicating the configured values, using `StringComparison.Ordinal`.
+- `ShouldExcludeIlLine(...)` always strips lines starting with [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs) (`// MVID:`). If [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-en) is `true`, it also strips any substring from [`ILIgnoreLineContainingStrings`](../README.md#configuration-table-en) after trimming and deduplicating the configured values, using `StringComparison.Ordinal`.
 - Files that are not handled by IL comparison and whose extension is included in [`TextFileExtensions`](../README.md#configuration-table-en) are compared as text files. At that point, the code converts [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en) and [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en) into effective byte counts and uses those values to choose the comparison method.
 - If [`OptimizeForNetworkShares`](../README.md#configuration-table-en) is enabled, the code avoids chunk-parallel reads on remote storage and always uses sequential `DiffTextFilesAsync(...)`, regardless of file size. In local-optimized mode, it uses the old-side file size: below [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-en) it stays sequential, and at or above the threshold it splits the file into fixed-size chunks based on [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-en) and runs `DiffTextFilesParallelAsync(...)`.
 - If [`TextDiffParallelMemoryLimitMegabytes`](../README.md#configuration-table-en) is greater than `0`, [`FileDiffService`](../Services/FileDiffService.cs) treats it as an additional buffer budget for chunk-parallel text diff, logs the current managed-heap size, and reduces the effective worker count or falls back to sequential comparison when that budget cannot cover the requested parallelism.
@@ -357,11 +360,11 @@ catch (Exception ex)
 - Timestamp-regression warnings for files whose `new` last-modified time is older than `old`
 - Disassembler labels used during IL comparison
 
-The nested `DiffSummaryStatistics` sealed record (`AddedCount`, `RemovedCount`, `ModifiedCount`, `UnchangedCount`, `IgnoredCount`) and the `SummaryStatistics` computed property provide a single consistent snapshot of the five bucket counts. [`ReportGenerateService`](../Services/ReportGenerateService.cs) reads `SummaryStatistics` once per report to write the summary section, so callers do not need to access each collection individually.
+The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed record (`AddedCount`, `RemovedCount`, `ModifiedCount`, `UnchangedCount`, `IgnoredCount`) and the `SummaryStatistics` computed property provide a single consistent snapshot of the five bucket counts. [`ReportGenerateService`](../Services/ReportGenerateService.cs) reads `SummaryStatistics` once per report to write the summary section, so callers do not need to access each collection individually.
 
 [`ReportGenerateService`](../Services/ReportGenerateService.cs) depends on these assumptions:
 - `ResetAll()` must happen before any new run populates the instance.
-- The detail-result `Dictionary` must not contain stale entries left over from a previous run.
+- The detail-result [`Dictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2?view=net-8.0) must not contain stale entries left over from a previous run.
 - IL tool labels are only present for IL-based comparisons.
 - Report generation reads execution results only and must not start new comparisons.
 
@@ -386,12 +389,12 @@ The nested `DiffSummaryStatistics` sealed record (`AddedCount`, `RemovedCount`, 
 | Logging / UX | [`MaxLogGenerations`](../README.md#configuration-table-en), [`SpinnerFrames`](../README.md#configuration-table-en) | Controls log file retention and the console spinner animation |
 
 Additional internal defaults:
-- [`ProgramRunner`](../ProgramRunner.cs) currently applies non-configurable IL cache defaults from [`Common/Constants.cs`](../Common/Constants.cs): `2000` memory entries, `12` hours TTL, and `60` seconds for internal stats logs. Cross-project byte/timestamp literals reused by both projects live in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs).
+- [`ProgramRunner`](../ProgramRunner.cs) currently applies non-configurable IL cache defaults from [`Common/Constants.cs`](../Common/Constants.cs): [`Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT`](../Common/Constants.cs) (`2000` memory entries), [`Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS`](../Common/Constants.cs) (`12` hours TTL), and [`Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS`](../Common/Constants.cs) (`60` seconds for internal stats logs). Cross-project byte/timestamp literals reused by both projects live in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs).
 - Those values are intentionally documented in code because they trade off same-day rerun reuse against unbounded memory or log growth in a short-lived console process.
 
 ### Myers diff algorithm
 
-`TextDiffer` implements the Myers diff algorithm (E. W. Myers, 1986) instead of the classical O(N×M) Longest Common Subsequence dynamic-programming approach.
+[`TextDiffer`](../FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) implements the Myers diff algorithm ([E. W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986](http://www.xmailserver.org/diff2.pdf)) instead of the classical O(N×M) Longest Common Subsequence dynamic-programming approach.
 
 #### Why Myers diff?
 
@@ -447,12 +450,12 @@ The inline diff can be suppressed in three ways, each producing a visible `diff-
 | Trigger | Setting | Condition | Message shown |
 | --- | --- | --- | --- |
 | Edit distance too large | `InlineDiffMaxEditDistance` (default `4000`) | `D > InlineDiffMaxEditDistance` — too many insertions/deletions | `#N Inline diff skipped: edit distance too large (>M insertions/deletions in X vs Y lines). Increase InlineDiffMaxEditDistance in config to raise the limit.` |
-| Output lines capped mid-compute | `InlineDiffMaxOutputLines` (default `10000`) | `TextDiffer.Compute` reached the output-line budget; a `Truncated` row is appended and the partial diff is shown | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
+| Output lines capped mid-compute | `InlineDiffMaxOutputLines` (default `10000`) | [`TextDiffer.Compute`](../FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) reached the output-line budget; a `Truncated` row is appended and the partial diff is shown | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
 | Diff result too large | `InlineDiffMaxDiffLines` (default `10000`) | Total diff output (including hunk headers) exceeds the threshold *after* compute | `#N Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
 
 The edit-distance-exceeded and single-Truncated cases both render as a plain row (no `<details>` element), so the notice is visible without any click. The `InlineDiffMaxOutputLines` truncation renders *inside* the `<details>` block after a partial diff.
 
-> **ILMismatch entries** also require `ShouldOutputILText: true` (the default). `HtmlReportGenerateService` reads IL text directly from the `*_IL.txt` files produced by `ILTextOutputService` (under `Reports/<label>/IL/old` and `Reports/<label>/IL/new`). If `ShouldOutputILText` is `false`, those files are not written and the inline diff is silently omitted — no `diff-skipped` notice is shown.
+> **ILMismatch entries** also require `ShouldOutputILText: true` (the default). [`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs) reads IL text directly from the `*_IL.txt` files produced by [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs) (under `Reports/<label>/IL/old` and `Reports/<label>/IL/new`). If `ShouldOutputILText` is `false`, those files are not written and the inline diff is silently omitted — no `diff-skipped` notice is shown.
 
 ### Runtime mode resolution
 
@@ -467,7 +470,7 @@ flowchart TD
     F -- "No" --> D
 ```
 
-Network path detection is implemented in `FileSystemUtility.IsLikelyWindowsNetworkPath(...)`. It recognizes `\\`-prefixed UNC paths, `\\?\UNC\`-prefixed device paths, and `//`-prefixed forward-slash UNC paths (including IP-based forms such as `//192.168.1.1/share`).
+Network path detection is implemented in [`FileSystemUtility.IsLikelyWindowsNetworkPath(...)`](../FolderDiffIL4DotNet.Core/IO/FileSystemUtility.cs). It recognizes `\\`-prefixed UNC paths, `\\?\UNC\`-prefixed device paths, and `//`-prefixed forward-slash UNC paths (including IP-based forms such as `//192.168.1.1/share`).
 
 Practical effect of network-optimized mode:
 - Skip IL cache precompute and prefetch.
@@ -540,20 +543,20 @@ Current CI behavior:
 - Uploads TRX and coverage files as `TestAndCoverage`
 
 Release automation:
-- `release.yml` runs for pushed `v*` tags and manual dispatch with an explicit existing tag input
+- [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs for pushed `v*` tags and manual dispatch with an explicit existing tag input
 - Rebuilds, reruns coverage-gated tests, regenerates DocFX output, publishes the app, and removes `*.pdb`
 - Creates zipped publish/docs artifacts plus SHA-256 checksum files
 - Creates a GitHub Release from the existing tag with generated release notes
 
 Security automation:
-- `codeql.yml` analyzes both `csharp` and `actions` on `push`, `pull_request`, weekly schedule, and `workflow_dispatch`
-- The Checkout step uses `fetch-depth: 0` so Nerdbank.GitVersioning can compute version height from the full commit graph during the `csharp` autobuild
+- [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) analyzes both `csharp` and `actions` on `push`, `pull_request`, weekly schedule, and `workflow_dispatch`
+- The Checkout step uses `fetch-depth: 0` so [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) can compute version height from the full commit graph during the `csharp` autobuild
 - The Analyze step uses `continue-on-error: true` to tolerate the SARIF upload rejection that occurs when the repository's GitHub Default Setup code scanning is also active for the `actions` language
-- `dependabot.yml` opens weekly update PRs for both `nuget` dependencies and GitHub Actions
+- [`.github/dependabot.yml`](../.github/dependabot.yml) opens weekly update PRs for both `nuget` dependencies and GitHub Actions
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) protects the expected CI/release/security file presence and key settings from accidental removal
 
 Versioning:
-- [`version.json`](../version.json) uses Nerdbank.GitVersioning
+- [`version.json`](../version.json) uses [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning)
 - Informational version is embedded and later included in the generated report
 
 <a id="guide-en-skipped-tests"></a>
@@ -562,12 +565,12 @@ Versioning:
 Some tests report as **Skipped** when run locally. This is intentional and does not indicate a bug.
 
 Which tests skip and why:
-- **`DotNetDisassembleServiceTests`** (six tests) — these exercise fallback and blacklist logic using fake `#!/bin/sh` shell scripts created by [`WriteExecutable`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs). `File.SetUnixFileMode` and shell script execution are not available on Windows, so the tests call `Skip.If(OperatingSystem.IsWindows(), ...)` and report Skipped there.
-- **`RealDisassemblerE2ETests`** (one test) — this builds the same tiny class library twice with `Deterministic=false` and verifies that `dotnet-ildasm` produces `ILMatch` after MVID filtering. It calls `Skip.If(!CanRunDotNetIldasm(), ...)` and reports Skipped whenever `dotnet-ildasm` (or `dotnet ildasm`) is absent from `PATH`.
+- **[`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs)** (six tests) — these exercise fallback and blacklist logic using fake `#!/bin/sh` shell scripts created by [`WriteExecutable`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs). [`File.SetUnixFileMode`](https://learn.microsoft.com/en-us/dotnet/api/system.io.file.setunixfilemode?view=net-8.0) and shell script execution are not available on Windows, so the tests call `Skip.If(OperatingSystem.IsWindows(), ...)` and report Skipped there.
+- **[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs)** (one test) — this builds the same tiny class library twice with `Deterministic=false` and verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) produces `ILMatch` after MVID filtering. It calls `Skip.If(!CanRunDotNetIldasm(), ...)` and reports Skipped whenever [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) (or [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)) is absent from `PATH`.
 
 Why this is safe:
 - CI runs on Linux and installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) before the test step, so every test that skips locally runs in full on every push. A local Skipped result reflects a missing prerequisite in that environment, not a test failure.
-- The skippable tests use [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) from `Xunit.SkippableFact`, so the runner counts them as Skipped rather than Passed, making the distinction visible.
+- The skippable tests use [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) from [`Xunit.SkippableFact`](https://www.nuget.org/packages/Xunit.SkippableFact/1.5.23), so the runner counts them as Skipped rather than Passed, making the distinction visible.
 - If a previously Skipped test appears as **Failed**, that is a real issue and should be investigated. Skipped and Failed are distinct outcomes.
 
 For the complete list of affected tests and the `Skip.If` pattern, see [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-en-isolation).
@@ -609,7 +612,7 @@ Before merging behavior changes, check:
 - For unexpected network-mode behavior, verify both config flags and detected path classification.
 - When a result bucket looks wrong, inspect [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) population order before touching report formatting.
 - If a test becomes order-dependent, suspect leaked run-scoped state first.
-- If the banner or any console output shows `?` characters on Windows, the process is using the OEM code page. [`Program.cs`](../Program.cs) sets `Console.OutputEncoding = Encoding.UTF8` at the very start of `Main()` — before any output — to override this. On Linux and macOS the console is already UTF-8, so the assignment is effectively a no-op on those platforms.
+- If the banner or any console output shows `?` characters on Windows, the process is using the OEM code page. [`Program.cs`](../Program.cs) sets [`Console.OutputEncoding`](https://learn.microsoft.com/en-us/DOTNET/api/system.console.outputencoding?view=net-8.0) = `Encoding.UTF8` at the very start of `Main()` — before any output — to override this. On Linux and macOS the console is already UTF-8, so the assignment is effectively a no-op on those platforms.
 
 ---
 
@@ -677,8 +680,8 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 ```
 
 実行時に生成される主な成果物:
-- `Reports/<label>/diff_report.md`
-- [`ShouldGenerateHtmlReport`](../README.md#configuration-table-ja) が `true`（既定）のとき `Reports/<label>/diff_report.html`
+- `Reports/<label>/[`diff_report.md`](samples/diff_report.md)`
+- [`ShouldGenerateHtmlReport`](../README.md#configuration-table-ja) が `true`（既定）のとき `Reports/<label>/[`diff_report.html`](samples/diff_report.html)`
 - [`ShouldOutputILText`](../README.md#configuration-table-ja) が `true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
 - `Logs/log_YYYYMMDD.log`
 - ディスクキャッシュ有効かつカスタム保存先未指定時はアプリ基準ディレクトリ配下の `ILCache/`
@@ -686,10 +689,10 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 ## ソースコードのスタイル方針
 
 文字列整形や構造化は、まず局所性と読みやすさを優先します。
-- 固定書式で単発利用のメッセージは、`string.Format(...)` より補間文字列を優先します。
+- 固定書式で単発利用のメッセージは、[`string.Format(...)`](https://learn.microsoft.com/ja-jp/dotnet/api/system.string.format?view=net-8.0) より補間文字列を優先します。
 - 同じ文言テンプレートを複数箇所で意図的に共有する場合のみ、共通の書式定数やヘルパーを残します。
 - ドメイン非依存の helper は [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) へ置き、[`FolderDiffIL4DotNet/Services`](../Services/) はフォルダ差分の振る舞いに集中させてください。
-- プロジェクト横断で使うバイト換算値や日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) に集約し、アプリ固有の定数は [`Common/Constants.cs`](../Common/Constants.cs) で管理してください。`Constants.IL_MVID_LINE_PREFIX` のような IL ドメイン固有の文字列定数は `Common/Constants.cs` に置き、複数のサービスファイルに重複定義しないようにしてください。
+- プロジェクト横断で使うバイト換算値や日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) に集約し、アプリ固有の定数は [`Common/Constants.cs`](../Common/Constants.cs) で管理してください。[`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs) のような IL ドメイン固有の文字列定数は [`Common/Constants.cs`](../Common/Constants.cs) に置き、複数のサービスファイルに重複定義しないようにしてください。
 - `#region` は、ファイル構成や命名だけでは読みづらい具体的な事情がある場合に限って追加してください。
 
 ## アーキテクチャ概要
@@ -717,6 +720,7 @@ flowchart TD
     L --> O["ILTextOutputService"]
     F --> P["FileDiffResultLists"]
     G --> P
+    click P href "../Models/FileDiffResultLists.cs" "Open FileDiffResultLists"
 ```
 
 設計意図:
@@ -725,7 +729,7 @@ flowchart TD
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) は実行固有のパスとモード判定を不変オブジェクトとして保持します。
 - [`FolderDiffIL4DotNet.Core`](../FolderDiffIL4DotNet.Core/) は、フォルダ差分ドメインに依存しない console / diagnostics / I/O / text helper を収める再利用境界です。
 - コアサービスは、静的可変状態や場当たり的な `new` ではなく、コンストラクタ注入とインターフェースで接続されます。
-- [`IFileSystemService`](../Services/IFileSystemService.cs) と [`IFileComparisonService`](../Services/IFileComparisonService.cs) が、列挙/比較 I/O を切り出す最下層の差し替えポイントです。特に `IFileSystemService.EnumerateFiles(...)` は、巨大なフォルダでもフィルタ前に `string[]` を丸ごと確保しない遅延列挙を維持します。
+- [`IFileSystemService`](../Services/IFileSystemService.cs) と [`IFileComparisonService`](../Services/IFileComparisonService.cs) が、列挙/比較 I/O を切り出す最下層の差し替えポイントです。特に [`IFileSystemService.EnumerateFiles(...)`](../Services/IFileSystemService.cs) は、巨大なフォルダでもフィルタ前に `string[]` を丸ごと確保しない遅延列挙を維持します。
 - [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) は、比較対象への取り込み条件、無視ファイル記録、自動並列度の決定を集約し、[`FolderDiffService`](../Services/FolderDiffService.cs) へポリシー知識が広がりすぎないようにします。
 - [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) は、差分処理とレポート生成が共有する実行単位の集約ハブです。
 - [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) は逆アセンブル実行とキャッシュヒット/ストア追跡を担い、IL キャッシュのプリフェッチは [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) へ委譲します。コマンド判定・候補列挙・実行ファイルパス解決の共有静的ロジックは [`DisassemblerHelper`](../Services/DisassemblerHelper.cs) に集約し、両クラス間の重複を排除しています。
@@ -754,10 +758,12 @@ sequenceDiagram
     Runner->>Runner: DiffExecutionContext 構築
     Runner->>Scope: BuildRunServiceProvider()
     Runner->>Diff: ExecuteFolderDiffAsync()
-    Diff-->>Runner: FileDiffResultLists に結果集約
+    Diff-->>Runner: 集約済みの差分結果を返す
     Runner->>Report: GenerateDiffReport(...)
     Runner-->>CLI: 型付き終了コード (0/2/3/4/1)
 ```
+
+差分フェーズは [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を返し、その内容を使ってレポート生成と完了時の警告出力を行います。
 
 ### `RunAsync` の中で起きること
 
@@ -772,8 +778,8 @@ sequenceDiagram
 9. ネットワーク共有判定を含む [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) を組み立てます。
 10. 実行単位の DI コンテナを構築します。
 11. フォルダ比較を実行し、進捗表示を終了します。
-12. 集約結果から `diff_report.md` を生成します。
-13. [`ShouldGenerateHtmlReport`](../README.md#configuration-table-ja) が `true`（既定）のとき、集約結果から `diff_report.html` を生成します。HTML ファイルは localStorage 自動保存とダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。
+12. 集約結果から [`diff_report.md`](samples/diff_report.md) を生成します。
+13. [`ShouldGenerateHtmlReport`](../README.md#configuration-table-ja) が `true`（既定）のとき、集約結果から [`diff_report.html`](samples/diff_report.html) を生成します。HTML ファイルは localStorage 自動保存とダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。
 14. フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析/バリデーション失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。
 
 実装上は、`RunAsync()` 自体を短く保つため、これらを明示的なフェーズとして private helper へ分割しています。
@@ -781,11 +787,11 @@ sequenceDiagram
 失敗時の扱い:
 - [`ProgramRunner`](../ProgramRunner.cs) はアプリ境界で小さな型付き Result を使い、すべての失敗を 1 つの終了コードへ潰さないようにしています。
 - 引数検証エラー、未知フラグ、入力パス不足/不正は終了コード `2` です。
-- [`ConfigService`](../Services/ConfigService.cs) の `config.json` 未検出、解析失敗、設定読込 I/O 失敗、または [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) が失敗した場合は終了コード `3` です。
+- [`ConfigService`](../Services/ConfigService.cs) の [`config.json`](../config.json) 未検出、解析失敗、設定読込 I/O 失敗、または [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) が失敗した場合は終了コード `3` です。
 - 差分実行やレポート生成の失敗、さらに IL 比較由来の致命的な [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は終了コード `4` です。
 - 明示分類から漏れた想定外の内部エラーだけを終了コード `1` として扱います。
 - IL 比較由来の [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は致命的な例外扱いとし、実行全体を止めるものとします。
-- `FolderDiffService.ExecuteFolderDiffAsync()` は、パス検証エラーや [`DirectoryNotFoundException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.directorynotfoundexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) などの想定される実行時例外を error として記録して再スローします。本当に想定外の例外だけを別文言の "unexpected error" として記録します。
+- [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) は、パス検証エラーや [`DirectoryNotFoundException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.directorynotfoundexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) などの想定される実行時例外を error として記録して再スローします。本当に想定外の例外だけを別文言の "unexpected error" として記録します。
 - 出力ファイルの読み取り専用化はベストエフォートで、失敗しても警告止まりです。
 
 <a id="guide-ja-di-layout"></a>
@@ -842,16 +848,16 @@ sequenceDiagram
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | ファイル単位の判定木 | `MD5 -> IL -> text -> fallback` |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL 比較、行除外、任意 IL 出力 | 同一逆アセンブラ制約を保証 |
-| [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | ツール探索、逆アセンブル実行、キャッシュヒット/ストア追跡、ブラックリスト | 外部ツール境界；プリフェッチは `ILCachePrefetcher` へ委譲 |
-| [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL キャッシュのプリフェッチ（全候補コマンド×引数パターンの事前ヒット確認） | `DotNetDisassembleService` から分離；独自のヒットカウンタを保持 |
-| [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | 共有静的ヘルパー：コマンド判定・候補列挙・実行ファイルパス解決 | `DotNetDisassembleService` と `ILCachePrefetcher` の両方が使用；インスタンス状態なし |
-| [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | ツール別失敗数管理・設定可能な TTL ブラックリスト | スレッドセーフな `ConcurrentDictionary`；TTL は設定値 `DisassemblerBlacklistTtlMinutes` を使用 |
+| [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | ツール探索、逆アセンブル実行、キャッシュヒット/ストア追跡、ブラックリスト | 外部ツール境界；プリフェッチは [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) へ委譲 |
+| [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL キャッシュのプリフェッチ（全候補コマンド×引数パターンの事前ヒット確認） | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) から分離；独自のヒットカウンタを保持 |
+| [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | 共有静的ヘルパー：コマンド判定・候補列挙・実行ファイルパス解決 | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) と [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) の両方が使用；インスタンス状態なし |
+| [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | ツール別失敗数管理・設定可能な TTL ブラックリスト | スレッドセーフな [`ConcurrentDictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0)；TTL は設定値 `DisassemblerBlacklistTtlMinutes` を使用 |
 | [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | IL キャッシュの公開 API と調停 | メモリ/ディスクの詳細は専用コンポーネントへ委譲 |
 | [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | メモリ上の IL / MD5 キャッシュ | LRU と TTL を担当 |
 | [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | IL キャッシュのディスク永続化とクォータ制御 | キャッシュファイル I/O とトリミングを担当 |
-| [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | `FileDiffResultLists` を読むだけ；`_sectionWriters` を `IReportSectionWriter` 経由で反復 |
-| [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | `ReportGenerateService` 内に 10 個のプライベートネストクラスで実装 |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | `FileDiffResultLists` を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 `diff_report.html` を生成；`ShouldGenerateHtmlReport` が `false` のときはスキップ |
+| [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；`_sectionWriters` を [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) 経由で反復 |
+| [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | [`ReportGenerateService`](../Services/ReportGenerateService.cs) 内に 10 個のプライベートネストクラスで実装 |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；`ShouldGenerateHtmlReport` が `false` のときはスキップ |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態 |
 
 <a id="guide-ja-comparison-pipeline"></a>
@@ -878,7 +884,7 @@ flowchart TD
 
 実装上の補足:
 - [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) は実行単位の集計を初期化し、その後 [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs) へ [`IgnoredExtensions`](../README.md#configuration-table-ja) 適用済み old/new 一覧の列挙と相対パス和集合件数の算出を委譲します。
-- 列挙は `IFileSystemService.EnumerateFiles(...)` 経由の遅延列挙で進むため、巨大フォルダでも全件配列化してからフィルタする構造を避けています。
+- 列挙は [`IFileSystemService.EnumerateFiles(...)`](../Services/IFileSystemService.cs) 経由の遅延列挙で進むため、巨大フォルダでも全件配列化してからフィルタする構造を避けています。
 - `PrecomputeIlCachesAsync()` はファイルごとの本判定より前に走り、逆アセンブラや IL キャッシュのウォームアップを先に済ませます。あわせて、大規模ツリーでも old/new 全件の追加リストをもう 1 本作らないよう、重複排除済みパスを設定可能なバッチ単位で流します。
 - 走査の主導権は old 側にあります。new 側に対応がなければ `Removed`、最後まで `remainingNewFilesAbsolutePathHashSet` に残ったものが `Added` です。
 - 並列実行で変わるのは処理順序だけです。高コストな比較に入る前に new 側の集合から対象の相対パスを外すため、最終的な分類結果のルール自体は逐次実行時と変わりません。
@@ -906,7 +912,7 @@ flowchart TD
 壊しやすい前提:
 - 1 ファイルで最初に確定した分類がそのファイルの最終分類です。
 - IL 比較は MD5 不一致の後、かつ .NET 実行可能ファイルにのみ進みます。
-- IL 比較では `Constants.IL_MVID_LINE_PREFIX`（`// MVID:`）で始まる行を常に無視します。これは逆アセンブラが出力する Module Version ID メタデータで、再ビルドのたびに変わり得るため、アセンブリの中身が実質的に同じでも、この行だけで差分ありと判定されてしまうことがあるためです。
+- IL 比較では [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs)（`// MVID:`）で始まる行を常に無視します。これは逆アセンブラが出力する Module Version ID メタデータで、再ビルドのたびに変わり得るため、アセンブリの中身が実質的に同じでも、この行だけで差分ありと判定されてしまうことがあるためです。
 - 追加の IL 行無視は部分一致で、大文字小文字を区別します（`StringComparison.Ordinal`）。
 - old/new の IL 比較は、同じ逆アセンブラ識別子とバージョン表記でなければなりません。
 - テキスト比較は、並列チャンク経路で例外が出た場合に逐次比較へフォールバックします。この挙動は、並列比較側で例外を握りつぶさず `FilesAreEqualAsync(...)` まで伝播させる前提で成り立っています。
@@ -917,9 +923,9 @@ flowchart TD
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) は `NotDotNetExecutable` と `Failed` を区別します。[`FileDiffService`](../Services/FileDiffService.cs) は `Failed` の場合に warning を出して IL 経路をスキップします。
 - MD5 が一致した時点で `MD5Match` を記録して即終了し、その後に IL やテキスト比較へは進みません。
 - IL 経路は [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs) に委譲され、内部で `DisassemblePairWithSameDisassemblerAsync(...)`、比較用ラベル正規化、行除外、任意の IL テキスト出力までをまとめて担当します。
-- [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) では、この境界を推奨ツール経路付きで確認します。`Deterministic=false` の小さなクラスライブラリを 2 回ビルドして DLL バイト列が異なることを確認したうえで、`dotnet-ildasm` のフィルタ後 IL では `ILMatch` になることを検証します。
+- [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) では、この境界を推奨ツール経路付きで確認します。`Deterministic=false` の小さなクラスライブラリを 2 回ビルドして DLL バイト列が異なることを確認したうえで、[`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) のフィルタ後 IL では `ILMatch` になることを検証します。
 - `BuildComparisonDisassemblerLabel(...)` は正しさの一部です。old/new でツール識別やバージョン表記がずれた場合は、その比較を認めず [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) にします。
-- `ShouldExcludeIlLine(...)` は `Constants.IL_MVID_LINE_PREFIX`（`// MVID:`）で始まる行を必ず除外します。さらに [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-ja) が `true` の場合は、[`ILIgnoreLineContainingStrings`](../README.md#configuration-table-ja) に設定された文字列を trim・重複排除したうえで、`StringComparison.Ordinal` の部分一致で除外します。
+- `ShouldExcludeIlLine(...)` は [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs)（`// MVID:`）で始まる行を必ず除外します。さらに [`ShouldIgnoreILLinesContainingConfiguredStrings`](../README.md#configuration-table-ja) が `true` の場合は、[`ILIgnoreLineContainingStrings`](../README.md#configuration-table-ja) に設定された文字列を trim・重複排除したうえで、`StringComparison.Ordinal` の部分一致で除外します。
 - `.NET` 実行可能として IL 比較の対象にならず、かつ拡張子が [`TextFileExtensions`](../README.md#configuration-table-ja) に含まれるファイルは、テキストファイルとして比較します。このとき [`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja) と [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) を実効バイト数に変換し、比較方法を決めます。
 - [`OptimizeForNetworkShares`](../README.md#configuration-table-ja) が有効な場合は、ネットワーク共有上でチャンクごとに何度もファイルを開閉するコストを避けるため、ファイルサイズにかかわらず `DiffTextFilesAsync(...)` による逐次比較を使います。ローカル最適化時は old 側ファイルのサイズを基準にし、[`TextDiffParallelThresholdKilobytes`](../README.md#configuration-table-ja) 未満なら逐次比較、以上なら [`TextDiffChunkSizeKilobytes`](../README.md#configuration-table-ja) ごとの固定長チャンクに分割して `DiffTextFilesParallelAsync(...)` で並列比較します。
 - [`TextDiffParallelMemoryLimitMegabytes`](../README.md#configuration-table-ja) が `0` より大きい場合、[`FileDiffService`](../Services/FileDiffService.cs) はそれを並列テキスト比較で追加確保してよいバッファ予算として扱い、その時点の managed heap 使用量をログへ残しつつ、実効ワーカー数を下げるか逐次比較へフォールバックします。
@@ -971,11 +977,11 @@ catch (Exception ex)
 - Modified と判定されたファイルのうち、`new` 側の更新日時が `old` 側より古いものの警告情報
 - IL 比較で使用した逆アセンブラ表示ラベル
 
-ネストされた `DiffSummaryStatistics` sealed レコード（`AddedCount`、`RemovedCount`、`ModifiedCount`、`UnchangedCount`、`IgnoredCount`）と `SummaryStatistics` 計算プロパティが、5 つのバケット数を一度に取得できる一貫したスナップショットを提供します。[`ReportGenerateService`](../Services/ReportGenerateService.cs) はレポートのサマリーセクションを書く際に `SummaryStatistics` を一度参照するため、各コレクションを個別に参照する必要はありません。
+ネストされた [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed レコード（`AddedCount`、`RemovedCount`、`ModifiedCount`、`UnchangedCount`、`IgnoredCount`）と `SummaryStatistics` 計算プロパティが、5 つのバケット数を一度に取得できる一貫したスナップショットを提供します。[`ReportGenerateService`](../Services/ReportGenerateService.cs) はレポートのサマリーセクションを書く際に `SummaryStatistics` を一度参照するため、各コレクションを個別に参照する必要はありません。
 
 [`ReportGenerateService`](../Services/ReportGenerateService.cs) が前提としている仕様:
 - 新しい実行前に `ResetAll()` が必ず呼ばれていること
-- 前回の実行に由来する不要なエントリが詳細結果の `Dictionary` に残っていないこと
+- 前回の実行に由来する不要なエントリが詳細結果の [`Dictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.generic.dictionary-2?view=net-8.0) に残っていないこと
 - IL のラベルは IL 比較時だけ存在すること
 - レポート生成は、実行結果の読み取りであり、新しい比較を開始しないこと
 
@@ -1000,12 +1006,12 @@ catch (Exception ex)
 | ログ / UX | [`MaxLogGenerations`](../README.md#configuration-table-ja), [`SpinnerFrames`](../README.md#configuration-table-ja) | ログファイルの保持世代数とコンソールスピナーアニメーションを制御 |
 
 補足の内部既定値:
-- [`ProgramRunner`](../ProgramRunner.cs) は、[`Common/Constants.cs`](../Common/Constants.cs) で定義した IL キャッシュ内部既定値として、メモリ `2000` 件、TTL `12` 時間、内部統計ログ `60` 秒を使います。両プロジェクトで共通利用するバイト換算値と日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) にあります。
+- [`ProgramRunner`](../ProgramRunner.cs) は、[`Common/Constants.cs`](../Common/Constants.cs) で定義した IL キャッシュ内部既定値として、[`Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT`](../Common/Constants.cs)（メモリ `2000` 件）、[`Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS`](../Common/Constants.cs)（TTL `12` 時間）、[`Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS`](../Common/Constants.cs)（内部統計ログ `60` 秒）を使います。両プロジェクトで共通利用するバイト換算値と日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) にあります。
 - これらは同日中の再実行で再利用を効かせつつ、短命なコンソールプロセスとしてメモリ消費やログ肥大を抑えるため、コード側で理由付きの既定値として維持しています。
 
-### Myers diff アルゴリズム
+### Myers diff algorithm
 
-`TextDiffer` は古典的な O(N×M) の最長共通部分列（LCS）動的計画法の代わりに、Myers diff アルゴリズム（E. W. Myers, 1986）を実装しています。
+[`TextDiffer`](../FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) は古典的な O(N×M) の最長共通部分列（LCS）動的計画法の代わりに、Myers diff algorithm（[E. W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986](http://www.xmailserver.org/diff2.pdf)）を実装しています。
 
 #### なぜ Myers diff なのか
 
@@ -1061,12 +1067,12 @@ d = 0, 1, 2, … のステップで:
 | トリガー | 設定 | 条件 | 表示メッセージ |
 | --- | --- | --- | --- |
 | 編集距離が大きすぎる | `InlineDiffMaxEditDistance`（既定 `4000`） | `D > InlineDiffMaxEditDistance` — 挿入・削除行数が多すぎる | `#N Inline diff skipped: edit distance too large (>M insertions/deletions in X vs Y lines). Increase InlineDiffMaxEditDistance in config to raise the limit.` |
-| 出力行数が計算途中で上限に達した | `InlineDiffMaxOutputLines`（既定 `10000`） | `TextDiffer.Compute` が出力行数予算に達し、`Truncated` 行を末尾に追加して部分差分を返す | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
+| 出力行数が計算途中で上限に達した | `InlineDiffMaxOutputLines`（既定 `10000`） | [`TextDiffer.Compute`](../FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) が出力行数予算に達し、`Truncated` 行を末尾に追加して部分差分を返す | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
 | 差分結果が大きすぎる | `InlineDiffMaxDiffLines`（既定 `10000`） | 計算後の差分出力行数合計（ハンクヘッダ含む）が閾値を超えた | `#N Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
 
 編集距離超過と単一 Truncated 行のケースはいずれも `<details>` ラッパーなしのプレーン行としてレンダリングされるため、クリック不要でメッセージが見えます。`InlineDiffMaxOutputLines` による打ち切りは `<details>` ブロック内に部分差分の末尾として表示されます。
 
-> **ILMismatch エントリ**はさらに `ShouldOutputILText: true`（既定値）が必要です。`HtmlReportGenerateService` は `ILTextOutputService` が `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に書き出した `*_IL.txt` ファイルを直接読み込んでインライン差分を生成します。`ShouldOutputILText` が `false` の場合、これらのファイルは生成されずインライン差分はサイレントに省略されます（`diff-skipped` 通知は表示されません）。
+> **ILMismatch エントリ**はさらに `ShouldOutputILText: true`（既定値）が必要です。[`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs) は [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs) が `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に書き出した `*_IL.txt` ファイルを直接読み込んでインライン差分を生成します。`ShouldOutputILText` が `false` の場合、これらのファイルは生成されずインライン差分はサイレントに省略されます（`diff-skipped` 通知は表示されません）。
 
 ### 実行モードの決定
 
@@ -1081,7 +1087,7 @@ flowchart TD
     F -- "いいえ" --> D
 ```
 
-ネットワークパスの判定は `FileSystemUtility.IsLikelyWindowsNetworkPath(...)` で行います。`\\` プレフィックスの UNC パス、`\\?\UNC\` プレフィックスのデバイスパス、および `//` プレフィックスのスラッシュ形式 UNC パス（`//192.168.1.1/share` のような IP ベースの形式を含む）を検出します。
+ネットワークパスの判定は [`FileSystemUtility.IsLikelyWindowsNetworkPath(...)`](../FolderDiffIL4DotNet.Core/IO/FileSystemUtility.cs) で行います。`\\` プレフィックスの UNC パス、`\\?\UNC\` プレフィックスのデバイスパス、および `//` プレフィックスのスラッシュ形式 UNC パス（`//192.168.1.1/share` のような IP ベースの形式を含む）を検出します。
 
 ネットワーク最適化モードの実際の影響:
 - IL キャッシュの事前計算と先読みをスキップします。
@@ -1154,20 +1160,20 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - TRX とカバレッジ関連を `TestAndCoverage` としてアップロード
 
 リリース自動化:
-- `release.yml` は `v*` タグ push と、既存タグを明示指定する `workflow_dispatch` で実行します
+- [`.github/workflows/release.yml`](../.github/workflows/release.yml) は `v*` タグ push と、既存タグを明示指定する `workflow_dispatch` で実行します
 - 再ビルド、カバレッジゲート付き再テスト、DocFX 再生成、アプリ publish、`*.pdb` 除去まで行います
 - publish 出力 ZIP、ドキュメント ZIP、SHA-256 チェックサムを生成します
 - 既存タグから GitHub Release を作成し、自動生成リリースノートを付けます
 
 セキュリティ自動化:
-- `codeql.yml` は `csharp` と `actions` を対象に、`push` / `pull_request` / 週次スケジュール / `workflow_dispatch` で解析します
-- Checkout ステップでは `fetch-depth: 0` を指定し、`csharp` の autobuild 時に Nerdbank.GitVersioning がフルコミット履歴からバージョン計算できるようにします
+- [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) は `csharp` と `actions` を対象に、`push` / `pull_request` / 週次スケジュール / `workflow_dispatch` で解析します
+- Checkout ステップでは `fetch-depth: 0` を指定し、`csharp` の autobuild 時に [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) がフルコミット履歴からバージョン計算できるようにします
 - Analyze ステップは `continue-on-error: true` を設定し、リポジトリの GitHub Default Setup コードスキャンが有効なとき `actions` 言語の SARIF アップロードが拒否されてもジョブが失敗しないようにします
-- `dependabot.yml` は `nuget` 依存関係と GitHub Actions の更新 PR を週次で作成します
+- [`.github/dependabot.yml`](../.github/dependabot.yml) は `nuget` 依存関係と GitHub Actions の更新 PR を週次で作成します
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) で CI / リリース / セキュリティ設定ファイルの存在と主要設定の剥がれを検知します
 
 バージョニング:
-- [`version.json`](../version.json) で Nerdbank.GitVersioning を利用
+- [`version.json`](../version.json) で [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) を利用
 - Informational Version が埋め込まれ、生成レポートにも出力されます
 
 <a id="guide-ja-skipped-tests"></a>
@@ -1176,12 +1182,12 @@ API リファレンス生成とサイト構築には DocFX を使います。
 ローカルで実行すると一部テストが **Skipped** と表示されることがあります。これは意図した挙動であり、バグではありません。
 
 スキップされるテストとその理由:
-- **`DotNetDisassembleServiceTests`**（6 件）— 偽の `#!/bin/sh` シェルスクリプトを [`WriteExecutable`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) で生成し、フォールバック・ブラックリスト挙動を決定的に検証します。`File.SetUnixFileMode` およびシェルスクリプトの実行は Windows では使えないため、`Skip.If(OperatingSystem.IsWindows(), ...)` を呼び出して Skipped を報告します。
-- **`RealDisassemblerE2ETests`**（1 件）— `Deterministic=false` で 2 回ビルドした同一クラスライブラリを `dotnet-ildasm` が MVID 除外後に `ILMatch` と判定することを確認します。`PATH` に `dotnet-ildasm`（または `dotnet ildasm`）が見つからない場合は `Skip.If(!CanRunDotNetIldasm(), ...)` を呼び出して Skipped を報告します。
+- **[`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs)**（6 件）— 偽の `#!/bin/sh` シェルスクリプトを [`WriteExecutable`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) で生成し、フォールバック・ブラックリスト挙動を決定的に検証します。[`File.SetUnixFileMode`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.file.setunixfilemode?view=net-8.0) およびシェルスクリプトの実行は Windows では使えないため、`Skip.If(OperatingSystem.IsWindows(), ...)` を呼び出して Skipped を報告します。
+- **[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs)**（1 件）— `Deterministic=false` で 2 回ビルドした同一クラスライブラリを [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) が MVID 除外後に `ILMatch` と判定することを確認します。`PATH` に [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)（または [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)）が見つからない場合は `Skip.If(!CanRunDotNetIldasm(), ...)` を呼び出して Skipped を報告します。
 
 なぜ安全か:
 - CI は Linux 上で動き、テストステップの前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールします。そのため、ローカルでスキップされるテストはすべて push のたびにフルで実行されます。ローカルの Skipped はその環境で前提条件が欠けていることを示すだけで、テストの失敗ではありません。
-- スキップ対象のテストは `Xunit.SkippableFact` の [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) を使うため、ランナーは Passed ではなく Skipped として別カウントで表示し、区別が明確になっています。
+- スキップ対象のテストは [`Xunit.SkippableFact`](https://www.nuget.org/packages/Xunit.SkippableFact/1.5.23) の [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) を使うため、ランナーは Passed ではなく Skipped として別カウントで表示し、区別が明確になっています。
 - これまで Skipped だったテストが **Failed** になった場合は実際の問題であり、調査が必要です。Skipped と Failed は異なる結果です。
 
 スキップ対象テストの一覧と `Skip.If` パターンの詳細は [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-ja-isolation) を参照してください。
@@ -1223,4 +1229,4 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - ネットワーク共有モードが想定外なら、設定フラグと自動判定結果の両方を確認してください。
 - バケット分類がおかしい場合は、レポート整形より前に [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) の投入順を追ってください。
 - テストが順序依存になったら、まず実行スコープ状態のリークを疑ってください。
-- Windows でバナーやコンソール出力が `?` になる場合は、プロセスが OEM コードページ（CP932/CP437 等）を使用しています。[`Program.cs`](../Program.cs) の `Main()` 先頭で `Console.OutputEncoding = Encoding.UTF8` を設定することで回避しています。Linux / macOS ではコンソールがすでに UTF-8 のため、この設定は実質ノーオペレーションです。
+- Windows でバナーやコンソール出力が `?` になる場合は、プロセスが OEM コードページ（CP932/CP437 等）を使用しています。[`Program.cs`](../Program.cs) の `Main()` 先頭で [`Console.OutputEncoding`](https://learn.microsoft.com/ja-jp/DOTNET/api/system.console.outputencoding?view=net-8.0) = `Encoding.UTF8` を設定することで回避しています。Linux / macOS ではコンソールがすでに UTF-8 のため、この設定は実質ノーオペレーションです。

@@ -29,7 +29,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FolderDiffIL4DotNet.Core\FolderDiffIL4DotNet.Core.csproj" />
     <ProjectReference Include="..\FolderDiffIL4DotNet.csproj" />
-    <!-- FakeDisassembler is a helper executable used by DotNetDisassembleServiceTests -->
+    <!-- FakeDisassembler is a helper executable used by DotNetDisassembleServiceTests (Services/DotNetDisassembleServiceTests.cs) -->
     <ProjectReference Include="Helpers\FakeDisassembler.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>false</Private>

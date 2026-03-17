@@ -79,7 +79,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--help`, `-h` | Show help and exit (code `0`). |
 | `--version` | Show the application version and exit (code `0`). |
 | `--no-pause` | Skip key-wait at process end. |
-| `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
+| `--config <path>` | Load config from `<path>` instead of the default `<exe>/[`config.json`](config.json)`. |
 | `--threads <N>` | Override `MaxParallelism` for this run (`0` = auto). |
 | `--no-il-cache` | Disable the IL cache for this run. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
@@ -97,8 +97,8 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 ```
 
 Main output:
-- `Reports/<label>/diff_report.md`
-- `Reports/<label>/diff_report.html` (disable with `"ShouldGenerateHtmlReport": false` in `config.json`)
+- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
+- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json))
 - Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#configuration-table-en) is `true`
 
 Process exit codes:
@@ -118,7 +118,7 @@ See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample o
 <a id="readme-en-html-report"></a>
 ## Interactive HTML Review Report
 
-Each run also produces **`diff_report.html`** alongside `diff_report.md` (disable with `"ShouldGenerateHtmlReport": false` in `config.json`).
+Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** alongside [`diff_report.md`](doc/samples/diff_report.md) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json)).
 
 The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. Every file entry is displayed in a table with interactive columns for sign-off:
 
@@ -130,7 +130,7 @@ The HTML report is a self-contained single file that opens in any browser — no
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
 | Diff Reason | Diff type only: `MD5Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. |
-| Disassembler | Disassembler label and version used for IL comparison (e.g. `dotnet-ildasm (version: dotnet ildasm 0.12.2.0)`); empty for non-IL files |
+| Disassembler | Disassembler label and version used for IL comparison (e.g. [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm 0.12.2.0)`); empty for non-IL files |
 
 Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
@@ -268,7 +268,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-shouldwarnwhennewfiletimestampisolderthanoldfiletimestamp">
       <td><code>ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp</code></td>
       <td><code>true</code></td>
-      <td>Warns if a <strong>modified</strong> file in <code>new</code> has an older last-modified timestamp than the matching file in <code>old</code>, prints the warning at the end of the run, and appends a final <code>Warnings</code> section to <code>diff_report.md</code>. Unchanged files are excluded from this check.</td>
+      <td>Warns if a <strong>modified</strong> file in <code>new</code> has an older last-modified timestamp than the matching file in <code>old</code>, prints the warning at the end of the run, and appends a final <code>Warnings</code> section to <a href="doc/samples/diff_report.md"><code>diff_report.md</code></a>. Unchanged files are excluded from this check.</td>
     </tr>
     <tr id="config-en-maxparallelism">
       <td><code>MaxParallelism</code></td>
@@ -353,7 +353,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-inlinediffmaxeditdistance">
       <td><code>InlineDiffMaxEditDistance</code></td>
       <td><code>4000</code></td>
-      <td>Maximum allowed edit distance (total inserted + deleted lines) for inline diff computation. If the actual diff exceeds this value the inline diff is skipped. Uses <a href="https://en.wikipedia.org/wiki/Diff#Algorithm">Myers diff</a> (O(D²&nbsp;+&nbsp;N&nbsp;+&nbsp;M)) so very large files with few changes are handled efficiently — file size alone does not cause a skip.</td>
+      <td>Maximum allowed edit distance (total inserted + deleted lines) for inline diff computation. If the actual diff exceeds this value the inline diff is skipped. Uses Myers diff algorithm (<a href="http://www.xmailserver.org/diff2.pdf">E. W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986</a>) with O(D²&nbsp;+&nbsp;N&nbsp;+&nbsp;M) complexity, so very large files with few changes are handled efficiently. File size alone does not cause a skip.</td>
     </tr>
     <tr id="config-en-inlinediffmaxdifflines">
       <td><code>InlineDiffMaxDiffLines</code></td>
@@ -373,14 +373,14 @@ Override only the settings you want to change. For example:
     <tr id="config-en-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
       <td><code>true</code></td>
-      <td>When <code>true</code>, generates <code>diff_report.html</code> alongside <code>diff_report.md</code>. The HTML file is a self-contained interactive review document with checkboxes, text inputs, localStorage auto-save, and a download function that bakes the current review state into a portable snapshot. Set to <code>false</code> to produce only the Markdown report.</td>
+      <td>When <code>true</code>, generates <a href="doc/samples/diff_report.html"><code>diff_report.html</code></a> alongside <a href="doc/samples/diff_report.md"><code>diff_report.md</code></a>. The HTML file is a self-contained interactive review document with checkboxes, text inputs, localStorage auto-save, and a download function that bakes the current review state into a portable snapshot. Set to <code>false</code> to produce only the Markdown report.</td>
     </tr>
   </tbody>
 </table>
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#configuration-table-en) and [`TextFileExtensions`](#configuration-table-en) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
-- After loading `config.json`, if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; `TextDiffChunkSizeKilobytes` must be less than `TextDiffParallelThresholdKilobytes`; and `SpinnerFrames` must contain at least one element.
+- After loading [`config.json`](config.json), if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; `TextDiffChunkSizeKilobytes` must be less than `TextDiffParallelThresholdKilobytes`; and `SpinnerFrames` must contain at least one element.
 - **JSON syntax errors** (e.g. a trailing comma after the last property or array element) are caught immediately at startup, logged to the run log file, and printed to the console in red with the line number and a hint — the run exits with code `3`. Standard JSON does not allow trailing commas: `"Key": "value",}` is invalid; remove the final comma.
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#configuration-table-en).
@@ -390,8 +390,8 @@ Notes:
 <a id="readme-en-generated-artifacts"></a>
 ## Generated Artifacts
 
-- `Reports/<label>/diff_report.md`
-- `Reports/<label>/diff_report.html` (unless `ShouldGenerateHtmlReport` is `false`)
+- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
+- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (unless `ShouldGenerateHtmlReport` is `false`)
 - `Logs/log_YYYYMMDD.log`
 - Optional: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
@@ -488,7 +488,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--help`, `-h` | 使い方を表示してコード `0` で終了します。 |
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
-| `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
+| `--config <path>` | デフォルトの `<exe>/[`config.json`](config.json)` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り `MaxParallelism` を上書きします（`0` = 自動）。 |
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
@@ -506,8 +506,8 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 ```
 
 主な出力:
-- `Reports/<label>/diff_report.md`
-- `Reports/<label>/diff_report.html`（`config.json` で `"ShouldGenerateHtmlReport": false` を指定すると無効化可）
+- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
+- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化可）
 - [`ShouldOutputILText`](#configuration-table-ja) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
 
 プロセス終了コード:
@@ -527,7 +527,7 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 <a id="readme-ja-html-report"></a>
 ## インタラクティブ HTML レビューレポート
 
-実行のたびに `diff_report.md` と並行して **`diff_report.html`** も生成されます（`config.json` で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
+実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
 HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 
@@ -539,7 +539,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
 | Diff Reason | 差分タイプのみ: `MD5Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など |
-| Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: `dotnet-ildasm (version: dotnet ildasm 0.12.2.0)`）。IL 比較対象外のファイルは空欄 |
+| Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm 0.12.2.0)`）。IL 比較対象外のファイルは空欄 |
 
 Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 
@@ -676,7 +676,7 @@ flowchart TD
     <tr id="config-ja-shouldwarnwhennewfiletimestampisolderthanoldfiletimestamp">
       <td><code>ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp</code></td>
       <td><code>true</code></td>
-      <td><strong>Modified</strong> と判定されたファイルのうち、<code>new</code> 側の更新日時が対応する <code>old</code> 側より古いものを検出し、実行終了時のコンソールと <code>diff_report.md</code> 末尾の <code>Warnings</code> セクションへ一覧を出力します。Unchanged ファイルはこのチェックの対象外です。</td>
+      <td><strong>Modified</strong> と判定されたファイルのうち、<code>new</code> 側の更新日時が対応する <code>old</code> 側より古いものを検出し、実行終了時のコンソールと <a href="doc/samples/diff_report.md"><code>diff_report.md</code></a> 末尾の <code>Warnings</code> セクションへ一覧を出力します。Unchanged ファイルはこのチェックの対象外です。</td>
     </tr>
     <tr id="config-ja-maxparallelism">
       <td><code>MaxParallelism</code></td>
@@ -761,7 +761,7 @@ flowchart TD
     <tr id="config-ja-inlinediffmaxeditdistance">
       <td><code>InlineDiffMaxEditDistance</code></td>
       <td><code>4000</code></td>
-      <td>インライン差分計算に許容する最大編集距離（挿入行数 + 削除行数の合計）。実際の差分がこの値を超えた場合はインライン差分の表示をスキップします。<a href="https://en.wikipedia.org/wiki/Diff#Algorithm">Myers diff</a>（O(D²&nbsp;+&nbsp;N&nbsp;+&nbsp;M)）を使用するため、差分が少なければ数百万行のファイルも高速に処理できます。ファイルサイズ単体はスキップの原因になりません。</td>
+      <td>インライン差分計算に許容する最大編集距離（挿入行数 + 削除行数の合計）。実際の差分がこの値を超えた場合はインライン差分の表示をスキップします。Myers diff algorithm（<a href="http://www.xmailserver.org/diff2.pdf">E. W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986</a>）を使用するため、差分が少なければ数百万行のファイルも高速に処理できます。ファイルサイズ単体はスキップの原因になりません。</td>
     </tr>
     <tr id="config-ja-inlinediffmaxdifflines">
       <td><code>InlineDiffMaxDiffLines</code></td>
@@ -781,14 +781,14 @@ flowchart TD
     <tr id="config-ja-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
       <td><code>true</code></td>
-      <td><code>true</code> の場合、<code>diff_report.md</code> と並んで <code>diff_report.html</code> を生成します。HTML ファイルはチェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。<code>false</code> にすると Markdown レポートのみを生成します。</td>
+      <td><code>true</code> の場合、<a href="doc/samples/diff_report.md"><code>diff_report.md</code></a> と並んで <a href="doc/samples/diff_report.html"><code>diff_report.html</code></a> を生成します。HTML ファイルはチェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。<code>false</code> にすると Markdown レポートのみを生成します。</td>
     </tr>
   </tbody>
 </table>
 
 補足:
 - [`IgnoredExtensions`](#configuration-table-ja) と [`TextFileExtensions`](#configuration-table-ja) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
-- `config.json` の読み込み後、範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: `MaxLogGenerations >= 1`、`TextDiffParallelThresholdKilobytes >= 1`、`TextDiffChunkSizeKilobytes >= 1`、`TextDiffChunkSizeKilobytes` は `TextDiffParallelThresholdKilobytes` 未満であること、`SpinnerFrames` は 1 件以上の要素を含むこと。
+- [`config.json`](config.json) の読み込み後、範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: `MaxLogGenerations >= 1`、`TextDiffParallelThresholdKilobytes >= 1`、`TextDiffChunkSizeKilobytes >= 1`、`TextDiffChunkSizeKilobytes` は `TextDiffParallelThresholdKilobytes` 未満であること、`SpinnerFrames` は 1 件以上の要素を含むこと。
 - **JSON 書式エラー**（最後のプロパティや配列要素の後のトレイリングカンマなど）はアプリ起動直後に検出され、実行ログへ書き込まれてコンソールに赤字で行番号とヒントを表示し、終了コード `3` で失敗します。標準 JSON はトレイリングカンマを許容しないため、`"Key": "value",}` のように末尾のカンマがある場合は削除してください。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#configuration-table-ja) に空文字（`""`）を含めてください。
@@ -798,8 +798,8 @@ flowchart TD
 <a id="readme-ja-generated-artifacts"></a>
 ## 生成物
 
-- `Reports/<label>/diff_report.md`
-- `Reports/<label>/diff_report.html`（`ShouldGenerateHtmlReport` が `false` の場合は生成されません）
+- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
+- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（`ShouldGenerateHtmlReport` が `false` の場合は生成されません）
 - `Logs/log_YYYYMMDD.log`
 - 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
