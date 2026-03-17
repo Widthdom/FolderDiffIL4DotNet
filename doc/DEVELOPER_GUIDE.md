@@ -438,7 +438,7 @@ The snapshot storage sums to Σ(2d + 3) for d = 0…D ≈ D² integers. For D = 
 | Large text, 1000 changes | 1000 | ~1 M iters + O(N+M) | ~1 M ints (~4 MB) |
 | `InlineDiffMaxEditDistance` exceeded | > 4000 | aborts early | O(1) |
 
-`InlineDiffMaxEditDistance` (default 4000) caps computation before D exceeds the limit. Because `InlineDiffMaxDiffLines` (default 1000) already suppresses rendering for diffs with more than 1000 output lines, raising the edit-distance limit beyond ~4000 rarely provides additional value for typical review workflows.
+`InlineDiffMaxEditDistance` (default 4000) caps computation before D exceeds the limit. Because `InlineDiffMaxDiffLines` (default 10000) already suppresses rendering for diffs with more than 10000 output lines, raising the edit-distance limit beyond ~4000 rarely provides additional value for typical review workflows.
 
 ### Inline diff skip behaviour
 
@@ -1052,7 +1052,7 @@ d = 0, 1, 2, … のステップで:
 | 大きなテキスト、1000 行差分 | 1000 | ~100 万反復 + O(N+M) | ~100 万整数（~4 MB） |
 | `InlineDiffMaxEditDistance` 超過 | > 4000 | 早期終了 | O(1) |
 
-`InlineDiffMaxEditDistance`（既定値 4000）は D が上限を超える前に計算を中断します。`InlineDiffMaxDiffLines`（既定値 1000）により 1000 行超の差分は表示が抑制されるため、編集距離の上限を 4000 超にしても実際のレビュー業務での恩恵は限定的です。
+`InlineDiffMaxEditDistance`（既定値 4000）は D が上限を超える前に計算を中断します。`InlineDiffMaxDiffLines`（既定値 10000）により 10000 行超の差分は表示が抑制されるため、編集距離の上限を 4000 超にしても実際のレビュー業務での恩恵は限定的です。
 
 ### インライン差分スキップの挙動
 
