@@ -765,13 +765,13 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    // 1. Collapse all diff-detail elements so exported file starts with diffs closed");
             sb.AppendLine("    var openDetails = Array.from(document.querySelectorAll('details[open]'));");
             sb.AppendLine("    openDetails.forEach(function(d){ d.removeAttribute('open'); });");
-            sb.AppendLine("    // 2. Reset column widths to defaults so exported file starts at initial layout");
+            sb.AppendLine("    // 2. Capture current effective column widths to bake into reviewed HTML as defaults");
             sb.AppendLine("    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w'];");
-            sb.AppendLine("    var savedColVars = {};");
-            sb.AppendLine("    colVarNames.forEach(function(v){ savedColVars[v] = root.style.getPropertyValue(v); root.style.removeProperty(v); });");
+            sb.AppendLine("    var cs = getComputedStyle(root);");
+            sb.AppendLine("    var curWidths = {};");
+            sb.AppendLine("    colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });");
             sb.AppendLine("    var html    = document.documentElement.outerHTML;");
-            sb.AppendLine("    // Restore column widths and open details in the live page");
-            sb.AppendLine("    colVarNames.forEach(function(v){ if (savedColVars[v]) root.style.setProperty(v, savedColVars[v]); });");
+            sb.AppendLine("    // Restore open details in the live page");
             sb.AppendLine("    openDetails.forEach(function(d){ d.setAttribute('open', ''); });");
             sb.AppendLine("    // Embed state");
             sb.AppendLine("    html = html.replace('const __savedState__  = null;',");
@@ -779,6 +779,15 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    // Update title");
             sb.AppendLine("    html = html.replace('<title>diff_report</title>',");
             sb.AppendLine("      '<title>' + slug + '_reviewed</title>');");
+            sb.AppendLine("    // Bake current column widths as CSS defaults in the reviewed HTML");
+            sb.AppendLine("    html = html.replace(/:root \\{ --col-reason-w:[^}]+\\}/,");
+            sb.AppendLine("      ':root { --col-reason-w: '  + curWidths['--col-reason-w']");
+            sb.AppendLine("      + '; --col-notes-w: '   + curWidths['--col-notes-w']");
+            sb.AppendLine("      + '; --col-path-w: '    + curWidths['--col-path-w']");
+            sb.AppendLine("      + '; --col-diff-w: '    + curWidths['--col-diff-w']");
+            sb.AppendLine("      + '; --col-disasm-w: '  + curWidths['--col-disasm-w'] + '; }');");
+            sb.AppendLine("    // Remove inline col-var overrides from <html> element (now baked into :root)");
+            sb.AppendLine("    html = html.replace(/(<html\\b[^>]*?) style=\"[^\"]*\"/, '$1');");
             sb.AppendLine("    // Replace controls bar with reviewed banner");
             sb.AppendLine("    html = html.replace(/<!--CTRL-->[\\s\\S]*?<!--\\/CTRL-->/g,");
             sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</div>');");
@@ -935,10 +944,10 @@ namespace FolderDiffIL4DotNet.Services
     td.col-no   { width: 3.2em; text-align: right; color: #aaa;
                   font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
     td.col-cb   { width: 2.2em; text-align: center; }
-    td.col-reason { overflow: hidden; }
+    td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
-    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    td.col-ts    { white-space: nowrap; width: 16em; overflow: hidden; }
+    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+    td.col-ts    { white-space: nowrap; width: 16em; overflow: hidden; text-align: center; }
     td.col-diff  { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                    font-size: 12px; white-space: nowrap; min-width: 9em; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;

@@ -77,10 +77,10 @@
     td.col-no   { width: 3.2em; text-align: right; color: #aaa;
                   font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
     td.col-cb   { width: 2.2em; text-align: center; }
-    td.col-reason { overflow: hidden; }
+    td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
-    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    td.col-ts   { white-space: nowrap; width: 16em; overflow: hidden; }
+    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+    td.col-ts   { white-space: nowrap; width: 16em; overflow: hidden; text-align: center; }
     td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                   font-size: 12px; white-space: nowrap; overflow: hidden; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -827,13 +827,13 @@
     // 1. Collapse all diff-detail elements so exported file starts with diffs closed
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
-    // 2. Reset column widths to defaults so exported file starts at initial layout
+    // 2. Capture current effective column widths to bake into reviewed HTML as defaults
     var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w'];
-    var savedColVars = {};
-    colVarNames.forEach(function(v){ savedColVars[v] = root.style.getPropertyValue(v); root.style.removeProperty(v); });
+    var cs = getComputedStyle(root);
+    var curWidths = {};
+    colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
     var html    = document.documentElement.outerHTML;
-    // Restore column widths and open details in the live page
-    colVarNames.forEach(function(v){ if (savedColVars[v]) root.style.setProperty(v, savedColVars[v]); });
+    // Restore open details in the live page
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
     // Embed state
     html = html.replace('const __savedState__  = null;',
@@ -841,6 +841,15 @@
     // Update title
     html = html.replace('<title>diff_report</title>',
       '<title>' + slug + '_reviewed</title>');
+    // Bake current column widths as CSS defaults in the reviewed HTML
+    html = html.replace(/:root \{ --col-reason-w:[^}]+\}/,
+      ':root { --col-reason-w: '  + curWidths['--col-reason-w']
+      + '; --col-notes-w: '   + curWidths['--col-notes-w']
+      + '; --col-path-w: '    + curWidths['--col-path-w']
+      + '; --col-diff-w: '    + curWidths['--col-diff-w']
+      + '; --col-disasm-w: '  + curWidths['--col-disasm-w'] + '; }');
+    // Remove inline col-var overrides from <html> element (now baked into :root)
+    html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
     // Replace controls bar with reviewed banner
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
       '<div class="reviewed-banner">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</div>');
