@@ -309,7 +309,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-large");
 
-            // diff行数が maxDiffLines を超えるファイルを用意 (maxDiffLines=1 に設定、変更行は2行)
+            // diff出力行数が maxDiffLines を超えるファイルを用意 (maxDiffLines=1 に設定)
+            // 2行がそれぞれ変更されると diff 出力は 5 行（ハンクヘッダ1 + 削除2 + 追加2） > 1 → スキップ
             File.WriteAllLines(Path.Combine(oldDir, "big.txt"), new[] { "A", "B" });
             File.WriteAllLines(Path.Combine(newDir, "big.txt"), new[] { "A-changed", "B-changed" });
 
@@ -317,7 +318,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("big.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true);
-            config.InlineDiffMaxDiffLines = 1;  // diff 2行 > 1 → スキップ
+            config.InlineDiffMaxDiffLines = 1;  // diff 出力 5行 > 1 → スキップ
 
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null,

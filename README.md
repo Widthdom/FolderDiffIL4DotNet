@@ -129,9 +129,10 @@ The HTML report is a self-contained single file that opens in any browser — no
 | Notes | Free-text input — additional remarks |
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
-| Diff Reason | `MD5Mismatch`, `ILMatch`, `TextMismatch`, tool label for IL files (e.g. `ILMismatch dotnet-ildasm (version: 0.12.2)`), etc. |
+| Diff Reason | Diff type only: `MD5Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. |
+| Disassembler | Disassembler label and version used for IL comparison (e.g. `dotnet-ildasm (version: dotnet ildasm 0.12.2.0)`); empty for non-IL files |
 
-Section heading and column header colours indicate the type of change: **red** for Removed, **green** for Added, **blue** for Modified. Ignored and Unchanged use the default colour.
+Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**). Section headings and Ignored / Unchanged column headers use the default style.
 
 See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live sample (open in a browser).
 
@@ -178,7 +179,6 @@ Important details:
 - `Added`, `Removed`, `Unchanged`, and `Modified` are decided by relative path, not by file name alone.
 - IL comparison always ignores `// MVID:` lines, so build-specific assembly noise does not create false differences.
 - If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-en) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
-- Warm-up, cache cleanup, and post-write read-only protection are best-effort paths that log warnings and continue. Folder enumeration, matched-pair comparison, and report writing log and rethrow expected runtime exceptions because they affect correctness or required output.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
 ## Configuration ([`config.json`](config.json))
@@ -373,8 +373,7 @@ Override only the settings you want to change. For example:
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#configuration-table-en) and [`TextFileExtensions`](#configuration-table-en) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
-- Cross-project byte-size and timestamp literals are defined in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](FolderDiffIL4DotNet.Core/Common/CoreConstants.cs), and app-level constants remain in [`Common/Constants.cs`](Common/Constants.cs), so shared formats do not drift independently across projects.
-- After loading `config.json`, settings are validated by [`ConfigSettings.Validate()`](Models/ConfigSettings.cs). If any value is out of range, the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; `TextDiffChunkSizeKilobytes` must be less than `TextDiffParallelThresholdKilobytes`; and `SpinnerFrames` must contain at least one element.
+- After loading `config.json`, if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; `TextDiffChunkSizeKilobytes` must be less than `TextDiffParallelThresholdKilobytes`; and `SpinnerFrames` must contain at least one element.
 - **JSON syntax errors** (e.g. a trailing comma after the last property or array element) are caught immediately at startup, logged to the run log file, and printed to the console in red with the line number and a hint — the run exits with code `3`. Standard JSON does not allow trailing commas: `"Key": "value",}` is invalid; remove the final comma.
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#configuration-table-en).
@@ -389,11 +388,7 @@ Notes:
 - `Logs/log_YYYYMMDD.log`
 - Optional: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
-Report and IL-text creation are treated as required output, so write failures stop the run. After writing, the files are set to read-only when possible, and that protection step remains warning-only.
-
-Some tests show as **Skipped** when running locally — this is expected and safe. See [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-skipped-tests) for details.
-
-For API documentation generation, CI/CD pipeline details, and release automation, see [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-ci-release).
+For developer-focused details (architecture, exception handling, test setup, CI/CD, API docs), see [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md).
 
 ## License
 
@@ -536,9 +531,10 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | Notes | 自由テキスト入力 — 補足メモ |
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
-| Diff Reason | `MD5Mismatch`・`ILMatch`・`TextMismatch`、IL 比較ファイルはツールラベル付き（例: `ILMismatch dotnet-ildasm (version: 0.12.2)`）など |
+| Diff Reason | 差分タイプのみ: `MD5Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など |
+| Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: `dotnet-ildasm (version: dotnet ildasm 0.12.2.0)`）。IL 比較対象外のファイルは空欄 |
 
-セクション見出しと列ヘッダの文字色は変更種別を示します: Removed は**赤**、Added は**緑**、Modified は**青**。Ignored・Unchanged はデフォルト色です。
+Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされます。セクション見出しおよび Ignored・Unchanged の列ヘッダはデフォルトのスタイルです。
 
 ライブサンプルは [doc/samples/diff_report.html](doc/samples/diff_report.html) を参照してください（ブラウザで開いてください）。
 
@@ -584,7 +580,6 @@ flowchart TD
 重要な点:
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
 - [`ShouldIgnoreILLinesContainingConfiguredStrings`](#configuration-table-ja) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
-- ウォームアップ、キャッシュ削除、書き込み後の読み取り専用化は best-effort として warning を記録して継続します。一方、フォルダ列挙、対応ファイル比較、レポート書き込みは正しさや成果物に直結するため、想定される実行時例外でもログ出力のうえ再スローします。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
 ## 設定（[`config.json`](config.json)）
@@ -779,8 +774,7 @@ flowchart TD
 
 補足:
 - [`IgnoredExtensions`](#configuration-table-ja) と [`TextFileExtensions`](#configuration-table-ja) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
-- プロジェクト横断で使うバイト換算値や日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) に置き、アプリ固有の定数は [`Common/Constants.cs`](Common/Constants.cs) で管理しているため、共有書式がプロジェクトごとにずれません。
-- `config.json` の読み込み後、[`ConfigSettings.Validate()`](Models/ConfigSettings.cs) で設定値を検証します。範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: `MaxLogGenerations >= 1`、`TextDiffParallelThresholdKilobytes >= 1`、`TextDiffChunkSizeKilobytes >= 1`、`TextDiffChunkSizeKilobytes` は `TextDiffParallelThresholdKilobytes` 未満であること、`SpinnerFrames` は 1 件以上の要素を含むこと。
+- `config.json` の読み込み後、範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: `MaxLogGenerations >= 1`、`TextDiffParallelThresholdKilobytes >= 1`、`TextDiffChunkSizeKilobytes >= 1`、`TextDiffChunkSizeKilobytes` は `TextDiffParallelThresholdKilobytes` 未満であること、`SpinnerFrames` は 1 件以上の要素を含むこと。
 - **JSON 書式エラー**（最後のプロパティや配列要素の後のトレイリングカンマなど）はアプリ起動直後に検出され、実行ログへ書き込まれてコンソールに赤字で行番号とヒントを表示し、終了コード `3` で失敗します。標準 JSON はトレイリングカンマを許容しないため、`"Key": "value",}` のように末尾のカンマがある場合は削除してください。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#configuration-table-ja) に空文字（`""`）を含めてください。
@@ -795,11 +789,7 @@ flowchart TD
 - `Logs/log_YYYYMMDD.log`
 - 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
-レポート本体と IL テキストの生成は必須成果物として扱うため、書き込み失敗時は実行を停止します。生成後の読み取り専用化は可能な範囲で行い、失敗しても警告のみです。
-
-ローカルでテストを実行すると一部が **Skipped（スキップ）** と表示されることがありますが、問題ありません。詳細は [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-skipped-tests) を参照してください。
-
-API ドキュメントの生成手順、CI/CD パイプラインの詳細、リリース自動化については [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-ci-release) を参照してください。
+開発者向けの詳細（アーキテクチャ、例外ハンドリング、テスト設定、CI/CD、API ドキュメント）は [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) を参照してください。
 
 ## ライセンス
 
