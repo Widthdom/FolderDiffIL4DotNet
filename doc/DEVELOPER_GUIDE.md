@@ -389,9 +389,58 @@ Additional internal defaults:
 - [`ProgramRunner`](../ProgramRunner.cs) currently applies non-configurable IL cache defaults from [`Common/Constants.cs`](../Common/Constants.cs): `2000` memory entries, `12` hours TTL, and `60` seconds for internal stats logs. Cross-project byte/timestamp literals reused by both projects live in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs).
 - Those values are intentionally documented in code because they trade off same-day rerun reuse against unbounded memory or log growth in a short-lived console process.
 
-### Inline diff skip behaviour
+### Myers diff algorithm
 
-`TextDiffer` uses the **Myers diff algorithm** (O(D² + N + M) time, O(D²) space), where D is the edit distance (inserted + deleted lines). Because the runtime depends on D rather than N × M, very large files with few changes are handled efficiently — a 2,370,000-line IL file with 20 changed lines completes in milliseconds.
+`TextDiffer` implements the Myers diff algorithm (E. W. Myers, 1986) instead of the classical O(N×M) Longest Common Subsequence dynamic-programming approach.
+
+#### Why Myers diff?
+
+The classic LCS DP table requires an N×M cell matrix. For two 2,370,000-line IL files that differ in only 20 lines, the table would need 5.6 **trillion** cells — completely infeasible. Myers diff, on the other hand, has time complexity **O(D² + N + M)** and space complexity **O(D²)**, where D is the number of inserted plus deleted lines (the edit distance). For D = 20 and N = M = 2,370,000, that is roughly 400 diagonal iterations plus 4.74 million comparisons for the snake extensions — completing in well under a second.
+
+#### Edit graph and D-paths
+
+The algorithm models the two files as an *edit graph*:
+
+- The x-axis represents positions in `old` (0 to N), the y-axis positions in `new` (0 to M).
+- A horizontal move (x + 1, y) means deleting `old[x]`; a vertical move (x, y + 1) means inserting `new[y]`.
+- A diagonal move (x + 1, y + 1) — called a **snake** — is only taken when `old[x] == new[y]`, representing a matching (context) line.
+- Any path from (0, 0) to (N, M) is a valid edit script; the *shortest* path uses the fewest horizontal + vertical moves, i.e. minimises D.
+
+Every point in the edit graph lies on a **diagonal** k = x − y (k ∈ [−M, N]). A **D-path** is a path that contains exactly D non-diagonal moves. The key observation: with exactly D edits, the reachable diagonals are k ∈ {−D, −D+2, …, D−2, D} (only same-parity diagonals are reachable).
+
+#### Forward pass (finding D)
+
+At each step d = 0, 1, 2, …:
+
+1. For each reachable diagonal k (stepping by 2 from −d to d):
+   - Decide whether to arrive via a vertical move from diagonal k+1 or a horizontal move from diagonal k−1 by picking the option that gives the larger x.
+   - Extend the snake: advance (x, y) along the diagonal while `old[x] == new[y]`.
+   - Record V[k] = the furthest x reached on diagonal k.
+2. If (N, M) is reached, D = d.
+
+The snake extensions total at most N + M comparisons **across all steps** because each (x, y) cell is visited at most once. The diagonal loop at step d costs O(2d + 1) iterations. Total: O(D²) iterations + O(N + M) comparisons.
+
+#### Backtracking (reconstructing the edit script)
+
+Before each step d, a snapshot of V[−d−1 … d+1] is saved. After D is found, we backtrack from (N, M) to (0, 0):
+
+1. At step d with current position (x, y) on diagonal k = x − y, consult the snapshot from step d to determine whether the move was vertical (down = insert) or horizontal (right = delete).
+2. The snake before the edit contributes context lines; the single move contributes an Added or Removed line.
+3. Repeat for d = D, D−1, …, 1. Any remaining prefix (d = 0) is all context.
+
+The snapshot storage sums to Σ(2d + 3) for d = 0…D ≈ D² integers. For D = 4000 that is ~16 M integers (~64 MB), which is the practical upper bound when `InlineDiffMaxEditDistance = 4000`.
+
+#### Trade-offs and limits
+
+| Scenario | D | Time | Space (trace) |
+|---|---|---|---|
+| 237 万行 IL, 20 changes | 20 | ~95 M ops (< 0.1 s) | ~400 ints (~negligible) |
+| Large text, 1000 changes | 1000 | ~1 M iters + O(N+M) | ~1 M ints (~4 MB) |
+| `InlineDiffMaxEditDistance` exceeded | > 4000 | aborts early | O(1) |
+
+`InlineDiffMaxEditDistance` (default 4000) caps computation before D exceeds the limit. Because `InlineDiffMaxDiffLines` (default 1000) already suppresses rendering for diffs with more than 1000 output lines, raising the edit-distance limit beyond ~4000 rarely provides additional value for typical review workflows.
+
+### Inline diff skip behaviour
 
 The inline diff can be suppressed in three ways, each producing a visible `diff-skipped` notice in the HTML report (no expand arrow):
 
@@ -954,9 +1003,58 @@ catch (Exception ex)
 - [`ProgramRunner`](../ProgramRunner.cs) は、[`Common/Constants.cs`](../Common/Constants.cs) で定義した IL キャッシュ内部既定値として、メモリ `2000` 件、TTL `12` 時間、内部統計ログ `60` 秒を使います。両プロジェクトで共通利用するバイト換算値と日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) にあります。
 - これらは同日中の再実行で再利用を効かせつつ、短命なコンソールプロセスとしてメモリ消費やログ肥大を抑えるため、コード側で理由付きの既定値として維持しています。
 
-### インライン差分スキップの挙動
+### Myers diff アルゴリズム
 
-`TextDiffer` は **Myers diff アルゴリズム**（O(D² + N + M) 時間・O(D²) 空間、D = 編集距離）を使用します。実行時間は N × M でなく D に依存するため、差分が少なければ数百万行のファイルも高速に処理できます（例: 237 万行の IL ファイルで 20 行の差分 → ミリ秒以内）。
+`TextDiffer` は古典的な O(N×M) の最長共通部分列（LCS）動的計画法の代わりに、Myers diff アルゴリズム（E. W. Myers, 1986）を実装しています。
+
+#### なぜ Myers diff なのか
+
+LCS の DP テーブルには N×M のセル行列が必要です。20 行しか違わない 237 万行の IL ファイルを 2 本比較する場合、テーブルには 5.6 **兆**個のセルが必要になり、現実的に不可能です。Myers diff の時間計算量は **O(D² + N + M)**、空間計算量は **O(D²)** です（D = 挿入行数 + 削除行数）。D = 20、N = M = 237 万の場合、約 400 回の対角線反復と 474 万回のスネーク延長比較で完了し、実測で 0.1 秒未満です。
+
+#### 編集グラフと D パス
+
+アルゴリズムは 2 つのファイルを*編集グラフ*としてモデル化します。
+
+- x 軸が `old` の位置（0～N）、y 軸が `new` の位置（0～M）を表します。
+- 横移動（x + 1, y）は `old[x]` の削除、縦移動（x, y + 1）は `new[y]` の挿入を意味します。
+- 斜め移動（x + 1, y + 1）— **スネーク**と呼ぶ — は `old[x] == new[y]` のときのみ可能で、コンテキスト（一致）行を表します。
+- (0, 0) から (N, M) への任意のパスが有効な編集スクリプトであり、最短パスが最小の D を使います。
+
+編集グラフ上の各点は**対角線** k = x − y（k ∈ [−M, N]）上にあります。**D パス**はちょうど D 回の非斜め移動を含むパスです。重要な観察: D 回の編集で到達可能な対角線は k ∈ {−D, −D+2, …, D−2, D}（同じパリティの対角線のみ）です。
+
+#### 前向きパス（D の発見）
+
+d = 0, 1, 2, … のステップで:
+
+1. 到達可能な各対角線 k（−d から d へ、ステップ 2）について:
+   - k+1 からの縦移動と k-1 からの横移動を比較し、x が大きくなる方向を選択する。
+   - スネークを延ばす: `old[x] == new[y]` である限り (x, y) を対角に進める。
+   - V[k] = 対角線 k 上で到達できた最大 x を記録する。
+2. (N, M) に到達したとき D = d。
+
+スネーク延長の総比較回数は**全ステップ合計で** N + M 以下です（各セルは最多 1 回しか訪問しない）。対角線ループはステップ d あたり O(2d + 1) 回。合計: O(D²) 反復 + O(N + M) 比較。
+
+#### バックトラック（編集スクリプトの復元）
+
+各ステップ d の開始前に V[−d−1 … d+1] のスナップショットを保存します。D が確定したあと、(N, M) から (0, 0) へバックトラックします。
+
+1. ステップ d で現在位置 (x, y)（対角線 k = x − y）にいる場合、ステップ d のスナップショットを参照して移動方向（縦 = 挿入 / 横 = 削除）を復元する。
+2. 編集前のスネーク部分はコンテキスト行、1 回の移動は Added または Removed 行になる。
+3. d = D, D−1, …, 1 で繰り返す。残るプレフィックス（d = 0）はすべてコンテキストになる。
+
+スナップショットの合計サイズは Σ(2d + 3)（d = 0…D）≈ D² 整数。D = 4000 の場合は約 1600 万整数（~64 MB）で、`InlineDiffMaxEditDistance = 4000` の実用的な上限となります。
+
+#### トレードオフと上限
+
+| シナリオ | D | 時間 | スペース（トレース） |
+|---|---|---|---|
+| 237 万行 IL、20 行差分 | 20 | ~9500 万演算（< 0.1 秒） | ~400 整数（無視できる） |
+| 大きなテキスト、1000 行差分 | 1000 | ~100 万反復 + O(N+M) | ~100 万整数（~4 MB） |
+| `InlineDiffMaxEditDistance` 超過 | > 4000 | 早期終了 | O(1) |
+
+`InlineDiffMaxEditDistance`（既定値 4000）は D が上限を超える前に計算を中断します。`InlineDiffMaxDiffLines`（既定値 1000）により 1000 行超の差分は表示が抑制されるため、編集距離の上限を 4000 超にしても実際のレビュー業務での恩恵は限定的です。
+
+### インライン差分スキップの挙動
 
 インライン差分は 3 通りの条件で抑制されます。いずれの場合も HTML レポートに `diff-skipped` スタイルの通知が直接表示されます（展開矢印なし）。
 

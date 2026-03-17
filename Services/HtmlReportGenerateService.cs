@@ -430,7 +430,7 @@ namespace FolderDiffIL4DotNet.Services
 
             if (diffLines.Count == 0) return;
 
-            // Single Truncated line: file too large for LCS — show message directly without expand arrow
+            // Single Truncated line: edit distance too large — show message directly without expand arrow
             if (diffLines.Count == 1 && diffLines[0].Kind == TextDiffer.Truncated)
             {
                 sb.AppendLine("<tr class=\"diff-row\">");
