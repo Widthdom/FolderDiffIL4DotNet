@@ -410,10 +410,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // DIFF REASON / Location / Timestamp columns are center-aligned
+            // Justification / Timestamp / Diff Reason (= Location in Ignored table) columns are center-aligned
             Assert.Contains("td.col-reason { overflow: hidden; text-align: center; }", html);
-            Assert.Contains("td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }", html);
             Assert.Contains("td.col-ts    { white-space: nowrap; width: 16em; overflow: hidden; text-align: center; }", html);
+            Assert.Contains("min-width: 9em; text-align: center; }", html); // col-diff has text-align: center
+            // File Path is NOT center-aligned
+            Assert.Contains("td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }", html);
             // Notes column is NOT center-aligned
             Assert.Contains("td.col-notes  { overflow: hidden; }", html);
         }
