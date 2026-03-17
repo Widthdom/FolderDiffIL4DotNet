@@ -341,7 +341,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-enableinlinediff">
       <td><code>EnableInlineDiff</code></td>
       <td><code>true</code></td>
-      <td>When <code>true</code>, text-mismatched and IL-mismatched files in the HTML report include an expandable inline diff showing added and removed lines.</td>
+      <td>When <code>true</code>, text-mismatched and IL-mismatched files in the HTML report include an expandable inline diff showing added and removed lines. For IL-mismatched files, <code>ShouldOutputILText</code> must also be <code>true</code> (the default) so that the <code>*_IL.txt</code> source files exist.</td>
     </tr>
     <tr id="config-en-inlinediffcontextlines">
       <td><code>InlineDiffContextLines</code></td>
@@ -742,7 +742,7 @@ flowchart TD
     <tr id="config-ja-enableinlinediff">
       <td><code>EnableInlineDiff</code></td>
       <td><code>true</code></td>
-      <td><code>true</code> の場合、HTML レポートのテキスト不一致・IL 不一致ファイルに、追加行・削除行を示す折り畳み式インライン差分を表示します。</td>
+      <td><code>true</code> の場合、HTML レポートのテキスト不一致・IL 不一致ファイルに、追加行・削除行を示す折り畳み式インライン差分を表示します。IL 不一致ファイルのインライン差分には、<code>ShouldOutputILText</code> も <code>true</code>（既定値）である必要があります（<code>*_IL.txt</code> ファイルが生成されるため）。</td>
     </tr>
     <tr id="config-ja-inlinediffcontextlines">
       <td><code>InlineDiffContextLines</code></td>

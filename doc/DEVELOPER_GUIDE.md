@@ -401,6 +401,8 @@ The inline diff can be suppressed in three ways, each producing a visible `diff-
 
 The LCS guard and the single-Truncated case both render as a plain row (no `<details>` element), so the notice is visible without any click. The `InlineDiffMaxOutputLines` truncation renders *inside* the `<details>` block after a partial diff.
 
+> **ILMismatch entries** also require `ShouldOutputILText: true` (the default). `HtmlReportGenerateService` reads IL text directly from the `*_IL.txt` files produced by `ILTextOutputService` (under `Reports/<label>/IL/old` and `Reports/<label>/IL/new`). If `ShouldOutputILText` is `false`, those files are not written and the inline diff is silently omitted — no `diff-skipped` notice is shown.
+
 ### Runtime mode resolution
 
 ```mermaid
@@ -961,6 +963,8 @@ catch (Exception ex)
 | 差分結果が大きすぎる | `InlineDiffMaxDiffLines`（既定 `1000`） | 計算後の差分出力行数合計（ハンクヘッダ含む）が閾値を超えた | `Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
 
 LCS 超過と単一 Truncated 行のケースはいずれも `<details>` ラッパーなしのプレーン行としてレンダリングされるため、クリック不要でメッセージが見えます。`InlineDiffMaxOutputLines` による打ち切りは `<details>` ブロック内に部分差分の末尾として表示されます。
+
+> **ILMismatch エントリ**はさらに `ShouldOutputILText: true`（既定値）が必要です。`HtmlReportGenerateService` は `ILTextOutputService` が `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に書き出した `*_IL.txt` ファイルを直接読み込んでインライン差分を生成します。`ShouldOutputILText` が `false` の場合、これらのファイルは生成されずインライン差分はサイレントに省略されます（`diff-skipped` 通知は表示されません）。
 
 ### 実行モードの決定
 
