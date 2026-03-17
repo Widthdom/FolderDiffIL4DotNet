@@ -134,6 +134,8 @@ The HTML report is a self-contained single file that opens in any browser — no
 
 Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
+Inline diff `<summary>` labels also include a one-based `#N` prefix such as `#3 Show diff` / `#3 Show IL diff`; this number matches the leftmost `#` column for the same row.
+
 See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live sample (open in a browser).
 
 ### Review workflow
@@ -540,6 +542,8 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: `dotnet-ildasm (version: dotnet ildasm 0.12.2.0)`）。IL 比較対象外のファイルは空欄 |
 
 Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
+
+インライン差分の `<summary>` ラベルにも `#3 Show diff` / `#3 Show IL diff` のような 1 始まりの `#N` プレフィックスが付き、この番号は同じ行の左端 `#` 列と一致します。
 
 ライブサンプルは [doc/samples/diff_report.html](doc/samples/diff_report.html) を参照してください（ブラウザで開いてください）。
 
