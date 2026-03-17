@@ -425,6 +425,15 @@ namespace FolderDiffIL4DotNet.Services
 
             if (diffLines.Count == 0) return;
 
+            // Single Truncated line: file too large for LCS — show message directly without expand arrow
+            if (diffLines.Count == 1 && diffLines[0].Kind == TextDiffer.Truncated)
+            {
+                sb.AppendLine("<tr class=\"diff-row\">");
+                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">{HtmlEncode(diffLines[0].Text)}</p></td>");
+                sb.AppendLine("</tr>");
+                return;
+            }
+
             if (diffLines.Count > maxDiffLines)
             {
                 sb.AppendLine("<tr class=\"diff-row\">");
