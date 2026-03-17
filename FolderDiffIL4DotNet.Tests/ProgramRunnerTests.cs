@@ -122,7 +122,7 @@ namespace FolderDiffIL4DotNet.Tests
                     var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
 
                     Assert.Equal(3, exitCode);
-                    Assert.Contains(logger.Messages, message => message.Contains("Failed to parse the config file.", StringComparison.Ordinal));
+                    Assert.Contains(logger.Messages, message => message.Contains("JSON syntax error", StringComparison.OrdinalIgnoreCase));
                 });
             }
             finally

@@ -370,6 +370,8 @@ The nested `DiffSummaryStatistics` sealed record (`AddedCount`, `RemovedCount`, 
 
 [`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. [`config.json`](../config.json) is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults. After loading, [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) checks every setting for range constraints; if any fail, [`ConfigService`](../Services/ConfigService.cs) throws [`InvalidDataException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.invaliddataexception?view=net-8.0) with a message that lists each invalid setting, and the run exits with code `3`. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; `TextDiffChunkSizeKilobytes < TextDiffParallelThresholdKilobytes`; and `SpinnerFrames` must contain at least one element. For key-by-key descriptions, use the [README configuration table](../README.md#configuration-table-en).
 
+**JSON syntax errors** (e.g. a trailing comma after the last property or array element — a common mistake) are caught by [`ConfigService`](../Services/ConfigService.cs) before validation runs. The error is logged to the run log file and printed to the console in red, including the line number and byte position from the underlying [`JsonException`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonexception?view=net-8.0) and a trailing-comma hint. Standard JSON does not allow trailing commas: `"Key": "value",}` is invalid — remove the final comma. The run exits with code `3`.
+
 ### Configuration groups
 
 | Group | Keys | Purpose |
@@ -916,6 +918,8 @@ catch (Exception ex)
 ## 設定と実行モード
 
 既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。[`config.json`](../config.json) は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。読み込み後、[`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) で各設定値の範囲を検証します。制約違反があれば [`ConfigService`](../Services/ConfigService.cs) が全エラーを列挙した [`InvalidDataException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.invaliddataexception?view=net-8.0) をスローし、終了コード `3` で失敗します。検証対象の制約: `MaxLogGenerations >= 1`、`TextDiffParallelThresholdKilobytes >= 1`、`TextDiffChunkSizeKilobytes >= 1`、`TextDiffChunkSizeKilobytes < TextDiffParallelThresholdKilobytes`、`SpinnerFrames` は 1 件以上の要素を含むこと。キーごとの説明は [README の設定表](../README.md#configuration-table-ja) を参照してください。
+
+**JSON 書式エラー**（最後のプロパティや配列要素の後のトレイリングカンマなど、よくあるミス）はバリデーション実行前に [`ConfigService`](../Services/ConfigService.cs) が検出します。エラーは実行ログへ書き込まれ、コンソールには赤字で行番号・バイト位置（内部の [`JsonException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.text.json.jsonexception?view=net-8.0) から取得）とトレイリングカンマへのヒントを表示します。標準 JSON はトレイリングカンマを許容しないため、`"Key": "value",}` のように末尾にカンマがある場合は削除してください。終了コードは `3` です。
 
 ### 設定のまとまり
 

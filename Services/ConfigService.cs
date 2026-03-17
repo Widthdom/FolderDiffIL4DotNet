@@ -17,9 +17,16 @@ namespace FolderDiffIL4DotNet.Services
         private const string CONFIG_FILE_NAME = "config.json";
 
         /// <summary>
-        /// Config解析失敗
+        /// Config 解析失敗（JSON 書式エラー）のメッセージプレフィックス
         /// </summary>
-        private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse the config file.";
+        private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse config.json — JSON syntax error";
+
+        /// <summary>
+        /// JSON 書式ミス（トレイリングカンマ等）に対するヒント文言
+        /// </summary>
+        private const string ERROR_CONFIG_PARSE_HINT =
+            " Hint: standard JSON does not allow trailing commas after the last property or array element" +
+            " (e.g. remove the comma in \"Key\": \"value\",}).";
 
         /// <summary>
         /// Configバリデーション失敗のメッセージプレフィックス
@@ -67,7 +74,13 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (JsonException ex)
             {
-                throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED, ex);
+                // 行番号・バイト位置を付与し、トレイリングカンマ等の典型的なミスへのヒントを添える。
+                // Include line/position from JsonException and append a trailing-comma hint.
+                var location = ex.LineNumber.HasValue
+                    ? $" (line {ex.LineNumber.Value + 1}, position {(ex.BytePositionInLine ?? 0) + 1})"
+                    : string.Empty;
+                throw new InvalidDataException(
+                    $"{ERROR_CONFIG_PARSE_FAILED}{location}: {ex.Message}{ERROR_CONFIG_PARSE_HINT}", ex);
             }
         }
     }

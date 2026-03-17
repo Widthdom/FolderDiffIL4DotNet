@@ -29,6 +29,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var service = new ConfigService();
                 var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
                 Assert.IsType<JsonException>(ex.InnerException);
+                Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_TrailingCommaInObject_ThrowsInvalidDataExceptionWithHint()
+        {
+            // よくあるミス: オブジェクトの最後のプロパティ後にカンマを入れてしまう
+            // Common mistake: trailing comma after the last property in a JSON object
+            await WithConfigFileAsync("{ \"MaxLogGenerations\": 5, }", async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.IsType<JsonException>(ex.InnerException);
+                Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_TrailingCommaInArray_ThrowsInvalidDataExceptionWithHint()
+        {
+            // よくあるミス: 配列の最後の要素後にカンマを入れてしまう
+            // Common mistake: trailing comma after the last element in a JSON array
+            await WithConfigFileAsync("{ \"IgnoredExtensions\": [\".pdb\", \".log\",] }", async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.IsType<JsonException>(ex.InnerException);
+                Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_TrailingCommaError_MessageIncludesLineNumber()
+        {
+            // 行番号情報がメッセージに含まれることを確認
+            // Verify that line number information is included in the error message
+            const string json = """
+                {
+                  "MaxLogGenerations": 5,
+                }
+                """;
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                Assert.IsType<JsonException>(ex.InnerException);
+                // 行番号が含まれている（1以上の整数）
+                Assert.Matches(@"line \d+", ex.Message);
             });
         }
 
