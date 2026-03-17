@@ -328,15 +328,45 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>Auto-detects network paths and enables optimization mode as needed.</td>
     </tr>
+    <tr id="config-en-disassemblerblacklistttlminutes">
+      <td><code>DisassemblerBlacklistTtlMinutes</code></td>
+      <td><code>10</code></td>
+      <td>Minutes before a blacklisted disassembler tool — one that has failed <code>DISASSEMBLE_FAIL_THRESHOLD</code> (3) times consecutively — is removed from the blacklist and retried on the next call.</td>
+    </tr>
     <tr id="config-en-skipil">
       <td><code>SkipIL</code></td>
       <td><code>false</code></td>
       <td>When <code>true</code>, skips IL decompilation and IL diff for .NET assemblies. MD5-mismatched assemblies are treated as binary diffs. Equivalent to the <code>--skip-il</code> CLI flag.</td>
     </tr>
+    <tr id="config-en-enableinlinediff">
+      <td><code>EnableInlineDiff</code></td>
+      <td><code>true</code></td>
+      <td>When <code>true</code>, text-mismatched and IL-mismatched files in the HTML report include an expandable inline diff showing added and removed lines.</td>
+    </tr>
+    <tr id="config-en-inlinediffcontextlines">
+      <td><code>InlineDiffContextLines</code></td>
+      <td><code>0</code></td>
+      <td>Number of unchanged context lines to show above and below each changed hunk in inline diffs. <code>0</code> shows only the changed lines themselves.</td>
+    </tr>
+    <tr id="config-en-inlinediffmaxinputlines">
+      <td><code>InlineDiffMaxInputLines</code></td>
+      <td><code>1000</code></td>
+      <td>Maximum line count of either file before inline diff is skipped for that entry. Guards against very large files causing slow HTML rendering.</td>
+    </tr>
+    <tr id="config-en-inlinediffmaxoutputlines">
+      <td><code>InlineDiffMaxOutputLines</code></td>
+      <td><code>500</code></td>
+      <td>Maximum number of output lines produced by a single inline diff. When exceeded, the diff is truncated and a note is shown in the report.</td>
+    </tr>
     <tr id="config-en-spinnerframes">
       <td><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\\"]</code></td>
       <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default.</td>
+    </tr>
+    <tr id="config-en-shouldgeneratehtmlreport">
+      <td><code>ShouldGenerateHtmlReport</code></td>
+      <td><code>true</code></td>
+      <td>When <code>true</code>, generates <code>diff_report.html</code> alongside <code>diff_report.md</code>. The HTML file is a self-contained interactive review document with checkboxes, text inputs, localStorage auto-save, and a download function that bakes the current review state into a portable snapshot. Set to <code>false</code> to produce only the Markdown report.</td>
     </tr>
   </tbody>
 </table>
@@ -703,15 +733,45 @@ flowchart TD
       <td><code>true</code></td>
       <td>ネットワーク共有を自動検出して最適化モードを必要時に有効化。</td>
     </tr>
+    <tr id="config-ja-disassemblerblacklistttlminutes">
+      <td><code>DisassemblerBlacklistTtlMinutes</code></td>
+      <td><code>10</code></td>
+      <td>連続失敗回数が <code>DISASSEMBLE_FAIL_THRESHOLD</code>（3 回）に達してブラックリスト入りした逆アセンブラツールが、ブラックリストから除外されて再試行されるまでの分数。</td>
+    </tr>
     <tr id="config-ja-skipil">
       <td><code>SkipIL</code></td>
       <td><code>false</code></td>
       <td><code>true</code> の場合、.NET アセンブリの IL 逆アセンブルと IL 差分比較をまるごとスキップします。MD5 不一致のアセンブリはバイナリ差分として扱います。CLI フラグ <code>--skip-il</code> と同等。</td>
     </tr>
+    <tr id="config-ja-enableinlinediff">
+      <td><code>EnableInlineDiff</code></td>
+      <td><code>true</code></td>
+      <td><code>true</code> の場合、HTML レポートのテキスト不一致・IL 不一致ファイルに、追加行・削除行を示す折り畳み式インライン差分を表示します。</td>
+    </tr>
+    <tr id="config-ja-inlinediffcontextlines">
+      <td><code>InlineDiffContextLines</code></td>
+      <td><code>0</code></td>
+      <td>インライン差分で各変更ハンクの前後に表示する未変更コンテキスト行数。<code>0</code> では変更行のみを表示します。</td>
+    </tr>
+    <tr id="config-ja-inlinediffmaxinputlines">
+      <td><code>InlineDiffMaxInputLines</code></td>
+      <td><code>1000</code></td>
+      <td>いずれかのファイルの行数がこの値を超えた場合、そのエントリのインライン差分をスキップします。非常に大きいファイルによる HTML レンダリングの遅延を防ぎます。</td>
+    </tr>
+    <tr id="config-ja-inlinediffmaxoutputlines">
+      <td><code>InlineDiffMaxOutputLines</code></td>
+      <td><code>500</code></td>
+      <td>1 件のインライン差分で生成する最大出力行数。超過した場合は差分を打ち切り、レポートに注記を表示します。</td>
+    </tr>
     <tr id="config-ja-spinnerframes">
       <td><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\\"]</code></td>
       <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。</td>
+    </tr>
+    <tr id="config-ja-shouldgeneratehtmlreport">
+      <td><code>ShouldGenerateHtmlReport</code></td>
+      <td><code>true</code></td>
+      <td><code>true</code> の場合、<code>diff_report.md</code> と並んで <code>diff_report.html</code> を生成します。HTML ファイルはチェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。<code>false</code> にすると Markdown レポートのみを生成します。</td>
     </tr>
   </tbody>
 </table>
