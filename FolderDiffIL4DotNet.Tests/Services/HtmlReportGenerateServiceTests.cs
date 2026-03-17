@@ -396,6 +396,28 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("-1", html);
         }
 
+        /// <summary>
+        /// DIFF REASON・Location・Timestamp 列ボディセルに text-align: center が設定され、Notes 列には設定されていないことを確認します。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_BodyCells_ColReasonPathTs_HaveCenterAlignment()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("col-align");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // DIFF REASON / Location / Timestamp columns are center-aligned
+            Assert.Contains("td.col-reason { overflow: hidden; text-align: center; }", html);
+            Assert.Contains("td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }", html);
+            Assert.Contains("td.col-ts    { white-space: nowrap; width: 16em; overflow: hidden; text-align: center; }", html);
+            // Notes column is NOT center-aligned
+            Assert.Contains("td.col-notes  { overflow: hidden; }", html);
+        }
+
         // Helpers
 
         private (string oldDir, string newDir, string reportDir) MakeDirs(string label)
