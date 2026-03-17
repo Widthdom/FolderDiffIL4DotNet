@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## English
 
-### [Unreleased]
+### [1.3.0] - 2026-03-17
 
 #### Changed
 
@@ -317,7 +317,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 前半は英語、後半は日本語です。
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
-### [Unreleased]
+### [1.3.0] - 2026-03-17
 
 #### 変更
 
@@ -620,7 +620,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.1.9...v1.2.0
