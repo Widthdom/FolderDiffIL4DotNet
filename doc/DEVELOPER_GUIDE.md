@@ -447,8 +447,8 @@ The inline diff can be suppressed in three ways, each producing a visible `diff-
 | Trigger | Setting | Condition | Message shown |
 | --- | --- | --- | --- |
 | Edit distance too large | `InlineDiffMaxEditDistance` (default `4000`) | `D > InlineDiffMaxEditDistance` — too many insertions/deletions | `#N Inline diff skipped: edit distance too large (>M insertions/deletions in X vs Y lines). Increase InlineDiffMaxEditDistance in config to raise the limit.` |
-| Output lines capped mid-compute | `InlineDiffMaxOutputLines` (default `500`) | `TextDiffer.Compute` reached the output-line budget; a `Truncated` row is appended and the partial diff is shown | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
-| Diff result too large | `InlineDiffMaxDiffLines` (default `1000`) | Total diff output (including hunk headers) exceeds the threshold *after* compute | `#N Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
+| Output lines capped mid-compute | `InlineDiffMaxOutputLines` (default `10000`) | `TextDiffer.Compute` reached the output-line budget; a `Truncated` row is appended and the partial diff is shown | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
+| Diff result too large | `InlineDiffMaxDiffLines` (default `10000`) | Total diff output (including hunk headers) exceeds the threshold *after* compute | `#N Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
 
 The edit-distance-exceeded and single-Truncated cases both render as a plain row (no `<details>` element), so the notice is visible without any click. The `InlineDiffMaxOutputLines` truncation renders *inside* the `<details>` block after a partial diff.
 
@@ -1061,8 +1061,8 @@ d = 0, 1, 2, … のステップで:
 | トリガー | 設定 | 条件 | 表示メッセージ |
 | --- | --- | --- | --- |
 | 編集距離が大きすぎる | `InlineDiffMaxEditDistance`（既定 `4000`） | `D > InlineDiffMaxEditDistance` — 挿入・削除行数が多すぎる | `#N Inline diff skipped: edit distance too large (>M insertions/deletions in X vs Y lines). Increase InlineDiffMaxEditDistance in config to raise the limit.` |
-| 出力行数が計算途中で上限に達した | `InlineDiffMaxOutputLines`（既定 `500`） | `TextDiffer.Compute` が出力行数予算に達し、`Truncated` 行を末尾に追加して部分差分を返す | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
-| 差分結果が大きすぎる | `InlineDiffMaxDiffLines`（既定 `1000`） | 計算後の差分出力行数合計（ハンクヘッダ含む）が閾値を超えた | `#N Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
+| 出力行数が計算途中で上限に達した | `InlineDiffMaxOutputLines`（既定 `10000`） | `TextDiffer.Compute` が出力行数予算に達し、`Truncated` 行を末尾に追加して部分差分を返す | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
+| 差分結果が大きすぎる | `InlineDiffMaxDiffLines`（既定 `10000`） | 計算後の差分出力行数合計（ハンクヘッダ含む）が閾値を超えた | `#N Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
 
 編集距離超過と単一 Truncated 行のケースはいずれも `<details>` ラッパーなしのプレーン行としてレンダリングされるため、クリック不要でメッセージが見えます。`InlineDiffMaxOutputLines` による打ち切りは `<details>` ブロック内に部分差分の末尾として表示されます。
 

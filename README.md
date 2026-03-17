@@ -355,12 +355,12 @@ Override only the settings you want to change. For example:
     </tr>
     <tr id="config-en-inlinediffmaxdifflines">
       <td><code>InlineDiffMaxDiffLines</code></td>
-      <td><code>1000</code></td>
+      <td><code>10000</code></td>
       <td>Maximum number of diff output lines (added + removed + context + hunk headers) before the inline diff display is suppressed for that entry. The diff is computed first; if the result exceeds this threshold the entry is skipped. Guards against very large diffs causing slow HTML rendering.</td>
     </tr>
     <tr id="config-en-inlinediffmaxoutputlines">
       <td><code>InlineDiffMaxOutputLines</code></td>
-      <td><code>500</code></td>
+      <td><code>10000</code></td>
       <td>Maximum number of output lines produced by a single inline diff. When exceeded, the diff is truncated and a note is shown in the report.</td>
     </tr>
     <tr id="config-en-spinnerframes">
@@ -761,12 +761,12 @@ flowchart TD
     </tr>
     <tr id="config-ja-inlinediffmaxdifflines">
       <td><code>InlineDiffMaxDiffLines</code></td>
-      <td><code>1000</code></td>
+      <td><code>10000</code></td>
       <td>差分の出力行数（追加・削除・コンテキスト・ハンクヘッダを含む）がこの値を超えた場合、そのエントリのインライン差分表示をスキップします。差分を計算した後で判定するため、元ファイルの行数ではなく実際の差分量に応じてスキップが制御されます。非常に大きい差分による HTML レンダリングの遅延を防ぎます。</td>
     </tr>
     <tr id="config-ja-inlinediffmaxoutputlines">
       <td><code>InlineDiffMaxOutputLines</code></td>
-      <td><code>500</code></td>
+      <td><code>10000</code></td>
       <td>1 件のインライン差分で生成する最大出力行数。超過した場合は差分を打ち切り、レポートに注記を表示します。</td>
     </tr>
     <tr id="config-ja-spinnerframes">

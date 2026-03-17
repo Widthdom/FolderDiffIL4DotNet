@@ -243,17 +243,17 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>
         /// インライン差分の計算結果の行数上限。差分計算後、差分出力行数（ハンクヘッダを含む）がこの値を超える場合は
-        /// インライン差分の表示をスキップします。既定値は 1000。
-        /// 0 以下にすると既定値（1000）を使用します。
+        /// インライン差分の表示をスキップします。既定値は 10000。
+        /// 0 以下にすると既定値（10000）を使用します。
         /// </summary>
-        public int InlineDiffMaxDiffLines { get; set; } = 1000;
+        public int InlineDiffMaxDiffLines { get; set; } = 10000;
 
         /// <summary>
         /// HTML レポートに出力するインライン差分の最大行数（ハンクヘッダを含む）。
-        /// 超過分は打ち切り表示になります。既定値は 500。
-        /// 0 以下にすると既定値（500）を使用します。
+        /// 超過分は打ち切り表示になります。既定値は 10000。
+        /// 0 以下にすると既定値（10000）を使用します。
         /// </summary>
-        public int InlineDiffMaxOutputLines { get; set; } = 500;
+        public int InlineDiffMaxOutputLines { get; set; } = 10000;
 
         /// <summary>
         /// コンソールスピナーのフレーム文字列リスト。各要素が 1 フレームになります。

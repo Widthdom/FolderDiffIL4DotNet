@@ -36,7 +36,7 @@ namespace FolderDiffIL4DotNet.Core.Text
         /// <param name="oldLines">old 側のテキスト行配列。</param>
         /// <param name="newLines">new 側のテキスト行配列。</param>
         /// <param name="contextLines">変更箇所の前後に表示するコンテキスト行数（既定: 3）。</param>
-        /// <param name="maxOutputLines">出力する最大行数（ハンクヘッダ含む、既定: 500）。超過分は Truncated 行で打ち切り。</param>
+        /// <param name="maxOutputLines">出力する最大行数（ハンクヘッダ含む、既定: 10000）。超過分は Truncated 行で打ち切り。</param>
         /// <param name="maxEditDistance">
         /// 許容する最大編集距離（挿入行数 + 削除行数の合計、既定: 4000）。
         /// 実際の差分がこの値を超える場合は単一の Truncated 行を返します。
@@ -46,7 +46,7 @@ namespace FolderDiffIL4DotNet.Core.Text
             string[] oldLines,
             string[] newLines,
             int contextLines = 3,
-            int maxOutputLines = 500,
+            int maxOutputLines = 10000,
             int maxEditDistance = 4000)
         {
             if (oldLines == null) throw new ArgumentNullException(nameof(oldLines));

@@ -333,8 +333,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
 
             Assert.True(config.EnableInlineDiff);
             Assert.Equal(0, config.InlineDiffContextLines);
-            Assert.Equal(1000, config.InlineDiffMaxDiffLines);
-            Assert.Equal(500, config.InlineDiffMaxOutputLines);
+            Assert.Equal(10000, config.InlineDiffMaxDiffLines);
+            Assert.Equal(10000, config.InlineDiffMaxOutputLines);
         }
 
         [Fact]
@@ -412,8 +412,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
             Assert.True(config.EnableInlineDiff);
             Assert.Equal(0, config.InlineDiffContextLines);
-            Assert.Equal(1000, config.InlineDiffMaxDiffLines);
-            Assert.Equal(500, config.InlineDiffMaxOutputLines);
+            Assert.Equal(10000, config.InlineDiffMaxDiffLines);
+            Assert.Equal(10000, config.InlineDiffMaxOutputLines);
         }
     }
 }

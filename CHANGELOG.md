@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- Raised the default values of `InlineDiffMaxOutputLines` and `InlineDiffMaxDiffLines` from `500`/`1000` to **`10000`** each in [`ConfigSettings`](Models/ConfigSettings.cs), [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs), and [`TextDiffer`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs). Updated [`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs), bilingual [README.md](README.md), and [developer guide](doc/DEVELOPER_GUIDE.md).
+
 - Replaced the O(N×M) LCS algorithm in [`TextDiffer`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) with **Myers diff** (O(D² + N + M) time, O(D²) space, where D = edit distance). The previous `m × n > 4 000 000` cell-count guard is replaced by a new [`InlineDiffMaxEditDistance`](README.md#configuration-table-en) config key (default `4 000`) that limits the number of inserted + deleted lines. Files with millions of lines now produce an inline diff as long as the actual change is small — for example, two 2 370 000-line IL files differing by 20 lines complete in milliseconds. Updated [`TextDifferTests`](FolderDiffIL4DotNet.Tests/Core/Text/TextDifferTests.cs): replaced `Compute_InputExceedsLcsLimit_ReturnsTruncatedMessage` with `Compute_EditDistanceExceedsLimit_ReturnsTruncatedMessage`; added `Compute_LargeFilesSmallEditDistance_ProducesCorrectDiff` and `Compute_VeryLargeFilesWithTinyDiff_ProducesInlineDiff`.
 
 - Polished HTML report UX in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs): download button icon changed from `⇩` to `⤓` and label changed to "Download as reviewed"; the reviewed-file banner now reads `"Reviewed: <timestamp> — read-only"` instead of a plain lock icon; Added/Removed section heading and column header colours now follow the GitHub diff palette (`#22863a` green / `#b31d28` red / `#e6ffed` background for Added, `#ffeef0` background for Removed); the `No` column is widened to `3.2em` to accommodate files counts up to 999,999; empty `Diff Reason` cells no longer render a ghost `<code>` element. Updated sample [`doc/samples/diff_report.html`](doc/samples/diff_report.html) to match.
@@ -318,6 +320,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 変更
+
+- `InlineDiffMaxOutputLines` と `InlineDiffMaxDiffLines` の既定値を `500`/`1000` から **`10000`** に引き上げました（[`ConfigSettings`](Models/ConfigSettings.cs)・[`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs)・[`TextDiffer`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs)）。[`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs)、日英 [README.md](README.md)、[開発者ガイド](doc/DEVELOPER_GUIDE.md) を更新しました。
 
 - [`TextDiffer`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) の差分アルゴリズムを O(N×M) の LCS から **Myers diff**（O(D² + N + M) 時間・O(D²) 空間、D = 編集距離）に置き換えました。従来の `m × n > 4 000 000` セル数ガードを廃止し、新しい設定項目 [`InlineDiffMaxEditDistance`](README.md#configuration-table-ja)（既定値 `4 000`、挿入行数 + 削除行数の合計上限）に置き換えました。差分が少なければ数百万行のファイルもインライン差分を表示できます（例: 237 万行の IL ファイルを 20 行の差分で比較した場合、ミリ秒以内に完了）。[`TextDifferTests`](FolderDiffIL4DotNet.Tests/Core/Text/TextDifferTests.cs) を更新: `Compute_InputExceedsLcsLimit_ReturnsTruncatedMessage` を `Compute_EditDistanceExceedsLimit_ReturnsTruncatedMessage` に置換し、`Compute_LargeFilesSmallEditDistance_ProducesCorrectDiff` と `Compute_VeryLargeFilesWithTinyDiff_ProducesInlineDiff` を追加しました。
 
