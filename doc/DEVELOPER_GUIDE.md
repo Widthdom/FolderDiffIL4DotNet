@@ -539,6 +539,7 @@ Before merging behavior changes, check:
 - For unexpected network-mode behavior, verify both config flags and detected path classification.
 - When a result bucket looks wrong, inspect [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) population order before touching report formatting.
 - If a test becomes order-dependent, suspect leaked run-scoped state first.
+- If the banner or any console output shows `?` characters on Windows, the process is using the OEM code page. [`Program.cs`](../Program.cs) sets `Console.OutputEncoding = Encoding.UTF8` at the very start of `Main()` — before any output — to override this. On Linux and macOS the console is already UTF-8, so the assignment is effectively a no-op on those platforms.
 
 ---
 
@@ -1082,3 +1083,4 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - ネットワーク共有モードが想定外なら、設定フラグと自動判定結果の両方を確認してください。
 - バケット分類がおかしい場合は、レポート整形より前に [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) の投入順を追ってください。
 - テストが順序依存になったら、まず実行スコープ状態のリークを疑ってください。
+- Windows でバナーやコンソール出力が `?` になる場合は、プロセスが OEM コードページ（CP932/CP437 等）を使用しています。[`Program.cs`](../Program.cs) の `Main()` 先頭で `Console.OutputEncoding = Encoding.UTF8` を設定することで回避しています。Linux / macOS ではコンソールがすでに UTF-8 のため、この設定は実質ノーオペレーションです。

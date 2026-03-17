@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- Fixed garbled `?` characters in the banner on Windows: [`Program.cs`](Program.cs) now sets `Console.OutputEncoding = Encoding.UTF8` at the very start of `Main()` before any output, overriding the OEM code page (CP932/CP437) that Windows uses by default. On Linux and macOS the console is already UTF-8, so this change has no effect on those platforms.
 - Fixed three CI pipeline test failures caused by recent HTML report changes in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs): (1) `GenerateDiffReportHtml_ILMismatch_NoInlineDiff` and `GenerateDiffReportHtml_TextMismatch_EnableInlineDiffFalse_NoDetailsElement` were asserting `DoesNotContain("<details")` but a JS comment contained the literal `<details` — fixed by rewriting the comment to avoid the substring; (2) `GenerateDiffReportHtml_Md5MismatchWarning_AppearsInWarningsSection` used a single exact-match string that broke when a `<span>` was inserted between the class attribute and the heading text — fixed by splitting into two separate `Contains` assertions; (3) colour assertions updated from `#2d7a2d`/`#b00020` to `#22863a`/`#b31d28` to match the GitHub diff palette.
 
 #### Added
@@ -303,6 +304,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 修正
 
+- Windows でバナー文字が `?` になる問題を修正しました。[`Program.cs`](Program.cs) の `Main()` 先頭（出力より前）で `Console.OutputEncoding = Encoding.UTF8` を設定し、Windows がデフォルトで使用する OEM コードページ（CP932/CP437）を上書きするようにしました。Linux / macOS ではコンソールがすでに UTF-8 のためこの変更は影響しません。
 - 直近の HTML レポート変更により発生した CI パイプラインのテスト失敗 3 件を修正しました（[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs)）。(1) `GenerateDiffReportHtml_ILMismatch_NoInlineDiff` と `GenerateDiffReportHtml_TextMismatch_EnableInlineDiffFalse_NoDetailsElement` は `DoesNotContain("<details")` を検証していましたが、JS コメントに `<details` リテラルが含まれていたため、当該コメントを書き換えて修正。(2) `GenerateDiffReportHtml_Md5MismatchWarning_AppearsInWarningsSection` は見出しテキストの直前に `<span>` が挿入されたことで完全一致が崩れていたため、2 つの独立した `Contains` 検証に分割して修正。(3) 色定数を `#2d7a2d`/`#b00020` から `#22863a`/`#b31d28`（GitHub diff パレット）に変更したことに伴い、色の検証アサーションを更新しました。
 
 #### 追加
