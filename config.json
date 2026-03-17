@@ -1,6 +1,1 @@
-{
-  "EnableInlineDiff": true,
-  "InlineDiffContextLines": 0,
-  "InlineDiffMaxInputLines": 1000,
-  "InlineDiffMaxOutputLines": 500
-}
+{}
