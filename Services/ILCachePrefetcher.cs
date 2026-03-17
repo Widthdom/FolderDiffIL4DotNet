@@ -54,7 +54,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// プリフェッチ中のキャッシュヒット件数（読み取り専用スナップショット）。
         /// <para>
-        /// Snapshot of cache hits recorded during prefetch. Uses <see cref="Volatile.Read"/>
+        /// Snapshot of cache hits recorded during prefetch. Uses <see cref="Volatile"/>
         /// to ensure visibility across threads.
         /// </para>
         /// </summary>

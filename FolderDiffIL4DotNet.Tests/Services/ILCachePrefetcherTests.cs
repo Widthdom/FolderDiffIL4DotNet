@@ -210,10 +210,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var script = $"#!/bin/sh\necho \"{version}\"\nexit {exitCode}";
             File.WriteAllText(path, script);
+#pragma warning disable CA1416 // Unix 専用テストメソッド（呼び出し元が Skip.If(IsWindows) でガードされている）
+            // Unix-only; caller guards with Skip.If(OperatingSystem.IsWindows())
             File.SetUnixFileMode(path,
                 UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
                 UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
                 UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+#pragma warning restore CA1416
         }
     }
 }

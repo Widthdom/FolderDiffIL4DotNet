@@ -15,12 +15,18 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public enum DiffDetailResult
         {
-            MD5Match, // MD5ハッシュが一致
-            MD5Mismatch, // MD5ハッシュが不一致
-            ILMatch, // IL（中間言語）ベースで一致（ビルド固有情報の差異は無視）
-            ILMismatch, // IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視）
-            TextMatch, // テキストベースで一致
-            TextMismatch // テキストベースで不一致
+            /// <summary>MD5 ハッシュが一致。<para>Files match by MD5 hash.</para></summary>
+            MD5Match,
+            /// <summary>MD5 ハッシュが不一致。<para>Files differ by MD5 hash.</para></summary>
+            MD5Mismatch,
+            /// <summary>IL（中間言語）ベースで一致（ビルド固有情報の差異は無視）。<para>Files match at the IL level (build-specific differences ignored).</para></summary>
+            ILMatch,
+            /// <summary>IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視）。<para>Files differ at the IL level (build-specific differences ignored).</para></summary>
+            ILMismatch,
+            /// <summary>テキストベースで一致。<para>Files match as text.</para></summary>
+            TextMatch,
+            /// <summary>テキストベースで不一致。<para>Files differ as text.</para></summary>
+            TextMismatch
         }
 
         /// <summary>
@@ -29,8 +35,11 @@ namespace FolderDiffIL4DotNet.Models
         [Flags]
         public enum IgnoredFileLocation
         {
+            /// <summary>フォルダを特定しない初期値（0）。<para>Default value indicating no folder (0).</para></summary>
             None = 0,
+            /// <summary>旧バージョン側（比較元）フォルダに存在。<para>File exists in the old (source) folder.</para></summary>
             Old = 1,
+            /// <summary>新バージョン側（比較先）フォルダに存在。<para>File exists in the new (target) folder.</para></summary>
             New = 2
         }
 

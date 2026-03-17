@@ -423,6 +423,7 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             IReadOnlyList<TextDiffer.DiffLine> diffLines;
+#pragma warning disable CA1031 // ベストエフォートなインライン差分レンダリングのため全例外を握りつぶす意図的なキャッチ / Intentional catch-all for best-effort inline-diff rendering
             try
             {
                 diffLines = TextDiffer.Compute(oldLines, newLines, contextLines, maxOutput);
@@ -434,6 +435,7 @@ namespace FolderDiffIL4DotNet.Services
                     shouldOutputMessageToConsole: false, ex);
                 return;
             }
+#pragma warning restore CA1031
 
             if (diffLines.Count == 0) return;
 
@@ -591,6 +593,7 @@ namespace FolderDiffIL4DotNet.Services
 
         // ── Table helpers ────────────────────────────────────────────────────
 
+        /// <param name="sb">追記先の <see cref="StringBuilder"/>。</param>
         /// <param name="headerBgColor">ヘッダ行の背景色。null の場合はデフォルト色。</param>
         /// <param name="col6Header">6 列目（差異理由 / 所在）のヘッダラベル。</param>
         private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header)

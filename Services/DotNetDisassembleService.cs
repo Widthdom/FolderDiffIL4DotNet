@@ -133,7 +133,7 @@ namespace FolderDiffIL4DotNet.Services
         /// 逆アセンブル実行時のヒット数と <see cref="ILCachePrefetcher"/> のプリフェッチヒット数の合計を返します。
         /// <para>
         /// Read-only snapshot of total cache hits: disassembly hits plus prefetch hits
-        /// from <see cref="ILCachePrefetcher"/>. Uses <see cref="Volatile.Read"/> for thread safety.
+        /// from <see cref="ILCachePrefetcher"/>. Uses <see cref="Volatile"/> for thread safety.
         /// </para>
         /// </summary>
         public int IlCacheHits => Volatile.Read(ref _ilCacheHits) + _prefetcher.IlCacheHits;
@@ -141,7 +141,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// IL キャッシュへの格納（書き込み）件数（読み取り専用スナップショット）。
         /// <para>
-        /// Read-only snapshot of total cache stores. Uses <see cref="Volatile.Read"/> for thread safety.
+        /// Read-only snapshot of total cache stores. Uses <see cref="Volatile"/> for thread safety.
         /// </para>
         /// </summary>
         public int IlCacheStores => Volatile.Read(ref _ilCacheStores);
@@ -289,6 +289,8 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="disassembleCommand">使用するコマンド（ildasm / dotnet / ilspycmd など）</param>
         /// <param name="dotNetAssemblyFileAbsolutePath">対象アセンブリの絶対パス</param>
+        /// <param name="allowCache">true のとき、試行前にキャッシュヒットを確認します。</param>
+        /// <param name="recordUsage">true のとき、使用した逆アセンブラ情報を <see cref="FileDiffResultLists"/> に記録します。</param>
         /// <returns>成功可否、IL テキスト、ツールラベル、発生した例外</returns>
         private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleAsync(
             string disassembleCommand,
@@ -328,6 +330,8 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="disassembleCommand">実行コマンド</param>
         /// <param name="dotNetAssemblyFileAbsolutePath">対象アセンブリの絶対パス</param>
         /// <param name="argset">作業ディレクトリ/引数/一時出力のタプル</param>
+        /// <param name="allowCache">true のとき、試行前にキャッシュヒットを確認します。</param>
+        /// <param name="recordUsage">true のとき、使用した逆アセンブラ情報を <see cref="FileDiffResultLists"/> に記録します。</param>
         private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleWithArguments(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,

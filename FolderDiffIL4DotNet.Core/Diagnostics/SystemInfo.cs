@@ -48,7 +48,7 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
         /// <summary>
         /// 実行アセンブリの「ユーザ向け表示用バージョン文字列」を取得します。
         /// </summary>
-        /// <param name="programType">バージョンを取得したいアセンブリを含む型（通常は <see cref="Program"/> クラス型）。</param>
+        /// <param name="programType">バージョンを取得したいアセンブリを含む型（通常はエントリポイントクラス型）。</param>
         /// <returns>表示用途に利用できるバージョン文字列。</returns>
         /// <exception cref="InvalidOperationException">どのバージョン情報も取得できなかった場合。</exception>
         public static string GetAppVersion(Type programType)
