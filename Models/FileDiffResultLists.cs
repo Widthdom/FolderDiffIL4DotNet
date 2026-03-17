@@ -118,12 +118,12 @@ namespace FolderDiffIL4DotNet.Models
         public ConcurrentDictionary<string, byte> DisassemblerToolVersionsFromCache { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// new 側の更新日時が old 側より古いファイルの警告一覧。
+        /// Modified と判定されたファイルのうち、new 側の更新日時が old 側より古いものの警告一覧。
         /// </summary>
         public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// 1 件以上のファイルで new 側の更新日時が old 側より古いかどうか。
+        /// Modified と判定されたファイルの中に、new 側の更新日時が old 側より古いものが 1 件以上あるかどうか。
         /// </summary>
         public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
 
@@ -273,7 +273,7 @@ namespace FolderDiffIL4DotNet.Models
         }
 
         /// <summary>
-        /// new 側の更新日時が old 側より古いファイルの警告を記録します。
+        /// Modified と判定されたファイルについて、new 側の更新日時が old 側より古い場合の警告を記録します。
         /// </summary>
         /// <param name="fileRelativePath">ファイルの相対パス。</param>
         /// <param name="oldTimestamp">old 側の更新日時。</param>

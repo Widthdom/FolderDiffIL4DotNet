@@ -208,7 +208,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// new 側の更新日時逆転警告文言
         /// </summary>
-        private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.";
+        private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.";
 
         /// <summary>
         /// 警告セクション

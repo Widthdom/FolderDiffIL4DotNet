@@ -163,7 +163,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public async Task ExecuteFolderDiffAsync_WhenNewFileTimestampIsOlder_RecordsWarning()
+        public async Task ExecuteFolderDiffAsync_WhenModifiedFileTimestampIsOlder_RecordsWarning()
         {
             var oldDir = Path.Combine(_rootDir, "old-timestamp-warning");
             var newDir = Path.Combine(_rootDir, "new-timestamp-warning");
@@ -173,8 +173,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             const string fileRelativePath = "timestamp.txt";
-            WriteFile(oldDir, fileRelativePath, "same");
-            WriteFile(newDir, fileRelativePath, "same");
+            WriteFile(oldDir, fileRelativePath, "old content");
+            WriteFile(newDir, fileRelativePath, "new content");
             var oldFile = Path.Combine(oldDir, fileRelativePath);
             var newFile = Path.Combine(newDir, fileRelativePath);
             File.SetLastWriteTimeUtc(oldFile, new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
@@ -193,6 +193,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenUnchangedFileTimestampIsOlder_DoesNotRecordWarning()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-timestamp-warning-unchanged");
+            var newDir = Path.Combine(_rootDir, "new-timestamp-warning-unchanged");
+            var reportDir = Path.Combine(_rootDir, "report-timestamp-warning-unchanged");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            const string fileRelativePath = "timestamp.txt";
+            WriteFile(oldDir, fileRelativePath, "same");
+            WriteFile(newDir, fileRelativePath, "same");
+            File.SetLastWriteTimeUtc(Path.Combine(oldDir, fileRelativePath), new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
+            File.SetLastWriteTimeUtc(Path.Combine(newDir, fileRelativePath), new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
+
+            var config = CreateConfig(maxParallelism: 1);
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Empty(_resultLists.NewFileTimestampOlderThanOldWarnings);
+            Assert.Contains(fileRelativePath, _resultLists.UnchangedFilesRelativePath);
+        }
+
+        [Fact]
         public async Task ExecuteFolderDiffAsync_WhenTimestampWarningDisabled_DoesNotRecordWarning()
         {
             var oldDir = Path.Combine(_rootDir, "old-timestamp-warning-off");
@@ -203,8 +229,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             const string fileRelativePath = "timestamp.txt";
-            WriteFile(oldDir, fileRelativePath, "same");
-            WriteFile(newDir, fileRelativePath, "same");
+            WriteFile(oldDir, fileRelativePath, "old content");
+            WriteFile(newDir, fileRelativePath, "new content");
             File.SetLastWriteTimeUtc(Path.Combine(oldDir, fileRelativePath), new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
             File.SetLastWriteTimeUtc(Path.Combine(newDir, fileRelativePath), new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
 

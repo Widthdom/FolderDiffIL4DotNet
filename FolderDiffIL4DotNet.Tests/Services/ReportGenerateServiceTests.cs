@@ -401,13 +401,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportText = File.ReadAllText(reportPath);
             Assert.Contains("## Warnings", reportText);
             Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
-            Assert.Contains("- **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
+            Assert.Contains("- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
             Assert.Contains("  - nested", reportText);
             Assert.Contains("[2026-03-14 10:00:00 → 2026-03-14 09:00:00]", reportText);
             Assert.EndsWith("[2026-03-14 10:00:00 → 2026-03-14 09:00:00]", reportText.TrimEnd());
             Assert.True(
                 reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal) <
-                reportText.IndexOf("files in `new` have older last-modified timestamps", StringComparison.Ordinal));
+                reportText.IndexOf("**modified** files in `new` have older last-modified timestamps", StringComparison.Ordinal));
         }
 
         [Fact]

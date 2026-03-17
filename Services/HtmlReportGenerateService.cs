@@ -559,7 +559,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
-                sb.AppendLine($"  <li>One or more files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>");
+                sb.AppendLine($"  <li>One or more <strong>modified</strong> files in <code>new</code> have older last-modified timestamps than the corresponding files in <code>old</code>.</li>");
                 sb.AppendLine("</ul>");
 
                 // Timestamp-regressed files table (same style as Modified Files)
