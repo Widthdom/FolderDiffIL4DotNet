@@ -24,6 +24,9 @@ namespace FolderDiffIL4DotNet.Services
         internal const string DIFF_REPORT_HTML_FILE_NAME = "diff_report.html";
 
         private const string TIMESTAMP_ARROW = " → ";
+        private const string COLOR_ADDED    = "#22863a";
+        private const string COLOR_REMOVED  = "#b31d28";
+        private const string COLOR_MODIFIED = "#0051c3";
         private const string TH_BG_ADDED    = "#e6ffed";
         private const string TH_BG_REMOVED  = "#ffeef0";
         private const string TH_BG_MODIFIED = "#e3f2fd";
@@ -284,7 +287,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.AddedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ + ] Added Files ({items.Count})</h2>");
+            sb.AppendLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] Added Files ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine("<p class=\"empty\">(none)</p>"); return; }
 
             AppendTableStart(sb, TH_BG_ADDED, "Diff Reason");
@@ -304,7 +307,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.RemovedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ - ] Removed Files ({items.Count})</h2>");
+            sb.AppendLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] Removed Files ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine("<p class=\"empty\">(none)</p>"); return; }
 
             AppendTableStart(sb, TH_BG_REMOVED, "Diff Reason");
@@ -329,7 +332,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.ModifiedFilesRelativePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ * ] Modified Files ({items.Count})</h2>");
+            sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] Modified Files ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine("<p class=\"empty\">(none)</p>"); return; }
 
             AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
@@ -568,7 +571,7 @@ namespace FolderDiffIL4DotNet.Services
                 sb.AppendLine("</ul>");
 
                 // Timestamp-regressed files table (same style as Modified Files)
-                sb.AppendLine($"<h2>[ ! ] Modified Files — Timestamps Regressed ({warnings.Count})</h2>");
+                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] Modified Files — Timestamps Regressed ({warnings.Count})</h2>");
                 AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
                 sb.AppendLine("<tbody>");
                 int idx = 0;

@@ -132,7 +132,7 @@ The HTML report is a self-contained single file that opens in any browser — no
 | Diff Reason | Diff type only: `MD5Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. |
 | Disassembler | Disassembler label and version used for IL comparison (e.g. `dotnet-ildasm (version: dotnet ildasm 0.12.2.0)`); empty for non-IL files |
 
-Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**). Section headings and Ignored / Unchanged column headers use the default style.
+Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
 See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live sample (open in a browser).
 
@@ -534,7 +534,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | Diff Reason | 差分タイプのみ: `MD5Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など |
 | Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: `dotnet-ildasm (version: dotnet ildasm 0.12.2.0)`）。IL 比較対象外のファイルは空欄 |
 
-Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされます。セクション見出しおよび Ignored・Unchanged の列ヘッダはデフォルトのスタイルです。
+Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 
 ライブサンプルは [doc/samples/diff_report.html](doc/samples/diff_report.html) を参照してください（ブラウザで開いてください）。
 
