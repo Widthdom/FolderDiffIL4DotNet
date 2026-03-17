@@ -379,9 +379,10 @@ namespace FolderDiffIL4DotNet.Services
             ILCache ilCache,
             string sectionPrefix = "mod")
         {
-            int maxDiffLines = config.InlineDiffMaxDiffLines  > 0 ? config.InlineDiffMaxDiffLines  : 1000;
-            int maxOutput    = config.InlineDiffMaxOutputLines > 0 ? config.InlineDiffMaxOutputLines : 500;
-            int contextLines = config.InlineDiffContextLines >= 0 ? config.InlineDiffContextLines : 0;
+            int maxDiffLines    = config.InlineDiffMaxDiffLines    > 0 ? config.InlineDiffMaxDiffLines    : 1000;
+            int maxOutput       = config.InlineDiffMaxOutputLines  > 0 ? config.InlineDiffMaxOutputLines  : 500;
+            int contextLines    = config.InlineDiffContextLines   >= 0 ? config.InlineDiffContextLines   : 0;
+            int maxEditDistance = config.InlineDiffMaxEditDistance  > 0 ? config.InlineDiffMaxEditDistance : 4000;
 
             string[] oldLines, newLines;
 
@@ -416,7 +417,7 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning disable CA1031 // ベストエフォートなインライン差分レンダリングのため全例外を握りつぶす意図的なキャッチ / Intentional catch-all for best-effort inline-diff rendering
             try
             {
-                diffLines = TextDiffer.Compute(oldLines, newLines, contextLines, maxOutput);
+                diffLines = TextDiffer.Compute(oldLines, newLines, contextLines, maxOutput, maxEditDistance);
             }
             catch (Exception ex)
             {

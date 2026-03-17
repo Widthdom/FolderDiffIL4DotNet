@@ -154,7 +154,7 @@
   <li>Elapsed Time: 0h 0m 1.2s</li>
   <li>Timestamps (timezone): +09:00</li>
   <li>Note: When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>
-  <li>Note: When diffing IL, lines containing any of the configured strings are ignored: &quot;buildserver1_&quot;, &quot;buildserver2_&quot;, &quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;.</li>
+  <li>Note: When diffing IL, lines containing any of the configured strings are ignored: &quot;buildserver1_&quot;, &quot;buildserver2_&quot;, &quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;, &quot;.publickeytoken = ( &quot;, &quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;, &quot;// Code size &quot;.</li>
   <li>Legend:
     <ul>
       <li><code>MD5Match</code> / <code>MD5Mismatch</code>: MD5 hash match / mismatch</li>
@@ -642,7 +642,7 @@
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
-  <td colspan="8"><p class="diff-skipped">Inline diff skipped: file too large for LCS (2001 vs 2001 lines). Disable EnableInlineDiff to suppress this message.</p></td>
+  <td colspan="8"><p class="diff-skipped">#7 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 2001 vs 2001 lines). Increase InlineDiffMaxEditDistance in config to raise the limit.</p></td>
 </tr>
 <tr>
   <td class="col-no">8</td>
@@ -655,7 +655,7 @@
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
-  <td colspan="8"><p class="diff-skipped">Inline diff skipped: diff too large (1250 diff lines; limit is 1000). Increase <code>InlineDiffMaxDiffLines</code> in config to enable.</p></td>
+  <td colspan="8"><p class="diff-skipped">#8 Inline diff skipped: diff too large (1250 diff lines; limit is 1000). Increase <code>InlineDiffMaxDiffLines</code> in config to enable.</p></td>
 </tr>
 </tbody></table>
 </div>

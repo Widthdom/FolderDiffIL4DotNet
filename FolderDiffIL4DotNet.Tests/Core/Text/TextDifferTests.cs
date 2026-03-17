@@ -175,20 +175,55 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.True(truncIdx <= 5);
         }
 
-        // ── 入力行数超過 ─────────────────────────────────────────────────────
+        // ── 編集距離上限 ─────────────────────────────────────────────────────
 
         [Fact]
-        public void Compute_InputExceedsLcsLimit_ReturnsTruncatedMessage()
+        public void Compute_EditDistanceExceedsLimit_ReturnsTruncatedMessage()
         {
-            // 4M セル超え: 3000 × 2000 = 6M
-            var old = Enumerable.Range(1, 3000).Select(i => $"line{i}").ToArray();
-            var @new = Enumerable.Range(1, 2000).Select(i => $"line{i}").ToArray();
+            // maxEditDistance=5 に対して編集距離 10 (すべて異なる行) → スキップ
+            var old = Enumerable.Range(1, 10).Select(i => $"old{i}").ToArray();
+            var @new = Enumerable.Range(1, 10).Select(i => $"new{i}").ToArray();
 
-            var result = TextDiffer.Compute(old, @new);
+            var result = TextDiffer.Compute(old, @new, maxEditDistance: 5);
 
             Assert.Single(result);
             Assert.Equal(TextDiffer.Truncated, result[0].Kind);
             Assert.Contains("too large", result[0].Text, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("InlineDiffMaxEditDistance", result[0].Text);
+        }
+
+        [Fact]
+        public void Compute_LargeFilesSmallEditDistance_ProducesCorrectDiff()
+        {
+            // 旧 LCS ガードでは m×n > 4M でスキップされていたが、Myers diff なら小さい差分は処理できる
+            // 3000 行 × 2000 行: 共通行 2000、削除行 1000 → 編集距離 D=1000
+            var old = Enumerable.Range(1, 3000).Select(i => $"line{i}").ToArray();
+            var @new = Enumerable.Range(1, 2000).Select(i => $"line{i}").ToArray();
+
+            var result = TextDiffer.Compute(old, @new, contextLines: 0, maxOutputLines: 10000);
+
+            // 旧の LCS ガードでは Truncated が返っていたが、Myers diff では正しく差分が得られる
+            Assert.False(result.Count == 1 && result[0].Kind == TextDiffer.Truncated);
+            Assert.Contains(result, l => l.Kind == TextDiffer.Removed);
+            Assert.DoesNotContain(result, l => l.Kind == TextDiffer.Added);
+        }
+
+        [Fact]
+        public void Compute_VeryLargeFilesWithTinyDiff_ProducesInlineDiff()
+        {
+            // ファイルが大きくても差分が小さければ正常に処理できることを検証
+            // 10000 行の共通行に 1 行の変更を挟む
+            var old = Enumerable.Range(1, 10000).Select(i => $"common{i}").ToArray();
+            var @new = old.ToArray();
+            old[5000] = "old-changed";
+            @new[5000] = "new-changed";
+
+            var result = TextDiffer.Compute(old, @new, contextLines: 0);
+
+            Assert.Contains(result, l => l.Kind == TextDiffer.Removed && l.Text == "old-changed");
+            Assert.Contains(result, l => l.Kind == TextDiffer.Added   && l.Text == "new-changed");
+            // 単独の Truncated で返すのではなく、正しく差分が得られること
+            Assert.False(result.Count == 1 && result[0].Kind == TextDiffer.Truncated);
         }
 
         // ── null 引数 ─────────────────────────────────────────────────────────

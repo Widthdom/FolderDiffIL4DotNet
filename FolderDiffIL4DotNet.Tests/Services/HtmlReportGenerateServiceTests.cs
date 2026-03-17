@@ -359,12 +359,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReportHtml_TextMismatch_FileTooLargeForLcs_ShowsSkippedMessageWithoutExpandArrow()
+        public void GenerateDiffReportHtml_TextMismatch_EditDistanceTooLarge_ShowsSkippedMessageWithoutExpandArrow()
         {
-            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-lcs-large");
+            var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-edit-distance-large");
 
-            // 2001 行 × 2001 行 → 積が 4,000,000 超 → LCS テーブルを作れず Truncated 1 行のみ返る
-            // (+0 / -0 でさも差異なしに見えるバグを防ぐため、矢印なしで skip メッセージを直接表示する)
+            // 2001 行すべて異なる → 編集距離 D = 2001 + 2001 = 4002 > 既定の InlineDiffMaxEditDistance (4000)
+            // → Truncated 1 行のみ返る。矢印なしで skip メッセージを直接表示する。
             File.WriteAllLines(Path.Combine(oldDir, "huge.txt"), Enumerable.Range(1, 2001).Select(i => $"old{i}"));
             File.WriteAllLines(Path.Combine(newDir, "huge.txt"), Enumerable.Range(1, 2001).Select(i => $"new{i}"));
 
@@ -379,7 +379,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("diff-skipped", html);
-            Assert.Contains("file too large for LCS", html);
+            Assert.Contains("edit distance too large", html);
+            Assert.Contains("InlineDiffMaxEditDistance", html);
             // 矢印で展開する前に表示されるべき → <details> ラッパーなし
             Assert.DoesNotContain("<details", html);
         }

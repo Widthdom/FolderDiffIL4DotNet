@@ -194,7 +194,7 @@ Override only the settings you want to change. For example:
 ```json
 {
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
-  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x"],
+  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x", ".publickeytoken = ( ", ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ", "// Code size "],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
   "ShouldIncludeIgnoredFiles": false,
@@ -347,6 +347,11 @@ Override only the settings you want to change. For example:
       <td><code>InlineDiffContextLines</code></td>
       <td><code>0</code></td>
       <td>Number of unchanged context lines to show above and below each changed hunk in inline diffs. <code>0</code> shows only the changed lines themselves.</td>
+    </tr>
+    <tr id="config-en-inlinediffmaxeditdistance">
+      <td><code>InlineDiffMaxEditDistance</code></td>
+      <td><code>4000</code></td>
+      <td>Maximum allowed edit distance (total inserted + deleted lines) for inline diff computation. If the actual diff exceeds this value the inline diff is skipped. Uses <a href="https://en.wikipedia.org/wiki/Diff#Algorithm">Myers diff</a> (O(D²&nbsp;+&nbsp;N&nbsp;+&nbsp;M)) so very large files with few changes are handled efficiently — file size alone does not cause a skip.</td>
     </tr>
     <tr id="config-en-inlinediffmaxdifflines">
       <td><code>InlineDiffMaxDiffLines</code></td>
@@ -595,7 +600,7 @@ flowchart TD
 ```json
 {
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
-  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x"],
+  "ILIgnoreLineContainingStrings": ["buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x", ".publickeytoken = ( ", ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ", "// Code size "],
   "ShouldOutputFileTimestamps": false,
   "ShouldOutputILText": false,
   "ShouldIncludeIgnoredFiles": false,
@@ -748,6 +753,11 @@ flowchart TD
       <td><code>InlineDiffContextLines</code></td>
       <td><code>0</code></td>
       <td>インライン差分で各変更ハンクの前後に表示する未変更コンテキスト行数。<code>0</code> では変更行のみを表示します。</td>
+    </tr>
+    <tr id="config-ja-inlinediffmaxeditdistance">
+      <td><code>InlineDiffMaxEditDistance</code></td>
+      <td><code>4000</code></td>
+      <td>インライン差分計算に許容する最大編集距離（挿入行数 + 削除行数の合計）。実際の差分がこの値を超えた場合はインライン差分の表示をスキップします。<a href="https://en.wikipedia.org/wiki/Diff#Algorithm">Myers diff</a>（O(D²&nbsp;+&nbsp;N&nbsp;+&nbsp;M)）を使用するため、差分が少なければ数百万行のファイルも高速に処理できます。ファイルサイズ単体はスキップの原因になりません。</td>
     </tr>
     <tr id="config-ja-inlinediffmaxdifflines">
       <td><code>InlineDiffMaxDiffLines</code></td>

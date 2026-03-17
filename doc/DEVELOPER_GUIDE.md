@@ -391,15 +391,17 @@ Additional internal defaults:
 
 ### Inline diff skip behaviour
 
+`TextDiffer` uses the **Myers diff algorithm** (O(D² + N + M) time, O(D²) space), where D is the edit distance (inserted + deleted lines). Because the runtime depends on D rather than N × M, very large files with few changes are handled efficiently — a 2,370,000-line IL file with 20 changed lines completes in milliseconds.
+
 The inline diff can be suppressed in three ways, each producing a visible `diff-skipped` notice in the HTML report (no expand arrow):
 
 | Trigger | Setting | Condition | Message shown |
 | --- | --- | --- | --- |
-| LCS table too large | `EnableInlineDiff` | `oldLines × newLines > 4,000,000` — building the LCS DP table would require too much memory | `Inline diff skipped: file too large for LCS (M vs N lines). Disable EnableInlineDiff to suppress this message.` |
+| Edit distance too large | `InlineDiffMaxEditDistance` (default `4000`) | `D > InlineDiffMaxEditDistance` — too many insertions/deletions | `#N Inline diff skipped: edit distance too large (>M insertions/deletions in X vs Y lines). Increase InlineDiffMaxEditDistance in config to raise the limit.` |
 | Output lines capped mid-compute | `InlineDiffMaxOutputLines` (default `500`) | `TextDiffer.Compute` reached the output-line budget; a `Truncated` row is appended and the partial diff is shown | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
-| Diff result too large | `InlineDiffMaxDiffLines` (default `1000`) | Total diff output (including hunk headers) exceeds the threshold *after* compute | `Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
+| Diff result too large | `InlineDiffMaxDiffLines` (default `1000`) | Total diff output (including hunk headers) exceeds the threshold *after* compute | `#N Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
 
-The LCS guard and the single-Truncated case both render as a plain row (no `<details>` element), so the notice is visible without any click. The `InlineDiffMaxOutputLines` truncation renders *inside* the `<details>` block after a partial diff.
+The edit-distance-exceeded and single-Truncated cases both render as a plain row (no `<details>` element), so the notice is visible without any click. The `InlineDiffMaxOutputLines` truncation renders *inside* the `<details>` block after a partial diff.
 
 > **ILMismatch entries** also require `ShouldOutputILText: true` (the default). `HtmlReportGenerateService` reads IL text directly from the `*_IL.txt` files produced by `ILTextOutputService` (under `Reports/<label>/IL/old` and `Reports/<label>/IL/new`). If `ShouldOutputILText` is `false`, those files are not written and the inline diff is silently omitted — no `diff-skipped` notice is shown.
 
@@ -954,15 +956,17 @@ catch (Exception ex)
 
 ### インライン差分スキップの挙動
 
+`TextDiffer` は **Myers diff アルゴリズム**（O(D² + N + M) 時間・O(D²) 空間、D = 編集距離）を使用します。実行時間は N × M でなく D に依存するため、差分が少なければ数百万行のファイルも高速に処理できます（例: 237 万行の IL ファイルで 20 行の差分 → ミリ秒以内）。
+
 インライン差分は 3 通りの条件で抑制されます。いずれの場合も HTML レポートに `diff-skipped` スタイルの通知が直接表示されます（展開矢印なし）。
 
 | トリガー | 設定 | 条件 | 表示メッセージ |
 | --- | --- | --- | --- |
-| LCS テーブルが大きすぎる | `EnableInlineDiff` | `旧行数 × 新行数 > 4,000,000` — LCS の DP テーブルが大きくなりすぎる | `Inline diff skipped: file too large for LCS (M vs N lines). Disable EnableInlineDiff to suppress this message.` |
+| 編集距離が大きすぎる | `InlineDiffMaxEditDistance`（既定 `4000`） | `D > InlineDiffMaxEditDistance` — 挿入・削除行数が多すぎる | `#N Inline diff skipped: edit distance too large (>M insertions/deletions in X vs Y lines). Increase InlineDiffMaxEditDistance in config to raise the limit.` |
 | 出力行数が計算途中で上限に達した | `InlineDiffMaxOutputLines`（既定 `500`） | `TextDiffer.Compute` が出力行数予算に達し、`Truncated` 行を末尾に追加して部分差分を返す | `... (diff output truncated — increase InlineDiffMaxOutputLines to see more)` |
-| 差分結果が大きすぎる | `InlineDiffMaxDiffLines`（既定 `1000`） | 計算後の差分出力行数合計（ハンクヘッダ含む）が閾値を超えた | `Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
+| 差分結果が大きすぎる | `InlineDiffMaxDiffLines`（既定 `1000`） | 計算後の差分出力行数合計（ハンクヘッダ含む）が閾値を超えた | `#N Inline diff skipped: diff too large (N diff lines; limit is M). Increase InlineDiffMaxDiffLines in config to enable.` |
 
-LCS 超過と単一 Truncated 行のケースはいずれも `<details>` ラッパーなしのプレーン行としてレンダリングされるため、クリック不要でメッセージが見えます。`InlineDiffMaxOutputLines` による打ち切りは `<details>` ブロック内に部分差分の末尾として表示されます。
+編集距離超過と単一 Truncated 行のケースはいずれも `<details>` ラッパーなしのプレーン行としてレンダリングされるため、クリック不要でメッセージが見えます。`InlineDiffMaxOutputLines` による打ち切りは `<details>` ブロック内に部分差分の末尾として表示されます。
 
 > **ILMismatch エントリ**はさらに `ShouldOutputILText: true`（既定値）が必要です。`HtmlReportGenerateService` は `ILTextOutputService` が `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に書き出した `*_IL.txt` ファイルを直接読み込んでインライン差分を生成します。`ShouldOutputILText` が `false` の場合、これらのファイルは生成されずインライン差分はサイレントに省略されます（`diff-skipped` 通知は表示されません）。
 
