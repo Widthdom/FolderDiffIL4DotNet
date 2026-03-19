@@ -518,6 +518,114 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --print-config
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_PrintConfigFlag_ExitsZeroAndOutputsJson()
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--print-config" });
+
+                    Assert.Equal(0, exitCode);
+                    var output = sw.ToString();
+                    Assert.Contains("\"IgnoredExtensions\"", output, StringComparison.Ordinal);
+                    Assert.Contains("\"TextFileExtensions\"", output, StringComparison.Ordinal);
+                    Assert.Contains("\"MaxLogGenerations\"", output, StringComparison.Ordinal);
+                    Assert.Contains(".pdb", output, StringComparison.Ordinal);   // default IgnoredExtensions value
+                    Assert.Contains(".cs", output, StringComparison.Ordinal);    // default TextFileExtensions value
+                    // Logger should NOT have been initialized (no diff run)
+                    Assert.Empty(logger.Messages);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_PrintConfigFlag_ReflectsEnvVarOverride()
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            var prevVal = Environment.GetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS", "99");
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--print-config" });
+
+                    Assert.Equal(0, exitCode);
+                    Assert.Contains("\"MaxLogGenerations\": 99", sw.ToString(), StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                Environment.SetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS", prevVal);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_PrintConfigFlag_WithCustomConfigPath_ReflectsCustomValues()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-print-config-custom-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempRoot);
+            var customConfigPath = Path.Combine(tempRoot, "custom.json");
+            await File.WriteAllTextAsync(customConfigPath, """{ "MaxLogGenerations": 12 }""");
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithMissingConfigFileAsync(async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--config", customConfigPath, "--print-config" });
+
+                    Assert.Equal(0, exitCode);
+                    Assert.Contains("\"MaxLogGenerations\": 12", sw.ToString(), StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_PrintConfigFlag_WithMissingConfig_ReturnsConfigurationError()
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            await WithMissingConfigFileAsync(async () =>
+            {
+                var exitCode = await runner.RunAsync(new[] { "--print-config" });
+
+                Assert.Equal(3, exitCode);
+            });
+        }
+
+        // -----------------------------------------------------------------------
         // Preflight checks
         // -----------------------------------------------------------------------
 

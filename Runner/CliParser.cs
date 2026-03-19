@@ -14,6 +14,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_NO_IL_CACHE = "--no-il-cache";
         private const string OPT_SKIP_IL = "--skip-il";
         private const string OPT_NO_TIMESTAMP_WARNINGS = "--no-timestamp-warnings";
+        private const string OPT_PRINT_CONFIG = "--print-config";
 
         /// <summary>
         /// コマンドライン引数を走査して CLI オプションを解析します。
@@ -24,14 +25,14 @@ namespace FolderDiffIL4DotNet.Runner
         internal static CliOptions Parse(string[] args)
         {
             bool showHelp = false, showVersion = false, noPause = false;
-            bool noIlCache = false, skipIl = false, noTimestampWarnings = false;
+            bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false;
             string configPath = null;
             int? threadsOverride = null;
             string parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, null, null, false, false, false, null);
+                return new CliOptions(false, false, false, null, null, false, false, false, false, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -91,6 +92,9 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_NO_TIMESTAMP_WARNINGS:
                         noTimestampWarnings = true;
                         break;
+                    case OPT_PRINT_CONFIG:
+                        printConfig = true;
+                        break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
                         if (arg.StartsWith("--", System.StringComparison.Ordinal)
@@ -102,7 +106,7 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
 
-            return new CliOptions(showHelp, showVersion, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, parseError);
+            return new CliOptions(showHelp, showVersion, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, parseError);
         }
     }
 }

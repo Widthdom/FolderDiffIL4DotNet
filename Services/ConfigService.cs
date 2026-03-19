@@ -131,6 +131,7 @@ namespace FolderDiffIL4DotNet.Services
             TryApplyInt(P + "INLINEDIFFMAXEDITDISTANCE",                   v => config.InlineDiffMaxEditDistance = v);
             TryApplyInt(P + "INLINEDIFFMAXDIFFLINES",                      v => config.InlineDiffMaxDiffLines = v);
             TryApplyInt(P + "INLINEDIFFMAXOUTPUTLINES",                    v => config.InlineDiffMaxOutputLines = v);
+            TryApplyBool(P + "INLINEDIFFLAZYRENDER",                        v => config.InlineDiffLazyRender = v);
         }
 
         private static void TryApplyInt(string envVarName, Action<int> apply)

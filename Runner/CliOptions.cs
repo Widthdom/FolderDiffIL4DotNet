@@ -9,6 +9,7 @@ namespace FolderDiffIL4DotNet.Runner
     /// <param name="NoIlCache">--no-il-cache が指定された場合 true。</param>
     /// <param name="SkipIL">--skip-il が指定された場合 true。</param>
     /// <param name="NoTimestampWarnings">--no-timestamp-warnings が指定された場合 true。</param>
+    /// <param name="PrintConfig">--print-config が指定された場合 true。</param>
     /// <param name="ParseError">解析エラーのメッセージ。エラーがない場合 null。</param>
     internal sealed record CliOptions(
         bool ShowHelp,
@@ -19,5 +20,6 @@ namespace FolderDiffIL4DotNet.Runner
         bool NoIlCache,
         bool SkipIL,
         bool NoTimestampWarnings,
+        bool PrintConfig,
         string ParseError);
 }

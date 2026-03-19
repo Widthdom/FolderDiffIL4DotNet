@@ -20,7 +20,7 @@ Related documents:
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
-Current tree has `533` total tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`): `532` passing, `1` skipped (E2E test requiring a real disassembler binary).
+Current tree has `537` total tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`): `536` passing, `1` skipped (E2E test requiring a real disassembler binary).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -181,7 +181,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 <a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）の合計は `533` 件です（成功 `532`、スキップ `1` ― 実際の逆アセンブラバイナリが必要な E2E テスト）。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）の合計は `537` 件です（成功 `536`、スキップ `1` ― 実際の逆アセンブラバイナリが必要な E2E テスト）。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |

@@ -78,6 +78,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 |---|---|
 | `--help`, `-h` | Show help and exit (code `0`). |
 | `--version` | Show the application version and exit (code `0`). |
+| `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects `config.json` + all `FOLDERDIFF_*` env var overrides. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
 | `--no-pause` | Skip key-wait at process end. |
 | `--config <path>` | Load config from `<path>` instead of the default `<exe>/[`config.json`](config.json)`. |
 | `--threads <N>` | Override `MaxParallelism` for this run (`0` = auto). |
@@ -519,6 +520,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 |---|---|
 | `--help`, `-h` | 使い方を表示してコード `0` で終了します。 |
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
+| `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。`config.json` のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
 | `--config <path>` | デフォルトの `<exe>/[`config.json`](config.json)` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り `MaxParallelism` を上書きします（`0` = 自動）。 |

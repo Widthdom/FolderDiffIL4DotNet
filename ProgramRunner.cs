@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Console;
@@ -41,6 +42,7 @@ namespace FolderDiffIL4DotNet
             "Options:\n" +
             "  --help, -h                  Show this help message and exit.\n" +
             "  --version                   Show the application version and exit.\n" +
+            "  --print-config              Print the effective configuration as JSON and exit.\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +
             "  --config <path>             Path to config.json (default: <exe>/config.json).\n" +
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
@@ -98,6 +100,11 @@ namespace FolderDiffIL4DotNet
             {
                 Console.WriteLine(SystemInfo.GetAppVersion(typeof(Program)));
                 return 0;
+            }
+
+            if (opts.PrintConfig)
+            {
+                return await PrintConfigAsync(opts.ConfigPath);
             }
 
             var result = await RunWithResultAsync(args, opts);
@@ -500,6 +507,41 @@ namespace FolderDiffIL4DotNet
             int seconds = elapsed.Seconds;
             int tenths = elapsed.Milliseconds / 100;
             return $"{hours}h {minutes}m {seconds}.{tenths}s";
+        }
+
+        /// <summary>
+        /// 有効な設定（JSON 読込 + 環境変数オーバーライド適用後）を JSON として標準出力に書き出します。
+        /// </summary>
+        /// <param name="configPath">config.json の絶対パス。null の場合は既定パスを使用。</param>
+        /// <returns>成功時 0、設定読込失敗時 3。</returns>
+        private async Task<int> PrintConfigAsync(string configPath)
+        {
+            try
+            {
+                var config = await _configService.LoadConfigAsync(configPath);
+                Console.WriteLine(JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
+                return 0;
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                return (int)ProgramExitCode.ConfigurationError;
+            }
+            catch (InvalidDataException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                return (int)ProgramExitCode.ConfigurationError;
+            }
+            catch (IOException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                return (int)ProgramExitCode.ConfigurationError;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                return (int)ProgramExitCode.ConfigurationError;
+            }
         }
 
         /// <summary>
