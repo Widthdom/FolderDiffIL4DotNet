@@ -95,7 +95,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         // ── キャッシュヒット ────────────────────────────────────────────────────
 
-        [Fact]
+        [SkippableFact]
         public async Task PrefetchIlCacheAsync_WhenMatchingCacheEntryExists_IncrementsHitCounter()
         {
             Skip.If(OperatingSystem.IsWindows(), "Fake shell scripts require Unix.");
