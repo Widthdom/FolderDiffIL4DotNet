@@ -34,6 +34,11 @@ namespace FolderDiffIL4DotNet.Services
         internal const string ERROR_CONFIG_VALIDATION_PREFIX = "config.json contains invalid settings:";
 
         /// <summary>
+        /// 環境変数オーバーライドのプレフィックス。
+        /// </summary>
+        internal const string ENV_VAR_PREFIX = "FOLDERDIFF_";
+
+        /// <summary>
         /// config.jsonファイルから設定情報を非同期で読み込みます。
         /// このメソッドは、指定されたパス（または既定のアプリケーションベースディレクトリ）にある
         /// JSONファイルを読み取り、その内容を<see cref="ConfigSettings"/>オブジェクトにデシリアライズして返します。
@@ -63,6 +68,8 @@ namespace FolderDiffIL4DotNet.Services
                 var config = JsonSerializer.Deserialize<ConfigSettings>(json)
                     ?? throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED);
 
+                ApplyEnvironmentVariableOverrides(config);
+
                 var validationResult = config.Validate();
                 if (!validationResult.IsValid)
                 {
@@ -81,6 +88,81 @@ namespace FolderDiffIL4DotNet.Services
                     : string.Empty;
                 throw new InvalidDataException(
                     $"{ERROR_CONFIG_PARSE_FAILED}{location}: {ex.Message}{ERROR_CONFIG_PARSE_HINT}", ex);
+            }
+        }
+
+        /// <summary>
+        /// <c>FOLDERDIFF_</c> プレフィックスを持つ環境変数を読み取り、
+        /// 対応する <see cref="ConfigSettings"/> プロパティを上書きします。
+        /// JSON の既定値より後・バリデーションより前に適用されるため、
+        /// 環境変数で設定した値もバリデーション対象になります。
+        /// bool 値は <c>true</c>/<c>false</c>/<c>1</c>/<c>0</c>（大文字小文字不問）を受け付けます。
+        /// </summary>
+        /// <param name="config">上書き対象の設定オブジェクト。</param>
+        internal static void ApplyEnvironmentVariableOverrides(ConfigSettings config)
+        {
+            const string P = ENV_VAR_PREFIX;
+
+            TryApplyInt(P + "MAXLOGGENERATIONS",                           v => config.MaxLogGenerations = v);
+            TryApplyBool(P + "SHOULDINCLUDEUNCHANGEDFILES",                v => config.ShouldIncludeUnchangedFiles = v);
+            TryApplyBool(P + "SHOULDINCLUDEIGNOREDFILES",                  v => config.ShouldIncludeIgnoredFiles = v);
+            TryApplyBool(P + "SHOULDINCLUDEILCACHESTATSINREPORT",          v => config.ShouldIncludeILCacheStatsInReport = v);
+            TryApplyBool(P + "SHOULDGENERATEHTMLREPORT",                   v => config.ShouldGenerateHtmlReport = v);
+            TryApplyBool(P + "SHOULDOUTPUTILTEXT",                         v => config.ShouldOutputILText = v);
+            TryApplyBool(P + "SHOULDIGNOREILLINESCONFIGUREDSTRINGS",       v => config.ShouldIgnoreILLinesContainingConfiguredStrings = v);
+            TryApplyBool(P + "SHOULDOUTPUTFILETIMESTAMPS",                 v => config.ShouldOutputFileTimestamps = v);
+            TryApplyBool(P + "SHOULDWARNWHENNEWFILETIMESTAMPISOLDER",      v => config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = v);
+            TryApplyInt(P + "MAXPARALLELISM",                              v => config.MaxParallelism = v);
+            TryApplyInt(P + "TEXTDIFFPARALLELTHRESHOLDKILOBYTES",          v => config.TextDiffParallelThresholdKilobytes = v);
+            TryApplyInt(P + "TEXTDIFFCHUNKSIZEKILOBYTES",                  v => config.TextDiffChunkSizeKilobytes = v);
+            TryApplyInt(P + "TEXTDIFFPARALLELMEMORYLIMITMEGABYTES",        v => config.TextDiffParallelMemoryLimitMegabytes = v);
+            TryApplyBool(P + "ENABLEILCACHE",                              v => config.EnableILCache = v);
+            TryApplyString(P + "ILCACHEDIRECTORYABSOLUTEPATH",             v => config.ILCacheDirectoryAbsolutePath = v);
+            TryApplyInt(P + "ILCACHESTATSLOGINTERVALSECONDS",              v => config.ILCacheStatsLogIntervalSeconds = v);
+            TryApplyInt(P + "ILCACHEMAXDISKFILECOUNT",                     v => config.ILCacheMaxDiskFileCount = v);
+            TryApplyInt(P + "ILCACHEMAXDISKMEGABYTES",                     v => config.ILCacheMaxDiskMegabytes = v);
+            TryApplyInt(P + "ILPRECOMPUTEBATCHSIZE",                       v => config.ILPrecomputeBatchSize = v);
+            TryApplyBool(P + "OPTIMIZEFORNETWORKSHARES",                   v => config.OptimizeForNetworkShares = v);
+            TryApplyBool(P + "AUTODETECTNETWORKSHARES",                    v => config.AutoDetectNetworkShares = v);
+            TryApplyInt(P + "DISASSEMBLERBLACKLISTTTLMINUTES",             v => config.DisassemblerBlacklistTtlMinutes = v);
+            TryApplyBool(P + "SKIPIL",                                     v => config.SkipIL = v);
+            TryApplyBool(P + "ENABLEINLINEDIFF",                           v => config.EnableInlineDiff = v);
+            TryApplyInt(P + "INLINEDIFFCONTEXTLINES",                      v => config.InlineDiffContextLines = v);
+            TryApplyInt(P + "INLINEDIFFMAXEDITDISTANCE",                   v => config.InlineDiffMaxEditDistance = v);
+            TryApplyInt(P + "INLINEDIFFMAXDIFFLINES",                      v => config.InlineDiffMaxDiffLines = v);
+            TryApplyInt(P + "INLINEDIFFMAXOUTPUTLINES",                    v => config.InlineDiffMaxOutputLines = v);
+        }
+
+        private static void TryApplyInt(string envVarName, Action<int> apply)
+        {
+            var raw = Environment.GetEnvironmentVariable(envVarName);
+            if (raw != null && int.TryParse(raw, out var parsed))
+            {
+                apply(parsed);
+            }
+        }
+
+        private static void TryApplyBool(string envVarName, Action<bool> apply)
+        {
+            var raw = Environment.GetEnvironmentVariable(envVarName);
+            if (raw == null) return;
+
+            if (raw.Equals("true", StringComparison.OrdinalIgnoreCase) || raw == "1")
+            {
+                apply(true);
+            }
+            else if (raw.Equals("false", StringComparison.OrdinalIgnoreCase) || raw == "0")
+            {
+                apply(false);
+            }
+        }
+
+        private static void TryApplyString(string envVarName, Action<string> apply)
+        {
+            var raw = Environment.GetEnvironmentVariable(envVarName);
+            if (raw != null)
+            {
+                apply(raw);
             }
         }
     }

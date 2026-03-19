@@ -378,6 +378,33 @@ Override only the settings you want to change. For example:
   </tbody>
 </table>
 
+<a id="readme-en-env-var-overrides"></a>
+### Environment Variable Overrides
+
+Any scalar (non-list) setting in [`config.json`](config.json) can be overridden at runtime via an environment variable without modifying the file. This is useful in CI pipelines, Docker containers, or read-only deployments.
+
+**Naming convention:** `FOLDERDIFF_` + the property name in upper case.
+
+```sh
+# Common CI overrides
+export FOLDERDIFF_MAXPARALLELISM=4
+export FOLDERDIFF_ENABLEILCACHE=false
+export FOLDERDIFF_SKIPIL=true
+export FOLDERDIFF_SHOULDGENERATEHTMLREPORT=false
+export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
+```
+
+| Type | Accepted values |
+|------|----------------|
+| `bool` | `true` / `false` (case-insensitive), `1` / `0` |
+| `int` | Any valid integer |
+| `string` | Raw value as-is |
+
+Rules:
+- Environment variables are applied **after** `config.json` is loaded and **before** validation, so env-var values are subject to the same validation constraints as JSON values.
+- If an env var has an unrecognised value for its type (e.g. `"yes"` for a bool, `"x"` for an int), it is silently ignored and the JSON (or built-in default) value is kept.
+- List properties (`IgnoredExtensions`, `TextFileExtensions`, `ILIgnoreLineContainingStrings`, `SpinnerFrames`) cannot be overridden via environment variables; edit `config.json` for those.
+
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#configuration-table-en) and [`TextFileExtensions`](#configuration-table-en) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
 - After loading [`config.json`](config.json), if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: `MaxLogGenerations >= 1`; `TextDiffParallelThresholdKilobytes >= 1`; `TextDiffChunkSizeKilobytes >= 1`; `TextDiffChunkSizeKilobytes` must be less than `TextDiffParallelThresholdKilobytes`; and `SpinnerFrames` must contain at least one element.
@@ -785,6 +812,33 @@ flowchart TD
     </tr>
   </tbody>
 </table>
+
+<a id="readme-ja-env-var-overrides"></a>
+### 環境変数によるオーバーライド
+
+[`config.json`](config.json) のスカラー（リスト以外）設定はすべて、ファイルを変更せずに環境変数で実行時に上書きできます。CI パイプライン・Docker コンテナ・読み取り専用デプロイ環境で便利です。
+
+**命名規則:** `FOLDERDIFF_` + プロパティ名（大文字）
+
+```sh
+# CI でよく使うオーバーライド例
+export FOLDERDIFF_MAXPARALLELISM=4
+export FOLDERDIFF_ENABLEILCACHE=false
+export FOLDERDIFF_SKIPIL=true
+export FOLDERDIFF_SHOULDGENERATEHTMLREPORT=false
+export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
+```
+
+| 型 | 受け付ける値 |
+|----|-------------|
+| `bool` | `true` / `false`（大文字小文字不問）、`1` / `0` |
+| `int` | 任意の整数 |
+| `string` | 入力値をそのまま使用 |
+
+ルール:
+- 環境変数は `config.json` 読み込み**後**・バリデーション**前**に適用されます。そのため、環境変数で設定した値も JSON と同じバリデーション制約の対象になります。
+- 型に合わない値（bool に `"yes"`、int に `"x"` など）は警告なしで無視され、JSON（または組み込み既定値）が引き続き使用されます。
+- リスト型プロパティ（`IgnoredExtensions`、`TextFileExtensions`、`ILIgnoreLineContainingStrings`、`SpinnerFrames`）は環境変数でのオーバーライドに対応していません。これらは `config.json` を編集してください。
 
 補足:
 - [`IgnoredExtensions`](#configuration-table-ja) と [`TextFileExtensions`](#configuration-table-ja) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。

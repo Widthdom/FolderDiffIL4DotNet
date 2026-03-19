@@ -47,6 +47,14 @@ namespace FolderDiffIL4DotNet
             "  --no-il-cache               Disable the IL cache for this run.\n" +
             "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
             "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n\n" +
+            "Environment variables (override config.json values):\n" +
+            "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +
+            "  FOLDERDIFF_ENABLEILCACHE=<true|false>       Enable/disable the IL cache.\n" +
+            "  FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=<p> IL cache directory path.\n" +
+            "  FOLDERDIFF_SKIPIL=<true|false>              Skip IL comparison.\n" +
+            "  FOLDERDIFF_SHOULDGENERATEHTMLREPORT=<t|f>   Generate HTML report.\n" +
+            "  Any FOLDERDIFF_<PROPERTYNAME>=<value> key overrides the matching\n" +
+            "  config.json property (bool: true/false/1/0, int: integer).\n\n" +
             "Exit codes:\n" +
             "  0  Success.\n" +
             "  2  Invalid arguments or input paths.\n" +

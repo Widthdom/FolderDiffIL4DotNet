@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
+- Added environment variable overrides for all scalar config settings. Any non-list property in [`config.json`](config.json) can now be overridden at runtime without modifying the file by setting `FOLDERDIFF_<PROPERTYNAME>` (e.g. `FOLDERDIFF_MAXPARALLELISM=4`, `FOLDERDIFF_ENABLEILCACHE=false`, `FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache`). Bool values accept `true`/`false` (case-insensitive) and `1`/`0`; unrecognised values are silently ignored. Overrides are applied after JSON deserialization and before validation, so env-var values are subject to the same constraints as JSON values. Implementation in [`ConfigService.ApplyEnvironmentVariableOverrides`](Services/ConfigService.cs). Added 10 tests to [`ConfigServiceTests`](FolderDiffIL4DotNet.Tests/Services/ConfigServiceTests.cs) covering int/bool/string overrides, env-var-wins-over-JSON, invalid values ignored, validation still runs, and case-insensitive bool variants. Added env var summary to `--help` output in [`ProgramRunner`](ProgramRunner.cs). Added bilingual "Environment Variable Overrides" section to [README.md](README.md).
+
 - Added standalone Myers diff algorithm guide [`doc/MYERS_DIFF_ALGORITHM.md`](doc/MYERS_DIFF_ALGORITHM.md) (EN + JP): a comprehensive bilingual explanation of the Myers diff algorithm as implemented in [`TextDiffer.cs`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs), covering the edit graph model, diagonal / D-path theory, the forward pass (V array and greedy snake extension), backtracking from snapshots, worked example with full trace, O(D² + N + M) complexity analysis with concrete figures for 1 000 000-line IL files, implementation notes (offset trick, snapshot optimisation, early termination), and a comparison table of LCS / Myers / Patience / Histogram algorithms. The previous inline algorithm sections in README.md were replaced with a link to this guide.
 
 #### Fixed
@@ -332,6 +334,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 追加
+
+- [`config.json`](config.json) の全スカラー設定を環境変数で実行時に上書きできるようになりました。リスト型以外のプロパティはすべて `FOLDERDIFF_<プロパティ名>` 形式の環境変数で上書き可能です（例: `FOLDERDIFF_MAXPARALLELISM=4`、`FOLDERDIFF_ENABLEILCACHE=false`、`FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache`）。bool 値は `true`/`false`（大文字小文字不問）と `1`/`0` を受け付けます。型に合わない値は警告なしで無視されます。環境変数は JSON 読み込み後・バリデーション前に適用されるため、JSON と同じ制約チェックの対象になります。実装は [`ConfigService.ApplyEnvironmentVariableOverrides`](Services/ConfigService.cs)。[`ConfigServiceTests`](FolderDiffIL4DotNet.Tests/Services/ConfigServiceTests.cs) に 10 件のテストを追加（int/bool/string オーバーライド・環境変数優先・不正値無視・バリデーション通過・大文字小文字不問 bool）。[`ProgramRunner`](ProgramRunner.cs) の `--help` 出力に環境変数の概要を追加。日英 [README.md](README.md) に「環境変数によるオーバーライド」セクションを追加しました。
 
 - Myers diff アルゴリズムの解説ドキュメント [`doc/MYERS_DIFF_ALGORITHM.md`](doc/MYERS_DIFF_ALGORITHM.md)（日英バイリンガル）を追加しました。[`TextDiffer.cs`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) の実装に即した包括的な解説で、編集グラフモデル・対角線と D パス理論・前向きパス（V 配列と貪欲スネーク延長）・スナップショットからのバックトラック・全手順付きの具体例・100 万行 IL ファイルを用いた O(D² + N + M) 計算量の分析・実装上の要点（オフセットトリック・スナップショット最適化・早期打ち切り）・LCS / Myers / Patience / Histogram 各アルゴリズムの比較表を網羅しています。README.md の従来のアルゴリズム解説インライン節はこのガイドへのリンクに置き換えました。
 

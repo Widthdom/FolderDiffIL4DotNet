@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
 
@@ -284,6 +285,240 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.NotNull(config);
             });
         }
+
+        // -----------------------------------------------------------------------
+        // Environment variable override tests
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task LoadConfigAsync_EnvVarOverridesIntProperty_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_MAXPARALLELISM", "8") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var config = await service.LoadConfigAsync();
+
+                        Assert.Equal(8, config.MaxParallelism);
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EnvVarOverridesBoolProperty_TrueValue_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ENABLEILCACHE", "false") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var config = await service.LoadConfigAsync();
+
+                        Assert.False(config.EnableILCache);
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EnvVarOverridesBoolProperty_OneZero_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", "0") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var config = await service.LoadConfigAsync();
+
+                        Assert.False(config.ShouldGenerateHtmlReport);
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EnvVarOverridesStringProperty_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH", "/tmp/custom-il-cache") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var config = await service.LoadConfigAsync();
+
+                        Assert.Equal("/tmp/custom-il-cache", config.ILCacheDirectoryAbsolutePath);
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EnvVarOverridesJsonValue_EnvVarWins()
+        {
+            const string json = """{ "MaxParallelism": 4 }""";
+
+            await WithConfigFileAsync(json, async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_MAXPARALLELISM", "16") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var config = await service.LoadConfigAsync();
+
+                        Assert.Equal(16, config.MaxParallelism);
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EnvVarWithInvalidIntValue_IsIgnored()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_MAXPARALLELISM", "not-a-number") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var config = await service.LoadConfigAsync();
+
+                        Assert.Equal(0, config.MaxParallelism);  // default
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EnvVarWithInvalidBoolValue_IsIgnored()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ENABLEILCACHE", "yes") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var config = await service.LoadConfigAsync();
+
+                        Assert.True(config.EnableILCache);  // default unchanged
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigAsync_EnvVarOverridesInvalidValue_ValidationStillRuns()
+        {
+            // env var が不正値（MaxLogGenerations=0）を設定 → バリデーション失敗
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_MAXLOGGENERATIONS", "0") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                        Assert.Contains("MaxLogGenerations", ex.Message, StringComparison.Ordinal);
+                    });
+            });
+        }
+
+        [Fact]
+        public void ApplyEnvironmentVariableOverrides_CaseInsensitiveBool_TrueVariants()
+        {
+            foreach (var trueVal in new[] { "true", "TRUE", "True", "1" })
+            {
+                var config = new ConfigSettings { ShouldGenerateHtmlReport = false };
+                WithEnvVar("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", trueVal,
+                    () => ConfigService.ApplyEnvironmentVariableOverrides(config));
+                Assert.True(config.ShouldGenerateHtmlReport, $"Expected true for value '{trueVal}'");
+            }
+        }
+
+        [Fact]
+        public void ApplyEnvironmentVariableOverrides_CaseInsensitiveBool_FalseVariants()
+        {
+            foreach (var falseVal in new[] { "false", "FALSE", "False", "0" })
+            {
+                var config = new ConfigSettings { ShouldGenerateHtmlReport = true };
+                WithEnvVar("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", falseVal,
+                    () => ConfigService.ApplyEnvironmentVariableOverrides(config));
+                Assert.False(config.ShouldGenerateHtmlReport, $"Expected false for value '{falseVal}'");
+            }
+        }
+
+        [Fact]
+        public void ApplyEnvironmentVariableOverrides_MultipleVars_AllApplied()
+        {
+            var config = new ConfigSettings();
+            WithEnvVars(
+                new[] {
+                    ("FOLDERDIFF_MAXPARALLELISM", "12"),
+                    ("FOLDERDIFF_SKIPIL", "true"),
+                    ("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", "false"),
+                    ("FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH", "/ci/cache"),
+                },
+                () => ConfigService.ApplyEnvironmentVariableOverrides(config));
+
+            Assert.Equal(12, config.MaxParallelism);
+            Assert.True(config.SkipIL);
+            Assert.False(config.ShouldGenerateHtmlReport);
+            Assert.Equal("/ci/cache", config.ILCacheDirectoryAbsolutePath);
+        }
+
+        private static async Task WithEnvVarsAsync(
+            (string key, string value)[] vars,
+            Func<Task> action)
+        {
+            var originals = new (string key, string original)[vars.Length];
+            for (int i = 0; i < vars.Length; i++)
+            {
+                originals[i] = (vars[i].key, Environment.GetEnvironmentVariable(vars[i].key));
+                Environment.SetEnvironmentVariable(vars[i].key, vars[i].value);
+            }
+
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                foreach (var (key, original) in originals)
+                {
+                    Environment.SetEnvironmentVariable(key, original);
+                }
+            }
+        }
+
+        private static void WithEnvVars((string key, string value)[] vars, Action action)
+        {
+            var originals = new (string key, string original)[vars.Length];
+            for (int i = 0; i < vars.Length; i++)
+            {
+                originals[i] = (vars[i].key, Environment.GetEnvironmentVariable(vars[i].key));
+                Environment.SetEnvironmentVariable(vars[i].key, vars[i].value);
+            }
+
+            try
+            {
+                action();
+            }
+            finally
+            {
+                foreach (var (key, original) in originals)
+                {
+                    Environment.SetEnvironmentVariable(key, original);
+                }
+            }
+        }
+
+        private static void WithEnvVar(string key, string value, Action action)
+            => WithEnvVars(new[] { (key, value) }, action);
 
         private static async Task WithConfigFileAsync(string content, Func<Task> assertion, bool deleteConfig = false)
         {
