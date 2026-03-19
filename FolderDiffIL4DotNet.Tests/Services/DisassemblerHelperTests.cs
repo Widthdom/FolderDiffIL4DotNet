@@ -139,6 +139,101 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Fact]
+        public void ResolveExecutablePath_RelativePathWithSeparator_NonExistent_ReturnsNull()
+        {
+            // 相対パスでディレクトリ区切り文字を含むが、ファイルが存在しない場合は null。
+            var relPath = Path.Combine("nonexistent_subdir_xyz", "nonexistent_tool_abc");
+            Assert.Null(DisassemblerHelper.ResolveExecutablePath(relPath));
+        }
+
+        [Fact]
+        public void ResolveExecutablePath_RelativePathWithSeparator_Existing_ReturnsFullPath()
+        {
+            // 相対パスでディレクトリ区切り文字を含み、かつファイルが存在する場合は絶対パスを返す。
+            var tempDir = Path.Combine(Path.GetTempPath(), $"fdi4dn-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+            var fileName = $"tool-{Guid.NewGuid():N}";
+            var fullPath = Path.Combine(tempDir, fileName);
+            File.WriteAllText(fullPath, "dummy");
+            try
+            {
+                var relativePath = Path.GetRelativePath(Directory.GetCurrentDirectory(), fullPath);
+                // 相対パスにセパレータが含まれない場合（稀）はスキップ
+                if (!relativePath.Contains(Path.DirectorySeparatorChar)
+                    && !relativePath.Contains(Path.AltDirectorySeparatorChar))
+                {
+                    return;
+                }
+                var result = DisassemblerHelper.ResolveExecutablePath(relativePath);
+                Assert.NotNull(result);
+                Assert.True(File.Exists(result));
+            }
+            finally
+            {
+                File.Delete(fullPath);
+                Directory.Delete(tempDir);
+            }
+        }
+
+        [Fact]
+        public void ResolveExecutablePath_WhitespacePathVariable_ReturnsNull()
+        {
+            // PATH 環境変数が空白のみの場合、PATH 検索前に null を返す。
+            var originalPath = Environment.GetEnvironmentVariable("PATH");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", "   ");
+                Assert.Null(DisassemblerHelper.ResolveExecutablePath("some-nonexistent-tool-xyz"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", originalPath);
+            }
+        }
+
+        [Fact]
+        public void ResolveExecutablePath_PathWithEmptyEntries_SkipsEmptyAndReturnsNull()
+        {
+            // PATH に空エントリが含まれる場合、空エントリをスキップして null を返す。
+            var originalPath = Environment.GetEnvironmentVariable("PATH");
+            var sep = Path.PathSeparator.ToString();
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", $"{sep}{sep}/nonexistent-dir-xyz{sep}");
+                Assert.Null(DisassemblerHelper.ResolveExecutablePath("definitely-nonexistent-tool-xyz123"));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", originalPath);
+            }
+        }
+
+        [Fact]
+        public void ResolveExecutablePath_CommandFoundInPath_ReturnsAbsolutePath()
+        {
+            // PATH に含まれるディレクトリにコマンド名で一致するファイルを置いた場合に絶対パスを返す。
+            var tempDir = Path.Combine(Path.GetTempPath(), $"fdi4dn-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+            var commandName = $"test-cmd-{Guid.NewGuid():N}";
+            var commandFile = Path.Combine(tempDir, commandName);
+            File.WriteAllText(commandFile, "dummy");
+            var originalPath = Environment.GetEnvironmentVariable("PATH");
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", tempDir + Path.PathSeparator + originalPath);
+                var result = DisassemblerHelper.ResolveExecutablePath(commandName);
+                Assert.NotNull(result);
+                Assert.True(File.Exists(result));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", originalPath);
+                File.Delete(commandFile);
+                Directory.Delete(tempDir);
+            }
+        }
+
         // ── EnumerateExecutableNames ──────────────────────────────────────────
 
         [Fact]
@@ -155,6 +250,33 @@ namespace FolderDiffIL4DotNet.Tests.Services
             if (!OperatingSystem.IsWindows()) return;
             var names = DisassemblerHelper.EnumerateExecutableNames("mytool").ToList();
             Assert.Contains("mytool.exe", names, StringComparer.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public void EnumerateExecutableNames_OnWindows_CommandWithExeSuffix_DoesNotDuplicateExe()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+            var names = DisassemblerHelper.EnumerateExecutableNames("mytool.exe").ToList();
+            Assert.Equal(1, names.Count(n => n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [Fact]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public void EnumerateExecutableNames_OnWindows_CommandWithCmdSuffix_DoesNotDuplicateCmd()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+            var names = DisassemblerHelper.EnumerateExecutableNames("mytool.cmd").ToList();
+            Assert.Equal(1, names.Count(n => n.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase)));
+        }
+
+        [Fact]
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        public void EnumerateExecutableNames_OnWindows_CommandWithBatSuffix_DoesNotDuplicateBat()
+        {
+            if (!OperatingSystem.IsWindows()) return;
+            var names = DisassemblerHelper.EnumerateExecutableNames("mytool.bat").ToList();
+            Assert.Equal(1, names.Count(n => n.EndsWith(".bat", StringComparison.OrdinalIgnoreCase)));
         }
     }
 }

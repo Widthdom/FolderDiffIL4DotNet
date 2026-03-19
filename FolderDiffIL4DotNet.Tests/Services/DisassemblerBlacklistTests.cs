@@ -129,6 +129,37 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(bl.ContainsEntry(ToolA));
         }
 
+        // ── RegisterFailure / ResetFailure の null ガード ────────────────────────
+
+        [Fact]
+        public void RegisterFailure_NullOrWhitespace_DoesNotThrow_AndNoEntryCreated()
+        {
+            var bl = CreateBlacklist();
+            bl.RegisterFailure(null);
+            bl.RegisterFailure("");
+            bl.RegisterFailure("   ");
+            // ToolA は触っていないのでエントリが存在しないことを確認
+            Assert.False(bl.ContainsEntry(ToolA));
+        }
+
+        [Fact]
+        public void ResetFailure_NullOrWhitespace_DoesNotThrow()
+        {
+            var bl = CreateBlacklist();
+            // ガードが機能していれば例外なく戻るはず
+            bl.ResetFailure(null);
+            bl.ResetFailure("");
+            bl.ResetFailure("   ");
+        }
+
+        [Fact]
+        public void ResetFailure_NonExistentCommand_DoesNotThrow()
+        {
+            var bl = CreateBlacklist();
+            // エントリが存在しない場合も TryRemove は例外をスローしない
+            bl.ResetFailure("no-such-tool");
+        }
+
         // ── B-4: 並列競合テスト ───────────────────────────────────────────────
 
         [Fact]
