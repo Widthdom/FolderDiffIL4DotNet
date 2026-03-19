@@ -483,7 +483,7 @@ Workflow/config files:
 - [.github/workflows/codeql.yml](../.github/workflows/codeql.yml)
 - [.github/dependabot.yml](../.github/dependabot.yml)
 
-Current CI behavior:
+Current CI behavior (`build` job — Ubuntu):
 - Runs on `push` and `pull_request` targeting `main`, plus `workflow_dispatch`
 - Uses [`global.json`](../global.json) through `actions/setup-dotnet`
 - Restores and builds `FolderDiffIL4DotNet.sln`
@@ -494,6 +494,11 @@ Current CI behavior:
 - Enforces total coverage thresholds of `73%` line and `71%` branch from the generated Cobertura XML
 - Publishes build output and uploads it as `FolderDiffIL4DotNet`
 - Uploads TRX and coverage files as `TestAndCoverage`
+
+`test-windows` job — Windows:
+- Runs in parallel with `build` on `windows-latest`
+- Restores, builds, installs [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/), and runs the full test suite with `DOTNET_ROLL_FORWARD=Major`
+- Ensures Windows-specific code paths are exercised and the E2E disassembler test runs on every push
 
 Release automation:
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs for pushed `v*` tags and manual dispatch with an explicit existing tag input
@@ -522,7 +527,7 @@ Which tests skip and why:
 - **[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs)** (one test) — this builds the same tiny class library twice with `Deterministic=false` and verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) produces `ILMatch` after MVID filtering. It calls `Skip.If(!CanRunDotNetIldasm(), ...)` and reports Skipped whenever [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) (or [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)) is absent from `PATH`.
 
 Why this is safe:
-- CI runs on Linux and installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) before the test step, so every test that skips locally runs in full on every push. A local Skipped result reflects a missing prerequisite in that environment, not a test failure.
+- CI runs on both Linux (`build` job) and Windows (`test-windows` job), and both install a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) before the test step, so every test that skips locally runs in full on every push. The Windows job specifically ensures the E2E disassembler test executes on `windows-latest`. A local Skipped result reflects a missing prerequisite in that environment, not a test failure.
 - The skippable tests use [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) from [`Xunit.SkippableFact`](https://www.nuget.org/packages/Xunit.SkippableFact/1.5.23), so the runner counts them as Skipped rather than Passed, making the distinction visible.
 - If a previously Skipped test appears as **Failed**, that is a real issue and should be investigated. Skipped and Failed are distinct outcomes.
 
@@ -1053,7 +1058,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - [.github/workflows/codeql.yml](../.github/workflows/codeql.yml)
 - [.github/dependabot.yml](../.github/dependabot.yml)
 
-現在の CI 挙動:
+現在の CI 挙動（`build` ジョブ — Ubuntu）:
 - `main` 向け `push` / `pull_request` と `workflow_dispatch` で実行
 - `actions/setup-dotnet` で [`global.json`](../global.json) を利用
 - `FolderDiffIL4DotNet.sln` を restore / build
@@ -1064,6 +1069,11 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - 生成された Cobertura XML から total 行 `73%` / 分岐 `71%` のしきい値を強制する
 - publish 出力を `FolderDiffIL4DotNet` としてアップロード
 - TRX とカバレッジ関連を `TestAndCoverage` としてアップロード
+
+`test-windows` ジョブ — Windows:
+- `build` ジョブと並行して `windows-latest` 上で実行
+- restore / build / [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) インストール後、`DOTNET_ROLL_FORWARD=Major` 付きでフルテストスイートを実行
+- Windows 固有のコードパスを検証し、E2E 逆アセンブラテストを push のたびに実行することを保証する
 
 リリース自動化:
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) は `v*` タグ push と、既存タグを明示指定する `workflow_dispatch` で実行します
@@ -1092,7 +1102,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - **[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs)**（1 件）— `Deterministic=false` で 2 回ビルドした同一クラスライブラリを [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) が MVID 除外後に `ILMatch` と判定することを確認します。`PATH` に [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)（または [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)）が見つからない場合は `Skip.If(!CanRunDotNetIldasm(), ...)` を呼び出して Skipped を報告します。
 
 なぜ安全か:
-- CI は Linux 上で動き、テストステップの前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールします。そのため、ローカルでスキップされるテストはすべて push のたびにフルで実行されます。ローカルの Skipped はその環境で前提条件が欠けていることを示すだけで、テストの失敗ではありません。
+- CI は Linux（`build` ジョブ）と Windows（`test-windows` ジョブ）の両方で動き、どちらもテストステップの前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールします。そのため、ローカルでスキップされるテストはすべて push のたびにフルで実行されます。Windows ジョブは特に `windows-latest` 上での E2E 逆アセンブラテストの実行を保証します。ローカルの Skipped はその環境で前提条件が欠けていることを示すだけで、テストの失敗ではありません。
 - スキップ対象のテストは [`Xunit.SkippableFact`](https://www.nuget.org/packages/Xunit.SkippableFact/1.5.23) の [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) を使うため、ランナーは Passed ではなく Skipped として別カウントで表示し、区別が明確になっています。
 - これまで Skipped だったテストが **Failed** になった場合は実際の問題であり、調査が必要です。Skipped と Failed は異なる結果です。
 

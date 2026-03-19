@@ -20,7 +20,7 @@ Related documents:
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
-Current tree has `516` total tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`): `515` passing, `1` skipped (E2E test requiring a real disassembler binary).
+Current tree has `533` total tests in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`): `532` passing, `1` skipped (E2E test requiring a real disassembler binary).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -124,7 +124,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 
 - DocFX site generation runs before tests and publishes `_site/` as the `DocumentationSite` artifact.
 - Tests and coverage run only when [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) exists.
-- CI installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool before the test step and runs it with `DOTNET_ROLL_FORWARD=Major` so `Category=E2E` coverage guarantees the preferred disassembler path in GitHub Actions too.
+- CI runs two jobs: the `build` job (Ubuntu) installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool before the test step and runs it with `DOTNET_ROLL_FORWARD=Major` so `Category=E2E` coverage guarantees the preferred disassembler path in GitHub Actions; the `test-windows` job (Windows) runs the same test suite on `windows-latest` — also with `dotnet-ildasm` installed — so the E2E test that was previously always skipped on Windows now executes on every push.
 - `TestAndCoverage` artifact includes TRX and coverage outputs.
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
 - A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `73%` line or `71%` branch.
@@ -181,7 +181,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 <a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）の合計は `516` 件です（成功 `515`、スキップ `1` ― 実際の逆アセンブラバイナリが必要な E2E テスト）。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）の合計は `533` 件です（成功 `532`、スキップ `1` ― 実際の逆アセンブラバイナリが必要な E2E テスト）。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |
@@ -285,7 +285,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"Cov
 
 - テスト前に DocFX サイト生成を実行し、`_site/` を `DocumentationSite` artifact として公開します。
 - [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) が存在する場合のみテスト/カバレッジを実行します。
-- GitHub Actions ではテスト前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし、`DOTNET_ROLL_FORWARD=Major` を付けて `Category=E2E` の逆アセンブラ経路も実行します。
+- CI は 2 つのジョブで構成されます。`build` ジョブ（Ubuntu）はテスト前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし `DOTNET_ROLL_FORWARD=Major` 付きで `Category=E2E` の逆アセンブラ経路も実行します。`test-windows` ジョブ（Windows）は同じテストスイートを `windows-latest` 上で実行し（`dotnet-ildasm` もインストール済み）、これまで Windows では常にスキップされていた E2E テストも push のたびにフルで動作するようになりました。
 - `TestAndCoverage` アーティファクトに TRX とカバレッジ関連ファイルを格納します。
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
 - 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `73%` / 分岐 `71%` を下回るとワークフローを失敗させます。

@@ -141,3 +141,40 @@ jobs:
         with:
           name: FolderDiffIL4DotNet
           path: publish/**
+
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\NuGet\packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore FolderDiffIL4DotNet.sln
+
+      - name: Build
+        run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
+
+      - name: Install real disassembler for E2E tests
+        run: dotnet tool install --global dotnet-ildasm
+        env:
+          DOTNET_ROLL_FORWARD: Major
+
+      - name: Test
+        run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo
+        env:
+          DOTNET_ROLL_FORWARD: Major
