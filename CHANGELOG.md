@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- Added standalone Myers diff algorithm guide [`doc/MYERS_DIFF_ALGORITHM.md`](doc/MYERS_DIFF_ALGORITHM.md) (EN + JP): a comprehensive bilingual explanation of the Myers diff algorithm as implemented in [`TextDiffer.cs`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs), covering the edit graph model, diagonal / D-path theory, the forward pass (V array and greedy snake extension), backtracking from snapshots, worked example with full trace, O(D² + N + M) complexity analysis with concrete figures for 1 000 000-line IL files, implementation notes (offset trick, snapshot optimisation, early termination), and a comparison table of LCS / Myers / Patience / Histogram algorithms. The previous inline algorithm sections in README.md were replaced with a link to this guide.
+
 #### Fixed
 
 - Fixed HTML report inline diff numbering in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs): the `#N` prefix shown before `Show diff` / `Show IL diff` and inline-diff skip messages now uses the same one-based row number as the leftmost `#` column instead of the internal zero-based index. Added test `GenerateDiffReportHtml_InlineDiffSummary_UsesSameOneBasedNumberAsLeftmostColumn` to [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs), and updated [README.md](README.md) plus [testing guide](doc/TESTING_GUIDE.md).
@@ -324,6 +328,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- Myers diff アルゴリズムの解説ドキュメント [`doc/MYERS_DIFF_ALGORITHM.md`](doc/MYERS_DIFF_ALGORITHM.md)（日英バイリンガル）を追加しました。[`TextDiffer.cs`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) の実装に即した包括的な解説で、編集グラフモデル・対角線と D パス理論・前向きパス（V 配列と貪欲スネーク延長）・スナップショットからのバックトラック・全手順付きの具体例・100 万行 IL ファイルを用いた O(D² + N + M) 計算量の分析・実装上の要点（オフセットトリック・スナップショット最適化・早期打ち切り）・LCS / Myers / Patience / Histogram 各アルゴリズムの比較表を網羅しています。README.md の従来のアルゴリズム解説インライン節はこのガイドへのリンクに置き換えました。
 
 #### 修正
 
