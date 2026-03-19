@@ -458,64 +458,83 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             string detailsId = $"diff_{sectionPrefix}_{idx}";
+            string diffLabel = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "Show IL diff" : "Show diff";
+            string summary = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>";
+            string diffViewHtml = BuildDiffViewHtml(diffLines);
 
             sb.AppendLine("<tr class=\"diff-row\">");
             sb.AppendLine("  <td colspan=\"8\">");
-            sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
-            string diffLabel = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "Show IL diff" : "Show diff";
-            sb.AppendLine($"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>");
-            sb.AppendLine("      <div class=\"diff-view\">");
-            sb.AppendLine("        <table class=\"diff-table\">");
-            sb.AppendLine("          <tbody>");
+            if (config.InlineDiffLazyRender)
+            {
+                string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(diffViewHtml));
+                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
+                sb.AppendLine(summary);
+                sb.AppendLine("    </details>");
+            }
+            else
+            {
+                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
+                sb.AppendLine(summary);
+                sb.Append(diffViewHtml);
+                sb.AppendLine("    </details>");
+            }
+            sb.AppendLine("  </td>");
+            sb.AppendLine("</tr>");
+        }
+
+        private static string BuildDiffViewHtml(IReadOnlyList<TextDiffer.DiffLine> diffLines)
+        {
+            var dsb = new StringBuilder();
+            dsb.AppendLine("      <div class=\"diff-view\">");
+            dsb.AppendLine("        <table class=\"diff-table\">");
+            dsb.AppendLine("          <tbody>");
 
             foreach (var line in diffLines)
             {
                 switch (line.Kind)
                 {
                     case TextDiffer.HunkHeader:
-                        sb.AppendLine("            <tr class=\"diff-hunk-tr\">");
-                        sb.AppendLine("              <td class=\"diff-ln\"></td>");
-                        sb.AppendLine("              <td class=\"diff-ln\"></td>");
-                        sb.AppendLine($"              <td class=\"diff-hunk-td\">{HtmlEncode(line.Text)}</td>");
-                        sb.AppendLine("            </tr>");
+                        dsb.AppendLine("            <tr class=\"diff-hunk-tr\">");
+                        dsb.AppendLine("              <td class=\"diff-ln\"></td>");
+                        dsb.AppendLine("              <td class=\"diff-ln\"></td>");
+                        dsb.AppendLine($"              <td class=\"diff-hunk-td\">{HtmlEncode(line.Text)}</td>");
+                        dsb.AppendLine("            </tr>");
                         break;
                     case TextDiffer.Removed:
-                        sb.AppendLine("            <tr class=\"diff-del-tr\">");
-                        sb.AppendLine($"              <td class=\"diff-ln diff-old-ln\">{line.OldLineNo}</td>");
-                        sb.AppendLine("              <td class=\"diff-ln diff-new-ln\"></td>");
-                        sb.AppendLine($"              <td class=\"diff-del-td\">-{HtmlEncode(line.Text)}</td>");
-                        sb.AppendLine("            </tr>");
+                        dsb.AppendLine("            <tr class=\"diff-del-tr\">");
+                        dsb.AppendLine($"              <td class=\"diff-ln diff-old-ln\">{line.OldLineNo}</td>");
+                        dsb.AppendLine("              <td class=\"diff-ln diff-new-ln\"></td>");
+                        dsb.AppendLine($"              <td class=\"diff-del-td\">-{HtmlEncode(line.Text)}</td>");
+                        dsb.AppendLine("            </tr>");
                         break;
                     case TextDiffer.Added:
-                        sb.AppendLine("            <tr class=\"diff-add-tr\">");
-                        sb.AppendLine("              <td class=\"diff-ln diff-old-ln\"></td>");
-                        sb.AppendLine($"              <td class=\"diff-ln diff-new-ln\">{line.NewLineNo}</td>");
-                        sb.AppendLine($"              <td class=\"diff-add-td\">+{HtmlEncode(line.Text)}</td>");
-                        sb.AppendLine("            </tr>");
+                        dsb.AppendLine("            <tr class=\"diff-add-tr\">");
+                        dsb.AppendLine("              <td class=\"diff-ln diff-old-ln\"></td>");
+                        dsb.AppendLine($"              <td class=\"diff-ln diff-new-ln\">{line.NewLineNo}</td>");
+                        dsb.AppendLine($"              <td class=\"diff-add-td\">+{HtmlEncode(line.Text)}</td>");
+                        dsb.AppendLine("            </tr>");
                         break;
                     case TextDiffer.Context:
-                        sb.AppendLine("            <tr class=\"diff-ctx-tr\">");
-                        sb.AppendLine($"              <td class=\"diff-ln diff-old-ln\">{line.OldLineNo}</td>");
-                        sb.AppendLine($"              <td class=\"diff-ln diff-new-ln\">{line.NewLineNo}</td>");
-                        sb.AppendLine($"              <td class=\"diff-ctx-td\"> {HtmlEncode(line.Text)}</td>");
-                        sb.AppendLine("            </tr>");
+                        dsb.AppendLine("            <tr class=\"diff-ctx-tr\">");
+                        dsb.AppendLine($"              <td class=\"diff-ln diff-old-ln\">{line.OldLineNo}</td>");
+                        dsb.AppendLine($"              <td class=\"diff-ln diff-new-ln\">{line.NewLineNo}</td>");
+                        dsb.AppendLine($"              <td class=\"diff-ctx-td\"> {HtmlEncode(line.Text)}</td>");
+                        dsb.AppendLine("            </tr>");
                         break;
                     case TextDiffer.Truncated:
-                        sb.AppendLine("            <tr class=\"diff-trunc-tr\">");
-                        sb.AppendLine("              <td class=\"diff-ln\"></td>");
-                        sb.AppendLine("              <td class=\"diff-ln\"></td>");
-                        sb.AppendLine($"              <td class=\"diff-trunc-td\">{HtmlEncode(line.Text)}</td>");
-                        sb.AppendLine("            </tr>");
+                        dsb.AppendLine("            <tr class=\"diff-trunc-tr\">");
+                        dsb.AppendLine("              <td class=\"diff-ln\"></td>");
+                        dsb.AppendLine("              <td class=\"diff-ln\"></td>");
+                        dsb.AppendLine($"              <td class=\"diff-trunc-td\">{HtmlEncode(line.Text)}</td>");
+                        dsb.AppendLine("            </tr>");
                         break;
                 }
             }
 
-            sb.AppendLine("          </tbody>");
-            sb.AppendLine("        </table>");
-            sb.AppendLine("      </div>");
-            sb.AppendLine("    </details>");
-            sb.AppendLine("  </td>");
-            sb.AppendLine("</tr>");
+            dsb.AppendLine("          </tbody>");
+            dsb.AppendLine("        </table>");
+            dsb.AppendLine("      </div>");
+            return dsb.ToString();
         }
 
         private void AppendSummarySection(StringBuilder sb, ConfigSettings config)
@@ -746,6 +765,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    }");
             sb.AppendLine("    initColResize();");
             sb.AppendLine("    syncTableWidths();");
+            sb.AppendLine("    setupLazyDiff();");
             sb.AppendLine("  });");
             sb.AppendLine();
             sb.AppendLine("  function collectState() {");
@@ -818,6 +838,28 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    localStorage.removeItem(__storageKey__);");
             sb.AppendLine("    var status = document.getElementById('save-status');");
             sb.AppendLine("    if (status) status.textContent = 'Cleared.';");
+            sb.AppendLine("  }");
+            sb.AppendLine();
+            sb.AppendLine("  function decodeDiffHtml(b64) {");
+            sb.AppendLine("    var binary = atob(b64);");
+            sb.AppendLine("    var bytes = new Uint8Array(binary.length);");
+            sb.AppendLine("    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);");
+            sb.AppendLine("    return new TextDecoder('utf-8').decode(bytes);");
+            sb.AppendLine("  }");
+            sb.AppendLine();
+            sb.AppendLine("  // Lazy-render: diff table HTML is stored base64-encoded in data-diff-html.");
+            sb.AppendLine("  // On first open, decode and insert into DOM, then remove the attribute.");
+            sb.AppendLine("  function setupLazyDiff() {");
+            sb.AppendLine("    document.querySelectorAll('details[data-diff-html]').forEach(function(d) {");
+            sb.AppendLine("      d.addEventListener('toggle', function onToggle() {");
+            sb.AppendLine("        if (!d.open) return;");
+            sb.AppendLine("        var b64 = d.getAttribute('data-diff-html');");
+            sb.AppendLine("        if (!b64) return;");
+            sb.AppendLine("        d.removeAttribute('data-diff-html');");
+            sb.AppendLine("        d.removeEventListener('toggle', onToggle);");
+            sb.AppendLine("        try { d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64)); } catch(e) {}");
+            sb.AppendLine("      });");
+            sb.AppendLine("    });");
             sb.AppendLine("  }");
             sb.AppendLine();
             sb.AppendLine("  function syncTableWidths() {");

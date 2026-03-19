@@ -259,6 +259,15 @@ namespace FolderDiffIL4DotNet.Models
         public int InlineDiffMaxOutputLines { get; set; } = 10000;
 
         /// <summary>
+        /// HTML レポートのインライン差分を遅延レンダリング（Lazy Render）するかどうか。
+        /// true（既定）の場合、差分テーブルの HTML を Base64 エンコードして <c>data-diff-html</c> 属性に格納し、
+        /// <c>&lt;details&gt;</c> を開いたときに JavaScript でデコード・DOM に挿入します。
+        /// Modified ファイルが大量にある場合に初期 DOM ノード数を大幅に削減でき、ページの初期表示が高速になります。
+        /// false にすると全差分テーブルを DOM に直接埋め込みます（ブラウザの「ページ内検索」で差分内容を検索したい場合に有用）。
+        /// </summary>
+        public bool InlineDiffLazyRender { get; set; } = true;
+
+        /// <summary>
         /// コンソールスピナーのフレーム文字列リスト。各要素が 1 フレームになります。
         /// 既定値は <c>["|", "/", "-", "\\"]</c>（縦棒・スラッシュ・横棒・バックスラッシュの 4 フレーム回転）。
         /// 複数文字のフレーム（例: ブロック文字、絵文字）も指定できます。

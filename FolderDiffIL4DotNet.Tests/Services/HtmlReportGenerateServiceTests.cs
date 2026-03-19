@@ -604,7 +604,104 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("new-only-ignored.txt", html);
         }
 
-        private static ConfigSettings CreateConfig(bool enableInlineDiff = true) => new()
+        // ── Lazy Render ───────────────────────────────────────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_LazyRender_DiffContentStoredInDataAttribute()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("lazy-render-attr");
+
+            File.WriteAllLines(Path.Combine(oldDir, "app.txt"), new[] { "line1", "old-line2", "line3" });
+            File.WriteAllLines(Path.Combine(newDir, "app.txt"), new[] { "line1", "new-line2", "line3" });
+
+            _resultLists.AddModifiedFileRelativePath("app.txt");
+            _resultLists.RecordDiffDetail("app.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true, lazyRender: true);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // The <details> element should have a data-diff-html attribute (base64)
+            Assert.Contains("data-diff-html=\"", html);
+            // The summary (with "+N / -N") should still be in the raw HTML
+            Assert.Contains("diff-summary", html);
+            Assert.Contains("Show diff", html);
+            // Raw diff content (file lines) should NOT be in the HTML (stored in base64 attribute)
+            Assert.DoesNotContain("old-line2", html);
+            Assert.DoesNotContain("new-line2", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_LazyRender_DataAttributeDecodesCorrectly()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("lazy-render-decode");
+
+            File.WriteAllLines(Path.Combine(oldDir, "f.txt"), new[] { "removed-line", "common" });
+            File.WriteAllLines(Path.Combine(newDir, "f.txt"), new[] { "added-line", "common" });
+
+            _resultLists.AddModifiedFileRelativePath("f.txt");
+            _resultLists.RecordDiffDetail("f.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true, lazyRender: true);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Extract the base64 value from data-diff-html
+            var match = System.Text.RegularExpressions.Regex.Match(html, @"data-diff-html=""([^""]+)""");
+            Assert.True(match.Success, "Expected data-diff-html attribute in HTML");
+
+            var decodedHtml = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(match.Groups[1].Value));
+            Assert.Contains("diff-del-td", decodedHtml);
+            Assert.Contains("diff-add-td", decodedHtml);
+            Assert.Contains("removed-line", decodedHtml);
+            Assert.Contains("added-line", decodedHtml);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_LazyRender_False_DiffContentIsInline()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("lazy-render-false");
+
+            File.WriteAllLines(Path.Combine(oldDir, "app.txt"), new[] { "line1", "old-line2" });
+            File.WriteAllLines(Path.Combine(newDir, "app.txt"), new[] { "line1", "new-line2" });
+
+            _resultLists.AddModifiedFileRelativePath("app.txt");
+            _resultLists.RecordDiffDetail("app.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig(enableInlineDiff: true, lazyRender: false);
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.DoesNotContain("data-diff-html=", html);
+            Assert.Contains("diff-del-td", html);
+            Assert.Contains("old-line2", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_LazyRender_JsSetupFunctionPresent()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("lazy-render-js");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("setupLazyDiff", html);
+            Assert.Contains("decodeDiffHtml", html);
+            Assert.Contains("data-diff-html", html);  // JS references the attribute name
+        }
+
+        private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()
         {
             IgnoredExtensions = new List<string>(),
             TextFileExtensions = new List<string>(),
@@ -613,7 +710,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             ShouldOutputFileTimestamps = false,
             ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false,
             ShouldGenerateHtmlReport = true,
-            EnableInlineDiff = enableInlineDiff
+            EnableInlineDiff = enableInlineDiff,
+            InlineDiffLazyRender = lazyRender
         };
     }
 }

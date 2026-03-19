@@ -365,6 +365,11 @@ Override only the settings you want to change. For example:
       <td><code>10000</code></td>
       <td>Maximum number of output lines produced by a single inline diff. When exceeded, the diff is truncated and a note is shown in the report.</td>
     </tr>
+    <tr id="config-en-inlinedifflazyrender">
+      <td><code>InlineDiffLazyRender</code></td>
+      <td><code>true</code></td>
+      <td>When <code>true</code> (default), inline diff tables are Base64-encoded and stored in a <code>data-diff-html</code> attribute; JavaScript decodes and injects them into the DOM only when the user expands a <code>&lt;details&gt;</code> row. This dramatically reduces the initial DOM node count when there are many modified files (e.g. 5 000 files × 200 diff rows = 1 M fewer nodes), making the page much faster to load and interact with. Set to <code>false</code> if you need the browser's <em>Find in page</em> to search inside collapsed diff content.</td>
+    </tr>
     <tr id="config-en-spinnerframes">
       <td><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\\"]</code></td>
@@ -799,6 +804,11 @@ flowchart TD
       <td><code>InlineDiffMaxOutputLines</code></td>
       <td><code>10000</code></td>
       <td>1 件のインライン差分で生成する最大出力行数。超過した場合は差分を打ち切り、レポートに注記を表示します。</td>
+    </tr>
+    <tr id="config-ja-inlinedifflazyrender">
+      <td><code>InlineDiffLazyRender</code></td>
+      <td><code>true</code></td>
+      <td><code>true</code>（既定）の場合、インライン差分テーブルの HTML を Base64 エンコードして <code>data-diff-html</code> 属性に格納し、ユーザーが <code>&lt;details&gt;</code> 行を展開したときだけ JavaScript でデコード・DOM に挿入します。Modified ファイルが大量にある場合（例: 5,000 件 × 200 diff 行 = 100 万ノード削減）に初期 DOM ノード数を大幅に削減でき、ページの初期表示・操作が高速になります。<code>false</code> にすると全差分テーブルを DOM に直接埋め込みます（ブラウザの「ページ内検索」で折りたたまれた差分内容も検索したい場合に有用）。</td>
     </tr>
     <tr id="config-ja-spinnerframes">
       <td><code>SpinnerFrames</code></td>
