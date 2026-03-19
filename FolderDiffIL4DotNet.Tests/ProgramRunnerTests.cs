@@ -153,6 +153,29 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Equal(TimeSpan.FromSeconds(Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS), statsLogInterval);
         }
 
+        [Fact]
+        public void CreateIlCache_WhenPathIsEmpty_DefaultsToLocalApplicationDataSubfolder()
+        {
+            var config = new ConfigSettings
+            {
+                EnableILCache = true,
+                ILCacheDirectoryAbsolutePath = ""
+            };
+
+            var cache = InvokeCreateIlCache(config, new TestLogger());
+
+            Assert.NotNull(cache);
+            var diskCache = GetPrivateFieldValue(cache, "_diskCache");
+            var cacheDir = Assert.IsType<string>(GetPrivateFieldValue(diskCache, "_cacheDirectoryAbsolutePath"));
+
+            var expectedDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                Constants.APP_NAME,
+                Constants.DEFAULT_IL_CACHE_DIR_NAME);
+            Assert.Equal(expectedDir, cacheDir);
+            Assert.DoesNotContain(AppContext.BaseDirectory, cacheDir);
+        }
+
         // -----------------------------------------------------------------------
         // --help / --version early-exit tests
         // -----------------------------------------------------------------------

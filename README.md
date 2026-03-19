@@ -298,7 +298,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-ilcachedirectoryabsolutepath">
       <td><code>ILCacheDirectoryAbsolutePath</code></td>
       <td><code>""</code></td>
-      <td>IL cache directory. Empty = <code>&lt;exe&gt;/ILCache</code>.</td>
+      <td>IL cache directory. Empty = <code>%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache</code> on Windows, <code>~/.local/share/FolderDiffIL4DotNet/ILCache</code> on macOS/Linux.</td>
     </tr>
     <tr id="config-en-ilcachestatslogintervalseconds">
       <td><code>ILCacheStatsLogIntervalSeconds</code></td>
@@ -706,7 +706,7 @@ flowchart TD
     <tr id="config-ja-ilcachedirectoryabsolutepath">
       <td><code>ILCacheDirectoryAbsolutePath</code></td>
       <td><code>""</code></td>
-      <td>IL キャッシュディレクトリ。空なら <code>&lt;exe&gt;/ILCache</code>。</td>
+      <td>IL キャッシュディレクトリ。空なら Windows は <code>%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache</code>、macOS/Linux は <code>~/.local/share/FolderDiffIL4DotNet/ILCache</code>。</td>
     </tr>
     <tr id="config-ja-ilcachestatslogintervalseconds">
       <td><code>ILCacheStatsLogIntervalSeconds</code></td>

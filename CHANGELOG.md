@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- Changed the default IL disk cache directory from the executable directory (`<exe>/ILCache`) to the OS-standard user-local data directory: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache` on Windows and `~/.local/share/FolderDiffIL4DotNet/ILCache` on macOS/Linux. The previous default caused startup failures in read-only or container deployments and silently wrote cache files into the installation directory in multi-user environments. The fix is in [`RunScopeBuilder.CreateIlCache`](Runner/RunScopeBuilder.cs) (changed `AppContext.BaseDirectory` to `Environment.GetFolderPath(SpecialFolder.LocalApplicationData)`). Updated XML doc comment on `ILCacheDirectoryAbsolutePath` in [`ConfigSettings`](Models/ConfigSettings.cs), added test `CreateIlCache_WhenPathIsEmpty_DefaultsToLocalApplicationDataSubfolder` to [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs), and updated bilingual [README.md](README.md).
+
 - Fixed HTML report inline diff numbering in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs): the `#N` prefix shown before `Show diff` / `Show IL diff` and inline-diff skip messages now uses the same one-based row number as the leftmost `#` column instead of the internal zero-based index. Added test `GenerateDiffReportHtml_InlineDiffSummary_UsesSameOneBasedNumberAsLeftmostColumn` to [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs), and updated [README.md](README.md) plus [testing guide](doc/TESTING_GUIDE.md).
 
 ### [1.3.0] - 2026-03-17
@@ -334,6 +336,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Myers diff アルゴリズムの解説ドキュメント [`doc/MYERS_DIFF_ALGORITHM.md`](doc/MYERS_DIFF_ALGORITHM.md)（日英バイリンガル）を追加しました。[`TextDiffer.cs`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) の実装に即した包括的な解説で、編集グラフモデル・対角線と D パス理論・前向きパス（V 配列と貪欲スネーク延長）・スナップショットからのバックトラック・全手順付きの具体例・100 万行 IL ファイルを用いた O(D² + N + M) 計算量の分析・実装上の要点（オフセットトリック・スナップショット最適化・早期打ち切り）・LCS / Myers / Patience / Histogram 各アルゴリズムの比較表を網羅しています。README.md の従来のアルゴリズム解説インライン節はこのガイドへのリンクに置き換えました。
 
 #### 修正
+
+- IL ディスクキャッシュのデフォルトディレクトリを実行ファイル隣（`<exe>/ILCache`）から OS 標準のユーザーローカルデータディレクトリへ変更しました。Windows では `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux では `~/.local/share/FolderDiffIL4DotNet/ILCache` が使用されます。従来のデフォルトはコンテナや読み取り専用デプロイ環境で起動失敗を引き起こし、マルチユーザー環境ではインストールディレクトリにキャッシュファイルを書き込む問題がありました。変更は [`RunScopeBuilder.CreateIlCache`](Runner/RunScopeBuilder.cs)（`AppContext.BaseDirectory` → `Environment.GetFolderPath(SpecialFolder.LocalApplicationData)`）。[`ConfigSettings`](Models/ConfigSettings.cs) の `ILCacheDirectoryAbsolutePath` XML コメントを更新し、[`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) にテスト `CreateIlCache_WhenPathIsEmpty_DefaultsToLocalApplicationDataSubfolder` を追加、日英 [README.md](README.md) を更新しました。
 
 - [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs) の HTML レポートにおけるインライン差分の番号表示を修正しました。`Show diff` / `Show IL diff` の前や、インライン差分スキップ文言に表示される `#N` が内部の 0 始まりインデックスではなく、左端 `#` 列と同じ 1 始まりの行番号になるよう統一しました。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) にテスト `GenerateDiffReportHtml_InlineDiffSummary_UsesSameOneBasedNumberAsLeftmostColumn` を追加し、[README.md](README.md) と [テストガイド](doc/TESTING_GUIDE.md) も更新しました。
 

@@ -163,7 +163,10 @@ namespace FolderDiffIL4DotNet.Models
         public bool EnableILCache { get; set; } = true;
 
         /// <summary>
-        /// IL キャッシュ格納ディレクトリ（null/空の場合は実行ディレクトリ配下 <see cref="Constants.DEFAULT_IL_CACHE_DIR_NAME"/> を既定使用）
+        /// IL キャッシュ格納ディレクトリ（null/空の場合は OS 標準のユーザーローカルデータディレクトリ配下
+        /// <c>FolderDiffIL4DotNet/<see cref="Constants.DEFAULT_IL_CACHE_DIR_NAME"/></c> を既定使用。
+        /// Windows: <c>%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache</c>、
+        /// macOS/Linux: <c>~/.local/share/FolderDiffIL4DotNet/ILCache</c>）
         /// </summary>
         public string ILCacheDirectoryAbsolutePath
         {
