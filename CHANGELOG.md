@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## English
 
+### [Unreleased]
+
+#### Fixed
+
+- Fixed HTML report Timestamp column being truncated on macOS in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs). The column was declared `width: 16em` with `overflow: hidden`, which clipped the dual-timestamp format `[YYYY-MM-DD HH:MM:SS → YYYY-MM-DD HH:MM:SS]` (~300 px) on macOS due to its wider font metrics (SF Pro), while Windows happened to fit. The fix widens `col.col-ts-g` from `16em` to `22em` and removes the redundant `width: 16em` and `overflow: hidden` declarations from `td.col-ts`, relying on the `<col>` width and `white-space: nowrap` to keep timestamps on one line without clipping. Updated the CSS assertion in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs). Synced [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 ### [1.4.0] - 2026-03-20
 
 #### Added
@@ -24,8 +30,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Improved branch coverage from 71.6 % to 83.7 % by adding 11 targeted tests covering previously untested branches in [`DisassemblerBlacklist`](Services/DisassemblerBlacklist.cs) and [`DisassemblerHelper`](Services/DisassemblerHelper.cs). New tests in [`DisassemblerBlacklistTests`](FolderDiffIL4DotNet.Tests/Services/DisassemblerBlacklistTests.cs): `RegisterFailure_NullOrWhitespace_DoesNotThrow_AndNoEntryCreated`, `ResetFailure_NullOrWhitespace_DoesNotThrow`, `ResetFailure_NonExistentCommand_DoesNotThrow`. New tests in [`DisassemblerHelperTests`](FolderDiffIL4DotNet.Tests/Services/DisassemblerHelperTests.cs): `ResolveExecutablePath_RelativePathWithSeparator_NonExistent_ReturnsNull`, `ResolveExecutablePath_RelativePathWithSeparator_Existing_ReturnsFullPath`, `ResolveExecutablePath_WhitespacePathVariable_ReturnsNull`, `ResolveExecutablePath_PathWithEmptyEntries_SkipsEmptyAndReturnsNull`, `ResolveExecutablePath_CommandFoundInPath_ReturnsAbsolutePath`, plus three Windows-only `EnumerateExecutableNames` tests verifying that commands already ending in `.exe`/`.cmd`/`.bat` do not accumulate duplicate extension variants. `DisassemblerBlacklist` branch coverage reaches 100 %; `DisassemblerHelper` moves from 53 % to 80 %.
 
 #### Fixed
-
-- Fixed HTML report Timestamp column being truncated on macOS in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs). The column was declared `width: 16em` with `overflow: hidden`, which clipped the dual-timestamp format `[YYYY-MM-DD HH:MM:SS → YYYY-MM-DD HH:MM:SS]` (~300 px) on macOS due to its wider font metrics (SF Pro), while Windows happened to fit. The fix widens `col.col-ts-g` from `16em` to `22em` and removes the redundant `width: 16em` and `overflow: hidden` declarations from `td.col-ts`, relying on the `<col>` width and `white-space: nowrap` to keep timestamps on one line without clipping. Updated the CSS assertion in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
 
 - Changed the default IL disk cache directory from the executable directory (`<exe>/ILCache`) to the OS-standard user-local data directory: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache` on Windows and `~/.local/share/FolderDiffIL4DotNet/ILCache` on macOS/Linux. The previous default caused startup failures in read-only or container deployments and silently wrote cache files into the installation directory in multi-user environments. The fix is in [`RunScopeBuilder.CreateIlCache`](Runner/RunScopeBuilder.cs) (changed `AppContext.BaseDirectory` to `Environment.GetFolderPath(SpecialFolder.LocalApplicationData)`). Updated XML doc comment on `ILCacheDirectoryAbsolutePath` in [`ConfigSettings`](Models/ConfigSettings.cs), added test `CreateIlCache_WhenPathIsEmpty_DefaultsToLocalApplicationDataSubfolder` to [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs), and updated bilingual [README.md](README.md).
 
