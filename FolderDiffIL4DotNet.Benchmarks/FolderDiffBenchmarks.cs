@@ -58,8 +58,7 @@ namespace FolderDiffIL4DotNet.Benchmarks
         {
             var files = Directory.GetFiles(_smallDirPath).Take(2).ToArray();
             if (files.Length < 2) return false;
-            var comparer = new FileComparer();
-            return comparer.ComputeMd5Hash(files[0]) == comparer.ComputeMd5Hash(files[1]);
+            return FileComparer.ComputeFileMd5Hex(files[0]) == FileComparer.ComputeFileMd5Hex(files[1]);
         }
 
         private static string CreateTempFolderWithFiles(string prefix, int fileCount, int fileSizeBytes)
