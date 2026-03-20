@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added method-level change detection for `ILMismatch` assemblies using `System.Reflection.Metadata`. For each modified .NET assembly, the report now shows type/method/property/field additions, removals, and method body changes. This new **Method-Level Changes** section appears between **Summary** and **IL Cache Stats** in the Markdown report, and as an expandable inline row above the IL diff in the HTML report. Controlled by the new `ShouldIncludeMethodLevelChangesInReport` config setting (default: `true`). Added [`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs), [`MethodLevelChangesSummary`](Models/MethodLevelChangesSummary.cs), and corresponding tests.
 
+- Added **Modifiers** column to the Method-Level Changes table, extracting `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, and `readonly` modifiers from assembly metadata. Changed the **Detail** column format from `(Type paramName) : ReturnType` to `ReturnType (Type paramName)` to match C# declaration order. Renamed the column header to `Detail (ReturnType (Type paramName))`. Applied backtick emphasis to Change, Access, Modifiers, and Kind columns. Added bilingual **Assembly Semantic Changes** section to [README.md](README.md).
+
 ### [1.4.1] - 2026-03-20
 
 #### Added
@@ -372,6 +374,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 追加
 
 - `System.Reflection.Metadata` を使用した `ILMismatch` アセンブリのメソッドレベル変更検出を追加。変更のあった各 .NET アセンブリについて、型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更をレポートに出力します。Markdown レポートでは **Summary** と **IL Cache Stats** の間に **Method-Level Changes** セクションとして表示され、HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。新しい設定項目 `ShouldIncludeMethodLevelChangesInReport`（既定: `true`）で制御可能。[`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs)、[`MethodLevelChangesSummary`](Models/MethodLevelChangesSummary.cs)、および対応するテストを追加。
+
+- Method-Level Changes テーブルに **Modifiers** 列を追加。アセンブリメタデータから `static`、`abstract`、`virtual`、`override`、`sealed override`、`const`、`readonly` 修飾子を抽出します。**Detail** 列の形式を `(Type paramName) : ReturnType` から `ReturnType (Type paramName)` へ C# 宣言順に変更。列ヘッダを `Detail (ReturnType (Type paramName))` に改名。Change・Access・Modifiers・Kind 列にバッククォート強調を適用。[README.md](README.md) にバイリンガルの **アセンブリ セマンティック変更** セクションを追加。
 
 ### [1.4.1] - 2026-03-20
 

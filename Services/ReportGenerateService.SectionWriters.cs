@@ -209,11 +209,11 @@ namespace FolderDiffIL4DotNet.Services
                     if (summary.Entries.Count > 0)
                     {
                         writer.WriteLine();
-                        writer.WriteLine("| Assembly | Change | Class | Access | Kind | Name | Details |");
-                        writer.WriteLine("|----------|--------|-------|--------|------|------|---------|");
+                        writer.WriteLine("| Assembly | Change | Class | Access | Modifiers | Kind | Name | Detail (ReturnType (Type paramName)) |");
+                        writer.WriteLine("|----------|--------|-------|--------|-----------|------|------|--------------------------------------|");
                         foreach (var e in summary.Entries)
                         {
-                            writer.WriteLine($"| {EscapeMdTable(filePath)} | `{e.Change}` | {EscapeMdTable(e.TypeName)} | {EscapeMdTable(e.Access)} | {e.MemberKind} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.Details)} |");
+                            writer.WriteLine($"| {EscapeMdTable(filePath)} | `{EscapeMdTable(e.Change)}` | {EscapeMdTable(e.TypeName)} | `{EscapeMdTable(e.Access)}` | `{EscapeMdTable(e.Modifiers)}` | `{EscapeMdTable(e.MemberKind)}` | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.Details)} |");
                         }
                     }
                     else

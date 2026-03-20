@@ -732,10 +732,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 NewMethodCount = 12,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Service", "public", "Method", "NewMethod", "(string name) : void"),
-                    new("Modified", "MyApp.Service", "public", "Method", "ExistingMethod", "(int id) : bool"),
-                    new("Added", "MyApp.Service", "public", "Property", "NewProp", ": string { get; set; }"),
-                    new("Removed", "MyApp.Service", "private", "Field", "_oldField", ": int"),
+                    new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "void (string name)"),
+                    new("Modified", "MyApp.Service", "public", "virtual", "Method", "ExistingMethod", "bool (int id)"),
+                    new("Added", "MyApp.Service", "public", "", "Property", "NewProp", ": string { get; set; }"),
+                    new("Removed", "MyApp.Service", "private", "readonly", "Field", "_oldField", ": int"),
                 },
             };
 
@@ -765,7 +765,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 NewMethodCount = 12,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Service", "public", "Method", "NewMethod", "(string name) : void"),
+                    new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "void (string name)"),
                 },
             };
 
@@ -793,7 +793,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 NewMethodCount = 6,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "Foo", "public", "Method", "Bar", "() : void"),
+                    new("Added", "Foo", "public", "", "Method", "Bar", "void ()"),
                 },
             };
 

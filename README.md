@@ -12,6 +12,7 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 | Need | Document |
 | --- | --- |
 | Product overview, setup, usage, and configuration | [README.md](README.md#readme-en-usage) |
+| Assembly semantic change detection | [README.md](README.md#readme-en-assembly-semantic-changes) |
 | Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-map) |
 | Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-en-run-tests) |
 | Generated API reference from XML documentation comments | [api/index.md](api/index.md) via [docfx.json](docfx.json) |
@@ -183,6 +184,37 @@ Important details:
 - IL comparison always ignores `// MVID:` lines, so build-specific assembly noise does not create false differences.
 - If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
+
+<a id="readme-en-assembly-semantic-changes"></a>
+## Assembly Semantic Changes
+
+When an assembly is classified as `ILMismatch`, the tool performs an additional **semantic analysis** using [`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) to identify exactly what changed at the member level. Results appear in the **Method-Level Changes** section of the Markdown report and as an expandable inline row in the HTML report.
+
+### What is detected
+
+| Category | Detected changes |
+|----------|-----------------|
+| **Type** | Additions and removals (including nested types) |
+| **Method** | Additions, removals, and IL body modifications |
+| **Property** | Additions and removals (with get/set accessor info) |
+| **Field** | Additions and removals (with type and default value) |
+| **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
+| **Modifiers** | `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
+
+### Report table columns
+
+| Column | Description | Example |
+|--------|-------------|---------|
+| Assembly | Relative path of the assembly | `bin/MyLib.dll` |
+| Change | `Added`, `Removed`, or `Modified` | `Added` |
+| Class | Fully qualified type name | `MyNamespace.MyClass` |
+| Access | Access modifier | `public` |
+| Modifiers | Other modifiers | `static` |
+| Kind | Member kind | `Method` |
+| Name | Member name (empty for Type entries) | `DoWork` |
+| Detail | Signature in C# declaration order | `void (string name, int count = 0)` |
+
+Controlled by [`ShouldIncludeMethodLevelChangesInReport`](#config-en-shouldincludemethodlevelchangesinreport) (default: `true`).
 
 ## Configuration ([`config.json`](config.json))
 
@@ -455,6 +487,7 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 | 見たい内容 | ドキュメント |
 | --- | --- |
 | 製品概要、導入、使い方、設定 | [README.md](README.md#readme-ja-usage) |
+| アセンブリ セマンティック変更の検出 | [README.md](README.md#readme-ja-assembly-semantic-changes) |
 | 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) |
 | テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-ja-run-tests) |
 | XML ドキュメントコメントから生成する API リファレンス | [docfx.json](docfx.json) 経由 [api/index.md](api/index.md) |
@@ -629,6 +662,37 @@ flowchart TD
 - `Added` / `Removed` / `Unchanged` / `Modified` は、ファイル名だけでなく相対パスを基準に決まります。
 - [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
+
+<a id="readme-ja-assembly-semantic-changes"></a>
+## アセンブリ セマンティック変更
+
+アセンブリが `ILMismatch` に分類された場合、[`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) を使用してメンバーレベルの**セマンティック解析**を追加実行します。結果は Markdown レポートの **Method-Level Changes** セクション、および HTML レポートの展開可能なインライン行に表示されます。
+
+### 検出対象
+
+| カテゴリ | 検出内容 |
+|---------|---------|
+| **Type** | 型の追加・削除（ネスト型を含む） |
+| **Method** | メソッドの追加・削除・IL ボディの変更 |
+| **Property** | プロパティの追加・削除（get/set アクセサ情報付き） |
+| **Field** | フィールドの追加・削除（型と既定値付き） |
+| **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
+| **Modifiers** | `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
+
+### レポートテーブル列
+
+| 列 | 説明 | 例 |
+|----|------|-----|
+| Assembly | アセンブリの相対パス | `bin/MyLib.dll` |
+| Change | `Added`、`Removed`、`Modified` | `Added` |
+| Class | 完全修飾型名 | `MyNamespace.MyClass` |
+| Access | アクセス修飾子 | `public` |
+| Modifiers | その他の修飾子 | `static` |
+| Kind | メンバー種別 | `Method` |
+| Name | メンバー名（Type エントリの場合は空） | `DoWork` |
+| Detail | C# 宣言順のシグネチャ | `void (string name, int count = 0)` |
+
+[`ShouldIncludeMethodLevelChangesInReport`](#config-ja-shouldincludemethodlevelchangesinreport)（既定値: `true`）で制御します。
 
 ## 設定（[`config.json`](config.json)）
 

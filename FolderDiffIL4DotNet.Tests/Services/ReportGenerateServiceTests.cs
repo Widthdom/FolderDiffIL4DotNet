@@ -775,13 +775,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 NewMethodCount = 44,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.NewService", "", "Type", "", ""),
-                    new("Added", "MyApp.UserService", "public", "Method", "ValidateToken", "(string token) : bool"),
-                    new("Added", "MyApp.UserService", "internal", "Method", "RefreshSession", "(int userId) : void"),
-                    new("Removed", "MyApp.UserService", "public", "Method", "LegacyAuth", "(string key) : void"),
-                    new("Modified", "MyApp.UserService", "public", "Method", "Login", "(string user, string pass) : bool"),
-                    new("Added", "MyApp.UserService", "public", "Property", "IsActive", ": bool { get; set; }"),
-                    new("Added", "MyApp.UserService", "private", "Field", "_cache", ": object"),
+                    new("Added", "MyApp.NewService", "", "", "Type", "", ""),
+                    new("Added", "MyApp.UserService", "public", "static", "Method", "ValidateToken", "bool (string token)"),
+                    new("Added", "MyApp.UserService", "internal", "", "Method", "RefreshSession", "void (int userId)"),
+                    new("Removed", "MyApp.UserService", "public", "virtual", "Method", "LegacyAuth", "void (string key)"),
+                    new("Modified", "MyApp.UserService", "public", "", "Method", "Login", "bool (string user, string pass)"),
+                    new("Added", "MyApp.UserService", "public", "", "Property", "IsActive", ": bool { get; set; }"),
+                    new("Added", "MyApp.UserService", "private", "readonly", "Field", "_cache", ": object"),
                 },
             };
             _resultLists.FileRelativePathToMethodLevelChanges["src/App.dll"] = summary;
@@ -801,12 +801,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Content checks — table format
             Assert.Contains("## Method-Level Changes", reportText);
             Assert.Contains("### src/App.dll", reportText);
-            Assert.Contains("| Assembly | Change | Class | Access | Kind | Name | Details |", reportText);
-            Assert.Contains("| src/App.dll | `Added` | MyApp.NewService |  | Type |  |  |", reportText);
-            Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | public | Method | ValidateToken | (string token) : bool |", reportText);
-            Assert.Contains("| src/App.dll | `Modified` | MyApp.UserService | public | Method | Login |", reportText);
-            Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | public | Property | IsActive |", reportText);
-            Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | private | Field | _cache |", reportText);
+            Assert.Contains("| Assembly | Change | Class | Access | Modifiers | Kind | Name | Detail (ReturnType (Type paramName)) |", reportText);
+            Assert.Contains("| src/App.dll | `Added` | MyApp.NewService | `` | `` | `Type` |  |  |", reportText);
+            Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | `public` | `static` | `Method` | ValidateToken | bool (string token) |", reportText);
+            Assert.Contains("| src/App.dll | `Modified` | MyApp.UserService | `public` | `` | `Method` | Login |", reportText);
+            Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | `public` | `` | `Property` | IsActive |", reportText);
+            Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | `private` | `readonly` | `Field` | _cache |", reportText);
             Assert.Contains("- Method count: 42 (Old) vs 44 (New)", reportText);
 
             // Ordering: Summary < Method-Level Changes < IL Cache Stats
@@ -833,7 +833,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 NewMethodCount = 12,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "Foo", "public", "Method", "Bar", "() : void"),
+                    new("Added", "Foo", "public", "", "Method", "Bar", "void ()"),
                 },
             };
 

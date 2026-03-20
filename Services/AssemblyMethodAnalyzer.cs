@@ -37,27 +37,27 @@ namespace FolderDiffIL4DotNet.Services
 
                 // Types
                 foreach (var t in newSnapshot.TypeNames.Except(oldSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("Added", t, "", "Type", "", ""));
+                    entries.Add(new MemberChangeEntry("Added", t, "", "", "Type", "", ""));
                 foreach (var t in oldSnapshot.TypeNames.Except(newSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("Removed", t, "", "Type", "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", t, "", "", "Type", "", ""));
 
                 // Methods
                 foreach (var key in newSnapshot.Methods.Keys.Except(oldSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = newSnapshot.Methods[key];
-                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
+                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, m.Modifiers, "Method", m.MethodName, m.Details));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Except(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = oldSnapshot.Methods[key];
-                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
+                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, m.Modifiers, "Method", m.MethodName, m.Details));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     if (!oldSnapshot.Methods[key].IlBytes.AsSpan().SequenceEqual(newSnapshot.Methods[key].IlBytes.AsSpan()))
                     {
                         var m = newSnapshot.Methods[key];
-                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
+                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, m.Modifiers, "Method", m.MethodName, m.Details));
                     }
                 }
 
@@ -65,24 +65,24 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var key in newSnapshot.Properties.Keys.Except(oldSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = newSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, "Property", p.PropertyName, p.Details));
+                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.Details));
                 }
                 foreach (var key in oldSnapshot.Properties.Keys.Except(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = oldSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, "Property", p.PropertyName, p.Details));
+                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.Details));
                 }
 
                 // Fields
                 foreach (var key in newSnapshot.Fields.Keys.Except(oldSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = newSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, "Field", f.FieldName, f.Details));
+                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, f.Details));
                 }
                 foreach (var key in oldSnapshot.Fields.Keys.Except(newSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = oldSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, "Field", f.FieldName, f.Details));
+                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, f.Details));
                 }
 
                 return new MethodLevelChangesSummary
@@ -106,6 +106,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             public required string TypeName { get; init; }
             public required string Access { get; init; }
+            public required string Modifiers { get; init; }
             public required string MethodName { get; init; }
             public required string Details { get; init; }
             public required byte[] IlBytes { get; init; }
@@ -115,6 +116,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             public required string TypeName { get; init; }
             public required string Access { get; init; }
+            public required string Modifiers { get; init; }
             public required string PropertyName { get; init; }
             public required string Details { get; init; }
         }
@@ -123,6 +125,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             public required string TypeName { get; init; }
             public required string Access { get; init; }
+            public required string Modifiers { get; init; }
             public required string FieldName { get; init; }
             public required string Details { get; init; }
         }
@@ -160,6 +163,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     var methodDef = reader.GetMethodDefinition(methodHandle);
                     string access = GetAccessModifier(methodDef.Attributes);
+                    string modifiers = GetMethodModifiers(methodDef.Attributes);
                     string methodName = reader.GetString(methodDef.Name);
                     string matchKey = BuildMethodMatchKey(reader, typeName, methodDef, typeProvider);
                     string details = BuildMethodDetails(reader, methodDef, typeProvider);
@@ -169,6 +173,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         TypeName = typeName,
                         Access = access,
+                        Modifiers = modifiers,
                         MethodName = methodName,
                         Details = details,
                         IlBytes = ilBytes,
@@ -182,12 +187,14 @@ namespace FolderDiffIL4DotNet.Services
                     string propName = reader.GetString(propDef.Name);
                     string propKey = $"{typeName}::{propName}";
                     string propAccess = GetPropertyAccess(reader, propDef);
+                    string propModifiers = GetPropertyModifiers(reader, propDef);
                     string propDetails = BuildPropertyDetails(reader, propDef, typeProvider);
 
                     snapshot.Properties[propKey] = new PropertyDetail
                     {
                         TypeName = typeName,
                         Access = propAccess,
+                        Modifiers = propModifiers,
                         PropertyName = propName,
                         Details = propDetails,
                     };
@@ -200,12 +207,14 @@ namespace FolderDiffIL4DotNet.Services
                     string fieldName = reader.GetString(fieldDef.Name);
                     string fieldKey = $"{typeName}::{fieldName}";
                     string fieldAccess = GetFieldAccessModifier(fieldDef.Attributes);
+                    string fieldModifiers = GetFieldModifiers(fieldDef.Attributes);
                     string fieldDetails = BuildFieldDetails(reader, fieldDef, typeProvider);
 
                     snapshot.Fields[fieldKey] = new FieldDetail
                     {
                         TypeName = typeName,
                         Access = fieldAccess,
+                        Modifiers = fieldModifiers,
                         FieldName = fieldName,
                         Details = fieldDetails,
                     };
@@ -254,7 +263,7 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning restore CA1031
         }
 
-        /// <summary>Build human-readable details for a method: "(Type paramName, Type paramName = defaultValue) : ReturnType".</summary>
+        /// <summary>Build human-readable details for a method: "ReturnType (Type paramName, Type paramName = defaultValue)".</summary>
         private static string BuildMethodDetails(MetadataReader reader, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
         {
             try
@@ -298,7 +307,7 @@ namespace FolderDiffIL4DotNet.Services
                     parts.Add(part);
                 }
 
-                return $"({string.Join(", ", parts)}) : {signature.ReturnType}";
+                return $"{signature.ReturnType} ({string.Join(", ", parts)})";
             }
 #pragma warning disable CA1031
             catch
@@ -401,6 +410,48 @@ namespace FolderDiffIL4DotNet.Services
                 FieldAttributes.Private => "private",
                 _ => "private"
             };
+        }
+
+        /// <summary>Extract non-access modifiers from method attributes (static, abstract, virtual, sealed, override, etc.).</summary>
+        private static string GetMethodModifiers(MethodAttributes attributes)
+        {
+            var parts = new List<string>();
+            if ((attributes & MethodAttributes.Static) != 0) parts.Add("static");
+            if ((attributes & MethodAttributes.Abstract) != 0)
+                parts.Add("abstract");
+            else if ((attributes & MethodAttributes.Final) != 0 && (attributes & MethodAttributes.Virtual) != 0 && (attributes & MethodAttributes.NewSlot) == 0)
+                parts.Add("sealed override");
+            else if ((attributes & MethodAttributes.Virtual) != 0 && (attributes & MethodAttributes.NewSlot) != 0)
+                parts.Add("virtual");
+            else if ((attributes & MethodAttributes.Virtual) != 0)
+                parts.Add("override");
+            return string.Join(" ", parts);
+        }
+
+        /// <summary>Extract modifiers for a property by inspecting its getter/setter method attributes.</summary>
+        private static string GetPropertyModifiers(MetadataReader reader, PropertyDefinition propDef)
+        {
+            var accessors = propDef.GetAccessors();
+            MethodDefinition? accessor = !accessors.Getter.IsNil
+                ? reader.GetMethodDefinition(accessors.Getter)
+                : !accessors.Setter.IsNil ? reader.GetMethodDefinition(accessors.Setter) : null;
+            return accessor.HasValue ? GetMethodModifiers(accessor.Value.Attributes) : "";
+        }
+
+        /// <summary>Extract modifiers from field attributes (static, readonly, const, volatile).</summary>
+        private static string GetFieldModifiers(FieldAttributes attributes)
+        {
+            var parts = new List<string>();
+            if ((attributes & FieldAttributes.Static) != 0 && (attributes & FieldAttributes.Literal) != 0)
+            {
+                parts.Add("const");
+            }
+            else
+            {
+                if ((attributes & FieldAttributes.Static) != 0) parts.Add("static");
+                if ((attributes & FieldAttributes.InitOnly) != 0) parts.Add("readonly");
+            }
+            return string.Join(" ", parts);
         }
 
         private static byte[] ReadIlBytes(PEReader peReader, MethodDefinition methodDef)
