@@ -122,7 +122,7 @@ namespace FolderDiffIL4DotNet.Services
         /// old/new の .NET アセンブリを同一逆アセンブラで逆アセンブルし、MVID などの除外行を適用したうえで IL を比較します。
         /// <paramref name="shouldOutputIlText"/> が true の場合は IL テキストをファイルに出力します。
         /// </summary>
-        public async Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+        public async Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
         {
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
@@ -206,7 +206,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Merges the disassembler labels used for old/new into a single comparison label.
         /// old/new で使用された逆アセンブラ表示ラベルを比較用に 1 つへまとめます。
         /// </summary>
-        private static string BuildComparisonDisassemblerLabel(string commandStringOld, string commandStringNew)
+        private static string? BuildComparisonDisassemblerLabel(string commandStringOld, string commandStringNew)
         {
             var oldLabel = BuildToolAndVersionLabel(commandStringOld);
             var newLabel = BuildToolAndVersionLabel(commandStringNew);

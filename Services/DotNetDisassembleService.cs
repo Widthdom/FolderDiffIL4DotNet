@@ -212,14 +212,14 @@ namespace FolderDiffIL4DotNet.Services
         /// 指定コマンドでアセンブリの逆アセンブルを試行します。必要に応じて一時ASCIIパスを生成し、
         /// 複数の引数セットを順に試します。
         /// </summary>
-        private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleAsync(
+        private async Task<(bool Success, string? IlText, string? DisassembleCommandAndItsVersionWithArguments, Exception? Error)> TryDisassembleAsync(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
             bool allowCache,
             bool recordUsage)
         {
             Exception? lastError = null;
-            string tempAsciiPath = CreateAsciiTempCopyIfNeeded(dotNetAssemblyFileAbsolutePath);
+            string? tempAsciiPath = CreateAsciiTempCopyIfNeeded(dotNetAssemblyFileAbsolutePath);
 
             try
             {
@@ -248,10 +248,10 @@ namespace FolderDiffIL4DotNet.Services
         /// Tries disassembly with a single argument set: cache check, process execution, cache store.
         /// 1つの引数セットで逆アセンブルを試行します。キャッシュ事前チェック→プロセス実行→キャッシュ格納までを担当。
         /// </summary>
-        private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleWithArguments(
+        private async Task<(bool Success, string? IlText, string? DisassembleCommandAndItsVersionWithArguments, Exception? Error)> TryDisassembleWithArguments(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
-            (string workingDirectory, string[] args, string tempOut) argset,
+            (string workingDirectory, string[] args, string? tempOut) argset,
             bool allowCache,
             bool recordUsage)
         {
@@ -316,7 +316,7 @@ namespace FolderDiffIL4DotNet.Services
         /// IL キャッシュへのヒットを試みます。ミス時も Label を返すことで、
         /// 後続のキャッシュ格納でバージョン取得の再実行を省略できます。
         /// </summary>
-        private async Task<(bool Hit, string IlText, string Label)> TryCacheHitAsync(
+        private async Task<(bool Hit, string? IlText, string? Label)> TryCacheHitAsync(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
             string[] args,
@@ -371,7 +371,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static async Task<string> ReadIlTextAfterSuccessAsync(
             bool isIlspy,
-            (string workingDirectory, string[] args, string tempOut) argset,
+            (string workingDirectory, string[] args, string? tempOut) argset,
             string stdout)
         {
             if (isIlspy && !string.IsNullOrEmpty(argset.tempOut) && File.Exists(argset.tempOut))
@@ -463,14 +463,14 @@ namespace FolderDiffIL4DotNet.Services
         /// Enumerates argument sets to try, based on the command type.
         /// コマンド種別に応じた試行用の引数セットを列挙します。
         /// </summary>
-        private static IEnumerable<(string workingDirectory, string[] args, string tempOut)> BuildArgSets(string disassembleCommand, string disassemblerFileAbsolutePath, string tempAsciiPath)
+        private static IEnumerable<(string workingDirectory, string[] args, string? tempOut)> BuildArgSets(string disassembleCommand, string disassemblerFileAbsolutePath, string? tempAsciiPath)
         {
             var disassemblerFileDirectoryAbsolutePath = Path.GetDirectoryName(disassemblerFileAbsolutePath) ?? Environment.CurrentDirectory;
             var disassemblerFileNameOnly = Path.GetFileName(disassemblerFileAbsolutePath);
             var isDotnetMuxer = IsDotnetMuxer(disassembleCommand);
             var isIlspy = IsIlspyCommand(disassembleCommand);
 
-            var argSets = new List<(string workingDirectory, string[] args, string tempOut)>();
+            var argSets = new List<(string workingDirectory, string[] args, string? tempOut)>();
             if (!isIlspy)
             {
                 argSets.Add((disassemblerFileDirectoryAbsolutePath, isDotnetMuxer ? [Constants.ILDASM_LABEL, disassemblerFileNameOnly] : [disassemblerFileNameOnly], null));
@@ -571,7 +571,7 @@ namespace FolderDiffIL4DotNet.Services
             return string.Join("|", fingerprints.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
         }
 
-        private static string ResolveExecutablePath(string command) => DisassemblerHelper.ResolveExecutablePath(command);
+        private static string? ResolveExecutablePath(string command) => DisassemblerHelper.ResolveExecutablePath(command);
 
         /// <summary>
         /// Launches the command, waits for exit, and returns exit code / stdout / stderr.
@@ -579,7 +579,7 @@ namespace FolderDiffIL4DotNet.Services
         /// 指定コマンドを起動して終了を待ち、終了コードと標準出力/標準エラーを返します。
         /// 起動失敗時は例外をタプルに含めて返します。
         /// </summary>
-        private static async Task<(int ExitCode, string Stdout, string Stderr, Exception Error)> RunProcessAsync(string disassembleCommand, string workingDirectoryAbsolutePath, string[] args)
+        private static async Task<(int ExitCode, string? Stdout, string? Stderr, Exception? Error)> RunProcessAsync(string disassembleCommand, string workingDirectoryAbsolutePath, string[] args)
         {
             try
             {

@@ -51,7 +51,7 @@ namespace FolderDiffIL4DotNet.Runner
             services.AddSingleton(executionContext);
             services.AddScoped<FileDiffResultLists>();
             services.AddScoped<DotNetDisassemblerCache>();
-            services.AddScoped<ILCache>(sp => CreateIlCache(config, sp.GetRequiredService<ILoggerService>()));
+            services.AddScoped<ILCache>(sp => CreateIlCache(config, sp.GetRequiredService<ILoggerService>())!);
             services.AddScoped<ProgressReportService>();
             services.AddScoped<ReportGenerateService>();
             services.AddScoped<HtmlReportGenerateService>();

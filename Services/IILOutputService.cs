@@ -21,6 +21,6 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="shouldOutputIlText">Whether to write IL text to files. / IL テキストをファイルに出力するかどうか。</param>
         /// <returns>A tuple containing an equality flag and the disassembler label used. / アセンブリが等価かどうかを示すフラグと、使用した逆アセンブラのラベルを含むタプル。</returns>
-        Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText);
+        Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText);
     }
 }

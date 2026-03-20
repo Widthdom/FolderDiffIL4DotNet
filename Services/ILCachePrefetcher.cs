@@ -152,7 +152,7 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var pattern in patterns)
                 {
                     var fullLabel = pattern + (string.IsNullOrEmpty(disassemblerVersion) ? string.Empty : $" (version: {disassemblerVersion})");
-                    if (await _ilCache.TryGetILAsync(dotNetAssemblyFileAbsolutePath, fullLabel) != null)
+                    if (_ilCache != null && await _ilCache.TryGetILAsync(dotNetAssemblyFileAbsolutePath, fullLabel) != null)
                     {
                         Interlocked.Increment(ref _ilCacheHits);
                         break;

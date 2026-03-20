@@ -97,7 +97,7 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger,
             IFileSystemService fileSystem,
-            IFolderDiffExecutionStrategy executionStrategy)
+            IFolderDiffExecutionStrategy? executionStrategy)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(progressReporter);

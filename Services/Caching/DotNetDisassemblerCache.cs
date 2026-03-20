@@ -54,9 +54,9 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var (disassemblerKind, disassemblerVersionCacheKey, disassemblerExe) = GetDisassemblerInfo(disassembleCommandWithArguments);
             return disassemblerKind switch
             {
-                DisassemblerKind.DotnetIldasm => await GetVersionForDotnetIldasmAsync(disassemblerVersionCacheKey, disassemblerExe),
-                DisassemblerKind.Ildasm => await GetVersionForIldasmAsync(disassemblerVersionCacheKey, disassemblerExe),
-                DisassemblerKind.Ilspy => await GetVersionForIlspyAsync(disassemblerVersionCacheKey, disassemblerExe),
+                DisassemblerKind.DotnetIldasm => await GetVersionForDotnetIldasmAsync(disassemblerVersionCacheKey!, disassemblerExe!),
+                DisassemblerKind.Ildasm => await GetVersionForIldasmAsync(disassemblerVersionCacheKey!, disassemblerExe!),
+                DisassemblerKind.Ilspy => await GetVersionForIlspyAsync(disassemblerVersionCacheKey!, disassemblerExe!),
                 _ => throw new InvalidOperationException($"Failed to determine disassembler version for label: '{disassembleCommandWithArguments}'.")
             };
         }
@@ -65,7 +65,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Extracts the disassembler kind, cache key, and executable from a command label.
         /// コマンドラベルから逆アセンブラ種別・キャッシュキー・実行ファイル名を抽出します。
         /// </summary>
-        private static (DisassemblerKind disassemblerKind, string disassemblerVersionCacheKey, string disassemblerExe) GetDisassemblerInfo(string disassembleCommandWithArguments)
+        private static (DisassemblerKind disassemblerKind, string? disassemblerVersionCacheKey, string? disassemblerExe) GetDisassemblerInfo(string disassembleCommandWithArguments)
         {
             var tokens = ProcessHelper.TokenizeCommand(disassembleCommandWithArguments);
             if (tokens.Count == 0)

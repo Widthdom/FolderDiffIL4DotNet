@@ -19,7 +19,7 @@ namespace FolderDiffIL4DotNet.Services
         private const int FIXED_BAR_WIDTH = 32;
         private readonly string[] _keepAliveFrames;
         private string? _lastFormattedPercentage = null;
-        private string _labelPrefix = string.Empty;
+        private string? _labelPrefix = string.Empty;
         private double _lastPercentage = double.NegativeInfinity;
         private DateTime _lastConsoleWriteUtc = DateTime.MinValue;
         private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(5);

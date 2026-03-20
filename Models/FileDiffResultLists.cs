@@ -212,7 +212,7 @@ namespace FolderDiffIL4DotNet.Models
         /// Records the disassembler tool name and version used.
         /// 使用した逆アセンブラ名とバージョンを記録します。
         /// </summary>
-        public void RecordDisassemblerToolVersion(string toolName, string version, bool fromCache = false)
+        public void RecordDisassemblerToolVersion(string toolName, string? version, bool fromCache = false)
         {
             if (string.IsNullOrWhiteSpace(toolName))
             {
