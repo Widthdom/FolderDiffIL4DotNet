@@ -89,10 +89,19 @@ Run the filesystem-backed integration tests:
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=Integration"
 ```
 
-Run only the real-disassembler end-to-end tests:
+Run only the real-disassembler end-to-end tests (requires `FOLDERDIFF_RUN_E2E=true`):
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=E2E"
+FOLDERDIFF_RUN_E2E=true dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=E2E"
+```
+
+Run performance benchmarks (BenchmarkDotNet):
+
+```bash
+dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks
+
+# Run a specific benchmark class
+dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *TextDiffer*
 ```
 
 CI-parity command (same as GitHub Actions test step):
@@ -250,10 +259,19 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=Integration"
 ```
 
-実逆アセンブラの E2E テストだけを回す場合:
+実逆アセンブラの E2E テストだけを回す場合（`FOLDERDIFF_RUN_E2E=true` が必要）:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=E2E"
+FOLDERDIFF_RUN_E2E=true dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --filter "Category=E2E"
+```
+
+パフォーマンスベンチマーク（BenchmarkDotNet）を実行する場合:
+
+```bash
+dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks
+
+# 特定のベンチマーククラスだけを実行
+dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *TextDiffer*
 ```
 
 CI 同等コマンド（GitHub Actions と同じ test ステップ）:

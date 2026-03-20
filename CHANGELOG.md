@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- Decomposed 4 large classes into partial class files for maintainability without changing public API: [`ProgramRunner`](ProgramRunner.cs) (extracted `ProgramRunner.Types.cs`), [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs) (extracted `Sections.cs`, `Helpers.cs`, `Css.cs`, `Js.cs` under `Services/HtmlReport/`), [`FolderDiffService`](Services/FolderDiffService.cs) (extracted `ILPrecompute.cs`, `DiffClassification.cs`), [`ReportGenerateService`](Services/ReportGenerateService.cs) (extracted `SectionWriters.cs`).
+
+- Enabled `<Nullable>enable</Nullable>` and `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` in both [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) and [`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj). Nullable warnings (CS8600–8604, CS8618, CS8625) are temporarily suppressed via `<NoWarn>` until a full annotation pass is completed. XML doc warnings (CS1591, CS1573) also suppressed.
+
+#### Added
+
+- Added [`FolderDiffIL4DotNet.Benchmarks`](FolderDiffIL4DotNet.Benchmarks/) project with [BenchmarkDotNet](https://www.nuget.org/packages/BenchmarkDotNet/) 0.14.0. Includes [`TextDifferBenchmarks`](FolderDiffIL4DotNet.Benchmarks/TextDifferBenchmarks.cs) (small/medium/large IL-like diff) and [`FolderDiffBenchmarks`](FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs) (file enumeration and hash comparison). Run with `dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks`.
+
+- E2E disassembler tests now require `FOLDERDIFF_RUN_E2E=true` environment variable in addition to tool availability. This gives CI pipelines explicit control over E2E test execution.
+
 #### Fixed
 
 - Fixed HTML report Timestamp column being truncated on macOS in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs). The column was declared `width: 16em` with `overflow: hidden`, which clipped the dual-timestamp format `[YYYY-MM-DD HH:MM:SS → YYYY-MM-DD HH:MM:SS]` (~300 px) on macOS due to its wider font metrics (SF Pro), while Windows happened to fit. The fix widens `col.col-ts-g` from `16em` to `22em` and removes the redundant `width: 16em` and `overflow: hidden` declarations from `td.col-ts`, relying on the `<col>` width and `white-space: nowrap` to keep timestamps on one line without clipping. Updated the CSS assertion in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs). Synced [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
@@ -346,6 +358,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- 大規模クラス 4 件を partial class ファイルに分割し、公開 API を変更せずに保守性を向上: [`ProgramRunner`](ProgramRunner.cs)（`ProgramRunner.Types.cs` を抽出）、[`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs)（`Sections.cs`・`Helpers.cs`・`Css.cs`・`Js.cs` を `Services/HtmlReport/` 配下に抽出）、[`FolderDiffService`](Services/FolderDiffService.cs)（`ILPrecompute.cs`・`DiffClassification.cs` を抽出）、[`ReportGenerateService`](Services/ReportGenerateService.cs)（`SectionWriters.cs` を抽出）。
+
+- [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) と [`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) に `<Nullable>enable</Nullable>` と `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` を追加。nullable 警告（CS8600–8604, CS8618, CS8625）はアノテーション完了まで `<NoWarn>` で一時抑制。XML ドキュメント警告（CS1591, CS1573）も同様に抑制。
+
+#### 追加
+
+- [`FolderDiffIL4DotNet.Benchmarks`](FolderDiffIL4DotNet.Benchmarks/) プロジェクトを [BenchmarkDotNet](https://www.nuget.org/packages/BenchmarkDotNet/) 0.14.0 で追加。[`TextDifferBenchmarks`](FolderDiffIL4DotNet.Benchmarks/TextDifferBenchmarks.cs)（小・中・大規模 IL 風差分）と [`FolderDiffBenchmarks`](FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs)（ファイル列挙・ハッシュ比較）を収録。実行: `dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks`。
+
+- E2E 逆アセンブラテストにツール利用可能性に加えて `FOLDERDIFF_RUN_E2E=true` 環境変数を必須にしました。CI パイプラインで E2E テスト実行を明示的に制御できます。
 
 #### 追加
 
