@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## English
 
-### [Unreleased]
+### [1.4.1] - 2026-03-20
 
 #### Added
 
@@ -361,7 +361,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 前半は英語、後半は日本語です。
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
-### [Unreleased]
+### [1.4.1] - 2026-03-20
 
 #### 追加
 
