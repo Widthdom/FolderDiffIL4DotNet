@@ -1,4 +1,4 @@
-# FolderDiffIL4DotNet
+# FolderDiffIL4DotNet（English）
 
 `FolderDiffIL4DotNet` is a .NET console application that compares two folders and outputs a Markdown report.
 For .NET assemblies, it compares IL while ignoring build-specific information such as `// MVID:` lines, so assemblies whose contents are effectively the same can still be judged equal.

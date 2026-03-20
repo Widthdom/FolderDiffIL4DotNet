@@ -6,9 +6,9 @@
 > [日本語版](#myers-diff-アルゴリズム詳解)) provides the same content
 > in Japanese. Both sections are self-contained.
 >
-> **Reference paper** — E. W. Myers,
-> ["An O(ND) Difference Algorithm and Its Variations"](http://www.xmailserver.org/diff2.pdf),
-> _Algorithmica_ 1(2), 1986.
+> **Reference paper** — ["E. W. Myers,
+> An O(ND) Difference Algorithm and Its Variations,
+> _Algorithmica_ 1(2), 1986."](http://www.xmailserver.org/diff2.pdf)
 
 ---
 
@@ -663,9 +663,16 @@ needed for clean backtracking, and D is capped at 4000, keeping memory bounded.
 # Myers Diff アルゴリズム詳解
 
 > **対象読者** — diff の仕組みを初めて学ぶ開発者から、実装の詳細を確認したい
-> 上級者まで。
+> 上級者まで。前半（[English version](#myers-diff-algorithm--a-comprehensive-guide)）は英語、
+> 後半（本セクション以降）は日本語で同じ内容を記述しています。
+> 各セクションは独立して読めます。
+>
 > **実装ファイル** —
 > [`TextDiffer.cs`](../FolderDiffIL4DotNet.Core/Text/TextDiffer.cs)
+>
+> **参照論文** — ["E. W. Myers,
+> An O(ND) Difference Algorithm and Its Variations",
+> _Algorithmica_ 1(2), 1986.](http://www.xmailserver.org/diff2.pdf)
 
 ---
 
