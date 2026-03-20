@@ -26,7 +26,7 @@ namespace FolderDiffIL4DotNet.Services
         /// config.json を指定パス（または既定のアプリケーションベースディレクトリ）から非同期で読み込み、
         /// <see cref="ConfigSettings"/> にデシリアライズした後、設定値の整合性を検証します。
         /// </summary>
-        public async Task<ConfigSettings> LoadConfigAsync(string configFilePath = null)
+        public async Task<ConfigSettings> LoadConfigAsync(string? configFilePath = null)
         {
             try
             {
