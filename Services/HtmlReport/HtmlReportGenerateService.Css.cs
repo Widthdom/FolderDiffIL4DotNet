@@ -139,9 +139,10 @@ namespace FolderDiffIL4DotNet.Services
     .semantic-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
     .semantic-changes p { margin: 4px 0 2px; }
     table.semantic-changes-table { border-collapse: collapse; margin: 4px 0; font-size: 12px; table-layout: fixed; width: 1px; }
-    table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #999; background: #6b6b6e; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
+    table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #bbb; background: #98989d; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
     table.semantic-changes-table th.th-resizable { position: relative; }
     table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    table.semantic-changes-table th.sc-col-cb { width: 2.2em; text-align: center; }
     table.semantic-changes-table td.sc-col-cb { width: 2.2em; text-align: center; }
     /* sc-detail: checkbox(1) Class(2) BaseType(3) Change(4) Kind(5) Access(6) Modifiers(7) Type(8)… */
     table.semantic-changes-table.sc-detail td:nth-child(4), table.semantic-changes-table.sc-detail td:nth-child(5),

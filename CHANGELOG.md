@@ -21,6 +21,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added `Body` column (10th column, rightmost) to the Assembly Semantic Changes table. Displays `Changed` when a method body or field initializer has been modified at the IL level; otherwise empty. Entries with body changes use `Modified` in the Change column. Replaced the `Member count: N (Old) vs N (New)` summary line with `Added: N, Removed: N, Modified: N` counts computed from entries. Removed `OldMethodCount`/`NewMethodCount` properties from `AssemblySemanticChangesSummary` in favour of computed `AddedCount`, `RemovedCount`, and `ModifiedCount` properties.
 
+#### Changed
+
+- Prevented multi-word Modifiers (e.g. `static literal`, `static readonly`) from wrapping in the Markdown report by applying `NoWrapMd` (non-breaking space) to the Modifiers column values in [`ReportGenerateService.SectionWriters.cs`](Services/ReportGenerateService.SectionWriters.cs). Updated [`doc/samples/diff_report.md`](doc/samples/diff_report.md) to match.
+
+- Lightened the Assembly Semantic Changes table header background colour from `#6b6b6e` to `#98989d` in [`HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs) for better readability. Added explicit `th.sc-col-cb` width styling to ensure the checkbox column header renders visibly. Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) to match. Added test `GenerateDiffReportHtml_AssemblySemanticChanges_TableHeaderUsesLighterGray` to [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
+
 ### [1.4.1] - 2026-03-20
 
 #### Added
@@ -388,6 +394,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `Parameters` 列の値から括弧を削除。Parameters が独立列となったため `(…)` は冗長。値は `(string name, int count = 0)` ではなく `string name, int count = 0` で表示。引数なしは `()` ではなく空欄。
 
 - Assembly Semantic Changes テーブルに `Body` 列（10 列目、最右端）を追加。メソッドボディまたはフィールド初期化子が IL レベルで変更された場合に `Changed` を表示、それ以外は空欄。ボディ変更があるエントリの Change 列は `Modified`。集計行を `Member count: N (Old) vs N (New)` から `Added: N, Removed: N, Modified: N`（エントリから算出）に変更。`AssemblySemanticChangesSummary` の `OldMethodCount`/`NewMethodCount` プロパティを削除し、算出プロパティ `AddedCount`、`RemovedCount`、`ModifiedCount` に置き換え。
+
+#### 変更
+
+- Markdown レポートの Modifiers 列に `NoWrapMd`（ノーブレークスペース）を適用し、`static literal` や `static readonly` などの複数語修飾子が折り返されないよう修正。[`ReportGenerateService.SectionWriters.cs`](Services/ReportGenerateService.SectionWriters.cs) を修正。[`doc/samples/diff_report.md`](doc/samples/diff_report.md) を同期。
+
+- Assembly Semantic Changes テーブルヘッダの背景色を `#6b6b6e` から `#98989d` に明るく変更し視認性を改善。チェック列ヘッダの `th.sc-col-cb` に明示的な幅スタイルを追加。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を同期。テスト `GenerateDiffReportHtml_AssemblySemanticChanges_TableHeaderUsesLighterGray` を [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に追加。
 
 ### [1.4.1] - 2026-03-20
 

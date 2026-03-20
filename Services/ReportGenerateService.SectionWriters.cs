@@ -219,7 +219,7 @@ namespace FolderDiffIL4DotNet.Services
                             string baseTypeCol = !isCont ? NoWrapMd(EscapeMdTable(e.BaseType)) : "";
                             prevType = e.TypeName;
                             string access = e.Access.Length > 0 ? $"`{EscapeMdTable(e.Access)}`" : "";
-                            string modifiers = e.Modifiers.Length > 0 ? $"`{EscapeMdTable(e.Modifiers)}`" : "";
+                            string modifiers = e.Modifiers.Length > 0 ? $"`{NoWrapMd(EscapeMdTable(e.Modifiers))}`" : "";
                             string body = e.Body.Length > 0 ? $"`{EscapeMdTable(e.Body)}`" : "";
                             writer.WriteLine($"| {classCol} | {baseTypeCol} | `{EscapeMdTable(e.Change)}` | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {NoWrapMd(EscapeMdTable(e.MemberType))} | {EscapeMdTable(e.MemberName)} | {NoWrapMd(EscapeMdTable(e.ReturnType))} | {NoWrapMd(EscapeMdTable(e.Parameters))} | {body} |");
                         }

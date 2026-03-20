@@ -806,6 +806,119 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("data-diff-html", html);
         }
 
+        // ── Assembly Semantic Changes table styling / テーブルスタイル ────────
+
+        /// <summary>
+        /// Verifies the semantic-changes table header background uses the lighter gray (#98989d).
+        /// semantic-changes テーブルヘッダ背景に薄い灰色 (#98989d) が使われることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_TableHeaderUsesLighterGray()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("sc-header-color");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // Semantic changes table header must use lighter gray (#98989d), not the old dark gray (#6b6b6e)
+            // semantic-changes テーブルヘッダは旧暗灰色(#6b6b6e)ではなく薄灰色(#98989d)であること
+            Assert.Contains("background: #98989d", html);
+            Assert.DoesNotContain("background: #6b6b6e", html);
+        }
+
+        /// <summary>
+        /// Verifies that the checkbox column header (&#x2713;) is present in the semantic-changes detail table.
+        /// semantic-changes 詳細テーブルにチェック列ヘッダ (&#x2713;) が存在することを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_CheckboxHeaderPresent()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("sc-cb-header");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Added", "Foo", "", "public", "", "Method", "Bar", "", "void", "", ""),
+                },
+            };
+
+            var config = CreateConfig(enableInlineDiff: true, lazyRender: false);
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // Detail table must have checkbox header (✓) AND body checkboxes
+            // 詳細テーブルにチェックヘッダ(✓)とボディのチェックボックスが両方存在すること
+            Assert.Contains("<th class=\"sc-col-cb\">&#x2713;</th>", html);
+            Assert.Contains("<td class=\"sc-col-cb\"><input type=\"checkbox\"", html);
+        }
+
+        /// <summary>
+        /// Verifies that Kind, Access, and Modifiers column body cells use code emphasis (like TextMatch).
+        /// Kind, Access, Modifiers 列ボディが code 強調表示を使用すること（TextMatch と同等）を確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_KindAccessModifiersUseCodeEmphasis()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("sc-emphasis");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Modified", "MyApp.Svc", "", "public", "virtual", "Method", "Run", "", "void", "", "Changed"),
+                },
+            };
+
+            var config = CreateConfig(enableInlineDiff: true, lazyRender: false);
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // Kind, Access, and Modifiers must use <code> emphasis (matching TextMatch in other tables)
+            // Kind、Access、Modifiers は <code> 強調表示を使うこと（他テーブルの TextMatch と同様）
+            Assert.Contains("<code>Method</code>", html);        // Kind
+            Assert.Contains("<code>public</code>", html);        // Access
+            Assert.Contains("<code>virtual</code>", html);       // Modifiers
+            Assert.Contains("<code>Modified</code>", html);      // Change
+            Assert.Contains("<code>Changed</code>", html);       // Body
+        }
+
+        /// <summary>
+        /// Verifies the th.sc-col-cb CSS rule exists for proper checkbox column header styling.
+        /// th.sc-col-cb CSS ルールが存在しチェック列ヘッダが正しくスタイリングされることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_ThScColCbCssRuleExists()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("sc-th-css");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // Both th.sc-col-cb and td.sc-col-cb CSS rules must exist
+            // th.sc-col-cb と td.sc-col-cb 両方の CSS ルールが存在すること
+            Assert.Contains("table.semantic-changes-table th.sc-col-cb", html);
+            Assert.Contains("table.semantic-changes-table td.sc-col-cb", html);
+        }
+
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()
         {
             IgnoredExtensions = new List<string>(),

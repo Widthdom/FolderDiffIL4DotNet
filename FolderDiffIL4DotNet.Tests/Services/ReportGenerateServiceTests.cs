@@ -871,6 +871,51 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain("## Assembly Semantic Changes", reportText);
         }
 
+        /// <summary>
+        /// Verifies that multi-word Modifiers (e.g. "static literal") use non-breaking spaces in the Markdown report.
+        /// 複数語の Modifiers（例: "static literal"）が Markdown レポートでノーブレークスペースを使用することを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_AssemblySemanticChanges_MultiWordModifiersUseNonBreakingSpace()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-asc-nbsp");
+            var newDir = Path.Combine(_rootDir, "new-asc-nbsp");
+            var reportDir = Path.Combine(_rootDir, "report-asc-nbsp");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.AddModifiedFileRelativePath("src/Lib.dll");
+            _resultLists.RecordDiffDetail("src/Lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToAssemblySemanticChanges["src/Lib.dll"] = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Added", "MyApp.Status", "", "public", "static literal", "Field", "Active", "System.Int32", "", "", ""),
+                    new("Added", "MyApp.Status", "", "public", "static readonly", "Field", "Default", "System.TimeSpan", "", "", ""),
+                },
+            };
+
+            var config = CreateConfig();
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Multi-word modifiers must use non-breaking space (U+00A0) to prevent wrapping
+            // 複数語修飾子は折り返し防止のためノーブレークスペース (U+00A0) を使用すること
+            Assert.Contains("`static\u00A0literal`", reportText);
+            Assert.Contains("`static\u00A0readonly`", reportText);
+            // Regular space must NOT appear in these modifier values
+            // これらの修飾子値に通常スペースが含まれないこと
+            Assert.DoesNotContain("`static literal`", reportText);
+            Assert.DoesNotContain("`static readonly`", reportText);
+        }
+
         private static ConfigSettings CreateConfig() => new()
         {
             IgnoredExtensions = new List<string>(),

@@ -87,10 +87,10 @@
 |  |  | `Added` | `Property` | `public` |  | System.Double | Y |  |  |  |
 |  |  | `Added` | `Method` | `public` | `override` |  | ToString | System.String |  |  |
 | MyApp.Models.OrderStatus |  | `Added` | `Enum` | `public` |  |  |  |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Pending |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Processing |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Completed |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Cancelled |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Pending |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Processing |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Completed |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Cancelled |  |  |  |
 | MyApp.Models.UserDto |  | `Removed` | `Class` | `public` |  |  |  |  |  |  |
 |  |  | `Removed` | `Property` | `public` |  | System.String | Name |  |  |  |
 |  |  | `Removed` | `Property` | `public` |  | System.Int32 | Age |  |  |  |
@@ -106,9 +106,9 @@
 |  |  | `Added` | `Method` | `public` | `abstract` |  | Execute | System.Threading.Tasks.Task | System.String input |  |
 |  |  | `Added` | `Method` | `protected` | `virtual` |  | OnCompleted | System.Void |  |  |
 | MyApp.Services.Constants |  | `Added` | `Class` | `public` | `static` |  |  |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.String | DefaultEndpoint |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | MaxRetries |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static readonly` | System.TimeSpan | DefaultTimeout |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.String | DefaultEndpoint |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | MaxRetries |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static readonly` | System.TimeSpan | DefaultTimeout |  |  |  |
 | MyApp.Services.IValidator |  | `Added` | `Interface` | `public` |  |  |  |  |  |  |
 |  |  | `Added` | `Method` | `public` |  |  | Validate | System.Boolean | System.String input |  |
 | MyApp.Services.LegacyHelper |  | `Removed` | `Class` | `internal` |  |  |  |  |  |  |
