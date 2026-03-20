@@ -734,7 +734,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 {
                     new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "", "void (string name)"),
                     new("Modified", "MyApp.Service", "public", "virtual", "Method", "ExistingMethod", "", "bool (int id)"),
-                    new("Added", "MyApp.Service", "public", "", "Property", "NewProp", "string { get; set; }", ""),
+                    new("Added", "MyApp.Service", "public", "", "Property", "NewProp", "string", ""),
                     new("Removed", "MyApp.Service", "private", "readonly", "Field", "_oldField", "int", ""),
                 },
             };
@@ -746,7 +746,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("Show member changes", html);
+            Assert.Contains("Show assembly semantic changes", html);
             Assert.Contains("methods_mod_0", html);
             Assert.Contains("method-changes-table", html);
         }
@@ -776,7 +776,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.DoesNotContain("Show member changes", html);
+            Assert.DoesNotContain("Show assembly semantic changes", html);
         }
 
         [Fact]
@@ -806,7 +806,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Should contain a data-diff-html attribute for the method changes row
             Assert.Contains("methods_mod_0", html);
-            Assert.Contains("Show member changes", html);
+            Assert.Contains("Show assembly semantic changes", html);
             // Content should NOT be inline (lazy rendered) — table markup is base64-encoded
             Assert.DoesNotContain("method-changes-table", html);
             Assert.Contains("data-diff-html", html);

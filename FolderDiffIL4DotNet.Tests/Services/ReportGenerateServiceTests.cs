@@ -780,7 +780,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     new("Added", "MyApp.UserService", "internal", "", "Method", "RefreshSession", "", "void (int userId)"),
                     new("Removed", "MyApp.UserService", "public", "virtual", "Method", "LegacyAuth", "", "void (string key)"),
                     new("Modified", "MyApp.UserService", "public", "", "Method", "Login", "", "bool (string user, string pass)"),
-                    new("Added", "MyApp.UserService", "public", "", "Property", "IsActive", "bool { get; set; }", ""),
+                    new("Added", "MyApp.UserService", "public", "", "Property", "IsActive", "bool", ""),
                     new("Added", "MyApp.UserService", "private", "readonly", "Field", "_cache", "object", ""),
                 },
             };
@@ -805,7 +805,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("| src/App.dll | `Added` | MyApp.NewService |  |  | `Type` |  |  |  |", reportText);
             Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | `public` | `static` | `Method` |  | ValidateToken | bool (string token) |", reportText);
             Assert.Contains("| src/App.dll | `Modified` | MyApp.UserService | `public` |  | `Method` |  | Login |", reportText);
-            Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | `public` |  | `Property` | bool { get; set; } | IsActive |", reportText);
+            Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | `public` |  | `Property` | bool | IsActive |", reportText);
             Assert.Contains("| src/App.dll | `Added` | MyApp.UserService | `private` | `readonly` | `Field` | object | _cache |", reportText);
             Assert.Contains("- Member count: 42 (Old) vs 44 (New)", reportText);
 

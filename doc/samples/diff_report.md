@@ -62,7 +62,7 @@
 | src/App.dll | `Modified` | MyApp.Controllers.ApiController | `public` | `virtual` | `Method` |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> (int page) |
 | src/App.dll | `Modified` | MyApp.Services.DataService | `internal` |  | `Method` |  | RefreshCache | void () |
 | src/App.dll | `Modified` | MyApp.Services.DataService | `private` |  | `Method` |  | ValidateConnection | bool (string connStr) |
-| src/App.dll | `Added` | MyApp.Services.DataService | `public` |  | `Property` | int { get; set; } | CacheTimeout |  |
+| src/App.dll | `Added` | MyApp.Services.DataService | `public` |  | `Property` | int | CacheTimeout |  |
 - Member count: 28 (Old) vs 29 (New)
 
 ### src/Service.dll
@@ -79,9 +79,9 @@
 | src/Service.dll | `Modified` | MyApp.Services.OrderService | `internal` | `static` | `Method` |  | CalculateTotal | decimal (int qty, int price) |
 | src/Service.dll | `Added` | MyApp.Services.NewValidator | `private` | `readonly` | `Field` | string | _pattern |  |
 | src/Service.dll | `Added` | MyApp.Models.UserRecord |  |  | `Type` |  |  |  |
-| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Method` | UserRecord | void (string Name, int Age) |
-| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Property` | string { get; init; } | Name |  |
-| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Property` | int { get; init; } | Age |  |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Method` |  | UserRecord | void (string Name, int Age) |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Property` | string | Name |  |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Property` | int | Age |  |
 | src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `override` | `Method` |  | ToString | string () |
 | src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `virtual` | `Method` |  | Equals | bool (object obj) |
 | src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `override` | `Method` |  | GetHashCode | int () |

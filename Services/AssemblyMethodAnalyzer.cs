@@ -65,12 +65,12 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var key in newSnapshot.Properties.Keys.Except(oldSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = newSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, StripColonPrefix(p.Details), ""));
+                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, ""));
                 }
                 foreach (var key in oldSnapshot.Properties.Keys.Except(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = oldSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, StripColonPrefix(p.Details), ""));
+                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, ""));
                 }
 
                 // Fields
@@ -118,6 +118,7 @@ namespace FolderDiffIL4DotNet.Services
             public required string Access { get; init; }
             public required string Modifiers { get; init; }
             public required string PropertyName { get; init; }
+            public required string PropertyType { get; init; }
             public required string Details { get; init; }
         }
 
@@ -188,6 +189,7 @@ namespace FolderDiffIL4DotNet.Services
                     string propKey = $"{typeName}::{propName}";
                     string propAccess = GetPropertyAccess(reader, propDef);
                     string propModifiers = GetPropertyModifiers(reader, propDef);
+                    string propType = BuildPropertyType(reader, propDef, typeProvider);
                     string propDetails = BuildPropertyDetails(reader, propDef, typeProvider);
 
                     snapshot.Properties[propKey] = new PropertyDetail
@@ -196,6 +198,7 @@ namespace FolderDiffIL4DotNet.Services
                         Access = propAccess,
                         Modifiers = propModifiers,
                         PropertyName = propName,
+                        PropertyType = propType,
                         Details = propDetails,
                     };
                 }
@@ -326,6 +329,24 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 return $"{signature.ReturnType} ({string.Join(", ", parts)})";
+            }
+#pragma warning disable CA1031
+            catch
+            {
+                return "";
+            }
+#pragma warning restore CA1031
+        }
+
+        /// <summary>Extract the declared type of a property (without accessor info). / プロパティの宣言型を抽出（アクセサ情報なし）。</summary>
+        private static string BuildPropertyType(MetadataReader reader, PropertyDefinition propDef, SimpleSignatureTypeProvider typeProvider)
+        {
+            try
+            {
+                var sigBlobReader = reader.GetBlobReader(propDef.Signature);
+                var decoder = new SignatureDecoder<string, object?>(typeProvider, reader, genericContext: null);
+                var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
+                return signature.ReturnType;
             }
 #pragma warning disable CA1031
             catch

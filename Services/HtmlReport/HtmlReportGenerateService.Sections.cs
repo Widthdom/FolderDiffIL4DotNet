@@ -382,8 +382,8 @@ namespace FolderDiffIL4DotNet.Services
 
             string detailsId = $"methods_{sectionPrefix}_{idx}";
             string summaryText = totalChanges > 0
-                ? $"#{recordNo} Show member changes ({totalChanges} change{(totalChanges == 1 ? "" : "s")})"
-                : $"#{recordNo} Show member changes (other changes only)";
+                ? $"#{recordNo} Show assembly semantic changes ({totalChanges} change{(totalChanges == 1 ? "" : "s")})"
+                : $"#{recordNo} Show assembly semantic changes (other changes only)";
             string summaryLabel = $"      <summary class=\"diff-summary\">{HtmlEncode(summaryText)}</summary>";
             string contentHtml = contentBuilder.ToString();
 

@@ -211,7 +211,7 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | Access | Access modifier | `public` |
 | Modifiers | Other modifiers | `static` |
 | Kind | Member kind | `Method` |
-| Type | Declared type for Field/Property (empty for Method/Type) | `int { get; set; }` |
+| Type | Declared type for Field/Property (empty for Method/Type) | `int` |
 | Name | Member name (constructors use the class name; empty for Type entries) | `DoWork` |
 | ReturnType (Type paramName) | Method signature (empty for Field/Property/Type) | `void (string name, int count = 0)` |
 
@@ -690,7 +690,7 @@ flowchart TD
 | Access | アクセス修飾子 | `public` |
 | Modifiers | その他の修飾子 | `static` |
 | Kind | メンバー種別 | `Method` |
-| Type | Field/Property の宣言型（Method/Type の場合は空） | `int { get; set; }` |
+| Type | Field/Property の宣言型（Method/Type の場合は空） | `int` |
 | Name | メンバー名（コンストラクタはクラス名、Type エントリの場合は空） | `DoWork` |
 | ReturnType (Type paramName) | メソッドシグネチャ（Field/Property/Type の場合は空） | `void (string name, int count = 0)` |
 

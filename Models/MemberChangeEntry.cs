@@ -10,7 +10,7 @@ namespace FolderDiffIL4DotNet.Models
     /// <param name="Modifiers">Other modifiers (static, abstract, virtual, sealed, override, etc.). / その他の修飾子。</param>
     /// <param name="MemberKind">Member kind: "Type", "Method", "Property", "Field". / メンバー種別。</param>
     /// <param name="MemberName">Member name (C# name; constructors use the class name, not .ctor). Empty for Type entries. / メンバー名（C# 名、コンストラクタは .ctor ではなくクラス名）。Type の場合は空。</param>
-    /// <param name="MemberType">For Field/Property: the declared type (e.g. "string", "int { get; set; }"). Empty for Method/Type entries. / フィールド・プロパティの宣言型。メソッド・Type の場合は空。</param>
+    /// <param name="MemberType">For Field/Property: the declared type (e.g. "string", "int"). Empty for Method/Type entries. / フィールド・プロパティの宣言型。メソッド・Type の場合は空。</param>
     /// <param name="Details">
     /// For methods: ReturnType (Type paramName, ...). Empty for Type/Field/Property entries.
     /// メソッドなら ReturnType (Type paramName, ...)。Type/Field/Property の場合は空。
