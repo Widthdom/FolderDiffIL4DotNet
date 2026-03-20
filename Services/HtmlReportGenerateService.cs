@@ -55,7 +55,7 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             ConfigSettings config,
-            ILCache ilCache = null)
+            ILCache? ilCache = null)
         {
             if (!config.ShouldGenerateHtmlReport) return;
 
@@ -91,7 +91,7 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             ConfigSettings config,
-            ILCache ilCache)
+            ILCache? ilCache)
         {
             string label = Path.GetFileName(
                 reportsFolderAbsolutePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "diff";

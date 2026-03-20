@@ -78,7 +78,7 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             ConfigSettings config,
-            ILCache ilCache = null)
+            ILCache? ilCache = null)
         {
             string diffReportAbsolutePath = GetDiffReportAbsolutePath(reportsFolderAbsolutePath);
             bool hasMd5Mismatch = _fileDiffResultLists.HasAnyMd5Mismatch;
@@ -140,7 +140,7 @@ namespace FolderDiffIL4DotNet.Services
             ConfigSettings config,
             bool hasMd5Mismatch,
             bool hasTimestampRegressionWarning,
-            ILCache ilCache)
+            ILCache? ilCache)
         {
             PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
             File.Delete(diffReportAbsolutePath);
@@ -187,7 +187,7 @@ namespace FolderDiffIL4DotNet.Services
             ConfigSettings config,
             bool hasMd5Mismatch,
             bool hasTimestampRegressionWarning,
-            ILCache ilCache)
+            ILCache? ilCache)
         {
             var context = new ReportWriteContext
             {
@@ -251,7 +251,7 @@ namespace FolderDiffIL4DotNet.Services
                 _ => string.Empty
             };
 
-        private static string BuildIgnoredFileTimestampInfo(
+        private static string? BuildIgnoredFileTimestampInfo(
             KeyValuePair<string, FileDiffResultLists.IgnoredFileLocation> entry,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath)

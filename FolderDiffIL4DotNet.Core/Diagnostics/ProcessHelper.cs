@@ -75,7 +75,7 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
         /// Launches a process and returns trimmed stdout (or stderr if stdout is empty) on exit code 0; returns null on failure.
         /// プロセスを起動し、終了コード 0 なら標準出力（空なら標準エラー）をトリムして返します。失敗時は null。
         /// </summary>
-        public static async Task<string> TryGetProcessOutputAsync(string exe, IEnumerable<string> args)
+        public static async Task<string?> TryGetProcessOutputAsync(string exe, IEnumerable<string>? args)
         {
             var processStartInfo = new ProcessStartInfo
             {

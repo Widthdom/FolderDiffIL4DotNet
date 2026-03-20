@@ -173,7 +173,7 @@ namespace FolderDiffIL4DotNet.Models
         /// Records the comparison result for a file, optionally associating a disassembler label for IL comparisons.
         /// ファイルの比較結果を記録します。IL 比較時は逆アセンブラ表示ラベルも関連付けます。
         /// </summary>
-        public void RecordDiffDetail(string fileRelativePath, DiffDetailResult diffDetailResult, string ilDisassemblerLabel = null)
+        public void RecordDiffDetail(string fileRelativePath, DiffDetailResult diffDetailResult, string? ilDisassemblerLabel = null)
         {
             // Upsert: overwrite if exists, add if not (thread-safe)
             // 既に存在する場合は上書き、存在しなければ追加（スレッドセーフ）

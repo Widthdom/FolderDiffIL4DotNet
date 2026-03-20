@@ -22,11 +22,11 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_PREFIX_INFO = "[INFO]";
         private const string LOG_PREFIX_WARNING = "[WARNING]";
         private const string LOG_PREFIX_ERROR = "[ERROR]";
-        private string _logDirectoryAbsolutePath;
-        private string _logFileAbsolutePath;
+        private string? _logDirectoryAbsolutePath;
+        private string? _logFileAbsolutePath;
 
         /// <inheritdoc />
-        public string LogFileAbsolutePath => _logFileAbsolutePath;
+        public string? LogFileAbsolutePath => _logFileAbsolutePath;
 
         /// <summary>
         /// Creates the log directory and computes today's log file path (does not create the file itself).
@@ -49,11 +49,11 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <inheritdoc />
-        public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+        public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
             => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
 
         /// <inheritdoc />
-        public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+        public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
         {
             string formattedMessage = FormatMessage(message, logLevel);
 

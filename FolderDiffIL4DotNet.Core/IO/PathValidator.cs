@@ -49,7 +49,7 @@ namespace FolderDiffIL4DotNet.Core.IO
         /// フォルダ名を全 OS 共通ルールで検証し、問題があれば例外を投げます。
         /// </summary>
         /// <exception cref="ArgumentException">フォルダ名が不正な場合</exception>
-        public static void ValidateFolderNameOrThrow(string folderName, string paramName = null)
+        public static void ValidateFolderNameOrThrow(string folderName, string? paramName = null)
         {
             if (string.IsNullOrWhiteSpace(folderName))
             {
@@ -98,7 +98,7 @@ namespace FolderDiffIL4DotNet.Core.IO
         /// 注意: パスが絶対かどうかの検証は行いません（長さのみ検査）。
         /// </summary>
         /// <exception cref="ArgumentException">絶対パスが空、または上限超過の場合</exception>
-        public static void ValidateAbsolutePathLengthOrThrow(string absolutePath, string paramName = null)
+        public static void ValidateAbsolutePathLengthOrThrow(string absolutePath, string? paramName = null)
         {
             if (string.IsNullOrWhiteSpace(absolutePath))
             {

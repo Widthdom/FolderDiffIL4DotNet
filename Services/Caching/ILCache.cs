@@ -54,7 +54,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             return new ILCacheReportStats(hits, misses, stores, evicted, expired);
         }
 
-        public ILCache(string ilCacheDirectoryAbsolutePath, ILoggerService logger = null, int ilCacheMaxMemoryEntries = ILMemoryCache.DefaultMaxEntries, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0)
+        public ILCache(string ilCacheDirectoryAbsolutePath, ILoggerService? logger = null, int ilCacheMaxMemoryEntries = ILMemoryCache.DefaultMaxEntries, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0)
         {
             _logger = logger ?? new LoggerService();
             _memoryCache = new ILMemoryCache(ilCacheMaxMemoryEntries, timeToLive);
@@ -108,7 +108,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Looks up IL from the cache: checks memory first (including TTL), then falls back to disk.
         /// キャッシュから IL を取得します。まずメモリキャッシュを確認（期限も確認）し、次にディスクキャッシュを確認します。
         /// </summary>
-        public async Task<string> TryGetILAsync(string fileAbsolutePath, string toolLabel)
+        public async Task<string?> TryGetILAsync(string fileAbsolutePath, string toolLabel)
         {
             var ilCacheKey = BuildILCacheKey(fileAbsolutePath, toolLabel);
             if (_memoryCache.TryGet(ilCacheKey, out var memoryHit))
@@ -235,7 +235,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Removes the disk entry corresponding to a key evicted from memory.
         /// メモリ退避で追い出されたキーに対応するディスクエントリを削除します。
         /// </summary>
-        private void RemoveDiskEntryIfEvicted(string evictedCacheKey)
+        private void RemoveDiskEntryIfEvicted(string? evictedCacheKey)
         {
             if (evictedCacheKey == null)
             {

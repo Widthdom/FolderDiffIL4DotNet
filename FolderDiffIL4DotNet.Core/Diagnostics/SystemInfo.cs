@@ -65,7 +65,7 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
             }
             return verToShow;
         }
-        private static string TryGetEnvironmentMachineName()
+        private static string? TryGetEnvironmentMachineName()
         {
             try
             {
@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
             }
         }
 
-        private static string TryGetDnsHostName()
+        private static string? TryGetDnsHostName()
         {
             try
             {

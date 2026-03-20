@@ -8,11 +8,11 @@ namespace FolderDiffIL4DotNet.Runner
         bool ShowHelp,
         bool ShowVersion,
         bool NoPause,
-        string ConfigPath,
+        string? ConfigPath,
         int? ThreadsOverride,
         bool NoIlCache,
         bool SkipIL,
         bool NoTimestampWarnings,
         bool PrintConfig,
-        string ParseError);
+        string? ParseError);
 }

@@ -106,7 +106,7 @@ namespace FolderDiffIL4DotNet.Core.IO
         /// Retrieves the filesystem type and flags for a path on macOS via <c>statfs</c>.
         /// macOS で指定パスのファイルシステム種別およびフラグを取得します。
         /// </summary>
-        private static bool TryGetFileSystemInfoOnMac(string path, out string fsType, out uint flags)
+        private static bool TryGetFileSystemInfoOnMac(string path, out string? fsType, out uint flags)
         {
             fsType = null;
             flags = 0;
@@ -148,15 +148,15 @@ namespace FolderDiffIL4DotNet.Core.IO
         /// Finds the filesystem type of the longest-matching mount point for the given path from Unix mount-format lines.
         /// Unix の mounts 形式行から、指定パスに最も長く一致するマウントポイントの fs type を取得します。
         /// </summary>
-        private static string GetBestMatchingMountFileSystemType(string fullPath, IEnumerable<string> mountLines)
+        private static string? GetBestMatchingMountFileSystemType(string fullPath, IEnumerable<string> mountLines)
         {
             if (string.IsNullOrWhiteSpace(fullPath) || mountLines == null)
             {
                 return null;
             }
 
-            string bestMountPoint = null;
-            string bestFsType = null;
+            string? bestMountPoint = null;
+            string? bestFsType = null;
 
             foreach (var line in mountLines)
             {
@@ -288,7 +288,7 @@ namespace FolderDiffIL4DotNet.Core.IO
             return !string.IsNullOrEmpty(root) && IsNetworkDrive(root);
         }
 
-        private static string TryGetPathRoot(string absolutePath)
+        private static string? TryGetPathRoot(string absolutePath)
         {
             try
             {
@@ -347,7 +347,7 @@ namespace FolderDiffIL4DotNet.Core.IO
             return !string.IsNullOrEmpty(bestFsType) && s_unixNetworkFsTypes.Contains(bestFsType);
         }
 
-        private static string GetUnixMountsFilePath()
+        private static string? GetUnixMountsFilePath()
         {
             if (File.Exists(PROC_MOUNTS_PATH))
             {
@@ -357,7 +357,7 @@ namespace FolderDiffIL4DotNet.Core.IO
             return File.Exists(ETC_MTAB_PATH) ? ETC_MTAB_PATH : null;
         }
 
-        private static string TryGetFullPath(string absolutePath)
+        private static string? TryGetFullPath(string absolutePath)
         {
             try
             {
@@ -369,7 +369,7 @@ namespace FolderDiffIL4DotNet.Core.IO
             }
         }
 
-        private static IEnumerable<string> TryReadMountLines(string mountsFile)
+        private static IEnumerable<string>? TryReadMountLines(string mountsFile)
         {
             try
             {

@@ -70,7 +70,7 @@ namespace FolderDiffIL4DotNet.Runner
         /// Creates an <see cref="ILCache"/> based on configuration. Returns null when caching is disabled.
         /// 設定に基づいて <see cref="ILCache"/> を生成する。キャッシュが無効な場合は null を返す。
         /// </summary>
-        internal static ILCache CreateIlCache(ConfigSettings config, ILoggerService logger)
+        internal static ILCache? CreateIlCache(ConfigSettings config, ILoggerService logger)
         {
             if (!config.EnableILCache)
             {

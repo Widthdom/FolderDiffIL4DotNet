@@ -84,8 +84,8 @@ namespace FolderDiffIL4DotNet.Core.IO
             using var file1StreamReader = new StreamReader(fs1);
             using var file2StreamReader = new StreamReader(fs2);
 
-            string file1Line;
-            string file2Line;
+            string? file1Line;
+            string? file2Line;
 
             do
             {

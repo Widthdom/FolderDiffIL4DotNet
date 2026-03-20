@@ -74,8 +74,8 @@ namespace FolderDiffIL4DotNet
         private sealed class StepResult<TValue>
         {
             public bool IsSuccess { get; }
-            public TValue Value { get; }
-            public ProgramRunResult Failure { get; }
+            public TValue? Value { get; }
+            public ProgramRunResult? Failure { get; }
 
             public static StepResult<TValue> FromValue(TValue value)
                 => new(true, value, null);
@@ -83,7 +83,7 @@ namespace FolderDiffIL4DotNet
             public static StepResult<TValue> FromFailure(ProgramRunResult failure)
                 => new(false, default, failure);
 
-            private StepResult(bool isSuccess, TValue value, ProgramRunResult failure)
+            private StepResult(bool isSuccess, TValue? value, ProgramRunResult? failure)
             {
                 IsSuccess = isSuccess;
                 Value = value;

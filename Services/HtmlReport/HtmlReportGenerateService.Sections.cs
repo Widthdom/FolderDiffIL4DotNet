@@ -179,7 +179,7 @@ namespace FolderDiffIL4DotNet.Services
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
             ConfigSettings config,
-            ILCache ilCache)
+            ILCache? ilCache)
         {
             var items = _fileDiffResultLists.ModifiedFilesRelativePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
@@ -226,7 +226,7 @@ namespace FolderDiffIL4DotNet.Services
             ConfigSettings config,
             FileDiffResultLists.DiffDetailResult diffDetail,
             string disassemblerLabel,
-            ILCache ilCache,
+            ILCache? ilCache,
             string sectionPrefix = "mod")
         {
             int maxDiffLines    = config.InlineDiffMaxDiffLines    > 0 ? config.InlineDiffMaxDiffLines    : 10000;
@@ -371,7 +371,7 @@ namespace FolderDiffIL4DotNet.Services
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
             ConfigSettings config,
-            ILCache ilCache)
+            ILCache? ilCache)
         {
             bool hasMd5 = _fileDiffResultLists.HasAnyMd5Mismatch;
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;

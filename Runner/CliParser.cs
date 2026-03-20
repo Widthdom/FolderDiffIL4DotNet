@@ -27,9 +27,9 @@ namespace FolderDiffIL4DotNet.Runner
         {
             bool showHelp = false, showVersion = false, noPause = false;
             bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false;
-            string configPath = null;
+            string? configPath = null;
             int? threadsOverride = null;
-            string parseError = null;
+            string? parseError = null;
 
             if (args == null)
             {

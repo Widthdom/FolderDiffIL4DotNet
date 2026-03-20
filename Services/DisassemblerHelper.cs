@@ -57,7 +57,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Resolves an executable name to its absolute path by searching <c>PATH</c>. Returns <see langword="null"/> when not found.
         /// コマンド名から実行ファイルの絶対パスを解決します。解決できない場合は <see langword="null"/>。
         /// </summary>
-        internal static string ResolveExecutablePath(string command)
+        internal static string? ResolveExecutablePath(string command)
         {
             if (string.IsNullOrWhiteSpace(command))
             {

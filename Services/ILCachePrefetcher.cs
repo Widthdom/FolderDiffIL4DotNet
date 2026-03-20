@@ -21,7 +21,7 @@ namespace FolderDiffIL4DotNet.Services
     {
         private const string ILSPY_FLAG_IL = "-il";
         private readonly ConfigSettings _config;
-        private readonly ILCache _ilCache;
+        private readonly ILCache? _ilCache;
         private readonly ILoggerService _logger;
         private readonly DotNetDisassemblerCache _dotNetDisassemblerCache;
         private int _ilCacheHits;
@@ -35,7 +35,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="ArgumentNullException"><paramref name="config"/>, <paramref name="logger"/>, or <paramref name="dotNetDisassemblerCache"/> is null. / <paramref name="config"/>、<paramref name="logger"/>、または <paramref name="dotNetDisassemblerCache"/> が null の場合。</exception>
         internal ILCachePrefetcher(
             ConfigSettings config,
-            ILCache ilCache,
+            ILCache? ilCache,
             ILoggerService logger,
             DotNetDisassemblerCache dotNetDisassemblerCache)
         {
