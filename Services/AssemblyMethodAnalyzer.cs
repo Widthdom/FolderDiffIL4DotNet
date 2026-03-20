@@ -36,10 +36,16 @@ namespace FolderDiffIL4DotNet.Services
                 var entries = new List<MemberChangeEntry>();
 
                 // Types
-                foreach (var t in newSnapshot.TypeNames.Except(oldSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("Added", t, "", "", "Type", "", "", "", ""));
-                foreach (var t in oldSnapshot.TypeNames.Except(newSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("Removed", t, "", "", "Type", "", "", "", ""));
+                foreach (var t in newSnapshot.TypeNames.Keys.Except(oldSnapshot.TypeNames.Keys, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
+                {
+                    var info = newSnapshot.TypeNames[t];
+                    entries.Add(new MemberChangeEntry("Added", t, info.Access, "", info.Kind, "", "", "", ""));
+                }
+                foreach (var t in oldSnapshot.TypeNames.Keys.Except(newSnapshot.TypeNames.Keys, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
+                {
+                    var info = oldSnapshot.TypeNames[t];
+                    entries.Add(new MemberChangeEntry("Removed", t, info.Access, "", info.Kind, "", "", "", ""));
+                }
 
                 // Methods (including constructors)
                 foreach (var key in newSnapshot.Methods.Keys.Except(oldSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
@@ -135,9 +141,15 @@ namespace FolderDiffIL4DotNet.Services
             public required string Details { get; init; }
         }
 
+        private sealed class TypeInfo
+        {
+            public required string Access { get; init; }
+            public required string Kind { get; init; }
+        }
+
         private sealed class AssemblySnapshot
         {
-            public HashSet<string> TypeNames { get; } = new(StringComparer.Ordinal);
+            public Dictionary<string, TypeInfo> TypeNames { get; } = new(StringComparer.Ordinal);
             public Dictionary<string, MethodDetail> Methods { get; } = new(StringComparer.Ordinal);
             public Dictionary<string, PropertyDetail> Properties { get; } = new(StringComparer.Ordinal);
             public Dictionary<string, FieldDetail> Fields { get; } = new(StringComparer.Ordinal);
@@ -161,7 +173,9 @@ namespace FolderDiffIL4DotNet.Services
                 // Skip the special <Module> type
                 if (typeName == "<Module>") continue;
 
-                snapshot.TypeNames.Add(typeName);
+                string typeAccess = GetTypeAccessModifier(typeDef.Attributes);
+                string typeKind = GetTypeKind(reader, typeDef);
+                snapshot.TypeNames[typeName] = new TypeInfo { Access = typeAccess, Kind = typeKind };
 
                 // Methods
                 foreach (var methodHandle in typeDef.GetMethods())
@@ -466,6 +480,76 @@ namespace FolderDiffIL4DotNet.Services
                 FieldAttributes.Private => "private",
                 _ => "private"
             };
+        }
+
+        /// <summary>Extract access modifier from type attributes. / TypeAttributes からアクセス修飾子を取得。</summary>
+        private static string GetTypeAccessModifier(System.Reflection.TypeAttributes attributes)
+        {
+            var visibility = attributes & System.Reflection.TypeAttributes.VisibilityMask;
+            return visibility switch
+            {
+                System.Reflection.TypeAttributes.Public => "public",
+                System.Reflection.TypeAttributes.NotPublic => "internal",
+                System.Reflection.TypeAttributes.NestedPublic => "public",
+                System.Reflection.TypeAttributes.NestedFamily => "protected",
+                System.Reflection.TypeAttributes.NestedFamORAssem => "protected internal",
+                System.Reflection.TypeAttributes.NestedAssembly => "internal",
+                System.Reflection.TypeAttributes.NestedFamANDAssem => "private protected",
+                System.Reflection.TypeAttributes.NestedPrivate => "private",
+                _ => "internal"
+            };
+        }
+
+        /// <summary>
+        /// Determine the type kind: Class, Record, Struct, Interface, or Enum.
+        /// Record is detected heuristically by the presence of an EqualityContract property.
+        /// 型の種別を判定: Class, Record, Struct, Interface, Enum。
+        /// Record は EqualityContract プロパティの有無で推定。
+        /// </summary>
+        private static string GetTypeKind(MetadataReader reader, TypeDefinition typeDef)
+        {
+            var attributes = typeDef.Attributes;
+
+            if ((attributes & System.Reflection.TypeAttributes.Interface) != 0)
+                return "Interface";
+
+            // Check base type for enum / struct (value type)
+            if (!typeDef.BaseType.IsNil)
+            {
+                string baseTypeName = GetBaseTypeName(reader, typeDef.BaseType);
+                if (baseTypeName is "System.Enum")
+                    return "Enum";
+                if (baseTypeName is "System.ValueType")
+                    return "Struct";
+            }
+
+            // Heuristic: C# records have a compiler-generated EqualityContract property
+            foreach (var propHandle in typeDef.GetProperties())
+            {
+                var propDef = reader.GetPropertyDefinition(propHandle);
+                if (reader.GetString(propDef.Name) == "EqualityContract")
+                    return "Record";
+            }
+
+            return "Class";
+        }
+
+        /// <summary>Get the full name of a base type from its EntityHandle.</summary>
+        private static string GetBaseTypeName(MetadataReader reader, EntityHandle baseTypeHandle)
+        {
+            if (baseTypeHandle.Kind == HandleKind.TypeReference)
+            {
+                var typeRef = reader.GetTypeReference((TypeReferenceHandle)baseTypeHandle);
+                string ns = reader.GetString(typeRef.Namespace);
+                string name = reader.GetString(typeRef.Name);
+                return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+            }
+            if (baseTypeHandle.Kind == HandleKind.TypeDefinition)
+            {
+                var typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)baseTypeHandle);
+                return GetFullTypeName(reader, typeDef);
+            }
+            return "";
         }
 
         /// <summary>Extract non-access modifiers from method attributes (static, abstract, virtual, sealed, override, etc.).</summary>

@@ -209,13 +209,13 @@ namespace FolderDiffIL4DotNet.Services
                     if (summary.Entries.Count > 0)
                     {
                         writer.WriteLine();
-                        writer.WriteLine("| Assembly | Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters |");
-                        writer.WriteLine("|----------|--------|-------|------|--------|-----------|------|------|------------|------------|");
+                        writer.WriteLine("| Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters |");
+                        writer.WriteLine("|--------|-------|------|--------|-----------|------|------|------------|------------|");
                         foreach (var e in summary.Entries)
                         {
                             string access = e.Access.Length > 0 ? $"`{EscapeMdTable(e.Access)}`" : "";
                             string modifiers = e.Modifiers.Length > 0 ? $"`{EscapeMdTable(e.Modifiers)}`" : "";
-                            writer.WriteLine($"| {EscapeMdTable(filePath)} | `{EscapeMdTable(e.Change)}` | {EscapeMdTable(e.TypeName)} | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} |");
+                            writer.WriteLine($"| `{EscapeMdTable(e.Change)}` | {EscapeMdTable(e.TypeName)} | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} |");
                         }
                     }
                     else

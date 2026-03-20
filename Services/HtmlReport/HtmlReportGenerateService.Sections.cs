@@ -362,13 +362,13 @@ namespace FolderDiffIL4DotNet.Services
             if (summary.Entries.Count > 0)
             {
                 contentBuilder.AppendLine("<table class=\"method-changes-table\">");
-                contentBuilder.AppendLine("<thead><tr><th>Assembly</th><th>Change</th><th>Class</th><th>Kind</th><th>Access</th><th>Modifiers</th><th>Type</th><th>Name</th><th>ReturnType</th><th>Parameters</th></tr></thead>");
+                contentBuilder.AppendLine("<thead><tr><th>Change</th><th>Class</th><th>Kind</th><th>Access</th><th>Modifiers</th><th>Type</th><th>Name</th><th>ReturnType</th><th>Parameters</th></tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 foreach (var e in summary.Entries)
                 {
                     string accessTd = e.Access.Length > 0 ? $"<code>{HtmlEncode(e.Access)}</code>" : "";
                     string modifiersTd = e.Modifiers.Length > 0 ? $"<code>{HtmlEncode(e.Modifiers)}</code>" : "";
-                    contentBuilder.AppendLine($"<tr><td>{HtmlEncode(assemblyPath)}</td><td><code>{HtmlEncode(e.Change)}</code></td><td>{HtmlEncode(e.TypeName)}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td></tr>");
+                    contentBuilder.AppendLine($"<tr><td><code>{HtmlEncode(e.Change)}</code></td><td>{HtmlEncode(e.TypeName)}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td></tr>");
                 }
                 contentBuilder.AppendLine("</tbody></table>");
             }

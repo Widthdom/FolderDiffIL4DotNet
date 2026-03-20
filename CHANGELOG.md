@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Restructured the Assembly Semantic Changes table from 9 columns to 10 columns for clarity. Split the former `ReturnType (Type paramName)` column into separate `ReturnType` and `Parameters` columns. Moved `Kind` column before `Access` and `Modifiers` for better readability. Added `Constructor` and `StaticConstructor` as new Kind values (previously `.ctor`/`.cctor` were shown as `Method`). Constructors display the C# class name instead of `.ctor`. The `Type` column shows the declared type for Field/Property entries only. Empty Access/Modifiers cells no longer render as empty backticks. Changed `Method count` label to `Member count`. Renamed section from `Method-Level Changes` to `Assembly Semantic Changes`. Added record type and field variable samples to [`doc/samples/diff_report.md`](doc/samples/diff_report.md). Added bilingual **Assembly Semantic Changes** section to [README.md](README.md).
 
+- Refined Kind values for type entries: replaced generic `Type` with specific `Class`, `Record`, `Struct`, `Interface`, and `Enum` kinds. Record types are detected heuristically by the presence of an `EqualityContract` property. Type entries now show access modifiers (`public`, `internal`, `protected`, etc.) instead of leaving the Access column empty. Removed the redundant `Assembly` column from the semantic changes table (10→9 columns) since the assembly name is already shown as the section header. Enriched sample reports with `protected` access modifier examples, `Removed` type entries, Added+Removed pairs (move/rename pattern), method overload examples, and custom application-defined type properties.
+
 ### [1.4.1] - 2026-03-20
 
 #### Added
@@ -376,6 +378,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `System.Reflection.Metadata` を使用した `ILMismatch` アセンブリのメンバーレベル変更検出を追加。変更のあった各 .NET アセンブリについて、型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更をレポートに出力します。Markdown レポートでは **Summary** と **IL Cache Stats** の間に **Assembly Semantic Changes** セクションとして表示され、HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。新しい設定項目 `ShouldIncludeMethodLevelChangesInReport`（既定: `true`）で制御可能。[`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs)、[`MethodLevelChangesSummary`](Models/MethodLevelChangesSummary.cs)、および対応するテストを追加。
 
 - Assembly Semantic Changes テーブルを 9 列から 10 列に再構成し明確化。旧 `ReturnType (Type paramName)` 列を `ReturnType` 列と `Parameters` 列に分離。`Kind` 列を `Access`・`Modifiers` の前に移動。Kind 値に `Constructor` と `StaticConstructor` を追加（従来 `.ctor`/`.cctor` は `Method` として表示）。コンストラクタは `.ctor` ではなく C# のクラス名で表示。`Type` 列は Field/Property の宣言型のみを表示。空の Access/Modifiers セルは空バッククォートではなく空欄に。`Method count` ラベルを `Member count` に変更。セクション名を `Method-Level Changes` から `Assembly Semantic Changes` に改名。[`doc/samples/diff_report.md`](doc/samples/diff_report.md) に record 型およびフィールド変数のサンプルを追加。[README.md](README.md) にバイリンガルの **アセンブリ セマンティック変更** セクションを追加。
+
+- Kind 値を詳細化: 汎用の `Type` を `Class`、`Record`、`Struct`、`Interface`、`Enum` に置き換え。Record 型は `EqualityContract` プロパティの有無で推定。型エントリの Access 列に空欄ではなくアクセス修飾子（`public`、`internal`、`protected` 等）を表示。セクションヘッダに既にアセンブリ名が表示されるため冗長な `Assembly` 列を削除（10→9 列）。サンプルレポートに `protected` アクセス修飾子、`Removed` 型エントリ、Added+Removed ペア（移動/リネームパターン）、メソッドオーバーロード、アプリケーション独自型のプロパティを追加。
 
 ### [1.4.1] - 2026-03-20
 
