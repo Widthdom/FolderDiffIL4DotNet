@@ -216,12 +216,12 @@ namespace FolderDiffIL4DotNet.Services
                         {
                             bool isCont = e.TypeName == prevType;
                             string classCol = !isCont ? EscapeMdTable(e.TypeName) : "";
-                            string baseTypeCol = !isCont ? EscapeMdTable(e.BaseType) : "";
+                            string baseTypeCol = !isCont ? NoWrapMd(EscapeMdTable(e.BaseType)) : "";
                             prevType = e.TypeName;
                             string access = e.Access.Length > 0 ? $"`{EscapeMdTable(e.Access)}`" : "";
                             string modifiers = e.Modifiers.Length > 0 ? $"`{EscapeMdTable(e.Modifiers)}`" : "";
                             string body = e.Body.Length > 0 ? $"`{EscapeMdTable(e.Body)}`" : "";
-                            writer.WriteLine($"| {classCol} | {baseTypeCol} | `{EscapeMdTable(e.Change)}` | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} | {body} |");
+                            writer.WriteLine($"| {classCol} | {baseTypeCol} | `{EscapeMdTable(e.Change)}` | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {NoWrapMd(EscapeMdTable(e.MemberType))} | {EscapeMdTable(e.MemberName)} | {NoWrapMd(EscapeMdTable(e.ReturnType))} | {NoWrapMd(EscapeMdTable(e.Parameters))} | {body} |");
                         }
                     }
                     else
@@ -265,6 +265,9 @@ namespace FolderDiffIL4DotNet.Services
 
             /// <summary>Escape pipe characters for Markdown table cells. / Markdown テーブルセル用にパイプ文字をエスケープ。</summary>
             private static string EscapeMdTable(string value) => value.Replace("|", "\\|");
+
+            /// <summary>Replace spaces with non-breaking spaces to prevent wrapping in Markdown table cells. / Markdown テーブルセル内の折り返しを防ぐためにスペースをノーブレークスペースに置換。</summary>
+            private static string NoWrapMd(string value) => value.Replace(' ', '\u00A0');
         }
 
         /// <summary>Writes the IL Cache Stats section (only when enabled and ilCache is non-null). / IL Cache Stats セクションを書き込みます。</summary>
