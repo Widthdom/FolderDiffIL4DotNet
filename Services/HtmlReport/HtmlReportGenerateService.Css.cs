@@ -138,7 +138,8 @@ namespace FolderDiffIL4DotNet.Services
     .semantic-changes p { margin: 4px 0 2px; }
     table.semantic-changes-table { width: auto; border-collapse: collapse; margin: 4px 0; font-size: 12px; }
     table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #ccc; background: #f6f8fa; font-size: 11px; text-align: left; white-space: nowrap; }
-    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; }";
+    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; }
+    table.semantic-changes-table tr.group-cont td { border-top: none; }";
         }
     }
 }

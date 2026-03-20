@@ -365,12 +365,14 @@ namespace FolderDiffIL4DotNet.Services
                 string prevType = "";
                 foreach (var e in summary.Entries)
                 {
-                    string classTd = e.TypeName != prevType ? HtmlEncode(e.TypeName) : "";
+                    bool isCont = e.TypeName == prevType;
+                    string classTd = !isCont ? HtmlEncode(e.TypeName) : "";
                     prevType = e.TypeName;
+                    string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
                     string accessTd = e.Access.Length > 0 ? $"<code>{HtmlEncode(e.Access)}</code>" : "";
                     string modifiersTd = e.Modifiers.Length > 0 ? $"<code>{HtmlEncode(e.Modifiers)}</code>" : "";
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
-                    contentBuilder.AppendLine($"<tr><td>{classTd}</td><td><code>{HtmlEncode(e.Change)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    contentBuilder.AppendLine($"{trOpen}<td>{classTd}</td><td><code>{HtmlEncode(e.Change)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                 }
                 contentBuilder.AppendLine("</tbody></table>");
             }
@@ -422,9 +424,11 @@ namespace FolderDiffIL4DotNet.Services
             string prevType = "";
             foreach (var ((typeName, change), count) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => kv.Key.Change, StringComparer.Ordinal))
             {
-                string classTd = typeName != prevType ? HtmlEncode(typeName) : "";
+                bool isCont = typeName == prevType;
+                string classTd = !isCont ? HtmlEncode(typeName) : "";
                 prevType = typeName;
-                sb.AppendLine($"<tr><td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td>{count}</td></tr>");
+                string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
+                sb.AppendLine($"{trOpen}<td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td>{count}</td></tr>");
             }
             sb.AppendLine("</tbody></table>");
         }
