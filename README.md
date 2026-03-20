@@ -214,8 +214,11 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | Name | Member name (constructors use the class name; empty for Class/Record/Struct/Interface/Enum entries) | `DoWork` |
 | ReturnType | Return type for Method/Constructor (empty for Field/Property/Class/Record) | `void` |
 | Parameters | Parameter list for Method/Constructor (empty for Field/Property/Class/Record) | `string name, int count = 0` |
+| Body | `Changed` when method body or field initializer IL has changed; otherwise empty | `Changed` |
 
 Controlled by [`ShouldIncludeMethodLevelChangesInReport`](#config-en-shouldincludemethodlevelchangesinreport) (default: `true`).
+
+The summary line below the table shows counts: `Added: N, Removed: N, Modified: N`.
 
 ## Configuration ([`config.json`](config.json))
 
@@ -693,8 +696,11 @@ flowchart TD
 | Name | メンバー名（コンストラクタはクラス名、Class/Record/Struct/Interface/Enum エントリの場合は空） | `DoWork` |
 | ReturnType | Method/Constructor の戻り値型（Field/Property/Class/Record の場合は空） | `void` |
 | Parameters | Method/Constructor のパラメータ一覧（Field/Property/Class/Record の場合は空） | `string name, int count = 0` |
+| Body | メソッドボディまたはフィールド初期化子の IL が変更された場合 `Changed`、それ以外は空 | `Changed` |
 
 [`ShouldIncludeMethodLevelChangesInReport`](#config-ja-shouldincludemethodlevelchangesinreport)（既定値: `true`）で制御します。
+
+テーブル下の集計行にはカウントが表示されます: `Added: N, Removed: N, Modified: N`。
 
 ## 設定（[`config.json`](config.json)）
 

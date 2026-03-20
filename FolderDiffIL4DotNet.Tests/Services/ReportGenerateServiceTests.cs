@@ -771,17 +771,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var summary = new MethodLevelChangesSummary
             {
-                OldMethodCount = 42,
-                NewMethodCount = 44,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.NewService", "public", "", "Class", "", "", "", ""),
-                    new("Added", "MyApp.UserService", "public", "static", "Method", "ValidateToken", "", "bool", "string token"),
-                    new("Added", "MyApp.UserService", "internal", "", "Method", "RefreshSession", "", "void", "int userId"),
-                    new("Removed", "MyApp.UserService", "public", "virtual", "Method", "LegacyAuth", "", "void", "string key"),
-                    new("Modified", "MyApp.UserService", "public", "", "Method", "Login", "", "bool", "string user, string pass"),
-                    new("Added", "MyApp.UserService", "public", "", "Property", "IsActive", "bool", "", ""),
-                    new("Added", "MyApp.UserService", "private", "readonly", "Field", "_cache", "object", "", ""),
+                    new("Added", "MyApp.NewService", "public", "", "Class", "", "", "", "", ""),
+                    new("Added", "MyApp.UserService", "public", "static", "Method", "ValidateToken", "", "bool", "string token", ""),
+                    new("Added", "MyApp.UserService", "internal", "", "Method", "RefreshSession", "", "void", "int userId", ""),
+                    new("Removed", "MyApp.UserService", "public", "virtual", "Method", "LegacyAuth", "", "void", "string key", ""),
+                    new("Modified", "MyApp.UserService", "public", "", "Method", "Login", "", "bool", "string user, string pass", "Changed"),
+                    new("Added", "MyApp.UserService", "public", "", "Property", "IsActive", "bool", "", "", ""),
+                    new("Added", "MyApp.UserService", "private", "readonly", "Field", "_cache", "object", "", "", ""),
                 },
             };
             _resultLists.FileRelativePathToMethodLevelChanges["src/App.dll"] = summary;
@@ -801,13 +799,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Content checks — table format
             Assert.Contains("## Assembly Semantic Changes", reportText);
             Assert.Contains("### src/App.dll", reportText);
-            Assert.Contains("| Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters |", reportText);
-            Assert.Contains("| `Added` | MyApp.NewService | `Class` | `public` |  |  |  |  |  |", reportText);
-            Assert.Contains("| `Added` | MyApp.UserService | `Method` | `public` | `static` |  | ValidateToken | bool | string token |", reportText);
-            Assert.Contains("| `Modified` | MyApp.UserService | `Method` | `public` |  |  | Login | bool | (string user, string pass) |", reportText);
-            Assert.Contains("| `Added` | MyApp.UserService | `Property` | `public` |  | bool | IsActive |  |  |", reportText);
-            Assert.Contains("| `Added` | MyApp.UserService | `Field` | `private` | `readonly` | object | _cache |  |  |", reportText);
-            Assert.Contains("- Member count: 42 (Old) vs 44 (New)", reportText);
+            Assert.Contains("| Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |", reportText);
+            Assert.Contains("| `Added` | MyApp.NewService | `Class` | `public` |  |  |  |  |  |  |", reportText);
+            Assert.Contains("| `Added` | MyApp.UserService | `Method` | `public` | `static` |  | ValidateToken | bool | string token |  |", reportText);
+            Assert.Contains("| `Modified` | MyApp.UserService | `Method` | `public` |  |  | Login | bool | string user, string pass | `Changed` |", reportText);
+            Assert.Contains("| `Added` | MyApp.UserService | `Property` | `public` |  | bool | IsActive |  |  |  |", reportText);
+            Assert.Contains("| `Added` | MyApp.UserService | `Field` | `private` | `readonly` | object | _cache |  |  |  |", reportText);
+            Assert.Contains("- Added: 5, Removed: 1, Modified: 1", reportText);
 
             // Ordering: Summary < Assembly Semantic Changes < IL Cache Stats
             int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);
@@ -829,11 +827,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             _resultLists.FileRelativePathToMethodLevelChanges["src/App.dll"] = new MethodLevelChangesSummary
             {
-                OldMethodCount = 10,
-                NewMethodCount = 12,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "Foo", "public", "", "Method", "Bar", "", "void", ""),
+                    new("Added", "Foo", "public", "", "Method", "Bar", "", "void", "", ""),
                 },
             };
 

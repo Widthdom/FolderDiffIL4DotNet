@@ -39,12 +39,12 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var t in newSnapshot.TypeNames.Keys.Except(oldSnapshot.TypeNames.Keys, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
                 {
                     var info = newSnapshot.TypeNames[t];
-                    entries.Add(new MemberChangeEntry("Added", t, info.Access, "", info.Kind, "", "", "", ""));
+                    entries.Add(new MemberChangeEntry("Added", t, info.Access, "", info.Kind, "", "", "", "", ""));
                 }
                 foreach (var t in oldSnapshot.TypeNames.Keys.Except(newSnapshot.TypeNames.Keys, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
                 {
                     var info = oldSnapshot.TypeNames[t];
-                    entries.Add(new MemberChangeEntry("Removed", t, info.Access, "", info.Kind, "", "", "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", t, info.Access, "", info.Kind, "", "", "", "", ""));
                 }
 
                 // Methods (including constructors)
@@ -52,13 +52,13 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     var m = newSnapshot.Methods[key];
                     string kind = ToMemberKind(m.MethodName);
-                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters));
+                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, ""));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Except(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = oldSnapshot.Methods[key];
                     string kind = ToMemberKind(m.MethodName);
-                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters));
+                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, ""));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
@@ -66,7 +66,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         var m = newSnapshot.Methods[key];
                         string kind = ToMemberKind(m.MethodName);
-                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters));
+                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, "Changed"));
                     }
                 }
 
@@ -74,31 +74,29 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var key in newSnapshot.Properties.Keys.Except(oldSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = newSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", ""));
+                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", "", ""));
                 }
                 foreach (var key in oldSnapshot.Properties.Keys.Except(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = oldSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", "", ""));
                 }
 
                 // Fields
                 foreach (var key in newSnapshot.Fields.Keys.Except(oldSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = newSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", ""));
+                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", "", ""));
                 }
                 foreach (var key in oldSnapshot.Fields.Keys.Except(newSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = oldSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", "", ""));
                 }
 
                 return new MethodLevelChangesSummary
                 {
                     Entries = entries,
-                    OldMethodCount = oldSnapshot.Methods.Count,
-                    NewMethodCount = newSnapshot.Methods.Count,
                 };
             }
 #pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis

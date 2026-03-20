@@ -13,13 +13,25 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>All detected member-level changes. / 検出されたすべてのメンバーレベル変更。</summary>
         public IReadOnlyList<MemberChangeEntry> Entries { get; init; } = [];
 
-        /// <summary>Total member (method) count in the old assembly. / 旧アセンブリのメンバー（メソッド）総数。</summary>
-        public int OldMethodCount { get; init; }
-
-        /// <summary>Total member (method) count in the new assembly. / 新アセンブリのメンバー（メソッド）総数。</summary>
-        public int NewMethodCount { get; init; }
-
         /// <summary>Whether any changes were detected. / 何らかの変更が検出されたかどうか。</summary>
         public bool HasChanges => Entries.Count > 0;
+
+        /// <summary>Number of entries with Change="Added". / Change="Added" のエントリ数。</summary>
+        public int AddedCount => CountByChange("Added");
+
+        /// <summary>Number of entries with Change="Removed". / Change="Removed" のエントリ数。</summary>
+        public int RemovedCount => CountByChange("Removed");
+
+        /// <summary>Number of entries with Change="Modified". / Change="Modified" のエントリ数。</summary>
+        public int ModifiedCount => CountByChange("Modified");
+
+        private int CountByChange(string change)
+        {
+            int count = 0;
+            foreach (var e in Entries)
+                if (string.Equals(e.Change, change, System.StringComparison.Ordinal))
+                    count++;
+            return count;
+        }
     }
 }

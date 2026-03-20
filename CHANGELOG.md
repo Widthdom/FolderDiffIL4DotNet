@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Removed parentheses from the `Parameters` column values. Since Parameters is now an independent column, wrapping values in `(…)` is redundant. Values now display as `string name, int count = 0` instead of `(string name, int count = 0)`. Empty parameter lists display as blank instead of `()`.
 
+- Added `Body` column (10th column, rightmost) to the Assembly Semantic Changes table. Displays `Changed` when a method body or field initializer has been modified at the IL level; otherwise empty. Entries with body changes use `Modified` in the Change column. Replaced the `Member count: N (Old) vs N (New)` summary line with `Added: N, Removed: N, Modified: N` counts computed from entries. Removed `OldMethodCount`/`NewMethodCount` properties from `MethodLevelChangesSummary` in favour of computed `AddedCount`, `RemovedCount`, and `ModifiedCount` properties.
+
 ### [1.4.1] - 2026-03-20
 
 #### Added
@@ -384,6 +386,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Kind 値を詳細化: 汎用の `Type` を `Class`、`Record`、`Struct`、`Interface`、`Enum` に置き換え。Record 型は `EqualityContract` プロパティの有無で推定。型エントリの Access 列に空欄ではなくアクセス修飾子（`public`、`internal`、`protected` 等）を表示。セクションヘッダに既にアセンブリ名が表示されるため冗長な `Assembly` 列を削除（10→9 列）。サンプルレポートに `protected` アクセス修飾子、`Removed` 型エントリ、Added+Removed ペア（移動/リネームパターン）、メソッドオーバーロード、アプリケーション独自型のプロパティを追加。
 
 - `Parameters` 列の値から括弧を削除。Parameters が独立列となったため `(…)` は冗長。値は `(string name, int count = 0)` ではなく `string name, int count = 0` で表示。引数なしは `()` ではなく空欄。
+
+- Assembly Semantic Changes テーブルに `Body` 列（10 列目、最右端）を追加。メソッドボディまたはフィールド初期化子が IL レベルで変更された場合に `Changed` を表示、それ以外は空欄。ボディ変更があるエントリの Change 列は `Modified`。集計行を `Member count: N (Old) vs N (New)` から `Added: N, Removed: N, Modified: N`（エントリから算出）に変更。`MethodLevelChangesSummary` の `OldMethodCount`/`NewMethodCount` プロパティを削除し、算出プロパティ `AddedCount`、`RemovedCount`、`ModifiedCount` に置き換え。
 
 ### [1.4.1] - 2026-03-20
 

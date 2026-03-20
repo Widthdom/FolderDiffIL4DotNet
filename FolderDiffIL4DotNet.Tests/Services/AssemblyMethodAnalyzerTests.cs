@@ -17,8 +17,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(result);
             Assert.False(result.HasChanges);
             Assert.Empty(result.Entries);
-            Assert.True(result.OldMethodCount > 0);
-            Assert.Equal(result.OldMethodCount, result.NewMethodCount);
+            Assert.Equal(0, result.AddedCount);
+            Assert.Equal(0, result.RemovedCount);
+            Assert.Equal(0, result.ModifiedCount);
         }
 
         [Fact]

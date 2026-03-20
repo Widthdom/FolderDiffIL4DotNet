@@ -728,14 +728,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
             {
-                OldMethodCount = 10,
-                NewMethodCount = 12,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "", "void", "string name"),
-                    new("Modified", "MyApp.Service", "public", "virtual", "Method", "ExistingMethod", "", "bool", "int id"),
-                    new("Added", "MyApp.Service", "public", "", "Property", "NewProp", "string", "", ""),
-                    new("Removed", "MyApp.Service", "private", "readonly", "Field", "_oldField", "int", "", ""),
+                    new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "", "void", "string name", ""),
+                    new("Modified", "MyApp.Service", "public", "virtual", "Method", "ExistingMethod", "", "bool", "int id", "Changed"),
+                    new("Added", "MyApp.Service", "public", "", "Property", "NewProp", "string", "", "", ""),
+                    new("Removed", "MyApp.Service", "private", "readonly", "Field", "_oldField", "int", "", "", ""),
                 },
             };
 
@@ -761,11 +759,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
             {
-                OldMethodCount = 10,
-                NewMethodCount = 12,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "", "void", "string name"),
+                    new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "", "void", "string name", ""),
                 },
             };
 
@@ -789,11 +785,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
             {
-                OldMethodCount = 5,
-                NewMethodCount = 6,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "Foo", "public", "", "Method", "Bar", "", "void", ""),
+                    new("Added", "Foo", "public", "", "Method", "Bar", "", "void", "", ""),
                 },
             };
 
