@@ -208,12 +208,13 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | Assembly | Relative path of the assembly | `bin/MyLib.dll` |
 | Change | `Added`, `Removed`, or `Modified` | `Added` |
 | Class | Fully qualified type name | `MyNamespace.MyClass` |
+| Kind | Member kind: `Type`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
 | Access | Access modifier | `public` |
 | Modifiers | Other modifiers | `static` |
-| Kind | Member kind | `Method` |
-| Type | Declared type for Field/Property (empty for Method/Type) | `int` |
+| Type | Declared type for Field/Property (empty for Method/Constructor/Type) | `int` |
 | Name | Member name (constructors use the class name; empty for Type entries) | `DoWork` |
-| ReturnType (Type paramName) | Method signature (empty for Field/Property/Type) | `void (string name, int count = 0)` |
+| ReturnType | Return type for Method/Constructor (empty for Field/Property/Type) | `void` |
+| Parameters | Parameter list for Method/Constructor (empty for Field/Property/Type) | `(string name, int count = 0)` |
 
 Controlled by [`ShouldIncludeMethodLevelChangesInReport`](#config-en-shouldincludemethodlevelchangesinreport) (default: `true`).
 
@@ -687,12 +688,13 @@ flowchart TD
 | Assembly | アセンブリの相対パス | `bin/MyLib.dll` |
 | Change | `Added`、`Removed`、`Modified` | `Added` |
 | Class | 完全修飾型名 | `MyNamespace.MyClass` |
+| Kind | メンバー種別: `Type`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
 | Access | アクセス修飾子 | `public` |
 | Modifiers | その他の修飾子 | `static` |
-| Kind | メンバー種別 | `Method` |
-| Type | Field/Property の宣言型（Method/Type の場合は空） | `int` |
+| Type | Field/Property の宣言型（Method/Constructor/Type の場合は空） | `int` |
 | Name | メンバー名（コンストラクタはクラス名、Type エントリの場合は空） | `DoWork` |
-| ReturnType (Type paramName) | メソッドシグネチャ（Field/Property/Type の場合は空） | `void (string name, int count = 0)` |
+| ReturnType | Method/Constructor の戻り値型（Field/Property/Type の場合は空） | `void` |
+| Parameters | Method/Constructor のパラメータ一覧（Field/Property/Type の場合は空） | `(string name, int count = 0)` |
 
 [`ShouldIncludeMethodLevelChangesInReport`](#config-ja-shouldincludemethodlevelchangesinreport)（既定値: `true`）で制御します。
 

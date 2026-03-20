@@ -72,7 +72,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(string.IsNullOrEmpty(firstEntry.TypeName));
             Assert.False(string.IsNullOrEmpty(firstEntry.MemberKind));
             Assert.Contains(firstEntry.Change, new[] { "Added", "Removed", "Modified" });
-            Assert.Contains(firstEntry.MemberKind, new[] { "Type", "Method", "Property", "Field" });
+            Assert.Contains(firstEntry.MemberKind, new[] { "Type", "Constructor", "StaticConstructor", "Method", "Property", "Field" });
         }
     }
 }

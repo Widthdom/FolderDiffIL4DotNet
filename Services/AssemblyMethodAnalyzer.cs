@@ -37,27 +37,30 @@ namespace FolderDiffIL4DotNet.Services
 
                 // Types
                 foreach (var t in newSnapshot.TypeNames.Except(oldSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("Added", t, "", "", "Type", "", "", ""));
+                    entries.Add(new MemberChangeEntry("Added", t, "", "", "Type", "", "", "", ""));
                 foreach (var t in oldSnapshot.TypeNames.Except(newSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("Removed", t, "", "", "Type", "", "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", t, "", "", "Type", "", "", "", ""));
 
-                // Methods
+                // Methods (including constructors)
                 foreach (var key in newSnapshot.Methods.Keys.Except(oldSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = newSnapshot.Methods[key];
-                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, m.Modifiers, "Method", ToCSharpMethodName(m.MethodName, m.TypeName), "", m.Details));
+                    string kind = ToMemberKind(m.MethodName);
+                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Except(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = oldSnapshot.Methods[key];
-                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, m.Modifiers, "Method", ToCSharpMethodName(m.MethodName, m.TypeName), "", m.Details));
+                    string kind = ToMemberKind(m.MethodName);
+                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     if (!oldSnapshot.Methods[key].IlBytes.AsSpan().SequenceEqual(newSnapshot.Methods[key].IlBytes.AsSpan()))
                     {
                         var m = newSnapshot.Methods[key];
-                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, m.Modifiers, "Method", ToCSharpMethodName(m.MethodName, m.TypeName), "", m.Details));
+                        string kind = ToMemberKind(m.MethodName);
+                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters));
                     }
                 }
 
@@ -65,24 +68,24 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var key in newSnapshot.Properties.Keys.Except(oldSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = newSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, ""));
+                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", ""));
                 }
                 foreach (var key in oldSnapshot.Properties.Keys.Except(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = oldSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, ""));
+                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", ""));
                 }
 
                 // Fields
                 foreach (var key in newSnapshot.Fields.Keys.Except(oldSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = newSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), ""));
+                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", ""));
                 }
                 foreach (var key in oldSnapshot.Fields.Keys.Except(newSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = oldSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), ""));
+                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", ""));
                 }
 
                 return new MethodLevelChangesSummary
@@ -108,7 +111,8 @@ namespace FolderDiffIL4DotNet.Services
             public required string Access { get; init; }
             public required string Modifiers { get; init; }
             public required string MethodName { get; init; }
-            public required string Details { get; init; }
+            public required string ReturnType { get; init; }
+            public required string Parameters { get; init; }
             public required byte[] IlBytes { get; init; }
         }
 
@@ -167,7 +171,7 @@ namespace FolderDiffIL4DotNet.Services
                     string modifiers = GetMethodModifiers(methodDef.Attributes);
                     string methodName = reader.GetString(methodDef.Name);
                     string matchKey = BuildMethodMatchKey(reader, typeName, methodDef, typeProvider);
-                    string details = BuildMethodDetails(reader, methodDef, typeProvider);
+                    var (retType, parameters) = BuildMethodSignatureParts(reader, methodDef, typeProvider);
                     byte[] ilBytes = ReadIlBytes(peReader, methodDef);
 
                     snapshot.Methods[matchKey] = new MethodDetail
@@ -176,7 +180,8 @@ namespace FolderDiffIL4DotNet.Services
                         Access = access,
                         Modifiers = modifiers,
                         MethodName = methodName,
-                        Details = details,
+                        ReturnType = retType,
+                        Parameters = parameters,
                         IlBytes = ilBytes,
                     };
                 }
@@ -244,6 +249,15 @@ namespace FolderDiffIL4DotNet.Services
             return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
         }
 
+        /// <summary>Determine the member kind from the IL method name: .ctor → Constructor, .cctor → StaticConstructor, else → Method. / IL メソッド名からメンバー種別を判定。</summary>
+        private static string ToMemberKind(string ilMethodName)
+            => ilMethodName switch
+            {
+                ".ctor" => "Constructor",
+                ".cctor" => "StaticConstructor",
+                _ => "Method"
+            };
+
         /// <summary>Convert IL method name to C# name: .ctor/.cctor → simple class name. / IL メソッド名を C# 名に変換。</summary>
         private static string ToCSharpMethodName(string ilMethodName, string typeName)
         {
@@ -284,8 +298,11 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning restore CA1031
         }
 
-        /// <summary>Build human-readable details for a method: "ReturnType (Type paramName, Type paramName = defaultValue)".</summary>
-        private static string BuildMethodDetails(MetadataReader reader, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
+        /// <summary>
+        /// Build separate return type and parameter strings for a method.
+        /// メソッドの戻り値型とパラメータ文字列を個別に構築します。
+        /// </summary>
+        private static (string ReturnType, string Parameters) BuildMethodSignatureParts(MetadataReader reader, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
         {
             try
             {
@@ -328,12 +345,12 @@ namespace FolderDiffIL4DotNet.Services
                     parts.Add(part);
                 }
 
-                return $"{signature.ReturnType} ({string.Join(", ", parts)})";
+                return (signature.ReturnType, $"({string.Join(", ", parts)})");
             }
 #pragma warning disable CA1031
             catch
             {
-                return "";
+                return ("", "");
             }
 #pragma warning restore CA1031
         }
