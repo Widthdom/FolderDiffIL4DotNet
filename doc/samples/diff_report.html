@@ -134,8 +134,9 @@
     /* ── Method-level changes ──────────────────────────────────────────── */
     .method-changes { padding: 6px 12px; font-size: 12px; }
     .method-changes p { margin: 4px 0 2px; }
-    .method-changes ul { margin: 0 0 4px 1.4rem; }
-    .method-changes li { margin-bottom: 1px; }
+    table.method-changes-table { width: auto; border-collapse: collapse; margin: 4px 0; font-size: 12px; }
+    table.method-changes-table th { padding: 3px 8px; border: 1px solid #ccc; background: #f6f8fa; font-size: 11px; text-align: left; white-space: nowrap; }
+    table.method-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -373,7 +374,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#0051c3">[ * ] Modified Files (8)</h2>
+<h2 style="color:#0051c3">[ * ] Modified Files (9)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -436,7 +437,7 @@
 </tr>
 <tr class="diff-row">
   <td colspan="8">
-        <details id="methods_mod_2" data-diff-html="PGRpdiBjbGFzcz0ibWV0aG9kLWNoYW5nZXMiPgo8cD48c3Ryb25nPk1ldGhvZHMgYWRkZWQgKDEpOjwvc3Ryb25nPjwvcD4KPHVsPgogIDxsaT48Y29kZT5bcHVibGljXSBNeUFwcC5Db250cm9sbGVycy5BcGlDb250cm9sbGVyOjpIZWFsdGhDaGVjaygpIDogc3RyaW5nPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+TWV0aG9kcyB3aXRoIGJvZHkgY2hhbmdlcyAoMyk6PC9zdHJvbmc+PC9wPgo8dWw+CiAgPGxpPjxjb2RlPltwdWJsaWNdIE15QXBwLkNvbnRyb2xsZXJzLkFwaUNvbnRyb2xsZXI6OkdldFVzZXJzKGludCkgOiBTeXN0ZW0uQ29sbGVjdGlvbnMuR2VuZXJpYy5JTGlzdCZsdDtNeUFwcC5Nb2RlbHMuVXNlciZndDs8L2NvZGU+PC9saT4KICA8bGk+PGNvZGU+W2ludGVybmFsXSBNeUFwcC5TZXJ2aWNlcy5EYXRhU2VydmljZTo6UmVmcmVzaENhY2hlKCkgOiB2b2lkPC9jb2RlPjwvbGk+CiAgPGxpPjxjb2RlPltwcml2YXRlXSBNeUFwcC5TZXJ2aWNlcy5EYXRhU2VydmljZTo6VmFsaWRhdGVDb25uZWN0aW9uKHN0cmluZykgOiBib29sPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+UHJvcGVydGllcyBhZGRlZCAoMSk6PC9zdHJvbmc+PC9wPgo8dWw+CiAgPGxpPjxjb2RlPk15QXBwLlNlcnZpY2VzLkRhdGFTZXJ2aWNlOjpDYWNoZVRpbWVvdXQ8L2NvZGU+PC9saT4KPC91bD4KPHA+TWV0aG9kIGNvdW50OiAyOCAob2xkKSDihpIgMjkgKG5ldyk8L3A+CjwvZGl2Pgo=">
+        <details id="methods_mod_2" data-diff-html="PGRpdiBjbGFzcz0ibWV0aG9kLWNoYW5nZXMiPgo8dGFibGUgY2xhc3M9Im1ldGhvZC1jaGFuZ2VzLXRhYmxlIj4KPHRoZWFkPjx0cj48dGg+QXNzZW1ibHk8L3RoPjx0aD5DaGFuZ2U8L3RoPjx0aD5DbGFzczwvdGg+PHRoPkFjY2VzczwvdGg+PHRoPktpbmQ8L3RoPjx0aD5OYW1lPC90aD48dGg+RGV0YWlsczwvdGg+PC90cj48L3RoZWFkPgo8dGJvZHk+Cjx0cj48dGQ+c3JjL0FwcC5kbGw8L3RkPjx0ZD4rPC90ZD48dGQ+TXlBcHAuQ29udHJvbGxlcnMuQXBpQ29udHJvbGxlcjwvdGQ+PHRkPnB1YmxpYzwvdGQ+PHRkPk1ldGhvZDwvdGQ+PHRkPkhlYWx0aENoZWNrPC90ZD48dGQ+PGNvZGU+KCkgOiBzdHJpbmc8L2NvZGU+PC90ZD48L3RyPgo8dHI+PHRkPnNyYy9BcHAuZGxsPC90ZD48dGQ+fjwvdGQ+PHRkPk15QXBwLkNvbnRyb2xsZXJzLkFwaUNvbnRyb2xsZXI8L3RkPjx0ZD5wdWJsaWM8L3RkPjx0ZD5NZXRob2Q8L3RkPjx0ZD5HZXRVc2VyczwvdGQ+PHRkPjxjb2RlPihpbnQgcGFnZSkgOiBTeXN0ZW0uQ29sbGVjdGlvbnMuR2VuZXJpYy5JTGlzdCZsdDtNeUFwcC5Nb2RlbHMuVXNlciZndDs8L2NvZGU+PC90ZD48L3RyPgo8dHI+PHRkPnNyYy9BcHAuZGxsPC90ZD48dGQ+fjwvdGQ+PHRkPk15QXBwLlNlcnZpY2VzLkRhdGFTZXJ2aWNlPC90ZD48dGQ+aW50ZXJuYWw8L3RkPjx0ZD5NZXRob2Q8L3RkPjx0ZD5SZWZyZXNoQ2FjaGU8L3RkPjx0ZD48Y29kZT4oKSA6IHZvaWQ8L2NvZGU+PC90ZD48L3RyPgo8dHI+PHRkPnNyYy9BcHAuZGxsPC90ZD48dGQ+fjwvdGQ+PHRkPk15QXBwLlNlcnZpY2VzLkRhdGFTZXJ2aWNlPC90ZD48dGQ+cHJpdmF0ZTwvdGQ+PHRkPk1ldGhvZDwvdGQ+PHRkPlZhbGlkYXRlQ29ubmVjdGlvbjwvdGQ+PHRkPjxjb2RlPihzdHJpbmcgY29ublN0cikgOiBib29sPC9jb2RlPjwvdGQ+PC90cj4KPHRyPjx0ZD5zcmMvQXBwLmRsbDwvdGQ+PHRkPis8L3RkPjx0ZD5NeUFwcC5TZXJ2aWNlcy5EYXRhU2VydmljZTwvdGQ+PHRkPnB1YmxpYzwvdGQ+PHRkPlByb3BlcnR5PC90ZD48dGQ+Q2FjaGVUaW1lb3V0PC90ZD48dGQ+PGNvZGU+OiBpbnQgeyBnZXQ7IHNldDsgfTwvY29kZT48L3RkPjwvdHI+CjwvdGJvZHk+PC90YWJsZT4KPHA+TWV0aG9kIGNvdW50OiAyOCAob2xkKSAmI3gyMTkyOyAyOSAobmV3KTwvcD4KPC9kaXY+Cg==">
       <summary class="diff-summary">#3 Show member changes (5 changes)</summary>
     </details>
   </td>
@@ -477,7 +478,7 @@
 </tr>
 <tr class="diff-row">
   <td colspan="8">
-        <details id="methods_mod_4" data-diff-html="PGRpdiBjbGFzcz0ibWV0aG9kLWNoYW5nZXMiPgo8cD48c3Ryb25nPlR5cGVzIGFkZGVkICgxKTo8L3N0cm9uZz48L3A+Cjx1bD4KICA8bGk+PGNvZGU+TXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+TWV0aG9kcyBhZGRlZCAoNCk6PC9zdHJvbmc+PC9wPgo8dWw+CiAgPGxpPjxjb2RlPltwdWJsaWNdIE15QXBwLlNlcnZpY2VzLk5ld1ZhbGlkYXRvcjo6LmN0b3IoKSA6IHZvaWQ8L2NvZGU+PC9saT4KICA8bGk+PGNvZGU+W3B1YmxpY10gTXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yOjpWYWxpZGF0ZShzdHJpbmcpIDogYm9vbDwvY29kZT48L2xpPgogIDxsaT48Y29kZT5bcHJpdmF0ZV0gTXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yOjpQYXJzZUlucHV0KHN0cmluZykgOiBzdHJpbmc8L2NvZGU+PC9saT4KICA8bGk+PGNvZGU+W3B1YmxpY10gTXlBcHAuU2VydmljZXMuT3JkZXJTZXJ2aWNlOjpWYWxpZGF0ZVdpdGhOZXdWYWxpZGF0b3Ioc3RyaW5nKSA6IGJvb2w8L2NvZGU+PC9saT4KPC91bD4KPHA+PHN0cm9uZz5NZXRob2RzIHJlbW92ZWQgKDEpOjwvc3Ryb25nPjwvcD4KPHVsPgogIDxsaT48Y29kZT5bcHVibGljXSBNeUFwcC5TZXJ2aWNlcy5PcmRlclNlcnZpY2U6OkxlZ2FjeVZhbGlkYXRlKHN0cmluZykgOiBib29sPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+TWV0aG9kcyB3aXRoIGJvZHkgY2hhbmdlcyAoMik6PC9zdHJvbmc+PC9wPgo8dWw+CiAgPGxpPjxjb2RlPltwdWJsaWNdIE15QXBwLlNlcnZpY2VzLk9yZGVyU2VydmljZTo6UHJvY2Vzc09yZGVyKGludCkgOiB2b2lkPC9jb2RlPjwvbGk+CiAgPGxpPjxjb2RlPltpbnRlcm5hbF0gTXlBcHAuU2VydmljZXMuT3JkZXJTZXJ2aWNlOjpDYWxjdWxhdGVUb3RhbChpbnQsIGludCkgOiBkZWNpbWFsPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+RmllbGRzIGFkZGVkICgxKTo8L3N0cm9uZz48L3A+Cjx1bD4KICA8bGk+PGNvZGU+TXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yOjpfcGF0dGVybjwvY29kZT48L2xpPgo8L3VsPgo8cD5NZXRob2QgY291bnQ6IDE1IChvbGQpIOKGkiAxOCAobmV3KTwvcD4KPC9kaXY+Cg==">
+        <details id="methods_mod_4" data-diff-html="PGRpdiBjbGFzcz0ibWV0aG9kLWNoYW5nZXMiPgo8dGFibGUgY2xhc3M9Im1ldGhvZC1jaGFuZ2VzLXRhYmxlIj4KPHRoZWFkPjx0cj48dGg+QXNzZW1ibHk8L3RoPjx0aD5DaGFuZ2U8L3RoPjx0aD5DbGFzczwvdGg+PHRoPkFjY2VzczwvdGg+PHRoPktpbmQ8L3RoPjx0aD5OYW1lPC90aD48dGg+RGV0YWlsczwvdGg+PC90cj48L3RoZWFkPgo8dGJvZHk+Cjx0cj48dGQ+c3JjL1NlcnZpY2UuZGxsPC90ZD48dGQ+KzwvdGQ+PHRkPk15QXBwLlNlcnZpY2VzLk5ld1ZhbGlkYXRvcjwvdGQ+PHRkPjwvdGQ+PHRkPlR5cGU8L3RkPjx0ZD48L3RkPjx0ZD48L3RkPjwvdHI+Cjx0cj48dGQ+c3JjL1NlcnZpY2UuZGxsPC90ZD48dGQ+KzwvdGQ+PHRkPk15QXBwLlNlcnZpY2VzLk5ld1ZhbGlkYXRvcjwvdGQ+PHRkPnB1YmxpYzwvdGQ+PHRkPk1ldGhvZDwvdGQ+PHRkPi5jdG9yPC90ZD48dGQ+PGNvZGU+KCkgOiB2b2lkPC9jb2RlPjwvdGQ+PC90cj4KPHRyPjx0ZD5zcmMvU2VydmljZS5kbGw8L3RkPjx0ZD4rPC90ZD48dGQ+TXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yPC90ZD48dGQ+cHVibGljPC90ZD48dGQ+TWV0aG9kPC90ZD48dGQ+VmFsaWRhdGU8L3RkPjx0ZD48Y29kZT4oc3RyaW5nIGlucHV0KSA6IGJvb2w8L2NvZGU+PC90ZD48L3RyPgo8dHI+PHRkPnNyYy9TZXJ2aWNlLmRsbDwvdGQ+PHRkPis8L3RkPjx0ZD5NeUFwcC5TZXJ2aWNlcy5OZXdWYWxpZGF0b3I8L3RkPjx0ZD5wcml2YXRlPC90ZD48dGQ+TWV0aG9kPC90ZD48dGQ+UGFyc2VJbnB1dDwvdGQ+PHRkPjxjb2RlPihzdHJpbmcgcmF3KSA6IHN0cmluZzwvY29kZT48L3RkPjwvdHI+Cjx0cj48dGQ+c3JjL1NlcnZpY2UuZGxsPC90ZD48dGQ+KzwvdGQ+PHRkPk15QXBwLlNlcnZpY2VzLk9yZGVyU2VydmljZTwvdGQ+PHRkPnB1YmxpYzwvdGQ+PHRkPk1ldGhvZDwvdGQ+PHRkPlZhbGlkYXRlV2l0aE5ld1ZhbGlkYXRvcjwvdGQ+PHRkPjxjb2RlPihzdHJpbmcgZGF0YSkgOiBib29sPC9jb2RlPjwvdGQ+PC90cj4KPHRyPjx0ZD5zcmMvU2VydmljZS5kbGw8L3RkPjx0ZD4tPC90ZD48dGQ+TXlBcHAuU2VydmljZXMuT3JkZXJTZXJ2aWNlPC90ZD48dGQ+cHVibGljPC90ZD48dGQ+TWV0aG9kPC90ZD48dGQ+TGVnYWN5VmFsaWRhdGU8L3RkPjx0ZD48Y29kZT4oc3RyaW5nIGRhdGEpIDogYm9vbDwvY29kZT48L3RkPjwvdHI+Cjx0cj48dGQ+c3JjL1NlcnZpY2UuZGxsPC90ZD48dGQ+fjwvdGQ+PHRkPk15QXBwLlNlcnZpY2VzLk9yZGVyU2VydmljZTwvdGQ+PHRkPnB1YmxpYzwvdGQ+PHRkPk1ldGhvZDwvdGQ+PHRkPlByb2Nlc3NPcmRlcjwvdGQ+PHRkPjxjb2RlPihpbnQgb3JkZXJJZCkgOiB2b2lkPC9jb2RlPjwvdGQ+PC90cj4KPHRyPjx0ZD5zcmMvU2VydmljZS5kbGw8L3RkPjx0ZD5+PC90ZD48dGQ+TXlBcHAuU2VydmljZXMuT3JkZXJTZXJ2aWNlPC90ZD48dGQ+aW50ZXJuYWw8L3RkPjx0ZD5NZXRob2Q8L3RkPjx0ZD5DYWxjdWxhdGVUb3RhbDwvdGQ+PHRkPjxjb2RlPihpbnQgcXR5LCBpbnQgcHJpY2UpIDogZGVjaW1hbDwvY29kZT48L3RkPjwvdHI+Cjx0cj48dGQ+c3JjL1NlcnZpY2UuZGxsPC90ZD48dGQ+KzwvdGQ+PHRkPk15QXBwLlNlcnZpY2VzLk5ld1ZhbGlkYXRvcjwvdGQ+PHRkPnByaXZhdGU8L3RkPjx0ZD5GaWVsZDwvdGQ+PHRkPl9wYXR0ZXJuPC90ZD48dGQ+PGNvZGU+OiBzdHJpbmc8L2NvZGU+PC90ZD48L3RyPgo8L3Rib2R5PjwvdGFibGU+CjxwPk1ldGhvZCBjb3VudDogMTUgKG9sZCkgJiN4MjE5MjsgMTggKG5ldyk8L3A+CjwvZGl2Pgo=">
       <summary class="diff-summary">#5 Show member changes (9 changes)</summary>
     </details>
   </td>
@@ -532,6 +533,30 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#8 Inline diff skipped: diff too large (12500 diff lines; limit is 10000). Increase <code>InlineDiffMaxDiffLines</code> in config to enable.</p></td>
 </tr>
+<tr>
+  <td class="col-no">9</td>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_8"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_8"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_8"></td>
+  <td class="col-path">util/Legacy.dll</td>
+  <td class="col-ts">[2026-03-15 08:50:00 &#x2192; 2026-03-15 09:01:00]</td>
+  <td class="col-diff"><code>ILMismatch</code></td>
+  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+        <details id="methods_mod_8" data-diff-html="PGRpdiBjbGFzcz0ibWV0aG9kLWNoYW5nZXMiPgo8cD5PdGhlciBjaGFuZ2VzIG9ubHkuIFNlZSBJTCBkaWZmIGZvciBkZXRhaWxzLjwvcD4KPHA+TWV0aG9kIGNvdW50OiA4IChvbGQpICYjeDIxOTI7IDggKG5ldyk8L3A+CjwvZGl2Pgo=">
+      <summary class="diff-summary">#9 Show member changes (other changes only)</summary>
+    </details>
+  </td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+        <details id="diff_mod_8" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTUgKzUgQEA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtZGVsLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjU8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtZGVsLXRkIj4tICAgIC52ZXIgMTowOjA6MDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1hZGQtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjU8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1hZGQtdGQiPisgICAgLnZlciAxOjA6MTowPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgIDwvdGJvZHk+CiAgICAgICAgPC90YWJsZT4KICAgICAgPC9kaXY+Cg==">
+      <summary class="diff-summary">#9 Show IL diff (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
+    </details>
+  </td>
+</tr>
 </tbody></table>
 </div>
 <h2 class="section-heading">Summary</h2>
@@ -541,8 +566,8 @@
     <tr><td class="stat-label">Unchanged</td><td class="stat-value">5</td></tr>
     <tr><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
     <tr><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
-    <tr><td class="stat-label">Modified</td><td class="stat-value">8</td></tr>
-    <tr><td class="stat-label">Compared</td><td class="stat-value">17 (Old) vs 17 (New)</td></tr>
+    <tr><td class="stat-label">Modified</td><td class="stat-value">9</td></tr>
+    <tr><td class="stat-label">Compared</td><td class="stat-value">18 (Old) vs 18 (New)</td></tr>
   </tbody>
 </table>
 <h2 class="section-heading">IL Cache Stats</h2>

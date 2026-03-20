@@ -773,15 +773,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 OldMethodCount = 42,
                 NewMethodCount = 44,
-                AddedTypes = new List<string> { "MyApp.NewService" },
-                RemovedTypes = new List<string>(),
-                AddedMethods = new List<string> { "[public] MyApp.UserService::ValidateToken(string) : bool", "[internal] MyApp.UserService::RefreshSession(int) : void" },
-                RemovedMethods = new List<string> { "[public] MyApp.UserService::LegacyAuth(string) : void" },
-                BodyChangedMethods = new List<string> { "[public] MyApp.UserService::Login(string, string) : bool" },
-                AddedProperties = new List<string> { "MyApp.UserService::IsActive" },
-                RemovedProperties = new List<string>(),
-                AddedFields = new List<string> { "MyApp.UserService::_cache" },
-                RemovedFields = new List<string>(),
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("+", "MyApp.NewService", "", "Type", "", ""),
+                    new("+", "MyApp.UserService", "public", "Method", "ValidateToken", "(string token) : bool"),
+                    new("+", "MyApp.UserService", "internal", "Method", "RefreshSession", "(int userId) : void"),
+                    new("-", "MyApp.UserService", "public", "Method", "LegacyAuth", "(string key) : void"),
+                    new("~", "MyApp.UserService", "public", "Method", "Login", "(string user, string pass) : bool"),
+                    new("+", "MyApp.UserService", "public", "Property", "IsActive", ": bool { get; set; }"),
+                    new("+", "MyApp.UserService", "private", "Field", "_cache", ": object"),
+                },
             };
             _resultLists.FileRelativePathToMethodLevelChanges["src/App.dll"] = summary;
 
@@ -797,17 +798,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // Content checks
+            // Content checks — table format
             Assert.Contains("## Method-Level Changes", reportText);
             Assert.Contains("### src/App.dll", reportText);
-            Assert.Contains("- Types added (1):", reportText);
-            Assert.Contains("`MyApp.NewService`", reportText);
-            Assert.Contains("- Methods added (2):", reportText);
-            Assert.Contains("`[public] MyApp.UserService::ValidateToken(string) : bool`", reportText);
-            Assert.Contains("- Methods removed (1):", reportText);
-            Assert.Contains("- Methods with body changes (1):", reportText);
-            Assert.Contains("- Properties added (1):", reportText);
-            Assert.Contains("- Fields added (1):", reportText);
+            Assert.Contains("| Assembly | Change | Class | Access | Kind | Name | Details |", reportText);
+            Assert.Contains("| src/App.dll | + | MyApp.NewService |  | Type |  |  |", reportText);
+            Assert.Contains("| src/App.dll | + | MyApp.UserService | public | Method | ValidateToken | (string token) : bool |", reportText);
+            Assert.Contains("| src/App.dll | ~ | MyApp.UserService | public | Method | Login |", reportText);
+            Assert.Contains("| src/App.dll | + | MyApp.UserService | public | Property | IsActive |", reportText);
+            Assert.Contains("| src/App.dll | + | MyApp.UserService | private | Field | _cache |", reportText);
             Assert.Contains("- Method count: 42 (old) → 44 (new)", reportText);
 
             // Ordering: Summary < Method-Level Changes < IL Cache Stats
@@ -832,7 +831,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 OldMethodCount = 10,
                 NewMethodCount = 12,
-                AddedMethods = new List<string> { "[public] Foo::Bar() : void" },
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("+", "Foo", "public", "Method", "Bar", "() : void"),
+                },
             };
 
             var config = CreateConfig();

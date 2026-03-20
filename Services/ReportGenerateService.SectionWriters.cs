@@ -206,67 +206,19 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     writer.WriteLine($"\n### {filePath}");
 
-                    if (summary.AddedTypes.Count > 0)
+                    if (summary.Entries.Count > 0)
                     {
-                        writer.WriteLine($"- Types added ({summary.AddedTypes.Count}):");
-                        foreach (var t in summary.AddedTypes)
-                            writer.WriteLine($"  - `{t}`");
+                        writer.WriteLine();
+                        writer.WriteLine("| Assembly | Change | Class | Access | Kind | Name | Details |");
+                        writer.WriteLine("|----------|--------|-------|--------|------|------|---------|");
+                        foreach (var e in summary.Entries)
+                        {
+                            writer.WriteLine($"| {EscapeMdTable(filePath)} | {e.Change} | {EscapeMdTable(e.TypeName)} | {EscapeMdTable(e.Access)} | {e.MemberKind} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.Details)} |");
+                        }
                     }
-
-                    if (summary.RemovedTypes.Count > 0)
+                    else
                     {
-                        writer.WriteLine($"- Types removed ({summary.RemovedTypes.Count}):");
-                        foreach (var t in summary.RemovedTypes)
-                            writer.WriteLine($"  - `{t}`");
-                    }
-
-                    if (summary.AddedMethods.Count > 0)
-                    {
-                        writer.WriteLine($"- Methods added ({summary.AddedMethods.Count}):");
-                        foreach (var m in summary.AddedMethods)
-                            writer.WriteLine($"  - `{m}`");
-                    }
-
-                    if (summary.RemovedMethods.Count > 0)
-                    {
-                        writer.WriteLine($"- Methods removed ({summary.RemovedMethods.Count}):");
-                        foreach (var m in summary.RemovedMethods)
-                            writer.WriteLine($"  - `{m}`");
-                    }
-
-                    if (summary.BodyChangedMethods.Count > 0)
-                    {
-                        writer.WriteLine($"- Methods with body changes ({summary.BodyChangedMethods.Count}):");
-                        foreach (var m in summary.BodyChangedMethods)
-                            writer.WriteLine($"  - `{m}`");
-                    }
-
-                    if (summary.AddedProperties.Count > 0)
-                    {
-                        writer.WriteLine($"- Properties added ({summary.AddedProperties.Count}):");
-                        foreach (var p in summary.AddedProperties)
-                            writer.WriteLine($"  - `{p}`");
-                    }
-
-                    if (summary.RemovedProperties.Count > 0)
-                    {
-                        writer.WriteLine($"- Properties removed ({summary.RemovedProperties.Count}):");
-                        foreach (var p in summary.RemovedProperties)
-                            writer.WriteLine($"  - `{p}`");
-                    }
-
-                    if (summary.AddedFields.Count > 0)
-                    {
-                        writer.WriteLine($"- Fields added ({summary.AddedFields.Count}):");
-                        foreach (var f in summary.AddedFields)
-                            writer.WriteLine($"  - `{f}`");
-                    }
-
-                    if (summary.RemovedFields.Count > 0)
-                    {
-                        writer.WriteLine($"- Fields removed ({summary.RemovedFields.Count}):");
-                        foreach (var f in summary.RemovedFields)
-                            writer.WriteLine($"  - `{f}`");
+                        writer.WriteLine("- Other changes only. See IL diff for details.");
                     }
 
                     writer.WriteLine($"- Method count: {summary.OldMethodCount} (old) → {summary.NewMethodCount} (new)");
@@ -274,6 +226,9 @@ namespace FolderDiffIL4DotNet.Services
 
                 writer.WriteLine();
             }
+
+            /// <summary>Escape pipe characters for Markdown table cells. / Markdown テーブルセル用にパイプ文字をエスケープ。</summary>
+            private static string EscapeMdTable(string value) => value.Replace("|", "\\|");
         }
 
         /// <summary>Writes the IL Cache Stats section (only when enabled and ilCache is non-null). / IL Cache Stats セクションを書き込みます。</summary>

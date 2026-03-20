@@ -13,8 +13,10 @@ namespace FolderDiffIL4DotNet.Services
     /// <summary>
     /// Compares two .NET assemblies at the metadata level using <see cref="System.Reflection.Metadata"/>
     /// to detect type, method, property, and field additions/removals and method body changes.
+    /// Returns structured <see cref="MemberChangeEntry"/> records for table-style rendering.
     /// <see cref="System.Reflection.Metadata"/> を使用して 2 つの .NET アセンブリのメタデータを比較し、
     /// 型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更を検出します。
+    /// 表形式レンダリング向けの構造化 <see cref="MemberChangeEntry"/> レコードを返します。
     /// </summary>
     internal static class AssemblyMethodAnalyzer
     {
@@ -31,44 +33,63 @@ namespace FolderDiffIL4DotNet.Services
                 var oldSnapshot = ReadAssemblySnapshot(oldAssemblyPath);
                 var newSnapshot = ReadAssemblySnapshot(newAssemblyPath);
 
+                var entries = new List<MemberChangeEntry>();
+
                 // Types
-                var addedTypes = newSnapshot.TypeNames.Except(oldSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal).ToList();
-                var removedTypes = oldSnapshot.TypeNames.Except(newSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal).ToList();
+                foreach (var t in newSnapshot.TypeNames.Except(oldSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
+                    entries.Add(new MemberChangeEntry("+", t, "", "Type", "", ""));
+                foreach (var t in oldSnapshot.TypeNames.Except(newSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
+                    entries.Add(new MemberChangeEntry("-", t, "", "Type", "", ""));
 
                 // Methods
-                var addedMethods = newSnapshot.Methods.Keys.Except(oldSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(m => m, StringComparer.Ordinal).ToList();
-                var removedMethods = oldSnapshot.Methods.Keys.Except(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(m => m, StringComparer.Ordinal).ToList();
-
-                var bodyChanged = new List<string>();
-                foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(m => m, StringComparer.Ordinal))
+                foreach (var key in newSnapshot.Methods.Keys.Except(oldSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
-                    if (!oldSnapshot.Methods[key].AsSpan().SequenceEqual(newSnapshot.Methods[key].AsSpan()))
+                    var m = newSnapshot.Methods[key];
+                    entries.Add(new MemberChangeEntry("+", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
+                }
+                foreach (var key in oldSnapshot.Methods.Keys.Except(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    var m = oldSnapshot.Methods[key];
+                    entries.Add(new MemberChangeEntry("-", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
+                }
+                foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    if (!oldSnapshot.Methods[key].IlBytes.AsSpan().SequenceEqual(newSnapshot.Methods[key].IlBytes.AsSpan()))
                     {
-                        bodyChanged.Add(key);
+                        var m = newSnapshot.Methods[key];
+                        entries.Add(new MemberChangeEntry("~", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
                     }
                 }
 
                 // Properties
-                var addedProperties = newSnapshot.PropertyNames.Except(oldSnapshot.PropertyNames, StringComparer.Ordinal).OrderBy(p => p, StringComparer.Ordinal).ToList();
-                var removedProperties = oldSnapshot.PropertyNames.Except(newSnapshot.PropertyNames, StringComparer.Ordinal).OrderBy(p => p, StringComparer.Ordinal).ToList();
+                foreach (var key in newSnapshot.Properties.Keys.Except(oldSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    var p = newSnapshot.Properties[key];
+                    entries.Add(new MemberChangeEntry("+", p.TypeName, p.Access, "Property", p.PropertyName, p.Details));
+                }
+                foreach (var key in oldSnapshot.Properties.Keys.Except(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    var p = oldSnapshot.Properties[key];
+                    entries.Add(new MemberChangeEntry("-", p.TypeName, p.Access, "Property", p.PropertyName, p.Details));
+                }
 
                 // Fields
-                var addedFields = newSnapshot.FieldNames.Except(oldSnapshot.FieldNames, StringComparer.Ordinal).OrderBy(f => f, StringComparer.Ordinal).ToList();
-                var removedFields = oldSnapshot.FieldNames.Except(newSnapshot.FieldNames, StringComparer.Ordinal).OrderBy(f => f, StringComparer.Ordinal).ToList();
+                foreach (var key in newSnapshot.Fields.Keys.Except(oldSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    var f = newSnapshot.Fields[key];
+                    entries.Add(new MemberChangeEntry("+", f.TypeName, f.Access, "Field", f.FieldName, f.Details));
+                }
+                foreach (var key in oldSnapshot.Fields.Keys.Except(newSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    var f = oldSnapshot.Fields[key];
+                    entries.Add(new MemberChangeEntry("-", f.TypeName, f.Access, "Field", f.FieldName, f.Details));
+                }
 
                 return new MethodLevelChangesSummary
                 {
-                    AddedTypes = addedTypes,
-                    RemovedTypes = removedTypes,
+                    Entries = entries,
                     OldMethodCount = oldSnapshot.Methods.Count,
                     NewMethodCount = newSnapshot.Methods.Count,
-                    AddedMethods = addedMethods,
-                    RemovedMethods = removedMethods,
-                    BodyChangedMethods = bodyChanged,
-                    AddedProperties = addedProperties,
-                    RemovedProperties = removedProperties,
-                    AddedFields = addedFields,
-                    RemovedFields = removedFields,
                 };
             }
 #pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
@@ -79,15 +100,42 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning restore CA1031
         }
 
-        // ── Internal snapshot ────────────────────────────────────────────────
+        // ── Internal snapshot data ──────────────────────────────────────────
+
+        private sealed class MethodDetail
+        {
+            public required string TypeName { get; init; }
+            public required string Access { get; init; }
+            public required string MethodName { get; init; }
+            public required string Details { get; init; }
+            public required byte[] IlBytes { get; init; }
+        }
+
+        private sealed class PropertyDetail
+        {
+            public required string TypeName { get; init; }
+            public required string Access { get; init; }
+            public required string PropertyName { get; init; }
+            public required string Details { get; init; }
+        }
+
+        private sealed class FieldDetail
+        {
+            public required string TypeName { get; init; }
+            public required string Access { get; init; }
+            public required string FieldName { get; init; }
+            public required string Details { get; init; }
+        }
 
         private sealed class AssemblySnapshot
         {
             public HashSet<string> TypeNames { get; } = new(StringComparer.Ordinal);
-            public Dictionary<string, byte[]> Methods { get; } = new(StringComparer.Ordinal);
-            public HashSet<string> PropertyNames { get; } = new(StringComparer.Ordinal);
-            public HashSet<string> FieldNames { get; } = new(StringComparer.Ordinal);
+            public Dictionary<string, MethodDetail> Methods { get; } = new(StringComparer.Ordinal);
+            public Dictionary<string, PropertyDetail> Properties { get; } = new(StringComparer.Ordinal);
+            public Dictionary<string, FieldDetail> Fields { get; } = new(StringComparer.Ordinal);
         }
+
+        // ── Snapshot construction ───────────────────────────────────────────
 
         private static AssemblySnapshot ReadAssemblySnapshot(string assemblyPath)
         {
@@ -111,10 +159,20 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var methodHandle in typeDef.GetMethods())
                 {
                     var methodDef = reader.GetMethodDefinition(methodHandle);
-                    string methodKey = BuildMethodKey(reader, typeName, methodDef, typeProvider);
-
+                    string access = GetAccessModifier(methodDef.Attributes);
+                    string methodName = reader.GetString(methodDef.Name);
+                    string matchKey = BuildMethodMatchKey(reader, typeName, methodDef, typeProvider);
+                    string details = BuildMethodDetails(reader, methodDef, typeProvider);
                     byte[] ilBytes = ReadIlBytes(peReader, methodDef);
-                    snapshot.Methods[methodKey] = ilBytes;
+
+                    snapshot.Methods[matchKey] = new MethodDetail
+                    {
+                        TypeName = typeName,
+                        Access = access,
+                        MethodName = methodName,
+                        Details = details,
+                        IlBytes = ilBytes,
+                    };
                 }
 
                 // Properties
@@ -123,7 +181,16 @@ namespace FolderDiffIL4DotNet.Services
                     var propDef = reader.GetPropertyDefinition(propHandle);
                     string propName = reader.GetString(propDef.Name);
                     string propKey = $"{typeName}::{propName}";
-                    snapshot.PropertyNames.Add(propKey);
+                    string propAccess = GetPropertyAccess(reader, propDef);
+                    string propDetails = BuildPropertyDetails(reader, propDef, typeProvider);
+
+                    snapshot.Properties[propKey] = new PropertyDetail
+                    {
+                        TypeName = typeName,
+                        Access = propAccess,
+                        PropertyName = propName,
+                        Details = propDetails,
+                    };
                 }
 
                 // Fields
@@ -132,7 +199,16 @@ namespace FolderDiffIL4DotNet.Services
                     var fieldDef = reader.GetFieldDefinition(fieldHandle);
                     string fieldName = reader.GetString(fieldDef.Name);
                     string fieldKey = $"{typeName}::{fieldName}";
-                    snapshot.FieldNames.Add(fieldKey);
+                    string fieldAccess = GetFieldAccessModifier(fieldDef.Attributes);
+                    string fieldDetails = BuildFieldDetails(reader, fieldDef, typeProvider);
+
+                    snapshot.Fields[fieldKey] = new FieldDetail
+                    {
+                        TypeName = typeName,
+                        Access = fieldAccess,
+                        FieldName = fieldName,
+                        Details = fieldDetails,
+                    };
                 }
             }
 
@@ -146,7 +222,6 @@ namespace FolderDiffIL4DotNet.Services
             string name = reader.GetString(typeDef.Name);
             string ns = reader.GetString(typeDef.Namespace);
 
-            // Handle nested types
             if (typeDef.IsNested)
             {
                 var declaringType = reader.GetTypeDefinition(typeDef.GetDeclaringType());
@@ -157,10 +232,10 @@ namespace FolderDiffIL4DotNet.Services
             return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
         }
 
-        private static string BuildMethodKey(MetadataReader reader, string typeName, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
+        /// <summary>Build a key for method matching (without access modifier so access changes don't cause false add/remove pairs).</summary>
+        private static string BuildMethodMatchKey(MetadataReader reader, string typeName, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
         {
             string methodName = reader.GetString(methodDef.Name);
-            string accessModifier = GetAccessModifier(methodDef.Attributes);
 
             try
             {
@@ -168,18 +243,134 @@ namespace FolderDiffIL4DotNet.Services
                 var decoder = new SignatureDecoder<string, object?>(typeProvider, reader, genericContext: null);
                 var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
                 string parameters = string.Join(", ", signature.ParameterTypes);
-                string returnType = signature.ReturnType;
-                return $"[{accessModifier}] {typeName}::{methodName}({parameters}) : {returnType}";
+                return $"{typeName}::{methodName}({parameters}) : {signature.ReturnType}";
             }
 #pragma warning disable CA1031 // シグネチャデコード失敗時のフォールバック / Fallback when signature decoding fails
             catch
             {
-                // Fallback: use raw signature blob hex for uniqueness
                 var sigBytes = reader.GetBlobBytes(methodDef.Signature);
-                string sigHex = Convert.ToHexString(sigBytes);
-                return $"[{accessModifier}] {typeName}::{methodName}(#{sigHex})";
+                return $"{typeName}::{methodName}(#{Convert.ToHexString(sigBytes)})";
             }
 #pragma warning restore CA1031
+        }
+
+        /// <summary>Build human-readable details for a method: "(Type paramName, Type paramName = defaultValue) : ReturnType".</summary>
+        private static string BuildMethodDetails(MetadataReader reader, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
+        {
+            try
+            {
+                var sigBlobReader = reader.GetBlobReader(methodDef.Signature);
+                var decoder = new SignatureDecoder<string, object?>(typeProvider, reader, genericContext: null);
+                var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
+
+                // Collect parameter metadata (names and default values)
+                var paramsBySeq = new Dictionary<int, Parameter>();
+                foreach (var paramHandle in methodDef.GetParameters())
+                {
+                    var param = reader.GetParameter(paramHandle);
+                    if (param.SequenceNumber > 0)
+                        paramsBySeq[param.SequenceNumber] = param;
+                }
+
+                var parts = new List<string>();
+                for (int i = 0; i < signature.ParameterTypes.Length; i++)
+                {
+                    string paramType = signature.ParameterTypes[i];
+                    string part;
+
+                    if (paramsBySeq.TryGetValue(i + 1, out var param))
+                    {
+                        string paramName = reader.GetString(param.Name);
+                        part = string.IsNullOrEmpty(paramName) ? paramType : $"{paramType} {paramName}";
+
+                        var defaultHandle = param.GetDefaultValue();
+                        if (!defaultHandle.IsNil)
+                        {
+                            string defaultVal = ReadConstantValue(reader, defaultHandle);
+                            if (!string.IsNullOrEmpty(defaultVal))
+                                part += $" = {defaultVal}";
+                        }
+                    }
+                    else
+                    {
+                        part = paramType;
+                    }
+                    parts.Add(part);
+                }
+
+                return $"({string.Join(", ", parts)}) : {signature.ReturnType}";
+            }
+#pragma warning disable CA1031
+            catch
+            {
+                return "";
+            }
+#pragma warning restore CA1031
+        }
+
+        /// <summary>Build property details: ": Type { get; set; }".</summary>
+        private static string BuildPropertyDetails(MetadataReader reader, PropertyDefinition propDef, SimpleSignatureTypeProvider typeProvider)
+        {
+            try
+            {
+                var sigBlobReader = reader.GetBlobReader(propDef.Signature);
+                var decoder = new SignatureDecoder<string, object?>(typeProvider, reader, genericContext: null);
+                var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
+                string propType = signature.ReturnType;
+
+                var accessors = propDef.GetAccessors();
+                string accessorInfo = (!accessors.Getter.IsNil, !accessors.Setter.IsNil) switch
+                {
+                    (true, true) => " { get; set; }",
+                    (true, false) => " { get; }",
+                    (false, true) => " { set; }",
+                    _ => ""
+                };
+
+                return $": {propType}{accessorInfo}";
+            }
+#pragma warning disable CA1031
+            catch
+            {
+                return "";
+            }
+#pragma warning restore CA1031
+        }
+
+        /// <summary>Build field details: ": Type" or ": Type = defaultValue".</summary>
+        private static string BuildFieldDetails(MetadataReader reader, FieldDefinition fieldDef, SimpleSignatureTypeProvider typeProvider)
+        {
+            try
+            {
+                string fieldType = fieldDef.DecodeSignature(typeProvider, null);
+                string result = $": {fieldType}";
+
+                var defaultHandle = fieldDef.GetDefaultValue();
+                if (!defaultHandle.IsNil)
+                {
+                    string defaultVal = ReadConstantValue(reader, defaultHandle);
+                    if (!string.IsNullOrEmpty(defaultVal))
+                        result += $" = {defaultVal}";
+                }
+
+                return result;
+            }
+#pragma warning disable CA1031
+            catch
+            {
+                return "";
+            }
+#pragma warning restore CA1031
+        }
+
+        private static string GetPropertyAccess(MetadataReader reader, PropertyDefinition propDef)
+        {
+            var accessors = propDef.GetAccessors();
+            if (!accessors.Getter.IsNil)
+                return GetAccessModifier(reader.GetMethodDefinition(accessors.Getter).Attributes);
+            if (!accessors.Setter.IsNil)
+                return GetAccessModifier(reader.GetMethodDefinition(accessors.Setter).Attributes);
+            return "";
         }
 
         private static string GetAccessModifier(MethodAttributes attributes)
@@ -193,6 +384,21 @@ namespace FolderDiffIL4DotNet.Services
                 MethodAttributes.Assembly => "internal",
                 MethodAttributes.FamANDAssem => "private protected",
                 MethodAttributes.Private => "private",
+                _ => "private"
+            };
+        }
+
+        private static string GetFieldAccessModifier(FieldAttributes attributes)
+        {
+            var access = attributes & FieldAttributes.FieldAccessMask;
+            return access switch
+            {
+                FieldAttributes.Public => "public",
+                FieldAttributes.Family => "protected",
+                FieldAttributes.FamORAssem => "protected internal",
+                FieldAttributes.Assembly => "internal",
+                FieldAttributes.FamANDAssem => "private protected",
+                FieldAttributes.Private => "private",
                 _ => "private"
             };
         }
@@ -214,6 +420,41 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning restore CA1031
         }
 
+        private static string ReadConstantValue(MetadataReader reader, ConstantHandle handle)
+        {
+            if (handle.IsNil) return "";
+            var constant = reader.GetConstant(handle);
+            var blobReader = reader.GetBlobReader(constant.Value);
+
+            try
+            {
+                return constant.TypeCode switch
+                {
+                    ConstantTypeCode.Boolean => blobReader.ReadBoolean() ? "true" : "false",
+                    ConstantTypeCode.Char => $"'{(char)blobReader.ReadUInt16()}'",
+                    ConstantTypeCode.SByte => blobReader.ReadSByte().ToString(),
+                    ConstantTypeCode.Byte => blobReader.ReadByte().ToString(),
+                    ConstantTypeCode.Int16 => blobReader.ReadInt16().ToString(),
+                    ConstantTypeCode.UInt16 => blobReader.ReadUInt16().ToString(),
+                    ConstantTypeCode.Int32 => blobReader.ReadInt32().ToString(),
+                    ConstantTypeCode.UInt32 => blobReader.ReadUInt32().ToString(),
+                    ConstantTypeCode.Int64 => blobReader.ReadInt64().ToString(),
+                    ConstantTypeCode.UInt64 => blobReader.ReadUInt64().ToString(),
+                    ConstantTypeCode.Single => blobReader.ReadSingle().ToString(),
+                    ConstantTypeCode.Double => blobReader.ReadDouble().ToString(),
+                    ConstantTypeCode.String => $"\"{blobReader.ReadSerializedString() ?? ""}\"",
+                    ConstantTypeCode.NullReference => "null",
+                    _ => ""
+                };
+            }
+#pragma warning disable CA1031
+            catch
+            {
+                return "";
+            }
+#pragma warning restore CA1031
+        }
+
         // ── Signature type provider ──────────────────────────────────────────
 
         /// <summary>
@@ -221,7 +462,7 @@ namespace FolderDiffIL4DotNet.Services
         /// method parameter and return types into human-readable strings.
         /// メソッドパラメータおよび戻り値の型を可読文字列にデコードする最小限の実装。
         /// </summary>
-        private sealed class SimpleSignatureTypeProvider : ISignatureTypeProvider<string, object?>
+        internal sealed class SimpleSignatureTypeProvider : ISignatureTypeProvider<string, object?>
         {
             private readonly MetadataReader _reader;
 

@@ -136,8 +136,9 @@ namespace FolderDiffIL4DotNet.Services
     /* ── Method-level changes ──────────────────────────────────────────── */
     .method-changes { padding: 6px 12px; font-size: 12px; }
     .method-changes p { margin: 4px 0 2px; }
-    .method-changes ul { margin: 0 0 4px 1.4rem; }
-    .method-changes li { margin-bottom: 1px; }";
+    table.method-changes-table { width: auto; border-collapse: collapse; margin: 4px 0; font-size: 12px; }
+    table.method-changes-table th { padding: 3px 8px; border: 1px solid #ccc; background: #f6f8fa; font-size: 11px; text-align: left; white-space: nowrap; }
+    table.method-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; }";
         }
     }
 }

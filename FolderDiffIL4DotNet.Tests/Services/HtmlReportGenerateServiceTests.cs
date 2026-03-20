@@ -730,15 +730,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 OldMethodCount = 10,
                 NewMethodCount = 12,
-                AddedMethods = new List<string> { "[public] MyApp.Service::NewMethod(string) : void" },
-                RemovedMethods = new List<string>(),
-                BodyChangedMethods = new List<string> { "[public] MyApp.Service::ExistingMethod(int) : bool" },
-                AddedProperties = new List<string> { "MyApp.Service::NewProp" },
-                RemovedProperties = new List<string>(),
-                AddedFields = new List<string>(),
-                RemovedFields = new List<string> { "MyApp.Service::_oldField" },
-                AddedTypes = new List<string>(),
-                RemovedTypes = new List<string>(),
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("+", "MyApp.Service", "public", "Method", "NewMethod", "(string name) : void"),
+                    new("~", "MyApp.Service", "public", "Method", "ExistingMethod", "(int id) : bool"),
+                    new("+", "MyApp.Service", "public", "Property", "NewProp", ": string { get; set; }"),
+                    new("-", "MyApp.Service", "private", "Field", "_oldField", ": int"),
+                },
             };
 
             var config = CreateConfig(enableInlineDiff: true);
@@ -750,6 +748,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("Show member changes", html);
             Assert.Contains("methods_mod_0", html);
+            Assert.Contains("method-changes-table", html);
         }
 
         [Fact]
@@ -764,7 +763,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 OldMethodCount = 10,
                 NewMethodCount = 12,
-                AddedMethods = new List<string> { "[public] MyApp.Service::NewMethod(string) : void" },
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("+", "MyApp.Service", "public", "Method", "NewMethod", "(string name) : void"),
+                },
             };
 
             var config = CreateConfig(enableInlineDiff: true);
@@ -789,7 +791,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 OldMethodCount = 5,
                 NewMethodCount = 6,
-                AddedMethods = new List<string> { "[public] Foo::Bar() : void" },
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("+", "Foo", "public", "Method", "Bar", "() : void"),
+                },
             };
 
             var config = CreateConfig(enableInlineDiff: true, lazyRender: true);
@@ -802,8 +807,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Should contain a data-diff-html attribute for the method changes row
             Assert.Contains("methods_mod_0", html);
             Assert.Contains("Show member changes", html);
-            // Content should NOT be inline (lazy rendered)
-            Assert.DoesNotContain("Foo::Bar()", html);
+            // Content should NOT be inline (lazy rendered) — table markup is base64-encoded
+            Assert.DoesNotContain("method-changes-table", html);
+            Assert.Contains("data-diff-html", html);
         }
 
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()

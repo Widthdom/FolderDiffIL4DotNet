@@ -14,53 +14,40 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         [Fact]
-        public void HasChanges_WithAddedMethods_ReturnsTrue()
+        public void HasChanges_WithEntries_ReturnsTrue()
         {
             var summary = new MethodLevelChangesSummary
             {
-                AddedMethods = new List<string> { "[public] Foo::Bar() : void" },
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("+", "MyApp.Service", "public", "Method", "DoWork", "(int count) : void"),
+                },
             };
             Assert.True(summary.HasChanges);
         }
 
         [Fact]
-        public void HasChanges_WithRemovedTypes_ReturnsTrue()
+        public void HasChanges_EmptyEntries_ReturnsFalse()
         {
             var summary = new MethodLevelChangesSummary
             {
-                RemovedTypes = new List<string> { "MyApp.OldService" },
+                Entries = new List<MemberChangeEntry>(),
+                OldMethodCount = 10,
+                NewMethodCount = 10,
             };
-            Assert.True(summary.HasChanges);
+            Assert.False(summary.HasChanges);
         }
 
         [Fact]
-        public void HasChanges_WithBodyChangedMethods_ReturnsTrue()
+        public void Entries_ContainStructuredData()
         {
-            var summary = new MethodLevelChangesSummary
-            {
-                BodyChangedMethods = new List<string> { "[public] Foo::Run() : void" },
-            };
-            Assert.True(summary.HasChanges);
-        }
-
-        [Fact]
-        public void HasChanges_WithAddedProperties_ReturnsTrue()
-        {
-            var summary = new MethodLevelChangesSummary
-            {
-                AddedProperties = new List<string> { "Foo::Name" },
-            };
-            Assert.True(summary.HasChanges);
-        }
-
-        [Fact]
-        public void HasChanges_WithRemovedFields_ReturnsTrue()
-        {
-            var summary = new MethodLevelChangesSummary
-            {
-                RemovedFields = new List<string> { "Foo::_bar" },
-            };
-            Assert.True(summary.HasChanges);
+            var entry = new MemberChangeEntry("+", "MyApp.Service", "public", "Method", "GetName", "(string id) : string");
+            Assert.Equal("+", entry.Change);
+            Assert.Equal("MyApp.Service", entry.TypeName);
+            Assert.Equal("public", entry.Access);
+            Assert.Equal("Method", entry.MemberKind);
+            Assert.Equal("GetName", entry.MemberName);
+            Assert.Equal("(string id) : string", entry.Details);
         }
     }
 }

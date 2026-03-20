@@ -211,10 +211,9 @@ namespace FolderDiffIL4DotNet.Services
                 // Method-level changes row (above IL diff)
                 if (config.ShouldIncludeMethodLevelChangesInReport &&
                     diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch &&
-                    _fileDiffResultLists.FileRelativePathToMethodLevelChanges.TryGetValue(path, out var methodChanges) &&
-                    methodChanges.HasChanges)
+                    _fileDiffResultLists.FileRelativePathToMethodLevelChanges.TryGetValue(path, out var methodChanges))
                 {
-                    AppendMethodLevelChangesRow(sb, idx, methodChanges, config);
+                    AppendMethodLevelChangesRow(sb, idx, path, methodChanges, config);
                 }
 
                 if (config.EnableInlineDiff &&
@@ -349,36 +348,41 @@ namespace FolderDiffIL4DotNet.Services
         private void AppendMethodLevelChangesRow(
             StringBuilder sb,
             int idx,
+            string assemblyPath,
             MethodLevelChangesSummary summary,
             ConfigSettings config,
             string sectionPrefix = "mod")
         {
             int recordNo = idx + 1;
-
-            int totalChanges = summary.AddedTypes.Count + summary.RemovedTypes.Count +
-                               summary.AddedMethods.Count + summary.RemovedMethods.Count +
-                               summary.BodyChangedMethods.Count +
-                               summary.AddedProperties.Count + summary.RemovedProperties.Count +
-                               summary.AddedFields.Count + summary.RemovedFields.Count;
+            int totalChanges = summary.Entries.Count;
 
             var contentBuilder = new StringBuilder();
             contentBuilder.AppendLine("<div class=\"method-changes\">");
 
-            AppendMemberList(contentBuilder, "Types added", summary.AddedTypes);
-            AppendMemberList(contentBuilder, "Types removed", summary.RemovedTypes);
-            AppendMemberList(contentBuilder, "Methods added", summary.AddedMethods);
-            AppendMemberList(contentBuilder, "Methods removed", summary.RemovedMethods);
-            AppendMemberList(contentBuilder, "Methods with body changes", summary.BodyChangedMethods);
-            AppendMemberList(contentBuilder, "Properties added", summary.AddedProperties);
-            AppendMemberList(contentBuilder, "Properties removed", summary.RemovedProperties);
-            AppendMemberList(contentBuilder, "Fields added", summary.AddedFields);
-            AppendMemberList(contentBuilder, "Fields removed", summary.RemovedFields);
+            if (summary.Entries.Count > 0)
+            {
+                contentBuilder.AppendLine("<table class=\"method-changes-table\">");
+                contentBuilder.AppendLine("<thead><tr><th>Assembly</th><th>Change</th><th>Class</th><th>Access</th><th>Kind</th><th>Name</th><th>Details</th></tr></thead>");
+                contentBuilder.AppendLine("<tbody>");
+                foreach (var e in summary.Entries)
+                {
+                    contentBuilder.AppendLine($"<tr><td>{HtmlEncode(assemblyPath)}</td><td>{HtmlEncode(e.Change)}</td><td>{HtmlEncode(e.TypeName)}</td><td>{HtmlEncode(e.Access)}</td><td>{HtmlEncode(e.MemberKind)}</td><td>{HtmlEncode(e.MemberName)}</td><td><code>{HtmlEncode(e.Details)}</code></td></tr>");
+                }
+                contentBuilder.AppendLine("</tbody></table>");
+            }
+            else
+            {
+                contentBuilder.AppendLine("<p>Other changes only. See IL diff for details.</p>");
+            }
 
-            contentBuilder.AppendLine($"<p>Method count: {summary.OldMethodCount} (old) → {summary.NewMethodCount} (new)</p>");
+            contentBuilder.AppendLine($"<p>Method count: {summary.OldMethodCount} (old) &#x2192; {summary.NewMethodCount} (new)</p>");
             contentBuilder.AppendLine("</div>");
 
             string detailsId = $"methods_{sectionPrefix}_{idx}";
-            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} Show member changes ({totalChanges} change{(totalChanges == 1 ? "" : "s")})</summary>";
+            string summaryText = totalChanges > 0
+                ? $"#{recordNo} Show member changes ({totalChanges} change{(totalChanges == 1 ? "" : "s")})"
+                : $"#{recordNo} Show member changes (other changes only)";
+            string summaryLabel = $"      <summary class=\"diff-summary\">{HtmlEncode(summaryText)}</summary>";
             string contentHtml = contentBuilder.ToString();
 
             sb.AppendLine("<tr class=\"diff-row\">");
@@ -399,16 +403,6 @@ namespace FolderDiffIL4DotNet.Services
             }
             sb.AppendLine("  </td>");
             sb.AppendLine("</tr>");
-        }
-
-        private static void AppendMemberList(StringBuilder sb, string label, IReadOnlyList<string> members)
-        {
-            if (members.Count == 0) return;
-            sb.AppendLine($"<p><strong>{HtmlEncode(label)} ({members.Count}):</strong></p>");
-            sb.AppendLine("<ul>");
-            foreach (var member in members)
-                sb.AppendLine($"  <li><code>{HtmlEncode(member)}</code></li>");
-            sb.AppendLine("</ul>");
         }
 
         private void AppendSummarySection(StringBuilder sb, ConfigSettings config)

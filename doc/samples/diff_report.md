@@ -33,7 +33,7 @@
 ## [ - ] Removed Files (1)
 - [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
 
-## [ * ] Modified Files (8)
+## [ * ] Modified Files (9)
 - [ * ] config/app.config [2026-03-15 08:56:00 → 2026-03-15 09:01:00] `TextMismatch`
 - [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
 - [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
@@ -42,44 +42,47 @@
 - [ * ] src/Utils.cs [2026-03-15 08:57:00 → 2026-03-15 09:03:00] `TextMismatch`
 - [ * ] src/BigSchema.cs [2026-03-15 08:55:00 → 2026-03-15 09:04:00] `TextMismatch`
 - [ * ] src/LargeConfig.xml [2026-03-15 08:54:00 → 2026-03-15 09:05:00] `TextMismatch`
+- [ * ] util/Legacy.dll [2026-03-15 08:50:00 → 2026-03-15 09:01:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
 
 ## Summary
 - Ignored   : 3
 - Unchanged : 5
 - Added     : 1
 - Removed   : 1
-- Modified  : 8
-- Compared  : 17 (Old) vs 17 (New)
+- Modified  : 9
+- Compared  : 18 (Old) vs 18 (New)
 
 ## Method-Level Changes
 
 ### src/App.dll
-- Methods added (1):
-  - `[public] MyApp.Controllers.ApiController::HealthCheck() : string`
-- Methods with body changes (3):
-  - `[public] MyApp.Controllers.ApiController::GetUsers(int) : System.Collections.Generic.IList<MyApp.Models.User>`
-  - `[internal] MyApp.Services.DataService::RefreshCache() : void`
-  - `[private] MyApp.Services.DataService::ValidateConnection(string) : bool`
-- Properties added (1):
-  - `MyApp.Services.DataService::CacheTimeout`
+
+| Assembly | Change | Class | Access | Kind | Name | Details |
+|----------|--------|-------|--------|------|------|---------|
+| src/App.dll | + | MyApp.Controllers.ApiController | public | Method | HealthCheck | () : string |
+| src/App.dll | ~ | MyApp.Controllers.ApiController | public | Method | GetUsers | (int page) : System.Collections.Generic.IList\<MyApp.Models.User\> |
+| src/App.dll | ~ | MyApp.Services.DataService | internal | Method | RefreshCache | () : void |
+| src/App.dll | ~ | MyApp.Services.DataService | private | Method | ValidateConnection | (string connStr) : bool |
+| src/App.dll | + | MyApp.Services.DataService | public | Property | CacheTimeout | : int { get; set; } |
 - Method count: 28 (old) → 29 (new)
 
 ### src/Service.dll
-- Types added (1):
-  - `MyApp.Services.NewValidator`
-- Methods added (4):
-  - `[public] MyApp.Services.NewValidator::.ctor() : void`
-  - `[public] MyApp.Services.NewValidator::Validate(string) : bool`
-  - `[private] MyApp.Services.NewValidator::ParseInput(string) : string`
-  - `[public] MyApp.Services.OrderService::ValidateWithNewValidator(string) : bool`
-- Methods removed (1):
-  - `[public] MyApp.Services.OrderService::LegacyValidate(string) : bool`
-- Methods with body changes (2):
-  - `[public] MyApp.Services.OrderService::ProcessOrder(int) : void`
-  - `[internal] MyApp.Services.OrderService::CalculateTotal(int, int) : decimal`
-- Fields added (1):
-  - `MyApp.Services.NewValidator::_pattern`
+
+| Assembly | Change | Class | Access | Kind | Name | Details |
+|----------|--------|-------|--------|------|------|---------|
+| src/Service.dll | + | MyApp.Services.NewValidator |  | Type |  |  |
+| src/Service.dll | + | MyApp.Services.NewValidator | public | Method | .ctor | () : void |
+| src/Service.dll | + | MyApp.Services.NewValidator | public | Method | Validate | (string input) : bool |
+| src/Service.dll | + | MyApp.Services.NewValidator | private | Method | ParseInput | (string raw) : string |
+| src/Service.dll | + | MyApp.Services.OrderService | public | Method | ValidateWithNewValidator | (string data) : bool |
+| src/Service.dll | - | MyApp.Services.OrderService | public | Method | LegacyValidate | (string data) : bool |
+| src/Service.dll | ~ | MyApp.Services.OrderService | public | Method | ProcessOrder | (int orderId) : void |
+| src/Service.dll | ~ | MyApp.Services.OrderService | internal | Method | CalculateTotal | (int qty, int price) : decimal |
+| src/Service.dll | + | MyApp.Services.NewValidator | private | Field | _pattern | : string |
 - Method count: 15 (old) → 18 (new)
+
+### util/Legacy.dll
+- Other changes only. See IL diff for details.
+- Method count: 8 (old) → 8 (new)
 
 ## IL Cache Stats
 - Hits    : 42

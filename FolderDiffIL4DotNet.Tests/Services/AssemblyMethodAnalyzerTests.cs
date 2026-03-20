@@ -1,3 +1,4 @@
+using System.Linq;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
 
@@ -15,15 +16,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.NotNull(result);
             Assert.False(result.HasChanges);
-            Assert.Empty(result.AddedTypes);
-            Assert.Empty(result.RemovedTypes);
-            Assert.Empty(result.AddedMethods);
-            Assert.Empty(result.RemovedMethods);
-            Assert.Empty(result.BodyChangedMethods);
-            Assert.Empty(result.AddedProperties);
-            Assert.Empty(result.RemovedProperties);
-            Assert.Empty(result.AddedFields);
-            Assert.Empty(result.RemovedFields);
+            Assert.Empty(result.Entries);
             Assert.True(result.OldMethodCount > 0);
             Assert.Equal(result.OldMethodCount, result.NewMethodCount);
         }
@@ -60,10 +53,26 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.NotNull(result);
             Assert.True(result.HasChanges);
-            // These are completely different assemblies, so there should be type/method differences
-            // 完全に異なるアセンブリなので、型やメソッドの差異があるはず
-            Assert.True(result.AddedTypes.Count > 0 || result.RemovedTypes.Count > 0 ||
-                        result.AddedMethods.Count > 0 || result.RemovedMethods.Count > 0);
+            Assert.True(result.Entries.Count > 0);
+        }
+
+        [Fact]
+        public void Analyze_DifferentAssemblies_EntriesHaveStructuredData()
+        {
+            // Entries should contain structured MemberChangeEntry data
+            // エントリには構造化された MemberChangeEntry データが含まれるべき
+            var testAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var mainAssembly = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
+
+            var result = AssemblyMethodAnalyzer.Analyze(testAssembly, mainAssembly);
+
+            Assert.NotNull(result);
+            var firstEntry = result.Entries.First();
+            Assert.False(string.IsNullOrEmpty(firstEntry.Change));
+            Assert.False(string.IsNullOrEmpty(firstEntry.TypeName));
+            Assert.False(string.IsNullOrEmpty(firstEntry.MemberKind));
+            Assert.Contains(firstEntry.Change, new[] { "+", "-", "~" });
+            Assert.Contains(firstEntry.MemberKind, new[] { "Type", "Method", "Property", "Field" });
         }
     }
 }
