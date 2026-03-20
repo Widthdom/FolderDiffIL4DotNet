@@ -240,6 +240,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("MD5Mismatch", html);
         }
 
+        [Fact]
+        public void GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("myers-ref");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("Myers Diff Algorithm", html);
+            Assert.Contains("http://www.xmailserver.org/diff2.pdf", html);
+            Assert.Contains("Algorithmica", html);
+        }
+
         // ── Inline diff / インラインdiff ──────────────────────────────────────
 
         [Fact]

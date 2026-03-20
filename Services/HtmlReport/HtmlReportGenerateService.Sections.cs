@@ -57,6 +57,11 @@ namespace FolderDiffIL4DotNet.Services
                 }
             }
 
+            // Myers Diff Algorithm reference
+            sb.AppendLine("  <li>Note: Inline diffs for ILMismatch and TextMismatch are computed using the " +
+                "<a href=\"http://www.xmailserver.org/diff2.pdf\">" +
+                "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> 1(2), 1986)</a>.</li>");
+
             // Legend (as meta bullet items)
             sb.AppendLine("  <li>Legend:");
             sb.AppendLine("    <ul>");
