@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- Added method-level change detection for `ILMismatch` assemblies using `System.Reflection.Metadata`. For each modified .NET assembly, the report now shows type/method/property/field additions, removals, and method body changes. This new **Method-Level Changes** section appears between **Summary** and **IL Cache Stats** in the Markdown report, and as an expandable inline row above the IL diff in the HTML report. Controlled by the new `ShouldIncludeMethodLevelChangesInReport` config setting (default: `true`). Added [`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs), [`MethodLevelChangesSummary`](Models/MethodLevelChangesSummary.cs), and corresponding tests.
+
 ### [1.4.1] - 2026-03-20
 
 #### Added
@@ -364,6 +368,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- `System.Reflection.Metadata` を使用した `ILMismatch` アセンブリのメソッドレベル変更検出を追加。変更のあった各 .NET アセンブリについて、型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更をレポートに出力します。Markdown レポートでは **Summary** と **IL Cache Stats** の間に **Method-Level Changes** セクションとして表示され、HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。新しい設定項目 `ShouldIncludeMethodLevelChangesInReport`（既定: `true`）で制御可能。[`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs)、[`MethodLevelChangesSummary`](Models/MethodLevelChangesSummary.cs)、および対応するテストを追加。
 
 ### [1.4.1] - 2026-03-20
 

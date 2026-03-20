@@ -132,7 +132,12 @@ namespace FolderDiffIL4DotNet.Services
     tr.diff-trunc-tr { background: #fffbdd; }
     td.diff-trunc-td { color: #735c0f; padding: 2px 8px; font-style: italic; }
     p.diff-skipped { color: #735c0f; font-size: 12px; padding: 4px 8px;
-                     background: #fffbdd; margin: 0; }";
+                     background: #fffbdd; margin: 0; }
+    /* ── Method-level changes ──────────────────────────────────────────── */
+    .method-changes { padding: 6px 12px; font-size: 12px; }
+    .method-changes p { margin: 4px 0 2px; }
+    .method-changes ul { margin: 0 0 4px 1.4rem; }
+    .method-changes li { margin-bottom: 1px; }";
         }
     }
 }

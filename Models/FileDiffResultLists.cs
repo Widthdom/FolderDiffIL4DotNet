@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace FolderDiffIL4DotNet.Models
@@ -106,6 +107,12 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Method-level change summaries for ILMismatch files, keyed by file relative path.
+        /// ILMismatch ファイルに対するメソッドレベル変更要約。キーはファイルの相対パス。
+        /// </summary>
+        public ConcurrentDictionary<string, MethodLevelChangesSummary> FileRelativePathToMethodLevelChanges { get; } = new ConcurrentDictionary<string, MethodLevelChangesSummary>(StringComparer.Ordinal);
+
         public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
 
         /// <summary>
@@ -167,6 +174,7 @@ namespace FolderDiffIL4DotNet.Models
             DisassemblerToolVersions.Clear();
             DisassemblerToolVersionsFromCache.Clear();
             NewFileTimestampOlderThanOldWarnings.Clear();
+            FileRelativePathToMethodLevelChanges.Clear();
         }
 
         /// <summary>

@@ -191,6 +191,91 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
+        /// <summary>Writes the Method-Level Changes section for ILMismatch assemblies. / ILMismatch アセンブリのメソッドレベル変更セクションを書き込みます。</summary>
+        private sealed class MethodLevelChangesSectionWriter : IReportSectionWriter
+        {
+            public void Write(StreamWriter writer, ReportWriteContext ctx)
+            {
+                if (!ctx.Config.ShouldIncludeMethodLevelChangesInReport) return;
+                var changes = ctx.FileDiffResultLists.FileRelativePathToMethodLevelChanges;
+                if (changes.IsEmpty) return;
+
+                writer.WriteLine(REPORT_SECTION_METHOD_LEVEL_CHANGES);
+
+                foreach (var (filePath, summary) in changes.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
+                {
+                    writer.WriteLine($"\n### {filePath}");
+
+                    if (summary.AddedTypes.Count > 0)
+                    {
+                        writer.WriteLine($"- Types added ({summary.AddedTypes.Count}):");
+                        foreach (var t in summary.AddedTypes)
+                            writer.WriteLine($"  - `{t}`");
+                    }
+
+                    if (summary.RemovedTypes.Count > 0)
+                    {
+                        writer.WriteLine($"- Types removed ({summary.RemovedTypes.Count}):");
+                        foreach (var t in summary.RemovedTypes)
+                            writer.WriteLine($"  - `{t}`");
+                    }
+
+                    if (summary.AddedMethods.Count > 0)
+                    {
+                        writer.WriteLine($"- Methods added ({summary.AddedMethods.Count}):");
+                        foreach (var m in summary.AddedMethods)
+                            writer.WriteLine($"  - `{m}`");
+                    }
+
+                    if (summary.RemovedMethods.Count > 0)
+                    {
+                        writer.WriteLine($"- Methods removed ({summary.RemovedMethods.Count}):");
+                        foreach (var m in summary.RemovedMethods)
+                            writer.WriteLine($"  - `{m}`");
+                    }
+
+                    if (summary.BodyChangedMethods.Count > 0)
+                    {
+                        writer.WriteLine($"- Methods with body changes ({summary.BodyChangedMethods.Count}):");
+                        foreach (var m in summary.BodyChangedMethods)
+                            writer.WriteLine($"  - `{m}`");
+                    }
+
+                    if (summary.AddedProperties.Count > 0)
+                    {
+                        writer.WriteLine($"- Properties added ({summary.AddedProperties.Count}):");
+                        foreach (var p in summary.AddedProperties)
+                            writer.WriteLine($"  - `{p}`");
+                    }
+
+                    if (summary.RemovedProperties.Count > 0)
+                    {
+                        writer.WriteLine($"- Properties removed ({summary.RemovedProperties.Count}):");
+                        foreach (var p in summary.RemovedProperties)
+                            writer.WriteLine($"  - `{p}`");
+                    }
+
+                    if (summary.AddedFields.Count > 0)
+                    {
+                        writer.WriteLine($"- Fields added ({summary.AddedFields.Count}):");
+                        foreach (var f in summary.AddedFields)
+                            writer.WriteLine($"  - `{f}`");
+                    }
+
+                    if (summary.RemovedFields.Count > 0)
+                    {
+                        writer.WriteLine($"- Fields removed ({summary.RemovedFields.Count}):");
+                        foreach (var f in summary.RemovedFields)
+                            writer.WriteLine($"  - `{f}`");
+                    }
+
+                    writer.WriteLine($"- Method count: {summary.OldMethodCount} (old) → {summary.NewMethodCount} (new)");
+                }
+
+                writer.WriteLine();
+            }
+        }
+
         /// <summary>Writes the IL Cache Stats section (only when enabled and ilCache is non-null). / IL Cache Stats セクションを書き込みます。</summary>
         private sealed class ILCacheStatsSectionWriter : IReportSectionWriter
         {

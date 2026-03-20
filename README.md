@@ -241,6 +241,11 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>Includes <code>Ignored Files</code> section before <code>Unchanged</code>.</td>
     </tr>
+    <tr id="config-en-shouldincludemethodlevelchangesinreport">
+      <td><code>ShouldIncludeMethodLevelChangesInReport</code></td>
+      <td><code>true</code></td>
+      <td>When <code>true</code>, includes a <code>Method-Level Changes</code> section for <code>ILMismatch</code> assemblies between <code>Summary</code> and <code>IL Cache Stats</code>. Uses <code>System.Reflection.Metadata</code> to detect type/method/property/field additions, removals, and method body changes. In the HTML report, this appears as an expandable inline row above the IL diff.</td>
+    </tr>
     <tr id="config-en-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
       <td><code>false</code></td>
@@ -681,6 +686,11 @@ flowchart TD
       <td><code>ShouldIncludeIgnoredFiles</code></td>
       <td><code>true</code></td>
       <td>レポートに <code>Ignored Files</code> セクションを出力するか。</td>
+    </tr>
+    <tr id="config-ja-shouldincludemethodlevelchangesinreport">
+      <td><code>ShouldIncludeMethodLevelChangesInReport</code></td>
+      <td><code>true</code></td>
+      <td><code>true</code> の場合、<code>ILMismatch</code> と判定された .NET アセンブリについて、<code>Summary</code> と <code>IL Cache Stats</code> の間に <code>Method-Level Changes</code> セクションを出力します。<code>System.Reflection.Metadata</code> を使用して型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更を検出します。HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。</td>
     </tr>
     <tr id="config-ja-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>

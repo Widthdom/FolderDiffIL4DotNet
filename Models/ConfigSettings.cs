@@ -98,6 +98,16 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldIncludeIgnoredFiles { get; set; } = true;
 
         /// <summary>
+        /// Whether to include method-level change details (type/method/property/field additions, removals,
+        /// and method body changes) for ILMismatch assemblies in the diff report.
+        /// When true, a Method-Level Changes section is inserted between Summary and IL Cache Stats.
+        /// ILMismatch と判定された .NET アセンブリについて、メンバーレベルの変更詳細
+        /// （型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更）をレポートに出力するかどうか。
+        /// true の場合、Summary セクションと IL Cache Stats セクションの間に Method-Level Changes セクションを追加します。
+        /// </summary>
+        public bool ShouldIncludeMethodLevelChangesInReport { get; set; } = true;
+
+        /// <summary>
         /// Whether to include IL cache statistics (hits, misses, hit rate, etc.) in the diff report.
         /// When true, an IL Cache Stats section is inserted between the Summary and Warnings sections.
         /// If IL caching is disabled (EnableILCache = false), this section is omitted regardless of this setting.

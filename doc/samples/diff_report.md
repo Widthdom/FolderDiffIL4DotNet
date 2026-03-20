@@ -51,6 +51,36 @@
 - Modified  : 8
 - Compared  : 17 (Old) vs 17 (New)
 
+## Method-Level Changes
+
+### src/App.dll
+- Methods added (1):
+  - `[public] MyApp.Controllers.ApiController::HealthCheck() : string`
+- Methods with body changes (3):
+  - `[public] MyApp.Controllers.ApiController::GetUsers(int) : System.Collections.Generic.IList<MyApp.Models.User>`
+  - `[internal] MyApp.Services.DataService::RefreshCache() : void`
+  - `[private] MyApp.Services.DataService::ValidateConnection(string) : bool`
+- Properties added (1):
+  - `MyApp.Services.DataService::CacheTimeout`
+- Method count: 28 (old) → 29 (new)
+
+### src/Service.dll
+- Types added (1):
+  - `MyApp.Services.NewValidator`
+- Methods added (4):
+  - `[public] MyApp.Services.NewValidator::.ctor() : void`
+  - `[public] MyApp.Services.NewValidator::Validate(string) : bool`
+  - `[private] MyApp.Services.NewValidator::ParseInput(string) : string`
+  - `[public] MyApp.Services.OrderService::ValidateWithNewValidator(string) : bool`
+- Methods removed (1):
+  - `[public] MyApp.Services.OrderService::LegacyValidate(string) : bool`
+- Methods with body changes (2):
+  - `[public] MyApp.Services.OrderService::ProcessOrder(int) : void`
+  - `[internal] MyApp.Services.OrderService::CalculateTotal(int, int) : decimal`
+- Fields added (1):
+  - `MyApp.Services.NewValidator::_pattern`
+- Method count: 15 (old) → 18 (new)
+
 ## IL Cache Stats
 - Hits    : 42
 - Misses  : 8

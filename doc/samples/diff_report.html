@@ -131,6 +131,11 @@
     td.diff-trunc-td { color: #735c0f; padding: 2px 8px; font-style: italic; }
     p.diff-skipped { color: #735c0f; font-size: 12px; padding: 4px 8px;
                      background: #fffbdd; margin: 0; }
+    /* ── Method-level changes ──────────────────────────────────────────── */
+    .method-changes { padding: 6px 12px; font-size: 12px; }
+    .method-changes p { margin: 4px 0 2px; }
+    .method-changes ul { margin: 0 0 4px 1.4rem; }
+    .method-changes li { margin-bottom: 1px; }
   </style>
 </head>
 <body>
@@ -431,6 +436,13 @@
 </tr>
 <tr class="diff-row">
   <td colspan="8">
+        <details id="methods_mod_2" data-diff-html="PGRpdiBjbGFzcz0ibWV0aG9kLWNoYW5nZXMiPgo8cD48c3Ryb25nPk1ldGhvZHMgYWRkZWQgKDEpOjwvc3Ryb25nPjwvcD4KPHVsPgogIDxsaT48Y29kZT5bcHVibGljXSBNeUFwcC5Db250cm9sbGVycy5BcGlDb250cm9sbGVyOjpIZWFsdGhDaGVjaygpIDogc3RyaW5nPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+TWV0aG9kcyB3aXRoIGJvZHkgY2hhbmdlcyAoMyk6PC9zdHJvbmc+PC9wPgo8dWw+CiAgPGxpPjxjb2RlPltwdWJsaWNdIE15QXBwLkNvbnRyb2xsZXJzLkFwaUNvbnRyb2xsZXI6OkdldFVzZXJzKGludCkgOiBTeXN0ZW0uQ29sbGVjdGlvbnMuR2VuZXJpYy5JTGlzdCZsdDtNeUFwcC5Nb2RlbHMuVXNlciZndDs8L2NvZGU+PC9saT4KICA8bGk+PGNvZGU+W2ludGVybmFsXSBNeUFwcC5TZXJ2aWNlcy5EYXRhU2VydmljZTo6UmVmcmVzaENhY2hlKCkgOiB2b2lkPC9jb2RlPjwvbGk+CiAgPGxpPjxjb2RlPltwcml2YXRlXSBNeUFwcC5TZXJ2aWNlcy5EYXRhU2VydmljZTo6VmFsaWRhdGVDb25uZWN0aW9uKHN0cmluZykgOiBib29sPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+UHJvcGVydGllcyBhZGRlZCAoMSk6PC9zdHJvbmc+PC9wPgo8dWw+CiAgPGxpPjxjb2RlPk15QXBwLlNlcnZpY2VzLkRhdGFTZXJ2aWNlOjpDYWNoZVRpbWVvdXQ8L2NvZGU+PC9saT4KPC91bD4KPHA+TWV0aG9kIGNvdW50OiAyOCAob2xkKSDihpIgMjkgKG5ldyk8L3A+CjwvZGl2Pgo=">
+      <summary class="diff-summary">#3 Show member changes (5 changes)</summary>
+    </details>
+  </td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
         <details id="diff_mod_2" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTEyLDIgKzEyLDMgQEA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtZGVsLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjEyPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWRlbC10ZCI+LSAgICBJTF8wMDA0OiBsZGMuaTQucyAgIDQyPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWRlbC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj4xMzwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1kZWwtdGQiPi0gICAgSUxfMDAwNjogc3Rsb2MuMDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1hZGQtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjEyPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAgIElMXzAwMDQ6IGxkYy5pNC5zICAgMTAwPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+MTM8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1hZGQtdGQiPisgICAgSUxfMDAwNjogc3Rsb2MuMDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1hZGQtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjE0PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAgIElMXzAwMDc6IG5vcDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICA8L3Rib2R5PgogICAgICAgIDwvdGFibGU+CiAgICAgIDwvZGl2Pg==">
       <summary class="diff-summary">#3 Show IL diff (<span class="diff-added-cnt">+3</span> / <span class="diff-removed-cnt">-2</span>)</summary>
     </details>
@@ -462,6 +474,13 @@
   <td class="col-ts">[2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>ILMismatch</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+        <details id="methods_mod_4" data-diff-html="PGRpdiBjbGFzcz0ibWV0aG9kLWNoYW5nZXMiPgo8cD48c3Ryb25nPlR5cGVzIGFkZGVkICgxKTo8L3N0cm9uZz48L3A+Cjx1bD4KICA8bGk+PGNvZGU+TXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+TWV0aG9kcyBhZGRlZCAoNCk6PC9zdHJvbmc+PC9wPgo8dWw+CiAgPGxpPjxjb2RlPltwdWJsaWNdIE15QXBwLlNlcnZpY2VzLk5ld1ZhbGlkYXRvcjo6LmN0b3IoKSA6IHZvaWQ8L2NvZGU+PC9saT4KICA8bGk+PGNvZGU+W3B1YmxpY10gTXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yOjpWYWxpZGF0ZShzdHJpbmcpIDogYm9vbDwvY29kZT48L2xpPgogIDxsaT48Y29kZT5bcHJpdmF0ZV0gTXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yOjpQYXJzZUlucHV0KHN0cmluZykgOiBzdHJpbmc8L2NvZGU+PC9saT4KICA8bGk+PGNvZGU+W3B1YmxpY10gTXlBcHAuU2VydmljZXMuT3JkZXJTZXJ2aWNlOjpWYWxpZGF0ZVdpdGhOZXdWYWxpZGF0b3Ioc3RyaW5nKSA6IGJvb2w8L2NvZGU+PC9saT4KPC91bD4KPHA+PHN0cm9uZz5NZXRob2RzIHJlbW92ZWQgKDEpOjwvc3Ryb25nPjwvcD4KPHVsPgogIDxsaT48Y29kZT5bcHVibGljXSBNeUFwcC5TZXJ2aWNlcy5PcmRlclNlcnZpY2U6OkxlZ2FjeVZhbGlkYXRlKHN0cmluZykgOiBib29sPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+TWV0aG9kcyB3aXRoIGJvZHkgY2hhbmdlcyAoMik6PC9zdHJvbmc+PC9wPgo8dWw+CiAgPGxpPjxjb2RlPltwdWJsaWNdIE15QXBwLlNlcnZpY2VzLk9yZGVyU2VydmljZTo6UHJvY2Vzc09yZGVyKGludCkgOiB2b2lkPC9jb2RlPjwvbGk+CiAgPGxpPjxjb2RlPltpbnRlcm5hbF0gTXlBcHAuU2VydmljZXMuT3JkZXJTZXJ2aWNlOjpDYWxjdWxhdGVUb3RhbChpbnQsIGludCkgOiBkZWNpbWFsPC9jb2RlPjwvbGk+CjwvdWw+CjxwPjxzdHJvbmc+RmllbGRzIGFkZGVkICgxKTo8L3N0cm9uZz48L3A+Cjx1bD4KICA8bGk+PGNvZGU+TXlBcHAuU2VydmljZXMuTmV3VmFsaWRhdG9yOjpfcGF0dGVybjwvY29kZT48L2xpPgo8L3VsPgo8cD5NZXRob2QgY291bnQ6IDE1IChvbGQpIOKGkiAxOCAobmV3KTwvcD4KPC9kaXY+Cg==">
+      <summary class="diff-summary">#5 Show member changes (9 changes)</summary>
+    </details>
+  </td>
 </tr>
 <tr class="diff-row">
   <td colspan="8">

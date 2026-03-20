@@ -716,6 +716,96 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("data-diff-html", html);  // JS references the attribute name
         }
 
+        // ── Method-Level Changes / メソッドレベル変更 ─────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_MethodLevelChanges_ShowsInlineAboveILDiff()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("method-changes");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
+            {
+                OldMethodCount = 10,
+                NewMethodCount = 12,
+                AddedMethods = new List<string> { "[public] MyApp.Service::NewMethod(string) : void" },
+                RemovedMethods = new List<string>(),
+                BodyChangedMethods = new List<string> { "[public] MyApp.Service::ExistingMethod(int) : bool" },
+                AddedProperties = new List<string> { "MyApp.Service::NewProp" },
+                RemovedProperties = new List<string>(),
+                AddedFields = new List<string>(),
+                RemovedFields = new List<string> { "MyApp.Service::_oldField" },
+                AddedTypes = new List<string>(),
+                RemovedTypes = new List<string>(),
+            };
+
+            var config = CreateConfig(enableInlineDiff: true);
+            config.ShouldIncludeMethodLevelChangesInReport = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("Show member changes", html);
+            Assert.Contains("methods_mod_0", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_MethodLevelChanges_NotShownWhenDisabled()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("method-changes-off");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
+            {
+                OldMethodCount = 10,
+                NewMethodCount = 12,
+                AddedMethods = new List<string> { "[public] MyApp.Service::NewMethod(string) : void" },
+            };
+
+            var config = CreateConfig(enableInlineDiff: true);
+            config.ShouldIncludeMethodLevelChangesInReport = false;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.DoesNotContain("Show member changes", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_MethodLevelChanges_LazyRender_EncodesAsBase64()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("method-changes-lazy");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
+            {
+                OldMethodCount = 5,
+                NewMethodCount = 6,
+                AddedMethods = new List<string> { "[public] Foo::Bar() : void" },
+            };
+
+            var config = CreateConfig(enableInlineDiff: true, lazyRender: true);
+            config.ShouldIncludeMethodLevelChangesInReport = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // Should contain a data-diff-html attribute for the method changes row
+            Assert.Contains("methods_mod_0", html);
+            Assert.Contains("Show member changes", html);
+            // Content should NOT be inline (lazy rendered)
+            Assert.DoesNotContain("Foo::Bar()", html);
+        }
+
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()
         {
             IgnoredExtensions = new List<string>(),

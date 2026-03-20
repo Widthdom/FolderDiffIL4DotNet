@@ -754,6 +754,120 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
         }
 
+        // ── Method-Level Changes / メソッドレベル変更 ─────────────────────
+
+        [Fact]
+        public void GenerateDiffReport_MethodLevelChanges_IncludedBetweenSummaryAndILCacheStats()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-mlc");
+            var newDir = Path.Combine(_rootDir, "new-mlc");
+            var reportDir = Path.Combine(_rootDir, "report-mlc");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.AddModifiedFileRelativePath("src/App.dll");
+            _resultLists.RecordDiffDetail("src/App.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            var summary = new MethodLevelChangesSummary
+            {
+                OldMethodCount = 42,
+                NewMethodCount = 44,
+                AddedTypes = new List<string> { "MyApp.NewService" },
+                RemovedTypes = new List<string>(),
+                AddedMethods = new List<string> { "[public] MyApp.UserService::ValidateToken(string) : bool", "[internal] MyApp.UserService::RefreshSession(int) : void" },
+                RemovedMethods = new List<string> { "[public] MyApp.UserService::LegacyAuth(string) : void" },
+                BodyChangedMethods = new List<string> { "[public] MyApp.UserService::Login(string, string) : bool" },
+                AddedProperties = new List<string> { "MyApp.UserService::IsActive" },
+                RemovedProperties = new List<string>(),
+                AddedFields = new List<string> { "MyApp.UserService::_cache" },
+                RemovedFields = new List<string>(),
+            };
+            _resultLists.FileRelativePathToMethodLevelChanges["src/App.dll"] = summary;
+
+            // Also add IL Cache Stats to verify ordering
+            var config = CreateConfig();
+            config.ShouldIncludeILCacheStatsInReport = true;
+            var ilCache = new ILCache(ilCacheDirectoryAbsolutePath: string.Empty);
+
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config, ilCache);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Content checks
+            Assert.Contains("## Method-Level Changes", reportText);
+            Assert.Contains("### src/App.dll", reportText);
+            Assert.Contains("- Types added (1):", reportText);
+            Assert.Contains("`MyApp.NewService`", reportText);
+            Assert.Contains("- Methods added (2):", reportText);
+            Assert.Contains("`[public] MyApp.UserService::ValidateToken(string) : bool`", reportText);
+            Assert.Contains("- Methods removed (1):", reportText);
+            Assert.Contains("- Methods with body changes (1):", reportText);
+            Assert.Contains("- Properties added (1):", reportText);
+            Assert.Contains("- Fields added (1):", reportText);
+            Assert.Contains("- Method count: 42 (old) → 44 (new)", reportText);
+
+            // Ordering: Summary < Method-Level Changes < IL Cache Stats
+            int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);
+            int methodIdx = reportText.IndexOf("## Method-Level Changes", StringComparison.Ordinal);
+            int ilCacheIdx = reportText.IndexOf("## IL Cache Stats", StringComparison.Ordinal);
+            Assert.True(summaryIdx < methodIdx, "Method-Level Changes should appear after Summary");
+            Assert.True(methodIdx < ilCacheIdx, "Method-Level Changes should appear before IL Cache Stats");
+        }
+
+        [Fact]
+        public void GenerateDiffReport_MethodLevelChanges_NotIncludedWhenDisabled()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-mlc-off");
+            var newDir = Path.Combine(_rootDir, "new-mlc-off");
+            var reportDir = Path.Combine(_rootDir, "report-mlc-off");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.FileRelativePathToMethodLevelChanges["src/App.dll"] = new MethodLevelChangesSummary
+            {
+                OldMethodCount = 10,
+                NewMethodCount = 12,
+                AddedMethods = new List<string> { "[public] Foo::Bar() : void" },
+            };
+
+            var config = CreateConfig();
+            config.ShouldIncludeMethodLevelChangesInReport = false;
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.DoesNotContain("## Method-Level Changes", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_MethodLevelChanges_NotIncludedWhenNoChanges()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-mlc-empty");
+            var newDir = Path.Combine(_rootDir, "new-mlc-empty");
+            var reportDir = Path.Combine(_rootDir, "report-mlc-empty");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // No method-level changes recorded
+            var config = CreateConfig();
+            config.ShouldIncludeMethodLevelChangesInReport = true;
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.DoesNotContain("## Method-Level Changes", reportText);
+        }
+
         private static ConfigSettings CreateConfig() => new()
         {
             IgnoredExtensions = new List<string>(),
