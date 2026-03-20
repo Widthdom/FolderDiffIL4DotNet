@@ -205,8 +205,8 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 
 | Column | Description | Example |
 |--------|-------------|---------|
-| Change | `Added`, `Removed`, or `Modified` | `Added` |
 | Class | Fully qualified type name | `MyNamespace.MyClass` |
+| Change | `Added`, `Removed`, or `Modified` | `Added` |
 | Kind | Member kind: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
 | Access | Access modifier | `public` |
 | Modifiers | Other modifiers | `static` |
@@ -218,7 +218,7 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 
 Controlled by [`ShouldIncludeMethodLevelChangesInReport`](#config-en-shouldincludemethodlevelchangesinreport) (default: `true`).
 
-The summary line below the table shows counts: `Added: N, Removed: N, Modified: N`.
+The bullet list below the table shows counts per change kind (`Added`, `Removed`, `Modified`).
 
 ## Configuration ([`config.json`](config.json))
 
@@ -687,8 +687,8 @@ flowchart TD
 
 | 列 | 説明 | 例 |
 |----|------|-----|
-| Change | `Added`、`Removed`、`Modified` | `Added` |
 | Class | 完全修飾型名 | `MyNamespace.MyClass` |
+| Change | `Added`、`Removed`、`Modified` | `Added` |
 | Kind | メンバー種別: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
 | Access | アクセス修飾子 | `public` |
 | Modifiers | その他の修飾子 | `static` |
@@ -700,7 +700,7 @@ flowchart TD
 
 [`ShouldIncludeMethodLevelChangesInReport`](#config-ja-shouldincludemethodlevelchangesinreport)（既定値: `true`）で制御します。
 
-テーブル下の集計行にはカウントが表示されます: `Added: N, Removed: N, Modified: N`。
+テーブル下の箇条書きに変更種別ごとのカウント（`Added`、`Removed`、`Modified`）が表示されます。
 
 ## 設定（[`config.json`](config.json)）
 

@@ -56,55 +56,61 @@
 
 ### src/App.dll
 
-| Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
-|--------|-------|------|--------|-----------|------|------|------------|------------|------|
-| `Added` | MyApp.Controllers.ApiController | `Method` | `public` |  |  | HealthCheck | string |  |  |
-| `Added` | MyApp.Controllers.ApiController | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | int page, int pageSize = 20 |  |
-| `Removed` | MyApp.Controllers.ApiController | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | int page |  |
-| `Modified` | MyApp.Controllers.ApiController | `Method` | `public` | `virtual` |  | Search | System.Collections.Generic.IList\<MyApp.Models.User\> | string query | `Changed` |
-| `Modified` | MyApp.Controllers.ApiController | `Method` | `protected` |  |  | OnAuthorize | bool | MyApp.Models.UserContext ctx | `Changed` |
-| `Modified` | MyApp.Services.DataService | `Method` | `internal` |  |  | RefreshCache | void |  | `Changed` |
-| `Modified` | MyApp.Services.DataService | `Method` | `private` |  |  | ValidateConnection | bool | string connStr | `Changed` |
-| `Added` | MyApp.Services.DataService | `Property` | `public` |  | int | CacheTimeout |  |  |  |
-| `Added` | MyApp.Services.DataService | `Property` | `public` |  | MyApp.Models.CachePolicy | Policy |  |  |  |
-| `Added` | MyApp.Services.DataService | `Property` | `internal` |  | MyApp.Services.IConnectionPool | ConnectionPool |  |  |  |
-- Added: 5, Removed: 1, Modified: 4
+| Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
+|-------|--------|------|--------|-----------|------|------|------------|------------|------|
+| MyApp.Controllers.ApiController | `Added` | `Method` | `public` |  |  | HealthCheck | string |  |  |
+| MyApp.Controllers.ApiController | `Added` | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | int page, int pageSize = 20 |  |
+| MyApp.Controllers.ApiController | `Removed` | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | int page |  |
+| MyApp.Controllers.ApiController | `Modified` | `Method` | `public` | `virtual` |  | Search | System.Collections.Generic.IList\<MyApp.Models.User\> | string query | `Changed` |
+| MyApp.Controllers.ApiController | `Modified` | `Method` | `protected` |  |  | OnAuthorize | bool | MyApp.Models.UserContext ctx | `Changed` |
+| MyApp.Services.DataService | `Modified` | `Method` | `internal` |  |  | RefreshCache | void |  | `Changed` |
+| MyApp.Services.DataService | `Modified` | `Method` | `private` |  |  | ValidateConnection | bool | string connStr | `Changed` |
+| MyApp.Services.DataService | `Added` | `Property` | `public` |  | int | CacheTimeout |  |  |  |
+| MyApp.Services.DataService | `Added` | `Property` | `public` |  | MyApp.Models.CachePolicy | Policy |  |  |  |
+| MyApp.Services.DataService | `Added` | `Property` | `internal` |  | MyApp.Services.IConnectionPool | ConnectionPool |  |  |  |
+- Added    : 5
+- Removed  : 1
+- Modified : 4
 
 ### src/Service.dll
 
-| Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
-|--------|-------|------|--------|-----------|------|------|------------|------------|------|
-| `Added` | MyApp.Services.NewValidator | `Class` | `public` |  |  |  |  |  |  |
-| `Added` | MyApp.Services.NewValidator | `Constructor` | `public` |  |  | NewValidator | void |  |  |
-| `Added` | MyApp.Services.NewValidator | `Method` | `public` |  |  | Validate | bool | string input |  |
-| `Added` | MyApp.Services.NewValidator | `Method` | `public` |  |  | Validate | bool | string input, MyApp.Models.ValidationOptions options |  |
-| `Added` | MyApp.Services.NewValidator | `Method` | `private` |  |  | ParseInput | string | string raw |  |
-| `Added` | MyApp.Services.NewValidator | `Property` | `public` |  | MyApp.Models.ValidationResult | LastResult |  |  |  |
-| `Added` | MyApp.Services.NewValidator | `Field` | `private` | `readonly` | string | _pattern |  |  |  |
-| `Added` | MyApp.Services.OrderService | `Method` | `public` |  |  | ValidateWithNewValidator | bool | string data |  |
-| `Removed` | MyApp.Services.OrderService | `Method` | `public` | `virtual` |  | LegacyValidate | bool | string data |  |
-| `Modified` | MyApp.Services.OrderService | `Method` | `public` |  |  | ProcessOrder | void | int orderId | `Changed` |
-| `Modified` | MyApp.Services.OrderService | `Method` | `internal` | `static` |  | CalculateTotal | decimal | int qty, int price | `Changed` |
-| `Added` | MyApp.Services.OrderService | `Property` | `protected` |  | MyApp.Models.OrderContext | CurrentContext |  |  |  |
-| `Added` | MyApp.Services.OrderService | `Field` | `private` | `readonly` | MyApp.Models.UserRecord | _defaultUser |  |  |  |
-| `Removed` | MyApp.Services.LegacyHelper | `Class` | `internal` |  |  |  |  |  |  |
-| `Removed` | MyApp.Services.LegacyHelper | `Method` | `public` |  |  | Convert | string | object value |  |
-| `Removed` | MyApp.Services.LegacyHelper | `Method` | `public` | `static` |  | Format | string | string template, object[] args |  |
-| `Added` | MyApp.Models.UserRecord | `Record` | `public` |  |  |  |  |  |  |
-| `Added` | MyApp.Models.UserRecord | `Constructor` | `public` |  |  | UserRecord | void | string Name, int Age |  |
-| `Added` | MyApp.Models.UserRecord | `Property` | `public` |  | string | Name |  |  |  |
-| `Added` | MyApp.Models.UserRecord | `Property` | `public` |  | int | Age |  |  |  |
-| `Added` | MyApp.Models.UserRecord | `Method` | `public` | `override` |  | ToString | string |  |  |
-| `Added` | MyApp.Models.UserRecord | `Method` | `public` | `virtual` |  | Equals | bool | object obj |  |
-| `Added` | MyApp.Models.UserRecord | `Method` | `public` | `override` |  | GetHashCode | int |  |  |
-| `Removed` | MyApp.Models.UserDto | `Class` | `public` |  |  |  |  |  |  |
-| `Removed` | MyApp.Models.UserDto | `Property` | `public` |  | string | Name |  |  |  |
-| `Removed` | MyApp.Models.UserDto | `Property` | `public` |  | int | Age |  |  |  |
-- Added: 17, Removed: 7, Modified: 2
+| Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
+|-------|--------|------|--------|-----------|------|------|------------|------------|------|
+| MyApp.Services.NewValidator | `Added` | `Class` | `public` |  |  |  |  |  |  |
+| MyApp.Services.NewValidator | `Added` | `Constructor` | `public` |  |  | NewValidator | void |  |  |
+| MyApp.Services.NewValidator | `Added` | `Method` | `public` |  |  | Validate | bool | string input |  |
+| MyApp.Services.NewValidator | `Added` | `Method` | `public` |  |  | Validate | bool | string input, MyApp.Models.ValidationOptions options |  |
+| MyApp.Services.NewValidator | `Added` | `Method` | `private` |  |  | ParseInput | string | string raw |  |
+| MyApp.Services.NewValidator | `Added` | `Property` | `public` |  | MyApp.Models.ValidationResult | LastResult |  |  |  |
+| MyApp.Services.NewValidator | `Added` | `Field` | `private` | `readonly` | string | _pattern |  |  |  |
+| MyApp.Services.OrderService | `Added` | `Method` | `public` |  |  | ValidateWithNewValidator | bool | string data |  |
+| MyApp.Services.OrderService | `Removed` | `Method` | `public` | `virtual` |  | LegacyValidate | bool | string data |  |
+| MyApp.Services.OrderService | `Modified` | `Method` | `public` |  |  | ProcessOrder | void | int orderId | `Changed` |
+| MyApp.Services.OrderService | `Modified` | `Method` | `internal` | `static` |  | CalculateTotal | decimal | int qty, int price | `Changed` |
+| MyApp.Services.OrderService | `Added` | `Property` | `protected` |  | MyApp.Models.OrderContext | CurrentContext |  |  |  |
+| MyApp.Services.OrderService | `Added` | `Field` | `private` | `readonly` | MyApp.Models.UserRecord | _defaultUser |  |  |  |
+| MyApp.Services.LegacyHelper | `Removed` | `Class` | `internal` |  |  |  |  |  |  |
+| MyApp.Services.LegacyHelper | `Removed` | `Method` | `public` |  |  | Convert | string | object value |  |
+| MyApp.Services.LegacyHelper | `Removed` | `Method` | `public` | `static` |  | Format | string | string template, object[] args |  |
+| MyApp.Models.UserRecord | `Added` | `Record` | `public` |  |  |  |  |  |  |
+| MyApp.Models.UserRecord | `Added` | `Constructor` | `public` |  |  | UserRecord | void | string Name, int Age |  |
+| MyApp.Models.UserRecord | `Added` | `Property` | `public` |  | string | Name |  |  |  |
+| MyApp.Models.UserRecord | `Added` | `Property` | `public` |  | int | Age |  |  |  |
+| MyApp.Models.UserRecord | `Added` | `Method` | `public` | `override` |  | ToString | string |  |  |
+| MyApp.Models.UserRecord | `Added` | `Method` | `public` | `virtual` |  | Equals | bool | object obj |  |
+| MyApp.Models.UserRecord | `Added` | `Method` | `public` | `override` |  | GetHashCode | int |  |  |
+| MyApp.Models.UserDto | `Removed` | `Class` | `public` |  |  |  |  |  |  |
+| MyApp.Models.UserDto | `Removed` | `Property` | `public` |  | string | Name |  |  |  |
+| MyApp.Models.UserDto | `Removed` | `Property` | `public` |  | int | Age |  |  |  |
+- Added    : 17
+- Removed  : 7
+- Modified : 2
 
 ### util/Legacy.dll
 - Other changes only. See IL diff for details.
-- Added: 0, Removed: 0, Modified: 0
+- Added    : 0
+- Removed  : 0
+- Modified : 0
 
 ## IL Cache Stats
 - Hits    : 42

@@ -799,13 +799,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Content checks — table format
             Assert.Contains("## Assembly Semantic Changes", reportText);
             Assert.Contains("### src/App.dll", reportText);
-            Assert.Contains("| Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |", reportText);
-            Assert.Contains("| `Added` | MyApp.NewService | `Class` | `public` |  |  |  |  |  |  |", reportText);
-            Assert.Contains("| `Added` | MyApp.UserService | `Method` | `public` | `static` |  | ValidateToken | bool | string token |  |", reportText);
-            Assert.Contains("| `Modified` | MyApp.UserService | `Method` | `public` |  |  | Login | bool | string user, string pass | `Changed` |", reportText);
-            Assert.Contains("| `Added` | MyApp.UserService | `Property` | `public` |  | bool | IsActive |  |  |  |", reportText);
-            Assert.Contains("| `Added` | MyApp.UserService | `Field` | `private` | `readonly` | object | _cache |  |  |  |", reportText);
-            Assert.Contains("- Added: 5, Removed: 1, Modified: 1", reportText);
+            Assert.Contains("| Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |", reportText);
+            Assert.Contains("| MyApp.NewService | `Added` | `Class` | `public` |  |  |  |  |  |  |", reportText);
+            Assert.Contains("| MyApp.UserService | `Added` | `Method` | `public` | `static` |  | ValidateToken | bool | string token |  |", reportText);
+            Assert.Contains("| MyApp.UserService | `Modified` | `Method` | `public` |  |  | Login | bool | string user, string pass | `Changed` |", reportText);
+            Assert.Contains("| MyApp.UserService | `Added` | `Property` | `public` |  | bool | IsActive |  |  |  |", reportText);
+            Assert.Contains("| MyApp.UserService | `Added` | `Field` | `private` | `readonly` | object | _cache |  |  |  |", reportText);
+            Assert.Contains("- Added    : 5", reportText);
+            Assert.Contains("- Removed  : 1", reportText);
+            Assert.Contains("- Modified : 1", reportText);
 
             // Ordering: Summary < Assembly Semantic Changes < IL Cache Stats
             int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);

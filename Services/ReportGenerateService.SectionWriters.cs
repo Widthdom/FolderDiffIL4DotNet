@@ -209,14 +209,14 @@ namespace FolderDiffIL4DotNet.Services
                     if (summary.Entries.Count > 0)
                     {
                         writer.WriteLine();
-                        writer.WriteLine("| Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |");
-                        writer.WriteLine("|--------|-------|------|--------|-----------|------|------|------------|------------|------|");
+                        writer.WriteLine("| Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |");
+                        writer.WriteLine("|-------|--------|------|--------|-----------|------|------|------------|------------|------|");
                         foreach (var e in summary.Entries)
                         {
                             string access = e.Access.Length > 0 ? $"`{EscapeMdTable(e.Access)}`" : "";
                             string modifiers = e.Modifiers.Length > 0 ? $"`{EscapeMdTable(e.Modifiers)}`" : "";
                             string body = e.Body.Length > 0 ? $"`{EscapeMdTable(e.Body)}`" : "";
-                            writer.WriteLine($"| `{EscapeMdTable(e.Change)}` | {EscapeMdTable(e.TypeName)} | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} | {body} |");
+                            writer.WriteLine($"| {EscapeMdTable(e.TypeName)} | `{EscapeMdTable(e.Change)}` | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} | {body} |");
                         }
                     }
                     else
@@ -224,7 +224,9 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine("- Other changes only. See IL diff for details.");
                     }
 
-                    writer.WriteLine($"- Added: {summary.AddedCount}, Removed: {summary.RemovedCount}, Modified: {summary.ModifiedCount}");
+                    writer.WriteLine($"- Added    : {summary.AddedCount}");
+                    writer.WriteLine($"- Removed  : {summary.RemovedCount}");
+                    writer.WriteLine($"- Modified : {summary.ModifiedCount}");
                 }
 
                 writer.WriteLine();
