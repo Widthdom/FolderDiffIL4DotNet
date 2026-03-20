@@ -83,6 +83,29 @@ Large service classes are split into partial class files to keep each file focus
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/ReportGenerateService.SectionWriters.cs`](../Services/ReportGenerateService.SectionWriters.cs) |
 
+## Nullable Reference Types
+
+Both [`FolderDiffIL4DotNet.csproj`](../FolderDiffIL4DotNet.csproj) and [`FolderDiffIL4DotNet.Core.csproj`](../FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) enable `<Nullable>enable</Nullable>` with `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`. All nullable warnings (CS8600–8604, CS8618, CS8625) are enforced — there are no suppressions.
+
+### Annotation conventions
+
+| Pattern | When to use | Example |
+| --- | --- | --- |
+| `string?` return type | Method can return `null` on miss/failure | `string? TryGetPathRoot(...)` |
+| `string? param = null` | Optional parameter that callers may omit | `ValidateFolderNameOrThrow(string folderName, string? paramName = null)` |
+| `out string? param` | `out` parameter assigned `null` on failure path | `TryGetFileSystemInfoOnMac(string path, out string? fsType, out uint flags)` |
+| `TValue?` property on generic type | Value may be `default` when `IsSuccess` is false | `StepResult<TValue>.Value` |
+| `= null!` on `init` properties | Required-at-init properties on context/DTO classes where the compiler cannot verify initialization | `ReportWriteContext.OldFolderAbsolutePath { get; init; } = null!;` |
+| `ILCache?` field / parameter | Nullable service injected via DI (null when feature is disabled) | `private readonly ILCache? _ilCache;` |
+
+### Guidelines for new code
+
+- **Always annotate** — do not add new `<NoWarn>` entries for nullable codes. If the compiler warns, fix the annotation or add a null check.
+- **Prefer `?` over `null!`** — use `null!` only for `init`-only properties that are guaranteed to be set by the caller's object initializer. For all other cases, use `?` to express nullability honestly.
+- **Use `ArgumentNullException.ThrowIfNull()`** for required non-null parameters at public/internal API boundaries.
+- **Guard before dereference** — when calling a `Try*` method that returns `T?`, check for `null` before using the result.
+- **Test project is excluded** — [`FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) does not enable `<Nullable>` because test doubles and mock setups would require excessive annotation for little safety benefit.
+
 ## Performance Benchmarks
 
 The [`FolderDiffIL4DotNet.Benchmarks`](../FolderDiffIL4DotNet.Benchmarks/) project uses [BenchmarkDotNet](https://www.nuget.org/packages/BenchmarkDotNet/) to measure performance:
@@ -676,6 +699,53 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 - [`ShouldOutputILText`](../Models/ConfigSettings.cs) が `true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
 - `Logs/log_YYYYMMDD.log`
 - [`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は OS 標準のユーザーローカルデータディレクトリ配下の `ILCache/`（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux: `~/.local/share/FolderDiffIL4DotNet/ILCache`）
+
+## Partial Class ファイル構成
+
+大規模なサービスクラスを partial class ファイルに分割し、各ファイルを単一責務にまとめています。クラス名・名前空間は変更なし — ファイル配置のみが異なります。
+
+| クラス | メインファイル | Partial ファイル |
+| --- | --- | --- |
+| `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs)（ネスト型: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`） |
+| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) |
+| `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
+| `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/ReportGenerateService.SectionWriters.cs`](../Services/ReportGenerateService.SectionWriters.cs) |
+
+## Nullable 参照型
+
+[`FolderDiffIL4DotNet.csproj`](../FolderDiffIL4DotNet.csproj) と [`FolderDiffIL4DotNet.Core.csproj`](../FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) の両方で `<Nullable>enable</Nullable>` と `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` を有効にしています。nullable 警告（CS8600–8604, CS8618, CS8625）はすべて強制されており、`<NoWarn>` による抑制はありません。
+
+### アノテーション規約
+
+| パターン | 使用場面 | 例 |
+| --- | --- | --- |
+| `string?` 戻り値型 | ミス/失敗時に `null` を返すメソッド | `string? TryGetPathRoot(...)` |
+| `string? param = null` | 省略可能なパラメータ | `ValidateFolderNameOrThrow(string folderName, string? paramName = null)` |
+| `out string? param` | 失敗パスで `null` が代入される `out` パラメータ | `TryGetFileSystemInfoOnMac(string path, out string? fsType, out uint flags)` |
+| `TValue?` ジェネリック型のプロパティ | `IsSuccess` が false のとき `default` になる値 | `StepResult<TValue>.Value` |
+| `= null!`（`init` プロパティ） | コンパイラが初期化を検証できないコンテキスト/DTO の必須 init プロパティ | `ReportWriteContext.OldFolderAbsolutePath { get; init; } = null!;` |
+| `ILCache?` フィールド / パラメータ | DI 経由で注入される nullable サービス（機能無効時に null） | `private readonly ILCache? _ilCache;` |
+
+### 新規コードのガイドライン
+
+- **必ずアノテーションすること** — nullable コード向けの新しい `<NoWarn>` を追加しないでください。コンパイラが警告を出す場合は、アノテーションを修正するか null チェックを追加してください。
+- **`null!` より `?` を優先** — `null!` はオブジェクト初期化子で必ず設定される `init` 専用プロパティにのみ使用します。それ以外は `?` で null 可能性を正直に表現してください。
+- **`ArgumentNullException.ThrowIfNull()`** を使用 — public/internal API 境界で非 null 必須のパラメータに適用します。
+- **参照前にガード** — `T?` を返す `Try*` メソッドの呼び出し後は、結果を使用する前に `null` チェックしてください。
+- **テストプロジェクトは対象外** — [`FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) では `<Nullable>` を有効にしていません。テストダブルやモックセットアップに過度なアノテーションが必要になり、安全性の利点が小さいためです。
+
+## パフォーマンスベンチマーク
+
+[`FolderDiffIL4DotNet.Benchmarks`](../FolderDiffIL4DotNet.Benchmarks/) プロジェクトで [BenchmarkDotNet](https://www.nuget.org/packages/BenchmarkDotNet/) を使用してパフォーマンスを計測します。
+
+```bash
+dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks
+dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *TextDiffer*
+```
+
+ベンチマーククラス:
+- [`TextDifferBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/TextDifferBenchmarks.cs): 小規模（100 行）・中規模（10K 行）・大規模（1M 行）の IL 風テキスト差分。
+- [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): ファイル列挙（100 / 1K / 10K ファイル）と MD5 ハッシュ比較。
 
 ## ソースコードのスタイル方針
 

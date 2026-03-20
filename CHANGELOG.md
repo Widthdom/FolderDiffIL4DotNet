@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Decomposed 4 large classes into partial class files for maintainability without changing public API: [`ProgramRunner`](ProgramRunner.cs) (extracted `ProgramRunner.Types.cs`), [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs) (extracted `Sections.cs`, `Helpers.cs`, `Css.cs`, `Js.cs` under `Services/HtmlReport/`), [`FolderDiffService`](Services/FolderDiffService.cs) (extracted `ILPrecompute.cs`, `DiffClassification.cs`), [`ReportGenerateService`](Services/ReportGenerateService.cs) (extracted `SectionWriters.cs`).
 
-- Enabled `<Nullable>enable</Nullable>` and `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` in both [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) and [`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj). Nullable warnings (CS8600–8604, CS8618, CS8625) are temporarily suppressed via `<NoWarn>` until a full annotation pass is completed. XML doc warnings (CS1591, CS1573) also suppressed.
+- Enabled `<Nullable>enable</Nullable>` and `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` in both [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) and [`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj). All nullable reference type annotations (`?` suffixes, `null!` initializers) have been applied across both projects (31 files), and the temporary `<NoWarn>` suppressions for CS8600–8604/CS8618/CS8625 have been removed. XML doc warnings (CS1591, CS1573) remain suppressed until a full documentation pass.
 
 #### Added
 
@@ -363,7 +363,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - 大規模クラス 4 件を partial class ファイルに分割し、公開 API を変更せずに保守性を向上: [`ProgramRunner`](ProgramRunner.cs)（`ProgramRunner.Types.cs` を抽出）、[`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs)（`Sections.cs`・`Helpers.cs`・`Css.cs`・`Js.cs` を `Services/HtmlReport/` 配下に抽出）、[`FolderDiffService`](Services/FolderDiffService.cs)（`ILPrecompute.cs`・`DiffClassification.cs` を抽出）、[`ReportGenerateService`](Services/ReportGenerateService.cs)（`SectionWriters.cs` を抽出）。
 
-- [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) と [`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) に `<Nullable>enable</Nullable>` と `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` を追加。nullable 警告（CS8600–8604, CS8618, CS8625）はアノテーション完了まで `<NoWarn>` で一時抑制。XML ドキュメント警告（CS1591, CS1573）も同様に抑制。
+- [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) と [`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) に `<Nullable>enable</Nullable>` と `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` を追加。両プロジェクト全体（31 ファイル）に nullable 参照型アノテーション（`?` サフィックス、`null!` 初期化子）を適用し、CS8600–8604/CS8618/CS8625 の一時抑制 `<NoWarn>` を削除済み。XML ドキュメント警告（CS1591, CS1573）はドキュメント整備完了まで引き続き抑制。
 
 #### 追加
 
