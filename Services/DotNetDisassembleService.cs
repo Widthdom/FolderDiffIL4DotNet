@@ -180,8 +180,8 @@ namespace FolderDiffIL4DotNet.Services
                         continue;
                     }
 
-                    RecordDisassemblerUsage(candidateDisassembleCommand, oldResult.DisassembleCommandAndItsVersionWithArguments);
-                    RecordDisassemblerUsage(candidateDisassembleCommand, newResult.DisassembleCommandAndItsVersionWithArguments);
+                    RecordDisassemblerUsage(candidateDisassembleCommand, oldResult.DisassembleCommandAndItsVersionWithArguments!);
+                    RecordDisassemblerUsage(candidateDisassembleCommand, newResult.DisassembleCommandAndItsVersionWithArguments!);
                     return (
                         oldResult.IlText!,
                         oldResult.DisassembleCommandAndItsVersionWithArguments!,
