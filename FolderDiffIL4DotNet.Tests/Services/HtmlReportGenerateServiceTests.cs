@@ -730,10 +730,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "", "void", "string name", ""),
-                    new("Modified", "MyApp.Service", "public", "virtual", "Method", "ExistingMethod", "", "bool", "int id", "Changed"),
-                    new("Added", "MyApp.Service", "public", "", "Property", "NewProp", "string", "", "", ""),
-                    new("Removed", "MyApp.Service", "private", "readonly", "Field", "_oldField", "int", "", "", ""),
+                    new("Added", "MyApp.Service", "", "public", "", "Method", "NewMethod", "", "void", "string name", ""),
+                    new("Modified", "MyApp.Service", "", "public", "virtual", "Method", "ExistingMethod", "", "bool", "int id", "Changed"),
+                    new("Added", "MyApp.Service", "", "public", "", "Property", "NewProp", "string", "", "", ""),
+                    new("Removed", "MyApp.Service", "", "private", "readonly", "Field", "_oldField", "int", "", "", ""),
                 },
             };
 
@@ -761,7 +761,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Service", "public", "", "Method", "NewMethod", "", "void", "string name", ""),
+                    new("Added", "MyApp.Service", "", "public", "", "Method", "NewMethod", "", "void", "string name", ""),
                 },
             };
 
@@ -787,7 +787,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "Foo", "public", "", "Method", "Bar", "", "void", "", ""),
+                    new("Added", "Foo", "", "public", "", "Method", "Bar", "", "void", "", ""),
                 },
             };
 

@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Service", "public", "", "Method", "DoWork", "", "void", "int count", ""),
+                    new("Added", "MyApp.Service", "", "public", "", "Method", "DoWork", "", "void", "int count", ""),
                 },
             };
             Assert.True(summary.HasChanges);
@@ -39,9 +39,10 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Entries_ContainStructuredData()
         {
-            var entry = new MemberChangeEntry("Added", "MyApp.Service", "public", "static", "Method", "GetName", "", "string", "string id", "");
+            var entry = new MemberChangeEntry("Added", "MyApp.Service", "SomeBase", "public", "static", "Method", "GetName", "", "string", "string id", "");
             Assert.Equal("Added", entry.Change);
             Assert.Equal("MyApp.Service", entry.TypeName);
+            Assert.Equal("SomeBase", entry.BaseType);
             Assert.Equal("public", entry.Access);
             Assert.Equal("static", entry.Modifiers);
             Assert.Equal("Method", entry.MemberKind);

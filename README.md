@@ -194,26 +194,27 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 
 | Category | Detected changes |
 |----------|-----------------|
-| **Type** | Additions and removals (including nested types) |
+| **Type** | Additions and removals (including nested types), with base type and implemented interfaces |
 | **Method** | Additions, removals, and IL body modifications |
 | **Property** | Additions and removals (with get/set accessor info) |
 | **Field** | Additions and removals (with type and default value) |
 | **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
-| **Modifiers** | `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
+| **Modifiers** | For types: `sealed`, `abstract`, `static`. For members: `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
 
 ### Report table columns
 
 | Column | Description | Example |
 |--------|-------------|---------|
 | Class | Fully qualified type name | `MyNamespace.MyClass` |
+| BaseType | Base type and implemented interfaces (omits trivial bases like System.Object) | `MyApp.BaseController, System.IDisposable` |
 | Change | `Added`, `Removed`, or `Modified` | `Added` |
 | Kind | Member kind: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
 | Access | Access modifier | `public` |
-| Modifiers | Other modifiers | `static` |
-| Type | Declared type for Field/Property (empty for Method/Constructor/Class/Record) | `int` |
+| Modifiers | Other modifiers (for types: `sealed`, `abstract`, `static`; for members: `static`, `virtual`, `override`, etc.) | `sealed` |
+| Type | Declared type for Field/Property using fully qualified .NET type names (empty for Method/Constructor/Class/Record) | `System.Int32` |
 | Name | Member name (constructors use the class name; empty for Class/Record/Struct/Interface/Enum entries) | `DoWork` |
-| ReturnType | Return type for Method/Constructor (empty for Field/Property/Class/Record) | `void` |
-| Parameters | Parameter list for Method/Constructor (empty for Field/Property/Class/Record) | `string name, int count = 0` |
+| ReturnType | Return type for Method/Constructor using fully qualified .NET type names (empty for Field/Property/Class/Record) | `System.Void` |
+| Parameters | Parameter list for Method/Constructor using fully qualified .NET type names (empty for Field/Property/Class/Record) | `System.String name, System.Int32 count = 0` |
 | Body | `Changed` when method body or field initializer IL has changed; otherwise empty | `Changed` |
 
 Controlled by [`ShouldIncludeAssemblySemanticChangesInReport`](#config-en-shouldincludeassemblysemanticchangesinreport) (default: `true`).
@@ -676,26 +677,27 @@ flowchart TD
 
 | カテゴリ | 検出内容 |
 |---------|---------|
-| **Type** | 型の追加・削除（ネスト型を含む） |
+| **Type** | 型の追加・削除（ネスト型を含む）、基底型および実装インターフェース情報付き |
 | **Method** | メソッドの追加・削除・IL ボディの変更 |
 | **Property** | プロパティの追加・削除（get/set アクセサ情報付き） |
 | **Field** | フィールドの追加・削除（型と既定値付き） |
 | **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
-| **Modifiers** | `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
+| **Modifiers** | 型: `sealed`, `abstract`, `static`。メンバー: `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
 
 ### レポートテーブル列
 
 | 列 | 説明 | 例 |
 |----|------|-----|
 | Class | 完全修飾型名 | `MyNamespace.MyClass` |
+| BaseType | 基底型および実装インターフェース（System.Object 等の自明な基底型は省略） | `MyApp.BaseController, System.IDisposable` |
 | Change | `Added`、`Removed`、`Modified` | `Added` |
 | Kind | メンバー種別: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
 | Access | アクセス修飾子 | `public` |
-| Modifiers | その他の修飾子 | `static` |
-| Type | Field/Property の宣言型（Method/Constructor/Class/Record の場合は空） | `int` |
+| Modifiers | その他の修飾子（型: `sealed`, `abstract`, `static`、メンバー: `static`, `virtual` 等） | `sealed` |
+| Type | Field/Property の宣言型（完全修飾 .NET 型名、Method/Constructor/Class/Record の場合は空） | `System.Int32` |
 | Name | メンバー名（コンストラクタはクラス名、Class/Record/Struct/Interface/Enum エントリの場合は空） | `DoWork` |
-| ReturnType | Method/Constructor の戻り値型（Field/Property/Class/Record の場合は空） | `void` |
-| Parameters | Method/Constructor のパラメータ一覧（Field/Property/Class/Record の場合は空） | `string name, int count = 0` |
+| ReturnType | Method/Constructor の戻り値型（完全修飾 .NET 型名、Field/Property/Class/Record の場合は空） | `System.Void` |
+| Parameters | Method/Constructor のパラメータ一覧（完全修飾 .NET 型名、Field/Property/Class/Record の場合は空） | `System.String name, System.Int32 count = 0` |
 | Body | メソッドボディまたはフィールド初期化子の IL が変更された場合 `Changed`、それ以外は空 | `Changed` |
 
 [`ShouldIncludeAssemblySemanticChangesInReport`](#config-ja-shouldincludeassemblysemanticchangesinreport)（既定値: `true`）で制御します。

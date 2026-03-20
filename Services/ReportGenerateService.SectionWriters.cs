@@ -209,22 +209,24 @@ namespace FolderDiffIL4DotNet.Services
                     if (summary.Entries.Count > 0)
                     {
                         writer.WriteLine();
-                        writer.WriteLine("| Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |");
-                        writer.WriteLine("|-------|--------|------|--------|-----------|------|------|------------|------------|------|");
+                        writer.WriteLine("| Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |");
+                        writer.WriteLine("|-------|----------|--------|------|--------|-----------|------|------|------------|------------|------|");
                         string prevType = "";
                         foreach (var e in summary.Entries)
                         {
-                            string classCol = e.TypeName != prevType ? EscapeMdTable(e.TypeName) : "";
+                            bool isCont = e.TypeName == prevType;
+                            string classCol = !isCont ? EscapeMdTable(e.TypeName) : "";
+                            string baseTypeCol = !isCont ? EscapeMdTable(e.BaseType) : "";
                             prevType = e.TypeName;
                             string access = e.Access.Length > 0 ? $"`{EscapeMdTable(e.Access)}`" : "";
                             string modifiers = e.Modifiers.Length > 0 ? $"`{EscapeMdTable(e.Modifiers)}`" : "";
                             string body = e.Body.Length > 0 ? $"`{EscapeMdTable(e.Body)}`" : "";
-                            writer.WriteLine($"| {classCol} | `{EscapeMdTable(e.Change)}` | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} | {body} |");
+                            writer.WriteLine($"| {classCol} | {baseTypeCol} | `{EscapeMdTable(e.Change)}` | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} | {body} |");
                         }
                     }
                     else
                     {
-                        writer.WriteLine("- Other changes only. See IL diff for details.");
+                        writer.WriteLine("- No structural changes detected. See IL diff for implementation-level differences.");
                     }
 
                     if (summary.Entries.Count > 0)
@@ -249,13 +251,17 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 string prevType = "";
-                foreach (var ((typeName, change), count) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => kv.Key.Change, StringComparer.Ordinal))
+                foreach (var ((typeName, change), count) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => ChangeOrder(kv.Key.Change)))
                 {
                     string classCol = typeName != prevType ? EscapeMdTable(typeName) : "";
                     prevType = typeName;
                     writer.WriteLine($"| {classCol} | `{EscapeMdTable(change)}` | {count} |");
                 }
             }
+
+            private static int ChangeOrder(string change)
+                => change switch { "Added" => 0, "Removed" => 1, "Modified" => 2, _ => 3 };
+
 
             /// <summary>Escape pipe characters for Markdown table cells. / Markdown テーブルセル用にパイプ文字をエスケープ。</summary>
             private static string EscapeMdTable(string value) => value.Replace("|", "\\|");

@@ -35,16 +35,24 @@ namespace FolderDiffIL4DotNet.Services
 
                 var entries = new List<MemberChangeEntry>();
 
+                // Helper: look up BaseType string for a given type name from the appropriate snapshot
+                string LookupBaseType(string typeName, AssemblySnapshot preferred, AssemblySnapshot fallback)
+                {
+                    if (preferred.TypeNames.TryGetValue(typeName, out var info)) return info.BaseType;
+                    if (fallback.TypeNames.TryGetValue(typeName, out info)) return info.BaseType;
+                    return "";
+                }
+
                 // Types
                 foreach (var t in newSnapshot.TypeNames.Keys.Except(oldSnapshot.TypeNames.Keys, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
                 {
                     var info = newSnapshot.TypeNames[t];
-                    entries.Add(new MemberChangeEntry("Added", t, info.Access, "", info.Kind, "", "", "", "", ""));
+                    entries.Add(new MemberChangeEntry("Added", t, info.BaseType, info.Access, info.Modifiers, info.Kind, "", "", "", "", ""));
                 }
                 foreach (var t in oldSnapshot.TypeNames.Keys.Except(newSnapshot.TypeNames.Keys, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
                 {
                     var info = oldSnapshot.TypeNames[t];
-                    entries.Add(new MemberChangeEntry("Removed", t, info.Access, "", info.Kind, "", "", "", "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", t, info.BaseType, info.Access, info.Modifiers, info.Kind, "", "", "", "", ""));
                 }
 
                 // Methods (including constructors)
@@ -52,13 +60,13 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     var m = newSnapshot.Methods[key];
                     string kind = ToMemberKind(m.MethodName);
-                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, ""));
+                    entries.Add(new MemberChangeEntry("Added", m.TypeName, LookupBaseType(m.TypeName, newSnapshot, oldSnapshot), m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, ""));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Except(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = oldSnapshot.Methods[key];
                     string kind = ToMemberKind(m.MethodName);
-                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, ""));
+                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, LookupBaseType(m.TypeName, oldSnapshot, newSnapshot), m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, ""));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
@@ -66,7 +74,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         var m = newSnapshot.Methods[key];
                         string kind = ToMemberKind(m.MethodName);
-                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, "Changed"));
+                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, LookupBaseType(m.TypeName, newSnapshot, oldSnapshot), m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, "Changed"));
                     }
                 }
 
@@ -74,25 +82,33 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var key in newSnapshot.Properties.Keys.Except(oldSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = newSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", "", ""));
+                    entries.Add(new MemberChangeEntry("Added", p.TypeName, LookupBaseType(p.TypeName, newSnapshot, oldSnapshot), p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", "", ""));
                 }
                 foreach (var key in oldSnapshot.Properties.Keys.Except(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = oldSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, LookupBaseType(p.TypeName, oldSnapshot, newSnapshot), p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", "", ""));
                 }
 
                 // Fields
                 foreach (var key in newSnapshot.Fields.Keys.Except(oldSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = newSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", "", ""));
+                    entries.Add(new MemberChangeEntry("Added", f.TypeName, LookupBaseType(f.TypeName, newSnapshot, oldSnapshot), f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", "", ""));
                 }
                 foreach (var key in oldSnapshot.Fields.Keys.Except(newSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = oldSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, LookupBaseType(f.TypeName, oldSnapshot, newSnapshot), f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", "", ""));
                 }
+
+                // Sort: by TypeName, then by Change order (Added → Removed → Modified)
+                entries.Sort((a, b) =>
+                {
+                    int cmp = StringComparer.Ordinal.Compare(a.TypeName, b.TypeName);
+                    if (cmp != 0) return cmp;
+                    return ChangeOrder(a.Change).CompareTo(ChangeOrder(b.Change));
+                });
 
                 return new AssemblySemanticChangesSummary
                 {
@@ -143,6 +159,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             public required string Access { get; init; }
             public required string Kind { get; init; }
+            public required string BaseType { get; init; }
+            public required string Modifiers { get; init; }
         }
 
         private sealed class AssemblySnapshot
@@ -173,7 +191,9 @@ namespace FolderDiffIL4DotNet.Services
 
                 string typeAccess = GetTypeAccessModifier(typeDef.Attributes);
                 string typeKind = GetTypeKind(reader, typeDef);
-                snapshot.TypeNames[typeName] = new TypeInfo { Access = typeAccess, Kind = typeKind };
+                string baseType = GetBaseTypeDisplayName(reader, typeDef);
+                string typeModifiers = GetTypeModifiers(typeDef.Attributes);
+                snapshot.TypeNames[typeName] = new TypeInfo { Access = typeAccess, Kind = typeKind, BaseType = baseType, Modifiers = typeModifiers };
 
                 // Methods
                 foreach (var methodHandle in typeDef.GetMethods())
@@ -260,6 +280,10 @@ namespace FolderDiffIL4DotNet.Services
 
             return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
         }
+
+        /// <summary>Sort order for Change column: Added=0, Removed=1, Modified=2. / Change 列のソート順。</summary>
+        private static int ChangeOrder(string change)
+            => change switch { "Added" => 0, "Removed" => 1, "Modified" => 2, _ => 3 };
 
         /// <summary>Determine the member kind from the IL method name: .ctor → Constructor, .cctor → StaticConstructor, else → Method. / IL メソッド名からメンバー種別を判定。</summary>
         private static string ToMemberKind(string ilMethodName)
@@ -498,6 +522,24 @@ namespace FolderDiffIL4DotNet.Services
             };
         }
 
+        /// <summary>Extract non-access modifiers from type attributes (sealed, abstract, static). / TypeAttributes から非アクセス修飾子を取得。</summary>
+        private static string GetTypeModifiers(System.Reflection.TypeAttributes attributes)
+        {
+            var parts = new List<string>();
+            bool isAbstract = (attributes & System.Reflection.TypeAttributes.Abstract) != 0;
+            bool isSealed = (attributes & System.Reflection.TypeAttributes.Sealed) != 0;
+            bool isInterface = (attributes & System.Reflection.TypeAttributes.Interface) != 0;
+
+            if (isAbstract && isSealed && !isInterface)
+                parts.Add("static");          // static classes are abstract + sealed in IL
+            else if (isSealed && !isInterface)
+                parts.Add("sealed");
+            else if (isAbstract && !isInterface)
+                parts.Add("abstract");
+
+            return string.Join(" ", parts);
+        }
+
         /// <summary>
         /// Determine the type kind: Class, Record, Struct, Interface, or Enum.
         /// Record is detected heuristically by the presence of an EqualityContract property.
@@ -530,6 +572,54 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return "Class";
+        }
+
+        /// <summary>
+        /// Get the base type and implemented interfaces display string for a type definition,
+        /// omitting trivial bases (System.Object, System.ValueType, System.Enum) since those
+        /// are implied by the type kind. Returns e.g. "MyApp.BaseController, System.IDisposable".
+        /// 型定義の基底型および実装インターフェースの表示文字列を取得。自明な基底型は省略。
+        /// </summary>
+        private static string GetBaseTypeDisplayName(MetadataReader reader, TypeDefinition typeDef)
+        {
+            var parts = new List<string>();
+
+            // Base type (skip trivial)
+            if (!typeDef.BaseType.IsNil)
+            {
+                string baseTypeName = GetBaseTypeName(reader, typeDef.BaseType);
+                if (baseTypeName is not ("System.Object" or "System.ValueType" or "System.Enum" or ""))
+                    parts.Add(baseTypeName);
+            }
+
+            // Implemented interfaces
+            foreach (var ifaceHandle in typeDef.GetInterfaceImplementations())
+            {
+                var iface = reader.GetInterfaceImplementation(ifaceHandle);
+                string ifaceName = GetInterfaceTypeName(reader, iface.Interface);
+                if (!string.IsNullOrEmpty(ifaceName))
+                    parts.Add(ifaceName);
+            }
+
+            return string.Join(", ", parts);
+        }
+
+        /// <summary>Get the full name of an interface from its EntityHandle.</summary>
+        private static string GetInterfaceTypeName(MetadataReader reader, EntityHandle handle)
+        {
+            if (handle.Kind == HandleKind.TypeReference)
+            {
+                var typeRef = reader.GetTypeReference((TypeReferenceHandle)handle);
+                string ns = reader.GetString(typeRef.Namespace);
+                string name = reader.GetString(typeRef.Name);
+                return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
+            }
+            if (handle.Kind == HandleKind.TypeDefinition)
+            {
+                var typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)handle);
+                return GetFullTypeName(reader, typeDef);
+            }
+            return "";
         }
 
         /// <summary>Get the full name of a base type from its EntityHandle.</summary>
@@ -660,24 +750,24 @@ namespace FolderDiffIL4DotNet.Services
             public string GetPrimitiveType(PrimitiveTypeCode typeCode)
                 => typeCode switch
                 {
-                    PrimitiveTypeCode.Void => "void",
-                    PrimitiveTypeCode.Boolean => "bool",
-                    PrimitiveTypeCode.Char => "char",
-                    PrimitiveTypeCode.SByte => "sbyte",
-                    PrimitiveTypeCode.Byte => "byte",
-                    PrimitiveTypeCode.Int16 => "short",
-                    PrimitiveTypeCode.UInt16 => "ushort",
-                    PrimitiveTypeCode.Int32 => "int",
-                    PrimitiveTypeCode.UInt32 => "uint",
-                    PrimitiveTypeCode.Int64 => "long",
-                    PrimitiveTypeCode.UInt64 => "ulong",
-                    PrimitiveTypeCode.Single => "float",
-                    PrimitiveTypeCode.Double => "double",
-                    PrimitiveTypeCode.String => "string",
-                    PrimitiveTypeCode.Object => "object",
-                    PrimitiveTypeCode.IntPtr => "nint",
-                    PrimitiveTypeCode.UIntPtr => "nuint",
-                    PrimitiveTypeCode.TypedReference => "TypedReference",
+                    PrimitiveTypeCode.Void => "System.Void",
+                    PrimitiveTypeCode.Boolean => "System.Boolean",
+                    PrimitiveTypeCode.Char => "System.Char",
+                    PrimitiveTypeCode.SByte => "System.SByte",
+                    PrimitiveTypeCode.Byte => "System.Byte",
+                    PrimitiveTypeCode.Int16 => "System.Int16",
+                    PrimitiveTypeCode.UInt16 => "System.UInt16",
+                    PrimitiveTypeCode.Int32 => "System.Int32",
+                    PrimitiveTypeCode.UInt32 => "System.UInt32",
+                    PrimitiveTypeCode.Int64 => "System.Int64",
+                    PrimitiveTypeCode.UInt64 => "System.UInt64",
+                    PrimitiveTypeCode.Single => "System.Single",
+                    PrimitiveTypeCode.Double => "System.Double",
+                    PrimitiveTypeCode.String => "System.String",
+                    PrimitiveTypeCode.Object => "System.Object",
+                    PrimitiveTypeCode.IntPtr => "System.IntPtr",
+                    PrimitiveTypeCode.UIntPtr => "System.UIntPtr",
+                    PrimitiveTypeCode.TypedReference => "System.TypedReference",
                     _ => typeCode.ToString()
                 };
 
