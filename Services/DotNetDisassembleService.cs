@@ -119,7 +119,7 @@ namespace FolderDiffIL4DotNet.Services
                     var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: true, recordUsage: true);
                     if (success)
                     {
-                        return (ilText, disassembleCommandAndItsVersionWithArguments);
+                        return (ilText!, disassembleCommandAndItsVersionWithArguments!);
                     }
                     if (error != null)
                     {
@@ -174,7 +174,7 @@ namespace FolderDiffIL4DotNet.Services
                         continue;
                     }
 
-                    if (!AreSameDisassemblerVersion(oldResult.DisassembleCommandAndItsVersionWithArguments, newResult.DisassembleCommandAndItsVersionWithArguments))
+                    if (!AreSameDisassemblerVersion(oldResult.DisassembleCommandAndItsVersionWithArguments!, newResult.DisassembleCommandAndItsVersionWithArguments!))
                     {
                         lastError = new InvalidOperationException($"Disassembler version mismatch for command '{candidateDisassembleCommand}'. old='{oldResult.DisassembleCommandAndItsVersionWithArguments}', new='{newResult.DisassembleCommandAndItsVersionWithArguments}'.");
                         continue;
@@ -183,10 +183,10 @@ namespace FolderDiffIL4DotNet.Services
                     RecordDisassemblerUsage(candidateDisassembleCommand, oldResult.DisassembleCommandAndItsVersionWithArguments);
                     RecordDisassemblerUsage(candidateDisassembleCommand, newResult.DisassembleCommandAndItsVersionWithArguments);
                     return (
-                        oldResult.IlText,
-                        oldResult.DisassembleCommandAndItsVersionWithArguments,
-                        newResult.IlText,
-                        newResult.DisassembleCommandAndItsVersionWithArguments);
+                        oldResult.IlText!,
+                        oldResult.DisassembleCommandAndItsVersionWithArguments!,
+                        newResult.IlText!,
+                        newResult.DisassembleCommandAndItsVersionWithArguments!);
                 }
                 catch (System.ComponentModel.Win32Exception ex)
                 {
@@ -238,7 +238,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
-                FileSystemUtility.DeleteFileSilent(tempAsciiPath);
+                if (tempAsciiPath != null) FileSystemUtility.DeleteFileSilent(tempAsciiPath);
             }
 
             return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
@@ -285,7 +285,7 @@ namespace FolderDiffIL4DotNet.Services
                 // Success — clear the blacklist state.
                 // 正常終了したらブラックリスト状態を解除。
                 ResetDisassembleFailure(disassembleCommand);
-                var ilText = await ReadIlTextAfterSuccessAsync(IsIlspyCommand(disassembleCommand), argset, stdout);
+                var ilText = await ReadIlTextAfterSuccessAsync(IsIlspyCommand(disassembleCommand), argset, stdout!);
                 if (string.IsNullOrEmpty(label))
                 {
                     // On cache-miss path the label may not have been computed yet.

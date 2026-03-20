@@ -373,7 +373,7 @@ namespace FolderDiffIL4DotNet
             Directory.CreateDirectory(reportsFolderAbsolutePath);
         }
 
-        private async Task<ConfigSettings> LoadConfigurationAsync(string configPath)
+        private async Task<ConfigSettings> LoadConfigurationAsync(string? configPath)
         {
             _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
             var config = await _configService.LoadConfigAsync(configPath);
