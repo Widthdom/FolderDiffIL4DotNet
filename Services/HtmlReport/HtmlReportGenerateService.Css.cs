@@ -1,0 +1,138 @@
+namespace FolderDiffIL4DotNet.Services
+{
+    // CSS stylesheet for the HTML diff report.
+    // HTML 差分レポート用 CSS スタイルシート。
+    public sealed partial class HtmlReportGenerateService
+    {
+        private static string GetCss()
+        {
+            return
+@"    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
+    h1 { font-size: 2.0rem; padding: 1rem 0 0.4rem; }
+    h2 { font-size: 1rem; margin: 1.4rem 0 0.35rem; }
+    h2.section-heading { font-size: 1.55rem; margin: 1.6rem 0 0.4rem; }
+    code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+           font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
+    ul.meta { margin: 0.4rem 0 0.8rem 1.4rem; }
+    ul.meta li { margin-bottom: 3px; line-height: 1.65; }
+    ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
+    ul.meta ul li { margin-bottom: 1px; }
+    /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
+    .controls {
+      position: sticky; top: 0;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(255,255,255,0.1);
+      padding: 0.65rem 2rem; margin: 0 -2rem;
+      display: flex; gap: 0.8rem; align-items: center; z-index: 100;
+    }
+    .reviewed-banner {
+      position: sticky; top: 0;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(255,255,255,0.1);
+      padding: 0.5rem 2rem; margin: 0 -2rem;
+      font-size: 13px; color: #1f2328; font-weight: 500; z-index: 100;
+    }
+    /* ── Apple-style buttons ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.35em;
+      padding: 0.45rem 1.1rem; cursor: pointer;
+      background: #1d1d1f; color: #fff;
+      border: 1.5px solid #1d1d1f; font-size: 13px; border-radius: 980px;
+      font-family: inherit; letter-spacing: -0.01em;
+      transition: background 0.12s, color 0.12s; white-space: nowrap; line-height: 1;
+    }
+    .btn:hover { background: #424245; border-color: #424245; }
+    .btn-clear {
+      background: transparent; color: #1d1d1f;
+    }
+    .btn-clear:hover { background: #f5f5f7; }
+    .save-status { font-size: 12px; color: #86868b; }
+    .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
+    /* ── Column width CSS variables ──────────────────────────────────────── */
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em; }
+    col.col-no-g     { width: 3.2em; }
+    col.col-cb-g     { width: 2.2em; }
+    col.col-reason-g { width: var(--col-reason-w); }
+    col.col-notes-g  { width: var(--col-notes-w); }
+    col.col-path-g   { width: var(--col-path-w); }
+    col.col-ts-g     { width: 22em; }
+    col.col-diff-g   { width: var(--col-diff-w); }
+    col.col-disasm-g { width: var(--col-disasm-w); }
+    /* ── Data tables ─────────────────────────────────────────────────────── */
+    .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
+    table:not(.stat-table):not(.diff-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
+    th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
+         border: 1px solid #bbb; color: #000; }
+    th.th-resizable { position: relative; }
+    .th-label { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .col-resize-handle {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
+      cursor: col-resize; background: transparent;
+    }
+    .col-resize-handle:hover, .col-resize-handle:active { background: rgba(0,0,0,0.18); }
+    td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; font-size: 12px; }
+    td.col-no   { width: 3.2em; text-align: right; color: #aaa;
+                  font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
+    td.col-cb   { width: 2.2em; text-align: center; }
+    td.col-reason { overflow: hidden; text-align: center; }
+    td.col-notes  { overflow: hidden; }
+    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    td.col-ts    { white-space: nowrap; text-align: center; }
+    td.col-diff  { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+                   font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
+    td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
+    td.col-reason input[type=""text""], td.col-notes input[type=""text""] {
+      width: 100%; border: none; padding: 2px 4px; font-size: 12px;
+      background: transparent; outline: none; font-family: inherit; }
+    td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
+      background: #fffff8; outline: 1px solid #aaa; }
+    input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
+    table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
+    table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
+    table.stat-table td.stat-label { color: #444; white-space: nowrap; }
+    table.stat-table td.stat-value { text-align: right; }
+    ul.warnings { margin: 0.3rem 0 0 1.4rem; }
+    ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
+    .warn-icon { color: #f5a623; font-size: 1.1em; }
+    /* ── Inline diff ─────────────────────────────────────────────────────── */
+    tr.diff-row { background: #f6f8fa; }
+    tr.diff-row > td { padding: 0; border-top: none; }
+    .diff-added-cnt { color: #22863a; font-weight: 600; }
+    .diff-removed-cnt { color: #b31d28; font-weight: 600; }
+    summary.diff-summary {
+      display: inline-flex; align-items: center; gap: 0.4em;
+      cursor: pointer; font-size: 12px; color: #0051c3;
+      padding: 3px 6px; user-select: none; list-style: none; }
+    summary.diff-summary::-webkit-details-marker { display: none; }
+    summary.diff-summary::before { content: '▶'; font-size: 10px; transition: transform 0.15s; }
+    details[open] > summary.diff-summary::before { transform: rotate(90deg); }
+    .diff-view { overflow-x: auto; margin: 0 0 4px 0; }
+    table.diff-table { border-collapse: collapse; width: 100%; margin: 0;
+                       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+                       font-size: 12px; }
+    table.diff-table td { padding: 1px 6px; border: none; white-space: pre; }
+    td.diff-ln { width: 3.5em; min-width: 2.5em; text-align: right;
+                 color: #999; background: #f6f8fa; border-right: 1px solid #e0e0e0;
+                 user-select: none; font-size: 11px; padding: 1px 4px; }
+    tr.diff-hunk-tr { background: #f6f8fa; }
+    td.diff-hunk-td { color: #0057ae; padding: 1px 8px; }
+    tr.diff-del-tr { background: #ffeef0; }
+    td.diff-del-td { color: #b31d28; background: #ffeef0; }
+    tr.diff-add-tr { background: #e6ffed; }
+    td.diff-add-td { color: #22863a; background: #e6ffed; }
+    tr.diff-ctx-tr { background: #fff; }
+    td.diff-ctx-td { color: #24292e; background: #fff; }
+    tr.diff-trunc-tr { background: #fffbdd; }
+    td.diff-trunc-td { color: #735c0f; padding: 2px 8px; font-style: italic; }
+    p.diff-skipped { color: #735c0f; font-size: 12px; padding: 4px 8px;
+                     background: #fffbdd; margin: 0; }";
+        }
+    }
+}
