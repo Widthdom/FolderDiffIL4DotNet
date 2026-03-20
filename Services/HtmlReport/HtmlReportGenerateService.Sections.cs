@@ -354,8 +354,6 @@ namespace FolderDiffIL4DotNet.Services
             string sectionPrefix = "mod")
         {
             int recordNo = idx + 1;
-            int totalChanges = summary.Entries.Count;
-
             var contentBuilder = new StringBuilder();
             contentBuilder.AppendLine("<div class=\"semantic-changes\">");
 
@@ -385,9 +383,7 @@ namespace FolderDiffIL4DotNet.Services
             contentBuilder.AppendLine("</div>");
 
             string detailsId = $"semantic_{sectionPrefix}_{idx}";
-            string summaryText = totalChanges > 0
-                ? $"#{recordNo} Show assembly semantic changes ({totalChanges} change{(totalChanges == 1 ? "" : "s")})"
-                : $"#{recordNo} Show assembly semantic changes (other changes only)";
+            string summaryText = $"#{recordNo} Show assembly semantic changes";
             string summaryLabel = $"      <summary class=\"diff-summary\">{HtmlEncode(summaryText)}</summary>";
             string contentHtml = contentBuilder.ToString();
 
