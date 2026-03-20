@@ -39,7 +39,7 @@ namespace FolderDiffIL4DotNet.Core.Text
         /// names exceeding maxLength are shortened to "head + _.._  + tail + _hash".
         /// 任意の文字列をファイル名として安全な文字列へ変換します。長すぎる場合はヘッド + _.._  + テール + ハッシュで短縮します。
         /// </summary>
-        public static string ToSafeFileName(string fileNameExcludeExtention, int maxLength = SAFE_FILENAME_DEFAULT_MAX_LENGTH)
+        public static string ToSafeFileName(string? fileNameExcludeExtention, int maxLength = SAFE_FILENAME_DEFAULT_MAX_LENGTH)
         {
             if (string.IsNullOrEmpty(fileNameExcludeExtention))
             {

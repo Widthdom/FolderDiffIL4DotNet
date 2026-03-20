@@ -18,8 +18,8 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_PROGRESS_KEEPALIVE_LABELED = LOG_PROGRESS_LABELED + " (processing...)";
         private const int FIXED_BAR_WIDTH = 32;
         private readonly string[] _keepAliveFrames;
-        private string _lastFormattedPercentage = null;
-        private string _labelPrefix;
+        private string? _lastFormattedPercentage = null;
+        private string _labelPrefix = string.Empty;
         private double _lastPercentage = double.NegativeInfinity;
         private DateTime _lastConsoleWriteUtc = DateTime.MinValue;
         private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(5);
@@ -29,7 +29,7 @@ namespace FolderDiffIL4DotNet.Services
         private int _lastRenderLength;
         private int _keepAliveFrameIndex;
         private int _barWidth = -1;
-        private Timer _keepAliveTimer;
+        private Timer? _keepAliveTimer;
         private bool _keepAliveTimerStarted;
         private bool _disposed;
 

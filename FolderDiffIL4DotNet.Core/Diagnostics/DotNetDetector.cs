@@ -32,7 +32,7 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
     /// Holds the .NET executable detection result and, on failure, the exception.
     /// .NET 実行可能判定の結果と、失敗時の例外を保持します。
     /// </summary>
-    public readonly record struct DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus Status, Exception Exception = null)
+    public readonly record struct DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus Status, Exception? Exception = null)
     {
         /// <summary>
         /// True when the file was determined to be a .NET executable.

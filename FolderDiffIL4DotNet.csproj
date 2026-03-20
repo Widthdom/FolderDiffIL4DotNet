@@ -9,8 +9,7 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- CS1591/CS1573: XML doc warnings (suppressed until full doc pass) -->
-    <!-- CS8600-8604,CS8618,CS8625: nullable warnings (suppressed until annotation pass) -->
-    <NoWarn>$(NoWarn);CS1591;CS1573;CS8600;CS8601;CS8602;CS8603;CS8604;CS8618;CS8625</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;CS1573</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

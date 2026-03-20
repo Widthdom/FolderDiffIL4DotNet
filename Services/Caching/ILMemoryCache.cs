@@ -44,7 +44,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Tries to retrieve IL text for the given key; expired entries are purged on access.
         /// 指定キーの IL テキスト取得を試みます。期限切れエントリは参照時にパージされます。
         /// </summary>
-        internal bool TryGet(string cacheKey, out string ilText)
+        internal bool TryGet(string cacheKey, out string? ilText)
         {
             if (!_ilEntries.TryGetValue(cacheKey, out var entry))
             {
@@ -69,7 +69,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Stores IL text under the given key. Returns the evicted key (LRU) or null if no eviction occurred.
         /// 指定キーの IL テキストを保存します。LRU により追い出されたキーを返します（追い出しが無ければ null）。
         /// </summary>
-        internal string Store(string cacheKey, string ilText)
+        internal string? Store(string cacheKey, string ilText)
         {
             ArgumentNullException.ThrowIfNull(cacheKey);
 
@@ -89,7 +89,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Ensures capacity for a new entry by evicting the least-recently-used entry if at capacity.
         /// 新規挿入前にメモリキャッシュ上限を超えないようにし、必要であれば LRU エントリを削除します。
         /// </summary>
-        private string EnsureCapacityForInsert()
+        private string? EnsureCapacityForInsert()
         {
             if (_ilEntries.Count < _maxEntries)
             {
@@ -118,9 +118,9 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Finds the cache key with the oldest last-access time.
         /// 最終アクセス時刻が最も古いエントリのキャッシュキーを探します。
         /// </summary>
-        private string FindOldestEntryKey()
+        private string? FindOldestEntryKey()
         {
-            string oldestCacheKey = null;
+            string? oldestCacheKey = null;
             DateTime oldestLastAccessUtc = DateTime.MaxValue;
             foreach (var keyAndValue in _ilEntries)
             {

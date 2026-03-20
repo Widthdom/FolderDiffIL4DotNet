@@ -11,15 +11,15 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     internal sealed class ReportWriteContext
     {
-        public string OldFolderAbsolutePath { get; init; }
-        public string NewFolderAbsolutePath { get; init; }
-        public string AppVersion { get; init; }
-        public string ElapsedTimeString { get; init; }
-        public string ComputerName { get; init; }
-        public ConfigSettings Config { get; init; }
+        public string OldFolderAbsolutePath { get; init; } = null!;
+        public string NewFolderAbsolutePath { get; init; } = null!;
+        public string AppVersion { get; init; } = null!;
+        public string ElapsedTimeString { get; init; } = null!;
+        public string ComputerName { get; init; } = null!;
+        public ConfigSettings Config { get; init; } = null!;
         public bool HasMd5Mismatch { get; init; }
         public bool HasTimestampRegressionWarning { get; init; }
-        public ILCache IlCache { get; init; }
-        public FileDiffResultLists FileDiffResultLists { get; init; }
+        public ILCache? IlCache { get; init; }
+        public FileDiffResultLists FileDiffResultLists { get; init; } = null!;
     }
 }

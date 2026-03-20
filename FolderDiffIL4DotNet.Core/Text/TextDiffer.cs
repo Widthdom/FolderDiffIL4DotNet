@@ -71,7 +71,7 @@ namespace FolderDiffIL4DotNet.Core.Text
         /// Time: O(D^2 + N + M). Space: O(D^2).
         /// Myers diff アルゴリズムで編集スクリプトを生成します。編集距離が maxEditDistance を超えると null を返します。
         /// </summary>
-        private static List<(char Kind, int OldIdx, int NewIdx)> MyersDiff(
+        private static List<(char Kind, int OldIdx, int NewIdx)>? MyersDiff(
             string[] old, string[] @new, int maxEditDistance)
         {
             int N = old.Length, M = @new.Length;

@@ -178,7 +178,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Launches the disassembler with the given arguments and attempts to capture the version string.
         /// 指定引数で逆アセンブラを起動し、バージョン文字列の取得を試みます。
         /// </summary>
-        private async Task<string> TryGetDisassemblerVersionAsync(string disassemblerVersionCacheKey, string disassemblerExe, string[] args)
+        private async Task<string?> TryGetDisassemblerVersionAsync(string disassemblerVersionCacheKey, string disassemblerExe, string[] args)
         {
             try
             {

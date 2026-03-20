@@ -51,7 +51,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string RUN_FINGERPRINT_PREFIX = "run:";
         private const int DEFAULT_BLACKLIST_TTL_MINUTES = 10;
         private readonly ConfigSettings _config;
-        private readonly ILCache _ilCache;
+        private readonly ILCache? _ilCache;
         private readonly DisassemblerBlacklist _blacklist;
 
         // Per-run fallback identifier to isolate disk cache when the tool binary cannot be resolved.
@@ -78,7 +78,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public int IlCacheStores => Volatile.Read(ref _ilCacheStores);
 
-        public DotNetDisassembleService(ConfigSettings config, ILCache ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
+        public DotNetDisassembleService(ConfigSettings config, ILCache? ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
         {
             ArgumentNullException.ThrowIfNull(config);
             _config = config;
@@ -104,7 +104,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public async Task<(string ilText, string commandString)> DisassembleAsync(string dotNetAssemblyfileAbsolutePath)
         {
-            Exception lastError = null;
+            Exception? lastError = null;
             foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
             {
                 // Skip commands temporarily blacklisted due to consecutive failures.
@@ -144,7 +144,7 @@ namespace FolderDiffIL4DotNet.Services
             string oldDotNetAssemblyFileAbsolutePath,
             string newDotNetAssemblyFileAbsolutePath)
         {
-            Exception lastError = null;
+            Exception? lastError = null;
             foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
             {
                 if (IsDisassemblerBlacklisted(candidateDisassembleCommand))
@@ -218,7 +218,7 @@ namespace FolderDiffIL4DotNet.Services
             bool allowCache,
             bool recordUsage)
         {
-            Exception lastError = null;
+            Exception? lastError = null;
             string tempAsciiPath = CreateAsciiTempCopyIfNeeded(dotNetAssemblyFileAbsolutePath);
 
             try
@@ -255,7 +255,7 @@ namespace FolderDiffIL4DotNet.Services
             bool allowCache,
             bool recordUsage)
         {
-            string label = null;
+            string? label = null;
 
             if (allowCache)
             {
@@ -429,7 +429,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Returns a temp ASCII-path copy when the path contains non-ASCII characters; null otherwise.
         /// パスに非ASCII文字がある場合に ASCII 一時パスへコピーしたファイルのパスを返します。該当しなければ null。
         /// </summary>
-        private string CreateAsciiTempCopyIfNeeded(string dotNetAssemblyFileAbsolutePath)
+        private string? CreateAsciiTempCopyIfNeeded(string dotNetAssemblyFileAbsolutePath)
         {
             try
             {
@@ -681,7 +681,7 @@ namespace FolderDiffIL4DotNet.Services
             return fileName ?? disassembleCommand;
         }
 
-        private static string ExtractVersionFromLabel(string disassembleCommandAndItsVersionWithArguments)
+        private static string? ExtractVersionFromLabel(string disassembleCommandAndItsVersionWithArguments)
         {
             if (string.IsNullOrWhiteSpace(disassembleCommandAndItsVersionWithArguments))
             {

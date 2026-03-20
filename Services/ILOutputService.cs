@@ -21,7 +21,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string VERSION_LABEL_PREFIX = " (version: ";
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
         private readonly ConfigSettings _config;
-        private readonly ILCache _ilCache;
+        private readonly ILCache? _ilCache;
         private readonly IILTextOutputService _ilTextOutputService;
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
         private readonly ILoggerService _logger;
@@ -31,7 +31,7 @@ namespace FolderDiffIL4DotNet.Services
             DiffExecutionContext executionContext,
             IILTextOutputService ilTextOutputService,
             IDotNetDisassembleService dotNetDisassembleService,
-            ILCache ilCache,
+            ILCache? ilCache,
             ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(config);
@@ -229,7 +229,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Extracts a "toolName (version: x.y.z)" label from a command string.
         /// 実行コマンド文字列から「ツール名 (version: x.y.z)」形式を抽出します。
         /// </summary>
-        private static string BuildToolAndVersionLabel(string commandString)
+        private static string? BuildToolAndVersionLabel(string commandString)
         {
             if (string.IsNullOrWhiteSpace(commandString))
             {

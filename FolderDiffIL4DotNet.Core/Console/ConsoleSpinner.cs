@@ -31,7 +31,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// Creates and starts a new spinner with the given label.
         /// 指定ラベルで新しいスピナーを作成・開始します。
         /// </summary>
-        public ConsoleSpinner(string label, int intervalMilliseconds = DEFAULT_INTERVAL_MILLISECONDS, string[] frames = null)
+        public ConsoleSpinner(string label, int intervalMilliseconds = DEFAULT_INTERVAL_MILLISECONDS, string[]? frames = null)
         {
             _label = label;
             _frames = frames ?? DefaultFrames;
@@ -129,7 +129,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// Stops the spinner and optionally prints a completion message.
         /// スピナーを停止し、任意の完了メッセージを出力します。
         /// </summary>
-        public void Complete(string completionMessage = null)
+        public void Complete(string? completionMessage = null)
         {
             StopInternal();
             if (!string.IsNullOrEmpty(completionMessage))

@@ -45,7 +45,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Reads the cache file for the given key. Returns null on miss or read failure.
         /// 指定キーのキャッシュファイルを読み込みます。未ヒットまたは読み込み失敗時は null。
         /// </summary>
-        internal async Task<string> TryReadAsync(string cacheKey)
+        internal async Task<string?> TryReadAsync(string cacheKey)
         {
             if (!_isEnabled)
             {

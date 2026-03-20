@@ -12,7 +12,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Current log file absolute path (null if not yet initialized).
         /// 現在のログファイル絶対パス（未初期化時は null）。
         /// </summary>
-        string LogFileAbsolutePath { get; }
+        string? LogFileAbsolutePath { get; }
 
         /// <summary>
         /// Initializes the logging infrastructure (output directory and file path).
@@ -24,13 +24,13 @@ namespace FolderDiffIL4DotNet.Services
         /// Writes a log message.
         /// ログを出力します。
         /// </summary>
-        void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null);
+        void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null);
 
         /// <summary>
         /// Writes a log message with console color specification.
         /// ログを出力します（コンソール色指定）。
         /// </summary>
-        void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null);
+        void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null);
 
         /// <summary>
         /// Deletes old log files according to the generation count.
