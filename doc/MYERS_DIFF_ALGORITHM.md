@@ -4,11 +4,11 @@
 > [`TextDiffer.cs`](../FolderDiffIL4DotNet.Core/Text/TextDiffer.cs).
 > The first half is written in English; the second half (starting from
 > [日本語版](#myers-diff-アルゴリズム詳解)) provides the same content
-> in Japanese.  Both sections are self-contained.
+> in Japanese. Both sections are self-contained.
 >
 > **Reference paper** — E. W. Myers,
 > ["An O(ND) Difference Algorithm and Its Variations"](http://www.xmailserver.org/diff2.pdf),
-> *Algorithmica* 1(2), 1986.
+> _Algorithmica_ 1(2), 1986.
 
 ---
 
@@ -32,7 +32,7 @@
 ## 1. What Problem Does Diff Solve?
 
 Imagine you have two versions of a text file — an **old** version and a **new**
-version.  A *diff* tool answers the question:
+version. A _diff_ tool answers the question:
 
 > **"What is the smallest set of insertions and deletions that transforms the
 > old file into the new file?"**
@@ -41,23 +41,23 @@ For example:
 
 ```
 Old (3 lines)        New (3 lines)
-─────────────        ─────────────
+-------------        -------------
 A                    A
 B                    C
 C                    B
 ```
 
-One valid edit script is: *delete B at line 2, then insert C before the
-remaining B*. Another (longer) script might delete every line and re-insert
+One valid edit script is: _delete B at line 2, then insert C before the
+remaining B_. Another (longer) script might delete every line and re-insert
 everything. Among all valid scripts, we want the **shortest** — the one with
 the fewest insertions and deletions. That number of edits is called the **edit
 distance** D.
 
 ### Analogy — GPS Navigation
 
-Think of it like a GPS finding the shortest route between two cities.  There
+Think of it like a GPS finding the shortest route between two cities. There
 are many ways to get from City A to City B, but you want the route with the
-fewest turns (edits).  The Myers algorithm is the GPS — it efficiently finds
+fewest turns (edits). The Myers algorithm is the GPS — it efficiently finds
 the shortest route through a special "map" called the **edit graph**.
 
 ---
@@ -65,31 +65,31 @@ the shortest route through a special "map" called the **edit graph**.
 ## 2. Why Not the Classic LCS Approach?
 
 The textbook way to find a shortest diff is through the **Longest Common
-Subsequence (LCS)** using dynamic programming.  You build an N × M table (where
+Subsequence (LCS)** using dynamic programming. You build an N × M table (where
 N = lines in old, M = lines in new) and fill every cell.
 
-| Metric | Classic LCS | Myers Diff |
-|--------|-------------|------------|
+| Metric | Classic LCS | Myers Diff    |
+| ------ | ----------- | ------------- |
 | Time   | O(N × M)    | O(D² + N + M) |
-| Space  | O(N × M)    | O(D²) |
+| Space  | O(N × M)    | O(D²)         |
 
 For two 1,000,000-line IL files that differ in only 20 lines:
 
 - **LCS**: 1,000,000 × 1,000,000 = **1 trillion** cells — completely
   infeasible.
-- **Myers**: D = 20 → roughly 400 diagonal iterations + 2 million snake
-  comparisons → completes in **< 0.1 seconds**.
+- **Myers**: D = 20 -> roughly 400 diagonal iterations + 2 million snake
+  comparisons -> completes in **< 0.1 seconds**.
 
-The key insight is that **D is usually small** relative to N and M.  Most real
-files differ by a handful of lines, not by millions.  Myers diff exploits this
-by making its cost proportional to the *number of changes*, not to the *file
-size*.
+The key insight is that **D is usually small** relative to N and M. Most real
+files differ by a handful of lines, not by millions. Myers diff exploits this
+by making its cost proportional to the _number of changes_, not to the _file
+size_.
 
 ---
 
 ## 3. The Edit Graph — A Map of All Possible Edits
 
-The edit graph is the conceptual foundation of Myers diff.  It transforms the
+The edit graph is the conceptual foundation of Myers diff. It transforms the
 problem of "find the shortest diff" into "find the shortest path in a graph."
 
 ### Axes
@@ -103,50 +103,70 @@ y lines from new."
 ### Three Types of Moves
 
 ```
-                 old[0]   old[1]   old[2]
-                   A        B        C
-          ┌────────┬────────┬────────┐
-          │        │        │        │
- new[0] A │  (0,0)─┼→(1,0)─┼→(2,0)─┼→(3,0)   ← Horizontal = DELETE old[x]
-          │   │ ╲  │   │    │   │    │
-          │   ↓  ╲ │   ↓    │   ↓    │
- new[1] C │  (0,1)─┼→(1,1)─┼→(2,1)─┼→(3,1)   ← Vertical   = INSERT new[y]
-          │   │    │   │    │   │ ╲  │
-          │   ↓    │   ↓    │   ↓  ╲ │            Diagonal  = MATCH (free)
- new[2] B │  (0,2)─┼→(1,2)─┼→(2,2)─┼→(3,2)
-          │   │    │   │ ╲  │   │    │
-          │   ↓    │   ↓  ╲ │   ↓    │
-          │  (0,3)─┼→(1,3)─┼→(2,3)─┼→(3,3)
-          └────────┴────────┴────────┘
+               old[0]         old[1]         old[2]
+                 A              B              C
+          +--------------+--------------+--------------+
+          |              |              |              |
+          |              |              |              |
+          |              |              |              |
+ new[0] A |    (0,0)-----+--->(1,0)-----+--->(2,0)-----+--->(3,0)
+          |      |\      |      |       |      |       |
+          |      | \     |      |       |      |       |
+          |      |  \    |      |       |      |       |
+          |      |   \   |      |       |      |       |
+          |      |    \  |      |       |      |       |
+          |      |     \ |      |       |      |       |
+          |      v      \|      v       |      v       |
+ new[1] C |    (0,1)-----+--->(1,1)-----+--->(2,1)-----+--->(3,1)
+          |      |       |      |       |      |\      |
+          |      |       |      |       |      | \     |
+          |      |       |      |       |      |  \    |
+          |      |       |      |       |      |   \   |
+          |      |       |      |       |      |    \  |
+          |      |       |      |       |      |     \ |
+          |      v       |      v       |      v      \|
+ new[2] B |    (0,2)-----+--->(1,2)-----+--->(2,2)-----+--->(3,2)
+          |      |       |      |\      |      |       |
+          |      |       |      | \     |      |       |
+          |      |       |      |  \    |      |       |
+          |      |       |      |   \   |      |       |
+          |      |       |      |    \  |      |       |
+          |      |       |      |     \ |      |       |
+          |      v       |      v      \|      v       |
+          |    (0,3)-----+--->(1,3)-----+--->(2,3)-----+--->(3,3)
+          |              |              |              |
+          |              |              |              |
+          |              |              |              |
+          +--------------+--------------+--------------+
 
 Legend:
-  →  Horizontal move (x+1, y)   = DELETE old[x]
-  ↓  Vertical move   (x, y+1)   = INSERT new[y]
-  ╲  Diagonal move   (x+1, y+1) = MATCH  (old[x] == new[y])  — FREE!
+  --->  Horizontal move (x+1, y)   = DELETE old[x]
+  v     Vertical move   (x, y+1)   = INSERT new[y]
+  \     Diagonal move   (x+1, y+1) = MATCH  (old[x] == new[y])  -- FREE!
 ```
 
-| Move | Direction | Meaning | Cost |
-|------|-----------|---------|------|
-| Horizontal | (x, y) → (x+1, y) | Delete `old[x]` | 1 edit |
-| Vertical | (x, y) → (x, y+1) | Insert `new[y]` | 1 edit |
-| Diagonal | (x, y) → (x+1, y+1) | Match — `old[x] == new[y]` | **0** (free!) |
+| Move       | Direction            | Meaning                      | Cost          |
+| ---------- | -------------------- | ---------------------------- | ------------- |
+| Horizontal | (x, y) -> (x+1, y)   | Delete `old[x]`              | 1 edit        |
+| Vertical   | (x, y) -> (x, y+1)   | Insert `new[y]`              | 1 edit        |
+| Diagonal   | (x, y) -> (x+1, y+1) | Match — `old[x]` == `new[y]` | **0** (free!) |
 
 **Goal**: find a path from **(0, 0)** to **(N, M)** that uses the **fewest**
-horizontal + vertical moves.  Diagonal moves are free — they represent lines
+horizontal + vertical moves. Diagonal moves are free — they represent lines
 that are already the same in both files.
 
 ### Snakes
 
-A **snake** is a maximal sequence of consecutive diagonal moves.  When the
-algorithm lands on a point where `old[x] == new[y]`, it "slides" diagonally as
-far as possible — consuming all matching lines in one go.  Snakes are free, so
+A **snake** is a maximal sequence of consecutive diagonal moves. When the
+algorithm lands on a point where `old[x]` == `new[y]`, it "slides" diagonally as
+far as possible — consuming all matching lines in one go. Snakes are free, so
 the longer the better.
 
 ```
 A snake starting at (1,1):
 
-  (1,1) ─╲─ (2,2) ─╲─ (3,3) ─╲─ (4,4)
-          ↑          ↑          ↑
+  (1,1) -\- (2,2) -\- (3,3) -\- (4,4)
+          ^          ^          ^
         match      match      match
 
   Three matching lines consumed for free!
@@ -169,39 +189,63 @@ k = x − y
 - k < 0 means we have consumed more new lines than old (net insertions).
 
 ```
-        x=0   x=1   x=2   x=3
-       ┌─────┬─────┬─────┬─────┐
- y=0   │ k=0 │ k=1 │ k=2 │ k=3 │
-       ├─────┼─────┼─────┼─────┤
- y=1   │k=-1 │ k=0 │ k=1 │ k=2 │
-       ├─────┼─────┼─────┼─────┤
- y=2   │k=-2 │k=-1 │ k=0 │ k=1 │
-       ├─────┼─────┼─────┼─────┤
- y=3   │k=-3 │k=-2 │k=-1 │ k=0 │
-       └─────┴─────┴─────┴─────┘
+           x = 0    x = 1    x = 2    x = 3
+         +--------+--------+--------+--------+
+ y = 0   | k = 0  | k = 1  | k = 2  | k = 3  |
+         +--------+--------+--------+--------+
+ y = 1   | k = -1 | k = 0  | k = 1  | k = 2  |
+         +--------+--------+--------+--------+
+ y = 2   | k = -2 | k = -1 | k = 0  | k = 1  |
+         +--------+--------+--------+--------+
+ y = 3   | k = -3 | k = -2 | k = -1 | k = 0  |
+         +--------+--------+--------+--------+
 ```
 
 ### D-Paths
 
 A **D-path** is a path from (0,0) that uses exactly D non-diagonal moves
-(edits).  The crucial observation:
+(edits). The crucial observation:
 
 > **With exactly D edits, only diagonals k ∈ {−D, −D+2, …, D−2, D} are
 > reachable.**
 
 Why? Each edit changes k by exactly ±1 (horizontal: k+1, vertical: k−1).
 Starting at k = 0, after D moves the parity of k always equals the parity of
-D.  So for D = 0, only k = 0 is reachable; for D = 1, k ∈ {−1, +1}; for D = 2,
+D. So for D = 0, only k = 0 is reachable; for D = 1, k ∈ {−1, +1}; for D = 2,
 k ∈ {−2, 0, +2}; and so on.
 
 ```
-D=0:              k=0
-                   │
-D=1:         k=-1     k=+1
-              │  ╲  ╱  │
-D=2:    k=-2    k=0    k=+2
-          │  ╲  │  ╱  │
-D=3: k=-3   k=-1  k=+1  k=+3
+D = 0:                                   k = 0
+                                          / \
+                                         /   \
+                                        /     \
+                                       /       \
+                                      /         \
+                                     /           \
+                                    /             \
+                                   /               \
+                                  /                 \
+D = 1:                        k = -1              k = +1
+                                / \                 / \
+                               /   \               /   \
+                              /     \             /     \
+                             /       \           /       \
+                            /         \         /         \
+                           /           \       /           \
+                          /             \     /             \
+                         /               \   /               \
+                        /                 \ /                 \
+D = 2:              k = -2               k = 0              k = +2
+                      / \                 / \                 / \
+                     /   \               /   \               /   \
+                    /     \             /     \             /     \
+                   /       \           /       \           /       \
+                  /         \         /         \         /         \
+                 /           \       /           \       /           \
+                /             \     /             \     /             \
+               /               \   /               \   /               \
+              /                 \ /                 \ /                 \
+D = 3:    k = -3              k = -1              k = +1              k = +3
 
   Reachable diagonals fan out by 2 at each step.
 ```
@@ -210,7 +254,7 @@ D=3: k=-3   k=-1  k=+1  k=+3
 
 ## 5. The Forward Pass — Finding the Shortest Edit Distance D
 
-The forward pass is the heart of the algorithm.  It answers: "What is the
+The forward pass is the heart of the algorithm. It answers: "What is the
 minimum D?"
 
 ### The V Array
@@ -225,8 +269,8 @@ Since y = x − k, knowing x is enough to know the exact position.
 
 ```
 for d = 0, 1, 2, …:
-    save a snapshot of V             ← needed for backtracking later
-    for k = −d, −d+2, …, d−2, d:    ← only same-parity diagonals
+    save a snapshot of V             <- needed for backtracking later
+    for k = −d, −d+2, …, d−2, d:    <- only same-parity diagonals
         ① Decide direction:
            • If coming from k+1 (vertical / insert): x = V[k+1]
            • If coming from k−1 (horizontal / delete): x = V[k−1] + 1
@@ -236,14 +280,14 @@ for d = 0, 1, 2, …:
            while old[x] == new[y]:
                x++; y++
         ③ Record: V[k] = x
-        ④ Check: if x == N and y == M → DONE! D = d
+        ④ Check: if x == N and y == M -> DONE! D = d
 ```
 
 ### Why Pick the Larger x?
 
-A larger x means we have consumed more of the old file.  Combined with the
+A larger x means we have consumed more of the old file. Combined with the
 diagonal constraint (y = x − k), a larger x also means a larger y — we've made
-more overall progress toward (N, M).  The algorithm always takes the **greedy**
+more overall progress toward (N, M). The algorithm always takes the **greedy**
 choice at each step, which Myers proved leads to an optimal solution.
 
 ### Visualization of One Step (d = 1)
@@ -253,11 +297,12 @@ Suppose old = `[A, B, C]`, new = `[A, C, B]`.
 After d = 0, V[0] = 1 (matched A, slid to x = 1, y = 1).
 
 For d = 1:
+
 - k = −1: can only come from k = 0 (down/insert). x = V[0] = 1, y = 1−(−1) = 2.
-  Check: old[1] = B, new[2] = B → match! Slide to x = 2, y = 3.
+  Check: old[1] = B, new[2] = B -> match! Slide to x = 2, y = 3.
   V[−1] = 2.
 - k = +1: can only come from k = 0 (right/delete). x = V[0] + 1 = 2, y = 2−1 = 1.
-  Check: old[2] = C, new[1] = C → match! Slide to x = 3, y = 2.
+  Check: old[2] = C, new[1] = C -> match! Slide to x = 3, y = 2.
   V[+1] = 3.
 
 Neither (3, 3) is reached yet, so continue to d = 2…
@@ -266,13 +311,13 @@ Neither (3, 3) is reached yet, so continue to d = 2…
 
 ## 6. Backtracking — Reconstructing the Edit Script
 
-Once we know D, we need to recover the actual sequence of edits.  This is where
+Once we know D, we need to recover the actual sequence of edits. This is where
 the **snapshots** come in.
 
 ### Why Snapshots?
 
-During the forward pass, each step d overwrites V.  To reconstruct the path, we
-need to know what V looked like *before* each step.  The snapshot `trace[d]`
+During the forward pass, each step d overwrites V. To reconstruct the path, we
+need to know what V looked like _before_ each step. The snapshot `trace[d]`
 stores the V values at the beginning of step d.
 
 ### Backtracking Procedure
@@ -283,8 +328,8 @@ Starting from the final position (N, M):
 for d = D, D−1, …, 1:
     k = x − y
     Look up trace[d] to find V values from step d's start:
-        Was the move vertical (insert)?   → came from (V[k+1], V[k+1]−(k+1))
-        Was the move horizontal (delete)?  → came from (V[k−1]+1, V[k−1]+1−(k−1))
+        Was the move vertical (insert)?   -> came from (V[k+1], V[k+1]−(k+1))
+        Was the move horizontal (delete)?  -> came from (V[k−1]+1, V[k−1]+1−(k−1))
     Output the snake (context lines) from (xStart, yStart) to (x, y).
     Output the single edit (insert or delete).
     Move current position to the previous point.
@@ -294,19 +339,19 @@ Any remaining prefix (d = 0 snake) is all context lines.
 
 ### How to Determine Direction
 
-The same rule as the forward pass: if `k == −d` or `V[k−1] < V[k+1]`, the move
+The same rule as the forward pass: if `k` == `−d` or `V[k−1]` < `V[k+1]`, the move
 was vertical (insert); otherwise, it was horizontal (delete).
 
 ### Assembling the Result
 
 The backtracking produces edits in **reverse** order (from end to start), so the
-final step reverses the list.  Each edit is tagged:
+final step reverses the list. Each edit is tagged:
 
-| Tag | Meaning |
-|-----|---------|
+| Tag           | Meaning                             |
+| ------------- | ----------------------------------- |
 | `' '` (space) | Context — line exists in both files |
-| `'-'` | Removed — line exists only in old |
-| `'+'` | Added — line exists only in new |
+| `'-'`         | Removed — line exists only in old   |
+| `'+'`         | Added — line exists only in new     |
 
 ---
 
@@ -322,6 +367,7 @@ new = ["A", "C", "D", "E"]    (M = 4)
 ```
 
 Expected diff:
+
 ```
   A        (context)
 - B        (delete)
@@ -335,58 +381,105 @@ Edit distance D = 2 (one deletion + one insertion).
 ### Edit Graph
 
 ```
-              old[0]=A  old[1]=B  old[2]=C  old[3]=D
-                 │         │         │         │
-         (0,0)──→(1,0)───→(2,0)───→(3,0)───→(4,0)
-           │╲       │         │         │         │
-new[0]=A   ↓  ╲     ↓         ↓         ↓         ↓
-         (0,1)──→(1,1)───→(2,1)───→(3,1)───→(4,1)
-           │       │         │         │         │
-new[1]=C   ↓       ↓         ↓╲        ↓         ↓
-         (0,2)──→(1,2)───→(2,2)───→(3,2)───→(4,2)
-           │       │         │    ╲    │         │
-new[2]=D   ↓       ↓         ↓     ╲   ↓╲        ↓
-         (0,3)──→(1,3)───→(2,3)───→(3,3)───→(4,3)
-           │       │         │         │    ╲    │
-new[3]=E   ↓       ↓         ↓         ↓     ╲   ↓
-         (0,4)──→(1,4)───→(2,4)───→(3,4)───→(4,4)  ← GOAL
+              old[0]=A       old[1]=B       old[2]=C       old[3]=D
+        (0,0)--------->(1,0)--------->(2,0)--------->(3,0)--------->(4,0)
+          | \            |              |              |              |
+          |  \           |              |              |              |
+          |   \          |              |              |              |
+          |    \         |              |              |              |
+          |     \        |              |              |              |
+          |      \       |              |              |              |
+new[0]=A  |       \      |              |              |              |
+          |        \     |              |              |              |
+          |         \    |              |              |              |
+          |          \   |              |              |              |
+          |           \  |              |              |              |
+          |            \ |              |              |              |
+          v             \v              v              v              v
+        (0,1)--------->(1,1)--------->(2,1)--------->(3,1)--------->(4,1)
+          |              |              | \            |              |
+          |              |              |  \           |              |
+          |              |              |   \          |              |
+          |              |              |    \         |              |
+          |              |              |     \        |              |
+          |              |              |      \       |              |
+new[1]=C  |              |              |       \      |              |
+          |              |              |        \     |              |
+          |              |              |         \    |              |
+          |              |              |          \   |              |
+          |              |              |           \  |              |
+          |              |              |            \ |              |
+          v              v              v             \v              v
+        (0,2)--------->(1,2)--------->(2,2)--------->(3,2)--------->(4,2)
+          |              |              |              | \            |
+          |              |              |              |  \           |
+          |              |              |              |   \          |
+          |              |              |              |    \         |
+          |              |              |              |     \        |
+          |              |              |              |      \       |
+new[2]=D  |              |              |              |       \      |
+          |              |              |              |        \     |
+          |              |              |              |         \    |
+          |              |              |              |          \   |
+          |              |              |              |           \  |
+          |              |              |              |            \ |
+          v              v              v              v             \v
+        (0,3)--------->(1,3)--------->(2,3)--------->(3,3)--------->(4,3)
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+new[3]=E  |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          v              v              v              v              v
+        (0,4)--------->(1,4)--------->(2,4)--------->(3,4)--------->(4,4)  <- GOAL
 ```
 
-Diagonal matches (╲):
-- (0,0)→(1,1): old[0]=A == new[0]=A
-- (2,1)→(3,2): old[2]=C == new[1]=C
-- (3,2)→(4,3): old[3]=D == new[2]=D
+Diagonal matches (\):
+
+- (0,0)->(1,1): old[0]=A == new[0]=A
+- (2,1)->(3,2): old[2]=C == new[1]=C
+- (3,2)->(4,3): old[3]=D == new[2]=D
 
 ### Forward Pass Trace
 
 **d = 0** — no edits, just slide along the initial snake:
+
 ```
-  k=0: start at (0,0). old[0]=A == new[0]=A → slide to (1,1).
+  k=0: start at (0,0). old[0]=A == new[0]=A -> slide to (1,1).
   V[0] = 1
   Not at (4,4) yet.
 ```
 
 **d = 1** — one edit:
-```
-  k=−1: down from k=0 → x = V[0] = 1, y = 1−(−1) = 2.
-         old[1]=B, new[2]=D → no match.  V[−1] = 1.
 
-  k=+1: right from k=0 → x = V[0]+1 = 2, y = 2−1 = 1.
-         old[2]=C == new[1]=C → slide! (3,2).
-         old[3]=D == new[2]=D → slide! (4,3).
+```
+  k=−1: down from k=0 -> x = V[0] = 1, y = 1−(−1) = 2.
+         old[1]=B, new[2]=D -> no match.  V[−1] = 1.
+
+  k=+1: right from k=0 -> x = V[0]+1 = 2, y = 2−1 = 1.
+         old[2]=C == new[1]=C -> slide! (3,2).
+         old[3]=D == new[2]=D -> slide! (4,3).
          V[+1] = 4.
   Not at (4,4) yet.
 ```
 
 **d = 2** — two edits:
+
 ```
-  k=−2: down from k=−1 → x = V[−1] = 1, y = 1−(−2) = 3.
-         old[1]=B, new[3]=E → no match.  V[−2] = 1.
+  k=−2: down from k=−1 -> x = V[−1] = 1, y = 1−(−2) = 3.
+         old[1]=B, new[3]=E -> no match.  V[−2] = 1.
 
   k=0:  choose max(down from k=+1, right from k=−1):
-         down from k=+1 → x = V[+1] = 4.  right from k=−1 → x = V[−1]+1 = 2.
+         down from k=+1 -> x = V[+1] = 4.  right from k=−1 -> x = V[−1]+1 = 2.
          Pick down (x=4). y = 4−0 = 4.
-         x=4 == N and y=4 == M → FOUND!  D = 2. ✓
+         x=4 == N and y=4 == M -> FOUND!  D = 2. ✓
 
   (k=+2 not needed)
 ```
@@ -396,27 +489,27 @@ Diagonal matches (╲):
 Start at (4, 4), d = 2.
 
 **d = 2, k = 0**: Look at trace[2]. Was it down (from k=+1)?
-  V[+1] = 4, so came from (4, 3) via down (insert).
-  Snake: (4, 3) → (4, 4) — no snake (length 0).
-  Edit: INSERT new[3] = "E".
-  Move to (4, 3).
+V[+1] = 4, so came from (4, 3) via down (insert).
+Snake: (4, 3) -> (4, 4) — no snake (length 0).
+Edit: INSERT new[3] = "E".
+Move to (4, 3).
 
 **d = 1, k = +1**: Look at trace[1]. Was it right (from k=0)?
-  V[0] = 1, so came from (2, 1) via right (delete). x = V[0]+1 = 2, y = 1.
-  Snake: (2, 1) → (4, 3) — old[2]=C == new[1]=C, old[3]=D == new[2]=D.
-  Edit: DELETE old[1] = "B".
-  Move to (1, 1).
+V[0] = 1, so came from (2, 1) via right (delete). x = V[0]+1 = 2, y = 1.
+Snake: (2, 1) -> (4, 3) — old[2]=C == new[1]=C, old[3]=D == new[2]=D.
+Edit: DELETE old[1] = "B".
+Move to (1, 1).
 
 **d = 0 prefix**: Snake from (0, 0) to (1, 1) — old[0]=A == new[0]=A.
 
 ### Final Result (after reversing)
 
 ```
-  A          ← context (d=0 snake)
-- B          ← delete  (d=1 edit)
-  C          ← context (d=1 snake)
-  D          ← context (d=1 snake)
-+ E          ← insert  (d=2 edit)
+  A          <- context (d=0 snake)
+- B          <- delete  (d=1 edit)
+  C          <- context (d=1 snake)
+  D          <- context (d=1 snake)
++ E          <- insert  (d=2 edit)
 ```
 
 ---
@@ -428,13 +521,14 @@ Start at (4, 4), d = 2.
 The cost breaks down into two parts:
 
 1. **Diagonal loop iterations**: At step d, the inner loop runs over 2d + 1
-   diagonals.  Summing from d = 0 to D:
+   diagonals. Summing from d = 0 to D:
+
    ```
    Σ(2d + 1) for d = 0…D  =  (D + 1)²  ≈  D²
    ```
 
-2. **Snake extensions**: Each cell (x, y) in the edit graph is visited *at most
-   once* across all snake extensions.  The grid has N × M cells, but snakes can
+2. **Snake extensions**: Each cell (x, y) in the edit graph is visited _at most
+   once_ across all snake extensions. The grid has N × M cells, but snakes can
    only advance forward, so the total number of string comparisons is bounded by
    **N + M**.
 
@@ -442,8 +536,8 @@ Combined: **O(D² + N + M)**.
 
 ### Space Complexity: O(D²)
 
-The V array itself is O(D).  But we save a snapshot at each of the D + 1 steps.
-Snapshot at step d has size 2d + 3.  Total:
+The V array itself is O(D). But we save a snapshot at each of the D + 1 steps.
+Snapshot at step d has size 2d + 3. Total:
 
 ```
 Σ(2d + 3) for d = 0…D  ≈  D² + 3D  ≈  D²  integers
@@ -451,14 +545,14 @@ Snapshot at step d has size 2d + 3.  Total:
 
 ### Why This Is Fast for Real-World Diffs
 
-| Scenario | D | Time | Trace Space |
-|---|---|---|---|
-| 1M-line IL files, 20 changes | 20 | ~40M ops (< 0.1 s) | ~400 ints (negligible) |
-| Large text, 1000 changes | 1,000 | ~1M iterations + O(N+M) | ~1M ints (~4 MB) |
-| Completely different files | N + M | Degrades to O((N+M)²) | Up to N+M snapshots |
+| Scenario                     | D     | Time                    | Trace Space            |
+| ---------------------------- | ----- | ----------------------- | ---------------------- |
+| 1M-line IL files, 20 changes | 20    | ~40M ops (< 0.1 s)      | ~400 ints (negligible) |
+| Large text, 1000 changes     | 1,000 | ~1M iterations + O(N+M) | ~1M ints (~4 MB)       |
+| Completely different files   | N + M | Degrades to O((N+M)²)   | Up to N+M snapshots    |
 
-The algorithm is **output-sensitive** — its speed depends on how *different* the
-files are, not how *big* they are.
+The algorithm is **output-sensitive** — its speed depends on how _different_ the
+files are, not how _big_ they are.
 
 ---
 
@@ -482,12 +576,12 @@ public static IReadOnlyList<DiffLine> Compute(
 
 ```
 Compute()
-  │
-  ├─ MyersDiff(old, new, maxEditDistance)    ← Forward pass: finds D
-  │    │
-  │    └─ BacktrackMyers(...)                ← Backtracking: reconstructs edits
-  │
-  └─ BuildHunks(old, new, edits, ...)       ← Formats into unified diff hunks
+  |
+  +- MyersDiff(old, new, maxEditDistance)    <- Forward pass: finds D
+  |    |
+  |    +- BacktrackMyers(...)                <- Backtracking: reconstructs edits
+  |
+  +- BuildHunks(old, new, edits, ...)       <- Formats into unified diff hunks
 ```
 
 ### Key Implementation Details
@@ -496,7 +590,7 @@ Compute()
    shifted: `V[k + offset]` where `offset = maxD`.
 
 2. **Snapshot optimization**: Only the needed range `[offset − d − 1,
-   offset + d + 1]` is copied at each step, not the entire V array.
+offset + d + 1]` is copied at each step, not the entire V array.
 
 3. **Early termination**: If D exceeds `maxEditDistance`, `MyersDiff` returns
    `null` and `Compute` emits a single `Truncated` line explaining the skip.
@@ -523,11 +617,11 @@ public readonly record struct DiffLine(
 
 ### Configuration Parameters
 
-| Parameter | Default | Purpose |
-|-----------|---------|---------|
-| [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs) | 4000 | Maximum D before aborting the diff |
-| [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs) | 10000 | Maximum lines in the diff output |
-| [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs) | 10000 | Maximum total diff lines (post-compute check) |
+| Parameter                                                  | Default | Purpose                                       |
+| ---------------------------------------------------------- | ------- | --------------------------------------------- |
+| [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs) | 4000    | Maximum D before aborting the diff            |
+| [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs)  | 10000   | Maximum lines in the diff output              |
+| [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs)    | 10000   | Maximum total diff lines (post-compute check) |
 
 ### When D Exceeds the Limit
 
@@ -537,18 +631,18 @@ For D = 4000, the trace stores approximately:
 Σ(2d + 3) for d = 0…4000  ≈  16 million integers  ≈  64 MB
 ```
 
-This is the practical upper bound.  Beyond this, the diff is skipped and a
+This is the practical upper bound. Beyond this, the diff is skipped and a
 notice is shown to the user.
 
 ### Comparison with Other Algorithms
 
-| Algorithm | Time | Space | Best For |
-|-----------|------|-------|----------|
-| Classic LCS (DP) | O(N × M) | O(N × M) | Small files only |
-| Myers (basic) | O(D² + N + M) | O(D²) | Files with few changes ✓ |
-| Myers (linear space) | O(D² + N + M) | O(D) | Memory-constrained |
-| Patience diff | O(N log N + D²) | O(N) | Code with unique lines |
-| Histogram diff | ~O(N + M + D²) | O(N + M) | Git's default for code |
+| Algorithm            | Time            | Space    | Best For                 |
+| -------------------- | --------------- | -------- | ------------------------ |
+| Classic LCS (DP)     | O(N × M)        | O(N × M) | Small files only         |
+| Myers (basic)        | O(D² + N + M)   | O(D²)    | Files with few changes ✓ |
+| Myers (linear space) | O(D² + N + M)   | O(D)     | Memory-constrained       |
+| Patience diff        | O(N log N + D²) | O(N)     | Code with unique lines   |
+| Histogram diff       | ~O(N + M + D²)  | O(N + M) | Git's default for code   |
 
 This project uses the **basic Myers** variant because the snapshot trace is
 needed for clean backtracking, and D is capped at 4000, keeping memory bounded.
@@ -560,9 +654,10 @@ needed for clean backtracking, and D is capped at 4000, keeping memory bounded.
 - **Original paper**: [E. W. Myers, "An O(ND) Difference Algorithm and Its Variations,1986."](http://www.xmailserver.org/diff2.pdf)
 - **Blog post**: James Coglan, ["The Myers diff algorithm"](https://blog.jcoglan.com/2017/02/12/the-myers-diff-algorithm-part-1/) —
   an excellent series with step-by-step visualizations.
-- **Git source**: Git uses a variant of Myers diff in `xdiff/xdiffi.c`.
+- **Git source**: Git uses a variant of Myers diff in [`xdiff/xdiffi.c`](https://github.com/git/git/blob/master/xdiff/xdiffi.c).
 
 ---
+
 ---
 
 # Myers Diff アルゴリズム詳解
@@ -601,7 +696,7 @@ diff ツールは次の問いに答えます。
 
 ```
 Old（3 行）          New（3 行）
-───────────          ───────────
+-----------          -----------
 A                    A
 B                    C
 C                    B
@@ -627,15 +722,15 @@ C                    B
 ことです。old の行数 N、new の行数 M として N × M のテーブルを作り、全セルを
 埋めます。
 
-| 指標 | 古典的 LCS | Myers Diff |
-|------|-----------|------------|
-| 時間 | O(N × M) | O(D² + N + M) |
-| 空間 | O(N × M) | O(D²) |
+| 指標 | 古典的 LCS | Myers Diff    |
+| ---- | ---------- | ------------- |
+| 時間 | O(N × M)   | O(D² + N + M) |
+| 空間 | O(N × M)   | O(D²)         |
 
 20 行しか違わない 100 万行の IL ファイル 2 本を比較する場合:
 
 - **LCS**: 1,000,000 × 1,000,000 = **1 兆**セル — 実行不可能。
-- **Myers**: D = 20 → 対角線反復 約 400 回 + スネーク比較 200 万回 →
+- **Myers**: D = 20 -> 対角線反復 約 400 回 + スネーク比較 200 万回 ->
   **0.1 秒未満**で完了。
 
 核心的な洞察は、**D は通常 N や M に比べて非常に小さい**ということです。
@@ -659,48 +754,68 @@ C                    B
 ### 3 種類の移動
 
 ```
-                 old[0]   old[1]   old[2]
-                   A        B        C
-          ┌────────┬────────┬────────┐
-          │        │        │        │
- new[0] A │  (0,0)─┼→(1,0)─┼→(2,0)─┼→(3,0)   ← 横移動 = old[x] を削除
-          │   │ ╲  │   │    │   │    │
-          │   ↓  ╲ │   ↓    │   ↓    │
- new[1] C │  (0,1)─┼→(1,1)─┼→(2,1)─┼→(3,1)   ← 縦移動 = new[y] を挿入
-          │   │    │   │    │   │ ╲  │
-          │   ↓    │   ↓    │   ↓  ╲ │            斜め移動 = 一致（無料）
- new[2] B │  (0,2)─┼→(1,2)─┼→(2,2)─┼→(3,2)
-          │   │    │   │ ╲  │   │    │
-          │   ↓    │   ↓  ╲ │   ↓    │
-          │  (0,3)─┼→(1,3)─┼→(2,3)─┼→(3,3)
-          └────────┴────────┴────────┘
+               old[0]         old[1]         old[2]
+                 A              B              C
+          +--------------+--------------+--------------+
+          |              |              |              |
+          |              |              |              |
+          |              |              |              |
+ new[0] A |    (0,0)-----+--->(1,0)-----+--->(2,0)-----+--->(3,0)
+          |      |\      |      |       |      |       |
+          |      | \     |      |       |      |       |
+          |      |  \    |      |       |      |       |
+          |      |   \   |      |       |      |       |
+          |      |    \  |      |       |      |       |
+          |      |     \ |      |       |      |       |
+          |      v      \|      v       |      v       |
+ new[1] C |    (0,1)-----+--->(1,1)-----+--->(2,1)-----+--->(3,1)
+          |      |       |      |       |      |\      |
+          |      |       |      |       |      | \     |
+          |      |       |      |       |      |  \    |
+          |      |       |      |       |      |   \   |
+          |      |       |      |       |      |    \  |
+          |      |       |      |       |      |     \ |
+          |      v       |      v       |      v      \|
+ new[2] B |    (0,2)-----+--->(1,2)-----+--->(2,2)-----+--->(3,2)
+          |      |       |      |\      |      |       |
+          |      |       |      | \     |      |       |
+          |      |       |      |  \    |      |       |
+          |      |       |      |   \   |      |       |
+          |      |       |      |    \  |      |       |
+          |      |       |      |     \ |      |       |
+          |      v       |      v      \|      v       |
+          |    (0,3)-----+--->(1,3)-----+--->(2,3)-----+--->(3,3)
+          |              |              |              |
+          |              |              |              |
+          |              |              |              |
+          +--------------+--------------+--------------+
 
 凡例:
-  →  横移動 (x+1, y)   = old[x] を削除
-  ↓  縦移動 (x, y+1)   = new[y] を挿入
-  ╲  斜め移動 (x+1, y+1) = 一致 (old[x] == new[y]) — コスト 0！
+  --->  横移動 (x+1, y)   = old[x] を削除
+  v     縦移動 (x, y+1)   = new[y] を挿入
+  \     斜め移動 (x+1, y+1) = 一致 (old[x] == new[y]) -- コスト 0！
 ```
 
-| 移動 | 方向 | 意味 | コスト |
-|------|------|------|--------|
-| 横移動 | (x, y) → (x+1, y) | `old[x]` を削除 | 1 回の編集 |
-| 縦移動 | (x, y) → (x, y+1) | `new[y]` を挿入 | 1 回の編集 |
-| 斜め移動 | (x, y) → (x+1, y+1) | 一致 — `old[x] == new[y]` | **0**（無料！） |
+| 移動     | 方向                 | 意味                        | コスト          |
+| -------- | -------------------- | --------------------------- | --------------- |
+| 横移動   | (x, y) -> (x+1, y)   | `old[x]` を削除             | 1 回の編集      |
+| 縦移動   | (x, y) -> (x, y+1)   | `new[y]` を挿入             | 1 回の編集      |
+| 斜め移動 | (x, y) -> (x+1, y+1) | 一致 — `old[x]` == `new[y]` | **0**（無料！） |
 
 **目標**: **(0, 0)** から **(N, M)** へ、横移動 + 縦移動の回数が**最小**の
 パスを見つけること。斜め移動はコスト 0 — 両ファイルに共通する行を表します。
 
 ### スネーク（Snake）
 
-**スネーク**とは、連続する斜め移動の最長列のことです。`old[x] == new[y]` となる
+**スネーク**とは、連続する斜め移動の最長列のことです。`old[x]` == `new[y]` となる
 地点に着いたら、一致が続く限り斜めに「滑る」ように進みます。スネークは無料なので、
 長ければ長いほど有利です。
 
 ```
 (1,1) からのスネーク:
 
-  (1,1) ─╲─ (2,2) ─╲─ (3,3) ─╲─ (4,4)
-          ↑          ↑          ↑
+  (1,1) -\- (2,2) -\- (3,3) -\- (4,4)
+          ^          ^          ^
         一致       一致       一致
 
   一致する 3 行を無料で消費！
@@ -723,16 +838,16 @@ k = x − y
 - k < 0: new の方を多く消費（正味の挿入が多い）。
 
 ```
-        x=0   x=1   x=2   x=3
-       ┌─────┬─────┬─────┬─────┐
- y=0   │ k=0 │ k=1 │ k=2 │ k=3 │
-       ├─────┼─────┼─────┼─────┤
- y=1   │k=-1 │ k=0 │ k=1 │ k=2 │
-       ├─────┼─────┼─────┼─────┤
- y=2   │k=-2 │k=-1 │ k=0 │ k=1 │
-       ├─────┼─────┼─────┼─────┤
- y=3   │k=-3 │k=-2 │k=-1 │ k=0 │
-       └─────┴─────┴─────┴─────┘
+           x = 0    x = 1    x = 2    x = 3
+         +--------+--------+--------+--------+
+ y = 0   | k = 0  | k = 1  | k = 2  | k = 3  |
+         +--------+--------+--------+--------+
+ y = 1   | k = -1 | k = 0  | k = 1  | k = 2  |
+         +--------+--------+--------+--------+
+ y = 2   | k = -2 | k = -1 | k = 0  | k = 1  |
+         +--------+--------+--------+--------+
+ y = 3   | k = -3 | k = -2 | k = -1 | k = 0  |
+         +--------+--------+--------+--------+
 ```
 
 ### D パス
@@ -748,13 +863,37 @@ k = 0 からスタートし、D 回移動後の k のパリティ（偶奇）は
 D = 2 なら k ∈ {−2, 0, +2}…と展開します。
 
 ```
-D=0:              k=0
-                   │
-D=1:         k=-1     k=+1
-              │  ╲  ╱  │
-D=2:    k=-2    k=0    k=+2
-          │  ╲  │  ╱  │
-D=3: k=-3   k=-1  k=+1  k=+3
+D = 0:                                   k = 0
+                                          / \
+                                         /   \
+                                        /     \
+                                       /       \
+                                      /         \
+                                     /           \
+                                    /             \
+                                   /               \
+                                  /                 \
+D = 1:                        k = -1              k = +1
+                                / \                 / \
+                               /   \               /   \
+                              /     \             /     \
+                             /       \           /       \
+                            /         \         /         \
+                           /           \       /           \
+                          /             \     /             \
+                         /               \   /               \
+                        /                 \ /                 \
+D = 2:              k = -2               k = 0              k = +2
+                      / \                 / \                 / \
+                     /   \               /   \               /   \
+                    /     \             /     \             /     \
+                   /       \           /       \           /       \
+                  /         \         /         \         /         \
+                 /           \       /           \       /           \
+                /             \     /             \     /             \
+               /               \   /               \   /               \
+              /                 \ /                 \ /                 \
+D = 3:    k = -3              k = -1              k = +1              k = +3
 
   到達可能な対角線はステップごとに 2 ずつ広がる。
 ```
@@ -777,8 +916,8 @@ y = x − k なので、x が分かれば正確な位置が分かります。
 
 ```
 d = 0, 1, 2, … について:
-    V のスナップショットを保存        ← 後のバックトラック用
-    k = −d, −d+2, …, d−2, d について:  ← 同パリティの対角線のみ
+    V のスナップショットを保存        <- 後のバックトラック用
+    k = −d, −d+2, …, d−2, d について:  <- 同パリティの対角線のみ
         ① 方向を決定:
            • k+1 から来る場合（縦移動 / 挿入）: x = V[k+1]
            • k−1 から来る場合（横移動 / 削除）: x = V[k−1] + 1
@@ -787,7 +926,7 @@ d = 0, 1, 2, … について:
            y = x − k
            old[x] == new[y] である限り x++; y++
         ③ 記録: V[k] = x
-        ④ 判定: x == N かつ y == M → 完了！ D = d
+        ④ 判定: x == N かつ y == M -> 完了！ D = d
 ```
 
 ### なぜ x が大きい方を選ぶのか？
@@ -804,10 +943,11 @@ old = `[A, B, C]`、new = `[A, C, B]` の場合。
 d = 0 の後、V[0] = 1（A が一致し、x = 1, y = 1 まで滑った）。
 
 d = 1:
+
 - k = −1: k = 0 からの縦移動（挿入）のみ。x = V[0] = 1, y = 1−(−1) = 2。
-  判定: old[1] = B, new[2] = B → 一致！ x = 2, y = 3 まで滑る。V[−1] = 2。
+  判定: old[1] = B, new[2] = B -> 一致！ x = 2, y = 3 まで滑る。V[−1] = 2。
 - k = +1: k = 0 からの横移動（削除）のみ。x = V[0] + 1 = 2, y = 2−1 = 1。
-  判定: old[2] = C, new[1] = C → 一致！ x = 3, y = 2 まで滑る。V[+1] = 3。
+  判定: old[2] = C, new[1] = C -> 一致！ x = 3, y = 2 まで滑る。V[+1] = 3。
 
 (3, 3) にはまだ到達していないので d = 2 へ…
 
@@ -832,9 +972,9 @@ D が判明したら、実際の編集列を復元する必要があります。
 d = D, D−1, …, 1 について:
     k = x − y
     trace[d] を参照して、ステップ d 開始時の V 値を取得:
-        縦移動（挿入）だったか？ → (V[k+1], V[k+1]−(k+1)) から来た
-        横移動（削除）だったか？ → (V[k−1]+1, V[k−1]+1−(k−1)) から来た
-    スネーク部分（コンテキスト行）を (xStart, yStart) → (x, y) として出力。
+        縦移動（挿入）だったか？ -> (V[k+1], V[k+1]−(k+1)) から来た
+        横移動（削除）だったか？ -> (V[k−1]+1, V[k−1]+1−(k−1)) から来た
+    スネーク部分（コンテキスト行）を (xStart, yStart) -> (x, y) として出力。
     1 回の編集（挿入または削除）を出力。
     現在位置を前のポイントに移動。
 
@@ -843,19 +983,19 @@ d = D, D−1, …, 1 について:
 
 ### 方向の判定方法
 
-前向きパスと同じルール: `k == −d` または `V[k−1] < V[k+1]` なら縦移動（挿入）、
+前向きパスと同じルール: `k` == `−d` または `V[k−1]` < `V[k+1]` なら縦移動（挿入）、
 それ以外なら横移動（削除）。
 
 ### 結果の組み立て
 
-バックトラックは編集を**逆順**（末尾→先頭）で生成するため、最後にリストを
+バックトラックは編集を**逆順**（末尾->先頭）で生成するため、最後にリストを
 反転します。各編集にはタグが付きます:
 
-| タグ | 意味 |
-|------|------|
+| タグ          | 意味                                  |
+| ------------- | ------------------------------------- |
 | `' '`（空白） | コンテキスト — 両ファイルに存在する行 |
-| `'-'` | 削除 — old にのみ存在する行 |
-| `'+'` | 追加 — new にのみ存在する行 |
+| `'-'`         | 削除 — old にのみ存在する行           |
+| `'+'`         | 追加 — new にのみ存在する行           |
 
 ---
 
@@ -871,6 +1011,7 @@ new = ["A", "C", "D", "E"]    (M = 4)
 ```
 
 期待される diff:
+
 ```
   A        （コンテキスト）
 - B        （削除）
@@ -884,59 +1025,106 @@ new = ["A", "C", "D", "E"]    (M = 4)
 ### 編集グラフ
 
 ```
-              old[0]=A  old[1]=B  old[2]=C  old[3]=D
-                 │         │         │         │
-         (0,0)──→(1,0)───→(2,0)───→(3,0)───→(4,0)
-           │╲       │         │         │         │
-new[0]=A   ↓  ╲     ↓         ↓         ↓         ↓
-         (0,1)──→(1,1)───→(2,1)───→(3,1)───→(4,1)
-           │       │         │         │         │
-new[1]=C   ↓       ↓         ↓╲        ↓         ↓
-         (0,2)──→(1,2)───→(2,2)───→(3,2)───→(4,2)
-           │       │         │    ╲    │         │
-new[2]=D   ↓       ↓         ↓     ╲   ↓╲        ↓
-         (0,3)──→(1,3)───→(2,3)───→(3,3)───→(4,3)
-           │       │         │         │    ╲    │
-new[3]=E   ↓       ↓         ↓         ↓     ╲   ↓
-         (0,4)──→(1,4)───→(2,4)───→(3,4)───→(4,4)  ← 目標
+              old[0]=A       old[1]=B       old[2]=C       old[3]=D
+        (0,0)--------->(1,0)--------->(2,0)--------->(3,0)--------->(4,0)
+          | \            |              |              |              |
+          |  \           |              |              |              |
+          |   \          |              |              |              |
+          |    \         |              |              |              |
+          |     \        |              |              |              |
+          |      \       |              |              |              |
+new[0]=A  |       \      |              |              |              |
+          |        \     |              |              |              |
+          |         \    |              |              |              |
+          |          \   |              |              |              |
+          |           \  |              |              |              |
+          |            \ |              |              |              |
+          v             \v              v              v              v
+        (0,1)--------->(1,1)--------->(2,1)--------->(3,1)--------->(4,1)
+          |              |              | \            |              |
+          |              |              |  \           |              |
+          |              |              |   \          |              |
+          |              |              |    \         |              |
+          |              |              |     \        |              |
+          |              |              |      \       |              |
+new[1]=C  |              |              |       \      |              |
+          |              |              |        \     |              |
+          |              |              |         \    |              |
+          |              |              |          \   |              |
+          |              |              |           \  |              |
+          |              |              |            \ |              |
+          v              v              v             \v              v
+        (0,2)--------->(1,2)--------->(2,2)--------->(3,2)--------->(4,2)
+          |              |              |              | \            |
+          |              |              |              |  \           |
+          |              |              |              |   \          |
+          |              |              |              |    \         |
+          |              |              |              |     \        |
+          |              |              |              |      \       |
+new[2]=D  |              |              |              |       \      |
+          |              |              |              |        \     |
+          |              |              |              |         \    |
+          |              |              |              |          \   |
+          |              |              |              |           \  |
+          |              |              |              |            \ |
+          v              v              v              v             \v
+        (0,3)--------->(1,3)--------->(2,3)--------->(3,3)--------->(4,3)
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+new[3]=E  |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          |              |              |              |              |
+          v              v              v              v              v
+        (0,4)--------->(1,4)--------->(2,4)--------->(3,4)--------->(4,4)  <- GOAL
 ```
 
 斜め移動（一致）の位置:
-- (0,0)→(1,1): old[0]=A == new[0]=A
-- (2,1)→(3,2): old[2]=C == new[1]=C
-- (3,2)→(4,3): old[3]=D == new[2]=D
+
+- (0,0)->(1,1): old[0]=A == new[0]=A
+- (2,1)->(3,2): old[2]=C == new[1]=C
+- (3,2)->(4,3): old[3]=D == new[2]=D
 
 ### 前向きパスのトレース
 
 **d = 0** — 編集なし、初期スネークのみ:
+
 ```
-  k=0: (0,0) からスタート。old[0]=A == new[0]=A → (1,1) まで滑る。
+  k=0: (0,0) からスタート。old[0]=A == new[0]=A -> (1,1) まで滑る。
   V[0] = 1
   (4,4) にはまだ到達していない。
 ```
 
 **d = 1** — 編集 1 回:
-```
-  k=−1: k=0 から縦移動 → x = V[0] = 1, y = 1−(−1) = 2。
-         old[1]=B, new[2]=D → 不一致。V[−1] = 1。
 
-  k=+1: k=0 から横移動 → x = V[0]+1 = 2, y = 2−1 = 1。
-         old[2]=C == new[1]=C → 一致！ (3,2) まで滑る。
-         old[3]=D == new[2]=D → 一致！ (4,3) まで滑る。
+```
+  k=−1: k=0 から縦移動 -> x = V[0] = 1, y = 1−(−1) = 2。
+         old[1]=B, new[2]=D -> 不一致。V[−1] = 1。
+
+  k=+1: k=0 から横移動 -> x = V[0]+1 = 2, y = 2−1 = 1。
+         old[2]=C == new[1]=C -> 一致！ (3,2) まで滑る。
+         old[3]=D == new[2]=D -> 一致！ (4,3) まで滑る。
          V[+1] = 4。
   (4,4) にはまだ到達していない。
 ```
 
 **d = 2** — 編集 2 回:
+
 ```
-  k=−2: k=−1 から縦移動 → x = V[−1] = 1, y = 1−(−2) = 3。
-         old[1]=B, new[3]=E → 不一致。V[−2] = 1。
+  k=−2: k=−1 から縦移動 -> x = V[−1] = 1, y = 1−(−2) = 3。
+         old[1]=B, new[3]=E -> 不一致。V[−2] = 1。
 
   k=0:  max（k=+1 からの縦移動, k=−1 からの横移動）を選択:
-         k=+1 から縦移動 → x = V[+1] = 4。
-         k=−1 から横移動 → x = V[−1]+1 = 2。
+         k=+1 から縦移動 -> x = V[+1] = 4。
+         k=−1 から横移動 -> x = V[−1]+1 = 2。
          縦移動を選択（x=4 の方が大きい）。y = 4−0 = 4。
-         x=4 == N かつ y=4 == M → 発見！ D = 2。 ✓
+         x=4 == N かつ y=4 == M -> 発見！ D = 2。 ✓
 
   （k=+2 は不要）
 ```
@@ -946,27 +1134,27 @@ new[3]=E   ↓       ↓         ↓         ↓     ╲   ↓
 (4, 4) から開始、d = 2。
 
 **d = 2, k = 0**: trace[2] を参照。縦移動（k=+1 から）だったか？
-  V[+1] = 4 なので、(4, 3) から縦移動（挿入）で来た。
-  スネーク: (4, 3) → (4, 4) — スネークなし（長さ 0）。
-  編集: INSERT new[3] = "E"。
-  (4, 3) に移動。
+V[+1] = 4 なので、(4, 3) から縦移動（挿入）で来た。
+スネーク: (4, 3) -> (4, 4) — スネークなし（長さ 0）。
+編集: INSERT new[3] = "E"。
+(4, 3) に移動。
 
 **d = 1, k = +1**: trace[1] を参照。横移動（k=0 から）だったか？
-  V[0] = 1 なので、(2, 1) から横移動（削除）で来た。x = V[0]+1 = 2, y = 1。
-  スネーク: (2, 1) → (4, 3) — old[2]=C == new[1]=C, old[3]=D == new[2]=D。
-  編集: DELETE old[1] = "B"。
-  (1, 1) に移動。
+V[0] = 1 なので、(2, 1) から横移動（削除）で来た。x = V[0]+1 = 2, y = 1。
+スネーク: (2, 1) -> (4, 3) — old[2]=C == new[1]=C, old[3]=D == new[2]=D。
+編集: DELETE old[1] = "B"。
+(1, 1) に移動。
 
-**d = 0 のプレフィックス**: (0, 0) → (1, 1) のスネーク — old[0]=A == new[0]=A。
+**d = 0 のプレフィックス**: (0, 0) -> (1, 1) のスネーク — old[0]=A == new[0]=A。
 
 ### 最終結果（反転後）
 
 ```
-  A          ← コンテキスト（d=0 のスネーク）
-- B          ← 削除（d=1 の編集）
-  C          ← コンテキスト（d=1 のスネーク）
-  D          ← コンテキスト（d=1 のスネーク）
-+ E          ← 挿入（d=2 の編集）
+  A          <- コンテキスト（d=0 のスネーク）
+- B          <- 削除（d=1 の編集）
+  C          <- コンテキスト（d=1 のスネーク）
+  D          <- コンテキスト（d=1 のスネーク）
++ E          <- 挿入（d=2 の編集）
 ```
 
 ---
@@ -979,6 +1167,7 @@ new[3]=E   ↓       ↓         ↓         ↓     ╲   ↓
 
 1. **対角線ループの反復回数**: ステップ d では内側ループが 2d + 1 回の対角線を
    走査します。d = 0 から D まで合計すると:
+
    ```
    Σ(2d + 1)（d = 0…D）=（D + 1）² ≈ D²
    ```
@@ -1000,11 +1189,11 @@ V 配列自体は O(D) です。しかし D + 1 回の各ステップでスナ�
 
 ### 実世界の差分ではなぜ高速か
 
-| シナリオ | D | 時間 | トレース領域 |
-|----------|---|------|-------------|
-| 100 万行 IL、差分 20 行 | 20 | ~4000 万演算（< 0.1 秒） | ~400 整数（無視できる） |
-| 大きなテキスト、差分 1000 行 | 1,000 | ~100 万反復 + O(N+M) | ~100 万整数（~4 MB） |
-| 完全に異なるファイル | N + M | O((N+M)²) に退化 | N+M 個のスナップショット |
+| シナリオ                     | D     | 時間                     | トレース領域             |
+| ---------------------------- | ----- | ------------------------ | ------------------------ |
+| 100 万行 IL、差分 20 行      | 20    | ~4000 万演算（< 0.1 秒） | ~400 整数（無視できる）  |
+| 大きなテキスト、差分 1000 行 | 1,000 | ~100 万反復 + O(N+M)     | ~100 万整数（~4 MB）     |
+| 完全に異なるファイル         | N + M | O((N+M)²) に退化         | N+M 個のスナップショット |
 
 アルゴリズムは**出力感応型**です — 速度はファイルの*大きさ*ではなく、ファイルが
 どれだけ*異なるか*に依存します。
@@ -1032,12 +1221,12 @@ public static IReadOnlyList<DiffLine> Compute(
 
 ```
 Compute()
-  │
-  ├─ MyersDiff(old, new, maxEditDistance)    ← 前向きパス: D を発見
-  │    │
-  │    └─ BacktrackMyers(...)                ← バックトラック: 編集を復元
-  │
-  └─ BuildHunks(old, new, edits, ...)       ← unified diff ハンクへ整形
+  |
+  +- MyersDiff(old, new, maxEditDistance)    <- 前向きパス: D を発見
+  |    |
+  |    +- BacktrackMyers(...)                <- バックトラック: 編集を復元
+  |
+  +- BuildHunks(old, new, edits, ...)       <- unified diff ハンクへ整形
 ```
 
 ### 実装上の要点
@@ -1073,11 +1262,11 @@ public readonly record struct DiffLine(
 
 ### 設定パラメータ
 
-| パラメータ | 既定値 | 用途 |
-|-----------|--------|------|
-| [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs) | 4000 | 差分を中断する最大 D |
-| [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs) | 10000 | diff 出力の最大行数 |
-| [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs) | 10000 | diff 行の合計上限（計算後チェック） |
+| パラメータ                                                 | 既定値 | 用途                                |
+| ---------------------------------------------------------- | ------ | ----------------------------------- |
+| [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs) | 4000   | 差分を中断する最大 D                |
+| [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs)  | 10000  | diff 出力の最大行数                 |
+| [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs)    | 10000  | diff 行の合計上限（計算後チェック） |
 
 ### D が上限を超えた場合
 
@@ -1092,13 +1281,13 @@ D = 4000 の場合、トレースが格納する整数の数は:
 
 ### 他のアルゴリズムとの比較
 
-| アルゴリズム | 時間 | 空間 | 最適な用途 |
-|-------------|------|------|-----------|
-| 古典的 LCS (DP) | O(N × M) | O(N × M) | 小さなファイルのみ |
-| Myers（基本版） | O(D² + N + M) | O(D²) | 差分が少ないファイル ✓ |
-| Myers（線形空間版） | O(D² + N + M) | O(D) | メモリ制約がある場合 |
-| Patience diff | O(N log N + D²) | O(N) | ユニークな行が多いコード |
-| Histogram diff | ~O(N + M + D²) | O(N + M) | Git のコード差分デフォルト |
+| アルゴリズム        | 時間            | 空間     | 最適な用途                 |
+| ------------------- | --------------- | -------- | -------------------------- |
+| 古典的 LCS (DP)     | O(N × M)        | O(N × M) | 小さなファイルのみ         |
+| Myers（基本版）     | O(D² + N + M)   | O(D²)    | 差分が少ないファイル ✓     |
+| Myers（線形空間版） | O(D² + N + M)   | O(D)     | メモリ制約がある場合       |
+| Patience diff       | O(N log N + D²) | O(N)     | ユニークな行が多いコード   |
+| Histogram diff      | ~O(N + M + D²)  | O(N + M) | Git のコード差分デフォルト |
 
 本プロジェクトでは**基本版 Myers** を採用しています。スナップショットによる
 トレースがバックトラックの簡潔な実装に必要であり、D は 4000 に制限されている
@@ -1112,5 +1301,4 @@ D = 4000 の場合、トレースが格納する整数の数は:
 - **ブログ記事**: James Coglan,
   ["The Myers diff algorithm"](https://blog.jcoglan.com/2017/02/12/the-myers-diff-algorithm-part-1/) —
   ステップバイステップの可視化が優れたシリーズ。
-- **Git ソースコード**: Git は `xdiff/xdiffi.c` で Myers diff の変種を使用して
-  います。
+- **Git ソースコード**: Git は [`xdiff/xdiffi.c`](https://github.com/git/git/blob/master/xdiff/xdiffi.c) で Myers diff の変種を使用しています。
