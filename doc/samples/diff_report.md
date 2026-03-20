@@ -57,7 +57,7 @@
 ### src/App.dll
 
 | Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
-|-------|----------|--------|------|--------|-----------|------|------|------------|------------|------|
+|-------|----------|:------:|:----:|:------:|:---------:|------|------|------------|------------|------|
 | MyApp.Controllers.ApiController | MyApp.Controllers.BaseController, System.IDisposable | `Added` | `Method` | `public` |  |  | HealthCheck | System.String |  |  |
 |  |  | `Added` | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | System.Int32 page, System.Int32 pageSize = 20 |  |
 |  |  | `Removed` | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | System.Int32 page |  |
@@ -70,7 +70,7 @@
 |  |  | `Modified` | `Method` | `private` |  |  | ValidateConnection | System.Boolean | System.String connStr | `Changed` |
 
 | Class | Change | Count |
-|-------|--------|-------|
+|-------|:------:|------:|
 | MyApp.Controllers.ApiController | `Added` | 2 |
 |  | `Removed` | 1 |
 |  | `Modified` | 2 |
@@ -80,7 +80,7 @@
 ### src/Service.dll
 
 | Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
-|-------|----------|--------|------|--------|-----------|------|------|------------|------------|------|
+|-------|----------|:------:|:----:|:------:|:---------:|------|------|------------|------------|------|
 | MyApp.Models.UserDto |  | `Removed` | `Class` | `public` |  |  |  |  |  |  |
 |  |  | `Removed` | `Property` | `public` |  | System.String | Name |  |  |  |
 |  |  | `Removed` | `Property` | `public` |  | System.Int32 | Age |  |  |  |
@@ -103,6 +103,19 @@
 |  |  | `Added` | `Field` | `private` | `readonly` | System.String | _pattern |  |  |  |
 | MyApp.Services.IValidator |  | `Added` | `Interface` | `public` |  |  |  |  |  |  |
 |  |  | `Added` | `Method` | `public` |  |  | Validate | System.Boolean | System.String input |  |
+| MyApp.Models.OrderStatus |  | `Added` | `Enum` | `public` |  |  |  |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Pending |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Processing |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Completed |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Cancelled |  |  |  |
+| MyApp.Services.BaseProcessor |  | `Added` | `Class` | `public` | `abstract` |  |  |  |  |  |
+|  |  | `Added` | `Constructor` | `protected` |  |  | BaseProcessor | System.Void |  |  |
+|  |  | `Added` | `Method` | `public` | `abstract` |  | Execute | System.Threading.Tasks.Task | System.String input |  |
+|  |  | `Added` | `Method` | `protected` | `virtual` |  | OnCompleted | System.Void |  |  |
+| MyApp.Services.Constants |  | `Added` | `Class` | `public` | `static` |  |  |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.String | DefaultEndpoint |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | MaxRetries |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static readonly` | System.TimeSpan | DefaultTimeout |  |  |  |
 | MyApp.Services.OrderService | MyApp.Services.BaseService, MyApp.Services.IOrderProcessor | `Added` | `Method` | `public` |  |  | ValidateWithNewValidator | System.Boolean | System.String data |  |
 |  |  | `Added` | `Property` | `protected` |  | MyApp.Models.OrderContext | CurrentContext |  |  |  |
 |  |  | `Added` | `Field` | `private` | `readonly` | MyApp.Models.UserRecord | _defaultUser |  |  |  |
@@ -111,9 +124,12 @@
 |  |  | `Modified` | `Method` | `internal` | `static` |  | CalculateTotal | System.Decimal | System.Int32 qty, System.Int32 price | `Changed` |
 
 | Class | Change | Count |
-|-------|--------|-------|
+|-------|:------:|------:|
+| MyApp.Models.OrderStatus | `Added` | 5 |
 | MyApp.Models.UserDto | `Removed` | 3 |
 | MyApp.Models.UserRecord | `Added` | 7 |
+| MyApp.Services.BaseProcessor | `Added` | 4 |
+| MyApp.Services.Constants | `Added` | 4 |
 | MyApp.Services.IValidator | `Added` | 2 |
 | MyApp.Services.LegacyHelper | `Removed` | 3 |
 | MyApp.Services.NewValidator | `Added` | 7 |

@@ -53,7 +53,9 @@ namespace FolderDiffIL4DotNet.Services
     .save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em; }
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em;
+            --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
+            --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
     col.col-reason-g { width: var(--col-reason-w); }
@@ -134,14 +136,37 @@ namespace FolderDiffIL4DotNet.Services
     p.diff-skipped { color: #735c0f; font-size: 12px; padding: 4px 8px;
                      background: #fffbdd; margin: 0; }
     /* ── Assembly semantic changes ─────────────────────────────────────── */
-    .semantic-changes { padding: 6px 12px; font-size: 12px; }
+    .semantic-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
     .semantic-changes p { margin: 4px 0 2px; }
-    table.semantic-changes-table { width: auto; border-collapse: collapse; margin: 4px 0; font-size: 12px; }
-    table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #ccc; background: #f6f8fa; font-size: 11px; text-align: left; white-space: nowrap; }
-    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; }
-    table.semantic-changes-table td:nth-child(3), table.semantic-changes-table td:nth-child(4),
-    table.semantic-changes-table td:nth-child(5), table.semantic-changes-table td:nth-child(6) { text-align: center; }
-    table.semantic-changes-table tr.group-cont td { border-top: none; }";
+    table.semantic-changes-table { border-collapse: collapse; margin: 4px 0; font-size: 12px; table-layout: fixed; width: 1px; }
+    table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #555; background: #2c2c2e; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
+    table.semantic-changes-table th.th-resizable { position: relative; }
+    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    table.semantic-changes-table td.sc-col-cb { width: 2.2em; text-align: center; }
+    /* sc-detail: checkbox(1) Class(2) BaseType(3) Change(4) Kind(5) Access(6) Modifiers(7) Type(8)… */
+    table.semantic-changes-table.sc-detail td:nth-child(4), table.semantic-changes-table.sc-detail td:nth-child(5),
+    table.semantic-changes-table.sc-detail td:nth-child(6), table.semantic-changes-table.sc-detail td:nth-child(7) { text-align: center; }
+    /* sc-count: checkbox(1) Class(2) Change(3) Count(4) */
+    table.semantic-changes-table.sc-count td:nth-child(3) { text-align: center; }
+    table.semantic-changes-table.sc-count td:last-child { text-align: right; }
+    table.semantic-changes-table tr.group-cont td:nth-child(2) { border-top: hidden; }
+    table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
+    /* sc colgroup widths */
+    col.sc-col-cb-g { width: 2.2em; }
+    col.sc-col-class-g { width: var(--sc-class-w); }
+    col.sc-col-basetype-g { width: var(--sc-basetype-w); }
+    col.sc-col-change-g { width: 5.5em; }
+    col.sc-col-kind-g { width: 7em; }
+    col.sc-col-access-g { width: 5.5em; }
+    col.sc-col-mods-g { width: 6em; }
+    col.sc-col-type-g { width: var(--sc-type-w); }
+    col.sc-col-name-g { width: var(--sc-name-w); }
+    col.sc-col-rettype-g { width: var(--sc-rettype-w); }
+    col.sc-col-params-g { width: var(--sc-params-w); }
+    col.sc-col-body-g { width: var(--sc-body-w); }
+    col.sc-cnt-class-g { width: var(--sc-class-w); }
+    col.sc-cnt-change-g { width: 5.5em; }
+    col.sc-cnt-count-g { width: 4em; }";
         }
     }
 }

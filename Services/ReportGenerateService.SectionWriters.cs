@@ -210,7 +210,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         writer.WriteLine();
                         writer.WriteLine("| Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |");
-                        writer.WriteLine("|-------|----------|--------|------|--------|-----------|------|------|------------|------------|------|");
+                        writer.WriteLine("|-------|----------|:------:|:----:|:------:|:---------:|------|------|------------|------------|------|");
                         string prevType = "";
                         foreach (var e in summary.Entries)
                         {
@@ -233,7 +233,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         writer.WriteLine();
                         writer.WriteLine("| Class | Change | Count |");
-                        writer.WriteLine("|-------|--------|-------|");
+                        writer.WriteLine("|-------|:------:|------:|");
                         WriteSummaryCountTable(writer, summary);
                     }
                 }

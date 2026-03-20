@@ -359,10 +359,35 @@ namespace FolderDiffIL4DotNet.Services
 
             if (summary.Entries.Count > 0)
             {
-                contentBuilder.AppendLine("<table class=\"semantic-changes-table\">");
-                contentBuilder.AppendLine("<thead><tr><th>Class</th><th>BaseType</th><th>Change</th><th>Kind</th><th>Access</th><th>Modifiers</th><th>Type</th><th>Name</th><th>ReturnType</th><th>Parameters</th><th>Body</th></tr></thead>");
+                contentBuilder.AppendLine("<table class=\"semantic-changes-table sc-detail\">");
+                contentBuilder.AppendLine("<colgroup>");
+                contentBuilder.AppendLine("  <col class=\"sc-col-cb-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-class-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-basetype-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-change-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-kind-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-access-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-mods-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-type-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-name-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-rettype-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-params-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-body-g\">");
+                contentBuilder.AppendLine("</colgroup>");
+                contentBuilder.AppendLine("<thead><tr>");
+                contentBuilder.AppendLine("  <th class=\"sc-col-cb\">&#x2713;</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-class-w\">Class</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">BaseType</th>");
+                contentBuilder.AppendLine("  <th>Change</th><th>Kind</th><th>Access</th><th>Modifiers</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-type-w\">Type</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-name-w\">Name</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-rettype-w\">ReturnType</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-params-w\">Parameters</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-body-w\">Body</th>");
+                contentBuilder.AppendLine("</tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 string prevType = "";
+                int scRowIdx = 0;
                 foreach (var e in summary.Entries)
                 {
                     bool isCont = e.TypeName == prevType;
@@ -373,7 +398,9 @@ namespace FolderDiffIL4DotNet.Services
                     string accessTd = e.Access.Length > 0 ? $"<code>{HtmlEncode(e.Access)}</code>" : "";
                     string modifiersTd = e.Modifiers.Length > 0 ? $"<code>{HtmlEncode(e.Modifiers)}</code>" : "";
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
-                    contentBuilder.AppendLine($"{trOpen}<td>{classTd}</td><td>{baseTypeTd}</td><td><code>{HtmlEncode(e.Change)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    string cbId = $"sc_{sectionPrefix}_{idx}_{scRowIdx}";
+                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td><code>{HtmlEncode(e.Change)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    scRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
             }
@@ -420,8 +447,18 @@ namespace FolderDiffIL4DotNet.Services
                 counts[key] = counts.TryGetValue(key, out int c) ? c + 1 : 1;
             }
 
-            sb.AppendLine("<table class=\"semantic-changes-table\">");
-            sb.AppendLine("<thead><tr><th>Class</th><th>Change</th><th>Count</th></tr></thead>");
+            sb.AppendLine("<table class=\"semantic-changes-table sc-count\">");
+            sb.AppendLine("<colgroup>");
+            sb.AppendLine("  <col class=\"sc-col-cb-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-class-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-change-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-count-g\">");
+            sb.AppendLine("</colgroup>");
+            sb.AppendLine("<thead><tr>");
+            sb.AppendLine("  <th class=\"sc-col-cb\">&#x2713;</th>");
+            sb.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-class-w\">Class</th>");
+            sb.AppendLine("  <th>Change</th><th>Count</th>");
+            sb.AppendLine("</tr></thead>");
             sb.AppendLine("<tbody>");
             string prevType = "";
             foreach (var ((typeName, change), count) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => ChangeOrder(kv.Key.Change)))
@@ -430,7 +467,7 @@ namespace FolderDiffIL4DotNet.Services
                 string classTd = !isCont ? HtmlEncode(typeName) : "";
                 prevType = typeName;
                 string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
-                sb.AppendLine($"{trOpen}<td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td style=\"text-align:right\">{count}</td></tr>");
+                sb.AppendLine($"{trOpen}<td class=\"sc-col-cb\"></td><td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td>{count}</td></tr>");
             }
             sb.AppendLine("</tbody></table>");
         }
