@@ -57,6 +57,10 @@ dotnet run -- "/absolute/path/to/old" "/absolute/path/to/new" "dev-run" --no-pau
 dotnet run -- --help
 dotnet run -- --version
 
+# Print effective config (including env var overrides)
+dotnet run -- --print-config
+dotnet run -- --print-config --config /etc/cfg.json
+
 # Override threads, skip IL, use custom config
 dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
@@ -66,7 +70,7 @@ Generated during a run:
 - `Reports/<label>/[`diff_report.html`](samples/diff_report.html)` when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `true` (default)
 - `Reports/<label>/IL/old/*.txt` and `Reports/<label>/IL/new/*.txt` when [`ShouldOutputILText`](../Models/ConfigSettings.cs) is `true`
 - `Logs/log_YYYYMMDD.log`
-- `ILCache/` under the app base directory when disk cache is enabled and no custom cache directory is configured
+- `ILCache/` under the OS-standard user-local data directory (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache` on Windows, `~/.local/share/FolderDiffIL4DotNet/ILCache` on macOS/Linux) when [`EnableILCache`](../Models/ConfigSettings.cs) is `true` and [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) is not configured
 
 ## Source Style Notes
 
@@ -150,12 +154,13 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 
 ### What happens inside `RunAsync`
 
-1. Parse CLI options (`--help`, `--version`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`).
+1. Parse CLI options (`--help`, `--version`, `--print-config`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`).
 2. If `--help` or `--version` is present, print and exit immediately with code `0` — no logger initialization occurs.
+2a. If `--print-config` is present (optionally combined with `--config <path>`), load the effective configuration — [`config.json`](../config.json) deserialized and all `FOLDERDIFF_*` environment variable overrides applied — serialize it as indented JSON to standard output, and exit with code `0`. Config load errors exit with code `3`.
 3. Initialize logging and print application version.
 4. Validate `old`, `new`, and `reportLabel` arguments. Unknown CLI flags surface here as exit code `2`.
 5. Create `Reports/<label>` early and fail if the label already exists.
-6. Load the config file — from the path given to `--config` if supplied, otherwise from [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) — and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs). Immediately after deserialization, [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) is called; if any value is out of range, the run fails with exit code `3`.
+6. Load the config file — from the path given to `--config` if supplied, otherwise from [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) — and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs). Immediately after deserialization, [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) applies any `FOLDERDIFF_<PROPERTYNAME>` environment variable overrides (e.g. `FOLDERDIFF_MAXPARALLELISM=4`). Then [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) is called; if any value is out of range, the run fails with exit code `3`.
 7. Apply CLI overrides on top of the loaded config: `--threads` sets [`MaxParallelism`](../Models/ConfigSettings.cs); `--no-il-cache` sets [`EnableILCache`](../Models/ConfigSettings.cs) `= false`; `--skip-il` sets [`SkipIL`](../Models/ConfigSettings.cs) `= true`; `--no-timestamp-warnings` sets [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) `= false`.
 8. Clear transient shared helpers such as [`TimestampCache`](../Services/Caching/TimestampCache.cs).
 9. Compute [`DiffExecutionContext`](../Services/DiffExecutionContext.cs), including network-share decisions.
@@ -240,7 +245,7 @@ Why this matters:
 | [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | Disk persistence and quota enforcement for IL cache files | Owns cache-file I/O and trimming |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; iterates `_sectionWriters` via [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside [`ReportGenerateService`](../Services/ReportGenerateService.cs) |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; skipped when `ShouldGenerateHtmlReport` is `false` |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object |
 
 <a id="guide-en-comparison-pipeline"></a>
@@ -381,7 +386,7 @@ The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed re
 | --- | --- | --- |
 | Inclusion and report shape | [`IgnoredExtensions`](../Models/ConfigSettings.cs), [`TextFileExtensions`](../Models/ConfigSettings.cs), [`ShouldIncludeUnchangedFiles`](../Models/ConfigSettings.cs), [`ShouldIncludeIgnoredFiles`](../Models/ConfigSettings.cs), [`ShouldIncludeILCacheStatsInReport`](../Models/ConfigSettings.cs), [`ShouldOutputFileTimestamps`](../Models/ConfigSettings.cs), [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) | Controls scope, report verbosity, and timestamp-regression warnings. Note: [`ShouldOutputFileTimestamps`](../Models/ConfigSettings.cs) is purely supplementary — timestamps are never used in comparison logic; results (Unchanged / Modified / etc.) are determined solely by file content. |
 | IL behavior | [`ShouldOutputILText`](../Models/ConfigSettings.cs), [`ShouldIgnoreILLinesContainingConfiguredStrings`](../Models/ConfigSettings.cs), [`ILIgnoreLineContainingStrings`](../Models/ConfigSettings.cs), [`SkipIL`](../Models/ConfigSettings.cs), [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) | Controls IL normalization, artifact output, and disassembler reliability (blacklist TTL) |
-| Inline diff | [`EnableInlineDiff`](../Models/ConfigSettings.cs), [`InlineDiffContextLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs) | Controls inline diff rendering in the HTML report |
+| Inline diff | [`EnableInlineDiff`](../Models/ConfigSettings.cs), [`InlineDiffContextLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs), [`InlineDiffLazyRender`](../Models/ConfigSettings.cs) | Controls inline diff rendering in the HTML report |
 | Parallelism | [`MaxParallelism`](../Models/ConfigSettings.cs), [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs), [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs), [`TextDiffParallelMemoryLimitMegabytes`](../Models/ConfigSettings.cs) | Controls CPU usage, chunk sizing, and optional memory budget for large-text comparison |
 | Cache | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | Controls IL cache lifetime, storage, and large-tree precompute batching |
 | Network-share mode | [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs), [`AutoDetectNetworkShares`](../Models/ConfigSettings.cs) | Prevents high-I/O behavior on slower remote storage |
@@ -633,6 +638,10 @@ dotnet run -- "/absolute/path/to/old" "/absolute/path/to/new" "dev-run" --no-pau
 dotnet run -- --help
 dotnet run -- --version
 
+# 有効な設定を JSON で確認（環境変数オーバーライド適用済み）
+dotnet run -- --print-config
+dotnet run -- --print-config --config /etc/cfg.json
+
 # スレッド数指定・IL スキップ・カスタム設定ファイル
 dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
@@ -642,7 +651,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 - [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `true`（既定）のとき `Reports/<label>/[`diff_report.html`](samples/diff_report.html)`
 - [`ShouldOutputILText`](../Models/ConfigSettings.cs) が `true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
 - `Logs/log_YYYYMMDD.log`
-- ディスクキャッシュ有効かつカスタム保存先未指定時はアプリ基準ディレクトリ配下の `ILCache/`
+- [`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は OS 標準のユーザーローカルデータディレクトリ配下の `ILCache/`（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux: `~/.local/share/FolderDiffIL4DotNet/ILCache`）
 
 ## ソースコードのスタイル方針
 
@@ -725,12 +734,13 @@ sequenceDiagram
 
 ### `RunAsync` の中で起きること
 
-1. CLI オプション（`--help`、`--version`、`--no-pause`、`--config`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`）を解析します。
+1. CLI オプション（`--help`、`--version`、`--print-config`、`--no-pause`、`--config`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`）を解析します。
 2. `--help` または `--version` がある場合は、ロガー初期化を一切行わずに即座に出力してコード `0` で終了します。
+2a. `--print-config` がある場合（`--config <path>` との併用可）、有効な設定 — [`config.json`](../config.json) のデシリアライズ結果にすべての `FOLDERDIFF_*` 環境変数オーバーライドを適用したもの — をインデント付き JSON として標準出力に書き出し、終了コード `0` で終了します。設定読込エラーは終了コード `3` です。
 3. ログを初期化し、アプリのバージョンを表示します。
 4. `old`、`new`、`reportLabel` 引数を検証します。未知の CLI フラグはここで終了コード `2` として検出されます。
 5. `Reports/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。
-6. `--config` で指定されたパス（未指定なら [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0)）から設定ファイルを読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。デシリアライズ直後に [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) を呼び出し、範囲外の値がある場合は終了コード `3` で失敗させます。
+6. `--config` で指定されたパス（未指定なら [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0)）から設定ファイルを読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。デシリアライズ直後に [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) が `FOLDERDIFF_<PROPERTYNAME>` 環境変数オーバーライド（例: `FOLDERDIFF_MAXPARALLELISM=4`）を適用します。その後 [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) を呼び出し、範囲外の値がある場合は終了コード `3` で失敗させます。
 7. CLI オプションをコンフィグに上書き適用します。`--threads` → [`MaxParallelism`](../Models/ConfigSettings.cs)、`--no-il-cache` → [`EnableILCache`](../Models/ConfigSettings.cs) `= false`、`--skip-il` → [`SkipIL`](../Models/ConfigSettings.cs) `= true`、`--no-timestamp-warnings` → [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) `= false`。
 8. [`TimestampCache`](../Services/Caching/TimestampCache.cs) などの一時共有ヘルパーをクリアします。
 9. ネットワーク共有判定を含む [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) を組み立てます。
@@ -815,7 +825,7 @@ sequenceDiagram
 | [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | IL キャッシュのディスク永続化とクォータ制御 | キャッシュファイル I/O とトリミングを担当 |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；`_sectionWriters` を [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) 経由で反復 |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | [`ReportGenerateService`](../Services/ReportGenerateService.cs) 内に 10 個のプライベートネストクラスで実装 |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；`ShouldGenerateHtmlReport` が `false` のときはスキップ |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態 |
 
 <a id="guide-ja-comparison-pipeline"></a>
@@ -956,7 +966,7 @@ catch (Exception ex)
 | --- | --- | --- |
 | 対象範囲とレポート形状 | [`IgnoredExtensions`](../Models/ConfigSettings.cs), [`TextFileExtensions`](../Models/ConfigSettings.cs), [`ShouldIncludeUnchangedFiles`](../Models/ConfigSettings.cs), [`ShouldIncludeIgnoredFiles`](../Models/ConfigSettings.cs), [`ShouldIncludeILCacheStatsInReport`](../Models/ConfigSettings.cs), [`ShouldOutputFileTimestamps`](../Models/ConfigSettings.cs), [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) | 比較対象、レポート粒度、更新日時逆転警告の制御。[`ShouldOutputFileTimestamps`](../Models/ConfigSettings.cs) は純粋な補助情報であり、更新日時は比較ロジックには一切使用しない。Unchanged / Modified 等の判定はファイル内容のみで行われる。 |
 | IL 関連 | [`ShouldOutputILText`](../Models/ConfigSettings.cs), [`ShouldIgnoreILLinesContainingConfiguredStrings`](../Models/ConfigSettings.cs), [`ILIgnoreLineContainingStrings`](../Models/ConfigSettings.cs), [`SkipIL`](../Models/ConfigSettings.cs), [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) | IL 正規化・成果物出力・逆アセンブラ信頼性（ブラックリスト TTL）の制御 |
-| インライン差分 | [`EnableInlineDiff`](../Models/ConfigSettings.cs), [`InlineDiffContextLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs) | HTML レポートでのインライン差分表示を制御 |
+| インライン差分 | [`EnableInlineDiff`](../Models/ConfigSettings.cs), [`InlineDiffContextLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs), [`InlineDiffLazyRender`](../Models/ConfigSettings.cs) | HTML レポートでのインライン差分表示を制御 |
 | 並列度 | [`MaxParallelism`](../Models/ConfigSettings.cs), [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs), [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs), [`TextDiffParallelMemoryLimitMegabytes`](../Models/ConfigSettings.cs) | CPU 利用、チャンク粒度、大きいテキスト比較時の任意メモリ予算を制御 |
 | キャッシュ | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | IL キャッシュの寿命、保存先、大規模ツリー向け事前計算バッチを制御 |
 | ネットワーク共有向け | [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs), [`AutoDetectNetworkShares`](../Models/ConfigSettings.cs) | 遅いストレージでの高 I/O 挙動抑制 |
