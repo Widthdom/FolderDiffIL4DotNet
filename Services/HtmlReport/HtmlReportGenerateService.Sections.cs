@@ -362,11 +362,13 @@ namespace FolderDiffIL4DotNet.Services
             if (summary.Entries.Count > 0)
             {
                 contentBuilder.AppendLine("<table class=\"method-changes-table\">");
-                contentBuilder.AppendLine("<thead><tr><th>Assembly</th><th>Change</th><th>Class</th><th>Access</th><th>Modifiers</th><th>Kind</th><th>Name</th><th>Detail (ReturnType (Type paramName))</th></tr></thead>");
+                contentBuilder.AppendLine("<thead><tr><th>Assembly</th><th>Change</th><th>Class</th><th>Access</th><th>Modifiers</th><th>Kind</th><th>Type</th><th>Name</th><th>ReturnType (Type paramName)</th></tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 foreach (var e in summary.Entries)
                 {
-                    contentBuilder.AppendLine($"<tr><td>{HtmlEncode(assemblyPath)}</td><td><code>{HtmlEncode(e.Change)}</code></td><td>{HtmlEncode(e.TypeName)}</td><td><code>{HtmlEncode(e.Access)}</code></td><td><code>{HtmlEncode(e.Modifiers)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.Details)}</td></tr>");
+                    string accessTd = e.Access.Length > 0 ? $"<code>{HtmlEncode(e.Access)}</code>" : "";
+                    string modifiersTd = e.Modifiers.Length > 0 ? $"<code>{HtmlEncode(e.Modifiers)}</code>" : "";
+                    contentBuilder.AppendLine($"<tr><td>{HtmlEncode(assemblyPath)}</td><td><code>{HtmlEncode(e.Change)}</code></td><td>{HtmlEncode(e.TypeName)}</td><td>{accessTd}</td><td>{modifiersTd}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.Details)}</td></tr>");
                 }
                 contentBuilder.AppendLine("</tbody></table>");
             }
@@ -375,7 +377,7 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("<p>Other changes only. See IL diff for details.</p>");
             }
 
-            contentBuilder.AppendLine($"<p>Method count: {summary.OldMethodCount} (Old) vs {summary.NewMethodCount} (New)</p>");
+            contentBuilder.AppendLine($"<p>Member count: {summary.OldMethodCount} (Old) vs {summary.NewMethodCount} (New)</p>");
             contentBuilder.AppendLine("</div>");
 
             string detailsId = $"methods_{sectionPrefix}_{idx}";

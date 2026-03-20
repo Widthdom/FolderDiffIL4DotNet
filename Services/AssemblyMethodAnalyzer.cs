@@ -37,27 +37,27 @@ namespace FolderDiffIL4DotNet.Services
 
                 // Types
                 foreach (var t in newSnapshot.TypeNames.Except(oldSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("Added", t, "", "", "Type", "", ""));
+                    entries.Add(new MemberChangeEntry("Added", t, "", "", "Type", "", "", ""));
                 foreach (var t in oldSnapshot.TypeNames.Except(newSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("Removed", t, "", "", "Type", "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", t, "", "", "Type", "", "", ""));
 
                 // Methods
                 foreach (var key in newSnapshot.Methods.Keys.Except(oldSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = newSnapshot.Methods[key];
-                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, m.Modifiers, "Method", m.MethodName, m.Details));
+                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, m.Modifiers, "Method", ToCSharpMethodName(m.MethodName, m.TypeName), "", m.Details));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Except(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = oldSnapshot.Methods[key];
-                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, m.Modifiers, "Method", m.MethodName, m.Details));
+                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, m.Modifiers, "Method", ToCSharpMethodName(m.MethodName, m.TypeName), "", m.Details));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     if (!oldSnapshot.Methods[key].IlBytes.AsSpan().SequenceEqual(newSnapshot.Methods[key].IlBytes.AsSpan()))
                     {
                         var m = newSnapshot.Methods[key];
-                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, m.Modifiers, "Method", m.MethodName, m.Details));
+                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, m.Modifiers, "Method", ToCSharpMethodName(m.MethodName, m.TypeName), "", m.Details));
                     }
                 }
 
@@ -65,24 +65,24 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var key in newSnapshot.Properties.Keys.Except(oldSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = newSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.Details));
+                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, StripColonPrefix(p.Details), ""));
                 }
                 foreach (var key in oldSnapshot.Properties.Keys.Except(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = oldSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, p.Details));
+                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, p.Modifiers, "Property", p.PropertyName, StripColonPrefix(p.Details), ""));
                 }
 
                 // Fields
                 foreach (var key in newSnapshot.Fields.Keys.Except(oldSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = newSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, f.Details));
+                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), ""));
                 }
                 foreach (var key in oldSnapshot.Fields.Keys.Except(newSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = oldSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, f.Details));
+                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), ""));
                 }
 
                 return new MethodLevelChangesSummary
@@ -240,6 +240,24 @@ namespace FolderDiffIL4DotNet.Services
 
             return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
         }
+
+        /// <summary>Convert IL method name to C# name: .ctor/.cctor → simple class name. / IL メソッド名を C# 名に変換。</summary>
+        private static string ToCSharpMethodName(string ilMethodName, string typeName)
+        {
+            if (ilMethodName is ".ctor" or ".cctor")
+            {
+                // Extract simple class name from potentially nested or namespaced type name
+                int slashIdx = typeName.LastIndexOf('/');
+                string leaf = slashIdx >= 0 ? typeName[(slashIdx + 1)..] : typeName;
+                int dotIdx = leaf.LastIndexOf('.');
+                return dotIdx >= 0 ? leaf[(dotIdx + 1)..] : leaf;
+            }
+            return ilMethodName;
+        }
+
+        /// <summary>Strip leading ": " prefix from field/property details to extract the type portion. / フィールド・プロパティの詳細から先頭 ": " を除去して型部分を抽出。</summary>
+        private static string StripColonPrefix(string details)
+            => details.StartsWith(": ", StringComparison.Ordinal) ? details[2..] : details;
 
         /// <summary>Build a key for method matching (without access modifier so access changes don't cause false add/remove pairs).</summary>
         private static string BuildMethodMatchKey(MetadataReader reader, string typeName, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)

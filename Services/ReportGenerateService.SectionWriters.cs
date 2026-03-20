@@ -191,7 +191,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>Writes the Method-Level Changes section for ILMismatch assemblies. / ILMismatch アセンブリのメソッドレベル変更セクションを書き込みます。</summary>
+        /// <summary>Writes the Assembly Semantic Changes section for ILMismatch assemblies. / ILMismatch アセンブリのアセンブリ意味変更セクションを書き込みます。</summary>
         private sealed class MethodLevelChangesSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -200,7 +200,7 @@ namespace FolderDiffIL4DotNet.Services
                 var changes = ctx.FileDiffResultLists.FileRelativePathToMethodLevelChanges;
                 if (changes.IsEmpty) return;
 
-                writer.WriteLine(REPORT_SECTION_METHOD_LEVEL_CHANGES);
+                writer.WriteLine(REPORT_SECTION_ASSEMBLY_SEMANTIC_CHANGES);
 
                 foreach (var (filePath, summary) in changes.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
                 {
@@ -209,11 +209,13 @@ namespace FolderDiffIL4DotNet.Services
                     if (summary.Entries.Count > 0)
                     {
                         writer.WriteLine();
-                        writer.WriteLine("| Assembly | Change | Class | Access | Modifiers | Kind | Name | Detail (ReturnType (Type paramName)) |");
-                        writer.WriteLine("|----------|--------|-------|--------|-----------|------|------|--------------------------------------|");
+                        writer.WriteLine("| Assembly | Change | Class | Access | Modifiers | Kind | Type | Name | ReturnType (Type paramName) |");
+                        writer.WriteLine("|----------|--------|-------|--------|-----------|------|------|------|-----------------------------|");
                         foreach (var e in summary.Entries)
                         {
-                            writer.WriteLine($"| {EscapeMdTable(filePath)} | `{EscapeMdTable(e.Change)}` | {EscapeMdTable(e.TypeName)} | `{EscapeMdTable(e.Access)}` | `{EscapeMdTable(e.Modifiers)}` | `{EscapeMdTable(e.MemberKind)}` | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.Details)} |");
+                            string access = e.Access.Length > 0 ? $"`{EscapeMdTable(e.Access)}`" : "";
+                            string modifiers = e.Modifiers.Length > 0 ? $"`{EscapeMdTable(e.Modifiers)}`" : "";
+                            writer.WriteLine($"| {EscapeMdTable(filePath)} | `{EscapeMdTable(e.Change)}` | {EscapeMdTable(e.TypeName)} | {access} | {modifiers} | `{EscapeMdTable(e.MemberKind)}` | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.Details)} |");
                         }
                     }
                     else
@@ -221,7 +223,7 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine("- Other changes only. See IL diff for details.");
                     }
 
-                    writer.WriteLine($"- Method count: {summary.OldMethodCount} (Old) vs {summary.NewMethodCount} (New)");
+                    writer.WriteLine($"- Member count: {summary.OldMethodCount} (Old) vs {summary.NewMethodCount} (New)");
                 }
 
                 writer.WriteLine();

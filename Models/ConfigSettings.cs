@@ -98,12 +98,12 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldIncludeIgnoredFiles { get; set; } = true;
 
         /// <summary>
-        /// Whether to include method-level change details (type/method/property/field additions, removals,
+        /// Whether to include member-level change details (type/method/property/field additions, removals,
         /// and method body changes) for ILMismatch assemblies in the diff report.
-        /// When true, a Method-Level Changes section is inserted between Summary and IL Cache Stats.
+        /// When true, an Assembly Semantic Changes section is inserted between Summary and IL Cache Stats.
         /// ILMismatch と判定された .NET アセンブリについて、メンバーレベルの変更詳細
         /// （型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更）をレポートに出力するかどうか。
-        /// true の場合、Summary セクションと IL Cache Stats セクションの間に Method-Level Changes セクションを追加します。
+        /// true の場合、Summary セクションと IL Cache Stats セクションの間に Assembly Semantic Changes セクションを追加します。
         /// </summary>
         public bool ShouldIncludeMethodLevelChangesInReport { get; set; } = true;
 

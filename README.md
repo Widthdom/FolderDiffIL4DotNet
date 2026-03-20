@@ -188,7 +188,7 @@ Important details:
 <a id="readme-en-assembly-semantic-changes"></a>
 ## Assembly Semantic Changes
 
-When an assembly is classified as `ILMismatch`, the tool performs an additional **semantic analysis** using [`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) to identify exactly what changed at the member level. Results appear in the **Method-Level Changes** section of the Markdown report and as an expandable inline row in the HTML report.
+When an assembly is classified as `ILMismatch`, the tool performs an additional **semantic analysis** using [`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) to identify exactly what changed at the member level. Results appear in the **Assembly Semantic Changes** section of the Markdown report and as an expandable inline row in the HTML report.
 
 ### What is detected
 
@@ -211,8 +211,9 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | Access | Access modifier | `public` |
 | Modifiers | Other modifiers | `static` |
 | Kind | Member kind | `Method` |
-| Name | Member name (empty for Type entries) | `DoWork` |
-| Detail | Signature in C# declaration order | `void (string name, int count = 0)` |
+| Type | Declared type for Field/Property (empty for Method/Type) | `int { get; set; }` |
+| Name | Member name (constructors use the class name; empty for Type entries) | `DoWork` |
+| ReturnType (Type paramName) | Method signature (empty for Field/Property/Type) | `void (string name, int count = 0)` |
 
 Controlled by [`ShouldIncludeMethodLevelChangesInReport`](#config-en-shouldincludemethodlevelchangesinreport) (default: `true`).
 
@@ -276,7 +277,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-shouldincludemethodlevelchangesinreport">
       <td><code>ShouldIncludeMethodLevelChangesInReport</code></td>
       <td><code>true</code></td>
-      <td>When <code>true</code>, includes a <code>Method-Level Changes</code> section for <code>ILMismatch</code> assemblies between <code>Summary</code> and <code>IL Cache Stats</code>. Uses <code>System.Reflection.Metadata</code> to detect type/method/property/field additions, removals, and method body changes. In the HTML report, this appears as an expandable inline row above the IL diff.</td>
+      <td>When <code>true</code>, includes an <code>Assembly Semantic Changes</code> section for <code>ILMismatch</code> assemblies between <code>Summary</code> and <code>IL Cache Stats</code>. Uses <code>System.Reflection.Metadata</code> to detect type/method/property/field additions, removals, and method body changes. In the HTML report, this appears as an expandable inline row above the IL diff.</td>
     </tr>
     <tr id="config-en-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
@@ -666,7 +667,7 @@ flowchart TD
 <a id="readme-ja-assembly-semantic-changes"></a>
 ## アセンブリ セマンティック変更
 
-アセンブリが `ILMismatch` に分類された場合、[`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) を使用してメンバーレベルの**セマンティック解析**を追加実行します。結果は Markdown レポートの **Method-Level Changes** セクション、および HTML レポートの展開可能なインライン行に表示されます。
+アセンブリが `ILMismatch` に分類された場合、[`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) を使用してメンバーレベルの**セマンティック解析**を追加実行します。結果は Markdown レポートの **Assembly Semantic Changes** セクション、および HTML レポートの展開可能なインライン行に表示されます。
 
 ### 検出対象
 
@@ -689,8 +690,9 @@ flowchart TD
 | Access | アクセス修飾子 | `public` |
 | Modifiers | その他の修飾子 | `static` |
 | Kind | メンバー種別 | `Method` |
-| Name | メンバー名（Type エントリの場合は空） | `DoWork` |
-| Detail | C# 宣言順のシグネチャ | `void (string name, int count = 0)` |
+| Type | Field/Property の宣言型（Method/Type の場合は空） | `int { get; set; }` |
+| Name | メンバー名（コンストラクタはクラス名、Type エントリの場合は空） | `DoWork` |
+| ReturnType (Type paramName) | メソッドシグネチャ（Field/Property/Type の場合は空） | `void (string name, int count = 0)` |
 
 [`ShouldIncludeMethodLevelChangesInReport`](#config-ja-shouldincludemethodlevelchangesinreport)（既定値: `true`）で制御します。
 
@@ -754,7 +756,7 @@ flowchart TD
     <tr id="config-ja-shouldincludemethodlevelchangesinreport">
       <td><code>ShouldIncludeMethodLevelChangesInReport</code></td>
       <td><code>true</code></td>
-      <td><code>true</code> の場合、<code>ILMismatch</code> と判定された .NET アセンブリについて、<code>Summary</code> と <code>IL Cache Stats</code> の間に <code>Method-Level Changes</code> セクションを出力します。<code>System.Reflection.Metadata</code> を使用して型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更を検出します。HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。</td>
+      <td><code>true</code> の場合、<code>ILMismatch</code> と判定された .NET アセンブリについて、<code>Summary</code> と <code>IL Cache Stats</code> の間に <code>Assembly Semantic Changes</code> セクションを出力します。<code>System.Reflection.Metadata</code> を使用して型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更を検出します。HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。</td>
     </tr>
     <tr id="config-ja-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
