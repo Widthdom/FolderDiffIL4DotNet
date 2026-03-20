@@ -218,7 +218,7 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 
 Controlled by [`ShouldIncludeAssemblySemanticChangesInReport`](#config-en-shouldincludeassemblysemanticchangesinreport) (default: `true`).
 
-The bullet list below the table shows counts per change kind (`Added`, `Removed`, `Modified`).
+A summary count table (`Class | Change | Count`) follows, grouping entries by class and change kind. Consecutive rows with the same class name suppress the class column for readability.
 
 ## Configuration ([`config.json`](config.json))
 
@@ -700,7 +700,7 @@ flowchart TD
 
 [`ShouldIncludeAssemblySemanticChangesInReport`](#config-ja-shouldincludeassemblysemanticchangesinreport)（既定値: `true`）で制御します。
 
-テーブル下の箇条書きに変更種別ごとのカウント（`Added`、`Removed`、`Modified`）が表示されます。
+テーブル下に集計テーブル（`Class | Change | Count`）を表示し、クラスと変更種別ごとのカウントをまとめます。同一クラスが連続する場合、Class 列は先頭行のみに表示されます。
 
 ## 設定（[`config.json`](config.json)）
 

@@ -211,12 +211,15 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine();
                         writer.WriteLine("| Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |");
                         writer.WriteLine("|-------|--------|------|--------|-----------|------|------|------------|------------|------|");
+                        string prevType = "";
                         foreach (var e in summary.Entries)
                         {
+                            string classCol = e.TypeName != prevType ? EscapeMdTable(e.TypeName) : "";
+                            prevType = e.TypeName;
                             string access = e.Access.Length > 0 ? $"`{EscapeMdTable(e.Access)}`" : "";
                             string modifiers = e.Modifiers.Length > 0 ? $"`{EscapeMdTable(e.Modifiers)}`" : "";
                             string body = e.Body.Length > 0 ? $"`{EscapeMdTable(e.Body)}`" : "";
-                            writer.WriteLine($"| {EscapeMdTable(e.TypeName)} | `{EscapeMdTable(e.Change)}` | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} | {body} |");
+                            writer.WriteLine($"| {classCol} | `{EscapeMdTable(e.Change)}` | `{EscapeMdTable(e.MemberKind)}` | {access} | {modifiers} | {EscapeMdTable(e.MemberType)} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.ReturnType)} | {EscapeMdTable(e.Parameters)} | {body} |");
                         }
                     }
                     else
@@ -224,12 +227,31 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine("- Other changes only. See IL diff for details.");
                     }
 
-                    writer.WriteLine($"- Added    : {summary.AddedCount}");
-                    writer.WriteLine($"- Removed  : {summary.RemovedCount}");
-                    writer.WriteLine($"- Modified : {summary.ModifiedCount}");
+                    writer.WriteLine();
+                    writer.WriteLine("| Class | Change | Count |");
+                    writer.WriteLine("|-------|--------|-------|");
+                    WriteSummaryCountTable(writer, summary);
                 }
 
                 writer.WriteLine();
+            }
+
+            private static void WriteSummaryCountTable(StreamWriter writer, AssemblySemanticChangesSummary summary)
+            {
+                var counts = new Dictionary<(string TypeName, string Change), int>();
+                foreach (var e in summary.Entries)
+                {
+                    var key = (e.TypeName, e.Change);
+                    counts[key] = counts.TryGetValue(key, out int c) ? c + 1 : 1;
+                }
+
+                string prevType = "";
+                foreach (var ((typeName, change), count) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => kv.Key.Change, StringComparer.Ordinal))
+                {
+                    string classCol = typeName != prevType ? EscapeMdTable(typeName) : "";
+                    prevType = typeName;
+                    writer.WriteLine($"| {classCol} | `{EscapeMdTable(change)}` | {count} |");
+                }
             }
 
             /// <summary>Escape pipe characters for Markdown table cells. / Markdown テーブルセル用にパイプ文字をエスケープ。</summary>

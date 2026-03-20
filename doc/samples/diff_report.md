@@ -59,58 +59,70 @@
 | Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
 |-------|--------|------|--------|-----------|------|------|------------|------------|------|
 | MyApp.Controllers.ApiController | `Added` | `Method` | `public` |  |  | HealthCheck | string |  |  |
-| MyApp.Controllers.ApiController | `Added` | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | int page, int pageSize = 20 |  |
-| MyApp.Controllers.ApiController | `Removed` | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | int page |  |
-| MyApp.Controllers.ApiController | `Modified` | `Method` | `public` | `virtual` |  | Search | System.Collections.Generic.IList\<MyApp.Models.User\> | string query | `Changed` |
-| MyApp.Controllers.ApiController | `Modified` | `Method` | `protected` |  |  | OnAuthorize | bool | MyApp.Models.UserContext ctx | `Changed` |
+|  | `Added` | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | int page, int pageSize = 20 |  |
+|  | `Removed` | `Method` | `public` |  |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> | int page |  |
+|  | `Modified` | `Method` | `public` | `virtual` |  | Search | System.Collections.Generic.IList\<MyApp.Models.User\> | string query | `Changed` |
+|  | `Modified` | `Method` | `protected` |  |  | OnAuthorize | bool | MyApp.Models.UserContext ctx | `Changed` |
 | MyApp.Services.DataService | `Modified` | `Method` | `internal` |  |  | RefreshCache | void |  | `Changed` |
-| MyApp.Services.DataService | `Modified` | `Method` | `private` |  |  | ValidateConnection | bool | string connStr | `Changed` |
-| MyApp.Services.DataService | `Added` | `Property` | `public` |  | int | CacheTimeout |  |  |  |
-| MyApp.Services.DataService | `Added` | `Property` | `public` |  | MyApp.Models.CachePolicy | Policy |  |  |  |
-| MyApp.Services.DataService | `Added` | `Property` | `internal` |  | MyApp.Services.IConnectionPool | ConnectionPool |  |  |  |
-- Added    : 5
-- Removed  : 1
-- Modified : 4
+|  | `Modified` | `Method` | `private` |  |  | ValidateConnection | bool | string connStr | `Changed` |
+|  | `Added` | `Property` | `public` |  | int | CacheTimeout |  |  |  |
+|  | `Added` | `Property` | `public` |  | MyApp.Models.CachePolicy | Policy |  |  |  |
+|  | `Added` | `Property` | `internal` |  | MyApp.Services.IConnectionPool | ConnectionPool |  |  |  |
+
+| Class | Change | Count |
+|-------|--------|-------|
+| MyApp.Controllers.ApiController | `Added` | 2 |
+|  | `Modified` | 2 |
+|  | `Removed` | 1 |
+| MyApp.Services.DataService | `Added` | 3 |
+|  | `Modified` | 2 |
 
 ### src/Service.dll
 
 | Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
 |-------|--------|------|--------|-----------|------|------|------------|------------|------|
 | MyApp.Services.NewValidator | `Added` | `Class` | `public` |  |  |  |  |  |  |
-| MyApp.Services.NewValidator | `Added` | `Constructor` | `public` |  |  | NewValidator | void |  |  |
-| MyApp.Services.NewValidator | `Added` | `Method` | `public` |  |  | Validate | bool | string input |  |
-| MyApp.Services.NewValidator | `Added` | `Method` | `public` |  |  | Validate | bool | string input, MyApp.Models.ValidationOptions options |  |
-| MyApp.Services.NewValidator | `Added` | `Method` | `private` |  |  | ParseInput | string | string raw |  |
-| MyApp.Services.NewValidator | `Added` | `Property` | `public` |  | MyApp.Models.ValidationResult | LastResult |  |  |  |
-| MyApp.Services.NewValidator | `Added` | `Field` | `private` | `readonly` | string | _pattern |  |  |  |
+|  | `Added` | `Constructor` | `public` |  |  | NewValidator | void |  |  |
+|  | `Added` | `Method` | `public` |  |  | Validate | bool | string input |  |
+|  | `Added` | `Method` | `public` |  |  | Validate | bool | string input, MyApp.Models.ValidationOptions options |  |
+|  | `Added` | `Method` | `private` |  |  | ParseInput | string | string raw |  |
+|  | `Added` | `Property` | `public` |  | MyApp.Models.ValidationResult | LastResult |  |  |  |
+|  | `Added` | `Field` | `private` | `readonly` | string | _pattern |  |  |  |
 | MyApp.Services.OrderService | `Added` | `Method` | `public` |  |  | ValidateWithNewValidator | bool | string data |  |
-| MyApp.Services.OrderService | `Removed` | `Method` | `public` | `virtual` |  | LegacyValidate | bool | string data |  |
-| MyApp.Services.OrderService | `Modified` | `Method` | `public` |  |  | ProcessOrder | void | int orderId | `Changed` |
-| MyApp.Services.OrderService | `Modified` | `Method` | `internal` | `static` |  | CalculateTotal | decimal | int qty, int price | `Changed` |
-| MyApp.Services.OrderService | `Added` | `Property` | `protected` |  | MyApp.Models.OrderContext | CurrentContext |  |  |  |
-| MyApp.Services.OrderService | `Added` | `Field` | `private` | `readonly` | MyApp.Models.UserRecord | _defaultUser |  |  |  |
+|  | `Removed` | `Method` | `public` | `virtual` |  | LegacyValidate | bool | string data |  |
+|  | `Modified` | `Method` | `public` |  |  | ProcessOrder | void | int orderId | `Changed` |
+|  | `Modified` | `Method` | `internal` | `static` |  | CalculateTotal | decimal | int qty, int price | `Changed` |
+|  | `Added` | `Property` | `protected` |  | MyApp.Models.OrderContext | CurrentContext |  |  |  |
+|  | `Added` | `Field` | `private` | `readonly` | MyApp.Models.UserRecord | _defaultUser |  |  |  |
 | MyApp.Services.LegacyHelper | `Removed` | `Class` | `internal` |  |  |  |  |  |  |
-| MyApp.Services.LegacyHelper | `Removed` | `Method` | `public` |  |  | Convert | string | object value |  |
-| MyApp.Services.LegacyHelper | `Removed` | `Method` | `public` | `static` |  | Format | string | string template, object[] args |  |
+|  | `Removed` | `Method` | `public` |  |  | Convert | string | object value |  |
+|  | `Removed` | `Method` | `public` | `static` |  | Format | string | string template, object[] args |  |
 | MyApp.Models.UserRecord | `Added` | `Record` | `public` |  |  |  |  |  |  |
-| MyApp.Models.UserRecord | `Added` | `Constructor` | `public` |  |  | UserRecord | void | string Name, int Age |  |
-| MyApp.Models.UserRecord | `Added` | `Property` | `public` |  | string | Name |  |  |  |
-| MyApp.Models.UserRecord | `Added` | `Property` | `public` |  | int | Age |  |  |  |
-| MyApp.Models.UserRecord | `Added` | `Method` | `public` | `override` |  | ToString | string |  |  |
-| MyApp.Models.UserRecord | `Added` | `Method` | `public` | `virtual` |  | Equals | bool | object obj |  |
-| MyApp.Models.UserRecord | `Added` | `Method` | `public` | `override` |  | GetHashCode | int |  |  |
+|  | `Added` | `Constructor` | `public` |  |  | UserRecord | void | string Name, int Age |  |
+|  | `Added` | `Property` | `public` |  | string | Name |  |  |  |
+|  | `Added` | `Property` | `public` |  | int | Age |  |  |  |
+|  | `Added` | `Method` | `public` | `override` |  | ToString | string |  |  |
+|  | `Added` | `Method` | `public` | `virtual` |  | Equals | bool | object obj |  |
+|  | `Added` | `Method` | `public` | `override` |  | GetHashCode | int |  |  |
 | MyApp.Models.UserDto | `Removed` | `Class` | `public` |  |  |  |  |  |  |
-| MyApp.Models.UserDto | `Removed` | `Property` | `public` |  | string | Name |  |  |  |
-| MyApp.Models.UserDto | `Removed` | `Property` | `public` |  | int | Age |  |  |  |
-- Added    : 17
-- Removed  : 7
-- Modified : 2
+|  | `Removed` | `Property` | `public` |  | string | Name |  |  |  |
+|  | `Removed` | `Property` | `public` |  | int | Age |  |  |  |
+
+| Class | Change | Count |
+|-------|--------|-------|
+| MyApp.Models.UserDto | `Removed` | 3 |
+| MyApp.Models.UserRecord | `Added` | 7 |
+| MyApp.Services.LegacyHelper | `Removed` | 3 |
+| MyApp.Services.NewValidator | `Added` | 7 |
+| MyApp.Services.OrderService | `Added` | 3 |
+|  | `Modified` | 2 |
+|  | `Removed` | 1 |
 
 ### util/Legacy.dll
 - Other changes only. See IL diff for details.
-- Added    : 0
-- Removed  : 0
-- Modified : 0
+
+| Class | Change | Count |
+|-------|--------|-------|
 
 ## IL Cache Stats
 - Hits    : 42

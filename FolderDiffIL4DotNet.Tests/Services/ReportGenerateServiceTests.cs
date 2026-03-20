@@ -800,14 +800,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("## Assembly Semantic Changes", reportText);
             Assert.Contains("### src/App.dll", reportText);
             Assert.Contains("| Class | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |", reportText);
+            // First row shows class name; subsequent rows for same class are empty
             Assert.Contains("| MyApp.NewService | `Added` | `Class` | `public` |  |  |  |  |  |  |", reportText);
             Assert.Contains("| MyApp.UserService | `Added` | `Method` | `public` | `static` |  | ValidateToken | bool | string token |  |", reportText);
-            Assert.Contains("| MyApp.UserService | `Modified` | `Method` | `public` |  |  | Login | bool | string user, string pass | `Changed` |", reportText);
-            Assert.Contains("| MyApp.UserService | `Added` | `Property` | `public` |  | bool | IsActive |  |  |  |", reportText);
-            Assert.Contains("| MyApp.UserService | `Added` | `Field` | `private` | `readonly` | object | _cache |  |  |  |", reportText);
-            Assert.Contains("- Added    : 5", reportText);
-            Assert.Contains("- Removed  : 1", reportText);
-            Assert.Contains("- Modified : 1", reportText);
+            Assert.Contains("|  | `Modified` | `Method` | `public` |  |  | Login | bool | string user, string pass | `Changed` |", reportText);
+            Assert.Contains("|  | `Added` | `Property` | `public` |  | bool | IsActive |  |  |  |", reportText);
+            // Summary count table
+            Assert.Contains("| Class | Change | Count |", reportText);
+            Assert.Contains("| MyApp.NewService | `Added` | 1 |", reportText);
+            Assert.Contains("| MyApp.UserService | `Added` | 4 |", reportText);
+            Assert.Contains("|  | `Modified` | 1 |", reportText);
+            Assert.Contains("|  | `Removed` | 1 |", reportText);
 
             // Ordering: Summary < Assembly Semantic Changes < IL Cache Stats
             int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);

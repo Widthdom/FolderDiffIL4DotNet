@@ -364,12 +364,15 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("<table class=\"semantic-changes-table\">");
                 contentBuilder.AppendLine("<thead><tr><th>Class</th><th>Change</th><th>Kind</th><th>Access</th><th>Modifiers</th><th>Type</th><th>Name</th><th>ReturnType</th><th>Parameters</th><th>Body</th></tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
+                string prevType = "";
                 foreach (var e in summary.Entries)
                 {
+                    string classTd = e.TypeName != prevType ? HtmlEncode(e.TypeName) : "";
+                    prevType = e.TypeName;
                     string accessTd = e.Access.Length > 0 ? $"<code>{HtmlEncode(e.Access)}</code>" : "";
                     string modifiersTd = e.Modifiers.Length > 0 ? $"<code>{HtmlEncode(e.Modifiers)}</code>" : "";
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
-                    contentBuilder.AppendLine($"<tr><td>{HtmlEncode(e.TypeName)}</td><td><code>{HtmlEncode(e.Change)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    contentBuilder.AppendLine($"<tr><td>{classTd}</td><td><code>{HtmlEncode(e.Change)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                 }
                 contentBuilder.AppendLine("</tbody></table>");
             }
@@ -378,11 +381,7 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("<p>Other changes only. See IL diff for details.</p>");
             }
 
-            contentBuilder.AppendLine("<ul>");
-            contentBuilder.AppendLine($"<li>Added    : {summary.AddedCount}</li>");
-            contentBuilder.AppendLine($"<li>Removed  : {summary.RemovedCount}</li>");
-            contentBuilder.AppendLine($"<li>Modified : {summary.ModifiedCount}</li>");
-            contentBuilder.AppendLine("</ul>");
+            AppendSummaryCountTable(contentBuilder, summary);
             contentBuilder.AppendLine("</div>");
 
             string detailsId = $"semantic_{sectionPrefix}_{idx}";
@@ -410,6 +409,28 @@ namespace FolderDiffIL4DotNet.Services
             }
             sb.AppendLine("  </td>");
             sb.AppendLine("</tr>");
+        }
+
+        private static void AppendSummaryCountTable(StringBuilder sb, AssemblySemanticChangesSummary summary)
+        {
+            var counts = new Dictionary<(string TypeName, string Change), int>();
+            foreach (var e in summary.Entries)
+            {
+                var key = (e.TypeName, e.Change);
+                counts[key] = counts.TryGetValue(key, out int c) ? c + 1 : 1;
+            }
+
+            sb.AppendLine("<table class=\"semantic-changes-table\">");
+            sb.AppendLine("<thead><tr><th>Class</th><th>Change</th><th>Count</th></tr></thead>");
+            sb.AppendLine("<tbody>");
+            string prevType = "";
+            foreach (var ((typeName, change), count) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => kv.Key.Change, StringComparer.Ordinal))
+            {
+                string classTd = typeName != prevType ? HtmlEncode(typeName) : "";
+                prevType = typeName;
+                sb.AppendLine($"<tr><td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td>{count}</td></tr>");
+            }
+            sb.AppendLine("</tbody></table>");
         }
 
         private void AppendSummarySection(StringBuilder sb, ConfigSettings config)
