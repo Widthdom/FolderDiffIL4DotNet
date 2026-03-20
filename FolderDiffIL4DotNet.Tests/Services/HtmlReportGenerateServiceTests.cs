@@ -719,14 +719,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
         // ── Assembly Semantic Changes / アセンブリ意味変更 ─────────────────────
 
         [Fact]
-        public void GenerateDiffReportHtml_MethodLevelChanges_ShowsInlineAboveILDiff()
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_ShowsInlineAboveILDiff()
         {
-            var (oldDir, newDir, reportDir) = MakeDirs("method-changes");
+            var (oldDir, newDir, reportDir) = MakeDirs("semantic-changes");
 
             _resultLists.AddModifiedFileRelativePath("lib.dll");
             _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
-            _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
             {
                 Entries = new List<MemberChangeEntry>
                 {
@@ -738,26 +738,26 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
 
             var config = CreateConfig(enableInlineDiff: true);
-            config.ShouldIncludeMethodLevelChangesInReport = true;
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null,
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("Show assembly semantic changes", html);
-            Assert.Contains("methods_mod_0", html);
-            Assert.Contains("method-changes-table", html);
+            Assert.Contains("semantic_mod_0", html);
+            Assert.Contains("semantic-changes-table", html);
         }
 
         [Fact]
-        public void GenerateDiffReportHtml_MethodLevelChanges_NotShownWhenDisabled()
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_NotShownWhenDisabled()
         {
-            var (oldDir, newDir, reportDir) = MakeDirs("method-changes-off");
+            var (oldDir, newDir, reportDir) = MakeDirs("semantic-changes-off");
 
             _resultLists.AddModifiedFileRelativePath("lib.dll");
             _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
-            _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
             {
                 Entries = new List<MemberChangeEntry>
                 {
@@ -766,7 +766,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
 
             var config = CreateConfig(enableInlineDiff: true);
-            config.ShouldIncludeMethodLevelChangesInReport = false;
+            config.ShouldIncludeAssemblySemanticChangesInReport = false;
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null,
                 computerName: "test-host", config);
@@ -776,14 +776,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReportHtml_MethodLevelChanges_LazyRender_EncodesAsBase64()
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_LazyRender_EncodesAsBase64()
         {
-            var (oldDir, newDir, reportDir) = MakeDirs("method-changes-lazy");
+            var (oldDir, newDir, reportDir) = MakeDirs("semantic-changes-lazy");
 
             _resultLists.AddModifiedFileRelativePath("lib.dll");
             _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
-            _resultLists.FileRelativePathToMethodLevelChanges["lib.dll"] = new MethodLevelChangesSummary
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
             {
                 Entries = new List<MemberChangeEntry>
                 {
@@ -792,17 +792,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
 
             var config = CreateConfig(enableInlineDiff: true, lazyRender: true);
-            config.ShouldIncludeMethodLevelChangesInReport = true;
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null,
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Should contain a data-diff-html attribute for the method changes row
-            Assert.Contains("methods_mod_0", html);
+            // Should contain a data-diff-html attribute for the semantic changes row
+            Assert.Contains("semantic_mod_0", html);
             Assert.Contains("Show assembly semantic changes", html);
             // Content should NOT be inline (lazy rendered) — table markup is base64-encoded
-            Assert.DoesNotContain("method-changes-table", html);
+            Assert.DoesNotContain("semantic-changes-table", html);
             Assert.Contains("data-diff-html", html);
         }
 

@@ -108,10 +108,10 @@ namespace FolderDiffIL4DotNet.Models
         public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
-        /// Method-level change summaries for ILMismatch files, keyed by file relative path.
-        /// ILMismatch ファイルに対するメソッドレベル変更要約。キーはファイルの相対パス。
+        /// Assembly semantic change summaries for ILMismatch files, keyed by file relative path.
+        /// ILMismatch ファイルに対するアセンブリセマンティック変更要約。キーはファイルの相対パス。
         /// </summary>
-        public ConcurrentDictionary<string, MethodLevelChangesSummary> FileRelativePathToMethodLevelChanges { get; } = new ConcurrentDictionary<string, MethodLevelChangesSummary>(StringComparer.Ordinal);
+        public ConcurrentDictionary<string, AssemblySemanticChangesSummary> FileRelativePathToAssemblySemanticChanges { get; } = new ConcurrentDictionary<string, AssemblySemanticChangesSummary>(StringComparer.Ordinal);
 
         public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
 
@@ -174,7 +174,7 @@ namespace FolderDiffIL4DotNet.Models
             DisassemblerToolVersions.Clear();
             DisassemblerToolVersionsFromCache.Clear();
             NewFileTimestampOlderThanOldWarnings.Clear();
-            FileRelativePathToMethodLevelChanges.Clear();
+            FileRelativePathToAssemblySemanticChanges.Clear();
         }
 
         /// <summary>

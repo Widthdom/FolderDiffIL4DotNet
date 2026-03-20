@@ -192,12 +192,12 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>Writes the Assembly Semantic Changes section for ILMismatch assemblies. / ILMismatch アセンブリのアセンブリ意味変更セクションを書き込みます。</summary>
-        private sealed class MethodLevelChangesSectionWriter : IReportSectionWriter
+        private sealed class AssemblySemanticChangesSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                if (!ctx.Config.ShouldIncludeMethodLevelChangesInReport) return;
-                var changes = ctx.FileDiffResultLists.FileRelativePathToMethodLevelChanges;
+                if (!ctx.Config.ShouldIncludeAssemblySemanticChangesInReport) return;
+                var changes = ctx.FileDiffResultLists.FileRelativePathToAssemblySemanticChanges;
                 if (changes.IsEmpty) return;
 
                 writer.WriteLine(REPORT_SECTION_ASSEMBLY_SEMANTIC_CHANGES);

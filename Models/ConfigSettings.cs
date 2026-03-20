@@ -105,7 +105,7 @@ namespace FolderDiffIL4DotNet.Models
         /// （型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更）をレポートに出力するかどうか。
         /// true の場合、Summary セクションと IL Cache Stats セクションの間に Assembly Semantic Changes セクションを追加します。
         /// </summary>
-        public bool ShouldIncludeMethodLevelChangesInReport { get; set; } = true;
+        public bool ShouldIncludeAssemblySemanticChangesInReport { get; set; } = true;
 
         /// <summary>
         /// Whether to include IL cache statistics (hits, misses, hit rate, etc.) in the diff report.

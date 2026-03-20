@@ -209,11 +209,11 @@ namespace FolderDiffIL4DotNet.Services
                 AppendFileRow(sb, "mod", idx, path, ts, col6, asm ?? "");
 
                 // Method-level changes row (above IL diff)
-                if (config.ShouldIncludeMethodLevelChangesInReport &&
+                if (config.ShouldIncludeAssemblySemanticChangesInReport &&
                     diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch &&
-                    _fileDiffResultLists.FileRelativePathToMethodLevelChanges.TryGetValue(path, out var methodChanges))
+                    _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges.TryGetValue(path, out var semanticChanges))
                 {
-                    AppendMethodLevelChangesRow(sb, idx, path, methodChanges, config);
+                    AppendAssemblySemanticChangesRow(sb, idx, path, semanticChanges, config);
                 }
 
                 if (config.EnableInlineDiff &&
@@ -345,11 +345,11 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</tr>");
         }
 
-        private void AppendMethodLevelChangesRow(
+        private void AppendAssemblySemanticChangesRow(
             StringBuilder sb,
             int idx,
             string assemblyPath,
-            MethodLevelChangesSummary summary,
+            AssemblySemanticChangesSummary summary,
             ConfigSettings config,
             string sectionPrefix = "mod")
         {
@@ -357,11 +357,11 @@ namespace FolderDiffIL4DotNet.Services
             int totalChanges = summary.Entries.Count;
 
             var contentBuilder = new StringBuilder();
-            contentBuilder.AppendLine("<div class=\"method-changes\">");
+            contentBuilder.AppendLine("<div class=\"semantic-changes\">");
 
             if (summary.Entries.Count > 0)
             {
-                contentBuilder.AppendLine("<table class=\"method-changes-table\">");
+                contentBuilder.AppendLine("<table class=\"semantic-changes-table\">");
                 contentBuilder.AppendLine("<thead><tr><th>Class</th><th>Change</th><th>Kind</th><th>Access</th><th>Modifiers</th><th>Type</th><th>Name</th><th>ReturnType</th><th>Parameters</th><th>Body</th></tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 foreach (var e in summary.Entries)
@@ -385,7 +385,7 @@ namespace FolderDiffIL4DotNet.Services
             contentBuilder.AppendLine("</ul>");
             contentBuilder.AppendLine("</div>");
 
-            string detailsId = $"methods_{sectionPrefix}_{idx}";
+            string detailsId = $"semantic_{sectionPrefix}_{idx}";
             string summaryText = totalChanges > 0
                 ? $"#{recordNo} Show assembly semantic changes ({totalChanges} change{(totalChanges == 1 ? "" : "s")})"
                 : $"#{recordNo} Show assembly semantic changes (other changes only)";

@@ -4,19 +4,19 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Models
 {
-    public sealed class MethodLevelChangesSummaryTests
+    public sealed class AssemblySemanticChangesSummaryTests
     {
         [Fact]
         public void HasChanges_DefaultInstance_ReturnsFalse()
         {
-            var summary = new MethodLevelChangesSummary();
+            var summary = new AssemblySemanticChangesSummary();
             Assert.False(summary.HasChanges);
         }
 
         [Fact]
         public void HasChanges_WithEntries_ReturnsTrue()
         {
-            var summary = new MethodLevelChangesSummary
+            var summary = new AssemblySemanticChangesSummary
             {
                 Entries = new List<MemberChangeEntry>
                 {
@@ -29,7 +29,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void HasChanges_EmptyEntries_ReturnsFalse()
         {
-            var summary = new MethodLevelChangesSummary
+            var summary = new AssemblySemanticChangesSummary
             {
                 Entries = new List<MemberChangeEntry>(),
             };

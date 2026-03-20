@@ -126,10 +126,10 @@ namespace FolderDiffIL4DotNet.Services
                             areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch,
                             disassemblerLabel);
 
-                        // Best-effort method-level analysis for ILMismatch assemblies
-                        if (!areDotNetAssembliesEqual && _config.ShouldIncludeMethodLevelChangesInReport)
+                        // Best-effort assembly semantic analysis for ILMismatch assemblies
+                        if (!areDotNetAssembliesEqual && _config.ShouldIncludeAssemblySemanticChangesInReport)
                         {
-                            TryAnalyzeMethodLevelChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
+                            TryAnalyzeAssemblySemanticChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
                         }
 
                         return areDotNetAssembliesEqual;
@@ -242,19 +242,19 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Best-effort method-level analysis using System.Reflection.Metadata.
+        /// Best-effort assembly semantic analysis using System.Reflection.Metadata.
         /// Failures are logged but do not affect the comparison result.
-        /// System.Reflection.Metadata を使用したベストエフォートのメソッドレベル解析。
+        /// System.Reflection.Metadata を使用したベストエフォートのアセンブリセマンティック解析。
         /// 失敗してもファイル比較結果には影響しません。
         /// </summary>
-        private void TryAnalyzeMethodLevelChanges(string fileRelativePath, string oldPath, string newPath)
+        private void TryAnalyzeAssemblySemanticChanges(string fileRelativePath, string oldPath, string newPath)
         {
             try
             {
                 var summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath);
                 if (summary?.HasChanges == true)
                 {
-                    _fileDiffResultLists.FileRelativePathToMethodLevelChanges[fileRelativePath] = summary;
+                    _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges[fileRelativePath] = summary;
                 }
             }
 #pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis

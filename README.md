@@ -216,7 +216,7 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | Parameters | Parameter list for Method/Constructor (empty for Field/Property/Class/Record) | `string name, int count = 0` |
 | Body | `Changed` when method body or field initializer IL has changed; otherwise empty | `Changed` |
 
-Controlled by [`ShouldIncludeMethodLevelChangesInReport`](#config-en-shouldincludemethodlevelchangesinreport) (default: `true`).
+Controlled by [`ShouldIncludeAssemblySemanticChangesInReport`](#config-en-shouldincludeassemblysemanticchangesinreport) (default: `true`).
 
 The bullet list below the table shows counts per change kind (`Added`, `Removed`, `Modified`).
 
@@ -277,8 +277,8 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>Includes <code>Ignored Files</code> section before <code>Unchanged</code>.</td>
     </tr>
-    <tr id="config-en-shouldincludemethodlevelchangesinreport">
-      <td><code>ShouldIncludeMethodLevelChangesInReport</code></td>
+    <tr id="config-en-shouldincludeassemblysemanticchangesinreport">
+      <td><code>ShouldIncludeAssemblySemanticChangesInReport</code></td>
       <td><code>true</code></td>
       <td>When <code>true</code>, includes an <code>Assembly Semantic Changes</code> section for <code>ILMismatch</code> assemblies between <code>Summary</code> and <code>IL Cache Stats</code>. Uses <code>System.Reflection.Metadata</code> to detect type/method/property/field additions, removals, and method body changes. In the HTML report, this appears as an expandable inline row above the IL diff.</td>
     </tr>
@@ -698,7 +698,7 @@ flowchart TD
 | Parameters | Method/Constructor のパラメータ一覧（Field/Property/Class/Record の場合は空） | `string name, int count = 0` |
 | Body | メソッドボディまたはフィールド初期化子の IL が変更された場合 `Changed`、それ以外は空 | `Changed` |
 
-[`ShouldIncludeMethodLevelChangesInReport`](#config-ja-shouldincludemethodlevelchangesinreport)（既定値: `true`）で制御します。
+[`ShouldIncludeAssemblySemanticChangesInReport`](#config-ja-shouldincludeassemblysemanticchangesinreport)（既定値: `true`）で制御します。
 
 テーブル下の箇条書きに変更種別ごとのカウント（`Added`、`Removed`、`Modified`）が表示されます。
 
@@ -759,8 +759,8 @@ flowchart TD
       <td><code>true</code></td>
       <td>レポートに <code>Ignored Files</code> セクションを出力するか。</td>
     </tr>
-    <tr id="config-ja-shouldincludemethodlevelchangesinreport">
-      <td><code>ShouldIncludeMethodLevelChangesInReport</code></td>
+    <tr id="config-ja-shouldincludeassemblysemanticchangesinreport">
+      <td><code>ShouldIncludeAssemblySemanticChangesInReport</code></td>
       <td><code>true</code></td>
       <td><code>true</code> の場合、<code>ILMismatch</code> と判定された .NET アセンブリについて、<code>Summary</code> と <code>IL Cache Stats</code> の間に <code>Assembly Semantic Changes</code> セクションを出力します。<code>System.Reflection.Metadata</code> を使用して型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更を検出します。HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。</td>
     </tr>

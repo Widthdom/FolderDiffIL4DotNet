@@ -65,7 +65,7 @@ namespace FolderDiffIL4DotNet.Services
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
-    table:not(.stat-table):not(.diff-table):not(.method-changes-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
+    table:not(.stat-table):not(.diff-table):not(.semantic-changes-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
@@ -133,12 +133,12 @@ namespace FolderDiffIL4DotNet.Services
     td.diff-trunc-td { color: #735c0f; padding: 2px 8px; font-style: italic; }
     p.diff-skipped { color: #735c0f; font-size: 12px; padding: 4px 8px;
                      background: #fffbdd; margin: 0; }
-    /* ── Method-level changes ──────────────────────────────────────────── */
-    .method-changes { padding: 6px 12px; font-size: 12px; }
-    .method-changes p { margin: 4px 0 2px; }
-    table.method-changes-table { width: auto; border-collapse: collapse; margin: 4px 0; font-size: 12px; }
-    table.method-changes-table th { padding: 3px 8px; border: 1px solid #ccc; background: #f6f8fa; font-size: 11px; text-align: left; white-space: nowrap; }
-    table.method-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; }";
+    /* ── Assembly semantic changes ─────────────────────────────────────── */
+    .semantic-changes { padding: 6px 12px; font-size: 12px; }
+    .semantic-changes p { margin: 4px 0 2px; }
+    table.semantic-changes-table { width: auto; border-collapse: collapse; margin: 4px 0; font-size: 12px; }
+    table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #ccc; background: #f6f8fa; font-size: 11px; text-align: left; white-space: nowrap; }
+    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; }";
         }
     }
 }

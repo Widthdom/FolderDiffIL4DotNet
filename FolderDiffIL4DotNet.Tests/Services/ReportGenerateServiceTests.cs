@@ -759,9 +759,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void GenerateDiffReport_AssemblySemanticChanges_IncludedBetweenSummaryAndILCacheStats()
         {
-            var oldDir = Path.Combine(_rootDir, "old-mlc");
-            var newDir = Path.Combine(_rootDir, "new-mlc");
-            var reportDir = Path.Combine(_rootDir, "report-mlc");
+            var oldDir = Path.Combine(_rootDir, "old-asc");
+            var newDir = Path.Combine(_rootDir, "new-asc");
+            var reportDir = Path.Combine(_rootDir, "report-asc");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
@@ -769,7 +769,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddModifiedFileRelativePath("src/App.dll");
             _resultLists.RecordDiffDetail("src/App.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
-            var summary = new MethodLevelChangesSummary
+            var summary = new AssemblySemanticChangesSummary
             {
                 Entries = new List<MemberChangeEntry>
                 {
@@ -782,7 +782,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     new("Added", "MyApp.UserService", "private", "readonly", "Field", "_cache", "object", "", "", ""),
                 },
             };
-            _resultLists.FileRelativePathToMethodLevelChanges["src/App.dll"] = summary;
+            _resultLists.FileRelativePathToAssemblySemanticChanges["src/App.dll"] = summary;
 
             // Also add IL Cache Stats to verify ordering
             var config = CreateConfig();
@@ -818,16 +818,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReport_MethodLevelChanges_NotIncludedWhenDisabled()
+        public void GenerateDiffReport_AssemblySemanticChanges_NotIncludedWhenDisabled()
         {
-            var oldDir = Path.Combine(_rootDir, "old-mlc-off");
-            var newDir = Path.Combine(_rootDir, "new-mlc-off");
-            var reportDir = Path.Combine(_rootDir, "report-mlc-off");
+            var oldDir = Path.Combine(_rootDir, "old-asc-off");
+            var newDir = Path.Combine(_rootDir, "new-asc-off");
+            var reportDir = Path.Combine(_rootDir, "report-asc-off");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
-            _resultLists.FileRelativePathToMethodLevelChanges["src/App.dll"] = new MethodLevelChangesSummary
+            _resultLists.FileRelativePathToAssemblySemanticChanges["src/App.dll"] = new AssemblySemanticChangesSummary
             {
                 Entries = new List<MemberChangeEntry>
                 {
@@ -836,7 +836,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
 
             var config = CreateConfig();
-            config.ShouldIncludeMethodLevelChangesInReport = false;
+            config.ShouldIncludeAssemblySemanticChangesInReport = false;
             _service.GenerateDiffReport(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
@@ -847,18 +847,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReport_MethodLevelChanges_NotIncludedWhenNoChanges()
+        public void GenerateDiffReport_AssemblySemanticChanges_NotIncludedWhenNoChanges()
         {
-            var oldDir = Path.Combine(_rootDir, "old-mlc-empty");
-            var newDir = Path.Combine(_rootDir, "new-mlc-empty");
-            var reportDir = Path.Combine(_rootDir, "report-mlc-empty");
+            var oldDir = Path.Combine(_rootDir, "old-asc-empty");
+            var newDir = Path.Combine(_rootDir, "new-asc-empty");
+            var reportDir = Path.Combine(_rootDir, "report-asc-empty");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
             // No method-level changes recorded
             var config = CreateConfig();
-            config.ShouldIncludeMethodLevelChangesInReport = true;
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
             _service.GenerateDiffReport(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",

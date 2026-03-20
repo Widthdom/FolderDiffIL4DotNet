@@ -21,12 +21,12 @@ namespace FolderDiffIL4DotNet.Services
     internal static class AssemblyMethodAnalyzer
     {
         /// <summary>
-        /// Analyses two assembly files and returns a summary of member-level changes.
+        /// Analyses two assembly files and returns a summary of assembly semantic changes.
         /// Returns <see langword="null"/> if analysis fails (best-effort).
-        /// 2 つのアセンブリファイルを解析し、メンバーレベルの変更要約を返します。
+        /// 2 つのアセンブリファイルを解析し、アセンブリセマンティック変更要約を返します。
         /// 解析に失敗した場合は <see langword="null"/> を返します（ベストエフォート）。
         /// </summary>
-        public static MethodLevelChangesSummary? Analyze(string oldAssemblyPath, string newAssemblyPath)
+        public static AssemblySemanticChangesSummary? Analyze(string oldAssemblyPath, string newAssemblyPath)
         {
             try
             {
@@ -94,7 +94,7 @@ namespace FolderDiffIL4DotNet.Services
                     entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", "", ""));
                 }
 
-                return new MethodLevelChangesSummary
+                return new AssemblySemanticChangesSummary
                 {
                     Entries = entries,
                 };

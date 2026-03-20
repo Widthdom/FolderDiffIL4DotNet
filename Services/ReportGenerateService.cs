@@ -174,7 +174,7 @@ namespace FolderDiffIL4DotNet.Services
             new RemovedFilesSectionWriter(),
             new ModifiedFilesSectionWriter(),
             new SummarySectionWriter(),
-            new MethodLevelChangesSectionWriter(),
+            new AssemblySemanticChangesSectionWriter(),
             new ILCacheStatsSectionWriter(),
             new WarningsSectionWriter(),
         };

@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- Added member-level change detection for `ILMismatch` assemblies using `System.Reflection.Metadata`. For each modified .NET assembly, the report now shows type/method/property/field additions, removals, and method body changes. This new **Assembly Semantic Changes** section appears between **Summary** and **IL Cache Stats** in the Markdown report, and as an expandable inline row above the IL diff in the HTML report. Controlled by the new `ShouldIncludeMethodLevelChangesInReport` config setting (default: `true`). Added [`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs), [`MethodLevelChangesSummary`](Models/MethodLevelChangesSummary.cs), and corresponding tests.
+- Added member-level change detection for `ILMismatch` assemblies using `System.Reflection.Metadata`. For each modified .NET assembly, the report now shows type/method/property/field additions, removals, and method body changes. This new **Assembly Semantic Changes** section appears between **Summary** and **IL Cache Stats** in the Markdown report, and as an expandable inline row above the IL diff in the HTML report. Controlled by the new `ShouldIncludeAssemblySemanticChangesInReport` config setting (default: `true`). Added [`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs), [`AssemblySemanticChangesSummary`](Models/AssemblySemanticChangesSummary.cs), and corresponding tests.
 
 - Restructured the Assembly Semantic Changes table from 9 columns to 10 columns for clarity. Split the former `ReturnType (Type paramName)` column into separate `ReturnType` and `Parameters` columns. Moved `Kind` column before `Access` and `Modifiers` for better readability. Added `Constructor` and `StaticConstructor` as new Kind values (previously `.ctor`/`.cctor` were shown as `Method`). Constructors display the C# class name instead of `.ctor`. The `Type` column shows the declared type for Field/Property entries only. Empty Access/Modifiers cells no longer render as empty backticks. Changed `Method count` label to `Member count`. Renamed section from `Method-Level Changes` to `Assembly Semantic Changes`. Added record type and field variable samples to [`doc/samples/diff_report.md`](doc/samples/diff_report.md). Added bilingual **Assembly Semantic Changes** section to [README.md](README.md).
 
@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Removed parentheses from the `Parameters` column values. Since Parameters is now an independent column, wrapping values in `(…)` is redundant. Values now display as `string name, int count = 0` instead of `(string name, int count = 0)`. Empty parameter lists display as blank instead of `()`.
 
-- Added `Body` column (10th column, rightmost) to the Assembly Semantic Changes table. Displays `Changed` when a method body or field initializer has been modified at the IL level; otherwise empty. Entries with body changes use `Modified` in the Change column. Replaced the `Member count: N (Old) vs N (New)` summary line with `Added: N, Removed: N, Modified: N` counts computed from entries. Removed `OldMethodCount`/`NewMethodCount` properties from `MethodLevelChangesSummary` in favour of computed `AddedCount`, `RemovedCount`, and `ModifiedCount` properties.
+- Added `Body` column (10th column, rightmost) to the Assembly Semantic Changes table. Displays `Changed` when a method body or field initializer has been modified at the IL level; otherwise empty. Entries with body changes use `Modified` in the Change column. Replaced the `Member count: N (Old) vs N (New)` summary line with `Added: N, Removed: N, Modified: N` counts computed from entries. Removed `OldMethodCount`/`NewMethodCount` properties from `AssemblySemanticChangesSummary` in favour of computed `AddedCount`, `RemovedCount`, and `ModifiedCount` properties.
 
 ### [1.4.1] - 2026-03-20
 
@@ -379,7 +379,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 追加
 
-- `System.Reflection.Metadata` を使用した `ILMismatch` アセンブリのメンバーレベル変更検出を追加。変更のあった各 .NET アセンブリについて、型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更をレポートに出力します。Markdown レポートでは **Summary** と **IL Cache Stats** の間に **Assembly Semantic Changes** セクションとして表示され、HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。新しい設定項目 `ShouldIncludeMethodLevelChangesInReport`（既定: `true`）で制御可能。[`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs)、[`MethodLevelChangesSummary`](Models/MethodLevelChangesSummary.cs)、および対応するテストを追加。
+- `System.Reflection.Metadata` を使用した `ILMismatch` アセンブリのメンバーレベル変更検出を追加。変更のあった各 .NET アセンブリについて、型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更をレポートに出力します。Markdown レポートでは **Summary** と **IL Cache Stats** の間に **Assembly Semantic Changes** セクションとして表示され、HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。新しい設定項目 `ShouldIncludeAssemblySemanticChangesInReport`（既定: `true`）で制御可能。[`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs)、[`AssemblySemanticChangesSummary`](Models/AssemblySemanticChangesSummary.cs)、および対応するテストを追加。
 
 - Assembly Semantic Changes テーブルを 9 列から 10 列に再構成し明確化。旧 `ReturnType (Type paramName)` 列を `ReturnType` 列と `Parameters` 列に分離。`Kind` 列を `Access`・`Modifiers` の前に移動。Kind 値に `Constructor` と `StaticConstructor` を追加（従来 `.ctor`/`.cctor` は `Method` として表示）。コンストラクタは `.ctor` ではなく C# のクラス名で表示。`Type` 列は Field/Property の宣言型のみを表示。空の Access/Modifiers セルは空バッククォートではなく空欄に。`Method count` ラベルを `Member count` に変更。セクション名を `Method-Level Changes` から `Assembly Semantic Changes` に改名。[`doc/samples/diff_report.md`](doc/samples/diff_report.md) に record 型およびフィールド変数のサンプルを追加。[README.md](README.md) にバイリンガルの **アセンブリ セマンティック変更** セクションを追加。
 
@@ -387,7 +387,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `Parameters` 列の値から括弧を削除。Parameters が独立列となったため `(…)` は冗長。値は `(string name, int count = 0)` ではなく `string name, int count = 0` で表示。引数なしは `()` ではなく空欄。
 
-- Assembly Semantic Changes テーブルに `Body` 列（10 列目、最右端）を追加。メソッドボディまたはフィールド初期化子が IL レベルで変更された場合に `Changed` を表示、それ以外は空欄。ボディ変更があるエントリの Change 列は `Modified`。集計行を `Member count: N (Old) vs N (New)` から `Added: N, Removed: N, Modified: N`（エントリから算出）に変更。`MethodLevelChangesSummary` の `OldMethodCount`/`NewMethodCount` プロパティを削除し、算出プロパティ `AddedCount`、`RemovedCount`、`ModifiedCount` に置き換え。
+- Assembly Semantic Changes テーブルに `Body` 列（10 列目、最右端）を追加。メソッドボディまたはフィールド初期化子が IL レベルで変更された場合に `Changed` を表示、それ以外は空欄。ボディ変更があるエントリの Change 列は `Modified`。集計行を `Member count: N (Old) vs N (New)` から `Added: N, Removed: N, Modified: N`（エントリから算出）に変更。`AssemblySemanticChangesSummary` の `OldMethodCount`/`NewMethodCount` プロパティを削除し、算出プロパティ `AddedCount`、`RemovedCount`、`ModifiedCount` に置き換え。
 
 ### [1.4.1] - 2026-03-20
 
