@@ -77,6 +77,7 @@
 | src/Service.dll | `Removed` | MyApp.Services.OrderService | `public` | `virtual` | `Method` |  | LegacyValidate | bool (string data) |
 | src/Service.dll | `Modified` | MyApp.Services.OrderService | `public` |  | `Method` |  | ProcessOrder | void (int orderId) |
 | src/Service.dll | `Modified` | MyApp.Services.OrderService | `internal` | `static` | `Method` |  | CalculateTotal | decimal (int qty, int price) |
+| src/Service.dll | `Added` | MyApp.Services.OrderService | `private` | `readonly` | `Field` | MyApp.Models.UserRecord | _defaultUser |  |
 | src/Service.dll | `Added` | MyApp.Services.NewValidator | `private` | `readonly` | `Field` | string | _pattern |  |
 | src/Service.dll | `Added` | MyApp.Models.UserRecord |  |  | `Type` |  |  |  |
 | src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Method` |  | UserRecord | void (string Name, int Age) |
@@ -85,7 +86,7 @@
 | src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `override` | `Method` |  | ToString | string () |
 | src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `virtual` | `Method` |  | Equals | bool (object obj) |
 | src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `override` | `Method` |  | GetHashCode | int () |
-- Member count: 15 (Old) vs 25 (New)
+- Member count: 15 (Old) vs 26 (New)
 
 ### util/Legacy.dll
 - Other changes only. See IL diff for details.
