@@ -227,10 +227,13 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine("- Other changes only. See IL diff for details.");
                     }
 
-                    writer.WriteLine();
-                    writer.WriteLine("| Class | Change | Count |");
-                    writer.WriteLine("|-------|--------|-------|");
-                    WriteSummaryCountTable(writer, summary);
+                    if (summary.Entries.Count > 0)
+                    {
+                        writer.WriteLine();
+                        writer.WriteLine("| Class | Change | Count |");
+                        writer.WriteLine("|-------|--------|-------|");
+                        WriteSummaryCountTable(writer, summary);
+                    }
                 }
 
                 writer.WriteLine();

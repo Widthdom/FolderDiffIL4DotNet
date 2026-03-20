@@ -121,9 +121,6 @@
 ### util/Legacy.dll
 - Other changes only. See IL diff for details.
 
-| Class | Change | Count |
-|-------|--------|-------|
-
 ## IL Cache Stats
 - Hits    : 42
 - Misses  : 8

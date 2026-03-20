@@ -381,7 +381,8 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("<p>Other changes only. See IL diff for details.</p>");
             }
 
-            AppendSummaryCountTable(contentBuilder, summary);
+            if (summary.Entries.Count > 0)
+                AppendSummaryCountTable(contentBuilder, summary);
             contentBuilder.AppendLine("</div>");
 
             string detailsId = $"semantic_{sectionPrefix}_{idx}";
