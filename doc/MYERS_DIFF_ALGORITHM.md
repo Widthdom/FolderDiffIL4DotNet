@@ -525,9 +525,9 @@ public readonly record struct DiffLine(
 
 | Parameter | Default | Purpose |
 |-----------|---------|---------|
-| `InlineDiffMaxEditDistance` | 4000 | Maximum D before aborting the diff |
-| `InlineDiffMaxOutputLines` | 10000 | Maximum lines in the diff output |
-| `InlineDiffMaxDiffLines` | 10000 | Maximum total diff lines (post-compute check) |
+| [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs) | 4000 | Maximum D before aborting the diff |
+| [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs) | 10000 | Maximum lines in the diff output |
+| [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs) | 10000 | Maximum total diff lines (post-compute check) |
 
 ### When D Exceeds the Limit
 
@@ -1075,9 +1075,9 @@ public readonly record struct DiffLine(
 
 | パラメータ | 既定値 | 用途 |
 |-----------|--------|------|
-| `InlineDiffMaxEditDistance` | 4000 | 差分を中断する最大 D |
-| `InlineDiffMaxOutputLines` | 10000 | diff 出力の最大行数 |
-| `InlineDiffMaxDiffLines` | 10000 | diff 行の合計上限（計算後チェック） |
+| [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs) | 4000 | 差分を中断する最大 D |
+| [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs) | 10000 | diff 出力の最大行数 |
+| [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs) | 10000 | diff 行の合計上限（計算後チェック） |
 
 ### D が上限を超えた場合
 
