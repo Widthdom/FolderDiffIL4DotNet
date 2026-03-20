@@ -38,7 +38,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
@@ -244,9 +244,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(_resultLists.NewFileTimestampOlderThanOldWarnings);
         }
 
-        /// <summary>
-        /// シンボリックリンク経由のファイルも列挙・比較して相対パス分類できることを確認します。
-        /// </summary>
+        // Verify that files accessed via symbolic links are enumerated, compared, and classified by relative path
+        // シンボリックリンク経由のファイルも列挙・比較して相対パス分類できることを確認する
         [Fact]
         public async Task ExecuteFolderDiffAsync_WhenComparingFileSymlinks_ClassifiesUsingLinkedContents()
         {
@@ -322,13 +321,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(absolutePath, content);
         }
 
-        /// <summary>
-        /// 実ファイルを作成したうえで、そのファイルを指すシンボリックリンクを生成します。
-        /// </summary>
-        /// <param name="sourceFileAbsolutePath">リンク先として使う実ファイルの絶対パスです。</param>
-        /// <param name="linkFileAbsolutePath">生成するシンボリックリンクの絶対パスです。</param>
-        /// <param name="content">実ファイルへ書き込む内容です。</param>
-        /// <returns>リンク生成に成功した場合は true、権限やプラットフォーム制約で生成できない場合は false です。</returns>
+        // Creates a real file and a symbolic link pointing to it; returns false if symlink creation fails
+        // 実ファイルとそれを指すシンボリックリンクを生成し、リンク作成に失敗した場合は false を返す
         private static bool TryCreateFileSymbolicLink(string sourceFileAbsolutePath, string linkFileAbsolutePath, string content)
         {
             try

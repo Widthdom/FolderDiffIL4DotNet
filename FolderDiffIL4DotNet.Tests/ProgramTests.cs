@@ -48,7 +48,7 @@ namespace FolderDiffIL4DotNet.Tests
                 }
                 catch
                 {
-                    // ignore cleanup errors in tests
+                    // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
                 }
             }
         }
@@ -105,7 +105,7 @@ namespace FolderDiffIL4DotNet.Tests
                 }
                 catch
                 {
-                    // ignore cleanup errors in tests
+                    // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
                 }
                 try
                 {
@@ -116,7 +116,7 @@ namespace FolderDiffIL4DotNet.Tests
                 }
                 catch
                 {
-                    // ignore cleanup errors in tests
+                    // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
                 }
             }
         }
@@ -193,7 +193,7 @@ namespace FolderDiffIL4DotNet.Tests
                 }
                 catch
                 {
-                    // ignore cleanup errors in tests
+                    // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
                 }
                 try
                 {
@@ -204,7 +204,7 @@ namespace FolderDiffIL4DotNet.Tests
                 }
                 catch
                 {
-                    // ignore cleanup errors in tests
+                    // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
                 }
             }
         }
@@ -276,7 +276,7 @@ namespace FolderDiffIL4DotNet.Tests
                 }
                 catch
                 {
-                    // ignore cleanup errors in tests
+                    // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
                 }
                 try
                 {
@@ -287,7 +287,7 @@ namespace FolderDiffIL4DotNet.Tests
                 }
                 catch
                 {
-                    // ignore cleanup errors in tests
+                    // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
                 }
             }
         }

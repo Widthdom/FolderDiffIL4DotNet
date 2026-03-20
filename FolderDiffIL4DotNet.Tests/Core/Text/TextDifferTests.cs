@@ -7,7 +7,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
 {
     public sealed class TextDifferTests
     {
-        // ── 完全一致 ─────────────────────────────────────────────────────────
+        // ── Exact match / 完全一致 ────────────────────────────────────────────
 
         [Fact]
         public void Compute_IdenticalLines_ReturnsEmpty()
@@ -28,7 +28,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.Empty(result);
         }
 
-        // ── 追加のみ ─────────────────────────────────────────────────────────
+        // ── Additions only / 追加のみ ────────────────────────────────────────
 
         [Fact]
         public void Compute_OldEmpty_AllAdded()
@@ -46,7 +46,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.All(result.Where(l => l.Kind == TextDiffer.Added), l => Assert.Equal(0, l.OldLineNo));
         }
 
-        // ── 削除のみ ─────────────────────────────────────────────────────────
+        // ── Deletions only / 削除のみ ────────────────────────────────────────
 
         [Fact]
         public void Compute_NewEmpty_AllRemoved()
@@ -63,7 +63,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.All(result.Where(l => l.Kind == TextDiffer.Removed), l => Assert.Equal(0, l.NewLineNo));
         }
 
-        // ── 単一行変更 ────────────────────────────────────────────────────────
+        // ── Single-line change / 単一行変更 ──────────────────────────────────
 
         [Fact]
         public void Compute_SingleLineChanged_ProducesRemoveAndAdd()
@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.Contains(result, l => l.Kind == TextDiffer.Added && l.Text == "world");
         }
 
-        // ── 行番号 ────────────────────────────────────────────────────────────
+        // ── Line numbers / 行番号 ────────────────────────────────────────────
 
         [Fact]
         public void Compute_LineNumbers_AreOneBasedAndCorrect()
@@ -96,7 +96,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.Equal(3, addedLine.NewLineNo);
         }
 
-        // ── コンテキスト行 ───────────────────────────────────────────────────
+        // ── Context lines / コンテキスト行 ───────────────────────────────────
 
         [Fact]
         public void Compute_ContextLines_AroundChange()
@@ -107,10 +107,12 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             var result = TextDiffer.Compute(old, @new, contextLines: 1);
 
             var contextLines = result.Where(l => l.Kind == TextDiffer.Context).ToList();
+            // context=1 -- 1 line before and after the change (line 3): "b"(2) and "d"(4)
             // context=1 → 変更行(line3)の前後1行: "b"(2) と "d"(4)
             Assert.Equal(2, contextLines.Count);
             Assert.Contains(contextLines, l => l.Text == "b");
             Assert.Contains(contextLines, l => l.Text == "d");
+            // "a" (first) and "e" (last) should NOT be included
             // 最初の "a" と最後の "e" は含まれない
             Assert.DoesNotContain(contextLines, l => l.Text == "a");
             Assert.DoesNotContain(contextLines, l => l.Text == "e");
@@ -127,7 +129,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.DoesNotContain(result, l => l.Kind == TextDiffer.Context);
         }
 
-        // ── ハンクヘッダ ─────────────────────────────────────────────────────
+        // ── Hunk header / ハンクヘッダ ───────────────────────────────────────
 
         [Fact]
         public void Compute_HunkHeader_HasCorrectFormat()
@@ -144,12 +146,13 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.EndsWith("@@", hunk.Text.TrimEnd());
         }
 
-        // ── 複数ハンク ────────────────────────────────────────────────────────
+        // ── Multiple hunks / 複数ハンク ──────────────────────────────────────
 
         [Fact]
         public void Compute_MultipleHunks_TwoHunkHeaders()
         {
-            // 変更箇所が離れていれば2ハンクになる
+            // Changes far apart produce 2 hunks
+            // 変更箇所が離れていれば 2 ハンクになる
             var old = new[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
             var @new = new[] { "X", "2", "3", "4", "5", "6", "7", "8", "9", "Y" };
 
@@ -159,7 +162,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.Equal(2, hunkHeaders.Count);
         }
 
-        // ── 出力上限による打ち切り ──────────────────────────────────────────
+        // ── Output limit truncation / 出力上限による打ち切り ─────────────────
 
         [Fact]
         public void Compute_MaxOutputLines_TruncatesWithTruncatedLine()
@@ -170,17 +173,19 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             var result = TextDiffer.Compute(old, @new, contextLines: 0, maxOutputLines: 5);
 
             Assert.Contains(result, l => l.Kind == TextDiffer.Truncated);
+            // Number of lines before the truncation marker should be <= maxOutputLines
             // 打ち切り行より前の行数は maxOutputLines 以下
             int truncIdx = result.ToList().FindIndex(l => l.Kind == TextDiffer.Truncated);
             Assert.True(truncIdx <= 5);
         }
 
-        // ── 編集距離上限 ─────────────────────────────────────────────────────
+        // ── Edit distance limit / 編集距離上限 ──────────────────────────────
 
         [Fact]
         public void Compute_EditDistanceExceedsLimit_ReturnsTruncatedMessage()
         {
-            // maxEditDistance=5 に対して編集距離 10 (すべて異なる行) → スキップ
+            // Edit distance 10 (all lines differ) exceeds maxEditDistance=5 -- skipped
+            // maxEditDistance=5 に対して編集距離 10（すべて異なる行）→ スキップ
             var old = Enumerable.Range(1, 10).Select(i => $"old{i}").ToArray();
             var @new = Enumerable.Range(1, 10).Select(i => $"new{i}").ToArray();
 
@@ -195,14 +200,17 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
         [Fact]
         public void Compute_LargeFilesSmallEditDistance_ProducesCorrectDiff()
         {
-            // 旧 LCS ガードでは m×n > 4M でスキップされていたが、Myers diff なら小さい差分は処理できる
-            // 3000 行 × 2000 行: 共通行 2000、削除行 1000 → 編集距離 D=1000
+            // Old LCS guard would skip when m*n > 4M, but Myers diff can handle small diffs.
+            // 3000 x 2000 lines: 2000 common, 1000 deleted -- edit distance D=1000
+            // 旧 LCS ガードでは m*n > 4M でスキップされていたが、Myers diff なら小さい差分は処理できる。
+            // 3000 行 x 2000 行: 共通行 2000、削除行 1000 → 編集距離 D=1000
             var old = Enumerable.Range(1, 3000).Select(i => $"line{i}").ToArray();
             var @new = Enumerable.Range(1, 2000).Select(i => $"line{i}").ToArray();
 
             var result = TextDiffer.Compute(old, @new, contextLines: 0, maxOutputLines: 10000);
 
-            // 旧の LCS ガードでは Truncated が返っていたが、Myers diff では正しく差分が得られる
+            // Old LCS guard returned Truncated, but Myers diff produces the correct diff
+            // 旧 LCS ガードでは Truncated が返っていたが、Myers diff では正しく差分が得られる
             Assert.False(result.Count == 1 && result[0].Kind == TextDiffer.Truncated);
             Assert.Contains(result, l => l.Kind == TextDiffer.Removed);
             Assert.DoesNotContain(result, l => l.Kind == TextDiffer.Added);
@@ -211,8 +219,10 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
         [Fact]
         public void Compute_VeryLargeFilesWithTinyDiff_ProducesInlineDiff()
         {
-            // ファイルが大きくても差分が小さければ正常に処理できることを検証
-            // 10000 行の共通行に 1 行の変更を挟む
+            // Even very large files are handled correctly when the diff is small.
+            // 10000 common lines with a single changed line in the middle.
+            // ファイルが大きくても差分が小さければ正常に処理できることを検証。
+            // 10000 行の共通行に 1 行の変更を挟む。
             var old = Enumerable.Range(1, 10000).Select(i => $"common{i}").ToArray();
             var @new = old.ToArray();
             old[5000] = "old-changed";
@@ -222,11 +232,12 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
 
             Assert.Contains(result, l => l.Kind == TextDiffer.Removed && l.Text == "old-changed");
             Assert.Contains(result, l => l.Kind == TextDiffer.Added   && l.Text == "new-changed");
+            // Should produce a proper diff, not a single Truncated entry
             // 単独の Truncated で返すのではなく、正しく差分が得られること
             Assert.False(result.Count == 1 && result[0].Kind == TextDiffer.Truncated);
         }
 
-        // ── null 引数 ─────────────────────────────────────────────────────────
+        // ── Null arguments / null 引数 ──────────────────────────────────────
 
         [Fact]
         public void Compute_NullOld_ThrowsArgumentNullException()
@@ -254,7 +265,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.Contains(result, l => l.Kind == TextDiffer.Added && l.Text == "変更後");
         }
 
-        // ── 行頭空白 ─────────────────────────────────────────────────────────
+        // ── Leading whitespace / 行頭空白 ────────────────────────────────────
 
         [Fact]
         public void Compute_WhitespaceOnlyDiff_DetectsChange()
@@ -268,7 +279,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.Contains(result, l => l.Kind == TextDiffer.Added);
         }
 
-        // ── HunkHeader の OldLineNo/NewLineNo ────────────────────────────────
+        // ── HunkHeader OldLineNo/NewLineNo ──────────────────────────────────
 
         [Fact]
         public void Compute_HunkHeaderLine_HasZeroLineNumbers()
@@ -283,7 +294,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.Equal(0, hunk.NewLineNo);
         }
 
-        // ── コンテキスト行の行番号整合性 ─────────────────────────────────────
+        // ── Context line number consistency / コンテキスト行の行番号整合性 ──
 
         [Fact]
         public void Compute_ContextLines_BothLineNumbersSet()

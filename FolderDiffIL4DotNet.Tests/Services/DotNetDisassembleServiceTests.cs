@@ -42,7 +42,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
@@ -52,7 +52,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var binDir = Path.Combine(_rootDir, "bin");
             Directory.CreateDirectory(binDir);
 
-            // dotnet-ildasm: version succeeds, disassembly fails for files ending with "bad.dll"
+            // dotnet-ildasm: version succeeds but disassembly fails for files matching "bad.dll"
+            // dotnet-ildasm: バージョン取得は成功するが "bad.dll" に一致するファイルの逆アセンブルは失敗する
             InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 0.12.0");
@@ -60,13 +61,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Environment.SetEnvironmentVariable(prefix + "FAIL_PATTERN", "bad.dll");
                 Environment.SetEnvironmentVariable(prefix + "FAIL_EXIT", "90");
             });
-            // dotnet muxer: always fails
+            // dotnet muxer: always fails / dotnet muxer: 常に失敗
             InstallFakeTool(binDir, "dotnet", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_EXIT", "1");
                 Environment.SetEnvironmentVariable(prefix + "EXIT", "1");
             });
-            // ilspycmd: always succeeds
+            // ilspycmd: always succeeds / ilspycmd: 常に成功
             InstallFakeTool(binDir, "ilspycmd", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "ilspycmd 9.1.0");
@@ -131,8 +132,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildPrefetchCacheKeyPatterns_DotnetMuxer_IncludesCanonicalAndLegacyLabels()
         {
-            // BuildPrefetchCacheKeyPatterns は ILCachePrefetcher へ移動しました。
-            // BuildPrefetchCacheKeyPatterns has been moved to ILCachePrefetcher.
+            // BuildPrefetchCacheKeyPatterns has been moved to ILCachePrefetcher
+            // BuildPrefetchCacheKeyPatterns は ILCachePrefetcher へ移動済み
             var method = typeof(ILCachePrefetcher).GetMethod("BuildPrefetchCacheKeyPatterns", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
@@ -212,7 +213,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(binDir);
             var counterPath = Path.Combine(_rootDir, "dotnet_ildasm_count.txt");
 
-            // dotnet-ildasm: version succeeds but disassembly always fails (exit 91)
+            // dotnet-ildasm: version succeeds but disassembly always fails (exit 91) to trigger blacklisting
+            // dotnet-ildasm: バージョン取得は成功するが逆アセンブルは常に失敗（exit 91）し、ブラックリスト登録を発動させる
             InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 0.12.0");
@@ -277,18 +279,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        /// <summary>
-        /// ブラックリスト TTL（10 分）が満了した後、同ツールが再度試行されて成功することを確認します。
-        /// _disassembleFailCountAndTime に "失敗回数 >= 閾値 かつ 最終失敗時刻が 11 分前" のエントリを直接挿入し、
-        /// TTL 失効でエントリが消去されてから逆アセンブルが成功することを検証します。
-        /// </summary>
+        // After the blacklist TTL (10 min) expires, the same tool should be retried and succeed.
+        // Injects a pre-expired entry (fail count >= threshold, last fail 11 min ago) to verify TTL-based retry.
+        // ブラックリスト TTL（10 分）満了後に同ツールが再試行されて成功することを確認する。
+        // TTL 失効済みエントリ（失敗回数 >= 閾値、最終失敗 11 分前）を挿入して TTL ベースのリトライを検証する。
         [Fact]
         public async Task DisassembleAsync_AfterBlacklistTtlExpiry_RetriesToolAndSucceeds()
         {
             var binDir = Path.Combine(_rootDir, "bin-ttl");
             Directory.CreateDirectory(binDir);
 
-            // dotnet-ildasm: always succeeds
+            // dotnet-ildasm: always succeeds / dotnet-ildasm: 常に成功
             InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "dotnet ildasm 1.0.0");
@@ -313,7 +314,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var config = CreateConfig(enableIlCache: false);
                 var service = CreateService(config, null);
 
-                // TTL 失効済みエントリ（失敗回数 = 閾値 = 3、最終失敗 = 11 分前）を _blacklist 経由で直接挿入
+                // Inject a TTL-expired entry (fail count = threshold = 3, last fail = 11 min ago)
+                // TTL 失効済みエントリ（失敗回数 = 閾値 = 3、最終失敗 = 11 分前）を直接挿入
                 var blacklistField = typeof(DotNetDisassembleService).GetField("_blacklist", BindingFlags.Instance | BindingFlags.NonPublic);
                 Assert.NotNull(blacklistField);
                 var blacklist = blacklistField.GetValue(service) as DisassemblerBlacklist;
@@ -323,11 +325,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var dllPath = Path.Combine(_rootDir, "ttl-target.dll");
                 await File.WriteAllTextAsync(dllPath, "dummy");
 
+                // After TTL expiry, dotnet-ildasm is retried and succeeds
                 // TTL 失効後のため dotnet-ildasm が再試行されて成功する
                 var (_, command) = await service.DisassembleAsync(dllPath);
 
                 Assert.Contains("dotnet-ildasm", command, StringComparison.OrdinalIgnoreCase);
-                // エントリは IsBlacklisted 内で削除されているはず
+                // The expired entry should have been purged inside IsBlacklisted
+                // 期限切れエントリは IsBlacklisted 内で削除されているはず
                 Assert.False(blacklist.ContainsEntry(Constants.DOTNET_ILDASM));
             }
             finally
@@ -382,7 +386,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Contains("fingerprint:", command1, StringComparison.OrdinalIgnoreCase);
                 Assert.True(countAfterFirstRun > 0);
 
-                // Simulate tool binary update (touch the mtime to change fingerprint)
+                // Simulate tool binary update by touching mtime to change fingerprint
+            // ツールバイナリの更新をシミュレートし、mtime 変更でフィンガープリントを変える
                 await Task.Delay(1100);
                 var binaryPath = GetInstalledFakeBinaryPath(binDir, "dotnet-ildasm");
                 File.SetLastWriteTimeUtc(binaryPath, DateTime.UtcNow);
@@ -426,7 +431,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var binDir = Path.Combine(_rootDir, "prefetch-hit-bin");
             Directory.CreateDirectory(binDir);
 
-            // dotnet-ildasm: version succeeds, disassembly fails
+            // dotnet-ildasm: version succeeds but disassembly fails
+            // dotnet-ildasm: バージョン取得は成功するが逆アセンブルは失敗
             InstallFakeTool(binDir, "dotnet-ildasm", prefix =>
             {
                 Environment.SetEnvironmentVariable(prefix + "VERSION_OUTPUT", "1.2.3");
@@ -477,9 +483,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        // -----------------------------------------------------------------------
-        // Helpers
-        // -----------------------------------------------------------------------
+        // ── Helpers / ヘルパー ──────────────────────────────────────────────────
 
         private static ConfigSettings CreateConfig(bool enableIlCache) => new()
         {
@@ -488,16 +492,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             TextFileExtensions = new()
         };
 
-        /// <summary>
-        /// Installs the FakeDisassembler binary into binDir with the given toolName and sets
-        /// environment variables for the fake tool's behavior.
-        /// </summary>
         private static void InstallFakeTool(string binDir, string toolName, Action<string> configureEnv)
         {
             var exeName = OperatingSystem.IsWindows() ? "FakeDisassembler.exe" : "FakeDisassembler";
             var srcPath = Path.Combine(AppContext.BaseDirectory, exeName);
 
-            // If the FakeDisassembler binary isn't available (e.g. in non-test-runner contexts), skip.
+            // Skip if FakeDisassembler binary is not available (e.g. non-test-runner contexts)
+            // FakeDisassembler バイナリが利用不可の場合はスキップ
             if (!File.Exists(srcPath))
             {
                 return;
@@ -512,7 +513,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 File.SetUnixFileMode(destPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             }
 
-            // Copy the managed DLL and runtime config alongside the AppHost so it can execute.
+            // Copy managed DLL and runtime config alongside the AppHost so it can execute
+            // AppHost が実行できるようにマネージド DLL とランタイム設定を同フォルダにコピー
             foreach (var suffix in new[] { ".dll", ".runtimeconfig.json", ".deps.json" })
             {
                 var runtimeFile = Path.Combine(AppContext.BaseDirectory, "FakeDisassembler" + suffix);
@@ -558,8 +560,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static void ResetDisassemblerFailureState()
         {
-            // DisassemblerBlacklist is now per-instance, so there is no shared static state to clear.
-            // This method is kept as a no-op for symmetry with Dispose.
+            // DisassemblerBlacklist is per-instance; no shared static state to clear. Kept as no-op for symmetry.
+            // DisassemblerBlacklist はインスタンス単位で共有静的状態はない。対称性のため no-op として保持。
         }
 
         private void ResetDisassemblerVersionCacheState()

@@ -16,7 +16,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
         [Fact]
         public void GetAppVersion_WithValidType_ReturnsNonEmptyString()
         {
-            // Program クラス型を使用
+            // Use the Program class type / Program クラス型を使用
             var version = SystemInfo.GetAppVersion(typeof(FolderDiffIL4DotNet.Program));
             Assert.False(string.IsNullOrWhiteSpace(version));
         }
@@ -24,18 +24,23 @@ namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
         [Fact]
         public void TryGetDnsHostName_ReturnsStringOrNull()
         {
+            // TryGetDnsHostName is private, so covered indirectly via GetComputerName.
+            // We verify GetComputerName's return value here as a proxy.
             // TryGetDnsHostName はプライベートなので GetComputerName 経由で間接的にカバー。
-            // ここでは直接テストできるように GetComputerName の戻り値を確認する。
+            // ここでは GetComputerName の戻り値を確認して代替検証とする。
             var name = SystemInfo.GetComputerName();
-            // GetComputerName は null を返さない（UNKNOWN_COMPUTER_NAME を返す）
+            // GetComputerName never returns null (falls back to UNKNOWN_COMPUTER_NAME)
+            // GetComputerName は null を返さない（UNKNOWN_COMPUTER_NAME にフォールバック）
             Assert.NotNull(name);
         }
 
         [Fact]
         public void GetComputerName_WhenMachineNameAvailable_DoesNotReturnUnknown()
         {
+            // On a normal system MachineName is available, so the result should not be "Unknown Computer"
             // 通常の環境では MachineName が取得可能なので結果は "Unknown Computer" にならない
             var name = SystemInfo.GetComputerName();
+            // May vary by environment, but should at least be non-empty
             // 環境により異なるが、少なくとも空でないことを確認
             Assert.True(name.Length > 0);
         }

@@ -6,7 +6,8 @@ using System.Text;
 namespace FolderDiffIL4DotNet.Core.Text
 {
     /// <summary>
-    /// 文字列サニタイズおよびファイル名安全化を提供するクラス
+    /// Provides string sanitization and safe-filename conversion.
+    /// 文字列サニタイズおよびファイル名安全化を提供するクラス。
     /// </summary>
     public static class TextSanitizer
     {
@@ -16,7 +17,8 @@ namespace FolderDiffIL4DotNet.Core.Text
         private const int SAFE_FILENAME_HASH_BYTES = 6;
         private const int SAFE_FILENAME_DEFAULT_MAX_LENGTH = 180;
         /// <summary>
-        /// サニタイズ(\\, /, :, ..を.に置換)返します。
+        /// Sanitizes a string by replacing \, /, : and collapsing ".." into ".".
+        /// サニタイズ（\\, /, :, .. を . に置換）して返します。
         /// </summary>
         public static string Sanitize(string str)
         {
@@ -33,9 +35,9 @@ namespace FolderDiffIL4DotNet.Core.Text
         }
 
         /// <summary>
-        /// 任意の文字列を「ファイル名として安全に使える文字列」へ変換します。
-        /// 無効文字およびコロン(:)は '_' に置換し、長すぎる場合は
-        /// 「先頭<see cref="SAFE_FILENAME_HEAD_LENGTH"/> + "_.._" + 末尾<see cref="SAFE_FILENAME_TAIL_LENGTH"/> + '_' + 短縮ハッシュ(SHA1の先頭<see cref="SAFE_FILENAME_HASH_BYTES"/>バイト)」で短縮します。
+        /// Converts an arbitrary string to a filesystem-safe filename. Invalid chars and colons are replaced with '_';
+        /// names exceeding maxLength are shortened to "head + _.._  + tail + _hash".
+        /// 任意の文字列をファイル名として安全な文字列へ変換します。長すぎる場合はヘッド + _.._  + テール + ハッシュで短縮します。
         /// </summary>
         public static string ToSafeFileName(string fileNameExcludeExtention, int maxLength = SAFE_FILENAME_DEFAULT_MAX_LENGTH)
         {
@@ -71,8 +73,8 @@ namespace FolderDiffIL4DotNet.Core.Text
         }
 
         /// <summary>
-        /// 与えられた文字列に非ASCII文字（MAX_ASCII_CODE_POINT より大きいコードポイント）が含まれているかどうかを判定します。
-        /// null/空文字列は false を返します。
+        /// Returns true if the string contains any non-ASCII characters (code point > 0x7F). Returns false for null/empty.
+        /// 文字列に非 ASCII 文字が含まれているかを判定します。null/空文字列は false。
         /// </summary>
         public static bool ContainsNonAscii(string str)
         {

@@ -199,6 +199,7 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Contains("--config", output, StringComparison.Ordinal);
                 Assert.Contains("--skip-il", output, StringComparison.Ordinal);
                 // Logger should NOT have been initialized (no log messages)
+                // ロガーは初期化されていないはず（ログメッセージなし）
                 Assert.Empty(logger.Messages);
             }
             finally
@@ -246,6 +247,7 @@ namespace FolderDiffIL4DotNet.Tests
                 var output = sw.ToString().Trim();
                 Assert.False(string.IsNullOrWhiteSpace(output), "Version output should not be empty.");
                 // Logger should NOT have been initialized
+                // ロガーは初期化されていないはず
                 Assert.Empty(logger.Messages);
             }
             finally
@@ -308,6 +310,8 @@ namespace FolderDiffIL4DotNet.Tests
                 {
                     // Without --config this would fail with "Config file not found".
                     // With --config pointing to our custom file it should reach config-loaded step.
+                    // --config なしでは "Config file not found" で失敗するが、
+                    // --config でカスタムファイルを指定すれば設定読み込み段階まで到達するはず。
                     var exitCode = await runner.RunAsync(new[]
                     {
                         oldDir, newDir, "lbl_cfg_" + Guid.NewGuid().ToString("N"),
@@ -316,6 +320,7 @@ namespace FolderDiffIL4DotNet.Tests
                     });
 
                     // Config loaded successfully (diff may have no files = exit 0, or execution phase)
+                    // 設定読み込み成功（ファイルなし = exit 0、または実行フェーズ）
                     Assert.NotEqual(3, exitCode);
                     Assert.Contains(logger.Messages, m => m.Contains("Configuration loaded", StringComparison.Ordinal));
                 });
@@ -375,6 +380,7 @@ namespace FolderDiffIL4DotNet.Tests
                 await WithConfigFileAsync("{}", async () =>
                 {
                     // Just verify it doesn't blow up with config error and reaches execution phase
+                    // 設定エラーにならず実行フェーズに到達することを検証
                     var exitCode = await runner.RunAsync(new[]
                     {
                         oldDir, newDir, "lbl_thr_" + Guid.NewGuid().ToString("N"),
@@ -544,6 +550,7 @@ namespace FolderDiffIL4DotNet.Tests
                     Assert.Contains(".pdb", output, StringComparison.Ordinal);   // default IgnoredExtensions value
                     Assert.Contains(".cs", output, StringComparison.Ordinal);    // default TextFileExtensions value
                     // Logger should NOT have been initialized (no diff run)
+                    // ロガーは初期化されていないはず（差分実行なし）
                     Assert.Empty(logger.Messages);
                 });
             }
@@ -641,6 +648,7 @@ namespace FolderDiffIL4DotNet.Tests
             var runner = new ProgramRunner(logger, new ConfigService());
 
             // A label long enough so that BaseDirectory + "/Reports/" + label exceeds any OS path limit
+            // BaseDirectory + "/Reports/" + label が OS のパス長制限を超える長さのラベル
             var longLabel = new string('a', 4096);
 
             try
@@ -663,6 +671,7 @@ namespace FolderDiffIL4DotNet.Tests
         public void CheckDiskSpaceOrThrow_WithSufficientFreeSpace_DoesNotThrow()
         {
             // Verifies that the disk-space check passes silently on a normal system.
+            // 通常のシステムでディスク容量チェックがエラーなく通過することを検証
             var ex = Record.Exception(() => RunPreflightValidator.CheckDiskSpaceOrThrow(Path.GetTempPath()));
             Assert.Null(ex);
         }
@@ -671,6 +680,7 @@ namespace FolderDiffIL4DotNet.Tests
         public void CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_ThrowsUnauthorizedAccessException()
         {
             // This test requires Unix file-mode semantics and a non-root user.
+            // このテストは Unix ファイルモードと非 root ユーザーが必要
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Linux) &&
                 !RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
@@ -679,7 +689,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
             {
-                return; // root bypasses Unix permission checks
+                return; // root bypasses Unix permission checks / root はパーミッションチェックをバイパスする
             }
 
             var dir = Path.Combine(Path.GetTempPath(), "fd-perm-test-" + Guid.NewGuid().ToString("N"));
@@ -687,9 +697,11 @@ namespace FolderDiffIL4DotNet.Tests
             try
             {
                 // Remove write permission from the directory (read + execute only)
+                // ディレクトリから書き込み権限を削除（読み取り＋実行のみ）
                 File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
-                // Pass a path whose parent is `dir` — the check probes a file inside `dir`
+                // Pass a path whose parent is `dir` -- the check probes a file inside `dir`
+                // 親ディレクトリが `dir` のパスを渡す — チェックは `dir` 内のファイルを調べる
                 Assert.Throws<UnauthorizedAccessException>(() =>
                     RunPreflightValidator.CheckReportsParentWritableOrThrow(Path.Combine(dir, "label")));
             }
@@ -762,7 +774,7 @@ namespace FolderDiffIL4DotNet.Tests
         [InlineData(0, 5, 30, 100, "0h 5m 30.1s")]
         [InlineData(1, 23, 45, 600, "1h 23m 45.6s")]
         [InlineData(1, 0, 0, 0, "1h 0m 0.0s")]
-        [InlineData(0, 0, 1, 999, "0h 0m 1.9s")]  // truncates, does not round up
+        [InlineData(0, 0, 1, 999, "0h 0m 1.9s")]  // truncates, does not round up / 切り捨て、四捨五入しない
         [InlineData(100, 59, 59, 900, "100h 59m 59.9s")]
         public void FormatElapsedTime_VariousInputs_ReturnsExpectedString(
             int hours, int minutes, int seconds, int milliseconds, string expected)
@@ -868,7 +880,7 @@ namespace FolderDiffIL4DotNet.Tests
                 var newDir = Path.Combine(tempDir, "new");
                 Directory.CreateDirectory(newDir);
                 var reportDir = Path.Combine(tempDir, "report");
-                Directory.CreateDirectory(reportDir); // already exists
+                Directory.CreateDirectory(reportDir); // pre-create to trigger conflict / 競合を発生させるため事前作成
 
                 Assert.Throws<ArgumentException>(() =>
                     RunPreflightValidator.ValidateRunDirectories(oldDir, newDir, reportDir));
@@ -882,6 +894,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void CheckReportsParentWritableOrThrow_NonexistentParent_DoesNotThrow()
         {
+            // Skipped when parent directory does not exist (no exception)
             // 親ディレクトリが存在しない場合はスキップ（例外なし）
             var nonexistentParentChild = "/nonexistent/parent/dir/report";
             var ex = Record.Exception(() => RunPreflightValidator.CheckReportsParentWritableOrThrow(nonexistentParentChild));
@@ -891,9 +904,10 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void CheckDiskSpaceOrThrow_PathWithNoRoot_DoesNotThrow()
         {
-            // Path.GetPathRoot が空文字列を返すケースを模擬（相対パス的な文字列）
-            // Linuxでは "/" が root になるため、空ルートを返す路は難しい。
-            // best-effort: 正常パスで例外が出ないことを確認
+            // Best-effort: verify no exception on a normal path.
+            // Linux always returns "/" as root, so triggering an empty root is impractical.
+            // ベストエフォート: 正常パスで例外が出ないことを確認。
+            // Linux では "/" が常にルートになるため、空ルートの再現は困難。
             var ex = Record.Exception(() => RunPreflightValidator.CheckDiskSpaceOrThrow(Path.GetTempPath()));
             Assert.Null(ex);
         }
@@ -925,7 +939,7 @@ namespace FolderDiffIL4DotNet.Tests
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
             }
         }
 

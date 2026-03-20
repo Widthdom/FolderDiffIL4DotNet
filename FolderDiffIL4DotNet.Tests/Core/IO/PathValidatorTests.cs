@@ -120,6 +120,8 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         {
             // Path traversal via report label is blocked because '/', '\', and ".." components
             // are all rejected by the character or dot-name checks.
+            // レポートラベルでのパストラバーサルは '/'、'\'、".." がすべて
+            // 文字チェックまたはドット名チェックで拒否されるためブロックされる。
             Assert.Throws<ArgumentException>(() => PathValidator.ValidateFolderNameOrThrow(name));
         }
 
@@ -138,6 +140,8 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         {
             // An absolute-path string used as a report label would escape the Reports/ directory.
             // The leading '/' (or '\') is caught by the invalid-character check.
+            // レポートラベルに絶対パスを使うと Reports/ ディレクトリを脱出できてしまう。
+            // 先頭の '/'（または '\'）は不正文字チェックで捕捉される。
             Assert.Throws<ArgumentException>(() => PathValidator.ValidateFolderNameOrThrow(name));
         }
     }

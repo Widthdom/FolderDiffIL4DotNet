@@ -8,63 +8,31 @@ using FolderDiffIL4DotNet.Core.IO;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
+    /// Simple logger that writes to both a log file and the console.
+    /// Call <see cref="Initialize"/> first to set the log file path.
+    /// Before initialization, <see cref="LogMessage(AppLogLevel, string, bool, Exception)"/> only writes to the console.
     /// ファイルおよびコンソールへログを出力する簡易ロガー。
-    /// <para>
     /// 先に <see cref="Initialize"/> を呼び出してログファイルの出力先を確定してください。
-    /// 未初期化の場合、<see cref="LogMessage(AppLogLevel, string, bool, Exception)"/> はコンソール出力のみを行い、ファイルには書き込みません。
-    /// </para>
+    /// 未初期化の場合はコンソール出力のみを行い、ファイルには書き込みません。
     /// </summary>
     public sealed class LoggerService : ILoggerService
     {
-        /// <summary>
-        /// ログディレクトリ名
-        /// </summary>
         private const string LOGS_DIRECTORY_NAME = "Logs";
-
-        /// <summary>
-        /// ログファイル名のプレフィックス
-        /// </summary>
         private const string LOG_FILE_PREFIX = "log_";
-
-        /// <summary>
-        /// ログプレフィックス: INFO
-        /// </summary>
         private const string LOG_PREFIX_INFO = "[INFO]";
-
-        /// <summary>
-        /// ログプレフィックス: WARNING
-        /// </summary>
         private const string LOG_PREFIX_WARNING = "[WARNING]";
-
-        /// <summary>
-        /// ログプレフィックス: ERROR
-        /// </summary>
         private const string LOG_PREFIX_ERROR = "[ERROR]";
-        /// <summary>
-        /// ログディレクトリの絶対パス
-        /// </summary>
         private string _logDirectoryAbsolutePath;
-
-        /// <summary>
-        /// ログファイルの絶対パス
-        /// </summary>
         private string _logFileAbsolutePath;
 
         /// <inheritdoc />
         public string LogFileAbsolutePath => _logFileAbsolutePath;
 
         /// <summary>
-        /// ログディレクトリと当日付のログファイル（パスのみ）を設定します。
-        /// <para>
-        /// ログディレクトリは <c>AppContext.BaseDirectory/<see cref="LOGS_DIRECTORY_NAME"/></c> に作成され、
-        /// ログファイルパスは <c>log_yyyyMMdd.log</c> 形式で構成されます（本メソッドではファイル自体は作成しません）。
-        /// パス長は <see cref="PathValidator.ValidateAbsolutePathLengthOrThrow(string, string)"/> により検証されます。
-        /// </para>
+        /// Creates the log directory and computes today's log file path (does not create the file itself).
+        /// Path lengths are validated via <see cref="PathValidator.ValidateAbsolutePathLengthOrThrow(string, string)"/>.
+        /// ログディレクトリを作成し、当日付のログファイルパスを設定します（ファイル自体は作成しません）。
         /// </summary>
-        /// <exception cref="ArgumentException">ログディレクトリまたはログファイルのパス長がOSの上限を超えるなどで不正な場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">ログディレクトリの作成権限がない場合。</exception>
-        /// <exception cref="IOException">ディレクトリの作成に失敗した場合や、I/O エラーが発生した場合。</exception>
-        /// <exception cref="PathTooLongException">パスが長すぎる場合（環境による）。</exception>
         public void Initialize()
         {
             _logDirectoryAbsolutePath = Path.Combine(AppContext.BaseDirectory, LOGS_DIRECTORY_NAME);
@@ -129,6 +97,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
             }
 
+            // Before initialization, only console output is performed.
             // 初期化前の場合はコンソール出力のみで終了。
             if (string.IsNullOrWhiteSpace(_logFileAbsolutePath))
             {
@@ -189,9 +158,6 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>
-        /// メッセージにログレベルのプレフィックスを付与し、空文字の場合はプレフィックスのみを返します。
-        /// </summary>
         private static string FormatMessage(string message, AppLogLevel logLevel)
         {
             var prefix = GetLogLevelPrefix(logLevel);
@@ -200,9 +166,6 @@ namespace FolderDiffIL4DotNet.Services
                 : $"{prefix} {message}";
         }
 
-        /// <summary>
-        /// ログレベルに応じたプレフィックス（[INFO] など）を取得します。
-        /// </summary>
         private static string GetLogLevelPrefix(AppLogLevel logLevel) => logLevel switch
         {
             AppLogLevel.Warning => LOG_PREFIX_WARNING,

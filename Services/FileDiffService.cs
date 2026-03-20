@@ -9,72 +9,23 @@ using FolderDiffIL4DotNet.Models;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
+    /// Provides the entry point for individual file comparison (MD5/IL/text) and the preceding pre-computation phase.
     /// 個々のファイル比較（MD5/IL/テキスト）と、その前段となる事前計算の入口を提供するサービス。
     /// </summary>
     public sealed class FileDiffService : IFileDiffService
     {
-        /// <summary>
-        /// テキスト差分の高速化を検討するサイズ閾値（バイト）の既定値。
-        /// </summary>
         private const int DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * Constants.BYTES_PER_KILOBYTE;
-
-        /// <summary>
-        /// テキスト差分比較時のチャンクサイズ（バイト）の既定値。
-        /// </summary>
         private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * Constants.BYTES_PER_KILOBYTE;
-
-        /// <summary>
-        /// 1 MiB を表すバイト数。
-        /// </summary>
         private const int BYTES_PER_MEGABYTE = Constants.BYTES_PER_KILOBYTE * Constants.BYTES_PER_KILOBYTE;
-        /// <summary>
-        /// アプリケーションの設定情報
-        /// </summary>
         private readonly ConfigSettings _config;
-
-        /// <summary>
-        /// IL 出力サービス
-        /// </summary>
         private readonly IILOutputService _ilOutputService;
-
-        /// <summary>
-        /// 旧バージョン側（比較元）のIL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _oldFolderAbsolutePath;
-
-        /// <summary>
-        /// 新バージョン側（比較先）のIL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _newFolderAbsolutePath;
-
-        /// <summary>
-        /// ネットワーク共有向け最適化を行うか（実行時決定の統合フラグ）。
-        /// </summary>
         private readonly bool _optimizeForNetworkShares;
-
-        /// <summary>
-        /// 比較結果を蓄積する実行単位の状態オブジェクト。
-        /// </summary>
         private readonly FileDiffResultLists _fileDiffResultLists;
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
-
-        /// <summary>
-        /// ファイル比較・判定 I/O。
-        /// </summary>
         private readonly IFileComparisonService _fileComparisonService;
 
-        /// <summary>
-        /// 依存関係を受け取り初期化します。
-        /// </summary>
-        /// <param name="config">アプリケーション設定。</param>
-        /// <param name="ilOutputService">IL 比較・出力サービス。</param>
-        /// <param name="executionContext">実行コンテキスト。</param>
-        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
-        /// <param name="logger">ログ出力サービス。</param>
         public FileDiffService(
             ConfigSettings config,
             IILOutputService ilOutputService,
@@ -86,6 +37,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Constructor that allows substituting the comparison I/O for testing.
         /// テスト向けに比較 I/O を差し替え可能なコンストラクタ。
         /// </summary>
         public FileDiffService(
@@ -114,10 +66,9 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Runs IL-cache pre-computation (delegated to <see cref="ILOutputService"/>).
         /// IL キャッシュ関連の事前計算を実行します（実体は <see cref="ILOutputService"/> に委譲）。
         /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="filesAbsolutePath"/> が null の場合。</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下の場合。</exception>
         public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel)
         {
             ArgumentNullException.ThrowIfNull(filesAbsolutePath);
@@ -130,23 +81,18 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Determines whether two files are equal by trying MD5, then IL, then text comparison in order.
+        /// Results are recorded in <see cref="FileDiffResultLists"/> and honour network-optimisation and extension settings.
         /// 2つのファイルが等しいかを判定し、MD5→IL→テキストの順で比較を試みる統合メソッド。
         /// 判定結果は <see cref="FileDiffResultLists"/> に記録され、ネットワーク最適化や拡張子設定にも追従します。
         /// </summary>
-        /// <param name="fileRelativePath">比較対象ファイルのフォルダ基準相対パス。</param>
-        /// <param name="maxParallel">テキスト比較を並列実行する際の最大並列数（1 以上）。</param>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下で、並列テキスト比較が選択された場合。</exception>
-        /// <exception cref="DirectoryNotFoundException">比較途中で親ディレクトリが見つからなくなった場合。</exception>
-        /// <exception cref="IOException">ハッシュ比較、IL 比較、またはテキスト比較中の I/O に失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">比較対象ファイルへのアクセス権が不足している場合。</exception>
-        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
-        /// <exception cref="InvalidOperationException">IL 逆アセンブルツールが見つからない、または実行に失敗した場合。</exception>
         public async Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1)
         {
             string file1AbsolutePath = Path.Combine(_oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
             try
             {
+                // 1) MD5: exit early when file size and content are identical.
                 // 1) MD5: ファイルサイズや内容が完全一致する場合はここで終了。
                 if (await _fileComparisonService.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
                 {
@@ -154,6 +100,8 @@ namespace FolderDiffIL4DotNet.Services
                     return true;
                 }
 
+                // 2) IL for .NET assemblies: delegated to a separate service because it involves assembly-specific processing (MVID / configured-string line exclusion).
+                //    When SkipIL is true, skip IL comparison and fall through to text/binary comparison.
                 // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
                 //    SkipIL が true の場合は IL 比較をスキップしてテキスト/バイナリ比較に進む。
                 var dotNetDetectionResult = _config.SkipIL
@@ -186,6 +134,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                 }
 
+                // 3) Text comparison for text-extension files: sequential when network-optimised, otherwise parallel above a threshold.
                 // 3) テキスト拡張子ならテキスト比較: ネットワーク最適化時は逐次、それ以外は閾値に応じて並列比較を選択。
                 string fileExtension = Path.GetExtension(file1AbsolutePath);
                 if (_config.TextFileExtensions.Any(configuredExtension => string.Equals(configuredExtension, fileExtension, StringComparison.OrdinalIgnoreCase)))
@@ -201,6 +150,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         if (_optimizeForNetworkShares)
                         {
+                            // Under network-share optimisation, avoid parallel comparison (which opens/closes per chunk) and compare sequentially.
                             // ネットワーク共有最適化時は、チャンク毎のOpen/Closeを伴う並列比較は避け、逐次読みで比較
                             areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                         }
@@ -212,11 +162,13 @@ namespace FolderDiffIL4DotNet.Services
                                 int effectiveMaxParallel = DetermineEffectiveTextDiffParallelism(fileRelativePath, maxParallel, textDiffChunkSizeBytes);
                                 if (effectiveMaxParallel == 1)
                                 {
+                                    // Fall back to sequential comparison to avoid extra buffer allocation when the memory budget is small.
                                     // メモリ予算が小さい場合は追加バッファ確保を抑えるため逐次比較へ切り替える。
                                     areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                                 }
                                 else
                                 {
+                                    // Speed up large files with parallel chunk comparison.
                                     // 大きいファイルは並列チャンク比較で高速化
                                     areTextFilesEqual = await DiffTextFilesParallelAsync(
                                         file1AbsolutePath,
@@ -228,6 +180,7 @@ namespace FolderDiffIL4DotNet.Services
                             }
                             else
                             {
+                                // Sequential line comparison for small files to avoid parallelisation overhead.
                                 // 小さいファイルは逐次行比較（並列化のオーバーヘッドを避ける）
                                 areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
                             }
@@ -245,6 +198,8 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Mismatch);
                 return false;
             }
+            // Failures in the main comparison directly affect file-classification correctness,
+            // so even expected runtime exceptions are logged as errors and re-thrown to the caller.
             // このメソッドの本比較で起きた失敗はファイル分類の正しさに直結するため、
             // 想定内の実行時例外も error を残して呼び出し元へ再スローする。
             catch (DirectoryNotFoundException ex)
@@ -298,22 +253,16 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Experimental parallel chunk comparison for text files exceeding the size threshold, aimed at speed-up.
+        /// Only performs exact-match detection; does not identify specific differences.
+        /// Errors and invalid arguments are propagated to the caller, which decides whether to fall back to sequential comparison.
         /// サイズが閾値を超えるテキストファイルに対して高速化を目的に並列チャンク比較を行う実験的メソッド。
         /// 完全一致判定のみを行い、差分箇所の特定は行いません。
         /// エラーや引数不正は呼び出し側へ送出し、呼び出し側で逐次比較へのフォールバック可否を判断します。
         /// </summary>
-        /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
-        /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
-        /// <param name="largeFileSizeThresholdBytes">並列化閾値（バイト）。これ未満は逐次比較。</param>
-        /// <param name="chunkSizeBytes">チャンクサイズ（バイト）。</param>
-        /// <param name="maxParallel">最大並列度</param>
-        /// <returns>一致すれば true。不一致なら false。</returns>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> が 0 以下の場合。</exception>
-        /// <exception cref="IOException">チャンク読み取りまたはファイル長取得に失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">比較対象ファイルへのアクセス権が不足している場合。</exception>
-        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
         private async Task<bool> DiffTextFilesParallelAsync(string file1AbsolutePath, string file2AbsolutePath, long largeFileSizeThresholdBytes, int chunkSizeBytes, int maxParallel)
         {
+            // If either file is missing or their sizes differ, they are unequal without further comparison.
             // どちらかが存在しない、またはサイズが異なる場合は比較するまでもなく不一致。
             if (!_fileComparisonService.FileExists(file1AbsolutePath) || !_fileComparisonService.FileExists(file2AbsolutePath))
             {
@@ -325,6 +274,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return false;
             }
+            // Delegate small files to existing sequential comparison to avoid unnecessary overhead.
             // 小さいファイルは既存の逐次比較に委譲して余計なオーバーヘッドを避ける。
             if (file1Length < largeFileSizeThresholdBytes)
             {
@@ -335,11 +285,13 @@ namespace FolderDiffIL4DotNet.Services
                 throw new ArgumentOutOfRangeException(nameof(maxParallel), maxParallel, Constants.ERROR_MAX_PARALLEL);
             }
 
+            // Split large files into fixed-size chunks and run read-then-compare in parallel.
             // 大きなファイルは固定サイズのチャンクに分割し、読み取り→比較を並列実行する。
             int chunkCount = (int)((file1Length + chunkSizeBytes - 1) / chunkSizeBytes);
             var differences = 0;
             await Parallel.ForEachAsync(Enumerable.Range(0, chunkCount), new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (index, cancellationToken) =>
             {
+                // No need to read further chunks once a difference has been found.
                 // 既に差分が見つかっていれば以降のチャンクは読む必要がない。
                 if (Volatile.Read(ref differences) != 0)
                 {
@@ -349,12 +301,14 @@ namespace FolderDiffIL4DotNet.Services
                 var buffer2 = new byte[chunkSizeBytes];
                 int read1 = await _fileComparisonService.ReadChunkAsync(file1AbsolutePath, (long)index * chunkSizeBytes, buffer1.AsMemory(0, chunkSizeBytes), cancellationToken);
                 int read2 = await _fileComparisonService.ReadChunkAsync(file2AbsolutePath, (long)index * chunkSizeBytes, buffer2.AsMemory(0, chunkSizeBytes), cancellationToken);
+                // Chunks at the same offset with different read lengths are immediately unequal.
                 // 同じオフセットのチャンクでも読み取りバイト数が異なれば即時不一致。
                 if (read1 != read2)
                 {
                     Interlocked.Exchange(ref differences, 1);
                     return;
                 }
+                // Any single-byte difference within a chunk marks inequality and aborts remaining chunks.
                 // チャンク内で1バイトでも異なれば不一致とし、他チャンクも打ち切る。
                 for (int i = 0; i < read1; i++)
                 {
@@ -365,11 +319,13 @@ namespace FolderDiffIL4DotNet.Services
                     }
                 }
             });
+            // Exact match if the difference flag was never set.
             // 差分フラグが立っていなければ完全一致。
             return differences == 0;
         }
 
         /// <summary>
+        /// Converts a KiB configuration value to bytes; returns the default when the value is non-positive or would overflow.
         /// KiB 指定の設定値をバイトへ変換します。設定値が 0 以下または変換でオーバーフローする場合は既定値を返します。
         /// </summary>
         private static int GetEffectiveBytesFromConfiguredKilobytes(int configuredKilobytes, int defaultBytes)
@@ -389,12 +345,9 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Determines the effective parallelism for chunk-parallel comparison, accounting for the text-diff memory budget.
         /// テキスト差分の追加メモリ予算を考慮して、チャンク並列比較に使う実効並列度を決定します。
         /// </summary>
-        /// <param name="fileRelativePath">ログ出力に使うファイル相対パス。</param>
-        /// <param name="requestedMaxParallel">呼び出し側が要求した最大並列度。</param>
-        /// <param name="chunkSizeBytes">1 チャンクのサイズ（バイト）。</param>
-        /// <returns>実効並列度。1 以下の場合は呼び出し側が逐次比較へフォールバックします。</returns>
         private int DetermineEffectiveTextDiffParallelism(string fileRelativePath, int requestedMaxParallel, int chunkSizeBytes)
         {
             if (requestedMaxParallel <= 1)
@@ -431,9 +384,9 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// 設定されたテキスト差分の追加メモリ予算をバイト単位で返します。
+        /// Returns the configured text-diff additional memory budget in bytes (non-positive means unlimited).
+        /// 設定されたテキスト差分の追加メモリ予算をバイト単位で返します（0 以下は制限なし）。
         /// </summary>
-        /// <returns>バイト単位の予算。0 以下は制限なし。</returns>
         private long GetConfiguredTextDiffParallelMemoryLimitBytes()
         {
             if (_config.TextDiffParallelMemoryLimitMegabytes <= 0)
@@ -445,14 +398,9 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Logs that the effective parallelism was adjusted due to the text-diff memory budget.
         /// テキスト差分のメモリ予算により実効並列度を調整したことをログ出力します。
         /// </summary>
-        /// <param name="fileRelativePath">対象ファイルの相対パス。</param>
-        /// <param name="requestedMaxParallel">要求された最大並列度。</param>
-        /// <param name="effectiveMaxParallel">実際に採用する最大並列度。</param>
-        /// <param name="chunkSizeBytes">チャンクサイズ（バイト）。</param>
-        /// <param name="memoryLimitBytes">追加メモリ予算（バイト）。</param>
-        /// <param name="fallbackToSequential">逐次比較へフォールバックするかどうか。</param>
         private void LogTextDiffMemoryLimitApplied(string fileRelativePath, int requestedMaxParallel, int effectiveMaxParallel, int chunkSizeBytes, long memoryLimitBytes, bool fallbackToSequential)
         {
             long managedHeapBytes = GC.GetTotalMemory(forceFullCollection: false);

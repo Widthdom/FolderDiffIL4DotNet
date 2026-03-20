@@ -6,15 +6,12 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
-    /// <summary>
-    /// <see cref="DisassemblerBlacklist"/> の単体テスト。
-    /// </summary>
     public sealed class DisassemblerBlacklistTests
     {
         private const string ToolA = "dotnet-ildasm";
         private const string ToolB = "ilspycmd";
 
-        // ── 基本動作 ─────────────────────────────────────────────────────────
+        // ── Basic behavior / 基本動作 ─────────────────────────────────────────
 
         [Fact]
         public void IsBlacklisted_NoFailures_ReturnsFalse()
@@ -83,7 +80,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(bl.IsBlacklisted("   "));
         }
 
-        // ── TTL 期限切れ ──────────────────────────────────────────────────────
+        // ── TTL expiry / TTL 期限切れ ──────────────────────────────────────────
 
         [Fact]
         public void IsBlacklisted_AfterTtlExpiry_ReturnsFalseAndRemovesEntry()
@@ -93,10 +90,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             bl.RegisterFailure(ToolA);
             bl.RegisterFailure(ToolA);
 
-            Thread.Sleep(20); // TTL 満了まで待機
+            Thread.Sleep(20); // Wait for TTL to expire / TTL 満了まで待機
 
             Assert.False(bl.IsBlacklisted(ToolA));
-            Assert.False(bl.ContainsEntry(ToolA)); // エントリが削除されたか確認
+            // Entry should have been purged on expiry check
+            // 期限切れチェック時にエントリが削除されているはず
+            Assert.False(bl.ContainsEntry(ToolA));
         }
 
         [Fact]
@@ -129,7 +128,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(bl.ContainsEntry(ToolA));
         }
 
-        // ── RegisterFailure / ResetFailure の null ガード ────────────────────────
+        // ── RegisterFailure / ResetFailure null guards / null ガード ──────────
 
         [Fact]
         public void RegisterFailure_NullOrWhitespace_DoesNotThrow_AndNoEntryCreated()
@@ -138,7 +137,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             bl.RegisterFailure(null);
             bl.RegisterFailure("");
             bl.RegisterFailure("   ");
-            // ToolA は触っていないのでエントリが存在しないことを確認
+            // ToolA was never touched, so no entry should exist
+            // ToolA は操作していないためエントリが存在しないことを確認
             Assert.False(bl.ContainsEntry(ToolA));
         }
 
@@ -146,7 +146,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void ResetFailure_NullOrWhitespace_DoesNotThrow()
         {
             var bl = CreateBlacklist();
-            // ガードが機能していれば例外なく戻るはず
+            // Should return without throwing if null guards are working
+            // null ガードが機能していれば例外なく戻るはず
             bl.ResetFailure(null);
             bl.ResetFailure("");
             bl.ResetFailure("   ");
@@ -156,11 +157,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void ResetFailure_NonExistentCommand_DoesNotThrow()
         {
             var bl = CreateBlacklist();
+            // TryRemove should not throw even when no entry exists
             // エントリが存在しない場合も TryRemove は例外をスローしない
             bl.ResetFailure("no-such-tool");
         }
 
-        // ── B-4: 並列競合テスト ───────────────────────────────────────────────
+        // ── Concurrent race-condition tests / 並列競合テスト ──────────────────
 
         [Fact]
         public void RegisterFailure_Concurrent_DoesNotThrow_AndCountsAccumulate()
@@ -199,22 +201,25 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task IsBlacklisted_ConcurrentTtlExpiry_NoExceptionAndEventuallyReturnsFalse()
         {
-            // B-4: TTL 満了と同時に複数スレッドが IsBlacklisted を呼んだ場合に例外なく完了すること
+            // Multiple threads call IsBlacklisted around the TTL expiry boundary; no exceptions should escape
+            // TTL 満了境界付近で複数スレッドが IsBlacklisted を呼んでも例外が漏れないことを確認
             var bl = CreateBlacklist(failThreshold: 3, ttl: TimeSpan.FromMilliseconds(50));
             bl.InjectEntry(ToolA, failCount: 3, lastFailUtc: DateTime.UtcNow);
 
-            // TTL が切れるギリギリのタイミングで並列チェック
+            // Fire parallel checks around the TTL boundary to stress race conditions
+            // TTL 境界付近で並列チェックを実行して競合状態をテスト
             var tasks = new Task[20];
             for (int i = 0; i < tasks.Length; i++)
             {
                 tasks[i] = Task.Run(async () =>
                 {
-                    await Task.Delay(45); // TTL 満了の直前/直後に集中させる
+                    await Task.Delay(45); // Cluster around TTL expiry / TTL 満了の直前/直後に集中させる
                     _ = bl.IsBlacklisted(ToolA);
                 });
             }
 
-            await Task.WhenAll(tasks); // 例外がなければ成功
+            await Task.WhenAll(tasks); // Success if no exceptions thrown / 例外がなければ成功
+            // After TTL expiry, must always return false
             // TTL 満了後は必ず false を返す
             Thread.Sleep(20);
             Assert.False(bl.IsBlacklisted(ToolA));

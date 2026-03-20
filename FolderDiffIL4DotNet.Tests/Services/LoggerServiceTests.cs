@@ -84,7 +84,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 }
                 catch
                 {
-                    // ignore cleanup errors in tests
+                    // ignore cleanup errors / クリーンアップエラーを無視
                 }
             }
         }
@@ -195,9 +195,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        /// <summary>
-        /// CleanupOldLogFiles でログディレクトリが読み取り専用の場合、UnauthorizedAccessException をキャッチして継続します（Linux/非root のみ）。
-        /// </summary>
+        // CleanupOldLogFiles catches UnauthorizedAccessException and continues when log directory is read-only (Linux/macOS non-root only)
+        // ログディレクトリが読み取り専用の場合、CleanupOldLogFiles は UnauthorizedAccessException をキャッチして継続する（Linux/macOS 非 root のみ）
         [Fact]
         public void CleanupOldLogFiles_ReadOnlyDirectory_LogsWarningAndDoesNotThrow()
         {
@@ -215,7 +214,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
 
-            // ログファイルを複数作成してジェネレーション超過状態にする
+            // Create multiple log files to exceed the generation limit
+            // ジェネレーション超過状態にするため複数のログファイルを作成する
             var log1 = Path.Combine(tempDir, "log_20240101.log");
             var log2 = Path.Combine(tempDir, "log_20240102.log");
             var active = Path.Combine(tempDir, "log_20991231.log");
@@ -227,9 +227,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             try
             {
+                // Make directory read-only to prevent file deletion
                 // ディレクトリを読み取り専用にしてファイル削除を阻止
                 File.SetUnixFileMode(tempDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
 
+                // Should catch IOException or UnauthorizedAccessException and continue
                 // IOException または UnauthorizedAccessException をキャッチして継続することを確認
                 var ex = Record.Exception(() => logger.CleanupOldLogFiles(maxLogGenerations: 1));
                 Assert.Null(ex);
@@ -259,7 +261,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
     }

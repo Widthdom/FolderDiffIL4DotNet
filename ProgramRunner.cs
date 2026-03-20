@@ -18,6 +18,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace FolderDiffIL4DotNet
 {
     /// <summary>
+    /// Runner that orchestrates the entire application execution.
     /// アプリケーション実行全体を調停するランナー。
     /// </summary>
     public sealed class ProgramRunner
@@ -67,11 +68,6 @@ namespace FolderDiffIL4DotNet
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
 
-        /// <summary>
-        /// 依存サービスを受け取り初期化します。
-        /// </summary>
-        /// <param name="logger">ログ出力サービス。</param>
-        /// <param name="configService">設定読み込みサービス。</param>
         public ProgramRunner(ILoggerService logger, ConfigService configService)
         {
             ArgumentNullException.ThrowIfNull(logger);
@@ -82,10 +78,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Executes the main application flow and returns the process exit code.
         /// アプリケーションのメインフローを実行し、終了コードを返します。
         /// </summary>
-        /// <param name="args">コマンドライン引数。</param>
-        /// <returns>プロセス終了コード。</returns>
         public async Task<int> RunAsync(string[] args)
         {
             var opts = CliParser.Parse(args);
@@ -114,11 +109,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Converts the entire run into a typed result and maps it to the public API exit code at the application boundary.
         /// 実行全体を型付き結果へ変換し、公開 API である終了コードへ写像する境界処理です。
         /// </summary>
-        /// <param name="args">コマンドライン引数。</param>
-        /// <param name="opts">解析済み CLI オプション。</param>
-        /// <returns>成功/失敗種別と補助情報を含む実行結果。</returns>
         private async Task<ProgramRunResult> RunWithResultAsync(string[] args, CliOptions opts)
         {
             #pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
@@ -192,11 +185,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Returns the CLI argument validation phase as a typed result.
         /// CLI 引数検証フェーズを型付き結果として返します。
         /// </summary>
-        /// <param name="args">コマンドライン引数。</param>
-        /// <param name="opts">解析済み CLI オプション。</param>
-        /// <returns>成功時は実行引数、失敗時は入力不正の実行結果。</returns>
         private StepResult<RunArguments> TryValidateAndBuildRunArguments(string[] args, CliOptions opts)
         {
             try
@@ -251,10 +242,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Returns the report output directory initialization as a typed result.
         /// レポート出力先ディレクトリの初期化を型付き結果として返します。
         /// </summary>
-        /// <param name="reportsFolderAbsolutePath">今回のレポート出力先ディレクトリ。</param>
-        /// <returns>成功/失敗を表す結果。</returns>
         private StepResult<bool> TryPrepareReportsDirectory(string reportsFolderAbsolutePath)
         {
             try
@@ -281,10 +271,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Returns the configuration loading phase as a typed result.
         /// 設定読込フェーズを型付き結果として返します。
         /// </summary>
-        /// <param name="configPath">config.json の絶対パス。null の場合は既定パスを使用。</param>
-        /// <returns>成功時は読み込んだ設定、失敗時は設定不正の実行結果。</returns>
         private async Task<StepResult<ConfigSettings>> TryLoadConfigurationAsync(string configPath)
         {
             try
@@ -315,13 +304,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Returns the diff execution and report generation phase as a typed result.
         /// 差分実行とレポート生成フェーズを型付き結果として返します。
         /// </summary>
-        /// <param name="runArguments">検証済みの実行引数。</param>
-        /// <param name="config">読込済み設定。</param>
-        /// <param name="appVersion">アプリケーションバージョン。</param>
-        /// <param name="computerName">実行マシン名。</param>
-        /// <returns>成功時は完了状態、失敗時は実行失敗の結果。</returns>
         private async Task<StepResult<RunCompletionState>> TryExecuteRunAsync(
             RunArguments runArguments,
             ConfigSettings config,
@@ -364,11 +349,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Converts a failure category into a typed result with logging.
         /// 失敗種別をログ出力付きの型付き結果へ変換します。
         /// </summary>
-        /// <param name="exitCode">失敗を表す終了コード。</param>
-        /// <param name="exception">元例外。</param>
-        /// <returns>ログ済みの失敗結果。</returns>
         private ProgramRunResult CreateFailureResult(ProgramExitCode exitCode, Exception exception)
         {
             _logger.LogMessage(AppLogLevel.Error, exception.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, exception);
@@ -495,11 +478,11 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Formats elapsed time in a human-readable form (e.g. <c>0h 5m 30.1s</c>).
+        /// Seconds are shown to one decimal place (tenths, truncated).
         /// 経過時間を人間が判読しやすい形式（例: <c>0h 5m 30.1s</c>）に変換します。
         /// 秒は小数点以下 1 桁（1/10 秒単位、切り捨て）まで表示します。
         /// </summary>
-        /// <param name="elapsed">変換する経過時間。</param>
-        /// <returns><c>{h}h {m}m {s.d}s</c> 形式の文字列。</returns>
         internal static string FormatElapsedTime(TimeSpan elapsed)
         {
             int hours = (int)Math.Floor(elapsed.TotalHours);
@@ -510,10 +493,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// Prints the effective configuration (after JSON load + environment variable overrides) to stdout as JSON.
         /// 有効な設定（JSON 読込 + 環境変数オーバーライド適用後）を JSON として標準出力に書き出します。
         /// </summary>
-        /// <param name="configPath">config.json の絶対パス。null の場合は既定パスを使用。</param>
-        /// <returns>成功時 0、設定読込失敗時 3。</returns>
         private async Task<int> PrintConfigAsync(string configPath)
         {
             try
@@ -545,11 +527,9 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
-        /// CLI オプションの値で <see cref="ConfigSettings"/> を上書きします。
-        /// config.json よりも CLI フラグを優先させます。
+        /// Overrides <see cref="ConfigSettings"/> values with CLI options, giving CLI flags priority over config.json.
+        /// CLI オプションの値で <see cref="ConfigSettings"/> を上書きします。config.json よりも CLI フラグを優先させます。
         /// </summary>
-        /// <param name="config">対象の設定オブジェクト。</param>
-        /// <param name="opts">解析済み CLI オプション。</param>
         private static void ApplyCliOverrides(ConfigSettings config, CliOptions opts)
         {
             if (opts.ThreadsOverride.HasValue)
@@ -578,82 +558,55 @@ namespace FolderDiffIL4DotNet
         private sealed record RunCompletionState(bool HasMd5MismatchWarnings, bool HasTimestampRegressionWarnings);
 
         /// <summary>
+        /// Defines the public exit codes for the console application.
         /// コンソールアプリの公開終了コードを定義します。
         /// </summary>
         private enum ProgramExitCode
         {
             /// <summary>
-            /// 正常終了です。
+            /// Successful completion. / 正常終了です。
             /// </summary>
             Success = 0,
 
             /// <summary>
-            /// CLI 引数または入力パスが不正です。
+            /// Invalid CLI arguments or input paths. / CLI 引数または入力パスが不正です。
             /// </summary>
             InvalidArguments = 2,
 
             /// <summary>
-            /// 設定ファイルの不備または読込失敗です。
+            /// Configuration file error or load failure. / 設定ファイルの不備または読込失敗です。
             /// </summary>
             ConfigurationError = 3,
 
             /// <summary>
-            /// 差分実行またはレポート生成に失敗しました。
+            /// Diff execution or report generation failed. / 差分実行またはレポート生成に失敗しました。
             /// </summary>
             ExecutionFailed = 4,
 
             /// <summary>
-            /// 分類不能な想定外エラーです。
+            /// Unclassifiable unexpected error. / 分類不能な想定外エラーです。
             /// </summary>
             UnexpectedError = 1
         }
 
         /// <summary>
+        /// Result model representing overall success or failure of a run.
         /// 実行全体の成功/失敗を表す結果モデルです。
         /// </summary>
         private sealed class ProgramRunResult
         {
-            /// <summary>
-            /// 失敗時に返す共通の警告なし状態です。
-            /// </summary>
             private static readonly RunCompletionState _noWarnings = new(false, false);
 
-            /// <summary>
-            /// 実行結果の終了コードです。
-            /// </summary>
             public ProgramExitCode ExitCode { get; }
-
-            /// <summary>
-            /// MD5 不一致の終了時警告有無です。
-            /// </summary>
             public bool HasMd5MismatchWarnings { get; }
-
-            /// <summary>
-            /// 更新日時逆転の終了時警告有無です。
-            /// </summary>
             public bool HasTimestampRegressionWarnings { get; }
 
-            /// <summary>
-            /// 成功時の結果を生成します。
-            /// </summary>
-            /// <param name="completionState">集約済みの完了状態。</param>
-            /// <returns>成功結果。</returns>
             public static ProgramRunResult Success(RunCompletionState completionState)
                 => new(ProgramExitCode.Success, completionState);
 
-            /// <summary>
-            /// 失敗時の結果を生成します。
-            /// </summary>
-            /// <param name="exitCode">失敗種別の終了コード。</param>
-            /// <returns>失敗結果。</returns>
             public static ProgramRunResult Failure(ProgramExitCode exitCode)
                 => new(exitCode, _noWarnings);
 
-            /// <summary>
-            /// 実行結果を初期化します。
-            /// </summary>
-            /// <param name="exitCode">終了コード。</param>
-            /// <param name="completionState">終了時警告の集約状態。</param>
             private ProgramRunResult(ProgramExitCode exitCode, RunCompletionState completionState)
             {
                 ExitCode = exitCode;
@@ -663,48 +616,22 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
+        /// A lightweight Result type that holds either a success value or a failure result for each execution phase.
         /// 各実行フェーズの成功値または失敗結果を保持する簡易 Result 型です。
         /// </summary>
-        /// <typeparam name="TValue">成功時の値型。</typeparam>
+        /// <typeparam name="TValue">The type of the success value. / 成功時の値型。</typeparam>
         private sealed class StepResult<TValue>
         {
-            /// <summary>
-            /// フェーズが成功したかどうかを示します。
-            /// </summary>
             public bool IsSuccess { get; }
-
-            /// <summary>
-            /// 成功時の値です。
-            /// </summary>
             public TValue Value { get; }
-
-            /// <summary>
-            /// 失敗時の実行結果です。
-            /// </summary>
             public ProgramRunResult Failure { get; }
 
-            /// <summary>
-            /// 成功値から結果を生成します。
-            /// </summary>
-            /// <param name="value">成功時の値。</param>
-            /// <returns>成功結果。</returns>
             public static StepResult<TValue> FromValue(TValue value)
                 => new(true, value, null);
 
-            /// <summary>
-            /// 失敗結果から結果を生成します。
-            /// </summary>
-            /// <param name="failure">失敗結果。</param>
-            /// <returns>失敗結果。</returns>
             public static StepResult<TValue> FromFailure(ProgramRunResult failure)
                 => new(false, default, failure);
 
-            /// <summary>
-            /// フェーズ結果を初期化します。
-            /// </summary>
-            /// <param name="isSuccess">成功可否。</param>
-            /// <param name="value">成功時の値。</param>
-            /// <param name="failure">失敗時の実行結果。</param>
             private StepResult(bool isSuccess, TValue value, ProgramRunResult failure)
             {
                 IsSuccess = isSuccess;

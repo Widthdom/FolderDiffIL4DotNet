@@ -5,70 +5,32 @@ using System.Threading.Tasks;
 namespace FolderDiffIL4DotNet.Core.Console
 {
     /// <summary>
-    /// シンプルなコンソールスピナー。指定したラベルと共に一定間隔で回転する文字を表示します。
-    /// 無音区間でもユーザーに処理継続中であることを示す用途を想定しています。
+    /// A simple console spinner that displays a rotating character alongside a label at a fixed interval,
+    /// indicating to the user that processing is still in progress during otherwise silent periods.
+    /// シンプルなコンソールスピナー。指定したラベルと共に一定間隔で回転する文字を表示し、
+    /// 無音区間でもユーザーに処理継続中であることを示します。
     /// </summary>
     public sealed class ConsoleSpinner : IDisposable
     {
-        /// <summary>
-        /// 既定のフレーム更新間隔（ミリ秒）。
-        /// </summary>
         private const int DEFAULT_INTERVAL_MILLISECONDS = 120;
 
-        /// <summary>
-        /// 進捗バー描画直後はスピナーを抑止する時間。
-        /// </summary>
+        // Suppress spinner rendering briefly after a progress bar render to avoid visual glitches.
+        // 進捗バー描画直後はスピナーを一時抑止し、表示の衝突を防ぐ。
         private static readonly TimeSpan SpinnerSuppressionInterval = TimeSpan.FromMilliseconds(800);
-        /// <summary>
-        /// デフォルトのスピナーフレーム。
-        /// </summary>
         private static readonly string[] DefaultFrames = ["|", "/", "-", "\\"];
-
-        /// <summary>
-        /// スピナー前に表示するラベル。
-        /// </summary>
         private readonly string _label;
-
-        /// <summary>
-        /// スピナーに使用するフレーム集合。
-        /// </summary>
         private readonly string[] _frames;
-
-        /// <summary>
-        /// フレーム更新間隔。
-        /// </summary>
         private readonly TimeSpan _interval;
-
-        /// <summary>
-        /// アニメーション停止用のキャンセルトークン。
-        /// </summary>
         private readonly CancellationTokenSource _cts = new();
-
-        /// <summary>
-        /// スピナーアニメーションを実行するタスク。
-        /// </summary>
         private readonly Task _animationTask;
-        /// <summary>
-        /// 現在表示しているフレームインデックス。
-        /// </summary>
         private int _frameIndex;
-
-        /// <summary>
-        /// 直近に描画したコンテンツの文字数（消去用）。
-        /// </summary>
         private int _lastRenderLength;
-
-        /// <summary>
-        /// 停止済みかどうか。
-        /// </summary>
         private bool _isStopped;
 
         /// <summary>
-        /// スピナーを開始します。
+        /// Creates and starts a new spinner with the given label.
+        /// 指定ラベルで新しいスピナーを作成・開始します。
         /// </summary>
-        /// <param name="label">スピナーの前に表示するラベル。</param>
-        /// <param name="intervalMilliseconds">フレーム更新間隔（ミリ秒）。</param>
-        /// <param name="frames">スピナーで使用するフレーム文字列配列（省略時は | / - \）。各要素が 1 フレームになるため複数文字も指定できます。</param>
         public ConsoleSpinner(string label, int intervalMilliseconds = DEFAULT_INTERVAL_MILLISECONDS, string[] frames = null)
         {
             _label = label;
@@ -78,6 +40,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         }
 
         /// <summary>
+        /// Internal animation loop that updates spinner frames at the configured interval.
         /// 指定間隔でスピナーフレームを更新しつつコンソールへ描画する内部ループ。
         /// </summary>
         private async Task SpinAsync()
@@ -123,6 +86,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         }
 
         /// <summary>
+        /// Erases the most recently rendered spinner line from the console.
         /// 直近で描画したスピナー行を消去します。
         /// </summary>
         private void ClearLine()
@@ -139,6 +103,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         }
 
         /// <summary>
+        /// Stops the spinner animation loop and clears any remaining rendered line.
         /// スピナー描画ループを停止し、残っているアニメーション行をクリアします。
         /// </summary>
         private void StopInternal()
@@ -161,9 +126,9 @@ namespace FolderDiffIL4DotNet.Core.Console
         }
 
         /// <summary>
+        /// Stops the spinner and optionally prints a completion message.
         /// スピナーを停止し、任意の完了メッセージを出力します。
         /// </summary>
-        /// <param name="completionMessage">停止後に出力するメッセージ。</param>
         public void Complete(string completionMessage = null)
         {
             StopInternal();
@@ -174,7 +139,8 @@ namespace FolderDiffIL4DotNet.Core.Console
         }
 
         /// <summary>
-        /// スピナーを停止します。
+        /// Stops the spinner and releases resources.
+        /// スピナーを停止しリソースを解放します。
         /// </summary>
         public void Dispose()
         {

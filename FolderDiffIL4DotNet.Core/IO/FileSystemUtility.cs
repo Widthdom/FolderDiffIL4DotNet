@@ -9,11 +9,13 @@ using FolderDiffIL4DotNet.Core.Common;
 namespace FolderDiffIL4DotNet.Core.IO
 {
     /// <summary>
-    /// ファイルシステム操作（タイムスタンプ取得、読み取り専用設定、ファイル削除、ネットワークパス検出）を提供するクラス
+    /// Provides file-system operations: timestamp retrieval, read-only flag, silent deletion, and network-path detection.
+    /// ファイルシステム操作（タイムスタンプ取得、読み取り専用設定、ファイル削除、ネットワークパス検出）を提供するクラス。
     /// </summary>
     public static class FileSystemUtility
     {
         /// <summary>
+        /// File-system types considered network drives on macOS.
         /// macOS でネットワークドライブとみなすファイルシステム種別。
         /// </summary>
         private static readonly HashSet<string> s_macNetworkFsTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -22,6 +24,7 @@ namespace FolderDiffIL4DotNet.Core.IO
         };
 
         /// <summary>
+        /// File-system types considered network drives on Linux/Unix.
         /// Linux/Unix でネットワークドライブとみなすファイルシステム種別。
         /// </summary>
         private static readonly HashSet<string> s_unixNetworkFsTypes = new(StringComparer.OrdinalIgnoreCase)
@@ -31,7 +34,8 @@ namespace FolderDiffIL4DotNet.Core.IO
         private const string WINDOWS_UNC_PREFIX = @"\\";
         private const string WINDOWS_UNC_DEVICE_PREFIX = @"\\?\UNC\";
         /// <summary>
-        /// Windows でスラッシュ形式の UNC パスを示すプレフィックス（例: //server/share）。
+        /// Forward-slash UNC prefix on Windows (e.g. //server/share).
+        /// Windows でスラッシュ形式の UNC パスを示すプレフィックス。
         /// </summary>
         private const string WINDOWS_FORWARD_SLASH_UNC_PREFIX = "//";
         private const string PROC_MOUNTS_PATH = "/proc/mounts";
@@ -43,13 +47,14 @@ namespace FolderDiffIL4DotNet.Core.IO
         private const string ERROR_FILE_PATH_NULL = "File path cannot be null or whitespace.";
         private const string ERROR_FILE_NOT_FOUND = "File not found.";
         /// <summary>
-        /// macOS の <c><see cref="statfs"/></c> におけるフラグ。<c>MNT_LOCAL</c> が立っている場合はローカルファイルシステム。
-        /// 本値が未セットの場合はネットワークファイルシステムの可能性が高いとみなします。
+        /// macOS <c>statfs</c> flag. When <c>MNT_LOCAL</c> is set the filesystem is local; when unset it is likely a network filesystem.
+        /// macOS の <c>statfs</c> フラグ。<c>MNT_LOCAL</c> が立っていればローカル、未セットならネットワークファイルシステムの可能性が高い。
         /// </summary>
         private const uint MNT_LOCAL = 0x00001000;
 
         /// <summary>
-        /// Darwin (macOS) の <c><see cref="fsid_t"/></c> 構造体。
+        /// Darwin (macOS) <c>fsid_t</c> structure.
+        /// Darwin (macOS) の <c>fsid_t</c> 構造体。
         /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         private struct fsid_t
@@ -59,8 +64,9 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// Darwin (macOS) の <c>struct <see cref="statfs"/></c> 定義（必要フィールドのみを抜粋）。
-        /// 参考: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/mount.h
+        /// Darwin (macOS) <c>struct statfs</c> definition (relevant fields only).
+        /// Ref: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/sys/mount.h
+        /// Darwin (macOS) の <c>struct statfs</c> 定義（必要フィールドのみ抜粋）。
         /// </summary>
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         private struct statfs_darwin
@@ -97,6 +103,7 @@ namespace FolderDiffIL4DotNet.Core.IO
         private static extern int statfs(string path, out statfs_darwin buf);
 
         /// <summary>
+        /// Retrieves the filesystem type and flags for a path on macOS via <c>statfs</c>.
         /// macOS で指定パスのファイルシステム種別およびフラグを取得します。
         /// </summary>
         private static bool TryGetFileSystemInfoOnMac(string path, out string fsType, out uint flags)
@@ -119,12 +126,14 @@ namespace FolderDiffIL4DotNet.Core.IO
             }
             catch (Exception ex) when (IsRecoverableNetworkPathDetectionException(ex))
             {
-                // ignore recoverable detection errors and fall back to non-network.
+                // Ignore recoverable detection errors and fall back to non-network.
+                // 回復可能な検出エラーは無視し、非ネットワークとみなす。
             }
             return false;
         }
 
         /// <summary>
+        /// Returns true if the exception is recoverable during network-path detection.
         /// ネットワークパス検出時に発生し得る回復可能な例外かどうかを判定します。
         /// </summary>
         private static bool IsRecoverableNetworkPathDetectionException(Exception ex)
@@ -136,6 +145,7 @@ namespace FolderDiffIL4DotNet.Core.IO
                 or InvalidOperationException;
 
         /// <summary>
+        /// Finds the filesystem type of the longest-matching mount point for the given path from Unix mount-format lines.
         /// Unix の mounts 形式行から、指定パスに最も長く一致するマウントポイントの fs type を取得します。
         /// </summary>
         private static string GetBestMatchingMountFileSystemType(string fullPath, IEnumerable<string> mountLines)
@@ -182,8 +192,8 @@ namespace FolderDiffIL4DotNet.Core.IO
             return bestFsType;
         }
         /// <summary>
-        /// 指定されたファイルの最終更新日時を取得し、
-        /// 「yyyy-MM-dd HH:mm:ss」形式の文字列（秒精度）で返します。
+        /// Returns the file's last-write time as a "yyyy-MM-dd HH:mm:ss" string.
+        /// 指定ファイルの最終更新日時を「yyyy-MM-dd HH:mm:ss」形式で返します。
         /// </summary>
         public static string GetTimestamp(string fileAbsolutepath)
         {
@@ -192,8 +202,8 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// 指定されたファイルに読み取り専用属性（<see cref="FileAttributes.ReadOnly"/>）を付与します。
-        /// 既に読み取り専用の場合は何も行いません。
+        /// Sets the read-only attribute on the file; no-op if already read-only.
+        /// 指定ファイルに読み取り専用属性を付与します。既に読み取り専用の場合は何もしません。
         /// </summary>
         public static void TrySetReadOnly(string fileAbsolutePath)
         {
@@ -213,6 +223,7 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
+        /// Deletes a file, silently ignoring any exceptions.
         /// ファイルを例外を無視して削除します。
         /// </summary>
         public static void DeleteFileSilent(string fileAbsolutePath)
@@ -241,7 +252,8 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// 指定パスがネットワーク共有（UNC/NFS/CIFS/SSHFS など）の可能性が高いかを判定します。
+        /// Returns true if the path is likely a network share (UNC / NFS / CIFS / SSHFS etc.).
+        /// 指定パスがネットワーク共有の可能性が高いかを判定します。
         /// </summary>
         public static bool IsLikelyNetworkPath(string absolutePath)
         {

@@ -288,6 +288,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [InlineData(-1)]
         public void Validate_DisassemblerBlacklistTtlMinutes_NonPositive_UsesDefault_IsValid(int minutes)
         {
+            // Values <= 0 are treated as the default (10 min), so Validate passes
             // 0 以下は既定値（10 分）として扱われるため Validate エラーにならない
             var config = new ConfigSettings { DisassemblerBlacklistTtlMinutes = minutes };
             var result = config.Validate();
@@ -324,7 +325,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
         }
 
-        // ── InlineDiff ────────────────────────────────────────────────────────
+        // ── InlineDiff ─────────────────────────────────────────────────────────
 
         [Fact]
         public void Constructor_InlineDiffDefaults_AreCorrect()

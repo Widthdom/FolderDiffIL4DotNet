@@ -37,8 +37,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task LoadConfigAsync_TrailingCommaInObject_ThrowsInvalidDataExceptionWithHint()
         {
-            // よくあるミス: オブジェクトの最後のプロパティ後にカンマを入れてしまう
             // Common mistake: trailing comma after the last property in a JSON object
+            // よくあるミス: オブジェクトの最後のプロパティ後にカンマを入れてしまう
             await WithConfigFileAsync("{ \"MaxLogGenerations\": 5, }", async () =>
             {
                 var service = new ConfigService();
@@ -52,8 +52,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task LoadConfigAsync_TrailingCommaInArray_ThrowsInvalidDataExceptionWithHint()
         {
-            // よくあるミス: 配列の最後の要素後にカンマを入れてしまう
             // Common mistake: trailing comma after the last element in a JSON array
+            // よくあるミス: 配列の最後の要素後にカンマを入れてしまう
             await WithConfigFileAsync("{ \"IgnoredExtensions\": [\".pdb\", \".log\",] }", async () =>
             {
                 var service = new ConfigService();
@@ -67,8 +67,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task LoadConfigAsync_TrailingCommaError_MessageIncludesLineNumber()
         {
-            // 行番号情報がメッセージに含まれることを確認
             // Verify that line number information is included in the error message
+            // 行番号情報がメッセージに含まれることを確認
             const string json = """
                 {
                   "MaxLogGenerations": 5,
@@ -79,7 +79,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var service = new ConfigService();
                 var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
                 Assert.IsType<JsonException>(ex.InnerException);
-                // 行番号が含まれている（1以上の整数）
+                // Message should contain a line number (integer >= 1)
+                // メッセージに行番号（1 以上の整数）が含まれている
                 Assert.Matches(@"line \d+", ex.Message);
             });
         }
@@ -225,9 +226,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
         }
 
-        // -----------------------------------------------------------------------
-        // configFilePath parameter tests
-        // -----------------------------------------------------------------------
+        // ── configFilePath parameter tests / configFilePath パラメータテスト ──
 
         [Fact]
         public async Task LoadConfigAsync_CustomConfigFilePath_LoadsFromSpecifiedPath()
@@ -286,9 +285,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
         }
 
-        // -----------------------------------------------------------------------
-        // Environment variable override tests
-        // -----------------------------------------------------------------------
+        // ── Environment variable override tests / 環境変数オーバーライドテスト ──
 
         [Fact]
         public async Task LoadConfigAsync_EnvVarOverridesIntProperty_AppliesOverride()
@@ -414,7 +411,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task LoadConfigAsync_EnvVarOverridesInvalidValue_ValidationStillRuns()
         {
-            // env var が不正値（MaxLogGenerations=0）を設定 → バリデーション失敗
+            // Env var sets an invalid value (MaxLogGenerations=0), triggering validation failure
+            // 環境変数が不正値（MaxLogGenerations=0）を設定し、バリデーション失敗を引き起こす
             await WithConfigFileAsync("{}", async () =>
             {
                 await WithEnvVarsAsync(

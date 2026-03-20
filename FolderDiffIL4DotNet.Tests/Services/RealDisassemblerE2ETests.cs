@@ -15,24 +15,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
     [Trait("Category", "E2E")]
     public sealed class RealDisassemblerE2ETests : IDisposable
     {
-        /// <summary>
-        /// E2E テスト専用の一時作業ルートです。
-        /// </summary>
         private readonly string _rootDir;
-
-        /// <summary>
-        /// 1 回の比較実行で蓄積される差分結果です。
-        /// </summary>
         private readonly FileDiffResultLists _resultLists = new();
-
-        /// <summary>
-        /// 実サービスを使う E2E テストで共有するロガーです。
-        /// </summary>
         private readonly ILoggerService _logger = new LoggerService();
 
-        /// <summary>
-        /// テストごとに独立した一時ルートを初期化します。
-        /// </summary>
         public RealDisassemblerE2ETests()
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-real-disasm-e2e-" + Guid.NewGuid().ToString("N"));
@@ -40,9 +26,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.ResetAll();
         }
 
-        /// <summary>
-        /// E2E テストで作成した一時ファイル群を後始末します。
-        /// </summary>
         public void Dispose()
         {
             _resultLists.ResetAll();
@@ -55,13 +38,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
-        /// <summary>
-        /// dotnet-ildasm で非決定的に再ビルドした同一アセンブリを比較し、IL 一致として扱えることを確認します。
-        /// </summary>
+        // Compare two non-deterministically rebuilt copies of the same assembly via dotnet-ildasm and verify IL match
+        // dotnet-ildasm で非決定的に再ビルドした同一アセンブリを比較し、IL 一致として扱えることを確認する
         [SkippableFact]
         public async Task FilesAreEqualAsync_WhenDotNetIldasmComparesNonDeterministicRebuilds_ReturnsIlMatch()
         {
@@ -123,19 +105,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        /// <summary>
-        /// 実行環境で dotnet-ildasm を起動できるかを確認します。
-        /// </summary>
         private static bool CanRunDotNetIldasm()
             => CanRunCommand(Constants.DOTNET_ILDASM, "--version")
                 || CanRunCommand(Constants.DOTNET_MUXER, Constants.ILDASM_LABEL, "--version");
 
-        /// <summary>
-        /// 最低 1 つのメソッドを持つ非決定的ビルドのクラスライブラリを作成します。
-        /// </summary>
-        /// <param name="projectDir">生成先プロジェクトディレクトリです。</param>
-        /// <param name="assemblyName">出力アセンブリ名です。</param>
-        /// <returns>ビルド済み DLL の絶対パスです。</returns>
+        // Build a non-deterministic class library with at least one method and return the DLL path
+        // 少なくとも 1 メソッドを持つ非決定的クラスライブラリをビルドし、DLL パスを返す
         private static async Task<string> BuildLibraryAsync(string projectDir, string assemblyName)
         {
             Directory.CreateDirectory(projectDir);
@@ -169,12 +144,6 @@ namespace SampleLibraryNamespace
             return Path.Combine(projectDir, "bin", "Release", "net8.0", $"{assemblyName}.dll");
         }
 
-        /// <summary>
-        /// 外部コマンドが成功終了できるかを短時間で確認します。
-        /// </summary>
-        /// <param name="fileName">実行ファイル名です。</param>
-        /// <param name="arguments">引数列です。</param>
-        /// <returns>終了コード 0 で完了した場合は true、それ以外は false です。</returns>
         private static bool CanRunCommand(string fileName, params string[] arguments)
         {
             try
@@ -206,7 +175,7 @@ namespace SampleLibraryNamespace
                     }
                     catch
                     {
-                        // ignore kill failures when probing availability
+                        // ignore kill failures when probing availability / 利用可能性チェック時の kill 失敗を無視
                     }
 
                     return false;
@@ -219,12 +188,6 @@ namespace SampleLibraryNamespace
             }
         }
 
-        /// <summary>
-        /// 外部コマンドを実行し、失敗時は標準出力と標準エラーを含めて例外化します。
-        /// </summary>
-        /// <param name="fileName">実行ファイル名です。</param>
-        /// <param name="workingDirectory">実行時の作業ディレクトリです。</param>
-        /// <param name="arguments">引数列です。</param>
         private static async Task RunProcessAsync(string fileName, string workingDirectory, params string[] arguments)
         {
             var startInfo = new ProcessStartInfo

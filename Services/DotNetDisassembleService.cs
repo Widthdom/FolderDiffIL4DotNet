@@ -15,44 +15,29 @@ using FolderDiffIL4DotNet.Services.Caching;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// .NET 逆アセンブルの実行および <see cref="ILCache"/> を用いたキャッシュ取得/保存を担当するサービス。
-    /// ツールのバージョン取得（<see cref="DotNetDisassemblerCache"/> 経由）・ブラックリスト制御を担当。
-    /// IL キャッシュのプリフェッチは <see cref="ILCachePrefetcher"/> へ委譲します。
-    /// 日本語/非ASCIIパス対策として必要に応じて ASCII 一時コピーを作成して実行します。
-    /// <para>
     /// Responsible for executing .NET disassembly and managing the <see cref="ILCache"/>.
     /// Handles tool version retrieval (via <see cref="DotNetDisassemblerCache"/>) and blacklist control.
     /// IL-cache prefetch is delegated to <see cref="ILCachePrefetcher"/>.
     /// Creates a temporary ASCII copy of the target file when the path contains non-ASCII characters.
-    /// </para>
+    /// .NET 逆アセンブルの実行および <see cref="ILCache"/> を用いたキャッシュ取得/保存を担当するサービス。
+    /// ツールのバージョン取得（<see cref="DotNetDisassemblerCache"/> 経由）・ブラックリスト制御を担当。
+    /// IL キャッシュのプリフェッチは <see cref="ILCachePrefetcher"/> へ委譲します。
+    /// 日本語/非ASCIIパス対策として必要に応じて ASCII 一時コピーを作成して実行します。
     /// </summary>
     public sealed class DotNetDisassembleService : IDotNetDisassembleService
     {
         /// <summary>
-        /// ブラックリスト化判定に用いる連続失敗閾値。
-        /// <para>
-        /// 1〜2 回の失敗は一時的な競合やファイルロックによるものが多いため、
-        /// 誤ブラックリスト化を避けるため 3 回連続失敗を閾値としています。
         /// Threshold of consecutive failures before a disassembler tool is blacklisted.
         /// Set to 3 to tolerate transient errors (file locks, brief resource contention)
         /// while still reacting promptly to a broken tool.
-        /// </para>
+        /// ブラックリスト化判定に用いる連続失敗閾値。
+        /// 1〜2 回の失敗は一時的な競合やファイルロックによるものが多いため、
+        /// 誤ブラックリスト化を避けるため 3 回連続失敗を閾値としています。
         /// </summary>
         private const int DISASSEMBLE_FAIL_THRESHOLD = 3;
 
-        /// <summary>
-        /// ilspycmd の IL 出力を有効にするスイッチ（例: -il）
-        /// </summary>
         private const string ILSPY_FLAG_IL = "-il";
-
-        /// <summary>
-        /// ilspycmd の出力ファイル指定スイッチ（例: -o &lt;path&gt;）
-        /// </summary>
         private const string ILSPY_FLAG_OUTPUT = "-o";
-
-        /// <summary>
-        /// ildasm/ilspyインストールガイダンス
-        /// </summary>
         private const string GUIDANCE_INSTALL_DISASSEMBLER =
             Constants.DOTNET_ILDASM + " was not found or failed to run.\n" +
             "If it's not installed, install it with:\n" +
@@ -61,100 +46,38 @@ namespace FolderDiffIL4DotNet.Services
             "Alternatively, you can install " + Constants.ILSPY_CMD + " and we will use it automatically:\n" +
             "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY_CMD;
 
-        /// <summary>
-        /// バージョン付与ラベルの接頭辞。
-        /// </summary>
         private const string VERSION_LABEL_PREFIX = " (version: ";
-
-        /// <summary>
-        /// バージョン取得失敗時の識別子プレフィックス。
-        /// </summary>
         private const string UNKNOWN_VERSION_FINGERPRINT_PREFIX = "unavailable; fingerprint: ";
-
-        /// <summary>
-        /// ディスクキャッシュ分離のための実行単位フォールバック識別子プレフィックス。
-        /// </summary>
         private const string RUN_FINGERPRINT_PREFIX = "run:";
-        /// <summary>
-        /// ブラックリスト化有効期間の既定値（分）。設定未指定またはゼロ以下の場合に使用。
-        /// </summary>
         private const int DEFAULT_BLACKLIST_TTL_MINUTES = 10;
-        /// <summary>
-        /// 設定値。IL 出力やキャッシュ利用可否、キャッシュパラメータ等を保持する <see cref="ConfigSettings"/>。
-        /// </summary>
         private readonly ConfigSettings _config;
-
-        /// <summary>
-        /// IL 逆アセンブル結果キャッシュインスタンス。無効化されている場合は null。
-        /// </summary>
         private readonly ILCache _ilCache;
-
-        /// <summary>
-        /// 逆アセンブラツールのブラックリスト管理。TTL と失敗閾値に基づいてツールを一時スキップします。
-        /// </summary>
         private readonly DisassemblerBlacklist _blacklist;
 
-        /// <summary>
-        /// 実行単位フォールバック識別子。ツール実体を解決できない場合でも前回実行のキャッシュと混ざらないようにする。
-        /// </summary>
+        // Per-run fallback identifier to isolate disk cache when the tool binary cannot be resolved.
+        // ツール実体を解決できない場合でも前回実行のキャッシュと混ざらないようにする実行単位識別子。
         private static readonly string _runFingerprint = Guid.NewGuid().ToString("N");
-        /// <summary>
-        /// キャッシュヒット回数。
-        /// </summary>
         private int _ilCacheHits;
-
-        /// <summary>
-        /// キャッシュ書き込み（格納）回数。
-        /// </summary>
         private int _ilCacheStores;
-
-        /// <summary>
-        /// 比較結果を蓄積する実行単位の状態オブジェクト。
-        /// </summary>
         private readonly FileDiffResultLists _fileDiffResultLists;
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
-
-        /// <summary>
-        /// 逆アセンブラバージョン取得のキャッシュサービス。
-        /// </summary>
         private readonly DotNetDisassemblerCache _dotNetDisassemblerCache;
-
-        /// <summary>
-        /// IL キャッシュプリフェッチ処理を担うクラス。
-        /// </summary>
         private readonly ILCachePrefetcher _prefetcher;
 
         /// <summary>
-        /// IL キャッシュのヒット件数（読み取り専用スナップショット）。
-        /// 逆アセンブル実行時のヒット数と <see cref="ILCachePrefetcher"/> のプリフェッチヒット数の合計を返します。
-        /// <para>
         /// Read-only snapshot of total cache hits: disassembly hits plus prefetch hits
         /// from <see cref="ILCachePrefetcher"/>. Uses <see cref="Volatile"/> for thread safety.
-        /// </para>
+        /// IL キャッシュのヒット件数（読み取り専用スナップショット）。
+        /// 逆アセンブル実行時のヒット数と <see cref="ILCachePrefetcher"/> のプリフェッチヒット数の合計を返します。
         /// </summary>
         public int IlCacheHits => Volatile.Read(ref _ilCacheHits) + _prefetcher.IlCacheHits;
 
         /// <summary>
-        /// IL キャッシュへの格納（書き込み）件数（読み取り専用スナップショット）。
-        /// <para>
         /// Read-only snapshot of total cache stores. Uses <see cref="Volatile"/> for thread safety.
-        /// </para>
+        /// IL キャッシュへの格納（書き込み）件数（読み取り専用スナップショット）。
         /// </summary>
         public int IlCacheStores => Volatile.Read(ref _ilCacheStores);
 
-        /// <summary>
-        /// コンストラクタ
-        /// </summary>
-        /// <param name="config">アプリケーション設定。</param>
-        /// <param name="ilCache">IL キャッシュ（無効時は null）。</param>
-        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
-        /// <param name="logger">ログ出力サービス。</param>
-        /// <param name="dotNetDisassemblerCache">逆アセンブラバージョン取得キャッシュ。</param>
-        /// <exception cref="ArgumentNullException"></exception>
         public DotNetDisassembleService(ConfigSettings config, ILCache ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
         {
             ArgumentNullException.ThrowIfNull(config);
@@ -174,16 +97,17 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// 設定された候補コマンド（dotnet-ildasm / ildasm / ilspy など）を順次試し、成功した最初の逆アセンブル結果を返します。
-        /// キャッシュヒット時はプロセス起動を省略し、使用したコマンド＋バージョン情報付きのラベルを返します。
+        /// Tries each candidate disassemble command in order and returns the first successful IL result.
+        /// Skips process launch on cache hit and returns a versioned command label.
+        /// 設定された候補コマンドを順次試し、成功した最初の逆アセンブル結果を返します。
+        /// キャッシュヒット時はプロセス起動を省略し、バージョン情報付きのラベルを返します。
         /// </summary>
-        /// <param name="dotNetAssemblyfileAbsolutePath">逆アセンブル対象となる .NET アセンブリの絶対パス。</param>
-        /// <returns>逆アセンブル済み IL テキストと、人間が読めるコマンド表示（バージョン付き）をタプルで返します。</returns>
         public async Task<(string ilText, string commandString)> DisassembleAsync(string dotNetAssemblyfileAbsolutePath)
         {
             Exception lastError = null;
             foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
             {
+                // Skip commands temporarily blacklisted due to consecutive failures.
                 // 直近で連続失敗したコマンドは一時的にブラックリスト化しているためスキップ。
                 if (IsDisassemblerBlacklisted(candidateDisassembleCommand))
                 {
@@ -192,7 +116,6 @@ namespace FolderDiffIL4DotNet.Services
 
                 try
                 {
-                    // キャッシュ確認とプロセス起動を内包した TryDisassembleAsync を実行。
                     var (success, ilText, disassembleCommandAndItsVersionWithArguments, error) = await TryDisassembleAsync(candidateDisassembleCommand, dotNetAssemblyfileAbsolutePath, allowCache: true, recordUsage: true);
                     if (success)
                     {
@@ -284,14 +207,11 @@ namespace FolderDiffIL4DotNet.Services
         public Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel)
             => _prefetcher.PrefetchIlCacheAsync(dotNetAssemblyFilesAbsolutePaths, maxParallel);
         /// <summary>
+        /// Attempts disassembly with the given command, creating a temp ASCII path if needed
+        /// and trying each argument set in turn.
         /// 指定コマンドでアセンブリの逆アセンブルを試行します。必要に応じて一時ASCIIパスを生成し、
         /// 複数の引数セットを順に試します。
         /// </summary>
-        /// <param name="disassembleCommand">使用するコマンド（ildasm / dotnet / ilspycmd など）</param>
-        /// <param name="dotNetAssemblyFileAbsolutePath">対象アセンブリの絶対パス</param>
-        /// <param name="allowCache">true のとき、試行前にキャッシュヒットを確認します。</param>
-        /// <param name="recordUsage">true のとき、使用した逆アセンブラ情報を <see cref="FileDiffResultLists"/> に記録します。</param>
-        /// <returns>成功可否、IL テキスト、ツールラベル、発生した例外</returns>
         private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleAsync(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
@@ -325,13 +245,9 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Tries disassembly with a single argument set: cache check, process execution, cache store.
         /// 1つの引数セットで逆アセンブルを試行します。キャッシュ事前チェック→プロセス実行→キャッシュ格納までを担当。
         /// </summary>
-        /// <param name="disassembleCommand">実行コマンド</param>
-        /// <param name="dotNetAssemblyFileAbsolutePath">対象アセンブリの絶対パス</param>
-        /// <param name="argset">作業ディレクトリ/引数/一時出力のタプル</param>
-        /// <param name="allowCache">true のとき、試行前にキャッシュヒットを確認します。</param>
-        /// <param name="recordUsage">true のとき、使用した逆アセンブラ情報を <see cref="FileDiffResultLists"/> に記録します。</param>
         private async Task<(bool Success, string IlText, string DisassembleCommandAndItsVersionWithArguments, Exception Error)> TryDisassembleWithArguments(
             string disassembleCommand,
             string dotNetAssemblyFileAbsolutePath,
@@ -343,6 +259,7 @@ namespace FolderDiffIL4DotNet.Services
 
             if (allowCache)
             {
+                // Skip process launch on cache hit; label is reused on miss for later store.
                 // キャッシュヒット時はプロセス起動を省略。ラベルはミス時も後続で再利用する。
                 var (hit, cachedIl, computedLabel) = await TryCacheHitAsync(disassembleCommand, dotNetAssemblyFileAbsolutePath, argset.args, recordUsage);
                 label = computedLabel;
@@ -352,23 +269,27 @@ namespace FolderDiffIL4DotNet.Services
                 }
             }
 
-            // キャッシュヒットしなかった場合は実際にプロセスを起動して IL 取得を試みる。
+            // Cache miss — launch the process to obtain the IL text.
+            // キャッシュミス — プロセスを起動して IL テキストを取得する。
             var (exitCode, stdout, stderr, error) = await RunProcessAsync(disassembleCommand, argset.workingDirectory, argset.args);
             if (error != null)
             {
-                // プロセス自体が起動できない場合はブラックリストへ登録し、当該試行を失敗として返す。
+                // Process failed to start — blacklist and return failure.
+                // プロセス起動失敗 — ブラックリストへ登録し失敗として返す。
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: error);
             }
 
             if (exitCode == 0)
             {
+                // Success — clear the blacklist state.
                 // 正常終了したらブラックリスト状態を解除。
                 ResetDisassembleFailure(disassembleCommand);
                 var ilText = await ReadIlTextAfterSuccessAsync(IsIlspyCommand(disassembleCommand), argset, stdout);
                 if (string.IsNullOrEmpty(label))
                 {
-                    // キャッシュ miss → プロセス実行の経路ではラベルが未取得の場合があるためここで確保。
+                    // On cache-miss path the label may not have been computed yet.
+                    // キャッシュミス経路ではラベルが未取得の場合があるためここで確保。
                     label = await GetDisassembleCommandAndItsVersionWithArgumentsAsync(ProcessHelper.BuildBaseLabel(disassembleCommand, argset.args));
                 }
                 await TryStoreToCacheAsync(dotNetAssemblyFileAbsolutePath, label, ilText, disassembleCommand);
@@ -380,7 +301,8 @@ namespace FolderDiffIL4DotNet.Services
             }
             else
             {
-                // exit code が非 0 の場合は詳細付き例外に包んで失敗扱いとし、ブラックリストに登録。
+                // Non-zero exit code — wrap into an exception and blacklist the tool.
+                // 終了コードが非 0 の場合は例外に包んでブラックリストに登録。
                 var lastError = new InvalidOperationException($"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\nFile: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}");
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
@@ -388,9 +310,11 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// IL キャッシュへのヒットを試みます。
-        /// ヒット時は (true, IlText, Label)、ミス時は (false, null, Label)、キャッシュ無効や例外時は (false, null, null) を返します。
-        /// ミス時も Label を返すことで、後続のキャッシュ格納でバージョン取得の再実行を省略できます。
+        /// Attempts an IL cache hit. Returns (true, IlText, Label) on hit, (false, null, Label) on miss,
+        /// or (false, null, null) when the cache is disabled or an exception occurs.
+        /// The label is returned on miss so the caller can reuse it when storing to the cache.
+        /// IL キャッシュへのヒットを試みます。ミス時も Label を返すことで、
+        /// 後続のキャッシュ格納でバージョン取得の再実行を省略できます。
         /// </summary>
         private async Task<(bool Hit, string IlText, string Label)> TryCacheHitAsync(
             string disassembleCommand,
@@ -440,8 +364,10 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Reads IL text after a successful process exit.
+        /// ilspycmd reads from a temp file (deleted after read); other tools use stdout.
         /// プロセス正常終了後の IL テキストを取得します。
-        /// ilspycmd は一時ファイルから読み取り（読み取り後に削除）、その他は stdout を使用します。
+        /// ilspycmd は一時ファイルから読み取り、その他は stdout を使用します。
         /// </summary>
         private static async Task<string> ReadIlTextAfterSuccessAsync(
             bool isIlspy,
@@ -458,6 +384,8 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Stores IL text in the cache and increments the store counter.
+        /// Logs a warning and continues on error or when the cache is disabled.
         /// IL テキストをキャッシュに格納します。格納成功時はストアカウンタをインクリメントします。
         /// キャッシュ無効時やエラー時は警告ログを出力して処理を継続します。
         /// </summary>
@@ -494,18 +422,12 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>
-        /// 指定コマンドが dotnet 実行ファイルかを判定します。<see cref="DisassemblerHelper.IsDotnetMuxer"/> に委譲。
-        /// </summary>
         private static bool IsDotnetMuxer(string command) => DisassemblerHelper.IsDotnetMuxer(command);
-
-        /// <summary>
-        /// 指定コマンドが ilspycmd かを判定します。<see cref="DisassemblerHelper.IsIlspyCommand"/> に委譲。
-        /// </summary>
         private static bool IsIlspyCommand(string command) => DisassemblerHelper.IsIlspyCommand(command);
 
         /// <summary>
-        /// パスに非ASCII文字がある場合に、ASCII の一時パスへコピーしたファイルのパスを返します。該当しなければ null。
+        /// Returns a temp ASCII-path copy when the path contains non-ASCII characters; null otherwise.
+        /// パスに非ASCII文字がある場合に ASCII 一時パスへコピーしたファイルのパスを返します。該当しなければ null。
         /// </summary>
         private string CreateAsciiTempCopyIfNeeded(string dotNetAssemblyFileAbsolutePath)
         {
@@ -538,6 +460,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Enumerates argument sets to try, based on the command type.
         /// コマンド種別に応じた試行用の引数セットを列挙します。
         /// </summary>
         private static IEnumerable<(string workingDirectory, string[] args, string tempOut)> BuildArgSets(string disassembleCommand, string disassemblerFileAbsolutePath, string tempAsciiPath)
@@ -550,7 +473,6 @@ namespace FolderDiffIL4DotNet.Services
             var argSets = new List<(string workingDirectory, string[] args, string tempOut)>();
             if (!isIlspy)
             {
-                // ildasm 系
                 argSets.Add((disassemblerFileDirectoryAbsolutePath, isDotnetMuxer ? [Constants.ILDASM_LABEL, disassemblerFileNameOnly] : [disassemblerFileNameOnly], null));
                 argSets.Add((Environment.CurrentDirectory, isDotnetMuxer ? [Constants.ILDASM_LABEL, disassemblerFileAbsolutePath] : [disassemblerFileAbsolutePath], null));
                 if (!string.IsNullOrEmpty(tempAsciiPath))
@@ -560,7 +482,6 @@ namespace FolderDiffIL4DotNet.Services
             }
             else
             {
-                // ilspycmd
                 argSets.Add((disassemblerFileDirectoryAbsolutePath, [ILSPY_FLAG_IL, disassemblerFileNameOnly], null));
                 argSets.Add((Environment.CurrentDirectory, [ILSPY_FLAG_IL, disassemblerFileAbsolutePath], null));
                 if (!string.IsNullOrEmpty(tempAsciiPath))
@@ -582,7 +503,8 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// ベースラベルにツールバージョンを付加して返します。取得失敗時はベースラベルをそのまま返します。
+        /// Appends the tool version to the base label. Returns the base label as-is on failure.
+        /// ベースラベルにツールバージョンを付加して返します。取得失敗時はそのまま返します。
         /// </summary>
         private async Task<string> GetDisassembleCommandAndItsVersionWithArgumentsAsync(string disassembleCommandWithArguments)
         {
@@ -600,6 +522,8 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Builds a fingerprint for the disassembler binary from the command string.
+        /// Falls back to the per-run identifier when no binary can be resolved.
         /// コマンド文字列から逆アセンブラ実体のフィンガープリントを構築します。
         /// 取得できる実体がない場合は実行単位識別子を返します。
         /// </summary>
@@ -647,19 +571,18 @@ namespace FolderDiffIL4DotNet.Services
             return string.Join("|", fingerprints.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
         }
 
-        /// <summary>
-        /// コマンド名から実行ファイルの絶対パスを解決します。<see cref="DisassemblerHelper.ResolveExecutablePath"/> に委譲。
-        /// </summary>
         private static string ResolveExecutablePath(string command) => DisassemblerHelper.ResolveExecutablePath(command);
 
         /// <summary>
-        /// 指定コマンドを起動して終了を待ち、終了コードと標準出力/標準エラーを返します。起動失敗やアクセス拒否などがあれば例外を返します。
+        /// Launches the command, waits for exit, and returns exit code / stdout / stderr.
+        /// Returns the exception instead of throwing when the process cannot start.
+        /// 指定コマンドを起動して終了を待ち、終了コードと標準出力/標準エラーを返します。
+        /// 起動失敗時は例外をタプルに含めて返します。
         /// </summary>
         private static async Task<(int ExitCode, string Stdout, string Stderr, Exception Error)> RunProcessAsync(string disassembleCommand, string workingDirectoryAbsolutePath, string[] args)
         {
             try
             {
-                // プロセス起動設定を構築（標準出力/標準エラーをリダイレクトし、GUIは生成しない）。
                 var processStartInfo = new ProcessStartInfo
                 {
                     FileName = disassembleCommand,
@@ -675,7 +598,6 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 using var process = new Process { StartInfo = processStartInfo };
-                // 実行開始→標準出力/標準エラー読み取り→終了待ちの順で非同期に処理。
                 process.Start();
                 var outTask = process.StandardOutput.ReadToEndAsync();
                 var errTask = process.StandardError.ReadToEndAsync();
@@ -683,67 +605,43 @@ namespace FolderDiffIL4DotNet.Services
                 await process.WaitForExitAsync();
                 var stdOutput = outTask.Result;
                 var errorOutput = errTask.Result;
-                // 成功時は終了コードと標準出力/標準エラーを詰めて返す。
                 return (ExitCode: process.ExitCode, Stdout: stdOutput, Stderr: errorOutput, Error: null);
             }
             catch (System.ComponentModel.Win32Exception ex)
             {
-                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
                 return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
             }
             catch (InvalidOperationException ex)
             {
-                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
                 return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
             }
             catch (IOException ex)
             {
-                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
                 return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
             }
             catch (NotSupportedException ex)
             {
-                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
                 return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
             }
             catch (UnauthorizedAccessException ex)
             {
-                // プロセス起動自体が失敗した場合はエラーに詰めて呼び出し元に通知。
                 return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
             }
         }
 
-        /// <summary>
-        /// 指定ツールがブラックリスト化されているかを判定。TTL 満了時は自動解除。
-        /// </summary>
         private bool IsDisassemblerBlacklisted(string disassembleCommand)
             => _blacklist.IsBlacklisted(disassembleCommand);
 
-        /// <summary>
-        /// 指定ツールの失敗回数をインクリメントします。
-        /// </summary>
         private void RegisterDisassembleFailure(string disassembleCommand)
             => _blacklist.RegisterFailure(disassembleCommand);
 
-        /// <summary>
-        /// 指定ツールの失敗カウントをリセット（ブラックリスト解除）します。
-        /// </summary>
         private void ResetDisassembleFailure(string disassembleCommand)
             => _blacklist.ResetFailure(disassembleCommand);
 
-        /// <summary>
-        /// ユーザーの .NET グローバルツールディレクトリ。<see cref="DisassemblerHelper.UserDotnetToolsDirectory"/> に委譲。
-        /// </summary>
         private static string UserDotnetToolsDirectory => DisassemblerHelper.UserDotnetToolsDirectory;
 
-        /// <summary>
-        /// 逆アセンブラ候補コマンドを優先順で列挙します。<see cref="DisassemblerHelper.CandidateDisassembleCommands"/> に委譲。
-        /// </summary>
         private static IEnumerable<string> CandidateDisassembleCommands() => DisassemblerHelper.CandidateDisassembleCommands();
 
-        /// <summary>
-        /// 使用した逆アセンブラ名/バージョンを集計します。
-        /// </summary>
         private void RecordDisassemblerUsage(string disassembleCommand, string disassembleCommandAndItsVersionWithArguments, bool fromCache = false)
         {
             if (string.IsNullOrWhiteSpace(disassembleCommandAndItsVersionWithArguments))
@@ -756,9 +654,6 @@ namespace FolderDiffIL4DotNet.Services
             _fileDiffResultLists.RecordDisassemblerToolVersion(toolName, version, fromCache);
         }
 
-        /// <summary>
-        /// コマンドからツール名を正規化します。
-        /// </summary>
         private static string NormalizeDisassemblerName(string disassembleCommand)
         {
             if (string.IsNullOrWhiteSpace(disassembleCommand))
@@ -786,9 +681,6 @@ namespace FolderDiffIL4DotNet.Services
             return fileName ?? disassembleCommand;
         }
 
-        /// <summary>
-        /// " (version: ...)" 形式からバージョン文字列を抽出します。
-        /// </summary>
         private static string ExtractVersionFromLabel(string disassembleCommandAndItsVersionWithArguments)
         {
             if (string.IsNullOrWhiteSpace(disassembleCommandAndItsVersionWithArguments))
@@ -817,9 +709,6 @@ namespace FolderDiffIL4DotNet.Services
             return disassembleCommandAndItsVersionWithArguments.Substring(start, end - start).Trim();
         }
 
-        /// <summary>
-        /// 2 つの逆アセンブルラベルが同一バージョン識別を持つかを判定します。
-        /// </summary>
         private static bool AreSameDisassemblerVersion(string oldLabel, string newLabel)
         {
             var oldVersion = ExtractVersionFromLabel(oldLabel) ?? string.Empty;

@@ -133,6 +133,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             _sut.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.New);
 
             // Should be the same entry due to OrdinalIgnoreCase
+            // OrdinalIgnoreCase により同一エントリになるはず
             Assert.Single(_sut.IgnoredFilesRelativePathToLocation);
         }
 
@@ -246,6 +247,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         /// <summary>
+        /// Verifies that SummaryStatistics returns all-zero fields when every queue is empty.
         /// すべてのキューが空のとき SummaryStatistics が全フィールド 0 を返すことを確認します。
         /// </summary>
         [Fact]
@@ -261,6 +263,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         /// <summary>
+        /// Verifies that SummaryStatistics reflects correct counts after adding files to each category.
         /// 各分類にファイルを追加したあと SummaryStatistics が正確な件数を返すことを確認します。
         /// </summary>
         [Fact]
@@ -286,6 +289,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         /// <summary>
+        /// Verifies that SummaryStatistics returns all-zero fields after ResetAll.
         /// ResetAll 後は SummaryStatistics が全フィールド 0 に戻ることを確認します。
         /// </summary>
         [Fact]
@@ -308,6 +312,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         /// <summary>
+        /// Verifies that IgnoredCount is 1 when the same path is recorded as ignored from both Old and New.
         /// 同じパスを IgnoredFile として Old と New の両方から記録した場合、IgnoredCount が 1 であることを確認します。
         /// </summary>
         [Fact]

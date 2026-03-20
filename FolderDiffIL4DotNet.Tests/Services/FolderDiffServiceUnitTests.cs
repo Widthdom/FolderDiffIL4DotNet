@@ -69,9 +69,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(executionContext.IlOutputFolderAbsolutePath, Assert.Single(fileSystem.CreatedDirectories));
         }
 
-        /// <summary>
-        /// シンボリックリンクループ（ELOOP）が発生した場合、列挙時の IOException がエラーログとともに再スローされることを確認します。
-        /// </summary>
+        // Verify that an IOException (e.g. symlink loop ELOOP) during file enumeration is logged and rethrown
+        // ファイル列挙時の IOException（例: シンボリックリンクループ ELOOP）がエラーログとともに再スローされることを確認する
         [Fact]
         public async Task ExecuteFolderDiffAsync_WhenEnumeratingFilesThrowsIOExceptionDueToSymlinkLoop_LogsAndRethrows()
         {
@@ -107,9 +106,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
         }
 
-        /// <summary>
-        /// new 側のファイルが列挙後・比較前に削除された場合、FileNotFoundException を握りつぶして Removed に分類されることを確認します。
-        /// </summary>
+        // When a new-side file is deleted between enumeration and comparison, FileNotFoundException
+        // is swallowed and the file is classified as Removed
+        // new 側のファイルが列挙後・比較前に削除された場合、FileNotFoundException を握りつぶして Removed に分類する
         [Fact]
         public async Task ExecuteFolderDiffAsync_WhenNewFileDeletedBeforeComparison_ClassifiesAsRemovedWithWarning()
         {
@@ -123,7 +122,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             fileSystem.SetFiles(newDir,
                 Path.Combine(newDir, "ghost.txt"));
 
-            // FilesAreEqualAsync が FileNotFoundException をスローすることで「比較前に削除」を模擬する
+            // FilesAreEqualAsync throws FileNotFoundException to simulate file deletion before comparison
+            // FilesAreEqualAsync が FileNotFoundException をスローして「比較前に削除」を模擬する
             var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal))
             {
                 FilesAreEqualException = new FileNotFoundException("File not found: ghost.txt")
@@ -151,9 +151,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains("ghost.txt", StringComparison.Ordinal));
         }
 
-        /// <summary>
-        /// 並列モードで new 側のファイルが列挙後・比較前に削除された場合も、Removed に分類されることを確認します。
-        /// </summary>
+        // Same as above but in parallel mode: file deleted between enumeration and comparison is classified as Removed
+        // 並列モードでも列挙後・比較前に削除されたファイルは Removed に分類される
         [Fact]
         public async Task ExecuteFolderDiffAsync_WhenNewFileDeletedBeforeComparison_ParallelMode_ClassifiesAsRemovedWithWarning()
         {
@@ -527,7 +526,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
             using var progressReporter = new ProgressReportService(new ConfigSettings());
-            // old dir == new dir → same absolute paths appear in both OldFilesAbsolutePath and NewFilesAbsolutePath
+            // old dir == new dir: same absolute paths appear in both lists; precompute should deduplicate
+            // old dir == new dir: 同じ絶対パスが両リストに出現し、precompute で重複排除される
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
                 progressReporter,
@@ -539,8 +539,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             await service.ExecuteFolderDiffAsync();
 
-            // 3 distinct files even though each appears in both old and new lists
-            // With batch size 2: batches [alpha, beta] and [gamma] = 2 PrecomputeAsync calls
+            // 3 distinct files even though each appears in both old and new lists.
+            // With batch size 2: batches [alpha, beta] and [gamma] = 2 PrecomputeAsync calls.
+            // 3 ファイルが old/new 両方に出現するが重複排除され、バッチサイズ 2 で 2 回の PrecomputeAsync 呼び出しになる。
             Assert.Equal(2, fileDiffService.PrecomputeCalls.Count);
             var allPrecomputeTargets = fileDiffService.PrecomputeCalls.SelectMany(call => call.FilesAbsolutePath).ToArray();
             Assert.Equal(3, allPrecomputeTargets.Length);
@@ -573,7 +574,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
             using var progressReporter = new ProgressReportService(new ConfigSettings());
-            // ilPrecomputeBatchSize = 0 → falls back to default (2048) → all 6 paths in one batch
+            // ilPrecomputeBatchSize = 0 falls back to default (2048), so all 6 paths go in one batch
+            // ilPrecomputeBatchSize = 0 はデフォルト（2048）にフォールバックし、全 6 パスが 1 バッチに入る
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 0),
                 progressReporter,

@@ -7,113 +7,32 @@ using FolderDiffIL4DotNet.Models;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// コンソールに進捗状況を表示するクラス
+    /// Displays progress status on the console with an inline progress bar and keep-alive spinner.
+    /// コンソールにインライン進捗バーとキープアライブスピナーで進捗状況を表示するクラス。
     /// </summary>
     public sealed class ProgressReportService : IDisposable
     {
-        /// <summary>
-        /// 進捗表示
-        /// </summary>
         private const string LOG_PROGRESS = "Progress: {0}%";
-
-        /// <summary>
-        /// 進捗表示（ラベル付き）
-        /// </summary>
         private const string LOG_PROGRESS_LABELED = "{0}: {1}%";
-
-        /// <summary>
-        /// 進捗処理中表示
-        /// </summary>
         private const string LOG_PROGRESS_KEEPALIVE = LOG_PROGRESS + " (processing...)";
-
-        /// <summary>
-        /// 進捗処理中表示（ラベル付き）
-        /// </summary>
         private const string LOG_PROGRESS_KEEPALIVE_LABELED = LOG_PROGRESS_LABELED + " (processing...)";
-
-        /// <summary>
-        /// 進捗バーの固定幅。
-        /// </summary>
         private const int FIXED_BAR_WIDTH = 32;
-
-        /// <summary>
-        /// 進捗停滞時の簡易スピナーフレーム。<see cref="ConfigSettings.SpinnerFrames"/> から初期化されます。
-        /// </summary>
         private readonly string[] _keepAliveFrames;
-
-        /// <summary>
-        /// 直前に出力したF2フォーマットの文字列（重複出力抑止用）
-        /// </summary>
         private string _lastFormattedPercentage = null;
-
-        /// <summary>
-        /// 進捗バー前に表示するラベル。
-        /// </summary>
         private string _labelPrefix;
-
-        /// <summary>
-        /// 直前に出力した実数値（単調増加保証用）。未出力時は NegativeInfinity。
-        /// </summary>
         private double _lastPercentage = double.NegativeInfinity;
-
-        /// <summary>
-        /// Keep-alive 出力のために直近で標準出力へ書き込んだ時刻（UTC）。
-        /// </summary>
         private DateTime _lastConsoleWriteUtc = DateTime.MinValue;
-        /// <summary>
-        /// 進捗値が変わらない場合にも間隔ごとに動作中であることを知らせる。
-        /// </summary>
         private static readonly TimeSpan KeepAliveInterval = TimeSpan.FromSeconds(5);
-
-        /// <summary>
-        /// 進捗停滞時のスピナー更新間隔。
-        /// </summary>
         private static readonly TimeSpan IdleSpinnerInterval = TimeSpan.FromSeconds(1);
-
-        /// <summary>
-        /// 進捗値が変化した直近時刻（UTC）。
-        /// </summary>
         private DateTime _lastProgressChangeUtc = DateTime.MinValue;
-
-        /// <summary>
-        /// スレッドセーフに出力制御するためのロック。
-        /// </summary>
         private readonly object _lock = new object();
-
-        /// <summary>
-        /// 直近に描画した進捗バーの文字数。
-        /// </summary>
         private int _lastRenderLength;
-
-        /// <summary>
-        /// 進捗バーのスピナーフレームインデックス。
-        /// </summary>
         private int _keepAliveFrameIndex;
-
-        /// <summary>
-        /// 進捗バーの幅（初回計算後に固定）。
-        /// </summary>
         private int _barWidth = -1;
-
-        /// <summary>
-        /// 進捗停滞時にスピナーを動かすためのタイマー。
-        /// </summary>
         private Timer _keepAliveTimer;
-
-        /// <summary>
-        /// タイマーの初期化済みフラグ。
-        /// </summary>
         private bool _keepAliveTimerStarted;
-
-        /// <summary>
-        /// 破棄済みフラグ。
-        /// </summary>
         private bool _disposed;
 
-        /// <summary>
-        /// コンストラクタ。
-        /// </summary>
-        /// <param name="config">設定。スピナーフレームの取得に使用します。</param>
         public ProgressReportService(ConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(config);
@@ -121,16 +40,11 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// 進捗率をコンソールに表示します。小数点以下2桁（F2）で出力します。
+        /// Reports progress to the console. Outputs when the F2-formatted value changes;
+        /// suppresses duplicates and enforces monotonic increase for thread safety.
+        /// 進捗率をコンソールに表示します。F2フォーマット値が変化した場合のみ出力し、
+        /// 重複抑制と単調増加保証をスレッドセーフに行います。
         /// </summary>
-        /// <param name="percentage">進捗率（0.00～100.00）。0未満または100を超える値は無効です。</param>
-        /// <remarks>
-        /// 小数点以下2桁（F2）の表示値が前回と異なる場合に出力します。
-        /// 例: 70.01% → 70.02% → 70.03% ... と 0.01% 刻みで詳細に表示されます（同じ値の重複出力は抑制）。
-        /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="percentage"/> が 0.00～100.00 の範囲外の場合にスローされます。
-        /// </exception>
         public void ReportProgress(double percentage)
         {
             if (_disposed)
@@ -142,11 +56,11 @@ namespace FolderDiffIL4DotNet.Services
                 throw new ArgumentOutOfRangeException(nameof(percentage), $"Progress must be between 0.00 and 100.00. Actual: {percentage:F2}");
             }
 
-            // 単調増加と重複出力の抑止をスレッドセーフに実施
             lock (_lock)
             {
                 EnsureKeepAliveTimerStarted();
 
+                // Ignore backward progress (late arrivals from parallel tasks).
                 // 逆行（前回値より小さい進捗）は出力しない（並列時の遅延到着を抑止）。
                 if (percentage < _lastPercentage)
                 {
@@ -173,10 +87,6 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>
-        /// 進捗表示のラベルを設定します。
-        /// </summary>
-        /// <param name="label">ラベル文字列（null/空白なら未設定）。</param>
         public void SetLabel(string label)
         {
             if (_disposed)
@@ -189,12 +99,6 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>
-        /// 進捗バーをコンソールへ描画し、内部状態を更新します。
-        /// </summary>
-        /// <param name="formattedPercentage">F2 形式でフォーマット済みの進捗文字列。</param>
-        /// <param name="percentage">進捗率（0.00～100.00）。</param>
-        /// <param name="showKeepAlive">停滞中のスピナー表示を有効にするか。</param>
         private void RenderProgressBar(string formattedPercentage, double percentage, bool showKeepAlive)
         {
             if (Console.IsOutputRedirected)
@@ -209,9 +113,6 @@ namespace FolderDiffIL4DotNet.Services
             WriteInlineProgressLine(line, finalizeLine);
         }
 
-        /// <summary>
-        /// 進捗の更新が止まっている間もスピナーを動かすタイマーを起動します。
-        /// </summary>
         private void EnsureKeepAliveTimerStarted()
         {
             if (_keepAliveTimerStarted || Console.IsOutputRedirected || _disposed)
@@ -243,9 +144,6 @@ namespace FolderDiffIL4DotNet.Services
             }, null, KeepAliveInterval, IdleSpinnerInterval);
         }
 
-        /// <summary>
-        /// 進捗バーの 1 行表示を組み立てます。
-        /// </summary>
         private string BuildProgressBarLine(string formattedPercentage, double percentage, bool showKeepAlive)
         {
             int barWidth = GetBarWidth();
@@ -281,9 +179,6 @@ namespace FolderDiffIL4DotNet.Services
             return $"[{bar}] {percentText}";
         }
 
-        /// <summary>
-        /// リダイレクト時の進捗表示文字列を組み立てます。
-        /// </summary>
         private string BuildRedirectedProgressLine(string formattedPercentage, bool showKeepAlive)
         {
             if (string.IsNullOrEmpty(_labelPrefix))
@@ -296,9 +191,6 @@ namespace FolderDiffIL4DotNet.Services
             return string.Format(labeledFormat, _labelPrefix, formattedPercentage);
         }
 
-        /// <summary>
-        /// 進捗バーの幅をコンソール幅から算出します。
-        /// </summary>
         private int GetBarWidth()
         {
             if (_barWidth > 0)
@@ -310,18 +202,12 @@ namespace FolderDiffIL4DotNet.Services
             return _barWidth;
         }
 
-        /// <summary>
-        /// 進捗メッセージを1行で出力します（リダイレクト時のフォールバック）。
-        /// </summary>
         private void WriteProgressLine(string message)
         {
             Console.WriteLine(message);
             Console.Out.Flush();
         }
 
-        /// <summary>
-        /// 進捗バーを同一行で更新します。
-        /// </summary>
         private void WriteInlineProgressLine(string message, bool finalizeLine)
         {
             lock (ConsoleRenderCoordinator.RenderSyncRoot)
@@ -348,6 +234,8 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Stops the keep-alive timer and releases resources.
+        /// Call on abnormal exit to prevent the spinner from lingering.
         /// 進捗表示のタイマーを停止して資源を解放します。
         /// 例外終了時に呼び出すことで、進捗スピナーが残り続ける状態を防ぎます。
         /// </summary>

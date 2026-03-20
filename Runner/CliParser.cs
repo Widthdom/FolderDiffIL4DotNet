@@ -1,7 +1,8 @@
 namespace FolderDiffIL4DotNet.Runner
 {
     /// <summary>
-    /// コマンドライン引数を解析して <see cref="CliOptions"/> を生成する静的クラスです。
+    /// Parses command-line arguments into a <see cref="CliOptions"/> instance.
+    /// コマンドライン引数を解析して <see cref="CliOptions"/> を生成する静的クラス。
     /// </summary>
     internal static class CliParser
     {
@@ -17,11 +18,11 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_PRINT_CONFIG = "--print-config";
 
         /// <summary>
-        /// コマンドライン引数を走査して CLI オプションを解析します。
-        /// 未知のフラグが見つかった場合は <see cref="CliOptions.ParseError"/> に詳細を格納します。
+        /// Scans command-line arguments and returns parsed CLI options.
+        /// Unknown flags are reported via <see cref="CliOptions.ParseError"/>.
+        /// コマンドライン引数を走査して CLI オプションを解析する。
+        /// 未知のフラグが見つかった場合は <see cref="CliOptions.ParseError"/> に詳細を格納する。
         /// </summary>
-        /// <param name="args">コマンドライン引数配列。</param>
-        /// <returns>解析済み CLI オプション。</returns>
         internal static CliOptions Parse(string[] args)
         {
             bool showHelp = false, showVersion = false, noPause = false;
@@ -97,6 +98,7 @@ namespace FolderDiffIL4DotNet.Runner
                         break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
+                        // 位置引数ではなく認識されないフラグ（-- で始まるもの）を検出する。
                         if (arg.StartsWith("--", System.StringComparison.Ordinal)
                             || (arg.StartsWith("-", System.StringComparison.Ordinal) && arg.Length == 2))
                         {

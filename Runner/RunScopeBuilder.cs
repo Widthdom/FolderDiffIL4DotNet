@@ -11,12 +11,14 @@ using Microsoft.Extensions.DependencyInjection;
 namespace FolderDiffIL4DotNet.Runner
 {
     /// <summary>
-    /// 1 回の差分実行スコープに必要な DI コンテナと実行コンテキストを構築する静的クラスです。
+    /// Builds the DI container and execution context required for a single diff-run scope.
+    /// 1 回の差分実行スコープに必要な DI コンテナと実行コンテキストを構築する静的クラス。
     /// </summary>
     internal static class RunScopeBuilder
     {
         /// <summary>
-        /// 実行引数と設定から <see cref="DiffExecutionContext"/> を構築します。
+        /// Builds a <see cref="DiffExecutionContext"/> from the run arguments and configuration.
+        /// 実行引数と設定から <see cref="DiffExecutionContext"/> を構築する。
         /// </summary>
         internal static DiffExecutionContext BuildExecutionContext(
             string oldFolderAbsolutePath,
@@ -38,7 +40,8 @@ namespace FolderDiffIL4DotNet.Runner
         }
 
         /// <summary>
-        /// 差分実行スコープ用の <see cref="ServiceProvider"/> を構築します。
+        /// Builds a <see cref="ServiceProvider"/> for the diff-run scope.
+        /// 差分実行スコープ用の <see cref="ServiceProvider"/> を構築する。
         /// </summary>
         internal static ServiceProvider Build(ConfigSettings config, DiffExecutionContext executionContext, ILoggerService logger)
         {
@@ -64,7 +67,8 @@ namespace FolderDiffIL4DotNet.Runner
         }
 
         /// <summary>
-        /// 設定に基づいて <see cref="ILCache"/> を生成します。キャッシュが無効な場合は null を返します。
+        /// Creates an <see cref="ILCache"/> based on configuration. Returns null when caching is disabled.
+        /// 設定に基づいて <see cref="ILCache"/> を生成する。キャッシュが無効な場合は null を返す。
         /// </summary>
         internal static ILCache CreateIlCache(ConfigSettings config, ILoggerService logger)
         {

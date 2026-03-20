@@ -36,7 +36,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
@@ -480,6 +480,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("- Evicted :", reportText);
             Assert.Contains("- Expired :", reportText);
             // IL Cache Stats section must appear between Summary and Warnings
+            // IL Cache Stats セクションは Summary と Warnings の間に出力されること
             int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);
             int ilCacheIdx = reportText.IndexOf("## IL Cache Stats", StringComparison.Ordinal);
             int warningsIdx = reportText.IndexOf("## Warnings", StringComparison.Ordinal);
@@ -487,7 +488,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(ilCacheIdx < warningsIdx);
         }
 
-        // B-2: Unicode filename report output
+        // ── Unicode filename report output / Unicode ファイル名レポート出力 ──
 
         [Fact]
         public void GenerateDiffReport_UnicodeFileNames_AreIncludedInReport()
@@ -499,7 +500,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
-            // Simulate modified files with Unicode relative paths
+            // Simulate modified files with Unicode relative paths to test encoding
+            // Unicode 相対パスの変更ファイルをシミュレートしてエンコーディングをテストする
             var unicodePaths = new[]
             {
                 Path.Combine("サブディレクトリ", "ファイル名.dll"),
@@ -550,7 +552,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(unicodePath, reportText, StringComparison.Ordinal);
         }
 
-        // B-3: Large file count DiffSummaryStatistics snapshot
+        // ── Large file count summary statistics / 大量ファイルサマリー統計 ───
 
         [Fact]
         public void GenerateDiffReport_LargeFileCount_SummaryStatisticsAreCorrect()
@@ -585,14 +587,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // Summary counts must match (label is left-padded to 10 chars: "Unchanged " = 9+1, "Compared  " = 8+2)
+            // Summary counts must match (labels are left-padded to 10 chars)
+            // サマリーカウントが一致すること（ラベルは 10 文字に左寄せ）
             Assert.Contains($"- {"Unchanged",-10}: {fileCount}", reportText, StringComparison.Ordinal);
             Assert.Contains($"- {"Compared",-10}: {fileCount} (Old) vs {fileCount} (New)", reportText, StringComparison.Ordinal);
         }
 
-        /// <summary>
-        /// ShouldOutputFileTimestamps=true で unchanged ファイルの変更情報にタイムスタンプが含まれることを確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReport_WithUnchangedFilesAndTimestamps_IncludesTimestamps()
         {
@@ -620,9 +620,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("[", reportText); // timestamp
         }
 
-        /// <summary>
-        /// ShouldOutputFileTimestamps=true で modified ファイルにタイムスタンプが含まれることを確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReport_WithModifiedFilesAndTimestamps_IncludesTimestamps()
         {
@@ -649,9 +646,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("modified.txt", reportText);
         }
 
-        /// <summary>
-        /// ShouldIncludeIgnoredFiles=true かつ ShouldOutputFileTimestamps=true で無視ファイルのタイムスタンプが含まれることを確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReport_WithIgnoredFilesAndTimestamps_IncludesTimestamps()
         {
@@ -679,9 +673,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("ignored.dll", reportText);
         }
 
-        /// <summary>
-        /// ShouldIncludeIgnoredFiles=true で new 側のみの無視ファイルが正しく出力されることを確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReport_WithIgnoredFilesNewOnly_AndTimestamps()
         {
@@ -707,10 +698,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("new-only-ignored.dll", reportText);
         }
 
-        /// <summary>
-        /// ildasm および ilspycmd ラベルが DisassemblerToolVersions に存在する場合、
-        /// GetDisassemblerDisplayOrder の ildasm/ilspycmd 分岐が実行されることを確認します。
-        /// </summary>
+        // Verify ildasm and ilspycmd labels in DisassemblerToolVersions exercise the display-order branches
+        // DisassemblerToolVersions 内の ildasm/ilspycmd ラベルが表示順序分岐を実行することを確認する
         [Fact]
         public void GenerateDiffReport_DisassemblerOrder_IldasmAndIlspycmd_AppearInReport()
         {
@@ -735,10 +724,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("ilspycmd (version: 7.0.0)", reportText);
         }
 
-        /// <summary>
-        /// IgnoredFileLocation.None で RecordIgnoredFile を呼んだ場合、
-        /// BuildIgnoredFileTimestampInfo の !hasOld && !hasNew パスを通ることを確認します。
-        /// </summary>
+        // IgnoredFileLocation.None exercises the !hasOld && !hasNew path in BuildIgnoredFileTimestampInfo
+        // IgnoredFileLocation.None で BuildIgnoredFileTimestampInfo の !hasOld && !hasNew パスを通ることを確認する
         [Fact]
         public void GenerateDiffReport_WithIgnoredFilesNoneLocation_DoesNotBreakReport()
         {
@@ -749,7 +736,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
-            // Directly insert a None location entry into the dictionary to trigger the default path
+            // Directly insert a None location entry to trigger the default code path
+            // None ロケーションエントリを直接挿入してデフォルトコードパスをトリガーする
             _resultLists.IgnoredFilesRelativePathToLocation["none-location.pdb"] =
                 FileDiffResultLists.IgnoredFileLocation.None;
 
@@ -762,7 +750,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
                 config);
 
-            // Report should generate without throwing
+            // Report should generate without throwing / レポートが例外なく生成される
             Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
         }
 

@@ -6,11 +6,13 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
 {
     /// <summary>
     /// Verifies that repository automation for CI, releases, and security scanning remains configured.
+    /// リポジトリの CI・リリース・セキュリティスキャン自動化設定が維持されていることを検証します。
     /// </summary>
     public sealed class CiAutomationConfigurationTests
     {
         /// <summary>
         /// Verifies that the main CI workflow still enforces total coverage thresholds.
+        /// メイン CI ワークフローが合計カバレッジしきい値を引き続き強制していることを検証します。
         /// </summary>
         [Fact]
         public void DotNetWorkflow_EnforcesCoverageThresholds()
@@ -24,6 +26,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
 
         /// <summary>
         /// Verifies that tagged builds create a GitHub release with attached publish and documentation artifacts.
+        /// タグ付きビルドが公開・ドキュメント成果物を添付した GitHub リリースを作成することを検証します。
         /// </summary>
         [Fact]
         public void ReleaseWorkflow_CreatesGitHubReleaseFromVersionTags()
@@ -41,6 +44,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
 
         /// <summary>
         /// Verifies that CodeQL and Dependabot are enabled for repository security maintenance.
+        /// リポジトリのセキュリティ保守のため CodeQL と Dependabot が有効であることを検証します。
         /// </summary>
         [Fact]
         public void SecurityAutomation_EnablesCodeQlAndDependabot()
@@ -59,11 +63,6 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("interval: \"weekly\"", dependabotConfig, StringComparison.Ordinal);
         }
 
-        /// <summary>
-        /// Resolves a repository-relative file path for configuration tests.
-        /// </summary>
-        /// <param name="segments">The repository-relative path segments.</param>
-        /// <returns>The absolute path to the requested repository file.</returns>
         private static string GetRepositoryFilePath(params string[] segments)
         {
             var path = RepositoryRootPath;
@@ -75,9 +74,6 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             return path;
         }
 
-        /// <summary>
-        /// Gets the absolute path to the repository root from the test output directory.
-        /// </summary>
         private static string RepositoryRootPath =>
             Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
     }

@@ -8,11 +8,13 @@ using System.Threading.Tasks;
 namespace FolderDiffIL4DotNet.Core.Diagnostics
 {
     /// <summary>
-    /// プロセス実行およびコマンドライン処理を提供するクラス
+    /// Provides process execution and command-line tokenization utilities.
+    /// プロセス実行およびコマンドライン処理を提供するクラス。
     /// </summary>
     public static class ProcessHelper
     {
         /// <summary>
+        /// Tokenizes a shell command string by whitespace, respecting single/double quotes.
         /// シェルコマンド文字列を簡易にトークン分割（空白区切り・クォート対応）。
         /// </summary>
         public static List<string> TokenizeCommand(string str)
@@ -70,8 +72,8 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
         }
 
         /// <summary>
-        /// 指定した実行ファイルと引数でプロセスを起動し、終了コードが 0 の場合に
-        /// 標準出力（空なら標準エラー）をトリムして返します。失敗時は null を返します。
+        /// Launches a process and returns trimmed stdout (or stderr if stdout is empty) on exit code 0; returns null on failure.
+        /// プロセスを起動し、終了コード 0 なら標準出力（空なら標準エラー）をトリムして返します。失敗時は null。
         /// </summary>
         public static async Task<string> TryGetProcessOutputAsync(string exe, IEnumerable<string> args)
         {
@@ -108,6 +110,7 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
         }
 
         /// <summary>
+        /// Concatenates the command and arguments into a base label string.
         /// コマンドと引数を連結してベースラベルを返却します。
         /// </summary>
         public static string BuildBaseLabel(string command, string[] args)
@@ -117,7 +120,8 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
         }
 
         /// <summary>
-        /// 引数の配列から、使用されている引数を取得します。
+        /// Joins args into a single string, quoting any that contain spaces.
+        /// 引数の配列から使用されている引数を取得し、スペースを含むものはクォートします。
         /// </summary>
         public static string GetUsedArgs(string[] args) => string.Join(" ", args.Select(x => x.Contains(' ') ? $"\"{x}\"" : x));
     }

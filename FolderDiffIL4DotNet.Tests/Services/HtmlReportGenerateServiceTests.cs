@@ -33,7 +33,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
@@ -215,7 +215,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Raw angle brackets should not appear in file path cell
+            // Raw angle brackets must be HTML-escaped in file path cells
+            // ファイルパスセルでは生の山括弧が HTML エスケープされていなければならない
             Assert.Contains("&lt;Module&gt;", html);
             Assert.DoesNotContain("<Module>", html);
         }
@@ -239,14 +240,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("MD5Mismatch", html);
         }
 
-        // ── Inline diff ───────────────────────────────────────────────────────
+        // ── Inline diff / インラインdiff ──────────────────────────────────────
 
         [Fact]
         public void GenerateDiffReportHtml_TextMismatch_WithRealFiles_ShowsInlineDiff()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-basic");
 
-            // Create actual text files so inline diff can read them
+            // Create actual text files so the inline diff engine can read and compare them
+            // インライン diff エンジンが読み取り比較できるように実ファイルを作成する
             File.WriteAllLines(Path.Combine(oldDir, "app.txt"), new[] { "line1", "old-line2", "line3" });
             File.WriteAllLines(Path.Combine(newDir, "app.txt"), new[] { "line1", "new-line2", "line3" });
 
@@ -301,7 +303,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // ILMismatch without IL.txt files: IL text not available, so no inline diff rendered
+            // ILMismatch without IL.txt files: IL text is unavailable, so no inline diff is rendered
+            // ILMismatch で IL.txt ファイルがない場合、IL テキストが利用不可のためインライン diff は描画されない
             Assert.DoesNotContain("<details", html);
         }
 
@@ -310,7 +313,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-il-with-files");
 
-            // Create IL.txt files in the expected location (Reports/IL/old and /new)
+            // Create IL.txt files in the expected report structure (Reports/IL/old and /new)
+            // 期待されるレポート構造（Reports/IL/old と /new）に IL.txt ファイルを作成する
             string ilOldDir = Path.Combine(reportDir, "IL", "old");
             string ilNewDir = Path.Combine(reportDir, "IL", "new");
             Directory.CreateDirectory(ilOldDir);
@@ -338,8 +342,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-large");
 
-            // diff出力行数が maxDiffLines を超えるファイルを用意 (maxDiffLines=1 に設定)
-            // 2行がそれぞれ変更されると diff 出力は 5 行（ハンクヘッダ1 + 削除2 + 追加2） > 1 → スキップ
+            // Prepare a file where diff output exceeds maxDiffLines (set to 1).
+            // 2 changed lines produce 5 diff lines (1 hunk header + 2 del + 2 add) > 1, so the diff is skipped.
+            // diff 出力が maxDiffLines を超えるファイルを用意する（maxDiffLines=1 に設定）。
+            // 変更 2 行で diff 出力 5 行（ハンクヘッダ 1 + 削除 2 + 追加 2）> 1 となりスキップされる。
             File.WriteAllLines(Path.Combine(oldDir, "big.txt"), new[] { "A", "B" });
             File.WriteAllLines(Path.Combine(newDir, "big.txt"), new[] { "A-changed", "B-changed" });
 
@@ -347,7 +353,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("big.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true);
-            config.InlineDiffMaxDiffLines = 1;  // diff 出力 5行 > 1 → スキップ
+            config.InlineDiffMaxDiffLines = 1;  // 5 diff lines > 1 limit => skip / diff 出力 5 行 > 制限 1 → スキップ
 
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null,
@@ -363,8 +369,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-edit-distance-large");
 
-            // 2001 行すべて異なる → 編集距離 D = 2001 + 2001 = 4002 > 既定の InlineDiffMaxEditDistance (4000)
-            // → Truncated 1 行のみ返る。矢印なしで skip メッセージを直接表示する。
+            // All 2001 lines differ => edit distance D = 4002 > default InlineDiffMaxEditDistance (4000).
+            // Returns a single Truncated line; skip message is shown directly without an expand arrow.
+            // 2001 行すべて異なり編集距離 D = 4002 > 既定の InlineDiffMaxEditDistance (4000)。
+            // Truncated 1 行のみ返り、矢印なしで skip メッセージを直接表示する。
             File.WriteAllLines(Path.Combine(oldDir, "huge.txt"), Enumerable.Range(1, 2001).Select(i => $"old{i}"));
             File.WriteAllLines(Path.Combine(newDir, "huge.txt"), Enumerable.Range(1, 2001).Select(i => $"new{i}"));
 
@@ -381,7 +389,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("diff-skipped", html);
             Assert.Contains("edit distance too large", html);
             Assert.Contains("InlineDiffMaxEditDistance", html);
-            // 矢印で展開する前に表示されるべき → <details> ラッパーなし
+            // Shown directly without a <details> expand arrow
+            // <details> 展開矢印なしで直接表示される
             Assert.DoesNotContain("<details", html);
         }
 
@@ -390,7 +399,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("inline-diff-missing");
 
-            // ファイルを作成しない → IO エラー → 差分行なし（クラッシュしない）
+            // No files created => IO error => no diff lines (should not crash)
+            // ファイル未作成 → IO エラー → 差分行なし（クラッシュしない）
             _resultLists.AddModifiedFileRelativePath("ghost.txt");
             _resultLists.RecordDiffDetail("ghost.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
@@ -399,6 +409,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 appVersion: "1.0", elapsedTimeString: null,
                 computerName: "test-host", config);
 
+            // Report should be generated without crashing
             // クラッシュせずレポートが生成される
             Assert.True(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
         }
@@ -420,7 +431,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // summary に +N / -M が含まれる
+            // Summary should contain +N / -M counts
+            // summary に +N / -M カウントが含まれる
             Assert.Contains("+1", html);
             Assert.Contains("-1", html);
         }
@@ -453,9 +465,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain("#0 Show diff", html);
         }
 
-        /// <summary>
-        /// DIFF REASON・Location・Timestamp 列ボディセルに text-align: center が設定され、Notes 列には設定されていないことを確認します。
-        /// </summary>
+        // Verify DIFF REASON / Location / Timestamp body cells have text-align: center, but Notes column does not
+        // DIFF REASON・Location・Timestamp 列ボディセルに text-align: center が設定され、Notes 列には設定されていないことを確認する
         [Fact]
         public void GenerateDiffReportHtml_BodyCells_ColReasonPathTs_HaveCenterAlignment()
         {
@@ -467,17 +478,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Justification / Timestamp / Diff Reason (= Location in Ignored table) columns are center-aligned
+            // Justification / Timestamp / Diff Reason columns are center-aligned
+            // Justification / Timestamp / Diff Reason 列は中央揃え
             Assert.Contains("td.col-reason { overflow: hidden; text-align: center; }", html);
             Assert.Contains("td.col-ts    { white-space: nowrap; text-align: center; }", html);
             Assert.Contains("min-width: 9em; text-align: center; }", html); // col-diff has text-align: center
-            // File Path is NOT center-aligned
+            // File Path is NOT center-aligned / File Path 列は中央揃えではない
             Assert.Contains("td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }", html);
-            // Notes column is NOT center-aligned
+            // Notes column is NOT center-aligned / Notes 列は中央揃えではない
             Assert.Contains("td.col-notes  { overflow: hidden; }", html);
         }
 
-        // Helpers
+        // ── Helpers / ヘルパー ──────────────────────────────────────────────────
 
         private (string oldDir, string newDir, string reportDir) MakeDirs(string label)
         {
@@ -490,9 +502,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             return (old, @new, report);
         }
 
-        /// <summary>
-        /// ShouldIncludeILCacheStatsInReport=true かつ ILCache を渡した場合、IL Cache Stats セクションが出力されることを確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_WithILCacheStats_IncludesILCacheStatsSection()
         {
@@ -510,9 +519,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Hit Rate", html);
         }
 
-        /// <summary>
-        /// ShouldIncludeIgnoredFiles=true で無視ファイルがある場合、無視ファイルセクションにコンテンツが出力されることを確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_WithIgnoredFiles_IncludesIgnoredSection()
         {
@@ -532,10 +538,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("ignored.txt", html);
         }
 
-        /// <summary>
-        /// ShouldIncludeIgnoredFiles=true かつ ShouldOutputFileTimestamps=true で、
-        /// old/new 両方に存在する無視ファイルのタイムスタンプが出力されることを確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_WithIgnoredFilesBothSides_AndTimestamps_IncludesTimestamp()
         {
@@ -558,9 +560,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("ts-ignored.txt", html);
         }
 
-        /// <summary>
-        /// ShouldOutputFileTimestamps=true で unchanged ファイルのタイムスタンプが出力されることを確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_WithUnchangedFilesAndTimestamps_IncludesTimestamps()
         {
@@ -581,9 +580,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("same.txt", html);
         }
 
-        /// <summary>
-        /// ShouldIncludeIgnoredFiles=true で new 側のみに無視ファイルがある場合のタイムスタンプ出力を確認します。
-        /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_WithIgnoredFileNewSideOnly_AndTimestamps()
         {
@@ -604,7 +600,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("new-only-ignored.txt", html);
         }
 
-        // ── Lazy Render ───────────────────────────────────────────────────────
+        // ── Lazy Render / 遅延レンダリング ────────────────────────────────────
 
         [Fact]
         public void GenerateDiffReportHtml_LazyRender_DiffContentStoredInDataAttribute()
@@ -624,12 +620,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // The <details> element should have a data-diff-html attribute (base64)
+            // The <details> element should have a data-diff-html attribute (base64-encoded diff content)
+            // <details> 要素に data-diff-html 属性（base64 エンコード済み diff コンテンツ）があるはず
             Assert.Contains("data-diff-html=\"", html);
-            // The summary (with "+N / -N") should still be in the raw HTML
+            // The summary (with "+N / -N") should still be in the raw HTML / summary は生 HTML に残る
             Assert.Contains("diff-summary", html);
             Assert.Contains("Show diff", html);
-            // Raw diff content (file lines) should NOT be in the HTML (stored in base64 attribute)
+            // Raw diff content should NOT be inline in HTML (stored in base64 attribute instead)
+            // 生 diff コンテンツは HTML にインライン展開されず、base64 属性に格納される
             Assert.DoesNotContain("old-line2", html);
             Assert.DoesNotContain("new-line2", html);
         }
@@ -652,7 +650,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Extract the base64 value from data-diff-html
+            // Extract and decode the base64 value from data-diff-html
+            // data-diff-html から base64 値を抽出してデコードする
             var match = System.Text.RegularExpressions.Regex.Match(html, @"data-diff-html=""([^""]+)""");
             Assert.True(match.Success, "Expected data-diff-html attribute in HTML");
 

@@ -34,7 +34,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             catch
             {
-                // ignore cleanup errors in tests
+                // ignore cleanup errors / クリーンアップエラーを無視
             }
         }
 
@@ -151,9 +151,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.IsType<ArgumentOutOfRangeException>(warningLog.Exception);
         }
 
-        /// <summary>
-        /// 数 MiB 級の実ファイルでも逐次フォールバックなしでチャンク比較できることを確認します。
-        /// </summary>
+        // Verify multi-MiB files can be chunk-compared without falling back to sequential diff
+        // 数 MiB 級のファイルでも逐次フォールバックなしでチャンク比較できることを確認する
         [Fact]
         public async Task FilesAreEqualAsync_WhenLargeTextFilesExceedMegabytes_CompletesChunkComparisonWithoutFallback()
         {

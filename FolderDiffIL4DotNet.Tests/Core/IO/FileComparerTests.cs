@@ -112,7 +112,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         {
             var file = CreateTempFile("empty.bin", Array.Empty<byte>());
             var hash = FileComparer.ComputeFileMd5Hex(file);
-            // MD5 of empty input = d41d8cd98f00b204e9800998ecf8427e
+            // MD5 of empty input / 空入力の MD5 = d41d8cd98f00b204e9800998ecf8427e
             Assert.Equal("d41d8cd98f00b204e9800998ecf8427e", hash);
         }
 
@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         {
             var file = CreateTempFile("test.bin", System.Text.Encoding.UTF8.GetBytes("hello"));
             var hash = FileComparer.ComputeFileMd5Hex(file);
-            // MD5("hello") = 5d41402abc4b2a76b9719d911017c592
+            // MD5("hello") / MD5("hello") = 5d41402abc4b2a76b9719d911017c592
             Assert.Equal("5d41402abc4b2a76b9719d911017c592", hash);
         }
 

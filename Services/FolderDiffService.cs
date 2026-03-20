@@ -12,156 +12,52 @@ using FolderDiffIL4DotNet.Models;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// フォルダ間の差分を比較するサービスクラス
+    /// Service that compares two folders and classifies files as Unchanged / Added / Removed / Modified.
+    /// フォルダ間の差分を比較し、ファイルを Unchanged / Added / Removed / Modified に分類するサービス。
     /// </summary>
     public sealed class FolderDiffService : IFolderDiffService
     {
-        /// <summary>
-        /// フォルダ比較スピナーのラベル。
-        /// </summary>
         private const string SPINNER_LABEL_FOLDER_DIFF = "Diffing folders";
-
-        /// <summary>
-        /// ネットワーク最適化ログ (<see cref="FolderDiffService"/>)
-        /// </summary>
         private const string LOG_NETWORK_OPTIMIZED_SKIP_IL = $"Network-optimized mode: skip {Constants.LABEL_IL} precompute to reduce network I/O.";
-
-        /// <summary>
-        /// フォルダ比較完了ログ。
-        /// </summary>
         private const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
-
-        /// <summary>
-        /// 比較中にファイルが削除された場合の警告ログフォーマット。
-        /// </summary>
         private const string LOG_FILE_DELETED_DURING_COMPARISON = "File '{0}' was deleted from the new folder after enumeration; classifying as Removed.";
-
-        /// <summary>
-        /// ローカルモードの表示名。
-        /// </summary>
         private const string MODE_LOCAL_OPTIMIZED = "Local-optimized";
-
-        /// <summary>
-        /// NAS/サーバーモードの表示名。
-        /// </summary>
         private const string MODE_SERVER_NAS_OPTIMIZED = "Server/NAS-optimized";
 
         /// <summary>
-        /// キープアライブの出力間隔（秒）。
-        /// <para>
-        /// CI 環境や SSH セッションは無出力が 10～30 秒続くとタイムアウトすることが多いため、
-        /// それより十分小さい 5 秒間隔とすることで安全マージンを確保しています。
         /// Keep-alive output interval in seconds. Set to 5s so that CI environments
-        /// and SSH sessions with 10–30s no-output timeouts receive a heartbeat well within the limit.
-        /// </para>
+        /// and SSH sessions with 10-30s no-output timeouts receive a heartbeat well within the limit.
+        /// キープアライブの出力間隔（秒）。CI 環境や SSH セッションは無出力が 10～30 秒続くと
+        /// タイムアウトすることが多いため、5 秒間隔とすることで安全マージンを確保しています。
         /// </summary>
         private const int KEEP_ALIVE_INTERVAL_SECONDS = 5;
 
-        /// <summary>
-        /// IL 関連事前計算バッチサイズの既定値。
-        /// </summary>
         private const int DEFAULT_IL_PRECOMPUTE_BATCH_SIZE = 2048;
 
         /// <summary>
-        /// 大規模フォルダとして追加ログを出す和集合件数の閾値。
-        /// <para>
-        /// 数千ファイルまでは通常の進捗表示で十分ですが、1 万件を超えると
-        /// 発見フェーズ自体が数秒を要し始めるため、この閾値を超えた場合に追加の
-        /// 進捗ログを出力してユーザーへ処理中であることを知らせます。
-        /// Threshold at which discovery-phase file count is considered "large" and
-        /// warrants an extra log line. Above 10,000 entries the enumeration itself
-        /// can take several seconds, so we notify the user proactively.
-        /// </para>
+        /// Threshold at which discovery-phase file count is considered "large" and warrants an extra log line.
+        /// Above 10,000 entries the enumeration itself can take several seconds, so we notify the user proactively.
+        /// 大規模フォルダとして追加ログを出す和集合件数の閾値。1 万件を超えると発見フェーズ自体が数秒を要し始めるため、
+        /// この閾値を超えた場合に追加の進捗ログを出力してユーザーへ処理中であることを知らせます。
         /// </summary>
         private const int LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD = 10000;
-        /// <summary>
-        /// アプリケーションの設定情報
-        /// </summary>
+
         private readonly ConfigSettings _config;
-
-        /// <summary>
-        /// 進捗状況を報告するためのユーティリティ
-        /// </summary>
         private readonly ProgressReportService _progressReporter;
-
-        /// <summary>
-        /// 旧バージョン側（比較元）フォルダの絶対パス
-        /// </summary>
         private readonly string _oldFolderAbsolutePath;
-
-        /// <summary>
-        /// 新バージョン側（比較先）フォルダの絶対パス
-        /// </summary>
         private readonly string _newFolderAbsolutePath;
-
-        /// <summary>
-        /// IL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _ilOutputFolderAbsolutePath;
-
-        /// <summary>
-        /// 旧バージョン側（比較元）のIL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _ilOldFolderAbsolutePath;
-
-        /// <summary>
-        /// 新バージョン側（比較先）のIL全文ファイル出力先の絶対パス
-        /// </summary>
         private readonly string _ilNewFolderAbsolutePath;
-
-        /// <summary>
-        /// ファイル比較サービス
-        /// </summary>
         private readonly IFileDiffService _fileDiffService;
-
-        /// <summary>
-        /// 実行時に決定されるネットワーク最適化フラグ（Auto検知 + 手動フラグ を統合）。
-        /// </summary>
         private readonly bool _optimizeForNetworkShares;
-
-        /// <summary>
-        /// AutoDetectNetworkShares に基づく「旧フォルダ」側の自動検出結果。
-        /// true の場合、この実行では旧フォルダパスがネットワーク共有（UNC/NFS/SMB/SSHFS 等）と判定されています。
-        /// </summary>
         private readonly bool _detectedNetworkOld;
-
-        /// <summary>
-        /// AutoDetectNetworkShares に基づく「新フォルダ」側の自動検出結果。
-        /// true の場合、この実行では新フォルダパスがネットワーク共有（UNC/NFS/SMB/SSHFS 等）と判定されています。
-        /// </summary>
         private readonly bool _detectedNetworkNew;
-
-        /// <summary>
-        /// 比較結果を蓄積する実行単位の状態オブジェクト。
-        /// </summary>
         private readonly FileDiffResultLists _fileDiffResultLists;
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
-
-        /// <summary>
-        /// ファイルシステムアクセス。
-        /// </summary>
         private readonly IFileSystemService _fileSystem;
-
-        /// <summary>
-        /// 探索・並列度決定ポリシー。
-        /// </summary>
         private readonly IFolderDiffExecutionStrategy _executionStrategy;
 
-        /// <summary>
-        /// コンストラクタ。
-        /// 必須パラメータをフィールドに束ね、IL 出力先（old/new サブディレクトリのパス）も初期化します。
-        /// </summary>
-        /// <param name="config">アプリケーションの設定情報</param>
-        /// <param name="progressReporter">進捗状況を報告するためのユーティリティ</param>
-        /// <param name="executionContext">実行コンテキスト。</param>
-        /// <param name="fileDiffService">ファイル比較サービス。</param>
-        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
-        /// <param name="logger">ログ出力サービス。</param>
-        /// <exception cref="ArgumentNullException">config または progressReporter または executionContext が null の場合。</exception>
         public FolderDiffService(
             ConfigSettings config,
             ProgressReportService progressReporter,
@@ -174,6 +70,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Constructor that allows substituting the file-system implementation for testing.
         /// テスト向けにファイルシステム実装を差し替え可能なコンストラクタ。
         /// </summary>
         public FolderDiffService(
@@ -189,6 +86,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Constructor that also allows substituting the execution strategy for testing or DI.
         /// テストや DI 向けに戦略オブジェクトも差し替え可能なコンストラクタ。
         /// </summary>
         public FolderDiffService(
@@ -228,36 +126,25 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Recursively scans old/new folders, excludes ignored extensions, classifies files as
+        /// Unchanged / Added / Removed / Modified, and aggregates results in <see cref="FileDiffResultLists"/>.
+        /// Progress is reported per file, using the union count of old and new relative paths as 100%.
         /// 2つのフォルダ（old/new）を再帰的に走査し、無視拡張子を除外した上で
         /// Unchanged / Added / Removed / Modified を分類し、<see cref="FileDiffResultLists"/> に集計します。
         /// 進捗は old と new の相対パスの和集合件数を母数として 1 件ごとに報告します。
         /// </summary>
         /// <remarks>
-        /// 主な処理の流れ:
-        /// 1) old/new のファイル一覧取得（IgnoredExtensions を除外）
-        /// 2) 進捗の母数を old∪new の相対パス件数で算出し、1 件処理ごとに ProgressReporter に通知
-        /// 3) old 側を基準に走査し、各相対パスについて以下の順で比較:
-        ///    - MD5 ハッシュ一致なら Unchanged
-        ///    - .NET 実行可能なら IL を逆アセンブルして比較（再ビルドで変わり得る MVID 行および設定で指定された文字列を含む行を除外）。
-        ///    - TextFileExtensions に含まれる拡張子ならテキスト差分で比較
-        ///    - いずれも一致しなければ Modified と判定
-        ///    new 側に存在しない場合は Removed として記録
-        /// 4) old 側に存在せず new 側のみに残ったパスは Added として記録
+        /// Processing flow / 主な処理の流れ:
+        /// 1) Enumerate old/new file lists (excluding IgnoredExtensions) / old/new のファイル一覧取得（IgnoredExtensions を除外）
+        /// 2) Compute progress denominator from old-union-new relative-path count / 進捗の母数を old∪new の相対パス件数で算出
+        /// 3) Iterate old-side files and compare in order: MD5 hash -> IL disassembly -> text diff -> Modified
+        ///    old 側を基準に走査し、MD5→IL→テキストの順で比較。一致しなければ Modified、new に無ければ Removed
+        /// 4) Remaining new-only paths are classified as Added / old に無く new のみのパスは Added として記録
         ///
-        /// 補足:
-        /// - ShouldOutputILText が true の場合、各側の IL テキストを
-        ///   Reports/&lt;コマンドライン第3引数に指定したレポートのラベル&gt;/IL/old と Reports/&lt;コマンドライン第3引数に指定したレポートのラベル&gt;/IL/new に保存します（比較時に除外した行は出力前に除外）。
-        /// - IL 比較では実際に使用したツールとコマンド、バージョン情報をログへ併記します。
-        /// - 分類結果と詳細は <see cref="FileDiffResultLists"/> に集計され、後段のレポート生成で利用されます。
-        /// - IL プリコンピュートは best-effort で、warning を記録して継続します。一方、列挙・出力先準備・本比較での失敗は error を記録して再スローします。
+        /// Notes / 補足:
+        /// - IL precompute is best-effort (warnings logged); enumeration/output-dir/main-comparison failures are errors and re-thrown.
+        ///   IL プリコンピュートは best-effort（warning 記録で継続）。列挙・出力先準備・本比較の失敗は error で再スロー。
         /// </remarks>
-        /// <returns>非同期操作を表すタスク。</returns>
-        /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
-        /// <exception cref="IOException">ファイルの列挙や読み書きに失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">アクセス権限が不足している場合。</exception>
-        /// <exception cref="DirectoryNotFoundException">指定フォルダが存在しない場合。</exception>
-        /// <exception cref="InvalidOperationException">IL 逆アセンブルツールが見つからない、または実行に失敗した場合。</exception>
-        /// <exception cref="NotSupportedException">パス形式または比較対象ファイルの形式がサポートされない場合。</exception>
         public async Task ExecuteFolderDiffAsync()
         {
             LogExecutionMode();
@@ -303,6 +190,8 @@ namespace FolderDiffIL4DotNet.Services
                 ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);
                 folderDiffCompleted = true;
             }
+            // Enumeration, IL-output-dir preparation, and main-comparison failures affect the overall run correctness,
+            // so even expected runtime exceptions are logged as errors and re-thrown here.
             // 列挙、IL 出力先準備、本比較での失敗は run 全体の正しさに影響するため、
             // 想定内の実行時例外もここで error を記録して再スローする。
             catch (ArgumentException ex)
@@ -354,12 +243,12 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// 新旧すべてのファイルを対象に、IL キャッシュ用の事前計算を実行します。
-        /// MD5 計算や内部キー生成、.NET アセンブリに対する逆アセンブラ結果キャッシュのウォームアップを行います。
+        /// Runs IL-cache pre-computation for all old/new files: MD5 hashing, internal key generation, and disassembler-result cache warm-up.
+        /// 新旧すべてのファイルを対象に、IL キャッシュ用の事前計算（MD5 計算、内部キー生成、逆アセンブラ結果キャッシュのウォームアップ）を実行します。
         /// </summary>
-        /// <param name="maxParallel">最大並列度</param>
         private async Task PrecomputeIlCachesAsync(int maxParallel)
         {
+            // In network-optimised mode, skip MD5/IL cache warm-up and only reset progress to zero.
             // ネットワーク最適化モードでは MD5/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
             if (_optimizeForNetworkShares)
             {
@@ -368,6 +257,7 @@ namespace FolderDiffIL4DotNet.Services
                 return;
             }
             int precomputeBatchSize = GetEffectiveIlPrecomputeBatchSize();
+            // Start a keep-alive that periodically reports 0% so progress does not appear stalled during pre-computation.
             // 事前計算が長引いても進捗が止まって見えないよう、定期的に 0% を流すキープアライブを起動。
             using var keepAliveCts = new CancellationTokenSource();
             var keepAliveTask = CreateKeepAliveTask(keepAliveCts);
@@ -376,9 +266,10 @@ namespace FolderDiffIL4DotNet.Services
             {
                 try
                 {
+                    // Pre-compute failure only degrades performance; the main comparison re-executes what is needed.
+                    // Therefore this is best-effort: log a warning and continue.
                     // プリコンピュート失敗は性能劣化に留まり、後続の本比較で必要な処理は再実行される。
                     // そのため、ここは best-effort として warning を残しつつ継続する。
-                    // MD5 ハッシュや内部キー計算（ILCache.PrecomputeAsync）と、逆アセンブラのキャッシュウォームを実行。
                     foreach (var batch in EnumerateDistinctPrecomputeBatches(precomputeBatchSize))
                     {
                         await _fileDiffService.PrecomputeAsync(batch, maxParallel);
@@ -403,6 +294,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
+                // Stop the keep-alive and swallow OperationCanceledException while awaiting task completion.
                 // キープアライブを停止し、タスク終了待ちで OperationCanceledException を無視。
                 keepAliveCts.Cancel();
                 try
@@ -413,22 +305,18 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     // ignore cancellation
                 }
+                // Update progress after prefetch completes.
                 // プリフェッチ完了後に進捗を更新しておく。
                 _progressReporter.ReportProgress(0.0);
             }
         }
 
         /// <summary>
-        /// 事前計算フェーズ中に進捗表示が止まって見えないよう、<see cref="KEEP_ALIVE_INTERVAL_SECONDS"/> 秒ごとに
-        /// <see cref="ProgressReportService.ReportProgress"/> へ 0% を送り続けるバックグラウンドタスクを起動します。
-        /// <para>
         /// Starts a background task that periodically reports 0% progress to keep the spinner alive
-        /// during the IL pre-compute phase.  The loop exits cleanly when the returned
-        /// <see cref="CancellationTokenSource"/> is cancelled.
-        /// </para>
+        /// during the IL pre-compute phase. The loop exits cleanly when <paramref name="cts"/> is cancelled.
+        /// 事前計算フェーズ中に進捗表示が止まって見えないよう、定期的に 0% を送り続けるバックグラウンドタスクを起動します。
+        /// <paramref name="cts"/> をキャンセルするとループは正常終了します。
         /// </summary>
-        /// <param name="cts">タスクのキャンセルに使用する <see cref="CancellationTokenSource"/>。</param>
-        /// <returns>キープアライブループを実行している <see cref="Task"/>。</returns>
         private Task CreateKeepAliveTask(CancellationTokenSource cts)
             => Task.Run(async () =>
             {
@@ -465,13 +353,10 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// 逐次（単一スレッド）で差分判定を行います。
-        /// old 側を 1 件ずつ処理し、Unchanged / Modified / Removed を分類して進捗を更新します。
+        /// Performs sequential (single-threaded) diff classification, processing old-side files one by one
+        /// into Unchanged / Modified / Removed and updating progress.
+        /// 逐次（単一スレッド）で差分判定を行い、old 側を 1 件ずつ Unchanged / Modified / Removed に分類して進捗を更新します。
         /// </summary>
-        /// <param name="remainingNewFilesAbsolutePathHashSet">未処理の new 側ファイル集合（相対パス一致時に削除されます）</param>
-        /// <param name="totalFilesRelativePathCount">進捗計算の母数</param>
-        /// <param name="processedFileCountSoFar">これまでの処理件数</param>
-        /// <returns>処理済件数</returns>
         private async Task<int> DetermineDiffsSequentiallyAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar)
         {
             foreach (var oldFileAbsolutePath in _fileDiffResultLists.OldFilesAbsolutePath)
@@ -489,6 +374,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (FileNotFoundException)
                     {
+                        // If the new-side file was deleted after enumeration, treat as Removed and log a warning.
                         // 列挙後に new 側ファイルが削除された場合は Removed として扱い、警告を記録して継続する。
                         _logger.LogMessage(AppLogLevel.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_FILE_DELETED_DURING_COMPARISON, fileRelativePath), shouldOutputMessageToConsole: true);
                         _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
@@ -498,19 +384,16 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     if (areEqual)
                     {
-                        // - Unchanged -
                         _fileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
                     }
                     else
                     {
-                        // - Modified -
                         _fileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
                         RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
                     }
                 }
                 else
                 {
-                    // - Removed -
                     _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                 }
                 processedFileCountSoFar++;
@@ -520,22 +403,19 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Performs parallel diff classification. Only access to the remaining-new-files set is guarded by a
+        /// fine-grained lock; classification results are recorded via thread-safe collection APIs.
         /// 並列に差分判定を行います。new 側の未処理集合へのアクセスのみ低粒度ロックで保護し、
         /// 分類結果の追加はスレッドセーフなコレクション API で記録します。
         /// </summary>
-        /// <param name="remainingNewFilesAbsolutePathHashSet">未処理の new 側ファイル集合（相対パス一致時に削除されます）</param>
-        /// <param name="totalFilesRelativePathCount">進捗計算の母数</param>
-        /// <param name="processedFileCountSoFar">これまでの処理件数</param>
-        /// <param name="maxParallel">最大並列度</param>
-        /// <returns>処理済件数</returns>
         private async Task<int> DetermineDiffsInParallelAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar, int maxParallel)
         {
-            // lockRemaining: new 側の未処理集合（remainingNewFilesAbsolutePathHashSet）へのアクセスを直列化するためのロック。
-            //   - 役割: 「存在確認（Contains）→ 削除（Remove）」をアトミックに行い、
-            //           同じ相対パスの二重比較（重複処理）とレースコンディションによる不整合を防ぐ。
-            //   - 粒度: メンバーシップ確認と削除の最小限の区間だけロックし、計算の重い処理はロック外で行う。
+            // Lock that serialises access to remainingNewFilesAbsolutePathHashSet so that
+            // Contains-then-Remove is atomic, preventing duplicate comparisons and race conditions.
+            // Only the membership-check-and-remove section is locked; expensive work runs outside the lock.
+            // new 側の未処理集合へのアクセスを直列化するロック。Contains→Remove をアトミックに行い、
+            // 二重比較とレースコンディションを防ぐ。ロック範囲は最小限にし、重い処理はロック外で実行。
             var lockRemaining = new object();
-            // 処理済件数をインクリメントするための変数
             int processedFileCount = processedFileCountSoFar;
 
             await Parallel.ForEachAsync(_fileDiffResultLists.OldFilesAbsolutePath, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (oldFileAbsolutePath, cancellationToken) =>
@@ -543,10 +423,8 @@ namespace FolderDiffIL4DotNet.Services
                 var fileRelativePath = Path.GetRelativePath(_oldFolderAbsolutePath, oldFileAbsolutePath);
                 var newFileAbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
                 bool hasMatchingFileInNewFilesAbsolutePathHashSet;
-                // 未処理集合の存在確認と削除は「確認→削除」を不可分にするため同一ロックで保護
                 lock (lockRemaining)
                 {
-                    // new 側に同じ相対パスがあるかチェックし、あれば集合から除去（重複比較を防止）
                     hasMatchingFileInNewFilesAbsolutePathHashSet = remainingNewFilesAbsolutePathHashSet.Contains(newFileAbsolutePath);
                     if (hasMatchingFileInNewFilesAbsolutePathHashSet)
                     {
@@ -555,7 +433,6 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 if (hasMatchingFileInNewFilesAbsolutePathHashSet)
                 {
-                    // 比較本体はロック外で実行（I/O / 計算を含むため）
                     bool areFilesEqual;
                     try
                     {
@@ -563,6 +440,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (FileNotFoundException)
                     {
+                        // If the new-side file was deleted after enumeration, treat as Removed and log a warning.
                         // 列挙後に new 側ファイルが削除された場合は Removed として扱い、警告を記録して継続する。
                         _logger.LogMessage(AppLogLevel.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_FILE_DELETED_DURING_COMPARISON, fileRelativePath), shouldOutputMessageToConsole: true);
                         _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
@@ -572,23 +450,18 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     if (areFilesEqual)
                     {
-                        // - Unchanged -
                         _fileDiffResultLists.AddUnchangedFileRelativePath(fileRelativePath);
                     }
                     else
                     {
-                        // - Modified -
                         _fileDiffResultLists.AddModifiedFileRelativePath(fileRelativePath);
                         RecordNewFileTimestampOlderThanOldWarningIfNeeded(fileRelativePath, oldFileAbsolutePath, newFileAbsolutePath);
                     }
                 }
                 else
                 {
-                    // new 側に無いので Removed 判定
-                    // - Removed -
                     _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                 }
-                // 処理済件数をインクリメントし進捗を報告
                 var done = Interlocked.Increment(ref processedFileCount);
                 _progressReporter.ReportProgress((double)done * 100.0 / totalFilesRelativePathCount);
             });
@@ -597,6 +470,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Logs the execution mode (local-optimised / server-NAS-optimised) and the reasoning behind it.
         /// 実行モード（ローカル最適化 / サーバー・NAS 最適化）とその判定理由をログに出力します。
         /// </summary>
         private void LogExecutionMode()
@@ -607,6 +481,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Clears all classification results from the previous run.
         /// 前回実行の分類結果をすべてクリアします。
         /// </summary>
         private void ClearResultCollections()
@@ -615,6 +490,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Enumerates old/new folder files (excluding ignored extensions) into <see cref="FileDiffResultLists"/>.
         /// 無視拡張子を除いた旧・新フォルダのファイル一覧を <see cref="FileDiffResultLists"/> に格納します。
         /// </summary>
         private void EnumerateAllFiles()
@@ -626,6 +502,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Logs parallelism level, file counts, and .NET assembly candidate counts.
         /// 並列度・ファイル件数・.NET アセンブリ候補数をログに出力します。
         /// </summary>
         private void LogDiscoveryAndParallelStats(int totalFilesRelativePathCount, int maxParallel)
@@ -640,6 +517,7 @@ namespace FolderDiffIL4DotNet.Services
             int newCount = _fileDiffResultLists.NewFilesAbsolutePath.Count;
             _logger.LogMessage(AppLogLevel.Info, $"Discovery complete: old={oldCount}, new={newCount}, union(relative)={totalFilesRelativePathCount}", shouldOutputMessageToConsole: true);
 
+            // Also log approximate .NET assembly candidate count.
             // .NET アセンブリ候補数も概算表示
             int dotNetAssemblyCandidates = _executionStrategy.CountDotNetAssemblyCandidates(
                 _fileDiffResultLists.OldFilesAbsolutePath,
@@ -663,8 +541,9 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// IL 出力先ディレクトリを必要に応じて作成します。
-        /// <see cref="ConfigSettings.ShouldOutputILText"/> が true の場合は old/new サブディレクトリも作成します。
+        /// Creates IL output directories as needed; also creates old/new sub-directories when
+        /// <see cref="ConfigSettings.ShouldOutputILText"/> is true.
+        /// IL 出力先ディレクトリを必要に応じて作成します。ShouldOutputILText が true の場合は old/new サブディレクトリも作成します。
         /// </summary>
         private void CreateIlOutputDirectoriesIfNeeded()
         {
@@ -681,6 +560,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Records remaining new-side files (absent from old side) as Added and updates progress.
         /// new 側に残っているファイル（old 側に存在しないもの）を Added として記録し、進捗を更新します。
         /// </summary>
         private void ProcessAddedFiles(IEnumerable<string> remainingNewFiles, int processedFileCount, int totalFilesRelativePathCount)
@@ -694,6 +574,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Records a warning when a Modified file's new-side timestamp is older than the old side.
         /// Modified と判定されたファイルについて、new 側の更新日時が old 側より古い場合に警告情報を記録します。
         /// </summary>
         private void RecordNewFileTimestampOlderThanOldWarningIfNeeded(string fileRelativePath, string oldFileAbsolutePath, string newFileAbsolutePath)
@@ -717,19 +598,18 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// IL 関連の事前計算に使う実効バッチサイズを返します。
+        /// Returns the effective batch size for IL-related pre-computation (at least 1).
+        /// IL 関連の事前計算に使う実効バッチサイズを返します（1 以上）。
         /// </summary>
-        /// <returns>1 以上のバッチサイズ。</returns>
         private int GetEffectiveIlPrecomputeBatchSize()
             => _config.ILPrecomputeBatchSize > 0
                 ? _config.ILPrecomputeBatchSize
                 : DEFAULT_IL_PRECOMPUTE_BATCH_SIZE;
 
         /// <summary>
+        /// Yields deduplicated old/new file paths in batches of the specified size.
         /// old/new の重複を除いたファイル群を、指定サイズごとのバッチに分けて列挙します。
         /// </summary>
-        /// <param name="batchSize">1 バッチあたりの最大件数。</param>
-        /// <returns>重複排除済みのファイル絶対パスバッチ列挙。</returns>
         private IEnumerable<IReadOnlyList<string>> EnumerateDistinctPrecomputeBatches(int batchSize)
         {
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

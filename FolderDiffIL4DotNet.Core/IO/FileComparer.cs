@@ -8,29 +8,23 @@ using FolderDiffIL4DotNet.Core.Common;
 namespace FolderDiffIL4DotNet.Core.IO
 {
     /// <summary>
-    /// ファイルのハッシュ比較およびテキスト比較を提供するクラス
+    /// Provides hash-based and line-by-line text comparison of files.
+    /// ファイルのハッシュ比較およびテキスト比較を提供するクラス。
     /// </summary>
     public static class FileComparer
     {
-        /// <summary>
-        /// 逐次読み取りで利用する既定の FileStream バッファサイズ（64KiB）。
-        /// </summary>
         private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 64 * CoreConstants.BYTES_PER_KILOBYTE;
 
         /// <summary>
-        /// 指定された2つのファイルのMD5ハッシュ値を比較します。
+        /// Compares two files by MD5 hash, short-circuiting on size mismatch to minimize I/O.
+        /// 2 つのファイルの MD5 ハッシュ値を比較します。サイズが異なれば即座に不一致を返し I/O を最小化します。
         /// </summary>
-        /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
-        /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
-        /// <returns>ハッシュ値が等しい場合は true、それ以外の場合は false</returns>
-        /// <exception cref="FileNotFoundException">指定されたファイルが見つからない場合にスローされます。</exception>
-        /// <exception cref="UnauthorizedAccessException">ファイルへのアクセス権限がない場合にスローされます。</exception>
-        /// <exception cref="IOException">ファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
         public static async Task<bool> DiffFilesByHashAsync(string file1AbsolutePath, string file2AbsolutePath)
         {
             try
             {
-                // まずサイズが異なれば不一致（I/O を最小化）
+                // Short-circuit on size mismatch to minimize I/O
+                // サイズが異なれば即座に不一致を返し I/O を最小化
                 var file1Info = new FileInfo(file1AbsolutePath);
                 var file2Info = new FileInfo(file2AbsolutePath);
                 if (file1Info.Length != file2Info.Length)
@@ -39,7 +33,8 @@ namespace FolderDiffIL4DotNet.Core.IO
                 }
 
                 using var md5 = MD5.Create();
-                // ネットワークI/O最適化: 共通の逐次読み用バッファサイズを指定
+                // Use a larger sequential buffer for network I/O optimization
+                // ネットワーク I/O 最適化: 共通の逐次読み用バッファサイズを指定
                 using var file1stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
                 using var file2stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
                 var hash1 = await md5.ComputeHashAsync(file1stream);
@@ -61,36 +56,28 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// 指定ファイルの MD5 を計算し、32桁の16進小文字文字列として返します。
+        /// Computes the MD5 hash of a file and returns it as a 32-character lowercase hex string.
+        /// 指定ファイルの MD5 を計算し、32 桁の 16 進小文字文字列として返します。
         /// </summary>
-        /// <param name="fileAbsolutePath">対象ファイルの絶対パス。</param>
-        /// <returns>MD5 の16進小文字文字列。</returns>
-        /// <exception cref="FileNotFoundException">ファイルが存在しない場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">アクセス権が不足している場合。</exception>
-        /// <exception cref="IOException">読み取り中に I/O エラーが発生した場合。</exception>
         public static string ComputeFileMd5Hex(string fileAbsolutePath)
         {
             using (var md5 = MD5.Create())
             using (var fileStream = new FileStream(fileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
                 var hash = md5.ComputeHash(fileStream);
-                // 例: BitConverter.ToString => "AA-BB-.." を "aabb.." へ
+                // Convert "AA-BB-..." to "aabb..."
+                // BitConverter.ToString の結果 "AA-BB-.." を "aabb.." へ変換
                 return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
             }
         }
 
         /// <summary>
-        /// テキストファイルを行単位で逐次比較します。両ファイルの先頭から読み進め、
-        /// いずれかの行が異なった時点で false を返します。全行が一致すれば true を返します。
+        /// Compares two text files line-by-line, returning false at the first difference.
+        /// テキストファイルを行単位で逐次比較し、最初に差異が見つかった時点で false を返します。
         /// </summary>
-        /// <param name="file1AbsolutePath">ファイル1の絶対パス</param>
-        /// <param name="file2AbsolutePath">ファイル2の絶対パス</param>
-        /// <returns>ファイルが等しい場合は true、それ以外の場合は false</returns>
-        /// <exception cref="FileNotFoundException">指定されたファイルが見つからない場合にスローされます。</exception>
-        /// <exception cref="UnauthorizedAccessException">ファイルへのアクセス権限がない場合にスローされます。</exception>
-        /// <exception cref="IOException">ファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
         public static async Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
         {
+            // Use a larger sequential buffer for efficient comparison over network shares
             // 共通の逐次読み用バッファサイズを付与し、ネットワーク共有でも効率的に比較
             using var fs1 = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
             using var fs2 = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);

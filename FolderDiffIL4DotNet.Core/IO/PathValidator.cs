@@ -5,7 +5,8 @@ using System.Runtime.InteropServices;
 namespace FolderDiffIL4DotNet.Core.IO
 {
     /// <summary>
-    /// パスおよびフォルダ名の妥当性検証を提供するクラス
+    /// Validates paths and folder names against OS-specific constraints.
+    /// パスおよびフォルダ名の妥当性検証を提供するクラス。
     /// </summary>
     /// <remarks>
     /// <b>Security note:</b> <see cref="ValidateFolderNameOrThrow"/> is the primary defence against
@@ -17,13 +18,14 @@ namespace FolderDiffIL4DotNet.Core.IO
     public static class PathValidator
     {
         /// <summary>
-        /// Windows の禁止記号群（\\ / : * ? " &lt; &gt; |）。これを上限集合として全OSに適用。
-        /// 制御文字(0x00-0x1F)のチェックは別途実装側で行います。
+        /// Windows invalid file-name characters applied as a superset for all OSes. Control characters (0x00-0x1F) are checked separately.
+        /// Windows の禁止記号群を上限集合として全 OS に適用。制御文字チェックは別途実装。
         /// </summary>
         private static readonly char[] s_windowsInvalidFileNameChars = ['"', '<', '>', '|', '\\', '/', ':', '*', '?'];
 
         /// <summary>
-        /// Windows の予約名（拡張子の有無を問わずNG）。
+        /// Windows reserved names (rejected regardless of extension).
+        /// Windows の予約名（拡張子の有無を問わず NG）。
         /// </summary>
         private static readonly string[] s_windowsReservedNames =
         [
@@ -31,29 +33,10 @@ namespace FolderDiffIL4DotNet.Core.IO
             "COM1","COM2","COM3","COM4","COM5","COM6","COM7","COM8","COM9",
             "LPT1","LPT2","LPT3","LPT4","LPT5","LPT6","LPT7","LPT8","LPT9"
         ];
-        /// <summary>
-        /// 許容される制御文字上限コードポイント。
-        /// </summary>
         private const int MAX_CONTROL_CODE_POINT = 0x1F;
-
-        /// <summary>
-        /// Windows の通常パス長上限。
-        /// </summary>
         private const int WINDOWS_DEFAULT_PATH_LIMIT = 260;
-
-        /// <summary>
-        /// Windows 拡張パス (\\?\) 使用時の最大長。
-        /// </summary>
         private const int WINDOWS_EXTENDED_PATH_LIMIT = 32767;
-
-        /// <summary>
-        /// macOS の推奨最大パス長。
-        /// </summary>
         private const int MACOS_PATH_LIMIT = 1024;
-
-        /// <summary>
-        /// Linux/Unix 系の一般的なパス長上限。
-        /// </summary>
         private const int POSIX_PATH_LIMIT = 4096;
 
         private const string ERROR_FOLDER_NAME_EMPTY = "Folder name cannot be empty or whitespace.";
@@ -61,14 +44,10 @@ namespace FolderDiffIL4DotNet.Core.IO
         private const string ERROR_FOLDER_NAME_END_SPACE = "Folder name cannot end with a space or a dot.";
         private const string ERROR_ABSOLUTE_PATH_NULL = "Absolute path cannot be null or whitespace.";
         /// <summary>
-        /// フォルダ名として妥当か（macOS/Linux/Windowsの禁止事項を包括）検証し、問題があれば例外を投げます。
-        /// - 空白や空、"."/".." は不可
-        /// - 制御文字(0x00～0x1F、<see cref="MAX_CONTROL_CODE_POINT"/> 以下) や \ / : * ? " &lt; &gt; | を含むと不可
-        /// - 末尾のスペースやドット不可
-        /// - Windows予約名（<see cref="s_windowsReservedNames"/>: CON, PRN, AUX, NUL, COM1～COM9, LPT1～LPT9）は拡張子の有無に関わらず不可
+        /// Validates a folder name against cross-platform rules (macOS/Linux/Windows) and throws on violation.
+        /// Rejects: empty/whitespace, "."/"..," control chars, invalid filename chars, trailing space/dot, Windows reserved names.
+        /// フォルダ名を全 OS 共通ルールで検証し、問題があれば例外を投げます。
         /// </summary>
-        /// <param name="folderName">検証するフォルダ名</param>
-        /// <param name="paramName">例外に含めるパラメータ名（省略可）</param>
         /// <exception cref="ArgumentException">フォルダ名が不正な場合</exception>
         public static void ValidateFolderNameOrThrow(string folderName, string paramName = null)
         {
@@ -77,12 +56,14 @@ namespace FolderDiffIL4DotNet.Core.IO
                 throw new ArgumentException(ERROR_FOLDER_NAME_EMPTY, paramName ?? nameof(folderName));
             }
 
+            // Reject "." and ".."
             // "." と ".." は不可
             if (folderName == "." || folderName == "..")
             {
                 throw new ArgumentException(ERROR_FOLDER_NAME_DOT, paramName ?? nameof(folderName));
             }
 
+            // Check for control characters and forbidden characters
             // 制御文字 / 禁則文字のチェック
             foreach (var ch in folderName)
             {
@@ -92,13 +73,15 @@ namespace FolderDiffIL4DotNet.Core.IO
                 }
             }
 
-            // 末尾スペース/ドット不可（Windows仕様に合わせて厳格化）
+            // Trailing space or dot is forbidden (strict Windows rules applied everywhere)
+            // 末尾スペース/ドット不可（Windows 仕様に合わせて厳格化）
             if (folderName.EndsWith(" ") || folderName.EndsWith("."))
             {
                 throw new ArgumentException(ERROR_FOLDER_NAME_END_SPACE, paramName ?? nameof(folderName));
             }
 
-            // Windows予約名チェック（拡張子が付いていてもNG）
+            // Windows reserved-name check (rejected even with an extension)
+            // Windows 予約名チェック（拡張子が付いていても NG）
             var trimmed = folderName.TrimEnd(' ', '.');
             var basePart = trimmed.Split('.')[0];
             var upper = basePart.ToUpperInvariant();
@@ -109,16 +92,11 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// 絶対パスの長さがOSの上限を超えていないかを検証し、超過時は例外を投げます。
-        /// 目安の上限値:
-        /// - Windows: <see cref="WINDOWS_DEFAULT_PATH_LIMIT"/>（標準）/<see cref="WINDOWS_EXTENDED_PATH_LIMIT"/>（\\?\ プレフィックス利用時）
-        /// - macOS:   <see cref="MACOS_PATH_LIMIT"/>
-        /// - Linux:   <see cref="POSIX_PATH_LIMIT"/>
-        /// 注意: 実際の制限は環境やAPIによって差異があります。本メソッドは一般的な安全域で検証します。
-        /// また、与えられた文字列が「絶対パスかどうか」の検証は行いません（長さのみを検査）。
+        /// Validates that the absolute path length does not exceed the OS-specific limit; throws on violation.
+        /// Note: does not verify whether the string is actually an absolute path -- only checks length.
+        /// 絶対パスの長さが OS の上限を超えていないかを検証し、超過時は例外を投げます。
+        /// 注意: パスが絶対かどうかの検証は行いません（長さのみ検査）。
         /// </summary>
-        /// <param name="absolutePath">検証対象の絶対パス</param>
-        /// <param name="paramName">例外に含めるパラメータ名（省略可）</param>
         /// <exception cref="ArgumentException">絶対パスが空、または上限超過の場合</exception>
         public static void ValidateAbsolutePathLengthOrThrow(string absolutePath, string paramName = null)
         {
@@ -130,7 +108,8 @@ namespace FolderDiffIL4DotNet.Core.IO
             int limit;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // 拡張長パス（\\?\ または \\?\UNC\）は WINDOWS_EXTENDED_PATH_LIMIT 文字まで許容される
+                // Extended-length paths (\\?\ or \\?\UNC\) are allowed up to WINDOWS_EXTENDED_PATH_LIMIT
+                // 拡張長パスは WINDOWS_EXTENDED_PATH_LIMIT 文字まで許容
                 bool isExtended = absolutePath.StartsWith(@"\\?\", StringComparison.Ordinal);
                 limit = isExtended ? WINDOWS_EXTENDED_PATH_LIMIT : WINDOWS_DEFAULT_PATH_LIMIT;
             }

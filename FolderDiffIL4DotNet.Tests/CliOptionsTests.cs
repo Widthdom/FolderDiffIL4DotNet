@@ -225,6 +225,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.NotNull(opts.ParseError);
             Assert.Contains("--bogus", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
             // Second error is NOT overwritten (parseError uses ??=)
+            // 2 番目のエラーは上書きされない（parseError は ??= を使用）
             Assert.DoesNotContain("--also-bogus", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
         }
 

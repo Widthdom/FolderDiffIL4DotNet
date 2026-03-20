@@ -9,38 +9,17 @@ using FolderDiffIL4DotNet.Core.Text;
 namespace FolderDiffIL4DotNet.Services.ILOutput
 {
     /// <summary>
-    /// *_IL.txt (old/new) の生成を担当するサービス。比較時に除外した行を除いた内容を保存し、読み取り専用属性を付与する。
+    /// Generates *_IL.txt files (old/new) containing IL text with excluded lines removed, and marks them read-only.
+    /// *_IL.txt (old/new) の生成を担当するサービス。比較時に除外した行を除いた内容を保存し、読み取り専用属性を付与します。
     /// </summary>
     public sealed class ILTextOutputService : IILTextOutputService
     {
-        /// <summary>
-        /// IL 比較の HTML ログファイル名（サイドバイサイド表示）。
-        /// </summary>
         private const string ILTEXT_SUFFIX = "_" + Constants.LABEL_IL + ".txt";
-
-        /// <summary>
-        /// IL テキスト出力失敗時のメッセージ
-        /// </summary>
         private const string ERROR_FAILED_TO_OUTPUT_IL_TEXT = $"Failed to output {Constants.LABEL_IL} Text.";
-        /// <summary>
-        /// 旧 IL フォルダの絶対パス
-        /// </summary>
         private readonly string _ilOldFolderAbsolutePath;
-        /// <summary>
-        /// 新 IL フォルダの絶対パス
-        /// </summary>
         private readonly string _ilNewFolderAbsolutePath;
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
 
-        /// <summary>
-        /// コンストラクタ
-        /// </summary>
-        /// <param name="executionContext">実行コンテキスト。旧/新 IL フォルダのパスを提供します。</param>
-        /// <param name="logger">ログ出力サービス。</param>
         public ILTextOutputService(DiffExecutionContext executionContext, ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(executionContext);
@@ -52,19 +31,18 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         }
 
         /// <summary>
-        /// old/new 両側 IL 全文テキストを *_IL.txt に出力（比較時の除外行を適用後）し読み取り専用化。
+        /// Writes full old/new IL text (with excluded lines removed) to *_IL.txt and marks them read-only.
+        /// old/new 両側の IL 全文テキストを *_IL.txt に出力（除外行適用後）し、読み取り専用化します。
         /// </summary>
-        /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
-        /// <exception cref="IOException">IL テキストの削除または書き出しに失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">IL テキスト出力先へのアクセス権が不足している場合。</exception>
-        /// <exception cref="NotSupportedException">出力先パスの形式がサポートされない場合。</exception>
         public async Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
         {
             try
             {
+                // Sanitize the relative path and append _IL.txt to form the file name
                 // 相対パスのサニタイズを実施した後、_IL.txt を付与してファイル名を決定
                 string ilTextFileName = TextSanitizer.Sanitize(fileRelativePath) + ILTEXT_SUFFIX;
 
+                // Determine and validate the output file absolute paths
                 // 出力先ファイルの絶対パスを決定・妥当性を検証
                 string oldILFileAbsolutePath = Path.Combine(_ilOldFolderAbsolutePath, ilTextFileName);
                 string newILFileAbsolutePath = Path.Combine(_ilNewFolderAbsolutePath, ilTextFileName);
@@ -73,10 +51,12 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
                 File.Delete(oldILFileAbsolutePath);
                 File.Delete(newILFileAbsolutePath);
 
-                // ILの出力
+                // Write IL output
+                // IL の出力
                 await File.WriteAllLinesAsync(oldILFileAbsolutePath, il1LinesMvidExcluded);
                 await File.WriteAllLinesAsync(newILFileAbsolutePath, il2LinesMvidExcluded);
 
+                // Set read-only attribute
                 // 読み取り専用属性の設定
                 try
                 {

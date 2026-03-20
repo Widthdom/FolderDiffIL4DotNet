@@ -11,31 +11,15 @@ using FolderDiffIL4DotNet.Services.Caching;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
+    /// Generates a Markdown diff report (<see cref="DIFF_REPORT_FILE_NAME"/>) summarising folder comparison results.
     /// 差分結果の Markdown レポート (<see cref="DIFF_REPORT_FILE_NAME"/>) を生成するサービス。
     /// </summary>
     public sealed class ReportGenerateService
     {
-        /// <summary>
-        /// 差分結果保持オブジェクト。
-        /// </summary>
         private readonly FileDiffResultLists _fileDiffResultLists;
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
-
-        /// <summary>
-        /// レポート生成スピナーのフレーム文字列配列。
-        /// </summary>
         private readonly string[] _spinnerFrames;
 
-        /// <summary>
-        /// コンストラクタ。
-        /// </summary>
-        /// <param name="fileDiffResultLists">差分結果保持オブジェクト。</param>
-        /// <param name="logger">ログ出力サービス。</param>
-        /// <param name="config">設定。スピナーフレームの取得に使用します。</param>
         public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, ConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
@@ -45,195 +29,46 @@ namespace FolderDiffIL4DotNet.Services
             ArgumentNullException.ThrowIfNull(config);
             _spinnerFrames = config.SpinnerFrames.ToArray();
         }
-        /// <summary>
-        /// フォルダ差分の概要を出力する Markdown レポートのファイル名
-        /// </summary>
         private const string DIFF_REPORT_FILE_NAME = "diff_report.md";
-
-        /// <summary>
-        /// レポート生成スピナーのラベル。
-        /// </summary>
         private const string SPINNER_LABEL_GENERATING_REPORT = "Generating report";
-
-        /// <summary>
-        /// レポートタイトル
-        /// </summary>
         private const string REPORT_TITLE = "# Folder Diff Report";
-
-        /// <summary>
-        /// 逆アセンブラ未使用時の表示。
-        /// </summary>
         private const string REPORT_DISASSEMBLER_NOT_USED = "N/A";
-
-        /// <summary>
-        /// レポート内でのリスト結合区切り
-        /// </summary>
         private const string REPORT_LIST_SEPARATOR = ", ";
-
-        /// <summary>
-        /// MVID行スキップの但し書き（存在する場合のみ対象）。
-        /// </summary>
         private const string NOTE_MVID_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines starting with \"{Constants.IL_MVID_LINE_PREFIX}\" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.";
 
-        /// <summary>
-        /// 部分一致除外が有効だが、文字列設定が空の場合の但し書き。
-        /// </summary>
         private const string NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY = "Note: IL line-ignore-by-contains is enabled, but no non-empty strings are configured.";
-
-        /// <summary>
-        /// レジェンドのヘッダ
-        /// </summary>
         private const string REPORT_LEGEND_HEADER = "- Legend:";
-
-        /// <summary>
-        /// レポートマーカー: Ignored
-        /// </summary>
         private const string REPORT_MARKER_IGNORED = "[ x ]";
-
-        /// <summary>
-        /// レポートラベル: Ignored
-        /// </summary>
         private const string REPORT_LABEL_IGNORED = "Ignored";
-
-        /// <summary>
-        /// レポートマーカー: Unchanged
-        /// </summary>
         private const string REPORT_MARKER_UNCHANGED = "[ = ]";
-
-        /// <summary>
-        /// レポートラベル: Unchanged
-        /// </summary>
         private const string REPORT_LABEL_UNCHANGED = "Unchanged";
-
-        /// <summary>
-        /// レポートマーカー: Added
-        /// </summary>
         private const string REPORT_MARKER_ADDED = "[ + ]";
-
-        /// <summary>
-        /// レポートラベル: Added
-        /// </summary>
         private const string REPORT_LABEL_ADDED = "Added";
-
-        /// <summary>
-        /// レポートマーカー: Removed
-        /// </summary>
         private const string REPORT_MARKER_REMOVED = "[ - ]";
-
-        /// <summary>
-        /// レポートラベル: Removed
-        /// </summary>
         private const string REPORT_LABEL_REMOVED = "Removed";
-
-        /// <summary>
-        /// レポートマーカー: Modified
-        /// </summary>
         private const string REPORT_MARKER_MODIFIED = "[ * ]";
-
-        /// <summary>
-        /// レポートラベル: Modified
-        /// </summary>
         private const string REPORT_LABEL_MODIFIED = "Modified";
-
-        /// <summary>
-        /// レポートラベル: Compared
-        /// </summary>
         private const string REPORT_LABEL_COMPARED = "Compared";
-
-        /// <summary>
-        /// レポートセクションの共通プレフィックス
-        /// </summary>
         private const string REPORT_SECTION_PREFIX = "\n## ";
-
-        /// <summary>
-        /// レポートセクション: Files 接尾辞
-        /// </summary>
         private const string REPORT_SECTION_FILES_SUFFIX = " Files";
-
-        /// <summary>
-        /// レポートセクション: Ignored Files
-        /// </summary>
         private const string REPORT_SECTION_IGNORED_FILES = REPORT_SECTION_PREFIX + REPORT_MARKER_IGNORED + " " + REPORT_LABEL_IGNORED + REPORT_SECTION_FILES_SUFFIX;
-
-        /// <summary>
-        /// レポートセクション: Unchanged Files
-        /// </summary>
         private const string REPORT_SECTION_UNCHANGED_FILES = REPORT_SECTION_PREFIX + REPORT_MARKER_UNCHANGED + " " + REPORT_LABEL_UNCHANGED + REPORT_SECTION_FILES_SUFFIX;
-
-        /// <summary>
-        /// レポートセクション: Added Files
-        /// </summary>
         private const string REPORT_SECTION_ADDED_FILES = REPORT_SECTION_PREFIX + REPORT_MARKER_ADDED + " " + REPORT_LABEL_ADDED + REPORT_SECTION_FILES_SUFFIX;
-
-        /// <summary>
-        /// レポートセクション: Removed Files
-        /// </summary>
         private const string REPORT_SECTION_REMOVED_FILES = REPORT_SECTION_PREFIX + REPORT_MARKER_REMOVED + " " + REPORT_LABEL_REMOVED + REPORT_SECTION_FILES_SUFFIX;
-
-        /// <summary>
-        /// レポートセクション: Modified Files
-        /// </summary>
         private const string REPORT_SECTION_MODIFIED_FILES = REPORT_SECTION_PREFIX + REPORT_MARKER_MODIFIED + " " + REPORT_LABEL_MODIFIED + REPORT_SECTION_FILES_SUFFIX;
-
-        /// <summary>
-        /// ファイルの位置ラベル（旧）
-        /// </summary>
         private const string REPORT_LOCATION_OLD = "(old)";
-
-        /// <summary>
-        /// ファイルの位置ラベル（新）
-        /// </summary>
         private const string REPORT_LOCATION_NEW = "(new)";
-
-        /// <summary>
-        /// ファイルの位置ラベル（旧/新）
-        /// </summary>
         private const string REPORT_LOCATION_BOTH = "(old/new)";
-
-        /// <summary>
-        /// タイムスタンプ新旧区切り（矢印）
-        /// </summary>
         private const string REPORT_TIMESTAMP_ARROW = " → ";
-
-        /// <summary>
-        /// レポートフッタ: Summary セクション
-        /// </summary>
         private const string REPORT_SECTION_SUMMARY = REPORT_SECTION_PREFIX + "Summary";
-
-        /// <summary>
-        /// レポートセクション: IL Cache Stats
-        /// </summary>
         private const string REPORT_SECTION_IL_CACHE_STATS = REPORT_SECTION_PREFIX + "IL Cache Stats";
-
-        /// <summary>
-        /// new 側の更新日時逆転警告文言
-        /// </summary>
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.";
-
-        /// <summary>
-        /// 警告セクション
-        /// </summary>
         private const string REPORT_SECTION_WARNINGS = REPORT_SECTION_PREFIX + "Warnings";
-
-        /// <summary>
-        /// レポート生成完了ログ。
-        /// </summary>
         private const string LOG_REPORT_GENERATION_COMPLETED = "Report generation completed.";
         /// <summary>
-        /// <see cref="DIFF_REPORT_FILE_NAME"/> を生成します。
+        /// Generates the <see cref="DIFF_REPORT_FILE_NAME"/> Markdown report.
+        /// <see cref="DIFF_REPORT_FILE_NAME"/> Markdown レポートを生成します。
         /// </summary>
-        /// <param name="oldFolderAbsolutePath">旧フォルダの絶対パス</param>
-        /// <param name="newFolderAbsolutePath">新フォルダの絶対パス</param>
-        /// <param name="reportsFolderAbsolutePath">出力先レポートフォルダの絶対パス</param>
-        /// <param name="appVersion">アプリケーションバージョン</param>
-        /// <param name="elapsedTimeString">経過時間文字列 (null 可)</param>
-        /// <param name="computerName">実行コンピュータ名</param>
-        /// <param name="config">設定オブジェクト</param>
-        /// <param name="ilCache">IL キャッシュインスタンス（null の場合は IL Cache Stats セクションを出力しない）</param>
-        /// <exception cref="ArgumentException">出力先パスが無効、または長さ検証に失敗した場合。</exception>
-        /// <exception cref="IOException">レポートファイルの削除または書き込みに失敗した場合。</exception>
-        /// <exception cref="UnauthorizedAccessException">レポート出力先へのアクセス権が不足している場合。</exception>
-        /// <exception cref="NotSupportedException">出力先パスの形式がサポートされない場合。</exception>
         public void GenerateDiffReport(
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
@@ -251,7 +86,8 @@ namespace FolderDiffIL4DotNet.Services
             var reportGenerated = false;
             try
             {
-                // diff_report.md は最終成果物なので、削除/書き込み/パス検証に失敗したら継続せず再スローする。
+                // diff_report.md is the final artifact — rethrow on any write/path failure.
+                // diff_report.md は最終成果物なので、失敗したら継続せず再スローする。
                 WriteDiffReport(
                     diffReportAbsolutePath,
                     oldFolderAbsolutePath,
@@ -287,7 +123,8 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
-                // 書き込み後の読み取り専用化は best-effort。失敗してもレポート自体は既に利用可能なので warning のみ。
+                // Best-effort read-only flag — warn only, the report is already usable.
+                // 読み取り専用化は best-effort。失敗してもレポート自体は利用可能なので warning のみ。
                 TrySetReportReadOnly(diffReportAbsolutePath);
                 spinner.Complete(reportGenerated ? LOG_REPORT_GENERATION_COMPLETED : null);
             }
@@ -326,6 +163,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Ordered list of all report section writers; sections are emitted in this order.
         /// レポートに書き込む全セクションのリスト（順序通りに出力されます）。
         /// </summary>
         private static readonly IReadOnlyList<IReportSectionWriter> _sectionWriters = new IReportSectionWriter[]
@@ -494,7 +332,7 @@ namespace FolderDiffIL4DotNet.Services
 
         // ── Nested section writer implementations ────────────────────────────
 
-        /// <summary>レポートのヘッダ部（タイトル・実行情報・IL比較の注記）を書き込みます。</summary>
+        /// <summary>Writes the header section (title, run info, IL comparison notes). / レポートのヘッダ部を書き込みます。</summary>
         private sealed class HeaderSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -525,7 +363,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>判定根拠ラベルの凡例（Legend）を書き込みます。</summary>
+        /// <summary>Writes the Legend section for diff-detail labels. / 判定根拠ラベルの凡例を書き込みます。</summary>
         private sealed class LegendSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -537,7 +375,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>Ignored Files セクションを書き込みます。</summary>
+        /// <summary>Writes the Ignored Files section. / Ignored Files セクションを書き込みます。</summary>
         private sealed class IgnoredFilesSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -570,7 +408,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>Unchanged Files セクションを書き込みます。</summary>
+        /// <summary>Writes the Unchanged Files section. / Unchanged Files セクションを書き込みます。</summary>
         private sealed class UnchangedFilesSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -598,7 +436,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>Added Files セクションを書き込みます。</summary>
+        /// <summary>Writes the Added Files section. / Added Files セクションを書き込みます。</summary>
         private sealed class AddedFilesSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -614,7 +452,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>Removed Files セクションを書き込みます。</summary>
+        /// <summary>Writes the Removed Files section. / Removed Files セクションを書き込みます。</summary>
         private sealed class RemovedFilesSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -630,7 +468,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>Modified Files セクションを書き込みます。</summary>
+        /// <summary>Writes the Modified Files section. / Modified Files セクションを書き込みます。</summary>
         private sealed class ModifiedFilesSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -655,7 +493,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>Summary セクションを書き込みます。</summary>
+        /// <summary>Writes the Summary section. / Summary セクションを書き込みます。</summary>
         private sealed class SummarySectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -675,7 +513,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>IL Cache Stats セクションを書き込みます（設定有効かつ ilCache 非 null の場合のみ）。</summary>
+        /// <summary>Writes the IL Cache Stats section (only when enabled and ilCache is non-null). / IL Cache Stats セクションを書き込みます。</summary>
         private sealed class ILCacheStatsSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -694,7 +532,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>警告セクションを書き込みます。</summary>
+        /// <summary>Writes the Warnings section. / 警告セクションを書き込みます。</summary>
         private sealed class WarningsSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)

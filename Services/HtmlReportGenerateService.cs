@@ -11,8 +11,11 @@ using FolderDiffIL4DotNet.Services.Caching;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
+    /// Generates an interactive HTML diff report (<see cref="DIFF_REPORT_HTML_FILE_NAME"/>).
+    /// Each file row has a checkbox, Justification, and Notes columns with localStorage auto-save
+    /// and a "Download as reviewed" feature.
     /// 差分結果のインタラクティブ HTML レポート (<see cref="DIFF_REPORT_HTML_FILE_NAME"/>) を生成するサービス。
-    /// Removed / Added / Modified の各ファイル行にチェックボックス・Justification（根拠）・Notes 列を持ち、
+    /// 各ファイル行にチェックボックス・Justification・Notes 列を持ち、
     /// localStorage による自動保存と「レビュー済みとして保存」ダウンロード機能を提供します。
     /// </summary>
     public sealed class HtmlReportGenerateService
@@ -20,7 +23,6 @@ namespace FolderDiffIL4DotNet.Services
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly ILoggerService _logger;
 
-        /// <summary>出力ファイル名。</summary>
         internal const string DIFF_REPORT_HTML_FILE_NAME = "diff_report.html";
 
         private const string TIMESTAMP_ARROW = " → ";
@@ -32,7 +34,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string TH_BG_MODIFIED = "#e3f2fd";
         private const string TH_BG_DEFAULT  = "#fafafa";
 
-        /// <summary>コンストラクタ。</summary>
         public HtmlReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, ConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
@@ -45,17 +46,11 @@ namespace FolderDiffIL4DotNet.Services
         // ── Public entry point ───────────────────────────────────────────────
 
         /// <summary>
+        /// Generates diff_report.html and writes it to <paramref name="reportsFolderAbsolutePath"/>.
+        /// No-op when <see cref="ConfigSettings.ShouldGenerateHtmlReport"/> is <see langword="false"/>.
         /// diff_report.html を生成して <paramref name="reportsFolderAbsolutePath"/> へ書き込みます。
         /// <see cref="ConfigSettings.ShouldGenerateHtmlReport"/> が <see langword="false"/> の場合は何もしません。
         /// </summary>
-        /// <param name="oldFolderAbsolutePath">比較元フォルダの絶対パス。レポートヘッダに表示されます。</param>
-        /// <param name="newFolderAbsolutePath">比較先フォルダの絶対パス。レポートヘッダに表示されます。</param>
-        /// <param name="reportsFolderAbsolutePath">レポート出力先フォルダの絶対パス。diff_report.html はここに書き込まれます。</param>
-        /// <param name="appVersion">アプリケーションバージョン文字列。レポートフッタに表示されます。</param>
-        /// <param name="elapsedTimeString">実行時間の整形済み文字列。レポートフッタに表示されます。</param>
-        /// <param name="computerName">実行マシン名。レポートヘッダに表示されます。</param>
-        /// <param name="config">実行時設定。<see cref="ConfigSettings.ShouldGenerateHtmlReport"/> などを参照します。</param>
-        /// <param name="ilCache">インライン差分生成に使用する IL キャッシュ。<see langword="null"/> の場合は IL インライン差分を省略します。</param>
         public void GenerateDiffReportHtml(
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
@@ -624,9 +619,6 @@ namespace FolderDiffIL4DotNet.Services
 
         // ── Table helpers ────────────────────────────────────────────────────
 
-        /// <param name="sb">追記先の <see cref="StringBuilder"/>。</param>
-        /// <param name="headerBgColor">ヘッダ行の背景色。null の場合はデフォルト色。</param>
-        /// <param name="col6Header">6 列目（差異理由 / 所在）のヘッダラベル。</param>
         private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header)
         {
             string bg = headerBgColor ?? TH_BG_DEFAULT;

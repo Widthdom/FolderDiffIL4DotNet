@@ -7,51 +7,25 @@ using FolderDiffIL4DotNet.Models;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// config.jsonの読み込みと設定の提供を行うサービス
+    /// Service for loading and providing settings from config.json.
+    /// config.json の読み込みと設定の提供を行うサービス。
     /// </summary>
     public sealed class ConfigService
     {
-        /// <summary>
-        /// 設定ファイル名
-        /// </summary>
         private const string CONFIG_FILE_NAME = "config.json";
-
-        /// <summary>
-        /// Config 解析失敗（JSON 書式エラー）のメッセージプレフィックス
-        /// </summary>
         private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse config.json — JSON syntax error";
-
-        /// <summary>
-        /// JSON 書式ミス（トレイリングカンマ等）に対するヒント文言
-        /// </summary>
         private const string ERROR_CONFIG_PARSE_HINT =
             " Hint: standard JSON does not allow trailing commas after the last property or array element" +
             " (e.g. remove the comma in \"Key\": \"value\",}).";
-
-        /// <summary>
-        /// Configバリデーション失敗のメッセージプレフィックス
-        /// </summary>
         internal const string ERROR_CONFIG_VALIDATION_PREFIX = "config.json contains invalid settings:";
-
-        /// <summary>
-        /// 環境変数オーバーライドのプレフィックス。
-        /// </summary>
         internal const string ENV_VAR_PREFIX = "FOLDERDIFF_";
 
         /// <summary>
-        /// config.jsonファイルから設定情報を非同期で読み込みます。
-        /// このメソッドは、指定されたパス（または既定のアプリケーションベースディレクトリ）にある
-        /// JSONファイルを読み取り、その内容を<see cref="ConfigSettings"/>オブジェクトにデシリアライズして返します。
-        /// デシリアライズ後に設定値の整合性を検証します。
+        /// Asynchronously loads settings from config.json at the given path (or the application base directory),
+        /// deserialises them into a <see cref="ConfigSettings"/> object, and validates the result.
+        /// config.json を指定パス（または既定のアプリケーションベースディレクトリ）から非同期で読み込み、
+        /// <see cref="ConfigSettings"/> にデシリアライズした後、設定値の整合性を検証します。
         /// </summary>
-        /// <param name="configFilePath">
-        /// 読み込む config.json の絶対パス。null または空文字列の場合は、アプリケーション実行ディレクトリ直下の
-        /// config.json を使用します。
-        /// </param>
-        /// <returns>設定データを含む<see cref="ConfigSettings"/>オブジェクト</returns>
-        /// <exception cref="FileNotFoundException">config.jsonファイルが指定された場所に存在しない場合にスローされます。</exception>
-        /// <exception cref="InvalidDataException">config.jsonファイルが無効なJSON形式のため解析できない場合、または設定値が不正な場合にスローされます。</exception>
-        /// <exception cref="IOException">config.jsonファイルの読み取り中にエラーが発生した場合にスローされます。</exception>
         public async Task<ConfigSettings> LoadConfigAsync(string configFilePath = null)
         {
             try
@@ -81,8 +55,8 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (JsonException ex)
             {
-                // 行番号・バイト位置を付与し、トレイリングカンマ等の典型的なミスへのヒントを添える。
                 // Include line/position from JsonException and append a trailing-comma hint.
+                // 行番号・バイト位置を付与し、トレイリングカンマ等の典型的なミスへのヒントを添える。
                 var location = ex.LineNumber.HasValue
                     ? $" (line {ex.LineNumber.Value + 1}, position {(ex.BytePositionInLine ?? 0) + 1})"
                     : string.Empty;
@@ -92,13 +66,14 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// <c>FOLDERDIFF_</c> プレフィックスを持つ環境変数を読み取り、
-        /// 対応する <see cref="ConfigSettings"/> プロパティを上書きします。
-        /// JSON の既定値より後・バリデーションより前に適用されるため、
-        /// 環境変数で設定した値もバリデーション対象になります。
+        /// Reads environment variables prefixed with <c>FOLDERDIFF_</c> and overrides the corresponding
+        /// <see cref="ConfigSettings"/> properties. Applied after JSON defaults but before validation,
+        /// so environment-variable values are also subject to validation.
+        /// Booleans accept <c>true</c>/<c>false</c>/<c>1</c>/<c>0</c> (case-insensitive).
+        /// <c>FOLDERDIFF_</c> プレフィックスを持つ環境変数を読み取り、対応する <see cref="ConfigSettings"/> プロパティを上書きします。
+        /// JSON 既定値の後・バリデーションの前に適用されるため、環境変数の値もバリデーション対象です。
         /// bool 値は <c>true</c>/<c>false</c>/<c>1</c>/<c>0</c>（大文字小文字不問）を受け付けます。
         /// </summary>
-        /// <param name="config">上書き対象の設定オブジェクト。</param>
         internal static void ApplyEnvironmentVariableOverrides(ConfigSettings config)
         {
             const string P = ENV_VAR_PREFIX;

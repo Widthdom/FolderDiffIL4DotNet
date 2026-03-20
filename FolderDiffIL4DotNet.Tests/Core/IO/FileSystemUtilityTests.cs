@@ -126,9 +126,12 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         }
 
         /// <summary>
+        /// Verifies that forward-slash IP-based UNC paths (e.g. //192.168.1.1/share) are detected as Windows network paths.
+        /// Regression test: IsLikelyWindowsNetworkPath originally only handled <c>\\</c> prefixes;
+        /// this confirms <c>//</c>-style UNC paths are now also recognised.
         /// スラッシュ形式の IP ベース UNC パス（例: //192.168.1.1/share）が Windows ネットワークパスとして検出されることを確認します。
-        /// IsLikelyWindowsNetworkPath は <c>\\</c> プレフィックスのみ対応していましたが、
-        /// <c>//</c> 形式の UNC パスも同様にネットワークパスと判定できるよう修正された回帰テストです。
+        /// 回帰テスト: IsLikelyWindowsNetworkPath は元々 <c>\\</c> プレフィックスのみ対応していましたが、
+        /// <c>//</c> 形式の UNC パスも検出できるよう修正されたことを確認します。
         /// </summary>
         [Fact]
         public void IsLikelyWindowsNetworkPath_ForwardSlashIpUncPath_ReturnsTrue()
@@ -138,12 +141,14 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
                 BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
+            // //192.168.1.1/share is a valid UNC path on Windows (forward-slash form)
             // //192.168.1.1/share は Windows で有効な UNC パス（スラッシュ形式）
             var result = method.Invoke(null, ["//192.168.1.1/share/folder"]);
             Assert.True(Assert.IsType<bool>(result));
         }
 
         /// <summary>
+        /// Verifies that backslash-style UNC paths (\\server\share) continue to be detected as network paths.
         /// バックスラッシュ形式の UNC パス（\\server\share）が引き続きネットワークパスとして検出されることを確認します。
         /// </summary>
         [Fact]
@@ -213,19 +218,23 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         }
 
         /// <summary>
+        /// Verifies no exception when the file has already been deleted (deletion race).
         /// 削除競合（ファイルが既に削除済みの場合）でも例外が出ないことを確認します。
         /// </summary>
         [Fact]
         public void DeleteFileSilent_AlreadyDeletedFile_DoesNotThrow()
         {
             var path = Path.Combine(_tempDir, "already_gone.txt");
+            // File does not exist but should not throw
             // ファイルは存在しないが例外を投げない
             FileSystemUtility.DeleteFileSilent(path);
         }
 
         /// <summary>
-        /// 読み取り専用ファイルの削除試行（UnauthorizedAccessException）をsilentに無視することを確認します。
-        /// Unix以外ではスキップ。
+        /// Verifies that attempting to delete a read-only file (UnauthorizedAccessException) is silently ignored.
+        /// Skipped on non-Unix platforms.
+        /// 読み取り専用ファイルの削除試行（UnauthorizedAccessException）を silent に無視することを確認します。
+        /// Unix 以外ではスキップ。
         /// </summary>
         [Fact]
         public void DeleteFileSilent_ReadOnlyFile_OnUnix_DoesNotThrow()
@@ -233,15 +242,16 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux)
                 && !System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
             {
-                return; // Windowsではスキップ
+                return; // Skip on Windows / Windows ではスキップ
             }
 
             if (string.Equals(Environment.UserName, "root", StringComparison.OrdinalIgnoreCase))
             {
-                return; // rootはReadOnly属性を無視するためスキップ
+                return; // root bypasses ReadOnly -- skip / root は ReadOnly を無視するためスキップ
             }
 
             var file = CreateTempFile("readonly_del.txt", "content");
+            // Place file in a read-only directory to simulate access denial
             // 読み取り専用ディレクトリに配置してアクセス拒否を模擬
             var roDir = Path.Combine(_tempDir, "ro_dir");
             Directory.CreateDirectory(roDir);
@@ -250,8 +260,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             try
             {
                 File.SetUnixFileMode(roDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
-                // ディレクトリが書き込み不可なので削除はIOExceptionまたはUnauthorizedAccessException
-                FileSystemUtility.DeleteFileSilent(roFile); // should not throw
+                // Directory is not writable, so deletion raises IOException or UnauthorizedAccessException
+                // ディレクトリが書き込み不可なので削除は IOException または UnauthorizedAccessException
+                FileSystemUtility.DeleteFileSilent(roFile); // should not throw / 例外なし
             }
             finally
             {
@@ -260,13 +271,15 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         }
 
         /// <summary>
-        /// TrySetReadOnly が既に ReadOnly なファイルに対して何もしないことを確認します。
+        /// Verifies that TrySetReadOnly is idempotent on an already read-only file.
+        /// TrySetReadOnly が既に ReadOnly なファイルに対しても例外なく動作することを確認します。
         /// </summary>
         [Fact]
         public void TrySetReadOnly_AlreadyReadOnly_DoesNotThrow()
         {
             var file = CreateTempFile("already_readonly.txt", "content");
             FileSystemUtility.TrySetReadOnly(file);
+            // Calling again should not throw
             // 再度呼び出しても例外が出ない
             FileSystemUtility.TrySetReadOnly(file);
             var attrs = File.GetAttributes(file);
@@ -274,7 +287,8 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         }
 
         /// <summary>
-        /// Unix環境でIsLikelyNetworkPathがローカルパスに対してfalseを返すことを確認します。
+        /// Verifies that IsLikelyNetworkPath returns false for local paths on Unix.
+        /// Unix 環境で IsLikelyNetworkPath がローカルパスに対して false を返すことを確認します。
         /// </summary>
         [Fact]
         public void IsLikelyNetworkPath_UnixLocalPath_ReturnsFalse()
@@ -283,12 +297,14 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             {
                 return;
             }
-            // /tmp は通常ローカルFS（tmpfs等）
+            // /tmp is normally a local FS (tmpfs etc.)
+            // /tmp は通常ローカル FS（tmpfs 等）
             Assert.False(FileSystemUtility.IsLikelyNetworkPath("/tmp"));
         }
 
         /// <summary>
-        /// GetUnixMountsFilePath がファイルシステムで見つかったマウントファイルを返すことを確認します（Linux環境）。
+        /// Verifies that GetUnixMountsFilePath returns the discovered mount file on Linux.
+        /// GetUnixMountsFilePath がファイルシステムで見つかったマウントファイルを返すことを確認します（Linux 環境）。
         /// </summary>
         [Fact]
         public void GetUnixMountsFilePath_OnLinux_ReturnsProcMountsOrMtab()
@@ -302,12 +318,14 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
                 BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
             var result = method.Invoke(null, null) as string;
+            // Either /proc/mounts or /etc/mtab should exist
             // /proc/mounts または /etc/mtab が存在する
             Assert.NotNull(result);
         }
 
         /// <summary>
-        /// IsLikelyUnixNetworkPath でマウントファイルが存在しない場合はfalseを返すことをリフレクションで確認します。
+        /// Verifies via reflection that IsLikelyUnixNetworkPath returns false when no mount file exists.
+        /// IsLikelyUnixNetworkPath でマウントファイルが存在しない場合は false を返すことをリフレクションで確認します。
         /// </summary>
         [Fact]
         public void IsLikelyUnixNetworkPath_WhenNoMountsFile_ReturnsFalse()
@@ -317,13 +335,16 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
                 BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
-            // /nonexistent/path は TryGetFullPath が通るが、mounts ファイルが見つかればそこへ分岐する。
+            // /nonexistent/path passes TryGetFullPath; if a mounts file is found, it branches there.
+            // This test only verifies the fall-through path.
+            // /nonexistent/path は TryGetFullPath を通過し、mounts ファイルがあればそちらへ分岐する。
             // このテストはフォールスルーのみ検証。
             var result = method.Invoke(null, ["/nonexistent/path/that/does/not/exist"]);
             Assert.IsType<bool>(result); // false or true, just don't throw
         }
 
         /// <summary>
+        /// Verifies that TryReadMountLines returns null for a nonexistent file.
         /// TryReadMountLines で存在しないファイルを渡した際に null が返ることを確認します。
         /// </summary>
         [Fact]
@@ -334,13 +355,15 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
                 BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
-            // 存在しないファイルはIOExceptionが発生しnullが返る
+            // Nonexistent file triggers IOException and returns null
+            // 存在しないファイルは IOException が発生し null が返る
             var result = method.Invoke(null, ["/nonexistent/path/to/mounts"]);
             Assert.Null(result);
         }
 
         /// <summary>
-        /// //プレフィックスのUNCパスがIsLikelyNetworkPathでWindows判定に用いられる内部メソッドで正しく検出されることを確認します。
+        /// Verifies that //-prefixed UNC paths are correctly detected by the internal Windows network path check.
+        /// // プレフィックスの UNC パスが内部メソッド IsLikelyWindowsNetworkPath で正しく検出されることを確認します。
         /// </summary>
         [Fact]
         public void IsLikelyWindowsNetworkPath_ForwardSlashUncPrefixVariants_ReturnTrue()
@@ -350,13 +373,14 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
                 BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
-            // //server/share 形式のUNCパス
+            // //server/share format UNC path / //server/share 形式の UNC パス
             Assert.True((bool)method.Invoke(null, ["//server/share"]));
-            // \\server\share 形式のUNCパス
+            // \\server\share format UNC path / \\server\share 形式の UNC パス
             Assert.True((bool)method.Invoke(null, [@"\\server\share"]));
         }
 
         /// <summary>
+        /// Verifies that GetBestMatchingMountFileSystemType matches a mount point without a trailing slash.
         /// GetBestMatchingMountFileSystemType でパスが末尾スラッシュなしのマウントポイントと一致することを確認します。
         /// </summary>
         [Fact]
@@ -378,6 +402,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         }
 
         /// <summary>
+        /// Verifies that GetBestMatchingMountFileSystemType correctly interprets mount points with escaped spaces.
         /// GetBestMatchingMountFileSystemType でエスケープスペースを含むマウントポイントが正しく解釈されることを確認します。
         /// </summary>
         [Fact]
@@ -388,7 +413,8 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
                 BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
 
-            // マウントポイントに\040(スペース)が含まれる行
+            // Lines containing \040 (space) in the mount point
+            // マウントポイントに \040（スペース）が含まれる行
             var lines = new[]
             {
                 @"server:/my\040share /mnt/my share nfs rw 0 0",

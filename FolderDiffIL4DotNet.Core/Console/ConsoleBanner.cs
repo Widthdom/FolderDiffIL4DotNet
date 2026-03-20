@@ -1,7 +1,8 @@
 namespace FolderDiffIL4DotNet.Core.Console
 {
     /// <summary>
-    /// アプリ起動時のバナーを出力するクラス。
+    /// Prints the ASCII-art banner at application startup.
+    /// アプリ起動時の ASCII アートバナーを出力するクラス。
     /// </summary>
     public static class ConsoleBanner
     {
@@ -33,7 +34,8 @@ namespace FolderDiffIL4DotNet.Core.Console
             """;
 
         /// <summary>
-        /// アプリ起動時の ASCII アートバナーをコンソールへ出力します。
+        /// Outputs the ASCII-art banner to the console.
+        /// ASCII アートバナーをコンソールへ出力します。
         /// </summary>
         public static void Print()
         {

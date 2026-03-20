@@ -11,43 +11,18 @@ using FolderDiffIL4DotNet.Core.Diagnostics;
 namespace FolderDiffIL4DotNet.Services.Caching
 {
     /// <summary>
+    /// Retrieves and caches disassembler (ildasm / ilspycmd etc.) version strings to avoid repeated process-launch overhead.
     /// 逆アセンブラ（ildasm/ilspycmd 等）のバージョン文字列を取得し、プロセス起動コストを避けるためにキャッシュするコンポーネント。
     /// </summary>
     public sealed class DotNetDisassemblerCache
     {
-        /// <summary>
-        /// 逆アセンブラのバージョン決定に失敗した際の共通メッセージ
-        /// </summary>
         private const string ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION = "Failed to determine disassembler version";
-
-        /// <summary>
-        /// 逆アセンブラのバージョン決定に失敗した際のメッセージ（ラベル未指定）
-        /// </summary>
         private const string ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION_EMPTY = ERROR_FAILED_TO_DETERMINE_DISASSEMBLER_VERSION + ": empty command label.";
-
-        /// <summary>
-        /// バージョン文字列取得失敗時の共通メッセージ
-        /// </summary>
         private const string ERROR_FAILED_TO_GET_VERSION = "Failed to obtain version string for";
-
-        /// <summary>
-        /// 共通フラグ: バージョン表示（ロング）
-        /// </summary>
         private const string FLAG_VERSION_LONG = "--version";
-
-        /// <summary>
-        /// 共通フラグ: バージョン表示（ショート）
-        /// </summary>
         private const string FLAG_VERSION_SHORT = "-v";
-
-        /// <summary>
-        /// 共通フラグ: ヘルプ（ショート）
-        /// </summary>
         private const string FLAG_HELP_SHORT = "-h";
 
-        /// <summary>
-        /// 対応する逆アセンブラ種別（Unknown/dotnet-ildasm/ildasm/ilspy）。
-        /// </summary>
         private enum DisassemblerKind
         {
             Unknown = 0,
@@ -55,20 +30,9 @@ namespace FolderDiffIL4DotNet.Services.Caching
             Ildasm,
             Ilspy
         }
-        /// <summary>
-        /// コマンドラベルをキーにした逆アセンブラのバージョン文字列キャッシュ。
-        /// </summary>
         private readonly ConcurrentDictionary<string, string> _disassemblerVersionCache = new(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// ログ出力サービス。
-        /// </summary>
         private readonly ILoggerService _logger;
 
-        /// <summary>
-        /// コンストラクタ。
-        /// </summary>
-        /// <param name="logger">ログ出力サービス。</param>
         public DotNetDisassemblerCache(ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(logger);
@@ -76,7 +40,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// コマンドラベル（例: "dotnet ildasm file.dll"）から逆アセンブラ種別を判定し、バージョン文字列を取得して返す（キャッシュあり）。
+        /// Determines the disassembler kind from a command label (e.g. "dotnet ildasm file.dll") and returns a cached version string.
+        /// コマンドラベルから逆アセンブラ種別を判定し、バージョン文字列を取得して返す（キャッシュあり）。
         /// </summary>
         /// <exception cref="InvalidOperationException">コマンドラベルが無効、またはバージョン取得に失敗した場合。</exception>
         public async Task<string> GetDisassemblerVersionAsync(string disassembleCommandWithArguments)
@@ -97,6 +62,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Extracts the disassembler kind, cache key, and executable from a command label.
         /// コマンドラベルから逆アセンブラ種別・キャッシュキー・実行ファイル名を抽出します。
         /// </summary>
         private static (DisassemblerKind disassemblerKind, string disassemblerVersionCacheKey, string disassemblerExe) GetDisassemblerInfo(string disassembleCommandWithArguments)
@@ -127,6 +93,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Retrieves the version string for `dotnet ildasm` commands.
         /// `dotnet ildasm` 系コマンドのバージョン文字列を取得します。
         /// </summary>
         private Task<string> GetVersionForDotnetIldasmAsync(string disassemblerVersionCacheKey, string disassemblerExe)
@@ -142,6 +109,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Retrieves the version string for `ildasm` commands.
         /// `ildasm` コマンドのバージョン文字列を取得します。
         /// </summary>
         private Task<string> GetVersionForIldasmAsync(string disassemblerVersionCacheKey, string disassemblerExe)
@@ -155,6 +123,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Retrieves the version string for `ilspycmd` commands.
         /// `ilspycmd` コマンドのバージョン文字列を取得します。
         /// </summary>
         private Task<string> GetVersionForIlspyAsync(string disassemblerVersionCacheKey, string disassemblerExe)
@@ -169,6 +138,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Tries multiple argument sets and returns the first successful version string; falls back to cache on failure.
         /// 複数の引数候補でバージョン取得を試行し、最初に成功した結果を返します。
         /// </summary>
         private async Task<string> GetVersionWithFallbacksAsync(
@@ -205,6 +175,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Launches the disassembler with the given arguments and attempts to capture the version string.
         /// 指定引数で逆アセンブラを起動し、バージョン文字列の取得を試みます。
         /// </summary>
         private async Task<string> TryGetDisassemblerVersionAsync(string disassemblerVersionCacheKey, string disassemblerExe, string[] args)
