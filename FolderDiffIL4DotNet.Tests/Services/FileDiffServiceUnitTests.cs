@@ -468,7 +468,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private sealed class FakeILOutputService : IILOutputService
         {
-            public (bool AreEqual, string DisassemblerLabel) DiffResult { get; set; }
+            public (bool AreEqual, string? DisassemblerLabel) DiffResult { get; set; }
 
             public Exception DiffException { get; set; }
 
@@ -482,7 +482,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 return Task.CompletedTask;
             }
 
-            public Task<(bool AreEqual, string DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+            public Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
             {
                 DiffCalls.Add(new DiffCall(fileRelativePath, oldFolderAbsolutePath, newFolderAbsolutePath, shouldOutputIlText));
                 if (DiffException != null)

@@ -123,33 +123,33 @@ namespace FolderDiffIL4DotNet
                 var runArgumentsResult = TryValidateAndBuildRunArguments(args, opts);
                 if (!runArgumentsResult.IsSuccess)
                 {
-                    return runArgumentsResult.Failure;
+                    return runArgumentsResult.Failure!;
                 }
 
-                var runArguments = runArgumentsResult.Value;
+                var runArguments = runArgumentsResult.Value!;
                 var prepareReportsDirectoryResult = TryPrepareReportsDirectory(runArguments.ReportsFolderAbsolutePath);
                 if (!prepareReportsDirectoryResult.IsSuccess)
                 {
-                    return prepareReportsDirectoryResult.Failure;
+                    return prepareReportsDirectoryResult.Failure!;
                 }
 
                 var configResult = await TryLoadConfigurationAsync(opts.ConfigPath);
                 if (!configResult.IsSuccess)
                 {
-                    return configResult.Failure;
+                    return configResult.Failure!;
                 }
 
-                var config = configResult.Value;
+                var config = configResult.Value!;
                 ApplyCliOverrides(config, opts);
 
                 var completionStateResult = await TryExecuteRunAsync(runArguments, config, appVersion, computerName);
                 if (!completionStateResult.IsSuccess)
                 {
-                    return completionStateResult.Failure;
+                    return completionStateResult.Failure!;
                 }
 
                 _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
-                return ProgramRunResult.Success(completionStateResult.Value);
+                return ProgramRunResult.Success(completionStateResult.Value!);
             }
             catch (Exception ex)
             {
@@ -274,7 +274,7 @@ namespace FolderDiffIL4DotNet
         /// Returns the configuration loading phase as a typed result.
         /// 設定読込フェーズを型付き結果として返します。
         /// </summary>
-        private async Task<StepResult<ConfigSettings>> TryLoadConfigurationAsync(string configPath)
+        private async Task<StepResult<ConfigSettings>> TryLoadConfigurationAsync(string? configPath)
         {
             try
             {
@@ -373,7 +373,7 @@ namespace FolderDiffIL4DotNet
             Directory.CreateDirectory(reportsFolderAbsolutePath);
         }
 
-        private async Task<ConfigSettings> LoadConfigurationAsync(string configPath)
+        private async Task<ConfigSettings> LoadConfigurationAsync(string? configPath)
         {
             _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
             var config = await _configService.LoadConfigAsync(configPath);
@@ -472,7 +472,7 @@ namespace FolderDiffIL4DotNet
                 || Console.IsOutputRedirected
                 || Console.IsErrorRedirected;
 
-        private static ILCache CreateIlCache(ConfigSettings config, ILoggerService logger)
+        private static ILCache? CreateIlCache(ConfigSettings config, ILoggerService logger)
         {
             return RunScopeBuilder.CreateIlCache(config, logger);
         }
@@ -496,7 +496,7 @@ namespace FolderDiffIL4DotNet
         /// Prints the effective configuration (after JSON load + environment variable overrides) to stdout as JSON.
         /// 有効な設定（JSON 読込 + 環境変数オーバーライド適用後）を JSON として標準出力に書き出します。
         /// </summary>
-        private async Task<int> PrintConfigAsync(string configPath)
+        private async Task<int> PrintConfigAsync(string? configPath)
         {
             try
             {
