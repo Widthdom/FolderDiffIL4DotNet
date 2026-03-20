@@ -52,37 +52,44 @@
 - Modified  : 9
 - Compared  : 18 (Old) vs 18 (New)
 
-## Method-Level Changes
+## Assembly Semantic Changes
 
 ### src/App.dll
 
-| Assembly | Change | Class | Access | Modifiers | Kind | Name | Detail (ReturnType (Type paramName)) |
-|----------|--------|-------|--------|-----------|------|------|--------------------------------------|
-| src/App.dll | `Added` | MyApp.Controllers.ApiController | `public` | `` | `Method` | HealthCheck | string () |
-| src/App.dll | `Modified` | MyApp.Controllers.ApiController | `public` | `virtual` | `Method` | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> (int page) |
-| src/App.dll | `Modified` | MyApp.Services.DataService | `internal` | `` | `Method` | RefreshCache | void () |
-| src/App.dll | `Modified` | MyApp.Services.DataService | `private` | `` | `Method` | ValidateConnection | bool (string connStr) |
-| src/App.dll | `Added` | MyApp.Services.DataService | `public` | `` | `Property` | CacheTimeout | : int { get; set; } |
-- Method count: 28 (Old) vs 29 (New)
+| Assembly | Change | Class | Access | Modifiers | Kind | Type | Name | ReturnType (Type paramName) |
+|----------|--------|-------|--------|-----------|------|------|------|-----------------------------|
+| src/App.dll | `Added` | MyApp.Controllers.ApiController | `public` |  | `Method` |  | HealthCheck | string () |
+| src/App.dll | `Modified` | MyApp.Controllers.ApiController | `public` | `virtual` | `Method` |  | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> (int page) |
+| src/App.dll | `Modified` | MyApp.Services.DataService | `internal` |  | `Method` |  | RefreshCache | void () |
+| src/App.dll | `Modified` | MyApp.Services.DataService | `private` |  | `Method` |  | ValidateConnection | bool (string connStr) |
+| src/App.dll | `Added` | MyApp.Services.DataService | `public` |  | `Property` | int { get; set; } | CacheTimeout |  |
+- Member count: 28 (Old) vs 29 (New)
 
 ### src/Service.dll
 
-| Assembly | Change | Class | Access | Modifiers | Kind | Name | Detail (ReturnType (Type paramName)) |
-|----------|--------|-------|--------|-----------|------|------|--------------------------------------|
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | `` | `` | `Type` |  |  |
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | `public` | `` | `Method` | .ctor | void () |
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | `public` | `` | `Method` | Validate | bool (string input) |
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | `private` | `` | `Method` | ParseInput | string (string raw) |
-| src/Service.dll | `Added` | MyApp.Services.OrderService | `public` | `` | `Method` | ValidateWithNewValidator | bool (string data) |
-| src/Service.dll | `Removed` | MyApp.Services.OrderService | `public` | `virtual` | `Method` | LegacyValidate | bool (string data) |
-| src/Service.dll | `Modified` | MyApp.Services.OrderService | `public` | `` | `Method` | ProcessOrder | void (int orderId) |
-| src/Service.dll | `Modified` | MyApp.Services.OrderService | `internal` | `static` | `Method` | CalculateTotal | decimal (int qty, int price) |
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | `private` | `readonly` | `Field` | _pattern | : string |
-- Method count: 15 (Old) vs 18 (New)
+| Assembly | Change | Class | Access | Modifiers | Kind | Type | Name | ReturnType (Type paramName) |
+|----------|--------|-------|--------|-----------|------|------|------|-----------------------------|
+| src/Service.dll | `Added` | MyApp.Services.NewValidator |  |  | `Type` |  |  |  |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `public` |  | `Method` |  | NewValidator | void () |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `public` |  | `Method` |  | Validate | bool (string input) |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `private` |  | `Method` |  | ParseInput | string (string raw) |
+| src/Service.dll | `Added` | MyApp.Services.OrderService | `public` |  | `Method` |  | ValidateWithNewValidator | bool (string data) |
+| src/Service.dll | `Removed` | MyApp.Services.OrderService | `public` | `virtual` | `Method` |  | LegacyValidate | bool (string data) |
+| src/Service.dll | `Modified` | MyApp.Services.OrderService | `public` |  | `Method` |  | ProcessOrder | void (int orderId) |
+| src/Service.dll | `Modified` | MyApp.Services.OrderService | `internal` | `static` | `Method` |  | CalculateTotal | decimal (int qty, int price) |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `private` | `readonly` | `Field` | string | _pattern |  |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord |  |  | `Type` |  |  |  |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Method` | UserRecord | void (string Name, int Age) |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Property` | string { get; init; } | Name |  |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` |  | `Property` | int { get; init; } | Age |  |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `override` | `Method` |  | ToString | string () |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `virtual` | `Method` |  | Equals | bool (object obj) |
+| src/Service.dll | `Added` | MyApp.Models.UserRecord | `public` | `override` | `Method` |  | GetHashCode | int () |
+- Member count: 15 (Old) vs 25 (New)
 
 ### util/Legacy.dll
 - Other changes only. See IL diff for details.
-- Method count: 8 (Old) vs 8 (New)
+- Member count: 8 (Old) vs 8 (New)
 
 ## IL Cache Stats
 - Hits    : 42
