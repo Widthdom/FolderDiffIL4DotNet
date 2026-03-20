@@ -449,14 +449,12 @@ namespace FolderDiffIL4DotNet.Services
 
             sb.AppendLine("<table class=\"semantic-changes-table sc-count\">");
             sb.AppendLine("<colgroup>");
-            sb.AppendLine("  <col class=\"sc-col-cb-g\">");
             sb.AppendLine("  <col class=\"sc-cnt-class-g\">");
             sb.AppendLine("  <col class=\"sc-cnt-change-g\">");
             sb.AppendLine("  <col class=\"sc-cnt-count-g\">");
             sb.AppendLine("</colgroup>");
             sb.AppendLine("<thead><tr>");
-            sb.AppendLine("  <th class=\"sc-col-cb\">&#x2713;</th>");
-            sb.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-class-w\">Class</th>");
+            sb.AppendLine("  <th>Class</th>");
             sb.AppendLine("  <th>Change</th><th>Count</th>");
             sb.AppendLine("</tr></thead>");
             sb.AppendLine("<tbody>");
@@ -467,7 +465,7 @@ namespace FolderDiffIL4DotNet.Services
                 string classTd = !isCont ? HtmlEncode(typeName) : "";
                 prevType = typeName;
                 string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
-                sb.AppendLine($"{trOpen}<td class=\"sc-col-cb\"></td><td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td>{count}</td></tr>");
+                sb.AppendLine($"{trOpen}<td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td>{count}</td></tr>");
             }
             sb.AppendLine("</tbody></table>");
         }
