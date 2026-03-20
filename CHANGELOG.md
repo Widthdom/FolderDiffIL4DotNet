@@ -371,6 +371,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - E2E 逆アセンブラテストにツール利用可能性に加えて `FOLDERDIFF_RUN_E2E=true` 環境変数を必須にしました。CI パイプラインで E2E テスト実行を明示的に制御できます。
 
+#### 修正
+
+- macOS で HTML レポートの Timestamp 列が見切れる問題を修正しました（[`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs)）。列幅が `16em` 固定かつ `overflow: hidden` だったため、`[YYYY-MM-DD HH:MM:SS → YYYY-MM-DD HH:MM:SS]` 形式の二重タイムスタンプ（約 300 px）が macOS の SF Pro フォントの文字幅により切れていました。Windows では偶然収まっていましたが、macOS では再現していました。修正として `col.col-ts-g` の幅を `16em` から `22em` に拡大し、`td.col-ts` から不要な `width: 16em` と `overflow: hidden` を削除しました。`<col>` の幅と `white-space: nowrap` の組み合わせでタイムスタンプを一行に保持します。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) の CSS アサーションを更新しました。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を同期しました。
+
+### [1.4.0] - 2026-03-20
+
 #### 追加
 
 - `--print-config` CLI フラグを [`ProgramRunner`](ProgramRunner.cs) に追加しました。`FolderDiffIL4DotNet --print-config`（`--config <path>` との組み合わせも可）を実行すると、有効なコンフィグ（[`config.json`](config.json) をデシリアライズし `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態）をインデント付き JSON として標準出力に出力し、終了コード 0 で終了します。ソースを読まずにデフォルト値や上書き後の設定を確認でき、出力をリダイレクトすることで [`config.json`](config.json) のひな形も生成できます。設定読込エラー（ファイルなし・JSON 不正）は終了コード 3 で stderr にエラー内容を出力します。実装では [`CliOptions`](Runner/CliOptions.cs)・[`CliParser`](Runner/CliParser.cs) に `PrintConfig` を追加し、[`ProgramRunner`](ProgramRunner.cs) に `PrintConfigAsync` メソッドと `--help` 表示の更新を追加しました。また、前バージョンで追加した [`InlineDiffLazyRender`](Models/ConfigSettings.cs) プロパティに対する環境変数オーバーライドエントリ（`FOLDERDIFF_INLINEDIFFLAZYRENDER`）が [`ConfigService.ApplyEnvironmentVariableOverrides`](Services/ConfigService.cs) に漏れていたため、あわせて修正しました。[`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) に 4 件のテストを追加しました（`PrintConfigFlag_ExitsZeroAndOutputsJson`・`PrintConfigFlag_ReflectsEnvVarOverride`・`PrintConfigFlag_WithCustomConfigPath_ReflectsCustomValues`・`PrintConfigFlag_WithMissingConfig_ReturnsConfigurationError`）。日英 [README.md](README.md) を更新しました。
@@ -386,8 +392,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Myers diff アルゴリズムの解説ドキュメント [`doc/MYERS_DIFF_ALGORITHM.md`](doc/MYERS_DIFF_ALGORITHM.md)（日英バイリンガル）を追加しました。[`TextDiffer.cs`](FolderDiffIL4DotNet.Core/Text/TextDiffer.cs) の実装に即した包括的な解説で、編集グラフモデル・対角線と D パス理論・前向きパス（V 配列と貪欲スネーク延長）・スナップショットからのバックトラック・全手順付きの具体例・100 万行 IL ファイルを用いた O(D² + N + M) 計算量の分析・実装上の要点（オフセットトリック・スナップショット最適化・早期打ち切り）・LCS / Myers / Patience / Histogram 各アルゴリズムの比較表を網羅しています。README.md の従来のアルゴリズム解説インライン節はこのガイドへのリンクに置き換えました。
 
 #### 修正
-
-- macOS で HTML レポートの Timestamp 列が見切れる問題を修正しました（[`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs)）。列幅が `16em` 固定かつ `overflow: hidden` だったため、`[YYYY-MM-DD HH:MM:SS → YYYY-MM-DD HH:MM:SS]` 形式の二重タイムスタンプ（約 300 px）が macOS の SF Pro フォントの文字幅により切れていました。Windows では偶然収まっていましたが、macOS では再現していました。修正として `col.col-ts-g` の幅を `16em` から `22em` に拡大し、`td.col-ts` から不要な `width: 16em` と `overflow: hidden` を削除しました。`<col>` の幅と `white-space: nowrap` の組み合わせでタイムスタンプを一行に保持します。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) の CSS アサーションを更新しました。
 
 - IL ディスクキャッシュのデフォルトディレクトリを実行ファイル隣（`<exe>/ILCache`）から OS 標準のユーザーローカルデータディレクトリへ変更しました。Windows では `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux では `~/.local/share/FolderDiffIL4DotNet/ILCache` が使用されます。従来のデフォルトはコンテナや読み取り専用デプロイ環境で起動失敗を引き起こし、マルチユーザー環境ではインストールディレクトリにキャッシュファイルを書き込む問題がありました。変更は [`RunScopeBuilder.CreateIlCache`](Runner/RunScopeBuilder.cs)（`AppContext.BaseDirectory` → `Environment.GetFolderPath(SpecialFolder.LocalApplicationData)`）。[`ConfigSettings`](Models/ConfigSettings.cs) の [`ILCacheDirectoryAbsolutePath`](Models/ConfigSettings.cs) XML コメントを更新し、[`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) にテスト `CreateIlCache_WhenPathIsEmpty_DefaultsToLocalApplicationDataSubfolder` を追加、日英 [README.md](README.md) を更新しました。
 
