@@ -284,7 +284,7 @@ namespace FolderDiffIL4DotNet.Core.IO
                 return true;
             }
 
-            string root = TryGetPathRoot(absolutePath);
+            string? root = TryGetPathRoot(absolutePath);
             return !string.IsNullOrEmpty(root) && IsNetworkDrive(root);
         }
 
@@ -325,13 +325,13 @@ namespace FolderDiffIL4DotNet.Core.IO
 
         private static bool IsLikelyUnixNetworkPath(string absolutePath)
         {
-            string mountsFile = GetUnixMountsFilePath();
+            string? mountsFile = GetUnixMountsFilePath();
             if (mountsFile == null)
             {
                 return false;
             }
 
-            string fullPath = TryGetFullPath(absolutePath);
+            string? fullPath = TryGetFullPath(absolutePath);
             if (fullPath == null)
             {
                 return false;
@@ -343,7 +343,7 @@ namespace FolderDiffIL4DotNet.Core.IO
                 return false;
             }
 
-            string bestFsType = GetBestMatchingMountFileSystemType(fullPath, mountLines);
+            string? bestFsType = GetBestMatchingMountFileSystemType(fullPath, mountLines);
             return !string.IsNullOrEmpty(bestFsType) && s_unixNetworkFsTypes.Contains(bestFsType);
         }
 
