@@ -37,27 +37,27 @@ namespace FolderDiffIL4DotNet.Services
 
                 // Types
                 foreach (var t in newSnapshot.TypeNames.Except(oldSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("+", t, "", "Type", "", ""));
+                    entries.Add(new MemberChangeEntry("Added", t, "", "Type", "", ""));
                 foreach (var t in oldSnapshot.TypeNames.Except(newSnapshot.TypeNames, StringComparer.Ordinal).OrderBy(t => t, StringComparer.Ordinal))
-                    entries.Add(new MemberChangeEntry("-", t, "", "Type", "", ""));
+                    entries.Add(new MemberChangeEntry("Removed", t, "", "Type", "", ""));
 
                 // Methods
                 foreach (var key in newSnapshot.Methods.Keys.Except(oldSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = newSnapshot.Methods[key];
-                    entries.Add(new MemberChangeEntry("+", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
+                    entries.Add(new MemberChangeEntry("Added", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Except(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var m = oldSnapshot.Methods[key];
-                    entries.Add(new MemberChangeEntry("-", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
+                    entries.Add(new MemberChangeEntry("Removed", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     if (!oldSnapshot.Methods[key].IlBytes.AsSpan().SequenceEqual(newSnapshot.Methods[key].IlBytes.AsSpan()))
                     {
                         var m = newSnapshot.Methods[key];
-                        entries.Add(new MemberChangeEntry("~", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
+                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, m.Access, "Method", m.MethodName, m.Details));
                     }
                 }
 
@@ -65,24 +65,24 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var key in newSnapshot.Properties.Keys.Except(oldSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = newSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("+", p.TypeName, p.Access, "Property", p.PropertyName, p.Details));
+                    entries.Add(new MemberChangeEntry("Added", p.TypeName, p.Access, "Property", p.PropertyName, p.Details));
                 }
                 foreach (var key in oldSnapshot.Properties.Keys.Except(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var p = oldSnapshot.Properties[key];
-                    entries.Add(new MemberChangeEntry("-", p.TypeName, p.Access, "Property", p.PropertyName, p.Details));
+                    entries.Add(new MemberChangeEntry("Removed", p.TypeName, p.Access, "Property", p.PropertyName, p.Details));
                 }
 
                 // Fields
                 foreach (var key in newSnapshot.Fields.Keys.Except(oldSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = newSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("+", f.TypeName, f.Access, "Field", f.FieldName, f.Details));
+                    entries.Add(new MemberChangeEntry("Added", f.TypeName, f.Access, "Field", f.FieldName, f.Details));
                 }
                 foreach (var key in oldSnapshot.Fields.Keys.Except(newSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
                     var f = oldSnapshot.Fields[key];
-                    entries.Add(new MemberChangeEntry("-", f.TypeName, f.Access, "Field", f.FieldName, f.Details));
+                    entries.Add(new MemberChangeEntry("Removed", f.TypeName, f.Access, "Field", f.FieldName, f.Details));
                 }
 
                 return new MethodLevelChangesSummary

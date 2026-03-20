@@ -213,7 +213,7 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine("|----------|--------|-------|--------|------|------|---------|");
                         foreach (var e in summary.Entries)
                         {
-                            writer.WriteLine($"| {EscapeMdTable(filePath)} | {e.Change} | {EscapeMdTable(e.TypeName)} | {EscapeMdTable(e.Access)} | {e.MemberKind} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.Details)} |");
+                            writer.WriteLine($"| {EscapeMdTable(filePath)} | `{e.Change}` | {EscapeMdTable(e.TypeName)} | {EscapeMdTable(e.Access)} | {e.MemberKind} | {EscapeMdTable(e.MemberName)} | {EscapeMdTable(e.Details)} |");
                         }
                     }
                     else
@@ -221,7 +221,7 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine("- Other changes only. See IL diff for details.");
                     }
 
-                    writer.WriteLine($"- Method count: {summary.OldMethodCount} (old) → {summary.NewMethodCount} (new)");
+                    writer.WriteLine($"- Method count: {summary.OldMethodCount} (Old) vs {summary.NewMethodCount} (New)");
                 }
 
                 writer.WriteLine();

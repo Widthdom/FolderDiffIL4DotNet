@@ -375,7 +375,7 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("<p>Other changes only. See IL diff for details.</p>");
             }
 
-            contentBuilder.AppendLine($"<p>Method count: {summary.OldMethodCount} (old) &#x2192; {summary.NewMethodCount} (new)</p>");
+            contentBuilder.AppendLine($"<p>Method count: {summary.OldMethodCount} (Old) vs {summary.NewMethodCount} (New)</p>");
             contentBuilder.AppendLine("</div>");
 
             string detailsId = $"methods_{sectionPrefix}_{idx}";

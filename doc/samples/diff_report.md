@@ -58,31 +58,31 @@
 
 | Assembly | Change | Class | Access | Kind | Name | Details |
 |----------|--------|-------|--------|------|------|---------|
-| src/App.dll | + | MyApp.Controllers.ApiController | public | Method | HealthCheck | () : string |
-| src/App.dll | ~ | MyApp.Controllers.ApiController | public | Method | GetUsers | (int page) : System.Collections.Generic.IList\<MyApp.Models.User\> |
-| src/App.dll | ~ | MyApp.Services.DataService | internal | Method | RefreshCache | () : void |
-| src/App.dll | ~ | MyApp.Services.DataService | private | Method | ValidateConnection | (string connStr) : bool |
-| src/App.dll | + | MyApp.Services.DataService | public | Property | CacheTimeout | : int { get; set; } |
-- Method count: 28 (old) → 29 (new)
+| src/App.dll | `Added` | MyApp.Controllers.ApiController | public | Method | HealthCheck | () : string |
+| src/App.dll | `Modified` | MyApp.Controllers.ApiController | public | Method | GetUsers | (int page) : System.Collections.Generic.IList\<MyApp.Models.User\> |
+| src/App.dll | `Modified` | MyApp.Services.DataService | internal | Method | RefreshCache | () : void |
+| src/App.dll | `Modified` | MyApp.Services.DataService | private | Method | ValidateConnection | (string connStr) : bool |
+| src/App.dll | `Added` | MyApp.Services.DataService | public | Property | CacheTimeout | : int { get; set; } |
+- Method count: 28 (Old) vs 29 (New)
 
 ### src/Service.dll
 
 | Assembly | Change | Class | Access | Kind | Name | Details |
 |----------|--------|-------|--------|------|------|---------|
-| src/Service.dll | + | MyApp.Services.NewValidator |  | Type |  |  |
-| src/Service.dll | + | MyApp.Services.NewValidator | public | Method | .ctor | () : void |
-| src/Service.dll | + | MyApp.Services.NewValidator | public | Method | Validate | (string input) : bool |
-| src/Service.dll | + | MyApp.Services.NewValidator | private | Method | ParseInput | (string raw) : string |
-| src/Service.dll | + | MyApp.Services.OrderService | public | Method | ValidateWithNewValidator | (string data) : bool |
-| src/Service.dll | - | MyApp.Services.OrderService | public | Method | LegacyValidate | (string data) : bool |
-| src/Service.dll | ~ | MyApp.Services.OrderService | public | Method | ProcessOrder | (int orderId) : void |
-| src/Service.dll | ~ | MyApp.Services.OrderService | internal | Method | CalculateTotal | (int qty, int price) : decimal |
-| src/Service.dll | + | MyApp.Services.NewValidator | private | Field | _pattern | : string |
-- Method count: 15 (old) → 18 (new)
+| src/Service.dll | `Added` | MyApp.Services.NewValidator |  | Type |  |  |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | public | Method | .ctor | () : void |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | public | Method | Validate | (string input) : bool |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | private | Method | ParseInput | (string raw) : string |
+| src/Service.dll | `Added` | MyApp.Services.OrderService | public | Method | ValidateWithNewValidator | (string data) : bool |
+| src/Service.dll | `Removed` | MyApp.Services.OrderService | public | Method | LegacyValidate | (string data) : bool |
+| src/Service.dll | `Modified` | MyApp.Services.OrderService | public | Method | ProcessOrder | (int orderId) : void |
+| src/Service.dll | `Modified` | MyApp.Services.OrderService | internal | Method | CalculateTotal | (int qty, int price) : decimal |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | private | Field | _pattern | : string |
+- Method count: 15 (Old) vs 18 (New)
 
 ### util/Legacy.dll
 - Other changes only. See IL diff for details.
-- Method count: 8 (old) → 8 (new)
+- Method count: 8 (Old) vs 8 (New)
 
 ## IL Cache Stats
 - Hits    : 42
