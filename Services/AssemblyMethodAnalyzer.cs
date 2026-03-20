@@ -359,7 +359,7 @@ namespace FolderDiffIL4DotNet.Services
                     parts.Add(part);
                 }
 
-                return (signature.ReturnType, $"({string.Join(", ", parts)})");
+                return (signature.ReturnType, string.Join(", ", parts));
             }
 #pragma warning disable CA1031
             catch

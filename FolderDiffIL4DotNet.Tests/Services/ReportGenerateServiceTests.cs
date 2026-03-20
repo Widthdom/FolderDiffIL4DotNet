@@ -776,10 +776,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Entries = new List<MemberChangeEntry>
                 {
                     new("Added", "MyApp.NewService", "public", "", "Class", "", "", "", ""),
-                    new("Added", "MyApp.UserService", "public", "static", "Method", "ValidateToken", "", "bool", "(string token)"),
-                    new("Added", "MyApp.UserService", "internal", "", "Method", "RefreshSession", "", "void", "(int userId)"),
-                    new("Removed", "MyApp.UserService", "public", "virtual", "Method", "LegacyAuth", "", "void", "(string key)"),
-                    new("Modified", "MyApp.UserService", "public", "", "Method", "Login", "", "bool", "(string user, string pass)"),
+                    new("Added", "MyApp.UserService", "public", "static", "Method", "ValidateToken", "", "bool", "string token"),
+                    new("Added", "MyApp.UserService", "internal", "", "Method", "RefreshSession", "", "void", "int userId"),
+                    new("Removed", "MyApp.UserService", "public", "virtual", "Method", "LegacyAuth", "", "void", "string key"),
+                    new("Modified", "MyApp.UserService", "public", "", "Method", "Login", "", "bool", "string user, string pass"),
                     new("Added", "MyApp.UserService", "public", "", "Property", "IsActive", "bool", "", ""),
                     new("Added", "MyApp.UserService", "private", "readonly", "Field", "_cache", "object", "", ""),
                 },
@@ -803,7 +803,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("### src/App.dll", reportText);
             Assert.Contains("| Change | Class | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters |", reportText);
             Assert.Contains("| `Added` | MyApp.NewService | `Class` | `public` |  |  |  |  |  |", reportText);
-            Assert.Contains("| `Added` | MyApp.UserService | `Method` | `public` | `static` |  | ValidateToken | bool | (string token) |", reportText);
+            Assert.Contains("| `Added` | MyApp.UserService | `Method` | `public` | `static` |  | ValidateToken | bool | string token |", reportText);
             Assert.Contains("| `Modified` | MyApp.UserService | `Method` | `public` |  |  | Login | bool | (string user, string pass) |", reportText);
             Assert.Contains("| `Added` | MyApp.UserService | `Property` | `public` |  | bool | IsActive |  |  |", reportText);
             Assert.Contains("| `Added` | MyApp.UserService | `Field` | `private` | `readonly` | object | _cache |  |  |", reportText);
@@ -833,7 +833,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 NewMethodCount = 12,
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "Foo", "public", "", "Method", "Bar", "", "void", "()"),
+                    new("Added", "Foo", "public", "", "Method", "Bar", "", "void", ""),
                 },
             };
 

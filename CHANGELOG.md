@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Refined Kind values for type entries: replaced generic `Type` with specific `Class`, `Record`, `Struct`, `Interface`, and `Enum` kinds. Record types are detected heuristically by the presence of an `EqualityContract` property. Type entries now show access modifiers (`public`, `internal`, `protected`, etc.) instead of leaving the Access column empty. Removed the redundant `Assembly` column from the semantic changes table (10→9 columns) since the assembly name is already shown as the section header. Enriched sample reports with `protected` access modifier examples, `Removed` type entries, Added+Removed pairs (move/rename pattern), method overload examples, and custom application-defined type properties.
 
+- Removed parentheses from the `Parameters` column values. Since Parameters is now an independent column, wrapping values in `(…)` is redundant. Values now display as `string name, int count = 0` instead of `(string name, int count = 0)`. Empty parameter lists display as blank instead of `()`.
+
 ### [1.4.1] - 2026-03-20
 
 #### Added
@@ -380,6 +382,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Assembly Semantic Changes テーブルを 9 列から 10 列に再構成し明確化。旧 `ReturnType (Type paramName)` 列を `ReturnType` 列と `Parameters` 列に分離。`Kind` 列を `Access`・`Modifiers` の前に移動。Kind 値に `Constructor` と `StaticConstructor` を追加（従来 `.ctor`/`.cctor` は `Method` として表示）。コンストラクタは `.ctor` ではなく C# のクラス名で表示。`Type` 列は Field/Property の宣言型のみを表示。空の Access/Modifiers セルは空バッククォートではなく空欄に。`Method count` ラベルを `Member count` に変更。セクション名を `Method-Level Changes` から `Assembly Semantic Changes` に改名。[`doc/samples/diff_report.md`](doc/samples/diff_report.md) に record 型およびフィールド変数のサンプルを追加。[README.md](README.md) にバイリンガルの **アセンブリ セマンティック変更** セクションを追加。
 
 - Kind 値を詳細化: 汎用の `Type` を `Class`、`Record`、`Struct`、`Interface`、`Enum` に置き換え。Record 型は `EqualityContract` プロパティの有無で推定。型エントリの Access 列に空欄ではなくアクセス修飾子（`public`、`internal`、`protected` 等）を表示。セクションヘッダに既にアセンブリ名が表示されるため冗長な `Assembly` 列を削除（10→9 列）。サンプルレポートに `protected` アクセス修飾子、`Removed` 型エントリ、Added+Removed ペア（移動/リネームパターン）、メソッドオーバーロード、アプリケーション独自型のプロパティを追加。
+
+- `Parameters` 列の値から括弧を削除。Parameters が独立列となったため `(…)` は冗長。値は `(string name, int count = 0)` ではなく `string name, int count = 0` で表示。引数なしは `()` ではなく空欄。
 
 ### [1.4.1] - 2026-03-20
 

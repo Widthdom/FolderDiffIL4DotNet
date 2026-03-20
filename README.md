@@ -213,7 +213,7 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | Type | Declared type for Field/Property (empty for Method/Constructor/Class/Record) | `int` |
 | Name | Member name (constructors use the class name; empty for Class/Record/Struct/Interface/Enum entries) | `DoWork` |
 | ReturnType | Return type for Method/Constructor (empty for Field/Property/Class/Record) | `void` |
-| Parameters | Parameter list for Method/Constructor (empty for Field/Property/Class/Record) | `(string name, int count = 0)` |
+| Parameters | Parameter list for Method/Constructor (empty for Field/Property/Class/Record) | `string name, int count = 0` |
 
 Controlled by [`ShouldIncludeMethodLevelChangesInReport`](#config-en-shouldincludemethodlevelchangesinreport) (default: `true`).
 
@@ -692,7 +692,7 @@ flowchart TD
 | Type | Field/Property の宣言型（Method/Constructor/Class/Record の場合は空） | `int` |
 | Name | メンバー名（コンストラクタはクラス名、Class/Record/Struct/Interface/Enum エントリの場合は空） | `DoWork` |
 | ReturnType | Method/Constructor の戻り値型（Field/Property/Class/Record の場合は空） | `void` |
-| Parameters | Method/Constructor のパラメータ一覧（Field/Property/Class/Record の場合は空） | `(string name, int count = 0)` |
+| Parameters | Method/Constructor のパラメータ一覧（Field/Property/Class/Record の場合は空） | `string name, int count = 0` |
 
 [`ShouldIncludeMethodLevelChangesInReport`](#config-ja-shouldincludemethodlevelchangesinreport)（既定値: `true`）で制御します。
 

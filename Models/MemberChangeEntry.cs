@@ -12,7 +12,7 @@ namespace FolderDiffIL4DotNet.Models
     /// <param name="MemberName">Member name (C# name; constructors use the class name, not .ctor). Empty for Type entries. / メンバー名（C# 名、コンストラクタは .ctor ではなくクラス名）。Type の場合は空。</param>
     /// <param name="MemberType">For Field/Property: the declared type (e.g. "string", "int"). Empty for Method/Constructor/Type entries. / フィールド・プロパティの宣言型。メソッド・コンストラクタ・Type の場合は空。</param>
     /// <param name="ReturnType">For Method: the return type (e.g. "void", "string"). For Constructor: "void". Empty for Type/Field/Property entries. / メソッドの戻り値型。コンストラクタは "void"。Type/Field/Property の場合は空。</param>
-    /// <param name="Parameters">For Method/Constructor: the parameter list including parentheses (e.g. "(int page)", "()"). Empty for Type/Field/Property entries. / メソッド・コンストラクタのパラメータ一覧（括弧含む）。Type/Field/Property の場合は空。</param>
+    /// <param name="Parameters">For Method/Constructor: the parameter list without parentheses (e.g. "int page", "string name, int count = 0"). Empty string for no-arg methods. Empty for Type/Field/Property entries. / メソッド・コンストラクタのパラメータ一覧（括弧なし）。引数なしは空文字列。Type/Field/Property の場合は空。</param>
     public sealed record MemberChangeEntry(
         string Change,
         string TypeName,
