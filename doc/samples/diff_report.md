@@ -56,28 +56,28 @@
 
 ### src/App.dll
 
-| Assembly | Change | Class | Access | Kind | Name | Details |
-|----------|--------|-------|--------|------|------|---------|
-| src/App.dll | `Added` | MyApp.Controllers.ApiController | public | Method | HealthCheck | () : string |
-| src/App.dll | `Modified` | MyApp.Controllers.ApiController | public | Method | GetUsers | (int page) : System.Collections.Generic.IList\<MyApp.Models.User\> |
-| src/App.dll | `Modified` | MyApp.Services.DataService | internal | Method | RefreshCache | () : void |
-| src/App.dll | `Modified` | MyApp.Services.DataService | private | Method | ValidateConnection | (string connStr) : bool |
-| src/App.dll | `Added` | MyApp.Services.DataService | public | Property | CacheTimeout | : int { get; set; } |
+| Assembly | Change | Class | Access | Modifiers | Kind | Name | Detail (ReturnType (Type paramName)) |
+|----------|--------|-------|--------|-----------|------|------|--------------------------------------|
+| src/App.dll | `Added` | MyApp.Controllers.ApiController | `public` | `` | `Method` | HealthCheck | string () |
+| src/App.dll | `Modified` | MyApp.Controllers.ApiController | `public` | `virtual` | `Method` | GetUsers | System.Collections.Generic.IList\<MyApp.Models.User\> (int page) |
+| src/App.dll | `Modified` | MyApp.Services.DataService | `internal` | `` | `Method` | RefreshCache | void () |
+| src/App.dll | `Modified` | MyApp.Services.DataService | `private` | `` | `Method` | ValidateConnection | bool (string connStr) |
+| src/App.dll | `Added` | MyApp.Services.DataService | `public` | `` | `Property` | CacheTimeout | : int { get; set; } |
 - Method count: 28 (Old) vs 29 (New)
 
 ### src/Service.dll
 
-| Assembly | Change | Class | Access | Kind | Name | Details |
-|----------|--------|-------|--------|------|------|---------|
-| src/Service.dll | `Added` | MyApp.Services.NewValidator |  | Type |  |  |
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | public | Method | .ctor | () : void |
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | public | Method | Validate | (string input) : bool |
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | private | Method | ParseInput | (string raw) : string |
-| src/Service.dll | `Added` | MyApp.Services.OrderService | public | Method | ValidateWithNewValidator | (string data) : bool |
-| src/Service.dll | `Removed` | MyApp.Services.OrderService | public | Method | LegacyValidate | (string data) : bool |
-| src/Service.dll | `Modified` | MyApp.Services.OrderService | public | Method | ProcessOrder | (int orderId) : void |
-| src/Service.dll | `Modified` | MyApp.Services.OrderService | internal | Method | CalculateTotal | (int qty, int price) : decimal |
-| src/Service.dll | `Added` | MyApp.Services.NewValidator | private | Field | _pattern | : string |
+| Assembly | Change | Class | Access | Modifiers | Kind | Name | Detail (ReturnType (Type paramName)) |
+|----------|--------|-------|--------|-----------|------|------|--------------------------------------|
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `` | `` | `Type` |  |  |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `public` | `` | `Method` | .ctor | void () |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `public` | `` | `Method` | Validate | bool (string input) |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `private` | `` | `Method` | ParseInput | string (string raw) |
+| src/Service.dll | `Added` | MyApp.Services.OrderService | `public` | `` | `Method` | ValidateWithNewValidator | bool (string data) |
+| src/Service.dll | `Removed` | MyApp.Services.OrderService | `public` | `virtual` | `Method` | LegacyValidate | bool (string data) |
+| src/Service.dll | `Modified` | MyApp.Services.OrderService | `public` | `` | `Method` | ProcessOrder | void (int orderId) |
+| src/Service.dll | `Modified` | MyApp.Services.OrderService | `internal` | `static` | `Method` | CalculateTotal | decimal (int qty, int price) |
+| src/Service.dll | `Added` | MyApp.Services.NewValidator | `private` | `readonly` | `Field` | _pattern | : string |
 - Method count: 15 (Old) vs 18 (New)
 
 ### util/Legacy.dll
