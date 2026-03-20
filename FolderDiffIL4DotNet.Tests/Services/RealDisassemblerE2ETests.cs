@@ -47,6 +47,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [SkippableFact]
         public async Task FilesAreEqualAsync_WhenDotNetIldasmComparesNonDeterministicRebuilds_ReturnsIlMatch()
         {
+            Skip.IfNot(IsE2EEnabled(), "Set FOLDERDIFF_RUN_E2E=true to run E2E tests.");
             Skip.If(!CanRunDotNetIldasm(), "dotnet-ildasm is not available in this environment.");
             var previousRollForward = Environment.GetEnvironmentVariable("DOTNET_ROLL_FORWARD");
             Environment.SetEnvironmentVariable("DOTNET_ROLL_FORWARD", "Major");
@@ -104,6 +105,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Environment.SetEnvironmentVariable("DOTNET_ROLL_FORWARD", previousRollForward);
             }
         }
+
+        // Check whether E2E tests are opted-in via environment variable
+        // 環境変数で E2E テストが有効化されているかを確認する
+        private static bool IsE2EEnabled()
+            => string.Equals(Environment.GetEnvironmentVariable("FOLDERDIFF_RUN_E2E"), "true", StringComparison.OrdinalIgnoreCase);
 
         private static bool CanRunDotNetIldasm()
             => CanRunCommand(Constants.DOTNET_ILDASM, "--version")
