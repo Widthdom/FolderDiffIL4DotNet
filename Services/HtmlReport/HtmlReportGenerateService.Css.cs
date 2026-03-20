@@ -156,17 +156,17 @@ namespace FolderDiffIL4DotNet.Services
     col.sc-col-cb-g { width: 2.2em; }
     col.sc-col-class-g { width: var(--sc-class-w); }
     col.sc-col-basetype-g { width: var(--sc-basetype-w); }
-    col.sc-col-change-g { width: 6.5em; }
-    col.sc-col-kind-g { width: 8.5em; }
-    col.sc-col-access-g { width: 6.5em; }
-    col.sc-col-mods-g { width: 9em; }
+    col.sc-col-change-g { width: 7em; }
+    col.sc-col-kind-g { width: 10em; }
+    col.sc-col-access-g { width: 8em; }
+    col.sc-col-mods-g { width: 11em; }
     col.sc-col-type-g { width: var(--sc-type-w); }
     col.sc-col-name-g { width: var(--sc-name-w); }
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
     col.sc-cnt-class-g { width: 22em; }
-    col.sc-cnt-change-g { width: 6.5em; }
+    col.sc-cnt-change-g { width: 7em; }
     col.sc-cnt-count-g { width: 4em; }";
         }
     }

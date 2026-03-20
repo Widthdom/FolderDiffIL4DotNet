@@ -81,6 +81,16 @@
 
 | Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
 |-------|----------|:------:|:----:|:------:|:---------:|------|------|------------|------------|------|
+| MyApp.Models.Coordinate | System.ValueType | `Added` | `Struct` | `public` | `readonly` |  |  |  |  |  |
+|  |  | `Added` | `Constructor` | `public` |  |  | Coordinate | System.Void | System.Double\u00A0X,\u00A0System.Double\u00A0Y |  |
+|  |  | `Added` | `Property` | `public` |  | System.Double | X |  |  |  |
+|  |  | `Added` | `Property` | `public` |  | System.Double | Y |  |  |  |
+|  |  | `Added` | `Method` | `public` | `override` |  | ToString | System.String |  |  |
+| MyApp.Models.OrderStatus |  | `Added` | `Enum` | `public` |  |  |  |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Pending |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Processing |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Completed |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Cancelled |  |  |  |
 | MyApp.Models.UserDto |  | `Removed` | `Class` | `public` |  |  |  |  |  |  |
 |  |  | `Removed` | `Property` | `public` |  | System.String | Name |  |  |  |
 |  |  | `Removed` | `Property` | `public` |  | System.Int32 | Age |  |  |  |
@@ -91,6 +101,16 @@
 |  |  | `Added` | `Method` | `public` | `override` |  | ToString | System.String |  |  |
 |  |  | `Added` | `Method` | `public` | `virtual` |  | Equals | System.Boolean | System.Object obj |  |
 |  |  | `Added` | `Method` | `public` | `override` |  | GetHashCode | System.Int32 |  |  |
+| MyApp.Services.BaseProcessor |  | `Added` | `Class` | `public` | `abstract` |  |  |  |  |  |
+|  |  | `Added` | `Constructor` | `protected` |  |  | BaseProcessor | System.Void |  |  |
+|  |  | `Added` | `Method` | `public` | `abstract` |  | Execute | System.Threading.Tasks.Task | System.String input |  |
+|  |  | `Added` | `Method` | `protected` | `virtual` |  | OnCompleted | System.Void |  |  |
+| MyApp.Services.Constants |  | `Added` | `Class` | `public` | `static` |  |  |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.String | DefaultEndpoint |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | MaxRetries |  |  |  |
+|  |  | `Added` | `Field` | `public` | `static readonly` | System.TimeSpan | DefaultTimeout |  |  |  |
+| MyApp.Services.IValidator |  | `Added` | `Interface` | `public` |  |  |  |  |  |  |
+|  |  | `Added` | `Method` | `public` |  |  | Validate | System.Boolean | System.String input |  |
 | MyApp.Services.LegacyHelper |  | `Removed` | `Class` | `internal` |  |  |  |  |  |  |
 |  |  | `Removed` | `Method` | `public` |  |  | Convert | System.String | System.Object value |  |
 |  |  | `Removed` | `Method` | `public` | `static` |  | Format | System.String | System.String template, System.Object[] args |  |
@@ -101,21 +121,6 @@
 |  |  | `Added` | `Method` | `private` |  |  | ParseInput | System.String | System.String raw |  |
 |  |  | `Added` | `Property` | `public` |  | MyApp.Models.ValidationResult | LastResult |  |  |  |
 |  |  | `Added` | `Field` | `private` | `readonly` | System.String | _pattern |  |  |  |
-| MyApp.Services.IValidator |  | `Added` | `Interface` | `public` |  |  |  |  |  |  |
-|  |  | `Added` | `Method` | `public` |  |  | Validate | System.Boolean | System.String input |  |
-| MyApp.Models.OrderStatus |  | `Added` | `Enum` | `public` |  |  |  |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Pending |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Processing |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Completed |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | Cancelled |  |  |  |
-| MyApp.Services.BaseProcessor |  | `Added` | `Class` | `public` | `abstract` |  |  |  |  |  |
-|  |  | `Added` | `Constructor` | `protected` |  |  | BaseProcessor | System.Void |  |  |
-|  |  | `Added` | `Method` | `public` | `abstract` |  | Execute | System.Threading.Tasks.Task | System.String input |  |
-|  |  | `Added` | `Method` | `protected` | `virtual` |  | OnCompleted | System.Void |  |  |
-| MyApp.Services.Constants |  | `Added` | `Class` | `public` | `static` |  |  |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.String | DefaultEndpoint |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static literal` | System.Int32 | MaxRetries |  |  |  |
-|  |  | `Added` | `Field` | `public` | `static readonly` | System.TimeSpan | DefaultTimeout |  |  |  |
 | MyApp.Services.OrderService | MyApp.Services.BaseService, MyApp.Services.IOrderProcessor | `Added` | `Method` | `public` |  |  | ValidateWithNewValidator | System.Boolean | System.String data |  |
 |  |  | `Added` | `Property` | `protected` |  | MyApp.Models.OrderContext | CurrentContext |  |  |  |
 |  |  | `Added` | `Field` | `private` | `readonly` | MyApp.Models.UserRecord | _defaultUser |  |  |  |
@@ -125,6 +130,7 @@
 
 | Class | Change | Count |
 |-------|:------:|------:|
+| MyApp.Models.Coordinate | `Added` | 5 |
 | MyApp.Models.OrderStatus | `Added` | 5 |
 | MyApp.Models.UserDto | `Removed` | 3 |
 | MyApp.Models.UserRecord | `Added` | 7 |
