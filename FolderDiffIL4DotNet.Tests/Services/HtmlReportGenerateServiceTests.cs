@@ -1051,7 +1051,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains(":not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }", html);
-            Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: #f3eef8; }", html);
+            Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }", html);
         }
 
         // ── Req9: Language toggle / 言語切り替え ────────────────────────────────
