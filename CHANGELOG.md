@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **Semantic summary caveat note** — Added a bilingual note ("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below." / "注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。") to the HTML report's Assembly Semantic Changes section. Styled with `.sc-caveat` CSS class (italic, grey). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added tests `ShowsCaveatNote`, `CaveatCssExists` in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
+- **Semantic summary caveat note** — Added a caveat note to the HTML report's Assembly Semantic Changes section reminding users that the semantic summary is supplementary and to verify details in the IL diff. Styled with `.sc-caveat` CSS class (italic, grey). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added tests `ShowsCaveatNote`, `CaveatCssExists` in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
 
 #### Removed
 
@@ -439,7 +439,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 追加
 
-- **セマンティックサマリーの注意書き** — HTML レポートの Assembly Semantic Changes セクションに、日英バイリンガルの注意書き（「注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。」）を追加。`.sc-caveat` CSS クラスでスタイリング（イタリック、グレー）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に `ShowsCaveatNote`、`CaveatCssExists` テストを追加。
+- **セマンティックサマリーの注意書き** — HTML レポートの Assembly Semantic Changes セクションに、セマンティックサマリーは補助情報であり最終確認は IL diff で行うべき旨の注意書きを追加。`.sc-caveat` CSS クラスでスタイリング（イタリック、グレー）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に `ShowsCaveatNote`、`CaveatCssExists` テストを追加。
 
 #### 削除
 
