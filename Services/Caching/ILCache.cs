@@ -171,23 +171,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     _memoryCache.GetFileHash(fileAbsolutePath);
                 }
-                catch (System.IO.IOException ex)
-                {
-                    _logger.LogMessage(
-                        AppLogLevel.Warning,
-                        $"Failed to Precompute MD5 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
-                        shouldOutputMessageToConsole: true,
-                        ex);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    _logger.LogMessage(
-                        AppLogLevel.Warning,
-                        $"Failed to Precompute MD5 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
-                        shouldOutputMessageToConsole: true,
-                        ex);
-                }
-                catch (NotSupportedException ex)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,

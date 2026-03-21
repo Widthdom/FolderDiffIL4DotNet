@@ -178,32 +178,9 @@ namespace FolderDiffIL4DotNet.Services
                 ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);
                 folderDiffCompleted = true;
             }
-            catch (ArgumentException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (IOException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
+                or IOException or UnauthorizedAccessException
+                or InvalidOperationException or NotSupportedException)
             {
                 LogExpectedFolderDiffFailure(ex);
                 throw;

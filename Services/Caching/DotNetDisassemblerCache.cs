@@ -184,31 +184,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 return await ProcessHelper.TryGetProcessOutputAsync(disassemblerExe, args);
             }
-            catch (Win32Exception ex)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}'): {ex.Message}",
-                    shouldOutputMessageToConsole: true,
-                    ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}'): {ex.Message}",
-                    shouldOutputMessageToConsole: true,
-                    ex);
-            }
-            catch (IOException ex)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}'): {ex.Message}",
-                    shouldOutputMessageToConsole: true,
-                    ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or NotSupportedException)
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,

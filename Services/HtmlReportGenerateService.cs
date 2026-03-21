@@ -67,13 +67,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 File.WriteAllText(htmlPath, html, Encoding.UTF8);
             }
-            catch (IOException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write HTML report to '{htmlPath}': {ex.Message}",
-                    shouldOutputMessageToConsole: true, ex);
-            }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _logger.LogMessage(AppLogLevel.Warning,
                     $"Failed to write HTML report to '{htmlPath}': {ex.Message}",

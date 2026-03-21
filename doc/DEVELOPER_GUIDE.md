@@ -378,6 +378,9 @@ Failure handling:
 - `FilesAreEqualAsync(...)` also treats [`DirectoryNotFoundException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.directorynotfoundexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), and [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0) as expected runtime failures: it logs them with both old/new absolute paths and rethrows without changing the exception type.
 - Other unexpected exceptions are logged from inside `FilesAreEqualAsync(...)` with separate "unexpected error" wording and then rethrown to the caller.
 - `PrecomputeIlCachesAsync()`, disk-cache eviction cleanup, and post-write read-only protection are best-effort operations. They log warnings and continue because the main comparison result or already-written report remains usable.
+- **Use exception filters to consolidate identical catch blocks** — When multiple `catch` blocks perform the same action (e.g. all call `CreateFailureResult` or all log the same warning), merge them with an exception filter (`catch (Exception ex) when (ex is X or Y or Z)`). This reduces code duplication without changing runtime semantics.
+- **例外フィルターで同一 catch ブロックを集約する** — 複数の `catch` ブロックが同一の処理（例: 全て `CreateFailureResult` を呼ぶ、全て同じ警告をログ出力する）を行う場合は、例外フィルター（`catch (Exception ex) when (ex is X or Y or Z)`）で統合してください。ランタイムの挙動を変えずにコード重複を削減できます。
+
 - Even when you need to add more context, do not wrap the original exception in a new generic [`Exception`](https://learn.microsoft.com/en-us/dotnet/api/system.exception?view=net-8.0). Log the original exception and use `throw;` so the original exception type and stack trace are preserved.
 
 Avoid:

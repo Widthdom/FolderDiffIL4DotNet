@@ -209,27 +209,8 @@ namespace FolderDiffIL4DotNet.Services
             // so even expected runtime exceptions are logged as errors and re-thrown to the caller.
             // このメソッドの本比較で起きた失敗はファイル分類の正しさに直結するため、
             // 想定内の実行時例外も error を残して呼び出し元へ再スローする。
-            catch (DirectoryNotFoundException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (IOException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is DirectoryNotFoundException or IOException
+                or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
             {
                 LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
                 throw;

@@ -152,19 +152,7 @@ namespace FolderDiffIL4DotNet.Core.Diagnostics
                             : DotNetExecutableDetectionStatus.NotDotNetExecutable);
                 }
             }
-            catch (ArgumentException ex)
-            {
-                return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
-            }
-            catch (IOException ex)
-            {
-                return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 return new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.Failed, ex);
             }

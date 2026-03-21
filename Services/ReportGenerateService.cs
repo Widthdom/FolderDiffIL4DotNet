@@ -217,19 +217,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 FileSystemUtility.TrySetReadOnly(diffReportAbsolutePath);
             }
-            catch (ArgumentException ex)
-            {
-                LogReportProtectionWarning(ex);
-            }
-            catch (IOException ex)
-            {
-                LogReportProtectionWarning(ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogReportProtectionWarning(ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 LogReportProtectionWarning(ex);
             }

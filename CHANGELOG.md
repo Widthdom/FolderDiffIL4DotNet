@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Consolidated redundant exception handling with exception filters** — Replaced repetitive per-type `catch` blocks that performed identical actions with C# exception filters (`catch (Exception ex) when (ex is X or Y or Z)`). Affected files: `ProgramRunner.cs`, `FolderDiffService.cs`, `FileDiffService.cs`, `LoggerService.cs`, `ILOutputService.cs`, `ILDiskCache.cs`, `ILCache.cs`, `DotNetDisassemblerCache.cs`, `ILCachePrefetcher.cs`, `ILTextOutputService.cs`, `DotNetDisassembleService.cs`, `DotNetDisassembleService.VersionLabel.cs`, `ReportGenerateService.cs`, `HtmlReportGenerateService.cs`, `DotNetDetector.cs`. No behavioural change; purely a code-size and maintainability improvement.
+
 #### Fixed
 
 - **Method access modifier change detection** — Access modifier changes (e.g. `public` → `internal`) and modifier changes (e.g. adding/removing `static`, `virtual`) are now detected as `Modified` entries in the Assembly Semantic Changes table. Previously, the method match key excluded access modifiers and the intersection comparison only checked IL body bytes, so access-only or modifier-only changes were invisible in the semantic summary.
@@ -432,6 +436,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **冗長な例外ハンドリングを例外フィルターで集約** — 同一処理を行う型別 `catch` ブロックの繰り返しを、C# 例外フィルター（`catch (Exception ex) when (ex is X or Y or Z)`）に統合しました。対象ファイル: `ProgramRunner.cs`、`FolderDiffService.cs`、`FileDiffService.cs`、`LoggerService.cs`、`ILOutputService.cs`、`ILDiskCache.cs`、`ILCache.cs`、`DotNetDisassemblerCache.cs`、`ILCachePrefetcher.cs`、`ILTextOutputService.cs`、`DotNetDisassembleService.cs`、`DotNetDisassembleService.VersionLabel.cs`、`ReportGenerateService.cs`、`HtmlReportGenerateService.cs`、`DotNetDetector.cs`。動作の変更はなく、コード量の削減と保守性の向上が目的です。
 
 #### 修正
 
