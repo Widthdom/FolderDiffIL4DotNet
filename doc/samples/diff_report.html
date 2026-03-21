@@ -864,6 +864,8 @@
   const __storageKey__  = 'folderdiff-release';
   const __reportDate__  = '20260315';
   const __savedState__  = null;
+  // NOTE: replaced with SHA256 hash by downloadReviewed(). Do not change whitespace.
+  const __reviewedSha256__  = null;
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -949,15 +951,28 @@
       + '; --sc-cnt-class-w: ' + curWidths['--sc-cnt-class-w'] + '; }');
     // Remove inline col-var overrides from <html> element (now baked into :root)
     html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
-    // Replace controls bar with reviewed banner
+    // Replace controls bar with reviewed banner (includes Verify integrity button)
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
-      '<div class="reviewed-banner">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</div>');
-    // 3. Compute SHA256 integrity hash of the reviewed HTML for tamper detection
+      '<div class="reviewed-banner">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only'
+      + ' <button class="btn" onclick="verifyIntegrity()" style="margin-left:1em;font-size:12px">&#x1F50D; Verify integrity</button>'
+      + '</div>');
+    // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
+    var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
+    html = html.replace('const __reviewedSha256__  = null;',
+      "const __reviewedSha256__  = '" + placeholder + "';");
+    // Compute SHA256 of the HTML with placeholder
     var reviewedFileName = slug + '_reviewed.html';
     var encoded = new TextEncoder().encode(html);
     var hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
     var hashArray = Array.from(new Uint8Array(hashBuffer));
     var hashHex = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    // Replace placeholder with actual hash (same length, so no byte offset change)
+    html = html.replace(placeholder, hashHex);
+    // Compute final SHA256 for the companion .sha256 file (covers HTML with embedded hash)
+    var finalEncoded = new TextEncoder().encode(html);
+    var finalHashBuffer = await crypto.subtle.digest('SHA-256', finalEncoded);
+    var finalHashArray = Array.from(new Uint8Array(finalHashBuffer));
+    var finalHashHex = finalHashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
     // Download reviewed HTML
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a    = document.createElement('a');
@@ -968,7 +983,7 @@
     document.body.removeChild(a);
     // Download companion SHA256 verification file (brief delay avoids browser download blocking)
     setTimeout(function(){
-      var sha256Text = hashHex + '  ' + reviewedFileName + '\n';
+      var sha256Text = finalHashHex + '  ' + reviewedFileName + '\n';
       var sha256Blob = new Blob([sha256Text], { type: 'text/plain;charset=utf-8' });
       var a2 = document.createElement('a');
       a2.href = URL.createObjectURL(sha256Blob);
@@ -981,6 +996,41 @@
     // Display hash in save-status for manual verification
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'SHA256: ' + hashHex;
+  }
+
+  function verifyIntegrity() {
+    if (__reviewedSha256__ === null) {
+      alert('This report has not been downloaded as reviewed yet.\n\nこのレポートはまだレビュー済みとしてダウンロードされていません。');
+      return;
+    }
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.html';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.onchange = async function() {
+      var file = input.files[0];
+      document.body.removeChild(input);
+      if (!file) return;
+      var text = await file.text();
+      // Replace embedded hash with placeholder to reconstruct the hashable content
+      var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
+      var hashable = text.replace("'" + __reviewedSha256__ + "'", "'" + placeholder + "'");
+      var encoded = new TextEncoder().encode(hashable);
+      var hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+      var hashArray = Array.from(new Uint8Array(hashBuffer));
+      var actualHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+      if (actualHash === __reviewedSha256__) {
+        alert('Integrity verification passed.\nThe file has not been tampered with.'
+          + '\n\n整合性検証に合格しました。\nファイルは改ざんされていません。');
+      } else {
+        alert('Integrity verification FAILED.\nThe file may have been tampered with.'
+          + '\n\nExpected: ' + __reviewedSha256__
+          + '\nActual:   ' + actualHash
+          + '\n\n整合性検証に失敗しました。\nファイルが改ざんされている可能性があります。');
+      }
+    };
+    input.click();
   }
 
   function collapseAll() {

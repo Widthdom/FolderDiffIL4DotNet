@@ -212,6 +212,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Companion .sha256 verification file download
             Assert.Contains(".sha256", html);
             Assert.Contains("sha256Text", html);
+            // Self-verification: __reviewedSha256__ sentinel and verifyIntegrity function
+            Assert.Contains("const __reviewedSha256__  = null;", html);
+            Assert.Contains("verifyIntegrity", html);
         }
 
         [Fact]
