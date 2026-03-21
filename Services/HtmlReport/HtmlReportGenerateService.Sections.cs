@@ -551,16 +551,15 @@ namespace FolderDiffIL4DotNet.Services
             if (!hasSha256 && !hasTs) return;
 
             sb.AppendLine($"<h2 class=\"section-heading\"><span class=\"warn-icon\">&#x26A0;</span> {I18n("Warnings", "警告")}</h2>");
-            sb.AppendLine("<ul class=\"warnings\">");
-            if (hasSha256)
-                sb.AppendLine($"  <li>{I18n("One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.", "1つ以上のファイルが SHA256Mismatch として分類されました。SHA256 ハッシュ比較のみが可能だったため、手動レビューを推奨します。")}</li>");
-            if (hasTs)
-                sb.AppendLine($"  <li>{I18n("One or more modified files in new have older last-modified timestamps than the corresponding files in old.", "new 内の1つ以上の変更ファイルが、old 内の対応するファイルより古い更新日時を持っています。")}</li>");
-            sb.AppendLine("</ul>");
 
-            // SHA256Mismatch files table (same style as Modified Files)
+            // SHA256Mismatch warning + detail table (grouped together)
+            // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
             if (hasSha256)
             {
+                sb.AppendLine("<ul class=\"warnings\">");
+                sb.AppendLine($"  <li>{I18n("One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.", "1つ以上のファイルが SHA256Mismatch として分類されました。SHA256 ハッシュ比較のみが可能だったため、手動レビューを推奨します。")}</li>");
+                sb.AppendLine("</ul>");
+
                 var sha256Files = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                     .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                     .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
@@ -588,9 +587,14 @@ namespace FolderDiffIL4DotNet.Services
                 }
             }
 
-            // Timestamp-regressed files table (same style as Modified Files)
+            // Timestamp-regressed warning + detail table (grouped together)
+            // タイムスタンプ逆行 警告 + 詳細テーブル（まとめて配置）
             if (hasTs)
             {
+                sb.AppendLine("<ul class=\"warnings\">");
+                sb.AppendLine($"  <li>{I18n("One or more modified files in new have older last-modified timestamps than the corresponding files in old.", "new 内の1つ以上の変更ファイルが、old 内の対応するファイルより古い更新日時を持っています。")}</li>");
+                sb.AppendLine("</ul>");
+
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();

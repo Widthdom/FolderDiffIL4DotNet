@@ -516,7 +516,7 @@ Notes:
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#config-en-textfileextensions).
 - Timestamp-regression warnings are evaluated only for files classified as **modified** (files that exist in both `old` and `new` but whose content differs). Unchanged files are excluded even if their timestamps are reversed.
-- If any file ends as `SHA256Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion. A detail table titled `[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)` lists all affected files with their timestamps and diff detail.
+- If any file ends as `SHA256Mismatch`, the report writes that warning in the final `Warnings` section, and the same message is printed once at run completion. A detail table titled `[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)` is placed immediately below the warning message, listing all affected files with their timestamps and diff detail. Each warning message in the `Warnings` section is immediately followed by its corresponding detail table (interleaved layout).
 
 <a id="readme-en-generated-artifacts"></a>
 ## Generated Artifacts
@@ -1056,7 +1056,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#config-ja-textfileextensions) に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、**Modified（内容変更あり）と判定されたファイル**のみを対象に判定します。内容が同一の Unchanged ファイルは、更新日時が逆転していても警告対象外です。
-- `SHA256Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。`[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)` というタイトルの詳細テーブルに、該当ファイルのタイムスタンプと diff 詳細が一覧されます。
+- `SHA256Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションに出力され、同じ文言を実行終了時のコンソールにも1回だけ出力します。`[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)` というタイトルの詳細テーブルは警告メッセージの直下に配置され、該当ファイルのタイムスタンプと diff 詳細が一覧されます。`Warnings` セクションの各警告メッセージは、対応する詳細テーブルの直上に配置されます（インターリーブレイアウト）。
 
 <a id="readme-ja-generated-artifacts"></a>
 ## 生成物
