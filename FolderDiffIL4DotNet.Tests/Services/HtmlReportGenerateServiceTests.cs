@@ -816,6 +816,58 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("data-diff-html", html);  // JS references the attribute name
         }
 
+        // ── Column structure: per-table columns / テーブルごとの列構成 ─────────
+
+        /// <summary>
+        /// Verifies HTML tables have the correct column sets:
+        /// Ignored=no Disassembler, Added/Removed=no Diff Reason &amp; no Disassembler,
+        /// Unchanged=has Disassembler (with ILMatch label), Modified=all columns.
+        /// HTML テーブルが正しい列構成を持つことを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_ColumnStructure_PerTableColumns()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("col-struct");
+
+            _resultLists.AddUnchangedFileRelativePath("same.dll");
+            _resultLists.RecordDiffDetail("same.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "added.txt"));
+            _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "removed.txt"));
+            _resultLists.AddModifiedFileRelativePath("mod.dll");
+            _resultLists.RecordDiffDetail("mod.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Added and Removed tables should NOT have col-diff-g or col-disasm-g columns
+            // Added/Removed テーブルに col-diff-g, col-disasm-g カラムが無いことを確認
+            // Modified table SHOULD have col-disasm-g
+            // Modified テーブルには col-disasm-g があることを確認
+            Assert.Contains("col-disasm-g", html); // Present in Modified and Unchanged tables
+            Assert.Contains("dotnet-ildasm (version: 0.12.0)", html); // Unchanged ILMatch shows disassembler label
+
+            // Verify Ignored table does not have Disassembler header
+            // Ignored テーブルに Disassembler ヘッダが無いことを確認
+            int ignoredStart = html.IndexOf("Ignored Files", StringComparison.Ordinal);
+            int unchangedStart = html.IndexOf("Unchanged Files", StringComparison.Ordinal);
+            string ignoredSection = html.Substring(ignoredStart, unchangedStart - ignoredStart);
+            Assert.DoesNotContain("col-disasm-g", ignoredSection);
+
+            // Verify Added table does not have Diff Reason or Disassembler columns
+            // Added テーブルに Diff Reason, Disassembler カラムが無いことを確認
+            int addedStart = html.IndexOf("Added Files", StringComparison.Ordinal);
+            int removedStart = html.IndexOf("Removed Files", StringComparison.Ordinal);
+            string addedSection = html.Substring(addedStart, removedStart - addedStart);
+            Assert.DoesNotContain("col-diff-g", addedSection);
+            Assert.DoesNotContain("col-disasm-g", addedSection);
+        }
+
         // ── Assembly Semantic Changes / アセンブリ意味変更 ─────────────────────
 
         [Fact]

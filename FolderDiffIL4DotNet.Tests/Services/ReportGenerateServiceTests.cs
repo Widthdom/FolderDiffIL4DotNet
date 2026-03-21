@@ -504,8 +504,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("## Warnings", reportText);
             Assert.Contains($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}", reportText);
             Assert.Contains("- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
-            Assert.Contains("| Status | File Path | Timestamp | Legend | Disassembler |", reportText);
-            Assert.Contains("|:------:|-----------|:---------:|--------|--------------|", reportText);
+            Assert.Contains("| Status | File Path | Timestamp | Legend |", reportText);
+            Assert.Contains("|:------:|-----------|:---------:|--------|", reportText);
             Assert.Contains("| nested", reportText);
             Assert.Contains("2026-03-14 10:00:00 → 2026-03-14 09:00:00", reportText);
             Assert.True(
@@ -855,6 +855,120 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Report should generate without throwing / レポートが例外なく生成される
             Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
+        }
+
+        // ── Column structure: per-table columns / テーブルごとの列構成 ─────────
+
+        /// <summary>
+        /// Verifies that Ignored Files table has 4 columns (no Disassembler) and Added/Removed have 3 columns (no Legend, no Disassembler).
+        /// Ignored Files テーブルが 4 列（Disassembler なし）、Added/Removed が 3 列（Legend・Disassembler なし）であることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_ColumnStructure_PerTableColumns()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-col-struct");
+            var newDir = Path.Combine(_rootDir, "new-col-struct");
+            var reportDir = Path.Combine(_rootDir, "report-col-struct");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var oldSame = Path.Combine(oldDir, "same.dll");
+            var newSame = Path.Combine(newDir, "same.dll");
+            File.WriteAllText(oldSame, "same");
+            File.WriteAllText(newSame, "same");
+            _resultLists.SetOldFilesAbsolutePath(new List<string> { oldSame });
+            _resultLists.SetNewFilesAbsolutePath(new List<string> { newSame });
+            _resultLists.AddUnchangedFileRelativePath("same.dll");
+            _resultLists.RecordDiffDetail("same.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "added.txt"));
+            _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "removed.txt"));
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host", config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Ignored Files: 4-column header (Status, File Path, Timestamp, Legend — no Disassembler)
+            // Ignored Files: 4 列ヘッダ（Status, File Path, Timestamp, Legend — Disassembler なし）
+            int ignoredIdx = reportText.IndexOf("## [ x ] Ignored Files", StringComparison.Ordinal);
+            Assert.True(ignoredIdx >= 0);
+            string ignoredSection = reportText.Substring(ignoredIdx, reportText.IndexOf("## [", ignoredIdx + 1, StringComparison.Ordinal) - ignoredIdx);
+            Assert.Contains("| Status | File Path | Timestamp | Legend |", ignoredSection);
+            Assert.DoesNotContain("Disassembler", ignoredSection);
+
+            // Unchanged Files: 5-column header (keeps Disassembler)
+            // Unchanged Files: 5 列ヘッダ（Disassembler あり）
+            int unchangedIdx = reportText.IndexOf("## [ = ] Unchanged Files", StringComparison.Ordinal);
+            Assert.True(unchangedIdx >= 0);
+            string unchangedSection = reportText.Substring(unchangedIdx, reportText.IndexOf("## [", unchangedIdx + 1, StringComparison.Ordinal) - unchangedIdx);
+            Assert.Contains("| Status | File Path | Timestamp | Legend | Disassembler |", unchangedSection);
+            Assert.Contains("dotnet-ildasm (version: 0.12.0)", unchangedSection);
+
+            // Added Files: 3-column header (no Legend, no Disassembler)
+            // Added Files: 3 列ヘッダ（Legend・Disassembler なし）
+            int addedIdx = reportText.IndexOf("## [ + ] Added Files", StringComparison.Ordinal);
+            Assert.True(addedIdx >= 0);
+            string addedSection = reportText.Substring(addedIdx, reportText.IndexOf("## [", addedIdx + 1, StringComparison.Ordinal) - addedIdx);
+            Assert.Contains("| Status | File Path | Timestamp |", addedSection);
+            Assert.DoesNotContain("Legend", addedSection);
+            Assert.DoesNotContain("Disassembler", addedSection);
+
+            // Removed Files: 3-column header (no Legend, no Disassembler)
+            // Removed Files: 3 列ヘッダ（Legend・Disassembler なし）
+            int removedIdx = reportText.IndexOf("## [ - ] Removed Files", StringComparison.Ordinal);
+            Assert.True(removedIdx >= 0);
+            string removedSection = reportText.Substring(removedIdx, reportText.IndexOf("## Summary", StringComparison.Ordinal) - removedIdx);
+            Assert.Contains("| Status | File Path | Timestamp |", removedSection);
+            Assert.DoesNotContain("Legend", removedSection);
+            Assert.DoesNotContain("Disassembler", removedSection);
+        }
+
+        /// <summary>
+        /// Verifies that Warnings section tables have 4 columns (no Disassembler).
+        /// Warnings セクションのテーブルが 4 列（Disassembler なし）であることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_WarningsColumnStructure_NoDisassemblerColumn()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-warn-col");
+            var newDir = Path.Combine(_rootDir, "new-warn-col");
+            var reportDir = Path.Combine(_rootDir, "report-warn-col");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.AddModifiedFileRelativePath("payload.bin");
+            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("payload.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("lib.dll", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host", config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // SHA256Mismatch warning table: 4 columns (no Disassembler)
+            int sha256Start = reportText.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            Assert.True(sha256Start >= 0);
+            int tsRegressedStart = reportText.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            string sha256Section = reportText.Substring(sha256Start, tsRegressedStart - sha256Start);
+            Assert.Contains("| Status | File Path | Timestamp | Legend |", sha256Section);
+            Assert.DoesNotContain("Disassembler", sha256Section);
+
+            // Timestamps Regressed warning table: 4 columns (no Disassembler)
+            string tsSection = reportText.Substring(tsRegressedStart);
+            Assert.Contains("| Status | File Path | Timestamp | Legend |", tsSection);
+            Assert.DoesNotContain("Disassembler", tsSection);
         }
 
         // ── Assembly Semantic Changes removed from Markdown report ─────────────
