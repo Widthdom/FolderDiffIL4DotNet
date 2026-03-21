@@ -12,6 +12,7 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 | Need | Document |
 | --- | --- |
 | Product overview, setup, usage, and configuration | [README.md](README.md#readme-en-usage) |
+| Assembly semantic change detection | [README.md](README.md#readme-en-assembly-semantic-changes) |
 | Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-map) |
 | Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-en-run-tests) |
 | Generated API reference from XML documentation comments | [api/index.md](api/index.md) via [docfx.json](docfx.json) |
@@ -184,6 +185,42 @@ Important details:
 - If [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) is `true`, lines containing any configured ignore string are also skipped during IL comparison.
 - If IL comparison itself fails, the run stops instead of silently falling back to a weaker comparison.
 
+<a id="readme-en-assembly-semantic-changes"></a>
+## Assembly Semantic Changes
+
+When an assembly is classified as `ILMismatch`, the tool performs an additional **semantic analysis** using [`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) to identify exactly what changed at the member level. Results appear in the **Assembly Semantic Changes** section of the Markdown report and as an expandable inline row in the HTML report.
+
+### What is detected
+
+| Category | Detected changes |
+|----------|-----------------|
+| **Type** | Additions and removals (including nested types), with base type and implemented interfaces |
+| **Method** | Additions, removals, and IL body modifications |
+| **Property** | Additions and removals (with get/set accessor info) |
+| **Field** | Additions and removals (with type and default value) |
+| **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
+| **Modifiers** | For types: `sealed`, `abstract`, `static`. For members: `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
+
+### Report table columns
+
+| Column | Description | Example |
+|--------|-------------|---------|
+| Class | Fully qualified type name | `MyNamespace.MyClass` |
+| BaseType | Base type and implemented interfaces (omits trivial bases like System.Object) | `MyApp.BaseController, System.IDisposable` |
+| Change | `Added`, `Removed`, or `Modified` | `Added` |
+| Kind | Member kind: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
+| Access | Access modifier | `public` |
+| Modifiers | Other modifiers (for types: `sealed`, `abstract`, `static`; for members: `static`, `virtual`, `override`, etc.) | `sealed` |
+| Type | Declared type for Field/Property using fully qualified .NET type names (empty for Method/Constructor/Class/Record) | `System.Int32` |
+| Name | Member name (constructors use the class name; empty for Class/Record/Struct/Interface/Enum entries) | `DoWork` |
+| ReturnType | Return type for Method/Constructor using fully qualified .NET type names (empty for Field/Property/Class/Record) | `System.Void` |
+| Parameters | Parameter list for Method/Constructor using fully qualified .NET type names (empty for Field/Property/Class/Record) | `System.String name, System.Int32 count = 0` |
+| Body | `Changed` when method body or field initializer IL has changed; otherwise empty | `Changed` |
+
+Controlled by [`ShouldIncludeAssemblySemanticChangesInReport`](#config-en-shouldincludeassemblysemanticchangesinreport) (default: `true`).
+
+A summary count table (`Class | Change | Count`) follows, grouping entries by class and change kind. Consecutive rows with the same class name suppress the class column for readability.
+
 ## Configuration ([`config.json`](config.json))
 
 Place [`config.json`](config.json) next to the executable. All keys are optional; omitted keys use the code-defined defaults in [`ConfigSettings`](Models/ConfigSettings.cs). If the defaults are acceptable, this file can be just:
@@ -240,6 +277,11 @@ Override only the settings you want to change. For example:
       <td><code>ShouldIncludeIgnoredFiles</code></td>
       <td><code>true</code></td>
       <td>Includes <code>Ignored Files</code> section before <code>Unchanged</code>.</td>
+    </tr>
+    <tr id="config-en-shouldincludeassemblysemanticchangesinreport">
+      <td><code>ShouldIncludeAssemblySemanticChangesInReport</code></td>
+      <td><code>true</code></td>
+      <td>When <code>true</code>, includes an <code>Assembly Semantic Changes</code> section for <code>ILMismatch</code> assemblies between <code>Summary</code> and <code>IL Cache Stats</code>. Uses <code>System.Reflection.Metadata</code> to detect type/method/property/field additions, removals, and method body changes. In the HTML report, this appears as an expandable inline row above the IL diff.</td>
     </tr>
     <tr id="config-en-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
@@ -450,6 +492,7 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 | 見たい内容 | ドキュメント |
 | --- | --- |
 | 製品概要、導入、使い方、設定 | [README.md](README.md#readme-ja-usage) |
+| アセンブリ セマンティック変更の検出 | [README.md](README.md#readme-ja-assembly-semantic-changes) |
 | 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) |
 | テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-ja-run-tests) |
 | XML ドキュメントコメントから生成する API リファレンス | [docfx.json](docfx.json) 経由 [api/index.md](api/index.md) |
@@ -625,6 +668,42 @@ flowchart TD
 - [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) が `true` の場合は、設定した文字列を含む行も IL 比較から除外します。
 - IL 比較そのものに失敗した場合は、弱い比較へ黙って落とさず、その実行全体を停止します。
 
+<a id="readme-ja-assembly-semantic-changes"></a>
+## アセンブリ セマンティック変更
+
+アセンブリが `ILMismatch` に分類された場合、[`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) を使用してメンバーレベルの**セマンティック解析**を追加実行します。結果は Markdown レポートの **Assembly Semantic Changes** セクション、および HTML レポートの展開可能なインライン行に表示されます。
+
+### 検出対象
+
+| カテゴリ | 検出内容 |
+|---------|---------|
+| **Type** | 型の追加・削除（ネスト型を含む）、基底型および実装インターフェース情報付き |
+| **Method** | メソッドの追加・削除・IL ボディの変更 |
+| **Property** | プロパティの追加・削除（get/set アクセサ情報付き） |
+| **Field** | フィールドの追加・削除（型と既定値付き） |
+| **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
+| **Modifiers** | 型: `sealed`, `abstract`, `static`。メンバー: `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
+
+### レポートテーブル列
+
+| 列 | 説明 | 例 |
+|----|------|-----|
+| Class | 完全修飾型名 | `MyNamespace.MyClass` |
+| BaseType | 基底型および実装インターフェース（System.Object 等の自明な基底型は省略） | `MyApp.BaseController, System.IDisposable` |
+| Change | `Added`、`Removed`、`Modified` | `Added` |
+| Kind | メンバー種別: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
+| Access | アクセス修飾子 | `public` |
+| Modifiers | その他の修飾子（型: `sealed`, `abstract`, `static`、メンバー: `static`, `virtual` 等） | `sealed` |
+| Type | Field/Property の宣言型（完全修飾 .NET 型名、Method/Constructor/Class/Record の場合は空） | `System.Int32` |
+| Name | メンバー名（コンストラクタはクラス名、Class/Record/Struct/Interface/Enum エントリの場合は空） | `DoWork` |
+| ReturnType | Method/Constructor の戻り値型（完全修飾 .NET 型名、Field/Property/Class/Record の場合は空） | `System.Void` |
+| Parameters | Method/Constructor のパラメータ一覧（完全修飾 .NET 型名、Field/Property/Class/Record の場合は空） | `System.String name, System.Int32 count = 0` |
+| Body | メソッドボディまたはフィールド初期化子の IL が変更された場合 `Changed`、それ以外は空 | `Changed` |
+
+[`ShouldIncludeAssemblySemanticChangesInReport`](#config-ja-shouldincludeassemblysemanticchangesinreport)（既定値: `true`）で制御します。
+
+テーブル下に集計テーブル（`Class | Change | Count`）を表示し、クラスと変更種別ごとのカウントをまとめます。同一クラスが連続する場合、Class 列は先頭行のみに表示されます。
+
 ## 設定（[`config.json`](config.json)）
 
 実行ファイルと同じディレクトリに配置します。全項目省略可能で、未指定の項目は [`ConfigSettings`](Models/ConfigSettings.cs) に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
@@ -681,6 +760,11 @@ flowchart TD
       <td><code>ShouldIncludeIgnoredFiles</code></td>
       <td><code>true</code></td>
       <td>レポートに <code>Ignored Files</code> セクションを出力するか。</td>
+    </tr>
+    <tr id="config-ja-shouldincludeassemblysemanticchangesinreport">
+      <td><code>ShouldIncludeAssemblySemanticChangesInReport</code></td>
+      <td><code>true</code></td>
+      <td><code>true</code> の場合、<code>ILMismatch</code> と判定された .NET アセンブリについて、<code>Summary</code> と <code>IL Cache Stats</code> の間に <code>Assembly Semantic Changes</code> セクションを出力します。<code>System.Reflection.Metadata</code> を使用して型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更を検出します。HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。</td>
     </tr>
     <tr id="config-ja-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>

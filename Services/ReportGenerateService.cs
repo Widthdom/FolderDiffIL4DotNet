@@ -61,6 +61,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_LOCATION_BOTH = "(old/new)";
         private const string REPORT_TIMESTAMP_ARROW = " → ";
         private const string REPORT_SECTION_SUMMARY = REPORT_SECTION_PREFIX + "Summary";
+        private const string REPORT_SECTION_ASSEMBLY_SEMANTIC_CHANGES = REPORT_SECTION_PREFIX + "Assembly Semantic Changes";
         private const string REPORT_SECTION_IL_CACHE_STATS = REPORT_SECTION_PREFIX + "IL Cache Stats";
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.";
         private const string REPORT_SECTION_WARNINGS = REPORT_SECTION_PREFIX + "Warnings";
@@ -173,6 +174,7 @@ namespace FolderDiffIL4DotNet.Services
             new RemovedFilesSectionWriter(),
             new ModifiedFilesSectionWriter(),
             new SummarySectionWriter(),
+            new AssemblySemanticChangesSectionWriter(),
             new ILCacheStatsSectionWriter(),
             new WarningsSectionWriter(),
         };

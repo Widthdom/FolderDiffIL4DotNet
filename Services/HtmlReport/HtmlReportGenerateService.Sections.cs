@@ -208,6 +208,14 @@ namespace FolderDiffIL4DotNet.Services
                 string col6 = BuildDiffDetailDisplay(diffDetail);
                 AppendFileRow(sb, "mod", idx, path, ts, col6, asm ?? "");
 
+                // Method-level changes row (above IL diff)
+                if (config.ShouldIncludeAssemblySemanticChangesInReport &&
+                    diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch &&
+                    _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges.TryGetValue(path, out var semanticChanges))
+                {
+                    AppendAssemblySemanticChangesRow(sb, idx, path, semanticChanges, config);
+                }
+
                 if (config.EnableInlineDiff &&
                     (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||
                      diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch))
@@ -336,6 +344,134 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  </td>");
             sb.AppendLine("</tr>");
         }
+
+        private void AppendAssemblySemanticChangesRow(
+            StringBuilder sb,
+            int idx,
+            string assemblyPath,
+            AssemblySemanticChangesSummary summary,
+            ConfigSettings config,
+            string sectionPrefix = "mod")
+        {
+            int recordNo = idx + 1;
+            var contentBuilder = new StringBuilder();
+            contentBuilder.AppendLine("<div class=\"semantic-changes\">");
+
+            if (summary.Entries.Count > 0)
+            {
+                contentBuilder.AppendLine("<table class=\"semantic-changes-table sc-detail\">");
+                contentBuilder.AppendLine("<colgroup>");
+                contentBuilder.AppendLine("  <col class=\"sc-col-cb-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-class-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-basetype-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-change-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-kind-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-access-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-mods-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-type-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-name-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-rettype-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-params-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-body-g\">");
+                contentBuilder.AppendLine("</colgroup>");
+                contentBuilder.AppendLine("<thead><tr>");
+                contentBuilder.AppendLine("  <th class=\"sc-col-cb\">&#x2713;</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-class-w\">Class</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">BaseType</th>");
+                contentBuilder.AppendLine("  <th>Change</th><th>Kind</th><th>Access</th><th>Modifiers</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-type-w\">Type</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-name-w\">Name</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-rettype-w\">ReturnType</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-params-w\">Parameters</th>");
+                contentBuilder.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-body-w\">Body</th>");
+                contentBuilder.AppendLine("</tr></thead>");
+                contentBuilder.AppendLine("<tbody>");
+                string prevType = "";
+                int scRowIdx = 0;
+                foreach (var e in summary.Entries)
+                {
+                    bool isCont = e.TypeName == prevType;
+                    string classTd = !isCont ? HtmlEncode(e.TypeName) : "";
+                    string baseTypeTd = !isCont ? HtmlEncode(e.BaseType) : "";
+                    prevType = e.TypeName;
+                    string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
+                    string accessTd = e.Access.Length > 0 ? $"<code>{HtmlEncode(e.Access)}</code>" : "";
+                    string modifiersTd = e.Modifiers.Length > 0 ? $"<code>{HtmlEncode(e.Modifiers)}</code>" : "";
+                    string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
+                    string cbId = $"sc_{sectionPrefix}_{idx}_{scRowIdx}";
+                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td><code>{HtmlEncode(e.Change)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    scRowIdx++;
+                }
+                contentBuilder.AppendLine("</tbody></table>");
+            }
+            else
+            {
+                contentBuilder.AppendLine("<p>No structural changes detected. See IL diff for implementation-level differences.</p>");
+            }
+
+            if (summary.Entries.Count > 0)
+                AppendSummaryCountTable(contentBuilder, summary);
+            contentBuilder.AppendLine("</div>");
+
+            string detailsId = $"semantic_{sectionPrefix}_{idx}";
+            string summaryText = $"#{recordNo} Show assembly semantic changes";
+            string summaryLabel = $"      <summary class=\"diff-summary\">{HtmlEncode(summaryText)}</summary>";
+            string contentHtml = contentBuilder.ToString();
+
+            sb.AppendLine("<tr class=\"diff-row\">");
+            sb.AppendLine("  <td colspan=\"8\">");
+            if (config.InlineDiffLazyRender)
+            {
+                string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
+                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
+                sb.AppendLine(summaryLabel);
+                sb.AppendLine("    </details>");
+            }
+            else
+            {
+                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
+                sb.AppendLine(summaryLabel);
+                sb.Append(contentHtml);
+                sb.AppendLine("    </details>");
+            }
+            sb.AppendLine("  </td>");
+            sb.AppendLine("</tr>");
+        }
+
+        private static void AppendSummaryCountTable(StringBuilder sb, AssemblySemanticChangesSummary summary)
+        {
+            var counts = new Dictionary<(string TypeName, string Change), int>();
+            foreach (var e in summary.Entries)
+            {
+                var key = (e.TypeName, e.Change);
+                counts[key] = counts.TryGetValue(key, out int c) ? c + 1 : 1;
+            }
+
+            sb.AppendLine("<table class=\"semantic-changes-table sc-count\">");
+            sb.AppendLine("<colgroup>");
+            sb.AppendLine("  <col class=\"sc-cnt-class-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-change-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-count-g\">");
+            sb.AppendLine("</colgroup>");
+            sb.AppendLine("<thead><tr>");
+            sb.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-cnt-class-w\">Class</th>");
+            sb.AppendLine("  <th>Change</th><th>Count</th>");
+            sb.AppendLine("</tr></thead>");
+            sb.AppendLine("<tbody>");
+            string prevType = "";
+            foreach (var ((typeName, change), count) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => ChangeOrder(kv.Key.Change)))
+            {
+                bool isCont = typeName == prevType;
+                string classTd = !isCont ? HtmlEncode(typeName) : "";
+                prevType = typeName;
+                string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
+                sb.AppendLine($"{trOpen}<td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td>{count}</td></tr>");
+            }
+            sb.AppendLine("</tbody></table>");
+        }
+
+        private static int ChangeOrder(string change)
+            => change switch { "Added" => 0, "Removed" => 1, "Modified" => 2, _ => 3 };
 
         private void AppendSummarySection(StringBuilder sb, ConfigSettings config)
         {

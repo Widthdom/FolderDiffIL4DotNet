@@ -283,6 +283,7 @@ Why this matters:
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | Per-file decision tree | MD5 -> IL -> text -> fallback |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL compare flow, line filtering, optional IL dump writing | Enforces same disassembler identity |
+| [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | Method-level change detection via `System.Reflection.Metadata` | Best-effort; returns `null` on failure. Detects type/method/property/field additions and removals, and method body IL changes |
 | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | Tool probing, disassembly execution, cache hit/store tracking, blacklist handling | Central tool boundary; delegates prefetch to [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) |
 | [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL-cache prefetch (pre-hit verification for all candidate command/arg patterns) | Extracted from [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs); owns its own hit counter |
 | [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | Shared static helpers: command identification, candidate enumeration, executable path resolution | Used by both [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) and [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs); no instance state |
@@ -910,6 +911,7 @@ sequenceDiagram
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | ファイル単位の判定木 | `MD5 -> IL -> text -> fallback` |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL 比較、行除外、任意 IL 出力 | 同一逆アセンブラ制約を保証 |
+| [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | `System.Reflection.Metadata` によるメソッドレベル変更検出 | ベストエフォート；失敗時は `null` を返す。型・メソッド・プロパティ・フィールドの増減およびメソッド本体の IL 変更を検出 |
 | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | ツール探索、逆アセンブル実行、キャッシュヒット/ストア追跡、ブラックリスト | 外部ツール境界；プリフェッチは [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) へ委譲 |
 | [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL キャッシュのプリフェッチ（全候補コマンド×引数パターンの事前ヒット確認） | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) から分離；独自のヒットカウンタを保持 |
 | [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | 共有静的ヘルパー：コマンド判定・候補列挙・実行ファイルパス解決 | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) と [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) の両方が使用；インスタンス状態なし |
