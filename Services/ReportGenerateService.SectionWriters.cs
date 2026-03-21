@@ -80,7 +80,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_IGNORED} {REPORT_LABEL_IGNORED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|-----------|--------|--------------|");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var entry in ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
                 {
                     bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
@@ -114,7 +114,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_UNCHANGED} {REPORT_LABEL_UNCHANGED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|-----------|--------|--------------|");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var fileRelativePath in ctx.FileDiffResultLists.UnchangedFilesRelativePath)
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
@@ -141,7 +141,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_ADDED} {REPORT_LABEL_ADDED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|-----------|--------|--------------|");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var newFileAbsolutePath in ctx.FileDiffResultLists.AddedFilesAbsolutePath)
                 {
                     string tsCol = ctx.Config.ShouldOutputFileTimestamps
@@ -160,7 +160,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_REMOVED} {REPORT_LABEL_REMOVED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|-----------|--------|--------------|");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var oldFileAbsolutePath in ctx.FileDiffResultLists.RemovedFilesAbsolutePath)
                 {
                     string tsCol = ctx.Config.ShouldOutputFileTimestamps
@@ -179,7 +179,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_MODIFIED} {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|-----------|--------|--------------|");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var fileRelativePath in ctx.FileDiffResultLists.ModifiedFilesRelativePath)
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
@@ -338,7 +338,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
                 writer.WriteLine();
                 writer.WriteLine("| File Path | Timestamp |");
-                writer.WriteLine("|-----------|-----------|");
+                writer.WriteLine("|-----------|:---------:|");
                 foreach (var warning in ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
                 {

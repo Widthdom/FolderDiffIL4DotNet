@@ -999,6 +999,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("<code>InlineDiffMaxEditDistance</code>", html);
+            Assert.Contains("current value:", html);
         }
 
         // ── Req5: diff-row background / 差分行背景色 ─────────────────────────

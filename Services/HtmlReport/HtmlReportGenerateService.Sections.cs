@@ -138,7 +138,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, path));
                     string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, path));
-                    ts = oldTs != newTs ? $"[{oldTs}{TIMESTAMP_ARROW}{newTs}]" : $"[{newTs}]";
+                    ts = oldTs != newTs ? $"{oldTs}{TIMESTAMP_ARROW}{newTs}" : newTs;
                 }
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 string col6 = BuildDiffDetailDisplay(diffDetail);
@@ -161,7 +161,7 @@ namespace FolderDiffIL4DotNet.Services
             foreach (var absPath in items)
             {
                 string ts = config.ShouldOutputFileTimestamps
-                    ? $"[{Caching.TimestampCache.GetOrAdd(absPath)}]" : "";
+                    ? Caching.TimestampCache.GetOrAdd(absPath) : "";
                 AppendFileRow(sb, "add", idx, absPath, ts, "");
                 idx++;
             }
@@ -181,7 +181,7 @@ namespace FolderDiffIL4DotNet.Services
             foreach (var absPath in items)
             {
                 string ts = config.ShouldOutputFileTimestamps
-                    ? $"[{Caching.TimestampCache.GetOrAdd(absPath)}]" : "";
+                    ? Caching.TimestampCache.GetOrAdd(absPath) : "";
                 AppendFileRow(sb, "rem", idx, absPath, ts, "");
                 idx++;
             }
@@ -211,7 +211,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, path));
                     string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, path));
-                    ts = $"[{oldTs}{TIMESTAMP_ARROW}{newTs}]";
+                    ts = $"{oldTs}{TIMESTAMP_ARROW}{newTs}";
                 }
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
@@ -309,6 +309,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 string encoded = HtmlEncode(diffLines[0].Text)
                     .Replace("InlineDiffMaxEditDistance", "<code>InlineDiffMaxEditDistance</code>");
+                encoded += $" (current value: <code>{maxEditDistance}</code>)";
                 sb.AppendLine("<tr class=\"diff-row\">");
                 sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
                 sb.AppendLine("</tr>");
@@ -320,7 +321,7 @@ namespace FolderDiffIL4DotNet.Services
                 sb.AppendLine("<tr class=\"diff-row\">");
                 sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
                     $"({diffLines.Count} diff lines; limit is {maxDiffLines}). " +
-                    "Increase <code>InlineDiffMaxDiffLines</code> in config to enable.</p></td>");
+                    $"Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>{maxDiffLines}</code>)</p></td>");
                 sb.AppendLine("</tr>");
                 return;
             }
@@ -548,7 +549,7 @@ namespace FolderDiffIL4DotNet.Services
                 int idx = 0;
                 foreach (var w in warnings)
                 {
-                    string ts = $"[{HtmlEncode(w.OldTimestamp)}{TIMESTAMP_ARROW}{HtmlEncode(w.NewTimestamp)}]";
+                    string ts = $"{HtmlEncode(w.OldTimestamp)}{TIMESTAMP_ARROW}{HtmlEncode(w.NewTimestamp)}";
                     _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var diffDetail);
                     _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(w.FileRelativePath, out var asm);
                     string col6 = BuildDiffDetailDisplay(diffDetail);

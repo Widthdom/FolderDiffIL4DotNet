@@ -134,10 +134,10 @@ namespace FolderDiffIL4DotNet.Services
             {
                 string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolder, relPath));
                 string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolder, relPath));
-                return $"[{oldTs}{TIMESTAMP_ARROW}{newTs}]";
+                return $"{oldTs}{TIMESTAMP_ARROW}{newTs}";
             }
-            if (hasOld) return $"[{Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolder, relPath))}]";
-            if (hasNew) return $"[{Caching.TimestampCache.GetOrAdd(Path.Combine(newFolder, relPath))}]";
+            if (hasOld) return Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolder, relPath));
+            if (hasNew) return Caching.TimestampCache.GetOrAdd(Path.Combine(newFolder, relPath));
             return "";
         }
 

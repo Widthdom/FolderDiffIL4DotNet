@@ -112,12 +112,12 @@ namespace FolderDiffIL4DotNet.Services
     .btn-copy-path {
       display: inline-flex; align-items: center; justify-content: center;
       width: 1.4em; height: 1.4em; padding: 0; margin-left: 0.4em;
-      background: transparent; border: 1px solid #ccc; border-radius: 3px;
+      background: transparent; border: none; border-radius: 3px;
       cursor: pointer; font-size: 11px; vertical-align: middle;
-      transition: background 0.12s, border-color 0.12s; line-height: 1;
-      color: #999; flex-shrink: 0;
+      transition: background 0.12s; line-height: 1;
+      color: #bbb; flex-shrink: 0;
     }
-    .btn-copy-path:hover { background: #e8e8ed; border-color: #999; color: #333; }
+    .btn-copy-path:hover { background: #e8e8ed; color: #333; }
     .btn-copy-path svg { pointer-events: none; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
