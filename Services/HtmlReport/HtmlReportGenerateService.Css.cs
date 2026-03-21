@@ -100,6 +100,15 @@ namespace FolderDiffIL4DotNet.Services
     td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    /* ── Copy paths button ───────────────────────────────────────────────── */
+    .btn-copy-paths {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.6em; height: 1.6em; padding: 0; margin-left: 0.3em;
+      background: transparent; border: 1px solid #ccc; border-radius: 4px;
+      cursor: pointer; font-size: 11px; vertical-align: middle;
+      transition: background 0.12s, border-color 0.12s; line-height: 1;
+    }
+    .btn-copy-paths:hover { background: #e8e8ed; border-color: #999; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
     table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }

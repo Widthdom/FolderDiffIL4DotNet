@@ -34,7 +34,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <th class=\"col-cb\">&#x2713;</th>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-reason-w\">Justification</th>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-notes-w\">Notes</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">File Path</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">File Path <button class=\"btn-copy-paths\" onclick=\"copyColumnPaths(this)\" title=\"Copy all file paths\">&#x1F4CB;</button></th>");
             sb.AppendLine($"  <th>Timestamp</th>");
             sb.AppendLine($"  <th>{HtmlEncode(col6Header)}</th>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-disasm-w\">Disassembler</th>");

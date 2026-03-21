@@ -247,6 +247,22 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      initColResizeSingle(th);");
             sb.AppendLine("    });");
             sb.AppendLine("  }");
+            sb.AppendLine();
+            sb.AppendLine("  function copyColumnPaths(btn) {");
+            sb.AppendLine("    var table = btn.closest('table');");
+            sb.AppendLine("    if (!table) return;");
+            sb.AppendLine("    var paths = [];");
+            sb.AppendLine("    table.querySelectorAll('tbody td.col-path').forEach(function(td) {");
+            sb.AppendLine("      var text = td.textContent.trim();");
+            sb.AppendLine("      if (text) paths.push(text);");
+            sb.AppendLine("    });");
+            sb.AppendLine("    if (paths.length === 0) return;");
+            sb.AppendLine("    navigator.clipboard.writeText(paths.join('\\n')).then(function() {");
+            sb.AppendLine("      var orig = btn.textContent;");
+            sb.AppendLine("      btn.textContent = '\\u2713';");
+            sb.AppendLine("      setTimeout(function() { btn.textContent = orig; }, 1200);");
+            sb.AppendLine("    });");
+            sb.AppendLine("  }");
             sb.AppendLine("</script>");
         }
     }

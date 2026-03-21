@@ -98,6 +98,15 @@
     td.col-reason input[type="text"]:focus, td.col-notes input[type="text"]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    /* ── Copy paths button ───────────────────────────────────────────────── */
+    .btn-copy-paths {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.6em; height: 1.6em; padding: 0; margin-left: 0.3em;
+      background: transparent; border: 1px solid #ccc; border-radius: 4px;
+      cursor: pointer; font-size: 11px; vertical-align: middle;
+      transition: background 0.12s, border-color 0.12s; line-height: 1;
+    }
+    .btn-copy-paths:hover { background: #e8e8ed; border-color: #999; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
     table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }
@@ -223,7 +232,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
-  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
   <th>Timestamp</th>
   <th>Location</th>
   <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
@@ -279,7 +288,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
-  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
   <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
@@ -355,7 +364,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
-  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
   <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
@@ -391,7 +400,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
-  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
   <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
@@ -427,7 +436,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
-  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
   <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
@@ -639,7 +648,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
-  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
   <th>Timestamp</th>
   <th>Diff Reason</th>
   <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
@@ -906,6 +915,22 @@
   function initColResize() {
     document.querySelectorAll('th.th-resizable').forEach(function(th) {
       initColResizeSingle(th);
+    });
+  }
+
+  function copyColumnPaths(btn) {
+    var table = btn.closest('table');
+    if (!table) return;
+    var paths = [];
+    table.querySelectorAll('tbody td.col-path').forEach(function(td) {
+      var text = td.textContent.trim();
+      if (text) paths.push(text);
+    });
+    if (paths.length === 0) return;
+    navigator.clipboard.writeText(paths.join('\n')).then(function() {
+      var orig = btn.textContent;
+      btn.textContent = '\u2713';
+      setTimeout(function() { btn.textContent = orig; }, 1200);
     });
   }
 </script>
