@@ -919,6 +919,26 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("table.semantic-changes-table td.sc-col-cb", html);
         }
 
+        /// <summary>
+        /// Verifies the semantic changes table td cells have white background styling.
+        /// セマンティック変更テーブルの td セルに白背景スタイルが適用されていることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_TdHasWhiteBackground()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("sc-td-bg");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // td cells in the semantic-changes-table must have white background
+            // semantic-changes-table の td セルは白背景であること
+            Assert.Contains("background: #fff", html);
+        }
+
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()
         {
             IgnoredExtensions = new List<string>(),
