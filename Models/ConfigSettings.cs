@@ -34,6 +34,21 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed class ConfigSettings : IReadOnlyConfigSettings
     {
+        // Public default-value constants for numeric settings.
+        // 数値設定の既定値を公開定数として定義します。
+
+        public const int DefaultMaxLogGenerations = 5;
+        public const int DefaultTextDiffParallelThresholdKilobytes = 512;
+        public const int DefaultTextDiffChunkSizeKilobytes = 64;
+        public const int DefaultILCacheStatsLogIntervalSeconds = 60;
+        public const int DefaultILCacheMaxDiskFileCount = 1000;
+        public const int DefaultILCacheMaxDiskMegabytes = 512;
+        public const int DefaultILPrecomputeBatchSize = 2048;
+        public const int DefaultDisassemblerBlacklistTtlMinutes = 10;
+        public const int DefaultInlineDiffMaxEditDistance = 4000;
+        public const int DefaultInlineDiffMaxDiffLines = 10000;
+        public const int DefaultInlineDiffMaxOutputLines = 10000;
+
         private static readonly string[] DefaultIgnoredExtensionsValues =
         {
             ".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"
@@ -83,7 +98,7 @@ namespace FolderDiffIL4DotNet.Models
         /// Maximum number of log generations to retain.
         /// ログの最大世代数。
         /// </summary>
-        public int MaxLogGenerations { get; set; } = 5;
+        public int MaxLogGenerations { get; set; } = DefaultMaxLogGenerations;
 
         /// <summary>
         /// Whether to include unchanged files in the report.
@@ -173,13 +188,13 @@ namespace FolderDiffIL4DotNet.Models
         /// Size threshold (KiB) above which text diff switches to parallel chunk comparison. Default: 512.
         /// テキスト差分で並列チャンク比較へ切り替えるサイズ閾値（KiB）。既定値は 512。
         /// </summary>
-        public int TextDiffParallelThresholdKilobytes { get; set; } = 512;
+        public int TextDiffParallelThresholdKilobytes { get; set; } = DefaultTextDiffParallelThresholdKilobytes;
 
         /// <summary>
         /// Chunk size (KiB) used for parallel text diff comparison. Default: 64.
         /// テキスト差分の並列チャンク比較で使用するチャンクサイズ（KiB）。既定値は 64。
         /// </summary>
-        public int TextDiffChunkSizeKilobytes { get; set; } = 64;
+        public int TextDiffChunkSizeKilobytes { get; set; } = DefaultTextDiffChunkSizeKilobytes;
 
         /// <summary>
         /// Additional buffer budget (MB) allowed for parallel text diff chunk comparison.
@@ -217,19 +232,19 @@ namespace FolderDiffIL4DotNet.Models
         /// Interval (seconds) for IL cache statistics log output. 0 or less defaults to 60 seconds.
         /// IL キャッシュ統計ログの出力間隔（秒）。0 以下または未指定で 60 秒。
         /// </summary>
-        public int ILCacheStatsLogIntervalSeconds { get; set; } = 60;
+        public int ILCacheStatsLogIntervalSeconds { get; set; } = DefaultILCacheStatsLogIntervalSeconds;
 
         /// <summary>
         /// Maximum number of files in the on-disk IL cache (default: 1000, 0 or less = unlimited). Oldest-accessed files are evicted first when exceeded.
         /// ディスク IL キャッシュの最大ファイル数（既定: 1000、0 以下で無制限）。超過時は最終アクセスが最も古いものから削除。
         /// </summary>
-        public int ILCacheMaxDiskFileCount { get; set; } = 1000;
+        public int ILCacheMaxDiskFileCount { get; set; } = DefaultILCacheMaxDiskFileCount;
 
         /// <summary>
         /// Size limit (MB) for the on-disk IL cache (default: 512, 0 or less = unlimited). Oldest files are evicted until usage drops below the limit.
         /// ディスク IL キャッシュのサイズ上限（MB 単位、既定: 512、0 以下で無制限）。超過時はサイズが下回るまで古いものを削除。
         /// </summary>
-        public int ILCacheMaxDiskMegabytes { get; set; } = 512;
+        public int ILCacheMaxDiskMegabytes { get; set; } = DefaultILCacheMaxDiskMegabytes;
 
         /// <summary>
         /// Batch size for splitting IL-related precomputation. Default: 2048 (0 or less = use default).
@@ -237,7 +252,7 @@ namespace FolderDiffIL4DotNet.Models
         /// IL 関連の事前計算を分割実行するバッチサイズ。既定値は 2048、0 以下または未指定で既定値を使います。
         /// 大量ファイル時に old/new 全件の一時集約を避け、追加メモリ使用量を抑えます。
         /// </summary>
-        public int ILPrecomputeBatchSize { get; set; } = 2048;
+        public int ILPrecomputeBatchSize { get; set; } = DefaultILPrecomputeBatchSize;
 
         /// <summary>
         /// Whether to optimize for folder comparison on network shares (NAS/SMB, etc.).
@@ -267,7 +282,7 @@ namespace FolderDiffIL4DotNet.Models
         /// 連続失敗が閾値を超えたツールをこの期間スキップし、期間経過後に自動復旧します。
         /// 0 以下または未指定で既定値（10 分）を使用します。
         /// </summary>
-        public int DisassemblerBlacklistTtlMinutes { get; set; } = 10;
+        public int DisassemblerBlacklistTtlMinutes { get; set; } = DefaultDisassemblerBlacklistTtlMinutes;
 
         /// <summary>
         /// Whether to skip IL comparison for .NET assemblies.
@@ -306,7 +321,7 @@ namespace FolderDiffIL4DotNet.Models
         /// 0 以下にすると既定値（4000）を使用します。
         /// ファイルサイズに依らず差分が小さければインライン表示されます（Myers diff アルゴリズム使用）。
         /// </summary>
-        public int InlineDiffMaxEditDistance { get; set; } = 4000;
+        public int InlineDiffMaxEditDistance { get; set; } = DefaultInlineDiffMaxEditDistance;
 
         /// <summary>
         /// Maximum number of diff output lines (including hunk headers) after computation.
@@ -315,7 +330,7 @@ namespace FolderDiffIL4DotNet.Models
         /// インライン差分の表示をスキップします。既定値は 10000。
         /// 0 以下にすると既定値（10000）を使用します。
         /// </summary>
-        public int InlineDiffMaxDiffLines { get; set; } = 10000;
+        public int InlineDiffMaxDiffLines { get; set; } = DefaultInlineDiffMaxDiffLines;
 
         /// <summary>
         /// Maximum number of inline diff lines (including hunk headers) to render in the HTML report.
@@ -324,7 +339,7 @@ namespace FolderDiffIL4DotNet.Models
         /// 超過分は打ち切り表示になります。既定値は 10000。
         /// 0 以下にすると既定値（10000）を使用します。
         /// </summary>
-        public int InlineDiffMaxOutputLines { get; set; } = 10000;
+        public int InlineDiffMaxOutputLines { get; set; } = DefaultInlineDiffMaxOutputLines;
 
         /// <summary>
         /// Whether to lazy-render inline diffs in the HTML report.

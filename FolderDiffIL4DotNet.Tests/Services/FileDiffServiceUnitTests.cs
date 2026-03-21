@@ -363,8 +363,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 ShouldOutputILText = false,
                 EnableILCache = false,
                 OptimizeForNetworkShares = optimizeForNetworkShares,
-                TextDiffParallelThresholdKilobytes = 512,
-                TextDiffChunkSizeKilobytes = 64,
+                TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
+                TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffChunkSizeKilobytes,
                 TextDiffParallelMemoryLimitMegabytes = 0
             };
             configure?.Invoke(config);

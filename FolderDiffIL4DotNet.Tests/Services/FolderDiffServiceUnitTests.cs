@@ -610,8 +610,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
             using var progressReporter = new ProgressReportService(new ConfigSettings());
-            // ilPrecomputeBatchSize = 0 falls back to default (2048), so all 6 paths go in one batch
-            // ilPrecomputeBatchSize = 0 はデフォルト（2048）にフォールバックし、全 6 パスが 1 バッチに入る
+            // ilPrecomputeBatchSize = 0 falls back to default (DefaultILPrecomputeBatchSize), so all 6 paths go in one batch
+            // ilPrecomputeBatchSize = 0 はデフォルト（DefaultILPrecomputeBatchSize）にフォールバックし、全 6 パスが 1 バッチに入る
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 0),
                 progressReporter,
@@ -659,7 +659,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteFolderDiffAsync(cts.Token));
         }
 
-        private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = 2048) => new()
+        private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = ConfigSettings.DefaultILPrecomputeBatchSize) => new()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
             TextFileExtensions = new List<string> { ".txt" },

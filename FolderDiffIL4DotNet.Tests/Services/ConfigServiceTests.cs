@@ -128,7 +128,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.True(config.ShouldOutputFileTimestamps);
                 Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
                 Assert.True(config.EnableILCache);
-                Assert.Equal(60, config.ILCacheStatsLogIntervalSeconds);
+                Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);
                 Assert.True(config.AutoDetectNetworkShares);
                 Assert.Contains(".cs", config.TextFileExtensions);
                 Assert.Contains(".pdb", config.IgnoredExtensions);

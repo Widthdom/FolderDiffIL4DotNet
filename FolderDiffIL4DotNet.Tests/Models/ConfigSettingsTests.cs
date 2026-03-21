@@ -260,7 +260,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         public void Constructor_DisassemblerBlacklistTtlMinutes_DefaultIsTen()
         {
             var config = new ConfigSettings();
-            Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
+            Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
         }
 
         [Fact]
@@ -301,8 +301,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
         {
             var config = new ConfigSettings
             {
-                TextDiffChunkSizeKilobytes = 511,
-                TextDiffParallelThresholdKilobytes = 512,
+                TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes - 1,
+                TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
             };
             var result = config.Validate();
             Assert.True(result.IsValid);
@@ -315,8 +315,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
         {
             var config = new ConfigSettings
             {
-                TextDiffChunkSizeKilobytes = 512,
-                TextDiffParallelThresholdKilobytes = 512,
+                TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
+                TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
             };
             var result = config.Validate();
             Assert.False(result.IsValid);
@@ -386,7 +386,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         {
             Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
             Assert.Equal(ExpectedDefaultTextFileExtensions, config.TextFileExtensions);
-            Assert.Equal(5, config.MaxLogGenerations);
+            Assert.Equal(ConfigSettings.DefaultMaxLogGenerations, config.MaxLogGenerations);
             Assert.True(config.ShouldIncludeUnchangedFiles);
             Assert.True(config.ShouldIncludeIgnoredFiles);
             Assert.True(config.ShouldOutputILText);
@@ -396,25 +396,25 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.True(config.ShouldOutputFileTimestamps);
             Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
             Assert.Equal(0, config.MaxParallelism);
-            Assert.Equal(512, config.TextDiffParallelThresholdKilobytes);
-            Assert.Equal(64, config.TextDiffChunkSizeKilobytes);
+            Assert.Equal(ConfigSettings.DefaultTextDiffParallelThresholdKilobytes, config.TextDiffParallelThresholdKilobytes);
+            Assert.Equal(ConfigSettings.DefaultTextDiffChunkSizeKilobytes, config.TextDiffChunkSizeKilobytes);
             Assert.Equal(0, config.TextDiffParallelMemoryLimitMegabytes);
             Assert.True(config.EnableILCache);
             Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
-            Assert.Equal(60, config.ILCacheStatsLogIntervalSeconds);
-            Assert.Equal(1000, config.ILCacheMaxDiskFileCount);
-            Assert.Equal(512, config.ILCacheMaxDiskMegabytes);
-            Assert.Equal(2048, config.ILPrecomputeBatchSize);
+            Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);
+            Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskFileCount, config.ILCacheMaxDiskFileCount);
+            Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskMegabytes, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(ConfigSettings.DefaultILPrecomputeBatchSize, config.ILPrecomputeBatchSize);
             Assert.False(config.OptimizeForNetworkShares);
             Assert.True(config.AutoDetectNetworkShares);
             Assert.False(config.SkipIL);
             Assert.False(config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
-            Assert.Equal(10, config.DisassemblerBlacklistTtlMinutes);
+            Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
             Assert.True(config.EnableInlineDiff);
             Assert.Equal(0, config.InlineDiffContextLines);
-            Assert.Equal(10000, config.InlineDiffMaxDiffLines);
-            Assert.Equal(10000, config.InlineDiffMaxOutputLines);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffMaxDiffLines, config.InlineDiffMaxDiffLines);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffMaxOutputLines, config.InlineDiffMaxOutputLines);
         }
 
         /// <summary>
