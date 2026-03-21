@@ -36,9 +36,21 @@ namespace FolderDiffIL4DotNet.Services
                 if (!ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings) return;
 
                 var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
-                writer.WriteLine("- " + (ilIgnoreStrings.Count == 0
-                    ? NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY
-                    : $"Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored: {string.Join(REPORT_LIST_SEPARATOR, ilIgnoreStrings.Select(v => $"\"{v}\""))}."));
+                if (ilIgnoreStrings.Count == 0)
+                {
+                    writer.WriteLine("- " + NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY);
+                }
+                else
+                {
+                    writer.WriteLine($"- Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored:");
+                    writer.WriteLine();
+                    writer.WriteLine("| Ignored String |");
+                    writer.WriteLine("|----------------|");
+                    foreach (var v in ilIgnoreStrings)
+                    {
+                        writer.WriteLine($"| \"{v}\" |");
+                    }
+                }
             }
         }
 
@@ -113,7 +125,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.OldFolderAbsolutePath, fileRelativePath));
                         string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
-                        tsCol = oldTs != newTs ? $"[{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}]" : $"[{newTs}]";
+                        tsCol = oldTs != newTs ? $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}" : newTs;
                     }
                     writer.WriteLine($"| `{REPORT_MARKER_UNCHANGED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
@@ -133,7 +145,7 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var newFileAbsolutePath in ctx.FileDiffResultLists.AddedFilesAbsolutePath)
                 {
                     string tsCol = ctx.Config.ShouldOutputFileTimestamps
-                        ? $"[{Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)}]" : "";
+                        ? Caching.TimestampCache.GetOrAdd(newFileAbsolutePath) : "";
                     writer.WriteLine($"| `{REPORT_MARKER_ADDED}` | {newFileAbsolutePath} | {tsCol} | | |");
                 }
             }
@@ -152,7 +164,7 @@ namespace FolderDiffIL4DotNet.Services
                 foreach (var oldFileAbsolutePath in ctx.FileDiffResultLists.RemovedFilesAbsolutePath)
                 {
                     string tsCol = ctx.Config.ShouldOutputFileTimestamps
-                        ? $"[{Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)}]" : "";
+                        ? Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath) : "";
                     writer.WriteLine($"| `{REPORT_MARKER_REMOVED}` | {oldFileAbsolutePath} | {tsCol} | | |");
                 }
             }
@@ -178,7 +190,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.OldFolderAbsolutePath, fileRelativePath));
                         string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
-                        tsCol = $"[{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}]";
+                        tsCol = $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
                     }
                     writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
@@ -324,10 +336,13 @@ namespace FolderDiffIL4DotNet.Services
                 if (!ctx.HasTimestampRegressionWarning) return;
 
                 writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
+                writer.WriteLine();
+                writer.WriteLine("| File Path | Timestamp |");
+                writer.WriteLine("|-----------|-----------|");
                 foreach (var warning in ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
                 {
-                    writer.WriteLine($"  - {warning.FileRelativePath} [{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}]");
+                    writer.WriteLine($"| {warning.FileRelativePath} | {warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp} |");
                 }
             }
         }

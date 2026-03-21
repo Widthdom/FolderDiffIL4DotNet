@@ -18,8 +18,8 @@
     ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
     ul.meta ul li { margin-bottom: 1px; }
     /* ── Legend table ────────────────────────────────────────────────────── */
-    table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
-    table.legend-table td { padding: 2px 12px 2px 0; border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
+    table.legend-table { width: auto; max-width: 44em; margin: 4px 0 2px; border-collapse: collapse; }
+    table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
     table.legend-table td:first-child { white-space: nowrap; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
@@ -91,7 +91,8 @@
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
-    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    td.col-path { white-space: nowrap; overflow: hidden; display: flex; align-items: center; }
+    td.col-path .path-text { overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
     td.col-ts   { white-space: nowrap; text-align: center; }
     td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                   font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
@@ -105,15 +106,17 @@
     td.col-reason input[type="text"]:focus, td.col-notes input[type="text"]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
-    /* ── Copy paths button ───────────────────────────────────────────────── */
-    .btn-copy-paths {
+    /* ── Per-row copy path button ────────────────────────────────────────── */
+    .btn-copy-path {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 1.6em; height: 1.6em; padding: 0; margin-left: 0.3em;
-      background: transparent; border: 1px solid #ccc; border-radius: 4px;
+      width: 1.4em; height: 1.4em; padding: 0; margin-left: 0.4em;
+      background: transparent; border: 1px solid #ccc; border-radius: 3px;
       cursor: pointer; font-size: 11px; vertical-align: middle;
       transition: background 0.12s, border-color 0.12s; line-height: 1;
+      color: #999; flex-shrink: 0;
     }
-    .btn-copy-paths:hover { background: #e8e8ed; border-color: #999; }
+    .btn-copy-path:hover { background: #e8e8ed; border-color: #999; color: #333; }
+    .btn-copy-path svg { pointer-events: none; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
     table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }
@@ -211,7 +214,18 @@
   <li><span class="i18n" data-en="Elapsed Time" data-ja="処理時間">Elapsed Time</span>: 0h 0m 1.2s</li>
   <li><span class="i18n" data-en="Timestamps (timezone)" data-ja="タイムスタンプ (タイムゾーン)">Timestamps (timezone)</span>: +09:00</li>
   <li><span class="i18n" data-en="Note" data-ja="注">Note</span>: <span class="i18n" data-en="When diffing IL, lines starting with" data-ja="IL 差分比較時、">When diffing IL, lines starting with</span> <code>// MVID:</code> <span class="i18n" data-en="(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed." data-ja="（存在する場合）で始まる行は、リビルド時に変更されうる逆アセンブラ出力のモジュールバージョン ID メタデータを含むため無視されます。">(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</span></li>
-  <li><span class="i18n" data-en="Note" data-ja="注">Note</span>: <span class="i18n" data-en="When diffing IL, lines containing any of the configured strings are ignored:" data-ja="IL 差分比較時、設定された文字列を含む行は無視されます:">When diffing IL, lines containing any of the configured strings are ignored:</span> &quot;buildserver1_&quot;, &quot;buildserver2_&quot;, &quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;, &quot;.publickeytoken = ( &quot;, &quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;, &quot;// Code size &quot;.</li>
+  <li><span class="i18n" data-en="Note" data-ja="注">Note</span>: <span class="i18n" data-en="When diffing IL, lines containing any of the configured strings are ignored:" data-ja="IL 差分比較時、設定された文字列を含む行は無視されます:">When diffing IL, lines containing any of the configured strings are ignored:</span>
+    <table class="legend-table">
+      <tbody>
+        <tr><td>&quot;buildserver1_&quot;</td></tr>
+        <tr><td>&quot;buildserver2_&quot;</td></tr>
+        <tr><td>&quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;</td></tr>
+        <tr><td>&quot;.publickeytoken = ( &quot;</td></tr>
+        <tr><td>&quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;</td></tr>
+        <tr><td>&quot;// Code size &quot;</td></tr>
+      </tbody>
+    </table>
+  </li>
   <li><span class="i18n" data-en="Note" data-ja="注">Note</span>: <span class="i18n" data-en="Inline diffs for ILMismatch and TextMismatch are computed using the" data-ja="ILMismatch および TextMismatch のインライン差分は以下のアルゴリズムで計算されます:">Inline diffs for ILMismatch and TextMismatch are computed using the</span> <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>
   <li><span class="i18n" data-en="Legend" data-ja="凡例">Legend</span>:
     <table class="legend-table">
@@ -241,7 +255,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
   <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span> <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
+  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
   <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
   <th><span class="i18n" data-en="Location" data-ja="場所">Location</span></th>
   <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
@@ -252,7 +266,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_ign_0"></td>
   <td class="col-reason"><input type="text" id="reason_ign_0"></td>
   <td class="col-notes"><input type="text" id="notes_ign_0"></td>
-  <td class="col-path">/Users/UserA/workspace/old/logs/debug.log</td>
+  <td class="col-path"><span class="path-text">/Users/UserA/workspace/old/logs/debug.log</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:50:00]</td>
   <td class="col-diff"><code>old</code></td>
   <td class="col-disasm"></td>
@@ -262,7 +276,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_ign_1"></td>
   <td class="col-reason"><input type="text" id="reason_ign_1"></td>
   <td class="col-notes"><input type="text" id="notes_ign_1"></td>
-  <td class="col-path">/Users/UserA/workspace/new/obj/build.cache</td>
+  <td class="col-path"><span class="path-text">/Users/UserA/workspace/new/obj/build.cache</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 09:05:00]</td>
   <td class="col-diff"><code>new</code></td>
   <td class="col-disasm"></td>
@@ -272,7 +286,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_ign_2"></td>
   <td class="col-reason"><input type="text" id="reason_ign_2"></td>
   <td class="col-notes"><input type="text" id="notes_ign_2"></td>
-  <td class="col-path">bin/App.pdb</td>
+  <td class="col-path"><span class="path-text">bin/App.pdb</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00]</td>
   <td class="col-diff"><code>old/new</code></td>
   <td class="col-disasm"></td>
@@ -297,7 +311,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
   <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span> <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
+  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
   <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
   <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
   <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
@@ -308,7 +322,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_0"></td>
   <td class="col-reason"><input type="text" id="reason_unch_0"></td>
   <td class="col-notes"><input type="text" id="notes_unch_0"></td>
-  <td class="col-path">appsettings.json</td>
+  <td class="col-path"><span class="path-text">appsettings.json</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>TextMatch</code></td>
   <td class="col-disasm"></td>
@@ -318,7 +332,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_1"></td>
   <td class="col-reason"><input type="text" id="reason_unch_1"></td>
   <td class="col-notes"><input type="text" id="notes_unch_1"></td>
-  <td class="col-path">data/schema.bin</td>
+  <td class="col-path"><span class="path-text">data/schema.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:30:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>MD5Match</code></td>
   <td class="col-disasm"></td>
@@ -328,7 +342,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_2"></td>
   <td class="col-reason"><input type="text" id="reason_unch_2"></td>
   <td class="col-notes"><input type="text" id="notes_unch_2"></td>
-  <td class="col-path">docs/notes.md</td>
+  <td class="col-path"><span class="path-text">docs/notes.md</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:00:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>TextMatch</code></td>
   <td class="col-disasm"></td>
@@ -338,7 +352,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_3"></td>
   <td class="col-reason"><input type="text" id="reason_unch_3"></td>
   <td class="col-notes"><input type="text" id="notes_unch_3"></td>
-  <td class="col-path">util/Helper.dll</td>
+  <td class="col-path"><span class="path-text">util/Helper.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
   <td class="col-diff"><code>ILMatch</code></td>
   <td class="col-disasm"></td>
@@ -348,7 +362,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_4"></td>
   <td class="col-reason"><input type="text" id="reason_unch_4"></td>
   <td class="col-notes"><input type="text" id="notes_unch_4"></td>
-  <td class="col-path">vendor/lib.dll</td>
+  <td class="col-path"><span class="path-text">vendor/lib.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>MD5Match</code></td>
   <td class="col-disasm"></td>
@@ -373,7 +387,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
   <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span> <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
+  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
   <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
   <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
   <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
@@ -384,7 +398,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_add_0"></td>
   <td class="col-reason"><input type="text" id="reason_add_0"></td>
   <td class="col-notes"><input type="text" id="notes_add_0"></td>
-  <td class="col-path">/Users/UserA/workspace/new/docs/guide.md</td>
+  <td class="col-path"><span class="path-text">/Users/UserA/workspace/new/docs/guide.md</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 09:01:00]</td>
   <td class="col-diff"></td>
   <td class="col-disasm"></td>
@@ -409,7 +423,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
   <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span> <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
+  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
   <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
   <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
   <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
@@ -420,7 +434,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_rem_0"></td>
   <td class="col-reason"><input type="text" id="reason_rem_0"></td>
   <td class="col-notes"><input type="text" id="notes_rem_0"></td>
-  <td class="col-path">/Users/UserA/workspace/old/legacy/old-tool.txt</td>
+  <td class="col-path"><span class="path-text">/Users/UserA/workspace/old/legacy/old-tool.txt</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:55:00]</td>
   <td class="col-diff"></td>
   <td class="col-disasm"></td>
@@ -445,7 +459,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
   <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span> <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
+  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
   <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
   <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
   <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
@@ -456,7 +470,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
   <td class="col-reason"><input type="text" id="reason_mod_0"></td>
   <td class="col-notes"><input type="text" id="notes_mod_0"></td>
-  <td class="col-path">config/app.config</td>
+  <td class="col-path"><span class="path-text">config/app.config</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:56:00 &#x2192; 2026-03-15 09:01:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
@@ -473,7 +487,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
   <td class="col-reason"><input type="text" id="reason_mod_1"></td>
   <td class="col-notes"><input type="text" id="notes_mod_1"></td>
-  <td class="col-path">payload.bin</td>
+  <td class="col-path"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00]</td>
   <td class="col-diff"><code>MD5Mismatch</code></td>
   <td class="col-disasm"></td>
@@ -483,7 +497,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_2"></td>
   <td class="col-reason"><input type="text" id="reason_mod_2"></td>
   <td class="col-notes"><input type="text" id="notes_mod_2"></td>
-  <td class="col-path">src/App.dll</td>
+  <td class="col-path"><span class="path-text">src/App.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
   <td class="col-diff"><code>ILMismatch</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -507,7 +521,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_3"></td>
   <td class="col-reason"><input type="text" id="reason_mod_3"></td>
   <td class="col-notes"><input type="text" id="notes_mod_3"></td>
-  <td class="col-path">src/Main.cs</td>
+  <td class="col-path"><span class="path-text">src/Main.cs</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
@@ -524,7 +538,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_4"></td>
   <td class="col-reason"><input type="text" id="reason_mod_4"></td>
   <td class="col-notes"><input type="text" id="notes_mod_4"></td>
-  <td class="col-path">src/Service.dll</td>
+  <td class="col-path"><span class="path-text">src/Service.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>ILMismatch</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -548,7 +562,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_5"></td>
   <td class="col-reason"><input type="text" id="reason_mod_5"></td>
   <td class="col-notes"><input type="text" id="notes_mod_5"></td>
-  <td class="col-path">src/Utils.cs</td>
+  <td class="col-path"><span class="path-text">src/Utils.cs</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
@@ -565,7 +579,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_6"></td>
   <td class="col-reason"><input type="text" id="reason_mod_6"></td>
   <td class="col-notes"><input type="text" id="notes_mod_6"></td>
-  <td class="col-path">src/BigSchema.cs</td>
+  <td class="col-path"><span class="path-text">src/BigSchema.cs</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:55:00 &#x2192; 2026-03-15 09:04:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
@@ -578,7 +592,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_7"></td>
   <td class="col-reason"><input type="text" id="reason_mod_7"></td>
   <td class="col-notes"><input type="text" id="notes_mod_7"></td>
-  <td class="col-path">src/LargeConfig.xml</td>
+  <td class="col-path"><span class="path-text">src/LargeConfig.xml</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:54:00 &#x2192; 2026-03-15 09:05:00]</td>
   <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
@@ -591,7 +605,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_8"></td>
   <td class="col-reason"><input type="text" id="reason_mod_8"></td>
   <td class="col-notes"><input type="text" id="notes_mod_8"></td>
-  <td class="col-path">util/Legacy.dll</td>
+  <td class="col-path"><span class="path-text">util/Legacy.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:50:00 &#x2192; 2026-03-15 09:01:00]</td>
   <td class="col-diff"><code>ILMismatch</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -657,7 +671,7 @@
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
   <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span> <button class="btn-copy-paths" onclick="copyColumnPaths(this)" title="Copy all file paths">&#x1F4CB;</button></th>
+  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
   <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
   <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
   <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
@@ -668,7 +682,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_tsw_0"></td>
   <td class="col-reason"><input type="text" id="reason_tsw_0"></td>
   <td class="col-notes"><input type="text" id="notes_tsw_0"></td>
-  <td class="col-path">payload.bin</td>
+  <td class="col-path"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00]</td>
   <td class="col-diff"><code>MD5Mismatch</code></td>
   <td class="col-disasm"></td>
@@ -678,7 +692,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_tsw_1"></td>
   <td class="col-reason"><input type="text" id="reason_tsw_1"></td>
   <td class="col-notes"><input type="text" id="notes_tsw_1"></td>
-  <td class="col-path">src/Service.dll</td>
+  <td class="col-path"><span class="path-text">src/Service.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
   <td class="col-ts">[2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00]</td>
   <td class="col-diff"><code>ILMismatch</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
@@ -959,19 +973,18 @@
     setLang(__currentLang__ === 'en' ? 'ja' : 'en');
   }
 
-  function copyColumnPaths(btn) {
-    var table = btn.closest('table');
-    if (!table) return;
-    var paths = [];
-    table.querySelectorAll('tbody td.col-path').forEach(function(td) {
-      var text = td.textContent.trim();
-      if (text) paths.push(text);
-    });
-    if (paths.length === 0) return;
-    navigator.clipboard.writeText(paths.join('\n')).then(function() {
-      var orig = btn.textContent;
-      btn.textContent = '\u2713';
-      setTimeout(function() { btn.textContent = orig; }, 1200);
+  function copyPath(btn) {
+    var td = btn.closest('td');
+    if (!td) return;
+    var span = td.querySelector('.path-text');
+    var text = span ? span.textContent.trim() : td.textContent.trim();
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(function() {
+      var svg = btn.querySelector('svg');
+      if (svg) { svg.style.display='none'; btn.textContent='\u2713'; }
+      setTimeout(function() {
+        if (svg) { btn.textContent=''; btn.appendChild(svg); svg.style.display=''; }
+      }, 1200);
     });
   }
 </script>

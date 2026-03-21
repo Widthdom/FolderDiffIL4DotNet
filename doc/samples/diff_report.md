@@ -9,7 +9,16 @@
 - Elapsed Time: 0h 0m 1.2s
 - Timestamps (timezone): +09:00
 - Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
-- Note: When diffing IL, lines containing any of the configured strings are ignored: "buildserver1_", "buildserver2_", "// Method begins at Relative Virtual Address (RVA) 0x", ".publickeytoken = ( ", ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ", "// Code size ".
+- Note: When diffing IL, lines containing any of the configured strings are ignored:
+
+| Ignored String |
+|----------------|
+| "buildserver1_" |
+| "buildserver2_" |
+| "// Method begins at Relative Virtual Address (RVA) 0x" |
+| ".publickeytoken = ( " |
+| ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( " |
+| "// Code size " |
 - Legend:
 
 | Label | Description |
@@ -22,45 +31,45 @@
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|-----------|--------|--------------|
-| `[ x ]` | /Users/UserA/workspace/old/logs/debug.log (old) | [2026-03-15 08:50:00] | | |
-| `[ x ]` | /Users/UserA/workspace/new/obj/build.cache (new) | [2026-03-15 09:05:00] | | |
-| `[ x ]` | bin/App.pdb (old/new) | [2026-03-15 08:57:00 → 2026-03-15 09:03:00] | | |
+| `[ x ]` | /Users/UserA/workspace/old/logs/debug.log (old) | 2026-03-15 08:50:00 | | |
+| `[ x ]` | /Users/UserA/workspace/new/obj/build.cache (new) | 2026-03-15 09:05:00 | | |
+| `[ x ]` | bin/App.pdb (old/new) | 2026-03-15 08:57:00 → 2026-03-15 09:03:00 | | |
 
 ## [ = ] Unchanged Files (5)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|-----------|--------|--------------|
-| `[ = ]` | appsettings.json | [2026-03-15 09:00:00] | `TextMatch` | |
-| `[ = ]` | data/schema.bin | [2026-03-15 08:30:00 → 2026-03-15 09:00:00] | `MD5Match` | |
-| `[ = ]` | docs/notes.md | [2026-03-15 08:00:00 → 2026-03-15 09:00:00] | `TextMatch` | |
-| `[ = ]` | util/Helper.dll | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `ILMatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ = ]` | vendor/lib.dll | [2026-03-15 09:00:00] | `MD5Match` | |
+| `[ = ]` | appsettings.json | 2026-03-15 09:00:00 | `TextMatch` | |
+| `[ = ]` | data/schema.bin | 2026-03-15 08:30:00 → 2026-03-15 09:00:00 | `MD5Match` | |
+| `[ = ]` | docs/notes.md | 2026-03-15 08:00:00 → 2026-03-15 09:00:00 | `TextMatch` | |
+| `[ = ]` | util/Helper.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMatch` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ = ]` | vendor/lib.dll | 2026-03-15 09:00:00 | `MD5Match` | |
 
 ## [ + ] Added Files (1)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|-----------|--------|--------------|
-| `[ + ]` | /Users/UserA/workspace/new/docs/guide.md | [2026-03-15 09:01:00] | | |
+| `[ + ]` | /Users/UserA/workspace/new/docs/guide.md | 2026-03-15 09:01:00 | | |
 
 ## [ - ] Removed Files (1)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|-----------|--------|--------------|
-| `[ - ]` | /Users/UserA/workspace/old/legacy/old-tool.txt | [2026-03-15 08:55:00] | | |
+| `[ - ]` | /Users/UserA/workspace/old/legacy/old-tool.txt | 2026-03-15 08:55:00 | | |
 
 ## [ * ] Modified Files (9)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|-----------|--------|--------------|
-| `[ * ]` | config/app.config | [2026-03-15 08:56:00 → 2026-03-15 09:01:00] | `TextMismatch` | |
-| `[ * ]` | payload.bin | [2026-03-15 08:59:00 → 2026-03-15 08:54:00] | `MD5Mismatch` | |
-| `[ * ]` | src/App.dll | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | src/Main.cs | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `TextMismatch` | |
-| `[ * ]` | src/Service.dll | [2026-03-15 09:05:00 → 2026-03-15 09:00:00] | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | src/Utils.cs | [2026-03-15 08:57:00 → 2026-03-15 09:03:00] | `TextMismatch` | |
-| `[ * ]` | src/BigSchema.cs | [2026-03-15 08:55:00 → 2026-03-15 09:04:00] | `TextMismatch` | |
-| `[ * ]` | src/LargeConfig.xml | [2026-03-15 08:54:00 → 2026-03-15 09:05:00] | `TextMismatch` | |
-| `[ * ]` | util/Legacy.dll | [2026-03-15 08:50:00 → 2026-03-15 09:01:00] | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ * ]` | config/app.config | 2026-03-15 08:56:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
+| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `MD5Mismatch` | |
+| `[ * ]` | src/App.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ * ]` | src/Main.cs | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `TextMismatch` | |
+| `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ * ]` | src/Utils.cs | 2026-03-15 08:57:00 → 2026-03-15 09:03:00 | `TextMismatch` | |
+| `[ * ]` | src/BigSchema.cs | 2026-03-15 08:55:00 → 2026-03-15 09:04:00 | `TextMismatch` | |
+| `[ * ]` | src/LargeConfig.xml | 2026-03-15 08:54:00 → 2026-03-15 09:05:00 | `TextMismatch` | |
+| `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 
 ## Summary
 
@@ -180,6 +189,9 @@
 
 ## Warnings
 - **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
-- **WARNING:** One or more files in `new` have older last-modified timestamps than the corresponding files in `old`.
-  - payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00]
-  - src/Service.dll [2026-03-15 09:05:00 → 2026-03-15 09:00:00]
+- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.
+
+| File Path | Timestamp |
+|-----------|-----------|
+| payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 |
+| src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 |

@@ -1022,7 +1022,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         // ── Req7: Copy paths button / コピーボタン ──────────────────────────────
 
         [Fact]
-        public void GenerateDiffReportHtml_FilePathHeader_HasCopyButton()
+        public void GenerateDiffReportHtml_FilePathRow_HasCopyButton()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("copy-btn");
 
@@ -1035,8 +1035,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("btn-copy-paths", html);
-            Assert.Contains("copyColumnPaths", html);
+            Assert.Contains("btn-copy-path", html);
+            Assert.Contains("copyPath", html);
+            Assert.Contains("path-text", html);
         }
 
         // ── Req8: Row hover highlight / 行ホバーハイライト ──────────────────────

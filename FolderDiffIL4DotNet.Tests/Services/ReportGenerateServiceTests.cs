@@ -179,9 +179,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("lines containing any of the configured strings are ignored", reportText);
-            Assert.Contains("\"buildserver\"", reportText);
-            Assert.Contains("\"buildPath\"", reportText);
+            Assert.Contains("lines containing any of the configured strings are ignored:", reportText);
+            Assert.Contains("| Ignored String |", reportText);
+            Assert.Contains("| \"buildserver\" |", reportText);
+            Assert.Contains("| \"buildPath\" |", reportText);
         }
 
         [Fact]
@@ -402,9 +403,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("## Warnings", reportText);
             Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
             Assert.Contains("- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
-            Assert.Contains("  - nested", reportText);
-            Assert.Contains("[2026-03-14 10:00:00 → 2026-03-14 09:00:00]", reportText);
-            Assert.EndsWith("[2026-03-14 10:00:00 → 2026-03-14 09:00:00]", reportText.TrimEnd());
+            Assert.Contains("| File Path | Timestamp |", reportText);
+            Assert.Contains("|-----------|-----------|", reportText);
+            Assert.Contains("| nested", reportText);
+            Assert.Contains("2026-03-14 10:00:00 → 2026-03-14 09:00:00", reportText);
+            Assert.EndsWith("2026-03-14 10:00:00 → 2026-03-14 09:00:00 |", reportText.TrimEnd());
             Assert.True(
                 reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal) <
                 reportText.IndexOf("**modified** files in `new` have older last-modified timestamps", StringComparison.Ordinal));

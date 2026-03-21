@@ -20,8 +20,8 @@ namespace FolderDiffIL4DotNet.Services
     ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
     ul.meta ul li { margin-bottom: 1px; }
     /* ── Legend table ────────────────────────────────────────────────────── */
-    table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
-    table.legend-table td { padding: 2px 12px 2px 0; border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
+    table.legend-table { width: auto; max-width: 44em; margin: 4px 0 2px; border-collapse: collapse; }
+    table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
     table.legend-table td:first-child { white-space: nowrap; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
@@ -93,7 +93,8 @@ namespace FolderDiffIL4DotNet.Services
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
-    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    td.col-path { white-space: nowrap; overflow: hidden; display: flex; align-items: center; }
+    td.col-path .path-text { overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
     td.col-ts    { white-space: nowrap; text-align: center; }
     td.col-diff  { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                    font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
@@ -107,15 +108,17 @@ namespace FolderDiffIL4DotNet.Services
     td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
-    /* ── Copy paths button ───────────────────────────────────────────────── */
-    .btn-copy-paths {
+    /* ── Per-row copy path button ────────────────────────────────────────── */
+    .btn-copy-path {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 1.6em; height: 1.6em; padding: 0; margin-left: 0.3em;
-      background: transparent; border: 1px solid #ccc; border-radius: 4px;
+      width: 1.4em; height: 1.4em; padding: 0; margin-left: 0.4em;
+      background: transparent; border: 1px solid #ccc; border-radius: 3px;
       cursor: pointer; font-size: 11px; vertical-align: middle;
       transition: background 0.12s, border-color 0.12s; line-height: 1;
+      color: #999; flex-shrink: 0;
     }
-    .btn-copy-paths:hover { background: #e8e8ed; border-color: #999; }
+    .btn-copy-path:hover { background: #e8e8ed; border-color: #999; color: #333; }
+    .btn-copy-path svg { pointer-events: none; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
     table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }

@@ -52,8 +52,16 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 else
                 {
-                    var plainItems = string.Join(", ", ilIgnoreStrings.Select(s => HtmlEncode($"\"{s}\"")));
-                    sb.AppendLine($"  <li>{I18n("Note", "注")}: {I18n("When diffing IL, lines containing any of the configured strings are ignored:", "IL 差分比較時、設定された文字列を含む行は無視されます:")} {plainItems}.</li>");
+                    sb.AppendLine($"  <li>{I18n("Note", "注")}: {I18n("When diffing IL, lines containing any of the configured strings are ignored:", "IL 差分比較時、設定された文字列を含む行は無視されます:")}");
+                    sb.AppendLine("    <table class=\"legend-table\">");
+                    sb.AppendLine("      <tbody>");
+                    foreach (var s in ilIgnoreStrings)
+                    {
+                        sb.AppendLine($"        <tr><td>{HtmlEncode($"\"{s}\"")}</td></tr>");
+                    }
+                    sb.AppendLine("      </tbody>");
+                    sb.AppendLine("    </table>");
+                    sb.AppendLine("  </li>");
                 }
             }
 

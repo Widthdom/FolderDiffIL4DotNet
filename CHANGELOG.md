@@ -39,9 +39,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Myers Diff citation** — Bolded the volume number "1" after "Algorithmica" (`<b>1</b>(2)` / `**1**(2)`) across all Markdown and HTML report files.
 
-- **Clipboard copy button** — Added a clipboard copy button (📋) to the File Path column header in HTML report tables. The `copyColumnPaths(btn)` function collects all `td.col-path` text from the parent table and copies to clipboard.
+- **Clipboard copy button** — Added a per-row clipboard copy button (two overlapping squares icon) to each File Path cell in HTML report tables. The `copyPath(btn)` function copies the individual file path to clipboard with a checkmark feedback animation. Replaced the previous column-header-level copy button.
 
 - **Row hover highlight** — Added light purple hover highlight (`#f3eef8`) to file table rows (`tbody tr:not(.diff-row):hover`) and semantic changes table rows (`table.semantic-changes-table tbody tr:hover td`).
+
+- **Legend table width** — Constrained the Legend table width in HTML report (`max-width: 44em`) to prevent it from stretching too wide since its content is fixed text.
+
+- **IL ignore strings table** — Converted the IL line-ignore-by-contains strings from an inline comma-separated list to a table format in both Markdown (`| Ignored String |`) and HTML (`<table class="legend-table">`), with one string per row for better readability.
+
+- **Timestamp brackets removed** — Removed the `[` and `]` brackets from Timestamp column values in Markdown report tables, since brackets are unnecessary when timestamps are already in table cells.
 
 ### [1.4.1] - 2026-03-20
 
@@ -429,9 +435,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Myers Diff 引用** — すべての Markdown および HTML レポートファイルで "Algorithmica" の後の巻番号 "1" を太字化（`<b>1</b>(2)` / `**1**(2)`）。
 
-- **クリップボードコピーボタン** — HTML レポートテーブルの File Path 列ヘッダにクリップボードコピーボタン（📋）を追加。`copyColumnPaths(btn)` 関数が親テーブルの `td.col-path` テキストを収集してクリップボードにコピー。
+- **クリップボードコピーボタン** — HTML レポートテーブルの各 File Path セルに行単位のクリップボードコピーボタン（重なった四角アイコン）を追加。`copyPath(btn)` 関数が個別のファイルパスをクリップボードにコピーし、チェックマークのフィードバックアニメーションを表示。従来の列ヘッダレベルのコピーボタンを置き換え。
 
 - **行ホバーハイライト** — ファイルテーブル行（`tbody tr:not(.diff-row):hover`）およびセマンティック変更テーブル行（`table.semantic-changes-table tbody tr:hover td`）にライトパープルのホバーハイライト（`#f3eef8`）を追加。
+
+- **凡例テーブル幅** — HTML レポートの凡例テーブルの幅を制限（`max-width: 44em`）。内容が固定テキストのため、過度に横に伸びることを防止。
+
+- **IL 無視文字列テーブル** — IL 行含有文字列無視のリストを、インラインのカンマ区切りリストから Markdown（`| Ignored String |`）および HTML（`<table class="legend-table">`）の両方でテーブル形式に変換。1行1文字列で可読性を向上。
+
+- **タイムスタンプ括弧削除** — Markdown レポートテーブルの Timestamp 列値から `[` と `]` の括弧を削除。テーブルセル内では括弧は不要なため。
 
 ### [1.4.1] - 2026-03-20
 
