@@ -139,7 +139,7 @@ namespace FolderDiffIL4DotNet.Services
     /* ── Assembly semantic changes ─────────────────────────────────────── */
     .semantic-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
     .semantic-changes p { margin: 4px 0 2px; }
-    table.semantic-changes-table { border-collapse: collapse; margin: 4px 0; font-size: 12px; table-layout: auto; }
+    table.semantic-changes-table { border-collapse: collapse; margin: 4px 0; font-size: 12px; table-layout: fixed; }
     table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #bbb; background: #98989d; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
     table.semantic-changes-table th.th-resizable { position: relative; }
     table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
