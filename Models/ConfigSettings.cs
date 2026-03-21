@@ -241,10 +241,10 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>
         /// Whether to optimize for folder comparison on network shares (NAS/SMB, etc.).
-        /// When true, skips MD5 pre-warming / IL cache pre-read and throttles default parallelism
+        /// When true, skips SHA256 pre-warming / IL cache pre-read and throttles default parallelism
         /// to avoid excessive network I/O.
         /// ネットワーク共有（NAS/SMB など）上のフォルダ比較に最適化するかどうか。
-        /// true の場合、事前MD5プリウォーム/ILキャッシュ先読みをスキップし、
+        /// true の場合、事前SHA256プリウォーム/ILキャッシュ先読みをスキップし、
         /// 既定の並列度を抑制するなど、ネットワークI/O過多を避ける挙動になります。
         /// </summary>
         public bool OptimizeForNetworkShares { get; set; }
@@ -272,11 +272,11 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>
         /// Whether to skip IL comparison for .NET assemblies.
         /// When true, IL disassembly and IL diff comparison are omitted;
-        /// assemblies with MD5 mismatches are treated as binary differences.
+        /// assemblies with SHA256 mismatches are treated as binary differences.
         /// Can also be set via the CLI option --skip-il.
         /// .NET アセンブリの IL 比較をスキップするかどうか。
         /// true の場合、.NET アセンブリの IL 逆アセンブルおよび IL 差分比較を省略し、
-        /// MD5 不一致のアセンブリはそのままバイナリ差分として扱います。
+        /// SHA256 不一致のアセンブリはそのままバイナリ差分として扱います。
         /// CLI オプション --skip-il でも設定できます。
         /// </summary>
         public bool SkipIL { get; set; }

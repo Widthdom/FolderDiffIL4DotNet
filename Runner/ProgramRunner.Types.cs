@@ -6,7 +6,7 @@ namespace FolderDiffIL4DotNet
     {
         private sealed record RunArguments(string OldFolderAbsolutePath, string NewFolderAbsolutePath, string ReportsFolderAbsolutePath);
 
-        private sealed record RunCompletionState(bool HasMd5MismatchWarnings, bool HasTimestampRegressionWarnings);
+        private sealed record RunCompletionState(bool HasSha256MismatchWarnings, bool HasTimestampRegressionWarnings);
 
         /// <summary>
         /// Defines the public exit codes for the console application.
@@ -49,7 +49,7 @@ namespace FolderDiffIL4DotNet
             private static readonly RunCompletionState _noWarnings = new(false, false);
 
             public ProgramExitCode ExitCode { get; }
-            public bool HasMd5MismatchWarnings { get; }
+            public bool HasSha256MismatchWarnings { get; }
             public bool HasTimestampRegressionWarnings { get; }
 
             public static ProgramRunResult Success(RunCompletionState completionState)
@@ -61,7 +61,7 @@ namespace FolderDiffIL4DotNet
             private ProgramRunResult(ProgramExitCode exitCode, RunCompletionState completionState)
             {
                 ExitCode = exitCode;
-                HasMd5MismatchWarnings = completionState.HasMd5MismatchWarnings;
+                HasSha256MismatchWarnings = completionState.HasSha256MismatchWarnings;
                 HasTimestampRegressionWarnings = completionState.HasTimestampRegressionWarnings;
             }
         }

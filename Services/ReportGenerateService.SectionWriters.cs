@@ -63,7 +63,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine();
                 writer.WriteLine("| Label | Description |");
                 writer.WriteLine("|-------|-------------|");
-                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}` | MD5 hash match / mismatch |");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.SHA256Match}` / `{FileDiffResultLists.DiffDetailResult.SHA256Mismatch}` | SHA256 hash match / mismatch |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}` | IL(Intermediate Language) match / mismatch |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}` | Text match / mismatch |");
             }
@@ -253,33 +253,33 @@ namespace FolderDiffIL4DotNet.Services
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                if (!ctx.HasMd5Mismatch && !ctx.HasTimestampRegressionWarning) return;
+                if (!ctx.HasSha256Mismatch && !ctx.HasTimestampRegressionWarning) return;
 
                 writer.WriteLine(REPORT_SECTION_WARNINGS);
-                if (ctx.HasMd5Mismatch)
+                if (ctx.HasSha256Mismatch)
                 {
-                    writer.WriteLine($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}");
+                    writer.WriteLine($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}");
                 }
                 if (ctx.HasTimestampRegressionWarning)
                 {
                     writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
                 }
 
-                // MD5Mismatch detail table
-                if (ctx.HasMd5Mismatch)
+                // SHA256Mismatch detail table
+                if (ctx.HasSha256Mismatch)
                 {
-                    var md5Files = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary
-                        .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.MD5Mismatch)
+                    var sha256Files = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary
+                        .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                         .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                         .ToList();
-                    if (md5Files.Count > 0)
+                    if (sha256Files.Count > 0)
                     {
                         writer.WriteLine();
-                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — MD5Mismatch (Manual Review Recommended) ({md5Files.Count})");
+                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch (Manual Review Recommended) ({sha256Files.Count})");
                         writer.WriteLine();
                         writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
                         writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
-                        foreach (var kv in md5Files)
+                        foreach (var kv in sha256Files)
                         {
                             string tsCol = "";
                             if (ctx.Config.ShouldOutputFileTimestamps)

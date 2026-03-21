@@ -131,12 +131,12 @@ The HTML report is a self-contained single file that opens in any browser — no
 | Notes | Free-text input — additional remarks |
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
-| Diff Reason | Diff type only: `MD5Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. |
+| Diff Reason | Diff type only: `SHA256Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. |
 | Disassembler | Disassembler label and version used for IL comparison (e.g. [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm 0.12.2.0)`); empty for non-IL files |
 
 Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
-**Table sort order:** Unchanged Files rows are sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `MD5Mismatch`), then by File Path ascending. The MD5Mismatch warning table in the Warnings section lists files alphabetically by path.
+**Table sort order:** Unchanged Files rows are sorted by diff-detail result (`SHA256Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `SHA256Mismatch`), then by File Path ascending. The SHA256Mismatch warning table in the Warnings section lists files alphabetically by path.
 
 Inline diff `<summary>` labels also include a one-based `#N` prefix such as `#3 Show diff` / `#3 Show IL diff`; this number matches the leftmost `#` column for the same row.
 
@@ -176,8 +176,8 @@ flowchart TD
 
 For one matched pair, the decision order is:
 
-1. Try an exact byte-level match with MD5.
-2. If MD5 differs and the old-side file is a .NET executable, compare filtered IL instead of raw bytes.
+1. Try an exact byte-level match with SHA256.
+2. If SHA256 differs and the old-side file is a .NET executable, compare filtered IL instead of raw bytes.
 3. If it is not in the IL path and the extension is listed in [`TextFileExtensions`](#config-en-textfileextensions), compare it as text.
 4. If none of the checks say "same", treat it as a normal mismatch.
 
@@ -385,7 +385,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-skipil">
       <td><code>SkipIL</code></td>
       <td><code>false</code></td>
-      <td>When <code>true</code>, skips IL decompilation and IL diff for .NET assemblies. MD5-mismatched assemblies are treated as binary diffs. Equivalent to the <code>--skip-il</code> CLI flag.</td>
+      <td>When <code>true</code>, skips IL decompilation and IL diff for .NET assemblies. SHA256-mismatched assemblies are treated as binary diffs. Equivalent to the <code>--skip-il</code> CLI flag.</td>
     </tr>
     <tr id="config-en-enableinlinediff">
       <td><code>EnableInlineDiff</code></td>
@@ -464,7 +464,7 @@ Notes:
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#config-en-textfileextensions).
 - Timestamp-regression warnings are evaluated only for files classified as **modified** (files that exist in both `old` and `new` but whose content differs). Unchanged files are excluded even if their timestamps are reversed.
-- If any file ends as `MD5Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion. A detail table titled `[ ! ] Modified Files — MD5Mismatch (Manual Review Recommended)` lists all affected files with their timestamps and diff detail.
+- If any file ends as `SHA256Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion. A detail table titled `[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)` lists all affected files with their timestamps and diff detail.
 
 <a id="readme-en-generated-artifacts"></a>
 ## Generated Artifacts
@@ -619,12 +619,12 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | Notes | 自由テキスト入力 — 補足メモ |
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
-| Diff Reason | 差分タイプのみ: `MD5Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など |
+| Diff Reason | 差分タイプのみ: `SHA256Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など |
 | Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm 0.12.2.0)`）。IL 比較対象外のファイルは空欄 |
 
 Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 
-**テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`MD5Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `MD5Mismatch`）の順でソートされ、次にファイルパスの昇順でソートされます。警告セクション内の MD5Mismatch 警告テーブルはファイルパスのアルファベット順でソートされます。
+**テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）の順でソートされ、次にファイルパスの昇順でソートされます。警告セクション内の SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソートされます。
 
 インライン差分の `<summary>` ラベルにも `#3 Show diff` / `#3 Show IL diff` のような 1 始まりの `#N` プレフィックスが付き、この番号は同じ行の左端 `#` 列と一致します。
 
@@ -664,8 +664,8 @@ flowchart TD
 
 同じ相対パスの 1 組に対しては、次の順番で判定します。
 
-1. まず MD5 で完全一致かを確認します。
-2. MD5 が不一致で、old 側ファイルが .NET 実行可能なら、バイト列ではなく IL を比較します。
+1. まず SHA256 で完全一致かを確認します。
+2. SHA256 が不一致で、old 側ファイルが .NET 実行可能なら、バイト列ではなく IL を比較します。
 3. IL 経路に入らず、拡張子が [`TextFileExtensions`](#config-ja-textfileextensions) に含まれるなら、テキストとして比較します。
 4. どの比較でも「同じ」と言えなければ、通常の不一致として扱います。
 
@@ -872,7 +872,7 @@ flowchart TD
     <tr id="config-ja-skipil">
       <td><code>SkipIL</code></td>
       <td><code>false</code></td>
-      <td><code>true</code> の場合、.NET アセンブリの IL 逆アセンブルと IL 差分比較をまるごとスキップします。MD5 不一致のアセンブリはバイナリ差分として扱います。CLI フラグ <code>--skip-il</code> と同等。</td>
+      <td><code>true</code> の場合、.NET アセンブリの IL 逆アセンブルと IL 差分比較をまるごとスキップします。SHA256 不一致のアセンブリはバイナリ差分として扱います。CLI フラグ <code>--skip-il</code> と同等。</td>
     </tr>
     <tr id="config-ja-enableinlinediff">
       <td><code>EnableInlineDiff</code></td>
@@ -951,7 +951,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#config-ja-textfileextensions) に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、**Modified（内容変更あり）と判定されたファイル**のみを対象に判定します。内容が同一の Unchanged ファイルは、更新日時が逆転していても警告対象外です。
-- `MD5Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。`[ ! ] Modified Files — MD5Mismatch (Manual Review Recommended)` というタイトルの詳細テーブルに、該当ファイルのタイムスタンプと diff 詳細が一覧されます。
+- `SHA256Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。`[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)` というタイトルの詳細テーブルに、該当ファイルのタイムスタンプと diff 詳細が一覧されます。
 
 <a id="readme-ja-generated-artifacts"></a>
 ## 生成物

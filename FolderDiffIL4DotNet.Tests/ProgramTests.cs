@@ -210,12 +210,12 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
-        public async Task Main_WhenMd5MismatchExists_WritesWarningAtEndAndAddsReportWarningsSection()
+        public async Task Main_WhenSha256MismatchExists_WritesWarningAtEndAndAddsReportWarningsSection()
         {
             TimestampCache.Clear();
             var tempRoot = Path.Combine(Path.GetTempPath(), "fd-program-tests-" + Guid.NewGuid().ToString("N"));
-            var oldDir = Path.Combine(tempRoot, "old-md5-warning");
-            var newDir = Path.Combine(tempRoot, "new-md5-warning");
+            var oldDir = Path.Combine(tempRoot, "old-sha256-warning");
+            var newDir = Path.Combine(tempRoot, "new-sha256-warning");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             await File.WriteAllTextAsync(Path.Combine(oldDir, "payload.bin"), "old");
@@ -254,14 +254,14 @@ namespace FolderDiffIL4DotNet.Tests
                 });
 
                 var consoleText = writer.ToString();
-                Assert.Contains(Constants.WARNING_MD5_MISMATCH, consoleText);
+                Assert.Contains(Constants.WARNING_SHA256_MISMATCH, consoleText);
 
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
                 Assert.Contains("## Warnings", reportText);
-                Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
+                Assert.Contains($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}", reportText);
                 Assert.True(
                     reportText.IndexOf("## Warnings", StringComparison.Ordinal) <
-                    reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal));
+                    reportText.IndexOf(Constants.WARNING_SHA256_MISMATCH, StringComparison.Ordinal));
             }
             finally
             {

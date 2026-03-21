@@ -16,8 +16,8 @@ namespace FolderDiffIL4DotNet.Core.IO
         private const int FILE_STREAM_SEQUENTIAL_BUFFER_SIZE = 64 * CoreConstants.BYTES_PER_KILOBYTE;
 
         /// <summary>
-        /// Compares two files by MD5 hash, short-circuiting on size mismatch to minimize I/O.
-        /// 2 つのファイルの MD5 ハッシュ値を比較します。サイズが異なれば即座に不一致を返し I/O を最小化します。
+        /// Compares two files by SHA256 hash, short-circuiting on size mismatch to minimize I/O.
+        /// 2 つのファイルの SHA256 ハッシュ値を比較します。サイズが異なれば即座に不一致を返し I/O を最小化します。
         /// </summary>
         public static async Task<bool> DiffFilesByHashAsync(string file1AbsolutePath, string file2AbsolutePath)
         {
@@ -32,13 +32,13 @@ namespace FolderDiffIL4DotNet.Core.IO
                     return false;
                 }
 
-                using var md5 = MD5.Create();
+                using var sha256 = SHA256.Create();
                 // Use a larger sequential buffer for network I/O optimization
                 // ネットワーク I/O 最適化: 共通の逐次読み用バッファサイズを指定
                 using var file1stream = new FileStream(file1AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
                 using var file2stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
-                var hash1 = await md5.ComputeHashAsync(file1stream);
-                var hash2 = await md5.ComputeHashAsync(file2stream);
+                var hash1 = await sha256.ComputeHashAsync(file1stream);
+                var hash2 = await sha256.ComputeHashAsync(file2stream);
                 return hash1.SequenceEqual(hash2);
             }
             catch (FileNotFoundException ex)
@@ -56,15 +56,15 @@ namespace FolderDiffIL4DotNet.Core.IO
         }
 
         /// <summary>
-        /// Computes the MD5 hash of a file and returns it as a 32-character lowercase hex string.
-        /// 指定ファイルの MD5 を計算し、32 桁の 16 進小文字文字列として返します。
+        /// Computes the SHA256 hash of a file and returns it as a 64-character lowercase hex string.
+        /// 指定ファイルの SHA256 を計算し、64 桁の 16 進小文字文字列として返します。
         /// </summary>
-        public static string ComputeFileMd5Hex(string fileAbsolutePath)
+        public static string ComputeFileSha256Hex(string fileAbsolutePath)
         {
-            using (var md5 = MD5.Create())
+            using (var sha256 = SHA256.Create())
             using (var fileStream = new FileStream(fileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                var hash = md5.ComputeHash(fileStream);
+                var hash = sha256.ComputeHash(fileStream);
                 // Convert "AA-BB-..." to "aabb..."
                 // BitConverter.ToString の結果 "AA-BB-.." を "aabb.." へ変換
                 return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();

@@ -81,7 +81,7 @@ namespace FolderDiffIL4DotNet.Services
             ILCache? ilCache = null)
         {
             string diffReportAbsolutePath = GetDiffReportAbsolutePath(reportsFolderAbsolutePath);
-            bool hasMd5Mismatch = _fileDiffResultLists.HasAnyMd5Mismatch;
+            bool hasSha256Mismatch = _fileDiffResultLists.HasAnySha256Mismatch;
             bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT, frames: _spinnerFrames);
             var reportGenerated = false;
@@ -95,7 +95,7 @@ namespace FolderDiffIL4DotNet.Services
                     elapsedTimeString,
                     computerName,
                     config,
-                    hasMd5Mismatch,
+                    hasSha256Mismatch,
                     hasTimestampRegressionWarning,
                     ilCache);
                 reportGenerated = true;
@@ -138,7 +138,7 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             IReadOnlyConfigSettings config,
-            bool hasMd5Mismatch,
+            bool hasSha256Mismatch,
             bool hasTimestampRegressionWarning,
             ILCache? ilCache)
         {
@@ -154,7 +154,7 @@ namespace FolderDiffIL4DotNet.Services
                 elapsedTimeString,
                 computerName,
                 config,
-                hasMd5Mismatch,
+                hasSha256Mismatch,
                 hasTimestampRegressionWarning,
                 ilCache);
         }
@@ -185,7 +185,7 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             IReadOnlyConfigSettings config,
-            bool hasMd5Mismatch,
+            bool hasSha256Mismatch,
             bool hasTimestampRegressionWarning,
             ILCache? ilCache)
         {
@@ -197,7 +197,7 @@ namespace FolderDiffIL4DotNet.Services
                 ElapsedTimeString = elapsedTimeString,
                 ComputerName = computerName,
                 Config = config,
-                HasMd5Mismatch = hasMd5Mismatch,
+                HasSha256Mismatch = hasSha256Mismatch,
                 HasTimestampRegressionWarning = hasTimestampRegressionWarning,
                 IlCache = ilCache,
                 FileDiffResultLists = _fileDiffResultLists,
@@ -311,28 +311,28 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Returns the display order for Unchanged files: MD5Match → ILMatch → TextMatch.
-        /// Unchanged ファイルの表示順序を返します: MD5Match → ILMatch → TextMatch。
+        /// Returns the display order for Unchanged files: SHA256Match → ILMatch → TextMatch.
+        /// Unchanged ファイルの表示順序を返します: SHA256Match → ILMatch → TextMatch。
         /// </summary>
         private static int GetUnchangedSortOrder(FileDiffResultLists.DiffDetailResult detail)
             => detail switch
             {
-                FileDiffResultLists.DiffDetailResult.MD5Match => 0,
+                FileDiffResultLists.DiffDetailResult.SHA256Match => 0,
                 FileDiffResultLists.DiffDetailResult.ILMatch => 1,
                 FileDiffResultLists.DiffDetailResult.TextMatch => 2,
                 _ => 3
             };
 
         /// <summary>
-        /// Returns the display order for Modified files: TextMismatch → ILMismatch → MD5Mismatch.
-        /// Modified ファイルの表示順序を返します: TextMismatch → ILMismatch → MD5Mismatch。
+        /// Returns the display order for Modified files: TextMismatch → ILMismatch → SHA256Mismatch.
+        /// Modified ファイルの表示順序を返します: TextMismatch → ILMismatch → SHA256Mismatch。
         /// </summary>
         private static int GetModifiedSortOrder(FileDiffResultLists.DiffDetailResult detail)
             => detail switch
             {
                 FileDiffResultLists.DiffDetailResult.TextMismatch => 0,
                 FileDiffResultLists.DiffDetailResult.ILMismatch => 1,
-                FileDiffResultLists.DiffDetailResult.MD5Mismatch => 2,
+                FileDiffResultLists.DiffDetailResult.SHA256Mismatch => 2,
                 _ => 3
             };
 

@@ -7,8 +7,8 @@ using FolderDiffIL4DotNet.Common;
 namespace FolderDiffIL4DotNet.Services.Caching
 {
     /// <summary>
-    /// Caches IL disassembly results in memory and optionally on disk. Key = file-content MD5 + tool label.
-    /// IL 逆アセンブル結果をメモリ + 任意のディスクにキャッシュするクラス。キー: ファイル内容の MD5 + 使用ツールラベル。
+    /// Caches IL disassembly results in memory and optionally on disk. Key = file-content SHA256 + tool label.
+    /// IL 逆アセンブル結果をメモリ + 任意のディスクにキャッシュするクラス。キー: ファイル内容の SHA256 + 使用ツールラベル。
     /// </summary>
     /// <remarks>
     /// This class owns only the public API and coordination; actual memory storage is delegated to
@@ -69,8 +69,8 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// Pre-warms MD5 hashes of the target files in parallel to amortize I/O latency for subsequent cache-key generation.
-        /// 対象ファイル群の MD5 を並列プリウォームし、後続キャッシュキー生成の I/O レイテンシを平準化します。
+        /// Pre-warms SHA256 hashes of the target files in parallel to amortize I/O latency for subsequent cache-key generation.
+        /// 対象ファイル群の SHA256 を並列プリウォームし、後続キャッシュキー生成の I/O レイテンシを平準化します。
         /// </summary>
         public Task PrecomputeAsync(IEnumerable<string> fileAbsolutePaths, int maxParallel)
         {
@@ -92,14 +92,14 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             _logger.LogMessage(
                 AppLogLevel.Info,
-                $"Precompute MD5: starting for {files.Count} files ({nameof(maxParallel)}={maxParallel})",
+                $"Precompute SHA256: starting for {files.Count} files ({nameof(maxParallel)}={maxParallel})",
                 shouldOutputMessageToConsole: true);
 
-            RunMd5Precompute(files, maxParallel);
+            RunSha256Precompute(files, maxParallel);
 
             _logger.LogMessage(
                 AppLogLevel.Info,
-                $"Precompute MD5: completed for {files.Count} files",
+                $"Precompute SHA256: completed for {files.Count} files",
                 shouldOutputMessageToConsole: true);
             return Task.CompletedTask;
         }
@@ -151,16 +151,16 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// Builds a cache key: MD5 + <see cref="KEY_SEPARATOR"/> + toolLabel.
-        /// キャッシュキーを生成します: MD5 + <see cref="KEY_SEPARATOR"/> + toolLabel。
+        /// Builds a cache key: SHA256 + <see cref="KEY_SEPARATOR"/> + toolLabel.
+        /// キャッシュキーを生成します: SHA256 + <see cref="KEY_SEPARATOR"/> + toolLabel。
         /// </summary>
         private string BuildILCacheKey(string fileAbsolutePath, string toolLabel) => _memoryCache.GetFileHash(fileAbsolutePath) + KEY_SEPARATOR + toolLabel;
 
         /// <summary>
-        /// Runs MD5 pre-computation in parallel for the given files.
-        /// 指定されたファイル群に対して MD5 プリコンピュート処理を並列実行します。
+        /// Runs SHA256 pre-computation in parallel for the given files.
+        /// 指定されたファイル群に対して SHA256 プリコンピュート処理を並列実行します。
         /// </summary>
-        private void RunMd5Precompute(ICollection<string> files, int maxParallel)
+        private void RunSha256Precompute(ICollection<string> files, int maxParallel)
         {
             int processed = 0;
             long lastLogTicks = DateTime.UtcNow.Ticks;
@@ -175,7 +175,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to Precompute MD5 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
+                        $"Failed to Precompute SHA256 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
                         shouldOutputMessageToConsole: true,
                         ex);
                 }
@@ -211,7 +211,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             _logger.LogMessage(
                 AppLogLevel.Info,
-                $"Precompute MD5: {processed}/{totalFiles} ({percent}%)",
+                $"Precompute SHA256: {processed}/{totalFiles} ({percent}%)",
                 shouldOutputMessageToConsole: true);
         }
 

@@ -119,7 +119,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 
 Benchmark classes:
 - [`TextDifferBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/TextDifferBenchmarks.cs): Myers diff on small (100 lines), medium (10K), and large (1M) IL-like files.
-- [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): file enumeration (100 / 1K / 10K files) and MD5 hash comparison.
+- [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): file enumeration (100 / 1K / 10K files) and SHA256 hash comparison.
 
 ## Source Style Notes
 
@@ -282,7 +282,7 @@ Why this matters:
 | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | Folder-diff orchestration and result routing | Owns progress and added/removed routing |
 | [`Services/FolderDiffExecutionStrategy.cs`](../Services/FolderDiffExecutionStrategy.cs) | Discovery filtering and auto-parallelism policy | Applies ignored extensions and network-aware auto parallelism |
 | [`Services/IFileSystemService.cs`](../Services/IFileSystemService.cs) + [`Services/FileSystemService.cs`](../Services/FileSystemService.cs) | Discovery/output filesystem abstraction | Enables folder-level unit tests and lazy file discovery |
-| [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | Per-file decision tree | MD5 -> IL -> text -> fallback |
+| [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | Per-file decision tree | SHA256 -> IL -> text -> fallback |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL compare flow, line filtering, optional IL dump writing | Enforces same disassembler identity |
 | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | Method-level change detection via `System.Reflection.Metadata` | Best-effort; returns `null` on failure. Detects type/method/property/field additions, removals, and modifications (access modifier changes, modifier changes, type changes, IL body changes) |
@@ -291,7 +291,7 @@ Why this matters:
 | [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | Shared static helpers: command identification, candidate enumeration, executable path resolution | Used by both [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) and [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs); no instance state |
 | [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | Per-tool fail-count tracking and configurable TTL blacklist | Thread-safe [`ConcurrentDictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0); TTL defaults to [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) from config |
 | [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | Public cache facade and coordinator for IL artifacts | Delegates memory/disk details to focused cache components |
-| [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | In-memory IL/MD5 cache with LRU and TTL | Owns transient retention policy |
+| [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | In-memory IL/SHA256 cache with LRU and TTL | Owns transient retention policy |
 | [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | Disk persistence and quota enforcement for IL cache files | Owns cache-file I/O and trimming |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; iterates `_sectionWriters` via [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside [`ReportGenerateService`](../Services/ReportGenerateService.cs) |
@@ -332,8 +332,8 @@ Implementation notes:
 
 ```mermaid
 flowchart TD
-    A["Matched relative path"] --> B{"MD5 equal?"}
-    B -- "Yes" --> C["Record MD5Match and return true"]
+    A["Matched relative path"] --> B{"SHA256 equal?"}
+    B -- "Yes" --> C["Record SHA256Match and return true"]
     B -- "No" --> D{"Old file is .NET executable?"}
     D -- "Yes" --> E["Disassemble old/new with same tool identity"]
     E --> F{"Filtered IL equal?"}
@@ -344,12 +344,12 @@ flowchart TD
     J --> K{"Text equal?"}
     K -- "Yes" --> L["Record TextMatch and return true"]
     K -- "No" --> M["Record TextMismatch and return false"]
-    I -- "No" --> N["Record MD5Mismatch and return false"]
+    I -- "No" --> N["Record SHA256Mismatch and return false"]
 ```
 
 Rules that are easy to break:
 - The first successful classification for a file is the final classification for that file.
-- IL comparison is only attempted after MD5 mismatch and only for files detected as .NET executables.
+- IL comparison is only attempted after SHA256 mismatch and only for files detected as .NET executables.
 - IL comparison ignores lines starting with [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs) (`// MVID:`) unconditionally because they are disassembler-emitted Module Version ID metadata and can change on rebuild without reflecting an executable IL change.
 - Additional IL ignore rules are substring-based and case-sensitive (`StringComparison.Ordinal`).
 - IL comparison must use the same disassembler identity and version label for old/new.
@@ -357,9 +357,9 @@ Rules that are easy to break:
 
 Per-file mechanics:
 - [`FileDiffService.FilesAreEqualAsync(...)`](../Services/FileDiffService.cs) uses the old-side absolute path for `.NET executable` detection, file extension lookup, and threshold decisions.
-- In normal execution, `.NET executable` detection, MD5/text comparison, file length lookup, and chunk reads all go through [`IFileComparisonService`](../Services/IFileComparisonService.cs). This keeps [`FileDiffService`](../Services/FileDiffService.cs) from depending directly on the concrete comparison implementation and lets tests replace [`IFileComparisonService`](../Services/IFileComparisonService.cs) with a mock or stub. The default implementation, [`FileComparisonService`](../Services/FileComparisonService.cs), delegates those operations to [`DotNetDetector`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) and [`FileComparer`](../FolderDiffIL4DotNet.Core/IO/FileComparer.cs).
+- In normal execution, `.NET executable` detection, SHA256/text comparison, file length lookup, and chunk reads all go through [`IFileComparisonService`](../Services/IFileComparisonService.cs). This keeps [`FileDiffService`](../Services/FileDiffService.cs) from depending directly on the concrete comparison implementation and lets tests replace [`IFileComparisonService`](../Services/IFileComparisonService.cs) with a mock or stub. The default implementation, [`FileComparisonService`](../Services/FileComparisonService.cs), delegates those operations to [`DotNetDetector`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) and [`FileComparer`](../FolderDiffIL4DotNet.Core/IO/FileComparer.cs).
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) distinguishes `NotDotNetExecutable` from `Failed`; [`FileDiffService`](../Services/FileDiffService.cs) logs a warning on `Failed` before skipping the IL path.
-- Once MD5 matches, the code records `MD5Match` and returns immediately; no IL comparison or text comparison runs after that.
+- Once SHA256 matches, the code records `SHA256Match` and returns immediately; no IL comparison or text comparison runs after that.
 - The IL path delegates to [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs), which disassembles old/new via `DisassemblePairWithSameDisassemblerAsync(...)`, normalizes the comparison label, filters lines, optionally writes filtered IL text, and returns both equality and the disassembler label.
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) covers this boundary with the preferred tool path: it builds the same tiny class library twice with `Deterministic=false`, confirms the DLL bytes differ, and then verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) still returns `ILMatch` after filtering.
 - `BuildComparisonDisassemblerLabel(...)` is part of correctness. If old/new produce different tool identities or version labels, the code rejects that comparison and raises [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0).
@@ -368,12 +368,12 @@ Per-file mechanics:
 - If [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs) is enabled, the code avoids chunk-parallel reads on remote storage and always uses sequential `DiffTextFilesAsync(...)`, regardless of file size. In local-optimized mode, it uses the old-side file size: below [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) it stays sequential, and at or above the threshold it splits the file into fixed-size chunks based on [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) and runs `DiffTextFilesParallelAsync(...)`.
 - If [`TextDiffParallelMemoryLimitMegabytes`](../Models/ConfigSettings.cs) is greater than `0`, [`FileDiffService`](../Services/FileDiffService.cs) treats it as an additional buffer budget for chunk-parallel text diff, logs the current managed-heap size, and reduces the effective worker count or falls back to sequential comparison when that budget cannot cover the requested parallelism.
 - If chunk-parallel text comparison throws [`ArgumentOutOfRangeException`](https://learn.microsoft.com/en-us/dotnet/api/system.argumentoutofrangeexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), or [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0), the code logs a warning and falls back to sequential `DiffTextFilesAsync(...)`. Because of that fallback, `DiffTextFilesParallelAsync(...)` must not swallow those exceptions and replace them with `false`.
-- Files that are neither IL-comparison targets nor text-comparison targets end at `MD5Mismatch` when MD5 differs. `MD5Mismatch` is also part of the aggregated end-of-run warnings, and the report writes that warning in the final `Warnings` section before any timestamp-regression entries, along with a detail table (`[ ! ] Modified Files — MD5Mismatch (Manual Review Recommended)`) listing all affected files. There is no deeper generic binary diff step today.
-- For files classified as **modified**, if [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) is `true` and the new-side last-modified time is older than the old-side last-modified time, the code records a timestamp-regression warning. The check is performed only after `FilesAreEqualAsync` returns `false`; unchanged files are never evaluated. That warning is emitted in the aggregated console output at the end of the run and also written after the `MD5Mismatch` warning in the report's final `Warnings` section as a list of files with regressed timestamps.
+- Files that are neither IL-comparison targets nor text-comparison targets end at `SHA256Mismatch` when SHA256 differs. `SHA256Mismatch` is also part of the aggregated end-of-run warnings, and the report writes that warning in the final `Warnings` section before any timestamp-regression entries, along with a detail table (`[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)`) listing all affected files. There is no deeper generic binary diff step today.
+- For files classified as **modified**, if [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) is `true` and the new-side last-modified time is older than the old-side last-modified time, the code records a timestamp-regression warning. The check is performed only after `FilesAreEqualAsync` returns `false`; unchanged files are never evaluated. That warning is emitted in the aggregated console output at the end of the run and also written after the `SHA256Mismatch` warning in the report's final `Warnings` section as a list of files with regressed timestamps.
 
 Failure handling:
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) thrown during IL comparison is logged and intentionally rethrown. This treats IL tool mismatches or setup problems as fatal exceptions and stops the whole run.
-- Failures from [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) are not treated as fatal exceptions. The code logs a warning, skips IL comparison only, and then continues into text comparison or `MD5Mismatch` handling.
+- Failures from [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) are not treated as fatal exceptions. The code logs a warning, skips IL comparison only, and then continues into text comparison or `SHA256Mismatch` handling.
 - [`FileNotFoundException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.filenotfoundexception?view=net-8.0) thrown by `FilesAreEqualAsync(...)` is caught in [`FolderDiffService`](../Services/FolderDiffService.cs) when a new-side file is deleted after enumeration but before comparison. The file is classified as `Removed`, a warning is logged, and traversal continues. This is distinct from [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0) thrown during enumeration (for example a symlink loop), which is rethrown and stops the entire run.
 - `FilesAreEqualAsync(...)` also treats [`DirectoryNotFoundException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.directorynotfoundexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), and [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0) as expected runtime failures: it logs them with both old/new absolute paths and rethrows without changing the exception type.
 - Other unexpected exceptions are logged from inside `FilesAreEqualAsync(...)` with separate "unexpected error" wording and then rethrown to the caller.
@@ -406,14 +406,14 @@ catch (Exception ex)
 }
 ```
 
-- The per-file detail recorded in [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) and the bool returned from `FilesAreEqualAsync(...)` must describe the same outcome. [`FolderDiffService`](../Services/FolderDiffService.cs) uses the bool return value to classify the file as `Unchanged` or `Modified`, while the report uses the detail result to show whether the reason was `MD5Match`, `ILMismatch`, `TextMatch`, and so on. If code records `ILMismatch` but returns `true`, for example, the file would be listed under `Unchanged` while the detailed reason says mismatch, which makes the result internally inconsistent.
+- The per-file detail recorded in [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) and the bool returned from `FilesAreEqualAsync(...)` must describe the same outcome. [`FolderDiffService`](../Services/FolderDiffService.cs) uses the bool return value to classify the file as `Unchanged` or `Modified`, while the report uses the detail result to show whether the reason was `SHA256Match`, `ILMismatch`, `TextMatch`, and so on. If code records `ILMismatch` but returns `true`, for example, the file would be listed under `Unchanged` while the detailed reason says mismatch, which makes the result internally inconsistent.
 
 ## Result Model and Reporting Specification
 
 [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) stores:
 - Discovery lists for old/new files
 - Final buckets for `Unchanged`, `Added`, `Removed`, and `Modified`
-- Per-file detail results: `MD5Match`, `ILMatch`, `TextMatch`, `MD5Mismatch`, `ILMismatch`, `TextMismatch`
+- Per-file detail results: `SHA256Match`, `ILMatch`, `TextMatch`, `SHA256Mismatch`, `ILMismatch`, `TextMismatch`
 - Ignored file locations
 - Timestamp-regression warnings for files whose `new` last-modified time is older than `old`
 - Disassembler labels used during IL comparison
@@ -425,7 +425,7 @@ The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed re
 - The detail-result [`Dictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2?view=net-8.0) must not contain stale entries left over from a previous run.
 - IL tool labels are only present for IL-based comparisons.
 - Report generation reads execution results only and must not start new comparisons.
-- **Table sort order**: Unchanged Files rows are sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `MD5Mismatch`), then by File Path ascending. The MD5Mismatch warning table lists files alphabetically by path. This applies to both Markdown and HTML reports.
+- **Table sort order**: Unchanged Files rows are sorted by diff-detail result (`SHA256Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `SHA256Mismatch`), then by File Path ascending. The SHA256Mismatch warning table lists files alphabetically by path. This applies to both Markdown and HTML reports.
 
 <a id="guide-en-config-runtime"></a>
 ## Configuration and Runtime Modes
@@ -601,7 +601,7 @@ Typical safe extension points:
 - Add new tests by substituting [`IFileSystemService`](../Services/IFileSystemService.cs), [`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs), [`IFileComparisonService`](../Services/IFileComparisonService.cs), [`IFileDiffService`](../Services/IFileDiffService.cs), [`IILOutputService`](../Services/IILOutputService.cs), or [`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs)
 
 Higher-risk changes:
-- Altering the order `MD5 -> IL -> text`
+- Altering the order `SHA256 -> IL -> text`
 - Reusing run-scoped state across executions
 - Moving path decisions out of [`DiffExecutionContext`](../Services/DiffExecutionContext.cs)
 - Mixing tool identities during IL comparison
@@ -754,7 +754,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 
 ベンチマーククラス:
 - [`TextDifferBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/TextDifferBenchmarks.cs): 小規模（100 行）・中規模（10K 行）・大規模（1M 行）の IL 風テキスト差分。
-- [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): ファイル列挙（100 / 1K / 10K ファイル）と MD5 ハッシュ比較。
+- [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): ファイル列挙（100 / 1K / 10K ファイル）と SHA256 ハッシュ比較。
 
 ## ソースコードのスタイル方針
 
@@ -916,7 +916,7 @@ sequenceDiagram
 | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | フォルダ差分全体の調停と結果振り分け | 進捗と Added/Removed もここ |
 | [`Services/FolderDiffExecutionStrategy.cs`](../Services/FolderDiffExecutionStrategy.cs) | 列挙フィルタと自動並列度ポリシー | 無視拡張子適用とネットワーク考慮の並列度決定を担当 |
 | [`Services/IFileSystemService.cs`](../Services/IFileSystemService.cs) + [`Services/FileSystemService.cs`](../Services/FileSystemService.cs) | 列挙/出力系ファイルシステム抽象 | フォルダ単位ユニットテスト向け。遅延列挙もここで扱う |
-| [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | ファイル単位の判定木 | `MD5 -> IL -> text -> fallback` |
+| [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | ファイル単位の判定木 | `SHA256 -> IL -> text -> fallback` |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL 比較、行除外、任意 IL 出力 | 同一逆アセンブラ制約を保証 |
 | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | `System.Reflection.Metadata` によるメソッドレベル変更検出 | ベストエフォート；失敗時は `null` を返す。型・メソッド・プロパティ・フィールドの追加・削除・変更（アクセス修飾子変更、修飾子変更、型変更、IL ボディ変更）を検出 |
@@ -925,7 +925,7 @@ sequenceDiagram
 | [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | 共有静的ヘルパー：コマンド判定・候補列挙・実行ファイルパス解決 | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) と [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) の両方が使用；インスタンス状態なし |
 | [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | ツール別失敗数管理・設定可能な TTL ブラックリスト | スレッドセーフな [`ConcurrentDictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0)；TTL は設定値 [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) を使用 |
 | [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | IL キャッシュの公開 API と調停 | メモリ/ディスクの詳細は専用コンポーネントへ委譲 |
-| [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | メモリ上の IL / MD5 キャッシュ | LRU と TTL を担当 |
+| [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | メモリ上の IL / SHA256 キャッシュ | LRU と TTL を担当 |
 | [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | IL キャッシュのディスク永続化とクォータ制御 | キャッシュファイル I/O とトリミングを担当 |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；`_sectionWriters` を [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) 経由で反復 |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | [`ReportGenerateService`](../Services/ReportGenerateService.cs) 内に 10 個のプライベートネストクラスで実装 |
@@ -966,8 +966,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A["同一相対パスのファイル"] --> B{"MD5 一致?"}
-    B -- "はい" --> C["MD5Match を記録して true"]
+    A["同一相対パスのファイル"] --> B{"SHA256 一致?"}
+    B -- "はい" --> C["SHA256Match を記録して true"]
     B -- "いいえ" --> D{"old 側は .NET 実行可能?"}
     D -- "はい" --> E["old/new を同一ツール識別で逆アセンブル"]
     E --> F{"除外後 IL は一致?"}
@@ -978,12 +978,12 @@ flowchart TD
     J --> K{"テキスト一致?"}
     K -- "はい" --> L["TextMatch を記録して true"]
     K -- "いいえ" --> M["TextMismatch を記録して false"]
-    I -- "いいえ" --> N["MD5Mismatch を記録して false"]
+    I -- "いいえ" --> N["SHA256Mismatch を記録して false"]
 ```
 
 壊しやすい前提:
 - 1 ファイルで最初に確定した分類がそのファイルの最終分類です。
-- IL 比較は MD5 不一致の後、かつ .NET 実行可能ファイルにのみ進みます。
+- IL 比較は SHA256 不一致の後、かつ .NET 実行可能ファイルにのみ進みます。
 - IL 比較では [`Constants.IL_MVID_LINE_PREFIX`](../Common/Constants.cs)（`// MVID:`）で始まる行を常に無視します。これは逆アセンブラが出力する Module Version ID メタデータで、再ビルドのたびに変わり得るため、アセンブリの中身が実質的に同じでも、この行だけで差分ありと判定されてしまうことがあるためです。
 - 追加の IL 行無視は部分一致で、大文字小文字を区別します（`StringComparison.Ordinal`）。
 - old/new の IL 比較は、同じ逆アセンブラ識別子とバージョン表記でなければなりません。
@@ -991,9 +991,9 @@ flowchart TD
 
 ファイル単位の実装メモ:
 - [`FileDiffService.FilesAreEqualAsync(...)`](../Services/FileDiffService.cs) は、`.NET 実行可能か` の判定、拡張子判定、サイズ閾値判定の基準として old 側絶対パスを使います。
-- 通常実行時の `.NET 実行可能判定`、MD5/テキスト比較、サイズ取得、チャンク読み出しは [`IFileComparisonService`](../Services/IFileComparisonService.cs) を通して行われます。これは、[`FileDiffService`](../Services/FileDiffService.cs) が比較処理の具体実装に直接依存せず、テストでは [`IFileComparisonService`](../Services/IFileComparisonService.cs) をモックやスタブに差し替えられるようにするためです。既定実装の [`FileComparisonService`](../Services/FileComparisonService.cs) は、これらの処理を [`DotNetDetector`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) と [`FileComparer`](../FolderDiffIL4DotNet.Core/IO/FileComparer.cs) に委譲します。
+- 通常実行時の `.NET 実行可能判定`、SHA256/テキスト比較、サイズ取得、チャンク読み出しは [`IFileComparisonService`](../Services/IFileComparisonService.cs) を通して行われます。これは、[`FileDiffService`](../Services/FileDiffService.cs) が比較処理の具体実装に直接依存せず、テストでは [`IFileComparisonService`](../Services/IFileComparisonService.cs) をモックやスタブに差し替えられるようにするためです。既定実装の [`FileComparisonService`](../Services/FileComparisonService.cs) は、これらの処理を [`DotNetDetector`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) と [`FileComparer`](../FolderDiffIL4DotNet.Core/IO/FileComparer.cs) に委譲します。
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) は `NotDotNetExecutable` と `Failed` を区別します。[`FileDiffService`](../Services/FileDiffService.cs) は `Failed` の場合に warning を出して IL 経路をスキップします。
-- MD5 が一致した時点で `MD5Match` を記録して即終了し、その後に IL やテキスト比較へは進みません。
+- SHA256 が一致した時点で `SHA256Match` を記録して即終了し、その後に IL やテキスト比較へは進みません。
 - IL 経路は [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs) に委譲され、内部で `DisassemblePairWithSameDisassemblerAsync(...)`、比較用ラベル正規化、行除外、任意の IL テキスト出力までをまとめて担当します。
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) では、この境界を推奨ツール経路付きで確認します。`Deterministic=false` の小さなクラスライブラリを 2 回ビルドして DLL バイト列が異なることを確認したうえで、[`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) のフィルタ後 IL では `ILMatch` になることを検証します。
 - `BuildComparisonDisassemblerLabel(...)` は正しさの一部です。old/new でツール識別やバージョン表記がずれた場合は、その比較を認めず [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) にします。
@@ -1002,12 +1002,12 @@ flowchart TD
 - [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs) が有効な場合は、ネットワーク共有上でチャンクごとに何度もファイルを開閉するコストを避けるため、ファイルサイズにかかわらず `DiffTextFilesAsync(...)` による逐次比較を使います。ローカル最適化時は old 側ファイルのサイズを基準にし、[`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) 未満なら逐次比較、以上なら [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) ごとの固定長チャンクに分割して `DiffTextFilesParallelAsync(...)` で並列比較します。
 - [`TextDiffParallelMemoryLimitMegabytes`](../Models/ConfigSettings.cs) が `0` より大きい場合、[`FileDiffService`](../Services/FileDiffService.cs) はそれを並列テキスト比較で追加確保してよいバッファ予算として扱い、その時点の managed heap 使用量をログへ残しつつ、実効ワーカー数を下げるか逐次比較へフォールバックします。
 - 並列チャンク比較の途中で [`ArgumentOutOfRangeException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.argumentoutofrangeexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) のいずれかが出た場合は、warning を記録したうえで `DiffTextFilesAsync(...)` による逐次比較へフォールバックします。したがって `DiffTextFilesParallelAsync(...)` 側でこれらの例外を `false` に置き換えて握りつぶすと、呼び出し元はフォールバックできません。
-- IL 比較対象でもテキスト比較対象でもないファイルは、MD5 不一致の時点で `MD5Mismatch` が最終結果です。`MD5Mismatch` は実行完了時の集約警告の対象でもあり、レポートでは末尾の `Warnings` セクションで更新日時逆転警告より先に出し、詳細テーブル（`[ ! ] Modified Files — MD5Mismatch (Manual Review Recommended)`）に該当ファイル一覧を表示します。現状はその先の汎用バイナリ差分はありません。
-- **Modified と判定されたファイル**について、[`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) が `true` かつ new 側の更新日時が old 側より古い場合は、比較結果とは別に更新日時逆転の警告が記録されます。このチェックは `FilesAreEqualAsync` が `false` を返した後にのみ実行されます。Unchanged ファイルは評価されません。この警告は実行完了時にコンソールへ集約出力され、レポートでは `MD5Mismatch` 警告の後に更新日時が逆転したファイルの一覧として `Warnings` セクションへ出力されます。
+- IL 比較対象でもテキスト比較対象でもないファイルは、SHA256 不一致の時点で `SHA256Mismatch` が最終結果です。`SHA256Mismatch` は実行完了時の集約警告の対象でもあり、レポートでは末尾の `Warnings` セクションで更新日時逆転警告より先に出し、詳細テーブル（`[ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended)`）に該当ファイル一覧を表示します。現状はその先の汎用バイナリ差分はありません。
+- **Modified と判定されたファイル**について、[`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) が `true` かつ new 側の更新日時が old 側より古い場合は、比較結果とは別に更新日時逆転の警告が記録されます。このチェックは `FilesAreEqualAsync` が `false` を返した後にのみ実行されます。Unchanged ファイルは評価されません。この警告は実行完了時にコンソールへ集約出力され、レポートでは `SHA256Mismatch` 警告の後に更新日時が逆転したファイルの一覧として `Warnings` セクションへ出力されます。
 
 失敗時の扱い:
 - IL 比較で発生した [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は、ログを出力したうえで意図的に再送出されます。これは IL ツールの不整合やセットアップ不備を致命的な例外として扱い、実行全体を停止させるためです。
-- [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) の失敗は致命的な例外とは扱いません。警告ログを出力して IL 比較だけをスキップし、その後のテキスト比較または `MD5Mismatch` 判定へ進みます。
+- [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) の失敗は致命的な例外とは扱いません。警告ログを出力して IL 比較だけをスキップし、その後のテキスト比較または `SHA256Mismatch` 判定へ進みます。
 - `FilesAreEqualAsync(...)` が [`FileNotFoundException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.filenotfoundexception?view=net-8.0) をスローした場合は、[`FolderDiffService`](../Services/FolderDiffService.cs) 内でキャッチされます。これは列挙後・比較前に new 側ファイルが削除された場合に発生し、該当ファイルを `Removed` として分類し、警告を記録して走査を継続します。列挙時に発生する [`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)（シンボリックリンクのループなど）とは異なり、実行全体を停止させません。
 - `FilesAreEqualAsync(...)` では、[`DirectoryNotFoundException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.directorynotfoundexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) も想定される実行時失敗として扱い、old/new 両方の絶対パスを含む error ログを出したうえで例外型を変えずに再送出します。
 - それ以外の予期しない例外は、`FilesAreEqualAsync(...)` の中で old/new 両方の絶対パスを含む "unexpected error" ログを出力したうえで、呼び出し元へ再送出されます。
@@ -1037,14 +1037,14 @@ catch (Exception ex)
 }
 ```
 
-- [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) に記録する詳細結果と `FilesAreEqualAsync(...)` の戻り値は、同じ判定を表していなければなりません。[`FolderDiffService`](../Services/FolderDiffService.cs) は bool 戻り値で `Unchanged` / `Modified` を決める一方、レポートは詳細結果として `MD5Match`、`ILMismatch`、`TextMatch` などを表示します。たとえば `ILMismatch` を記録したのに `true` を返すと、一覧では `Unchanged` に入るのに詳細理由は mismatch になり、結果が矛盾します。
+- [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) に記録する詳細結果と `FilesAreEqualAsync(...)` の戻り値は、同じ判定を表していなければなりません。[`FolderDiffService`](../Services/FolderDiffService.cs) は bool 戻り値で `Unchanged` / `Modified` を決める一方、レポートは詳細結果として `SHA256Match`、`ILMismatch`、`TextMatch` などを表示します。たとえば `ILMismatch` を記録したのに `true` を返すと、一覧では `Unchanged` に入るのに詳細理由は mismatch になり、結果が矛盾します。
 
 ## 結果モデルとレポート仕様
 
 [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) が保持するもの:
 - old/new の発見済みファイル一覧
 - `Unchanged`、`Added`、`Removed`、`Modified` の最終バケット
-- `MD5Match`、`ILMatch`、`TextMatch`、`MD5Mismatch`、`ILMismatch`、`TextMismatch` の詳細判定
+- `SHA256Match`、`ILMatch`、`TextMatch`、`SHA256Mismatch`、`ILMismatch`、`TextMismatch` の詳細判定
 - 無視対象ファイルの所在情報
 - Modified と判定されたファイルのうち、`new` 側の更新日時が `old` 側より古いものの警告情報
 - IL 比較で使用した逆アセンブラ表示ラベル
@@ -1056,7 +1056,7 @@ catch (Exception ex)
 - 前回の実行に由来する不要なエントリが詳細結果の [`Dictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.generic.dictionary-2?view=net-8.0) に残っていないこと
 - IL のラベルは IL 比較時だけ存在すること
 - レポート生成は、実行結果の読み取りであり、新しい比較を開始しないこと
-- **テーブルのソート順**: Unchanged Files の行は diff-detail 結果（`MD5Match` → `ILMatch` → `TextMatch`）でソートし、次にファイルパス昇順。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `MD5Mismatch`）でソートし、次にファイルパス昇順。MD5Mismatch 警告テーブルはファイルパスのアルファベット順でソート。Markdown および HTML レポートの両方に適用。
+- **テーブルのソート順**: Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）でソートし、次にファイルパス昇順。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）でソートし、次にファイルパス昇順。SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソート。Markdown および HTML レポートの両方に適用。
 
 <a id="guide-ja-config-runtime"></a>
 ## 設定と実行モード
@@ -1232,7 +1232,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - [`IFileSystemService`](../Services/IFileSystemService.cs)、[`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs)、[`IFileComparisonService`](../Services/IFileComparisonService.cs)、[`IFileDiffService`](../Services/IFileDiffService.cs)、[`IILOutputService`](../Services/IILOutputService.cs)、[`IDotNetDisassembleService`](../Services/IDotNetDisassembleService.cs) を差し替えるテスト追加
 
 高リスクな変更:
-- `MD5 -> IL -> text` の順番変更
+- `SHA256 -> IL -> text` の順番変更
 - 実行スコープ状態の再利用
 - パス判定を [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) から外す変更
 - IL 比較で old/new のツール識別を混在させる変更

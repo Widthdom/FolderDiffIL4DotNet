@@ -265,8 +265,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir, ilCacheMaxDiskFileCount: 2);
             var tool = "tool";
 
-            // Create 3 files sequentially with unique content to produce distinct MD5 cache keys
-            // ユニークなコンテンツで 3 ファイルを順次作成し、異なる MD5 キャッシュキーを生成する
+            // Create 3 files sequentially with unique content to produce distinct SHA256 cache keys
+            // ユニークなコンテンツで 3 ファイルを順次作成し、異なる SHA256 キャッシュキーを生成する
             for (int i = 0; i < 3; i++)
             {
                 var file = CreateTestFile($"f{i}.dll", $"unique-content-{i}");

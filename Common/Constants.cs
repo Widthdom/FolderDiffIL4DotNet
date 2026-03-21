@@ -26,7 +26,7 @@ namespace FolderDiffIL4DotNet.Common
 
         public const string ERROR_MAX_PARALLEL = "The maximum degree of parallelism must be 1 or greater.";
 
-        public const string WARNING_MD5_MISMATCH = "One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.";
+        public const string WARNING_SHA256_MISMATCH = "One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only a SHA256 hash comparison was possible.";
 
         /// <summary>
         /// Timestamp format for reports and file listings (local time with milliseconds and UTC offset).

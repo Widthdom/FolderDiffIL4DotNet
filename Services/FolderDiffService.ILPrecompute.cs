@@ -13,13 +13,13 @@ namespace FolderDiffIL4DotNet.Services
     public sealed partial class FolderDiffService
     {
         /// <summary>
-        /// Runs IL-cache pre-computation for all old/new files: MD5 hashing, internal key generation, and disassembler-result cache warm-up.
-        /// 新旧すべてのファイルを対象に、IL キャッシュ用の事前計算（MD5 計算、内部キー生成、逆アセンブラ結果キャッシュのウォームアップ）を実行します。
+        /// Runs IL-cache pre-computation for all old/new files: SHA256 hashing, internal key generation, and disassembler-result cache warm-up.
+        /// 新旧すべてのファイルを対象に、IL キャッシュ用の事前計算（SHA256 計算、内部キー生成、逆アセンブラ結果キャッシュのウォームアップ）を実行します。
         /// </summary>
         private async Task PrecomputeIlCachesAsync(int maxParallel)
         {
-            // In network-optimised mode, skip MD5/IL cache warm-up and only reset progress to zero.
-            // ネットワーク最適化モードでは MD5/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
+            // In network-optimised mode, skip SHA256/IL cache warm-up and only reset progress to zero.
+            // ネットワーク最適化モードでは SHA256/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
             if (_optimizeForNetworkShares)
             {
                 _logger.LogMessage(AppLogLevel.Info, LOG_NETWORK_OPTIMIZED_SKIP_IL, shouldOutputMessageToConsole: true);

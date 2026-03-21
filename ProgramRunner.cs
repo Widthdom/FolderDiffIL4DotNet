@@ -103,7 +103,7 @@ namespace FolderDiffIL4DotNet
             }
 
             var result = await RunWithResultAsync(args, opts);
-            OutputCompletionWarnings(result.HasMd5MismatchWarnings, result.HasTimestampRegressionWarnings);
+            OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings);
             PromptForExitKeyIfNeeded(opts);
             return (int)result.ExitCode;
         }
@@ -169,11 +169,11 @@ namespace FolderDiffIL4DotNet
             return appVersion;
         }
 
-        private void OutputCompletionWarnings(bool hasMd5MismatchWarnings, bool hasTimestampRegressionWarnings)
+        private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings)
         {
-            if (hasMd5MismatchWarnings)
+            if (hasSha256MismatchWarnings)
             {
-                _logger.LogMessage(AppLogLevel.Warning, Constants.WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
+                _logger.LogMessage(AppLogLevel.Warning, Constants.WARNING_SHA256_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
             }
 
             if (!hasTimestampRegressionWarnings)
@@ -335,7 +335,7 @@ namespace FolderDiffIL4DotNet
             var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
             var elapsedTimeString = await ExecuteDiffAsync(scopedProvider);
             GenerateReport(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config);
-            return new RunCompletionState(resultLists.HasAnyMd5Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);
+            return new RunCompletionState(resultLists.HasAnySha256Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);
         }
 
         private async Task<string> ExecuteDiffAsync(IServiceProvider scopedProvider)

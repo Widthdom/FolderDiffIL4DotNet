@@ -159,28 +159,28 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Returns the display order for Unchanged files: MD5Match → ILMatch → TextMatch.
-        /// Unchanged ファイルの表示順序を返します: MD5Match → ILMatch → TextMatch。
+        /// Returns the display order for Unchanged files: SHA256Match → ILMatch → TextMatch.
+        /// Unchanged ファイルの表示順序を返します: SHA256Match → ILMatch → TextMatch。
         /// </summary>
         private static int GetUnchangedSortOrder(FileDiffResultLists.DiffDetailResult detail)
             => detail switch
             {
-                FileDiffResultLists.DiffDetailResult.MD5Match => 0,
+                FileDiffResultLists.DiffDetailResult.SHA256Match => 0,
                 FileDiffResultLists.DiffDetailResult.ILMatch => 1,
                 FileDiffResultLists.DiffDetailResult.TextMatch => 2,
                 _ => 3
             };
 
         /// <summary>
-        /// Returns the display order for Modified files: TextMismatch → ILMismatch → MD5Mismatch.
-        /// Modified ファイルの表示順序を返します: TextMismatch → ILMismatch → MD5Mismatch。
+        /// Returns the display order for Modified files: TextMismatch → ILMismatch → SHA256Mismatch.
+        /// Modified ファイルの表示順序を返します: TextMismatch → ILMismatch → SHA256Mismatch。
         /// </summary>
         private static int GetModifiedSortOrder(FileDiffResultLists.DiffDetailResult detail)
             => detail switch
             {
                 FileDiffResultLists.DiffDetailResult.TextMismatch => 0,
                 FileDiffResultLists.DiffDetailResult.ILMismatch => 1,
-                FileDiffResultLists.DiffDetailResult.MD5Mismatch => 2,
+                FileDiffResultLists.DiffDetailResult.SHA256Mismatch => 2,
                 _ => 3
             };
 

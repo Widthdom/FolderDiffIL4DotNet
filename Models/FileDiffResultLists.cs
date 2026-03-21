@@ -18,10 +18,10 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public enum DiffDetailResult
         {
-            /// <summary>Files match by MD5 hash. / MD5 ハッシュが一致。</summary>
-            MD5Match,
-            /// <summary>Files differ by MD5 hash. / MD5 ハッシュが不一致。</summary>
-            MD5Mismatch,
+            /// <summary>Files match by SHA256 hash. / SHA256 ハッシュが一致。</summary>
+            SHA256Match,
+            /// <summary>Files differ by SHA256 hash. / SHA256 ハッシュが不一致。</summary>
+            SHA256Mismatch,
             /// <summary>Files match at the IL level (build-specific differences ignored). / IL（中間言語）ベースで一致（ビルド固有情報の差異は無視）。</summary>
             ILMatch,
             /// <summary>Files differ at the IL level (build-specific differences ignored). / IL（中間言語）ベースで不一致（ビルド固有情報の差異は無視）。</summary>
@@ -81,7 +81,7 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public ConcurrentDictionary<string, string> FileRelativePathToIlDisassemblerLabelDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
 
-        public bool HasAnyMd5Mismatch => FileRelativePathToDiffDetailDictionary.Values.Any(result => result == DiffDetailResult.MD5Mismatch);
+        public bool HasAnySha256Mismatch => FileRelativePathToDiffDetailDictionary.Values.Any(result => result == DiffDetailResult.SHA256Mismatch);
 
         /// <summary>
         /// Relative paths and folder locations (old/new) of files excluded by IgnoredExtensions.

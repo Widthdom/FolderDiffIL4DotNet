@@ -232,7 +232,7 @@
   <li>Legend:
     <table class="legend-table">
       <tbody>
-        <tr><td><code>MD5Match</code> / <code>MD5Mismatch</code></td><td>MD5 hash match / mismatch</td></tr>
+        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>SHA256 hash match / mismatch</td></tr>
         <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>
         <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>Text match / mismatch</td></tr>
       </tbody>
@@ -326,7 +326,7 @@
   <td class="col-notes"><input type="text" id="notes_unch_0"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">data/schema.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:30:00 &#x2192; 2026-03-15 09:00:00</td>
-  <td class="col-diff"><code>MD5Match</code></td>
+  <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr>
@@ -336,7 +336,7 @@
   <td class="col-notes"><input type="text" id="notes_unch_1"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">vendor/lib.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:00:00</td>
-  <td class="col-diff"><code>MD5Match</code></td>
+  <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr>
@@ -677,7 +677,7 @@
   <td class="col-notes"><input type="text" id="notes_mod_11"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
-  <td class="col-diff"><code>MD5Mismatch</code></td>
+  <td class="col-diff"><code>SHA256Mismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 </tbody></table>
@@ -706,10 +706,10 @@
 </table>
 <h2 class="section-heading"><span class="warn-icon">&#x26A0;</span> Warnings</h2>
 <ul class="warnings">
-  <li>One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible.</li>
+  <li>One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.</li>
   <li>One or more modified files in new have older last-modified timestamps than the corresponding files in old.</li>
 </ul>
-<h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; MD5Mismatch (Manual Review Recommended) (1)</h2>
+<h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; SHA256Mismatch (Manual Review Recommended) (1)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -735,12 +735,12 @@
 <tbody>
 <tr>
   <td class="col-no">1</td>
-  <td class="col-cb"><input type="checkbox" id="cb_md5w_0"></td>
-  <td class="col-reason"><input type="text" id="reason_md5w_0"></td>
-  <td class="col-notes"><input type="text" id="notes_md5w_0"></td>
+  <td class="col-cb"><input type="checkbox" id="cb_sha256w_0"></td>
+  <td class="col-reason"><input type="text" id="reason_sha256w_0"></td>
+  <td class="col-notes"><input type="text" id="notes_sha256w_0"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
-  <td class="col-diff"><code>MD5Mismatch</code></td>
+  <td class="col-diff"><code>SHA256Mismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 </tbody></table>
@@ -854,7 +854,7 @@
   <td class="col-notes"><input type="text" id="notes_tsw_4"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
-  <td class="col-diff"><code>MD5Mismatch</code></td>
+  <td class="col-diff"><code>SHA256Mismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 </tbody></table>

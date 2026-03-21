@@ -23,7 +23,7 @@
 
 | Label | Description |
 |-------|-------------|
-| `MD5Match` / `MD5Mismatch` | MD5 hash match / mismatch |
+| `SHA256Match` / `SHA256Mismatch` | SHA256 hash match / mismatch |
 | `ILMatch` / `ILMismatch` | IL(Intermediate Language) match / mismatch |
 | `TextMatch` / `TextMismatch` | Text match / mismatch |
 
@@ -39,8 +39,8 @@
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|:---------:|--------|--------------|
-| `[ = ]` | data/schema.bin | 2026-03-15 08:30:00 → 2026-03-15 09:00:00 | `MD5Match` | |
-| `[ = ]` | vendor/lib.dll | 2026-03-15 09:00:00 | `MD5Match` | |
+| `[ = ]` | data/schema.bin | 2026-03-15 08:30:00 → 2026-03-15 09:00:00 | `SHA256Match` | |
+| `[ = ]` | vendor/lib.dll | 2026-03-15 09:00:00 | `SHA256Match` | |
 | `[ = ]` | util/Helper.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ = ]` | appsettings.json | 2026-03-15 09:00:00 | `TextMatch` | |
 | `[ = ]` | docs/notes.md | 2026-03-15 08:00:00 → 2026-03-15 09:00:00 | `TextMatch` | |
@@ -72,7 +72,7 @@
 | `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `MD5Mismatch` | |
+| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | |
 
 ## Summary
 
@@ -97,14 +97,14 @@
 | Expired | 0 |
 
 ## Warnings
-- **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
+- **WARNING:** One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only an SHA256 hash comparison was possible.
 - **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.
 
-### [ ! ] Modified Files — MD5Mismatch (Manual Review Recommended) (1)
+### [ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended) (1)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|:---------:|--------|--------------|
-| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `MD5Mismatch` | |
+| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | |
 
 ### [ ! ] Modified Files — Timestamps Regressed (5)
 
@@ -114,4 +114,4 @@
 | `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `MD5Mismatch` | |
+| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | |

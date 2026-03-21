@@ -29,7 +29,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var areEqual = await service.FilesAreEqualAsync("sample.txt", maxParallel: 4);
 
             Assert.True(areEqual);
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, resultLists.FileRelativePathToDiffDetailDictionary["sample.txt"]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, resultLists.FileRelativePathToDiffDetailDictionary["sample.txt"]);
             Assert.Single(fileComparisonService.HashCalls);
             Assert.Empty(fileComparisonService.DotNetDetectionCalls);
             Assert.Empty(fileComparisonService.TextDiffCalls);

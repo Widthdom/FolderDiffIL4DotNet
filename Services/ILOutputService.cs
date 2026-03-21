@@ -62,7 +62,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Main steps / 主な処理:
         /// <list type="number">
         /// <item><description>Returns immediately if IL cache is disabled (<c>EnableILCache == false</c>) or no cache instance exists. / IL キャッシュが無効 (<c>EnableILCache == false</c>) またはキャッシュインスタンス未生成の場合は即 return。</description></item>
-        /// <item><description>Calls <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> to pre-calculate per-file MD5 keys, smoothing out I/O cost. / <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> を呼び出し、対象ファイルごとの MD5 など内部キー計算を先行実行し I/O コストを平準化。</description></item>
+        /// <item><description>Calls <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> to pre-calculate per-file SHA256 keys, smoothing out I/O cost. / <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> を呼び出し、対象ファイルごとの SHA256 など内部キー計算を先行実行し I/O コストを平準化。</description></item>
         /// <item><description>Calls <see cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/> for files identified as .NET executables by <see cref="DotNetDetector.IsDotNetExecutable(string)"/>, checking cache hits across candidate disassembler x argument patterns. / <see cref="DotNetDetector.IsDotNetExecutable(string)"/> で .NET 実行可能と判定されたファイル群のみを対象に <see cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/> を呼び出し、使用候補の逆アセンブラー × 代表的な引数パターンのキャッシュヒットを事前確認。</description></item>
         /// </list>
         /// Exceptions are caught internally and logged as WARNING to prioritise continuation of the main diff processing.
@@ -78,8 +78,8 @@ namespace FolderDiffIL4DotNet.Services
 
             if (_config.OptimizeForNetworkShares)
             {
-                // When network-share optimisation is on, skip MD5 pre-warming and IL cache prefetch
-                // ネットワーク共有最適化時は、MD5 プリウォームおよび IL キャッシュ先読みをスキップ
+                // When network-share optimisation is on, skip SHA256 pre-warming and IL cache prefetch
+                // ネットワーク共有最適化時は、SHA256 プリウォームおよび IL キャッシュ先読みをスキップ
                 _logger.LogMessage(AppLogLevel.Info, LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP, shouldOutputMessageToConsole: true);
                 return;
             }
@@ -101,7 +101,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                 or InvalidOperationException or NotSupportedException)
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute SHA256 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
         }
 
