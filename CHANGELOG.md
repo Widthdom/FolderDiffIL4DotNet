@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **Logger thread safety** — Added a `lock` around log file writes in `LoggerService.LogMessage()` to prevent `IOException` when multiple threads call the logger concurrently during parallel diff processing. The lock object (`_fileWriteLock`) serialises only the file I/O section; console output remains unguarded as it is inherently thread-safe.
+
 - **Consolidated redundant exception handling with exception filters** — Replaced repetitive per-type `catch` blocks that performed identical actions with C# exception filters (`catch (Exception ex) when (ex is X or Y or Z)`). Affected files: `ProgramRunner.cs`, `FolderDiffService.cs`, `FileDiffService.cs`, `LoggerService.cs`, `ILOutputService.cs`, `ILDiskCache.cs`, `ILCache.cs`, `DotNetDisassemblerCache.cs`, `ILCachePrefetcher.cs`, `ILTextOutputService.cs`, `DotNetDisassembleService.cs`, `DotNetDisassembleService.VersionLabel.cs`, `ReportGenerateService.cs`, `HtmlReportGenerateService.cs`, `DotNetDetector.cs`. No behavioural change; purely a code-size and maintainability improvement.
 
 #### Fixed
@@ -438,6 +440,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 変更
+
+- **ロガーのスレッドセーフティ改善** — `LoggerService.LogMessage()` のログファイル書き込み部分に `lock` を追加し、並列差分処理時に複数スレッドが同時にロガーを呼び出した場合の `IOException` を防止しました。ロックオブジェクト（`_fileWriteLock`）はファイル I/O セクションのみを直列化し、コンソール出力はスレッドセーフであるため非ガードのままです。
 
 - **冗長な例外ハンドリングを例外フィルターで集約** — 同一処理を行う型別 `catch` ブロックの繰り返しを、C# 例外フィルター（`catch (Exception ex) when (ex is X or Y or Z)`）に統合しました。対象ファイル: `ProgramRunner.cs`、`FolderDiffService.cs`、`FileDiffService.cs`、`LoggerService.cs`、`ILOutputService.cs`、`ILDiskCache.cs`、`ILCache.cs`、`DotNetDisassemblerCache.cs`、`ILCachePrefetcher.cs`、`ILTextOutputService.cs`、`DotNetDisassembleService.cs`、`DotNetDisassembleService.VersionLabel.cs`、`ReportGenerateService.cs`、`HtmlReportGenerateService.cs`、`DotNetDetector.cs`。動作の変更はなく、コード量の削減と保守性の向上が目的です。
 

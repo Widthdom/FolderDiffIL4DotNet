@@ -22,6 +22,13 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_PREFIX_INFO = "[INFO]";
         private const string LOG_PREFIX_WARNING = "[WARNING]";
         private const string LOG_PREFIX_ERROR = "[ERROR]";
+
+        /// <summary>
+        /// Lock object for serialising file writes so that concurrent callers do not cause IOException.
+        /// 並列呼び出し時の IOException を防ぐためファイル書き込みを直列化するロックオブジェクト。
+        /// </summary>
+        private readonly object _fileWriteLock = new();
+
         private string? _logDirectoryAbsolutePath;
         private string? _logFileAbsolutePath;
 
@@ -104,13 +111,18 @@ namespace FolderDiffIL4DotNet.Services
                 return;
             }
 
-            using (var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true))
+            // Serialise file writes to prevent IOException under parallel diff processing.
+            // 並列差分処理時のファイル書き込み IOException を防止するため直列化。
+            lock (_fileWriteLock)
             {
-                streamWriter.WriteLine(
-                    $"[{DateTime.Now.ToString(Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture)}] {formattedMessage}");
-                if (exception != null)
+                using (var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true))
                 {
-                    streamWriter.WriteLine(exception.StackTrace);
+                    streamWriter.WriteLine(
+                        $"[{DateTime.Now.ToString(Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture)}] {formattedMessage}");
+                    if (exception != null)
+                    {
+                        streamWriter.WriteLine(exception.StackTrace);
+                    }
                 }
             }
         }
