@@ -107,6 +107,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                     var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
                     string tsCol = "";
                     if (ctx.Config.ShouldOutputFileTimestamps)
                     {
@@ -114,7 +115,7 @@ namespace FolderDiffIL4DotNet.Services
                         string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
                         tsCol = oldTs != newTs ? $"[{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}]" : $"[{newTs}]";
                     }
-                    writer.WriteLine($"| `{REPORT_MARKER_UNCHANGED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | |");
+                    writer.WriteLine($"| `{REPORT_MARKER_UNCHANGED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
             }
         }
@@ -171,6 +172,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                     var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
                     string tsCol = "";
                     if (ctx.Config.ShouldOutputFileTimestamps)
                     {
@@ -178,7 +180,7 @@ namespace FolderDiffIL4DotNet.Services
                         string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
                         tsCol = $"[{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}]";
                     }
-                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | |");
+                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
             }
         }

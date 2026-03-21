@@ -33,7 +33,7 @@
 | `[ = ]` | appsettings.json | [2026-03-15 09:00:00] | `TextMatch` | |
 | `[ = ]` | data/schema.bin | [2026-03-15 08:30:00 → 2026-03-15 09:00:00] | `MD5Match` | |
 | `[ = ]` | docs/notes.md | [2026-03-15 08:00:00 → 2026-03-15 09:00:00] | `TextMatch` | |
-| `[ = ]` | util/Helper.dll | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `ILMatch` `dotnet-ildasm (version: 0.12.2)` | |
+| `[ = ]` | util/Helper.dll | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `ILMatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ = ]` | vendor/lib.dll | [2026-03-15 09:00:00] | `MD5Match` | |
 
 ## [ + ] Added Files (1)
@@ -54,13 +54,13 @@
 |:------:|-----------|-----------|--------|--------------|
 | `[ * ]` | config/app.config | [2026-03-15 08:56:00 → 2026-03-15 09:01:00] | `TextMismatch` | |
 | `[ * ]` | payload.bin | [2026-03-15 08:59:00 → 2026-03-15 08:54:00] | `MD5Mismatch` | |
-| `[ * ]` | src/App.dll | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `ILMismatch` `dotnet-ildasm (version: 0.12.2)` | |
+| `[ * ]` | src/App.dll | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/Main.cs | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `TextMismatch` | |
-| `[ * ]` | src/Service.dll | [2026-03-15 09:05:00 → 2026-03-15 09:00:00] | `ILMismatch` `dotnet-ildasm (version: 0.12.2)` | |
+| `[ * ]` | src/Service.dll | [2026-03-15 09:05:00 → 2026-03-15 09:00:00] | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/Utils.cs | [2026-03-15 08:57:00 → 2026-03-15 09:03:00] | `TextMismatch` | |
 | `[ * ]` | src/BigSchema.cs | [2026-03-15 08:55:00 → 2026-03-15 09:04:00] | `TextMismatch` | |
 | `[ * ]` | src/LargeConfig.xml | [2026-03-15 08:54:00 → 2026-03-15 09:05:00] | `TextMismatch` | |
-| `[ * ]` | util/Legacy.dll | [2026-03-15 08:50:00 → 2026-03-15 09:01:00] | `ILMismatch` `dotnet-ildasm (version: 0.12.2)` | |
+| `[ * ]` | util/Legacy.dll | [2026-03-15 08:50:00 → 2026-03-15 09:01:00] | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 
 ## Summary
 

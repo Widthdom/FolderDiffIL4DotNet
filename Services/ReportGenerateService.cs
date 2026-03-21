@@ -310,13 +310,18 @@ namespace FolderDiffIL4DotNet.Services
 
         private static string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
         {
+            return $"`{diffDetail}`";
+        }
+
+        private static string BuildDisassemblerDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
+        {
             if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch || diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&
                 fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
                 !string.IsNullOrWhiteSpace(label))
             {
-                return $"`{diffDetail}` `{label}`";
+                return $"`{label}`";
             }
-            return $"`{diffDetail}`";
+            return "";
         }
 
         private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
