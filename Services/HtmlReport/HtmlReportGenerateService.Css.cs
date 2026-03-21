@@ -55,7 +55,8 @@ namespace FolderDiffIL4DotNet.Services
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
-            --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; }
+            --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
+            --sc-cnt-class-w: 22em; }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
     col.col-reason-g { width: var(--col-reason-w); }
@@ -138,7 +139,7 @@ namespace FolderDiffIL4DotNet.Services
     /* ── Assembly semantic changes ─────────────────────────────────────── */
     .semantic-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
     .semantic-changes p { margin: 4px 0 2px; }
-    table.semantic-changes-table { border-collapse: collapse; margin: 4px 0; font-size: 12px; table-layout: fixed; width: 1px; }
+    table.semantic-changes-table { border-collapse: collapse; margin: 4px 0; font-size: 12px; table-layout: auto; }
     table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #bbb; background: #98989d; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
     table.semantic-changes-table th.th-resizable { position: relative; }
     table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -166,7 +167,7 @@ namespace FolderDiffIL4DotNet.Services
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
-    col.sc-cnt-class-g { width: 22em; }
+    col.sc-cnt-class-g { width: var(--sc-cnt-class-w); }
     col.sc-cnt-change-g { width: 7em; }
     col.sc-cnt-count-g { width: 4em; }";
         }

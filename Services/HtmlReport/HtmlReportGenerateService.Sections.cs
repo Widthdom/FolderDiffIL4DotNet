@@ -454,7 +454,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <col class=\"sc-cnt-count-g\">");
             sb.AppendLine("</colgroup>");
             sb.AppendLine("<thead><tr>");
-            sb.AppendLine("  <th>Class</th>");
+            sb.AppendLine("  <th class=\"th-resizable\" data-col-var=\"--sc-cnt-class-w\">Class</th>");
             sb.AppendLine("  <th>Change</th><th>Count</th>");
             sb.AppendLine("</tr></thead>");
             sb.AppendLine("<tbody>");

@@ -68,7 +68,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    var openDetails = Array.from(document.querySelectorAll('details[open]'));");
             sb.AppendLine("    openDetails.forEach(function(d){ d.removeAttribute('open'); });");
             sb.AppendLine("    // 2. Capture current effective column widths to bake into reviewed HTML as defaults");
-            sb.AppendLine("    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];");
+            sb.AppendLine("    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--sc-cnt-class-w'];");
             sb.AppendLine("    var cs = getComputedStyle(root);");
             sb.AppendLine("    var curWidths = {};");
             sb.AppendLine("    colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });");
@@ -94,7 +94,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      + '; --sc-name-w: '     + curWidths['--sc-name-w']");
             sb.AppendLine("      + '; --sc-rettype-w: '  + curWidths['--sc-rettype-w']");
             sb.AppendLine("      + '; --sc-params-w: '   + curWidths['--sc-params-w']");
-            sb.AppendLine("      + '; --sc-body-w: '     + curWidths['--sc-body-w'] + '; }');");
+            sb.AppendLine("      + '; --sc-body-w: '     + curWidths['--sc-body-w']
+      + '; --sc-cnt-class-w: ' + curWidths['--sc-cnt-class-w'] + '; }');");
             sb.AppendLine("    // Remove inline col-var overrides from <html> element (now baked into :root)");
             sb.AppendLine("    html = html.replace(/(<html\\b[^>]*?) style=\"[^\"]*\"/, '$1');");
             sb.AppendLine("    // Replace controls bar with reviewed banner");
@@ -116,7 +117,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    document.querySelectorAll('input[type=\"text\"], textarea').forEach(function(inp){ inp.value=''; });");
             sb.AppendLine("    // Reset column widths to defaults");
             sb.AppendLine("    var root = document.documentElement;");
-            sb.AppendLine("    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'].forEach(function(v){ root.style.removeProperty(v); });");
+            sb.AppendLine("    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--sc-cnt-class-w'].forEach(function(v){ root.style.removeProperty(v); });");
             sb.AppendLine("    syncTableWidths();");
             sb.AppendLine("    // Close all open diff/IL-diff details");
             sb.AppendLine("    document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });");
