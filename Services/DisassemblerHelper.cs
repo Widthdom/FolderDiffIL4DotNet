@@ -162,9 +162,9 @@ namespace FolderDiffIL4DotNet.Services
                 var stdout = process.StandardOutput.ReadToEnd();
                 var stderr = process.StandardError.ReadToEnd();
 
-                if (!process.WaitForExit(millisecondsTimeout: 10_000))
+                if (!process.WaitForExit(10_000))
                 {
-                    try { process.Kill(); } catch { /* best-effort */ }
+                    try { process.Kill(); } catch (InvalidOperationException) { /* best-effort: process already exited */ }
                     return (false, null, resolved);
                 }
 
