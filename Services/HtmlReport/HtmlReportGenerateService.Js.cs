@@ -112,6 +112,11 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);");
             sb.AppendLine("  }");
             sb.AppendLine();
+            sb.AppendLine("  function collapseAll() {");
+            sb.AppendLine("    document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });");
+            sb.AppendLine("    scheduleSave();");
+            sb.AppendLine("  }");
+            sb.AppendLine();
             sb.AppendLine("  function clearAll() {");
             sb.AppendLine("    if (!confirm('Clear all checkboxes and text inputs?')) return;");
             sb.AppendLine("    document.querySelectorAll('input[type=\"checkbox\"]').forEach(function(cb){ cb.checked=false; });");
