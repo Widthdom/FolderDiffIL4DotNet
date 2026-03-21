@@ -47,7 +47,7 @@ namespace FolderDiffIL4DotNet.Services
             "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY_CMD;
 
         private const int DEFAULT_BLACKLIST_TTL_MINUTES = 10;
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly ILCache? _ilCache;
         private readonly DisassemblerBlacklist _blacklist;
 
@@ -75,7 +75,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public int IlCacheStores => Volatile.Read(ref _ilCacheStores);
 
-        public DotNetDisassembleService(ConfigSettings config, ILCache? ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
+        public DotNetDisassembleService(IReadOnlyConfigSettings config, ILCache? ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
         {
             ArgumentNullException.ThrowIfNull(config);
             _config = config;

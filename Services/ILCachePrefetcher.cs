@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Services
     internal sealed class ILCachePrefetcher
     {
         private const string ILSPY_FLAG_IL = "-il";
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly ILCache? _ilCache;
         private readonly ILoggerService _logger;
         private readonly DotNetDisassemblerCache _dotNetDisassemblerCache;
@@ -34,7 +34,7 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <exception cref="ArgumentNullException"><paramref name="config"/>, <paramref name="logger"/>, or <paramref name="dotNetDisassemblerCache"/> is null. / <paramref name="config"/>、<paramref name="logger"/>、または <paramref name="dotNetDisassemblerCache"/> が null の場合。</exception>
         internal ILCachePrefetcher(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache,
             ILoggerService logger,
             DotNetDisassemblerCache dotNetDisassemblerCache)

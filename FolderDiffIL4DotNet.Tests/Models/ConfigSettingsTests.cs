@@ -416,5 +416,51 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(10000, config.InlineDiffMaxDiffLines);
             Assert.Equal(10000, config.InlineDiffMaxOutputLines);
         }
+
+        /// <summary>
+        /// Verifies that ConfigSettings implements IReadOnlyConfigSettings and all interface properties are accessible.
+        /// ConfigSettings が IReadOnlyConfigSettings を実装し、全インターフェースプロパティがアクセス可能であることを検証する。
+        /// </summary>
+        [Fact]
+        public void ConfigSettings_ImplementsIReadOnlyConfigSettings()
+        {
+            var config = new ConfigSettings();
+
+            IReadOnlyConfigSettings readOnly = config;
+
+            Assert.NotNull(readOnly.IgnoredExtensions);
+            Assert.NotNull(readOnly.TextFileExtensions);
+            Assert.NotNull(readOnly.ILIgnoreLineContainingStrings);
+            Assert.NotNull(readOnly.SpinnerFrames);
+            Assert.Equal(config.MaxLogGenerations, readOnly.MaxLogGenerations);
+            Assert.Equal(config.ShouldIncludeUnchangedFiles, readOnly.ShouldIncludeUnchangedFiles);
+            Assert.Equal(config.MaxParallelism, readOnly.MaxParallelism);
+            Assert.Equal(config.EnableILCache, readOnly.EnableILCache);
+            Assert.Equal(config.SkipIL, readOnly.SkipIL);
+            Assert.Equal(config.EnableInlineDiff, readOnly.EnableInlineDiff);
+        }
+
+        /// <summary>
+        /// Verifies that list properties on IReadOnlyConfigSettings return IReadOnlyList (no Add/Remove).
+        /// IReadOnlyConfigSettings のリストプロパティが IReadOnlyList を返す（Add/Remove 不可）ことを検証する。
+        /// </summary>
+        [Fact]
+        public void IReadOnlyConfigSettings_ListProperties_AreReadOnly()
+        {
+            var config = new ConfigSettings();
+            IReadOnlyConfigSettings readOnly = config;
+
+            // IReadOnlyList does not expose Add/Remove, verifying type constraint
+            // IReadOnlyList は Add/Remove を公開しないため、型制約を確認
+            System.Collections.Generic.IReadOnlyList<string> ignoredExts = readOnly.IgnoredExtensions;
+            System.Collections.Generic.IReadOnlyList<string> textExts = readOnly.TextFileExtensions;
+            System.Collections.Generic.IReadOnlyList<string> ilIgnore = readOnly.ILIgnoreLineContainingStrings;
+            System.Collections.Generic.IReadOnlyList<string> spinnerFrames = readOnly.SpinnerFrames;
+
+            Assert.NotEmpty(ignoredExts);
+            Assert.NotEmpty(textExts);
+            Assert.Empty(ilIgnore);
+            Assert.NotEmpty(spinnerFrames);
+        }
     }
 }

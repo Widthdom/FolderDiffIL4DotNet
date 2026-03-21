@@ -184,7 +184,7 @@ namespace FolderDiffIL4DotNet.Services
                 _ => 3
             };
 
-        private static List<string> GetNormalizedIlIgnoreStrings(ConfigSettings config)
+        private static List<string> GetNormalizedIlIgnoreStrings(IReadOnlyConfigSettings config)
         {
             if (config?.ILIgnoreLineContainingStrings == null) return new List<string>();
             return config.ILIgnoreLineContainingStrings

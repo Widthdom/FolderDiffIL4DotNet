@@ -17,7 +17,7 @@ namespace FolderDiffIL4DotNet.Services
         private const int DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * Constants.BYTES_PER_KILOBYTE;
         private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * Constants.BYTES_PER_KILOBYTE;
         private const int BYTES_PER_MEGABYTE = Constants.BYTES_PER_KILOBYTE * Constants.BYTES_PER_KILOBYTE;
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly IILOutputService _ilOutputService;
         private readonly string _oldFolderAbsolutePath;
         private readonly string _newFolderAbsolutePath;
@@ -27,7 +27,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IFileComparisonService _fileComparisonService;
 
         public FileDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             IILOutputService ilOutputService,
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
@@ -41,7 +41,7 @@ namespace FolderDiffIL4DotNet.Services
         /// テスト向けに比較 I/O を差し替え可能なコンストラクタ。
         /// </summary>
         public FileDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             IILOutputService ilOutputService,
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,

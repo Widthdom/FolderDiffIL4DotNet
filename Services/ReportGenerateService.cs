@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILoggerService _logger;
         private readonly string[] _spinnerFrames;
 
-        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, ConfigSettings config)
+        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IReadOnlyConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Services
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache = null)
         {
             string diffReportAbsolutePath = GetDiffReportAbsolutePath(reportsFolderAbsolutePath);
@@ -137,7 +137,7 @@ namespace FolderDiffIL4DotNet.Services
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             bool hasMd5Mismatch,
             bool hasTimestampRegressionWarning,
             ILCache? ilCache)
@@ -184,7 +184,7 @@ namespace FolderDiffIL4DotNet.Services
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             bool hasMd5Mismatch,
             bool hasTimestampRegressionWarning,
             ILCache? ilCache)
@@ -336,7 +336,7 @@ namespace FolderDiffIL4DotNet.Services
                 _ => 3
             };
 
-        private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
+        private static List<string> GetNormalizedIlIgnoreContainingStrings(IReadOnlyConfigSettings config)
         {
             if (config?.ILIgnoreLineContainingStrings == null) return new List<string>();
             return config.ILIgnoreLineContainingStrings

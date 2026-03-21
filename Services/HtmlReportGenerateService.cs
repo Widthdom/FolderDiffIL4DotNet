@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string TH_BG_MODIFIED = "#e3f2fd";
         private const string TH_BG_DEFAULT  = "#fafafa";
 
-        public HtmlReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, ConfigSettings config)
+        public HtmlReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IReadOnlyConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
@@ -54,7 +54,7 @@ namespace FolderDiffIL4DotNet.Services
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache = null)
         {
             if (!config.ShouldGenerateHtmlReport) return;
@@ -84,7 +84,7 @@ namespace FolderDiffIL4DotNet.Services
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache)
         {
             string label = Path.GetFileName(

@@ -32,7 +32,7 @@ namespace FolderDiffIL4DotNet.Models
     /// Model class that holds settings from config.json.
     /// config.jsonの設定を保持するモデルクラス。
     /// </summary>
-    public sealed class ConfigSettings
+    public sealed class ConfigSettings : IReadOnlyConfigSettings
     {
         private static readonly string[] DefaultIgnoredExtensionsValues =
         {
@@ -399,6 +399,13 @@ namespace FolderDiffIL4DotNet.Models
 
             return new ConfigValidationResult(errors);
         }
+
+        // Explicit interface implementations for IReadOnlyList<string> properties.
+        // IReadOnlyList<string> プロパティの明示的インターフェース実装。
+        IReadOnlyList<string> IReadOnlyConfigSettings.IgnoredExtensions => _ignoredExtensions;
+        IReadOnlyList<string> IReadOnlyConfigSettings.TextFileExtensions => _textFileExtensions;
+        IReadOnlyList<string> IReadOnlyConfigSettings.ILIgnoreLineContainingStrings => _ilIgnoreLineContainingStrings;
+        IReadOnlyList<string> IReadOnlyConfigSettings.SpinnerFrames => _spinnerFrames;
 
         private static List<string> CreateDefaultIgnoredExtensions() => new(DefaultIgnoredExtensionsValues);
 

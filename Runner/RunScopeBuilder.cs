@@ -48,6 +48,7 @@ namespace FolderDiffIL4DotNet.Runner
             var services = new ServiceCollection();
             services.AddSingleton<ILoggerService>(logger);
             services.AddSingleton(config);
+            services.AddSingleton<IReadOnlyConfigSettings>(config);
             services.AddSingleton(executionContext);
             services.AddScoped<FileDiffResultLists>();
             services.AddScoped<DotNetDisassemblerCache>();

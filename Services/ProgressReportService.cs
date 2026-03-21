@@ -33,7 +33,7 @@ namespace FolderDiffIL4DotNet.Services
         private bool _keepAliveTimerStarted;
         private bool _disposed;
 
-        public ProgressReportService(ConfigSettings config)
+        public ProgressReportService(IReadOnlyConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(config);
             _keepAliveFrames = config.SpinnerFrames.ToArray();

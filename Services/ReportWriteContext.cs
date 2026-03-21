@@ -16,7 +16,7 @@ namespace FolderDiffIL4DotNet.Services
         public string AppVersion { get; init; } = null!;
         public string ElapsedTimeString { get; init; } = null!;
         public string ComputerName { get; init; } = null!;
-        public ConfigSettings Config { get; init; } = null!;
+        public IReadOnlyConfigSettings Config { get; init; } = null!;
         public bool HasMd5Mismatch { get; init; }
         public bool HasTimestampRegressionWarning { get; init; }
         public ILCache? IlCache { get; init; }

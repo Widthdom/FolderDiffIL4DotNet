@@ -23,7 +23,7 @@ namespace FolderDiffIL4DotNet.Services
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config)
+            IReadOnlyConfigSettings config)
         {
             sb.AppendLine($"<h1>{I18n("Folder Diff Report", "フォルダ差分レポート")}</h1>");
             sb.AppendLine("<ul class=\"meta\">");
@@ -87,7 +87,7 @@ namespace FolderDiffIL4DotNet.Services
             StringBuilder sb,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
-            ConfigSettings config)
+            IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.IgnoredFilesRelativePathToLocation
                 .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase).ToList();
@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
             StringBuilder sb,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
-            ConfigSettings config)
+            IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.UnchangedFilesRelativePath
                 .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
@@ -149,7 +149,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</tbody></table></div>");
         }
 
-        private void AppendAddedSection(StringBuilder sb, ConfigSettings config)
+        private void AppendAddedSection(StringBuilder sb, IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.AddedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
@@ -169,7 +169,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</tbody></table></div>");
         }
 
-        private void AppendRemovedSection(StringBuilder sb, ConfigSettings config)
+        private void AppendRemovedSection(StringBuilder sb, IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.RemovedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
@@ -194,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache)
         {
             var items = _fileDiffResultLists.ModifiedFilesRelativePath
@@ -248,7 +248,7 @@ namespace FolderDiffIL4DotNet.Services
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             FileDiffResultLists.DiffDetailResult diffDetail,
             string disassemblerLabel,
             ILCache? ilCache,
@@ -366,7 +366,7 @@ namespace FolderDiffIL4DotNet.Services
             int idx,
             string assemblyPath,
             AssemblySemanticChangesSummary summary,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             string sectionPrefix = "mod")
         {
             int recordNo = idx + 1;
@@ -504,7 +504,7 @@ namespace FolderDiffIL4DotNet.Services
         private static string ChangeToStatusBg(string change)
             => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Modified" => TH_BG_MODIFIED, _ => "" };
 
-        private void AppendSummarySection(StringBuilder sb, ConfigSettings config)
+        private void AppendSummarySection(StringBuilder sb, IReadOnlyConfigSettings config)
         {
             sb.AppendLine($"<h2 class=\"section-heading\">{I18n("Summary", "サマリー")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
@@ -542,7 +542,7 @@ namespace FolderDiffIL4DotNet.Services
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache)
         {
             bool hasMd5 = _fileDiffResultLists.HasAnyMd5Mismatch;

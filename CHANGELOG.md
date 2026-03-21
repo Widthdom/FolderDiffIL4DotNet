@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **Immutable ConfigSettings via IReadOnlyConfigSettings** — Introduced `IReadOnlyConfigSettings` interface exposing all `ConfigSettings` properties as read-only (list properties return `IReadOnlyList<string>`). `ConfigSettings` now implements this interface. All downstream service constructors (`FolderDiffService`, `FileDiffService`, `ILOutputService`, `DotNetDisassembleService`, `ILCachePrefetcher`, `ProgressReportService`, `FolderDiffExecutionStrategy`, `ReportGenerateService`, `HtmlReportGenerateService`) and `ReportWriteContext` accept `IReadOnlyConfigSettings` instead of the mutable `ConfigSettings`. Only `ProgramRunner.ApplyCliOverrides` retains mutable access. Added tests `ConfigSettings_ImplementsIReadOnlyConfigSettings` and `IReadOnlyConfigSettings_ListProperties_AreReadOnly` in `ConfigSettingsTests`.
+
 - **Logger thread safety** — Added a `lock` around log file writes in `LoggerService.LogMessage()` to prevent `IOException` when multiple threads call the logger concurrently during parallel diff processing. The lock object (`_fileWriteLock`) serialises only the file I/O section; console output remains unguarded as it is inherently thread-safe.
 
 - **Consolidated redundant exception handling with exception filters** — Replaced repetitive per-type `catch` blocks that performed identical actions with C# exception filters (`catch (Exception ex) when (ex is X or Y or Z)`). Affected files: `ProgramRunner.cs`, `FolderDiffService.cs`, `FileDiffService.cs`, `LoggerService.cs`, `ILOutputService.cs`, `ILDiskCache.cs`, `ILCache.cs`, `DotNetDisassemblerCache.cs`, `ILCachePrefetcher.cs`, `ILTextOutputService.cs`, `DotNetDisassembleService.cs`, `DotNetDisassembleService.VersionLabel.cs`, `ReportGenerateService.cs`, `HtmlReportGenerateService.cs`, `DotNetDetector.cs`. No behavioural change; purely a code-size and maintainability improvement.
@@ -440,6 +442,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 変更
+
+- **IReadOnlyConfigSettings による ConfigSettings の不変化** — `ConfigSettings` の全プロパティを読み取り専用で公開する `IReadOnlyConfigSettings` インターフェースを導入（リストプロパティは `IReadOnlyList<string>` として返却）。`ConfigSettings` がこのインターフェースを実装。下流の全サービスコンストラクタ（`FolderDiffService`、`FileDiffService`、`ILOutputService`、`DotNetDisassembleService`、`ILCachePrefetcher`、`ProgressReportService`、`FolderDiffExecutionStrategy`、`ReportGenerateService`、`HtmlReportGenerateService`）および `ReportWriteContext` がミュータブルな `ConfigSettings` の代わりに `IReadOnlyConfigSettings` を受け取るよう変更。`ProgramRunner.ApplyCliOverrides` のみミュータブルアクセスを保持。`ConfigSettingsTests` に `ConfigSettings_ImplementsIReadOnlyConfigSettings` および `IReadOnlyConfigSettings_ListProperties_AreReadOnly` テストを追加。
 
 - **ロガーのスレッドセーフティ改善** — `LoggerService.LogMessage()` のログファイル書き込み部分に `lock` を追加し、並列差分処理時に複数スレッドが同時にロガーを呼び出した場合の `IOException` を防止しました。ロックオブジェクト（`_fileWriteLock`）はファイル I/O セクションのみを直列化し、コンソール出力はスレッドセーフであるため非ガードのままです。
 

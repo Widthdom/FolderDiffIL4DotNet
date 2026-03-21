@@ -20,14 +20,14 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
         private const string VERSION_LABEL_PREFIX = " (version: ";
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly ILCache? _ilCache;
         private readonly IILTextOutputService _ilTextOutputService;
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
         private readonly ILoggerService _logger;
 
         public ILOutputService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             DiffExecutionContext executionContext,
             IILTextOutputService ilTextOutputService,
             IDotNetDisassembleService dotNetDisassembleService,
@@ -177,7 +177,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Normalises the strings used for contains-based line exclusion during IL comparison (removes null/whitespace, trims, deduplicates).
         /// IL 比較時に「含む」判定で除外対象とする文字列を正規化します（null/空白除外、trim、重複排除）。
         /// </summary>
-        private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
+        private static List<string> GetNormalizedIlIgnoreContainingStrings(IReadOnlyConfigSettings config)
         {
             if (config?.ILIgnoreLineContainingStrings == null)
             {
