@@ -138,7 +138,7 @@
 
   function verifyIntegrity() {
     if (__reviewedSha256__ === null) {
-      alert('This report has not been downloaded as reviewed yet.\n\nこのレポートはまだレビュー済みとしてダウンロードされていません。');
+      alert('This report has not been downloaded as reviewed yet.');
       return;
     }
     var input = document.createElement('input');
@@ -159,13 +159,11 @@
       var hashArray = Array.from(new Uint8Array(hashBuffer));
       var actualHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
       if (actualHash === __reviewedSha256__) {
-        alert('Integrity verification passed.\nThe file has not been tampered with.'
-          + '\n\n整合性検証に合格しました。\nファイルは改竄されていません。');
+        alert('Integrity verification passed.\nThe file has not been tampered with.');
       } else {
         alert('Integrity verification FAILED.\nThe file may have been tampered with.'
           + '\n\nExpected: ' + __reviewedSha256__
-          + '\nActual:   ' + actualHash
-          + '\n\n整合性検証に失敗しました。\nファイルが改竄されている可能性があります。');
+          + '\nActual:   ' + actualHash);
       }
     };
     input.click();
