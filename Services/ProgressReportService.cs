@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Models;
