@@ -218,7 +218,7 @@ namespace FolderDiffIL4DotNet.Services
                 var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
                     ? HtmlEncode(probe.Version)
                     : "N/A";
-                sb.AppendLine($"        <tr><td>{HtmlEncode(probe.ToolName)}</td><td>{available}</td><td>{version}</td></tr>");
+                sb.AppendLine($"        <tr><td>{HtmlEncode(probe.ToolName)}</td><td style=\"text-align:center\">{available}</td><td>{version}</td></tr>");
             }
             sb.AppendLine("      </tbody>");
             sb.AppendLine("    </table>");
