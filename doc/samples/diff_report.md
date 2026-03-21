@@ -57,7 +57,7 @@
 |:------:|-----------|:---------:|--------|--------------|
 | `[ - ]` | /Users/UserA/workspace/old/legacy/old-tool.txt | 2026-03-15 08:55:00 | | |
 
-## [ * ] Modified Files (9)
+## [ * ] Modified Files (12)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|:---------:|--------|--------------|
@@ -69,6 +69,9 @@
 | `[ * ]` | src/Utils.cs | 2026-03-15 08:57:00 → 2026-03-15 09:03:00 | `TextMismatch` | |
 | `[ * ]` | src/BigSchema.cs | 2026-03-15 08:55:00 → 2026-03-15 09:04:00 | `TextMismatch` | |
 | `[ * ]` | src/LargeConfig.xml | 2026-03-15 08:54:00 → 2026-03-15 09:05:00 | `TextMismatch` | |
+| `[ * ]` | src/BigModule.cs | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `TextMismatch` | |
+| `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
+| `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 
 ## Summary
@@ -79,8 +82,8 @@
 | Unchanged | 5 |
 | Added | 1 |
 | Removed | 1 |
-| Modified | 9 |
-| Compared | 18 (Old) vs 18 (New) |
+| Modified | 12 |
+| Compared | 21 (Old) vs 21 (New) |
 
 ## IL Cache Stats
 
@@ -99,5 +102,8 @@
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|:---------:|--------|--------------|
+| `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
+| `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `MD5Mismatch` | |
+| `[ * ]` | src/BigModule.cs | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `TextMismatch` | |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
