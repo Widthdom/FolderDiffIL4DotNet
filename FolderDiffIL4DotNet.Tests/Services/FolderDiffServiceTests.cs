@@ -74,7 +74,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(
                 FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New,
                 _resultLists.IgnoredFilesRelativePathToLocation["ignored.pdb"]);
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _resultLists.FileRelativePathToDiffDetailDictionary["same.txt"]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, _resultLists.FileRelativePathToDiffDetailDictionary["same.txt"]);
             Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, _resultLists.FileRelativePathToDiffDetailDictionary["modified.txt"]);
         }
 
@@ -103,7 +103,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(Path.Combine("nested", "same.txt"), _resultLists.UnchangedFilesRelativePath);
             Assert.Contains(Path.Combine("nested", "modified.txt"), _resultLists.ModifiedFilesRelativePath);
             Assert.Contains(Path.Combine(newDir, "nested", "added.txt"), _resultLists.AddedFilesAbsolutePath);
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _resultLists.FileRelativePathToDiffDetailDictionary[Path.Combine("nested", "same.txt")]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, _resultLists.FileRelativePathToDiffDetailDictionary[Path.Combine("nested", "same.txt")]);
             Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, _resultLists.FileRelativePathToDiffDetailDictionary[Path.Combine("nested", "modified.txt")]);
         }
 
@@ -111,7 +111,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public async Task ExecuteFolderDiffAsync_ClearsPreviousRunStateAtStart()
         {
             _resultLists.AddModifiedFileRelativePath("stale.txt");
-            _resultLists.RecordDiffDetail("stale.txt", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail("stale.txt", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var oldDir = Path.Combine(_rootDir, "old-empty");
             var newDir = Path.Combine(_rootDir, "new-empty");
@@ -275,7 +275,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             await service.ExecuteFolderDiffAsync();
 
             Assert.Contains("linked.txt", _resultLists.UnchangedFilesRelativePath);
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, _resultLists.FileRelativePathToDiffDetailDictionary["linked.txt"]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, _resultLists.FileRelativePathToDiffDetailDictionary["linked.txt"]);
         }
 
         private static ConfigSettings CreateConfig(int maxParallelism) => new()

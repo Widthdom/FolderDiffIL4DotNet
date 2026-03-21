@@ -7,14 +7,14 @@ using FolderDiffIL4DotNet.Core.IO;
 namespace FolderDiffIL4DotNet.Services.Caching
 {
     /// <summary>
-    /// Memory layer of the IL cache. Holds IL text and file MD5 hashes, managing TTL expiry and LRU eviction.
-    /// IL キャッシュのメモリ層。IL テキストとファイル MD5 を保持し、TTL と LRU を管理します。
+    /// Memory layer of the IL cache. Holds IL text and file SHA256 hashes, managing TTL expiry and LRU eviction.
+    /// IL キャッシュのメモリ層。IL テキストとファイル SHA256 を保持し、TTL と LRU を管理します。
     /// </summary>
     internal sealed class ILMemoryCache
     {
         internal const int DefaultMaxEntries = 1000;
         private readonly ConcurrentDictionary<string, CacheEntry> _ilEntries = new(StringComparer.Ordinal);
-        private readonly ConcurrentDictionary<string, string> _md5HashCache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, string> _sha256HashCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly int _maxEntries;
         private readonly TimeSpan? _timeToLive;
         private readonly object _lruLock = new();
@@ -34,11 +34,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
-        /// Returns the cached MD5 hex string for the file, computing it on first access.
-        /// 指定ファイルの MD5 を取得します（初回アクセス時に計算しキャッシュ）。
+        /// Returns the cached SHA256 hex string for the file, computing it on first access.
+        /// 指定ファイルの SHA256 を取得します（初回アクセス時に計算しキャッシュ）。
         /// </summary>
         internal string GetFileHash(string fileAbsolutePath) =>
-            _md5HashCache.GetOrAdd(fileAbsolutePath, static path => FileComparer.ComputeFileMd5Hex(path));
+            _sha256HashCache.GetOrAdd(fileAbsolutePath, static path => FileComparer.ComputeFileSha256Hex(path));
 
         /// <summary>
         /// Tries to retrieve IL text for the given key; expired entries are purged on access.

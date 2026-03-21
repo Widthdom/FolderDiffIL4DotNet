@@ -22,7 +22,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private const int MAX_PARALLEL_NETWORK_LIMIT = 8;
 
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly IFileSystemService _fileSystem;
         private readonly string _oldFolderAbsolutePath;
@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly bool _optimizeForNetworkShares;
         private readonly HashSet<string> _ignoredExtensions;
         public FolderDiffExecutionStrategy(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
             IFileSystemService fileSystem)

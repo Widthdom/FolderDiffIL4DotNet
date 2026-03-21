@@ -119,7 +119,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.SetNewFilesAbsolutePath(newFiles);
 
             _resultLists.AddUnchangedFileRelativePath("a.txt");
-            _resultLists.RecordDiffDetail("a.txt", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _resultLists.RecordDiffDetail("a.txt", FileDiffResultLists.DiffDetailResult.SHA256Match);
             _resultLists.AddModifiedFileRelativePath("b.txt");
             _resultLists.RecordDiffDetail("b.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
             _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "c.txt"));
@@ -208,7 +208,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("html-encode");
 
             _resultLists.AddModifiedFileRelativePath("src/<Module>.dll");
-            _resultLists.RecordDiffDetail("src/<Module>.dll", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail("src/<Module>.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var config = CreateConfig();
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
@@ -223,12 +223,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReportHtml_Md5MismatchWarning_AppearsInWarningsSection()
+        public void GenerateDiffReportHtml_Sha256MismatchWarning_AppearsInWarningsSection()
         {
-            var (oldDir, newDir, reportDir) = MakeDirs("md5-warning");
+            var (oldDir, newDir, reportDir) = MakeDirs("sha256-warning");
 
             _resultLists.AddModifiedFileRelativePath("payload.bin");
-            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var config = CreateConfig();
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
@@ -238,23 +238,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("section-heading\">", html);
             Assert.Contains("Warnings</h2>", html);
-            Assert.Contains("MD5Mismatch", html);
+            Assert.Contains("SHA256Mismatch", html);
         }
 
         /// <summary>
-        /// Verifies that HTML Warnings section includes the MD5Mismatch detail table with file listing.
-        /// HTML の警告セクションに MD5Mismatch 詳細テーブル（ファイル一覧）が含まれることを確認する。
+        /// Verifies that HTML Warnings section includes the SHA256Mismatch detail table with file listing.
+        /// HTML の警告セクションに SHA256Mismatch 詳細テーブル（ファイル一覧）が含まれることを確認する。
         /// </summary>
         [Fact]
-        public void GenerateDiffReportHtml_Md5MismatchWarning_IncludesDetailTable()
+        public void GenerateDiffReportHtml_Sha256MismatchWarning_IncludesDetailTable()
         {
-            var (oldDir, newDir, reportDir) = MakeDirs("md5-table");
+            var (oldDir, newDir, reportDir) = MakeDirs("sha256-table");
 
             _resultLists.AddModifiedFileRelativePath("alpha.bin");
-            _resultLists.RecordDiffDetail("alpha.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail("alpha.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             _resultLists.AddModifiedFileRelativePath("beta.bin");
-            _resultLists.RecordDiffDetail("beta.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
-            // TextMismatch file should NOT appear in the MD5Mismatch table
+            _resultLists.RecordDiffDetail("beta.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            // TextMismatch file should NOT appear in the SHA256Mismatch table
             _resultLists.AddModifiedFileRelativePath("gamma.txt");
             _resultLists.RecordDiffDetail("gamma.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
@@ -266,34 +266,34 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
             // Table heading should exist with count
-            Assert.Contains("MD5Mismatch (Manual Review Recommended) (2)</h2>", html);
+            Assert.Contains("SHA256Mismatch (Manual Review Recommended) (2)</h2>", html);
 
-            // Extract the MD5Mismatch table section
-            int md5TableStart = html.IndexOf("MD5Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
-            Assert.True(md5TableStart >= 0, "MD5Mismatch detail table heading should exist");
-            string md5Section = html.Substring(md5TableStart);
+            // Extract the SHA256Mismatch table section
+            int sha256TableStart = html.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            Assert.True(sha256TableStart >= 0, "SHA256Mismatch detail table heading should exist");
+            string sha256Section = html.Substring(sha256TableStart);
 
-            // Both MD5Mismatch files should appear
-            Assert.Contains("alpha.bin", md5Section);
-            Assert.Contains("beta.bin", md5Section);
+            // Both SHA256Mismatch files should appear
+            Assert.Contains("alpha.bin", sha256Section);
+            Assert.Contains("beta.bin", sha256Section);
 
             // Files should be sorted alphabetically (alpha before beta)
-            int alphaIdx = md5Section.IndexOf("alpha.bin", StringComparison.Ordinal);
-            int betaIdx = md5Section.IndexOf("beta.bin", StringComparison.Ordinal);
-            Assert.True(alphaIdx < betaIdx, "MD5Mismatch files should be sorted alphabetically");
+            int alphaIdx = sha256Section.IndexOf("alpha.bin", StringComparison.Ordinal);
+            int betaIdx = sha256Section.IndexOf("beta.bin", StringComparison.Ordinal);
+            Assert.True(alphaIdx < betaIdx, "SHA256Mismatch files should be sorted alphabetically");
         }
 
         /// <summary>
-        /// Verifies that MD5Mismatch detail table appears before Timestamps Regressed table when both warnings exist.
-        /// 両方の警告が存在する場合、MD5Mismatch 詳細テーブルがタイムスタンプ逆行テーブルの前に表示されることを確認する。
+        /// Verifies that SHA256Mismatch detail table appears before Timestamps Regressed table when both warnings exist.
+        /// 両方の警告が存在する場合、SHA256Mismatch 詳細テーブルがタイムスタンプ逆行テーブルの前に表示されることを確認する。
         /// </summary>
         [Fact]
-        public void GenerateDiffReportHtml_Md5MismatchTable_AppearsBeforeTimestampRegressedTable()
+        public void GenerateDiffReportHtml_Sha256MismatchTable_AppearsBeforeTimestampRegressedTable()
         {
-            var (oldDir, newDir, reportDir) = MakeDirs("md5-before-ts");
+            var (oldDir, newDir, reportDir) = MakeDirs("sha256-before-ts");
 
             _resultLists.AddModifiedFileRelativePath("payload.bin");
-            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             _resultLists.RecordNewFileTimestampOlderThanOldWarning("payload.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
 
             var config = CreateConfig();
@@ -304,11 +304,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            int md5TableIdx = html.IndexOf("MD5Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            int sha256TableIdx = html.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
             int tsTableIdx = html.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
-            Assert.True(md5TableIdx >= 0, "MD5Mismatch detail table should exist");
+            Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
             Assert.True(tsTableIdx >= 0, "Timestamps Regressed table should exist");
-            Assert.True(md5TableIdx < tsTableIdx, "MD5Mismatch table should appear before Timestamps Regressed table");
+            Assert.True(sha256TableIdx < tsTableIdx, "SHA256Mismatch table should appear before Timestamps Regressed table");
         }
 
         [Fact]
@@ -1170,7 +1170,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("copy-btn");
 
             _resultLists.AddModifiedFileRelativePath("src/app.dll");
-            _resultLists.RecordDiffDetail("src/app.dll", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail("src/app.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var config = CreateConfig();
             _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
@@ -1212,8 +1212,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         // ── Sort order: Unchanged files / Unchanged ファイルのソート順 ─────────
 
         /// <summary>
-        /// Verifies that HTML Unchanged files are sorted by MD5Match → ILMatch → TextMatch, then by File Path ascending.
-        /// HTML の Unchanged ファイルが MD5Match → ILMatch → TextMatch の順でソートされることを確認する。
+        /// Verifies that HTML Unchanged files are sorted by SHA256Match → ILMatch → TextMatch, then by File Path ascending.
+        /// HTML の Unchanged ファイルが SHA256Match → ILMatch → TextMatch の順でソートされることを確認する。
         /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_UnchangedFiles_SortedByDiffDetailThenPath()
@@ -1223,12 +1223,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             _resultLists.AddUnchangedFileRelativePath("zzz-text.config");
             _resultLists.RecordDiffDetail("zzz-text.config", FileDiffResultLists.DiffDetailResult.TextMatch);
-            _resultLists.AddUnchangedFileRelativePath("aaa-md5.bin");
-            _resultLists.RecordDiffDetail("aaa-md5.bin", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _resultLists.AddUnchangedFileRelativePath("aaa-sha256.bin");
+            _resultLists.RecordDiffDetail("aaa-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Match);
             _resultLists.AddUnchangedFileRelativePath("bbb-il.dll");
             _resultLists.RecordDiffDetail("bbb-il.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
-            _resultLists.AddUnchangedFileRelativePath("ccc-md5.bin");
-            _resultLists.RecordDiffDetail("ccc-md5.bin", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _resultLists.AddUnchangedFileRelativePath("ccc-sha256.bin");
+            _resultLists.RecordDiffDetail("ccc-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Match);
             _resultLists.AddUnchangedFileRelativePath("aaa-text.txt");
             _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMatch);
 
@@ -1237,15 +1237,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Expected order: MD5Match (aaa-md5.bin, ccc-md5.bin), ILMatch (bbb-il.dll), TextMatch (aaa-text.txt, zzz-text.config)
-            int md5_aaa = html.IndexOf("aaa-md5.bin", StringComparison.Ordinal);
-            int md5_ccc = html.IndexOf("ccc-md5.bin", StringComparison.Ordinal);
+            // Expected order: SHA256Match (aaa-sha256.bin, ccc-sha256.bin), ILMatch (bbb-il.dll), TextMatch (aaa-text.txt, zzz-text.config)
+            int sha256_aaa = html.IndexOf("aaa-sha256.bin", StringComparison.Ordinal);
+            int sha256_ccc = html.IndexOf("ccc-sha256.bin", StringComparison.Ordinal);
             int il_bbb = html.IndexOf("bbb-il.dll", StringComparison.Ordinal);
             int text_aaa = html.IndexOf("aaa-text.txt", StringComparison.Ordinal);
             int text_zzz = html.IndexOf("zzz-text.config", StringComparison.Ordinal);
 
-            Assert.True(md5_aaa < md5_ccc, "MD5Match files should be sorted by path (aaa < ccc)");
-            Assert.True(md5_ccc < il_bbb, "MD5Match should appear before ILMatch");
+            Assert.True(sha256_aaa < sha256_ccc, "SHA256Match files should be sorted by path (aaa < ccc)");
+            Assert.True(sha256_ccc < il_bbb, "SHA256Match should appear before ILMatch");
             Assert.True(il_bbb < text_aaa, "ILMatch should appear before TextMatch");
             Assert.True(text_aaa < text_zzz, "TextMatch files should be sorted by path (aaa < zzz)");
         }
@@ -1253,8 +1253,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         // ── Sort order: Modified files / Modified ファイルのソート順 ─────────
 
         /// <summary>
-        /// Verifies that HTML Modified files are sorted by TextMismatch → ILMismatch → MD5Mismatch, then by File Path ascending.
-        /// HTML の Modified ファイルが TextMismatch → ILMismatch → MD5Mismatch の順でソートされることを確認する。
+        /// Verifies that HTML Modified files are sorted by TextMismatch → ILMismatch → SHA256Mismatch, then by File Path ascending.
+        /// HTML の Modified ファイルが TextMismatch → ILMismatch → SHA256Mismatch の順でソートされることを確認する。
         /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_ModifiedFiles_SortedByDiffDetailThenPath()
@@ -1262,8 +1262,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("mod-sort");
             var config = CreateConfig(enableInlineDiff: false);
 
-            _resultLists.AddModifiedFileRelativePath("zzz-md5.bin");
-            _resultLists.RecordDiffDetail("zzz-md5.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.AddModifiedFileRelativePath("zzz-sha256.bin");
+            _resultLists.RecordDiffDetail("zzz-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             _resultLists.AddModifiedFileRelativePath("aaa-il.dll");
             _resultLists.RecordDiffDetail("aaa-il.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
             _resultLists.AddModifiedFileRelativePath("bbb-text.config");
@@ -1278,24 +1278,24 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Expected order: TextMismatch (aaa-text.txt, bbb-text.config), ILMismatch (aaa-il.dll, ccc-il.dll), MD5Mismatch (zzz-md5.bin)
+            // Expected order: TextMismatch (aaa-text.txt, bbb-text.config), ILMismatch (aaa-il.dll, ccc-il.dll), SHA256Mismatch (zzz-sha256.bin)
             int text_aaa = html.IndexOf("aaa-text.txt", StringComparison.Ordinal);
             int text_bbb = html.IndexOf("bbb-text.config", StringComparison.Ordinal);
             int il_aaa = html.IndexOf("aaa-il.dll", StringComparison.Ordinal);
             int il_ccc = html.IndexOf("ccc-il.dll", StringComparison.Ordinal);
-            int md5_zzz = html.IndexOf("zzz-md5.bin", StringComparison.Ordinal);
+            int sha256_zzz = html.IndexOf("zzz-sha256.bin", StringComparison.Ordinal);
 
             Assert.True(text_aaa < text_bbb, "TextMismatch files should be sorted by path (aaa < bbb)");
             Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch");
             Assert.True(il_aaa < il_ccc, "ILMismatch files should be sorted by path (aaa < ccc)");
-            Assert.True(il_ccc < md5_zzz, "ILMismatch should appear before MD5Mismatch");
+            Assert.True(il_ccc < sha256_zzz, "ILMismatch should appear before SHA256Mismatch");
         }
 
         // ── Sort order: Warnings timestamp-regressed table / 警告タイムスタンプ逆行テーブルのソート順 ─────────
 
         /// <summary>
-        /// Verifies that HTML Warnings timestamp-regressed table is sorted by TextMismatch → ILMismatch → MD5Mismatch, then by File Path ascending.
-        /// HTML の警告タイムスタンプ逆行テーブルが TextMismatch → ILMismatch → MD5Mismatch の順でソートされることを確認する。
+        /// Verifies that HTML Warnings timestamp-regressed table is sorted by TextMismatch → ILMismatch → SHA256Mismatch, then by File Path ascending.
+        /// HTML の警告タイムスタンプ逆行テーブルが TextMismatch → ILMismatch → SHA256Mismatch の順でソートされることを確認する。
         /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_WarningsTimestampRegressed_SortedByDiffDetailThenPath()
@@ -1304,9 +1304,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var config = CreateConfig(enableInlineDiff: false);
             config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
 
-            _resultLists.AddModifiedFileRelativePath("zzz-md5.bin");
-            _resultLists.RecordDiffDetail("zzz-md5.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
-            _resultLists.RecordNewFileTimestampOlderThanOldWarning("zzz-md5.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+            _resultLists.AddModifiedFileRelativePath("zzz-sha256.bin");
+            _resultLists.RecordDiffDetail("zzz-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("zzz-sha256.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
 
             _resultLists.AddModifiedFileRelativePath("aaa-il.dll");
             _resultLists.RecordDiffDetail("aaa-il.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
@@ -1328,10 +1328,43 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             int text_bbb = warningsSection.IndexOf("bbb-text.config", StringComparison.Ordinal);
             int il_aaa = warningsSection.IndexOf("aaa-il.dll", StringComparison.Ordinal);
-            int md5_zzz = warningsSection.IndexOf("zzz-md5.bin", StringComparison.Ordinal);
+            int sha256_zzz = warningsSection.IndexOf("zzz-sha256.bin", StringComparison.Ordinal);
 
             Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch in Warnings");
-            Assert.True(il_aaa < md5_zzz, "ILMismatch should appear before MD5Mismatch in Warnings");
+            Assert.True(il_aaa < sha256_zzz, "ILMismatch should appear before SHA256Mismatch in Warnings");
+        }
+
+        // ── Embedded resource tests ─────────────────────────────────────────
+
+        [Fact]
+        public void LoadEmbeddedResource_CssResource_ReturnsNonEmptyString()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+            Assert.False(string.IsNullOrWhiteSpace(css));
+            Assert.Contains("box-sizing", css);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_JsResource_ReturnsNonEmptyString()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js");
+            Assert.False(string.IsNullOrWhiteSpace(js));
+            Assert.Contains("function", js);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_JsResource_ContainsPlaceholders()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js");
+            Assert.Contains("{{STORAGE_KEY}}", js);
+            Assert.Contains("{{REPORT_DATE}}", js);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_InvalidResource_ThrowsFileNotFoundException()
+        {
+            Assert.Throws<FileNotFoundException>(() =>
+                HtmlReportGenerateService.LoadEmbeddedResource("NonExistent.Resource.Name"));
         }
 
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()

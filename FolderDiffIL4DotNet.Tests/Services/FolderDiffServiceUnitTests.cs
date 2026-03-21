@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
@@ -549,6 +550,41 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenCompleted_LogsFolderDiffCompletedViaLogger()
+        {
+            const string oldDir = "/virtual/old-logcheck";
+            const string newDir = "/virtual/new-logcheck";
+            const string reportDir = "/virtual/report-logcheck";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "file.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "file.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["file.txt"] = true
+            });
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Info
+                    && entry.Message.Contains("Folder diff completed.", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public async Task ExecuteFolderDiffAsync_WhenILPrecomputeBatchSizeIsZero_UsesDefaultBatchSizeAndCallsPrecomputeOnce()
         {
             const string oldDir = "/virtual/old-zerobatch";
@@ -574,8 +610,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
             using var progressReporter = new ProgressReportService(new ConfigSettings());
-            // ilPrecomputeBatchSize = 0 falls back to default (2048), so all 6 paths go in one batch
-            // ilPrecomputeBatchSize = 0 はデフォルト（2048）にフォールバックし、全 6 パスが 1 バッチに入る
+            // ilPrecomputeBatchSize = 0 falls back to default (DefaultILPrecomputeBatchSize), so all 6 paths go in one batch
+            // ilPrecomputeBatchSize = 0 はデフォルト（DefaultILPrecomputeBatchSize）にフォールバックし、全 6 パスが 1 バッチに入る
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 0),
                 progressReporter,
@@ -591,7 +627,39 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(6, precomputeCall.FilesAbsolutePath.Count);
         }
 
-        private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = 2048) => new()
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenCancelled_ThrowsOperationCanceledException()
+        {
+            const string oldDir = "/virtual/old-cancel";
+            const string newDir = "/virtual/new-cancel";
+            const string reportDir = "/virtual/report-cancel";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "file.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "file.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["file.txt"] = true
+            });
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteFolderDiffAsync(cts.Token));
+        }
+
+        private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = ConfigSettings.DefaultILPrecomputeBatchSize) => new()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
             TextFileExtensions = new List<string> { ".txt" },
@@ -691,13 +759,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public ConcurrentQueue<FilesAreEqualCall> FilesAreEqualCalls { get; } = new();
 
-            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePath, int maxParallel)
+            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePath, int maxParallel, CancellationToken cancellationToken = default)
             {
                 PrecomputeCalls.Enqueue(new PrecomputeCall(filesAbsolutePath.ToArray(), maxParallel));
                 return Task.CompletedTask;
             }
 
-            public Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1)
+            public Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1, CancellationToken cancellationToken = default)
             {
                 FilesAreEqualCalls.Enqueue(new FilesAreEqualCall(fileRelativePath, maxParallel));
                 if (FilesAreEqualException != null)

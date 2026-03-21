@@ -47,7 +47,7 @@ namespace FolderDiffIL4DotNet.Services
             "  " + Constants.DOTNET_MUXER + " tool install -g " + Constants.ILSPY_CMD;
 
         private const int DEFAULT_BLACKLIST_TTL_MINUTES = 10;
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly ILCache? _ilCache;
         private readonly DisassemblerBlacklist _blacklist;
 
@@ -75,7 +75,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public int IlCacheStores => Volatile.Read(ref _ilCacheStores);
 
-        public DotNetDisassembleService(ConfigSettings config, ILCache? ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
+        public DotNetDisassembleService(IReadOnlyConfigSettings config, ILCache? ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
         {
             ArgumentNullException.ThrowIfNull(config);
             _config = config;
@@ -139,7 +139,8 @@ namespace FolderDiffIL4DotNet.Services
         /// <inheritdoc />
         public async Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
             string oldDotNetAssemblyFileAbsolutePath,
-            string newDotNetAssemblyFileAbsolutePath)
+            string newDotNetAssemblyFileAbsolutePath,
+            CancellationToken cancellationToken = default)
         {
             Exception? lastError = null;
             foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
@@ -201,8 +202,8 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <inheritdoc />
-        public Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel)
-            => _prefetcher.PrefetchIlCacheAsync(dotNetAssemblyFilesAbsolutePaths, maxParallel);
+        public Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
+            => _prefetcher.PrefetchIlCacheAsync(dotNetAssemblyFilesAbsolutePaths, maxParallel, cancellationToken);
 
         /// <summary>
         /// Attempts disassembly with the given command, creating a temp ASCII path if needed
@@ -339,22 +340,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 return (false, null, label);
             }
-            catch (IOException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                return (false, null, null);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                return (false, null, null);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                return (false, null, null);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 return (false, null, null);
@@ -402,19 +388,7 @@ namespace FolderDiffIL4DotNet.Services
                 await _ilCache.SetILAsync(dotNetAssemblyFileAbsolutePath, label, ilText);
                 Interlocked.Increment(ref _ilCacheStores);
             }
-            catch (IOException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }

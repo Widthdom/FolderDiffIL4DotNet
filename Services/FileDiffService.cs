@@ -9,15 +9,15 @@ using FolderDiffIL4DotNet.Models;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// Provides the entry point for individual file comparison (MD5/IL/text) and the preceding pre-computation phase.
-    /// 個々のファイル比較（MD5/IL/テキスト）と、その前段となる事前計算の入口を提供するサービス。
+    /// Provides the entry point for individual file comparison (SHA256/IL/text) and the preceding pre-computation phase.
+    /// 個々のファイル比較（SHA256/IL/テキスト）と、その前段となる事前計算の入口を提供するサービス。
     /// </summary>
     public sealed class FileDiffService : IFileDiffService
     {
         private const int DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES = 512 * Constants.BYTES_PER_KILOBYTE;
         private const int DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES = 64 * Constants.BYTES_PER_KILOBYTE;
         private const int BYTES_PER_MEGABYTE = Constants.BYTES_PER_KILOBYTE * Constants.BYTES_PER_KILOBYTE;
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly IILOutputService _ilOutputService;
         private readonly string _oldFolderAbsolutePath;
         private readonly string _newFolderAbsolutePath;
@@ -27,7 +27,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IFileComparisonService _fileComparisonService;
 
         public FileDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             IILOutputService ilOutputService,
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
@@ -41,7 +41,7 @@ namespace FolderDiffIL4DotNet.Services
         /// テスト向けに比較 I/O を差し替え可能なコンストラクタ。
         /// </summary>
         public FileDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             IILOutputService ilOutputService,
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
@@ -69,7 +69,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Runs IL-cache pre-computation (delegated to <see cref="ILOutputService"/>).
         /// IL キャッシュ関連の事前計算を実行します（実体は <see cref="ILOutputService"/> に委譲）。
         /// </summary>
-        public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel)
+        public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(filesAbsolutePath);
             if (_config.SkipIL)
@@ -77,26 +77,27 @@ namespace FolderDiffIL4DotNet.Services
                 return Task.CompletedTask;
             }
 
-            return _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel);
+            return _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel, cancellationToken);
         }
 
         /// <summary>
-        /// Determines whether two files are equal by trying MD5, then IL, then text comparison in order.
+        /// Determines whether two files are equal by trying SHA256, then IL, then text comparison in order.
         /// Results are recorded in <see cref="FileDiffResultLists"/> and honour network-optimisation and extension settings.
-        /// 2つのファイルが等しいかを判定し、MD5→IL→テキストの順で比較を試みる統合メソッド。
+        /// 2つのファイルが等しいかを判定し、SHA256→IL→テキストの順で比較を試みる統合メソッド。
         /// 判定結果は <see cref="FileDiffResultLists"/> に記録され、ネットワーク最適化や拡張子設定にも追従します。
         /// </summary>
-        public async Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1)
+        public async Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string file1AbsolutePath = Path.Combine(_oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
             try
             {
-                // 1) MD5: exit early when file size and content are identical.
-                // 1) MD5: ファイルサイズや内容が完全一致する場合はここで終了。
+                // 1) SHA256: exit early when file size and content are identical.
+                // 1) SHA256: ファイルサイズや内容が完全一致する場合はここで終了。
                 if (await _fileComparisonService.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
                 {
-                    _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Match);
+                    _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Match);
                     return true;
                 }
 
@@ -120,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     try
                     {
-                        var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText);
+                        var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText, cancellationToken);
                         _fileDiffResultLists.RecordDiffDetail(
                             fileRelativePath,
                             areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch,
@@ -202,34 +203,15 @@ namespace FolderDiffIL4DotNet.Services
                     return areTextFilesEqual;
                 }
 
-                _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+                _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
                 return false;
             }
             // Failures in the main comparison directly affect file-classification correctness,
             // so even expected runtime exceptions are logged as errors and re-thrown to the caller.
             // このメソッドの本比較で起きた失敗はファイル分類の正しさに直結するため、
             // 想定内の実行時例外も error を残して呼び出し元へ再スローする。
-            catch (DirectoryNotFoundException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (IOException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
-                throw;
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is DirectoryNotFoundException or IOException
+                or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
             {
                 LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
                 throw;

@@ -103,7 +103,7 @@ namespace FolderDiffIL4DotNet
             }
 
             var result = await RunWithResultAsync(args, opts);
-            OutputCompletionWarnings(result.HasMd5MismatchWarnings, result.HasTimestampRegressionWarnings);
+            OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings);
             PromptForExitKeyIfNeeded(opts);
             return (int)result.ExitCode;
         }
@@ -169,11 +169,11 @@ namespace FolderDiffIL4DotNet
             return appVersion;
         }
 
-        private void OutputCompletionWarnings(bool hasMd5MismatchWarnings, bool hasTimestampRegressionWarnings)
+        private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings)
         {
-            if (hasMd5MismatchWarnings)
+            if (hasSha256MismatchWarnings)
             {
-                _logger.LogMessage(AppLogLevel.Warning, Constants.WARNING_MD5_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
+                _logger.LogMessage(AppLogLevel.Warning, Constants.WARNING_SHA256_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
             }
 
             if (!hasTimestampRegressionWarnings)
@@ -209,19 +209,8 @@ namespace FolderDiffIL4DotNet
                 _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
                 return StepResult<RunArguments>.FromValue(new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath));
             }
-            catch (ArgumentException ex)
-            {
-                return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
-            }
-            catch (IOException ex)
-            {
-                return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
-            }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
+                or IOException or UnauthorizedAccessException)
             {
                 return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
             }
@@ -252,19 +241,8 @@ namespace FolderDiffIL4DotNet
                 PrepareReportsDirectory(reportsFolderAbsolutePath);
                 return StepResult<bool>.FromValue(true);
             }
-            catch (ArgumentException ex)
-            {
-                return StepResult<bool>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (IOException ex)
-            {
-                return StepResult<bool>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return StepResult<bool>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is ArgumentException or IOException
+                or UnauthorizedAccessException or NotSupportedException)
             {
                 return StepResult<bool>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
             }
@@ -281,23 +259,8 @@ namespace FolderDiffIL4DotNet
                 var config = await LoadConfigurationAsync(configPath);
                 return StepResult<ConfigSettings>.FromValue(config);
             }
-            catch (FileNotFoundException ex)
-            {
-                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
-            }
-            catch (InvalidDataException ex)
-            {
-                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
-            }
-            catch (IOException ex)
-            {
-                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
+                or IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
             }
@@ -318,31 +281,9 @@ namespace FolderDiffIL4DotNet
                 var completionState = await RunPipelineAsync(runArguments, config, appVersion, computerName);
                 return StepResult<RunCompletionState>.FromValue(completionState);
             }
-            catch (ArgumentException ex)
-            {
-                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (FileNotFoundException ex)
-            {
-                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (IOException ex)
-            {
-                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
+                or FileNotFoundException or InvalidOperationException
+                or IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
             }
@@ -394,7 +335,7 @@ namespace FolderDiffIL4DotNet
             var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
             var elapsedTimeString = await ExecuteDiffAsync(scopedProvider);
             GenerateReport(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config);
-            return new RunCompletionState(resultLists.HasAnyMd5Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);
+            return new RunCompletionState(resultLists.HasAnySha256Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);
         }
 
         private async Task<string> ExecuteDiffAsync(IServiceProvider scopedProvider)
@@ -456,11 +397,7 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine(PRESS_ANY_KEY);
                 Console.ReadKey(true);
             }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
-            }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is InvalidOperationException or IOException)
             {
                 _logger.LogMessage(AppLogLevel.Error, ERROR_KEY_PROMPT, shouldOutputMessageToConsole: false, ex);
             }
@@ -504,22 +441,8 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine(JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            catch (FileNotFoundException ex)
-            {
-                Console.Error.WriteLine(ex.Message);
-                return (int)ProgramExitCode.ConfigurationError;
-            }
-            catch (InvalidDataException ex)
-            {
-                Console.Error.WriteLine(ex.Message);
-                return (int)ProgramExitCode.ConfigurationError;
-            }
-            catch (IOException ex)
-            {
-                Console.Error.WriteLine(ex.Message);
-                return (int)ProgramExitCode.ConfigurationError;
-            }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
+                or IOException or UnauthorizedAccessException)
             {
                 Console.Error.WriteLine(ex.Message);
                 return (int)ProgramExitCode.ConfigurationError;

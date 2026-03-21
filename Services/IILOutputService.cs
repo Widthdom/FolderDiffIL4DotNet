@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FolderDiffIL4DotNet.Services
@@ -13,14 +14,16 @@ namespace FolderDiffIL4DotNet.Services
         /// Pre-computes (pre-caches) IL disassembly results for the specified files.
         /// 指定ファイル群の IL 逆アセンブル結果を事前計算（プリキャッシュ）します。
         /// </summary>
-        Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel);
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
+        Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Compares .NET assembly IL diffs for the specified file between old/new folders.
         /// old/new フォルダ間で指定ファイルの .NET アセンブリ IL 差分を比較します。
         /// </summary>
         /// <param name="shouldOutputIlText">Whether to write IL text to files. / IL テキストをファイルに出力するかどうか。</param>
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
         /// <returns>A tuple containing an equality flag and the disassembler label used. / アセンブリが等価かどうかを示すフラグと、使用した逆アセンブラのラベルを含むタプル。</returns>
-        Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText);
+        Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default);
     }
 }

@@ -11,6 +11,10 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
+    /// <summary>
+    /// Unit tests for <see cref="FileDiffService"/> using fake I/O collaborators (no real disk access).
+    /// フェイク I/O 協力オブジェクトを使用した <see cref="FileDiffService"/> のユニットテスト（実ディスクアクセスなし）。
+    /// </summary>
     [Trait("Category", "Unit")]
     public sealed class FileDiffServiceUnitTests
     {
@@ -29,7 +33,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var areEqual = await service.FilesAreEqualAsync("sample.txt", maxParallel: 4);
 
             Assert.True(areEqual);
-            Assert.Equal(FileDiffResultLists.DiffDetailResult.MD5Match, resultLists.FileRelativePathToDiffDetailDictionary["sample.txt"]);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, resultLists.FileRelativePathToDiffDetailDictionary["sample.txt"]);
             Assert.Single(fileComparisonService.HashCalls);
             Assert.Empty(fileComparisonService.DotNetDetectionCalls);
             Assert.Empty(fileComparisonService.TextDiffCalls);
@@ -359,8 +363,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 ShouldOutputILText = false,
                 EnableILCache = false,
                 OptimizeForNetworkShares = optimizeForNetworkShares,
-                TextDiffParallelThresholdKilobytes = 512,
-                TextDiffChunkSizeKilobytes = 64,
+                TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
+                TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffChunkSizeKilobytes,
                 TextDiffParallelMemoryLimitMegabytes = 0
             };
             configure?.Invoke(config);
@@ -375,6 +379,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             return new FileDiffService(config, ilOutputService, executionContext, resultLists, logger, fileComparisonService);
         }
 
+        /// <summary>
+        /// Fake file comparison service that returns preconfigured results without touching real files.
+        /// 実ファイルにアクセスせず事前設定された結果を返すフェイク比較サービス。
+        /// </summary>
         private sealed class FakeFileComparisonService : IFileComparisonService
         {
             private readonly Dictionary<string, byte[]> _fileContentsByPath = new(StringComparer.OrdinalIgnoreCase);
@@ -466,6 +474,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        /// <summary>
+        /// Fake IL output service that records calls and returns preconfigured results.
+        /// 呼び出しを記録し事前設定された結果を返すフェイク IL 出力サービス。
+        /// </summary>
         private sealed class FakeILOutputService : IILOutputService
         {
             public (bool AreEqual, string? DisassemblerLabel) DiffResult { get; set; }
@@ -476,13 +488,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public int PrecomputeCallCount { get; private set; }
 
-            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
+            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
             {
                 PrecomputeCallCount++;
                 return Task.CompletedTask;
             }
 
-            public Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+            public Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)
             {
                 DiffCalls.Add(new DiffCall(fileRelativePath, oldFolderAbsolutePath, newFolderAbsolutePath, shouldOutputIlText));
                 if (DiffException != null)

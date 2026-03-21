@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
-using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 
@@ -42,7 +41,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private const int LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD = 10000;
 
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly ProgressReportService _progressReporter;
         private readonly string _oldFolderAbsolutePath;
         private readonly string _newFolderAbsolutePath;
@@ -59,7 +58,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IFolderDiffExecutionStrategy _executionStrategy;
 
         public FolderDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ProgressReportService progressReporter,
             DiffExecutionContext executionContext,
             IFileDiffService fileDiffService,
@@ -74,7 +73,7 @@ namespace FolderDiffIL4DotNet.Services
         /// テスト向けにファイルシステム実装を差し替え可能なコンストラクタ。
         /// </summary>
         public FolderDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ProgressReportService progressReporter,
             DiffExecutionContext executionContext,
             IFileDiffService fileDiffService,
@@ -90,7 +89,7 @@ namespace FolderDiffIL4DotNet.Services
         /// テストや DI 向けに戦略オブジェクトも差し替え可能なコンストラクタ。
         /// </summary>
         public FolderDiffService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ProgressReportService progressReporter,
             DiffExecutionContext executionContext,
             IFileDiffService fileDiffService,
@@ -133,7 +132,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Unchanged / Added / Removed / Modified を分類し、<see cref="FileDiffResultLists"/> に集計します。
         /// 進捗は old と new の相対パスの和集合件数を母数として 1 件ごとに報告します。
         /// </summary>
-        public async Task ExecuteFolderDiffAsync()
+        public async Task ExecuteFolderDiffAsync(CancellationToken cancellationToken = default)
         {
             LogExecutionMode();
             ClearResultCollections();
@@ -159,7 +158,7 @@ namespace FolderDiffIL4DotNet.Services
                 var maxParallel = _executionStrategy.DetermineMaxParallel();
                 LogDiscoveryAndParallelStats(totalFilesRelativePathCount, maxParallel);
 
-                await PrecomputeIlCachesAsync(maxParallel);
+                await PrecomputeIlCachesAsync(maxParallel, cancellationToken);
                 _progressReporter.ReportProgress(0.0);
 
                 CreateIlOutputDirectoriesIfNeeded();
@@ -168,42 +167,19 @@ namespace FolderDiffIL4DotNet.Services
                 int processedFileCount = 0;
                 if (maxParallel <= 1)
                 {
-                    processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount);
+                    processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, cancellationToken);
                 }
                 else
                 {
-                    processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, maxParallel);
+                    processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, maxParallel, cancellationToken);
                 }
 
                 ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);
                 folderDiffCompleted = true;
             }
-            catch (ArgumentException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (IOException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                LogExpectedFolderDiffFailure(ex);
-                throw;
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
+                or IOException or UnauthorizedAccessException
+                or InvalidOperationException or NotSupportedException)
             {
                 LogExpectedFolderDiffFailure(ex);
                 throw;
@@ -217,11 +193,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (folderDiffCompleted)
                 {
-                    lock (ConsoleRenderCoordinator.RenderSyncRoot)
-                    {
-                        Console.WriteLine(LOG_FOLDER_DIFF_COMPLETED);
-                        Console.Out.Flush();
-                    }
+                    _logger.LogMessage(AppLogLevel.Info, LOG_FOLDER_DIFF_COMPLETED, shouldOutputMessageToConsole: true);
                 }
             }
         }

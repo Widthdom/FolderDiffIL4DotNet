@@ -6,6 +6,10 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
+    /// <summary>
+    /// Tests for <see cref="ProgressReportService"/> lifecycle, range validation, and backward-progress handling.
+    /// <see cref="ProgressReportService"/> のライフサイクル、範囲バリデーション、進捗の巻き戻し処理のテスト。
+    /// </summary>
     public sealed class ProgressReportServiceTests
     {
         [Fact]

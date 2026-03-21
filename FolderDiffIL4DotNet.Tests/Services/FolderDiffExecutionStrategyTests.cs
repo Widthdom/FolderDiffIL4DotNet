@@ -7,6 +7,10 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
+    /// <summary>
+    /// Unit tests for <see cref="FolderDiffExecutionStrategy"/> covering file enumeration, filtering, parallelism policy, and .NET assembly detection.
+    /// <see cref="FolderDiffExecutionStrategy"/> のユニットテスト。ファイル列挙、フィルタリング、並列度ポリシー、.NET アセンブリ検出を検証します。
+    /// </summary>
     [Trait("Category", "Unit")]
     public sealed class FolderDiffExecutionStrategyTests
     {

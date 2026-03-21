@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
@@ -20,14 +21,14 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
         private const string VERSION_LABEL_PREFIX = " (version: ";
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly ILCache? _ilCache;
         private readonly IILTextOutputService _ilTextOutputService;
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
         private readonly ILoggerService _logger;
 
         public ILOutputService(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             DiffExecutionContext executionContext,
             IILTextOutputService ilTextOutputService,
             IDotNetDisassembleService dotNetDisassembleService,
@@ -62,7 +63,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Main steps / 主な処理:
         /// <list type="number">
         /// <item><description>Returns immediately if IL cache is disabled (<c>EnableILCache == false</c>) or no cache instance exists. / IL キャッシュが無効 (<c>EnableILCache == false</c>) またはキャッシュインスタンス未生成の場合は即 return。</description></item>
-        /// <item><description>Calls <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> to pre-calculate per-file MD5 keys, smoothing out I/O cost. / <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> を呼び出し、対象ファイルごとの MD5 など内部キー計算を先行実行し I/O コストを平準化。</description></item>
+        /// <item><description>Calls <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> to pre-calculate per-file SHA256 keys, smoothing out I/O cost. / <see cref="ILCache.PrecomputeAsync(IEnumerable{string}, int)"/> を呼び出し、対象ファイルごとの SHA256 など内部キー計算を先行実行し I/O コストを平準化。</description></item>
         /// <item><description>Calls <see cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/> for files identified as .NET executables by <see cref="DotNetDetector.IsDotNetExecutable(string)"/>, checking cache hits across candidate disassembler x argument patterns. / <see cref="DotNetDetector.IsDotNetExecutable(string)"/> で .NET 実行可能と判定されたファイル群のみを対象に <see cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/> を呼び出し、使用候補の逆アセンブラー × 代表的な引数パターンのキャッシュヒットを事前確認。</description></item>
         /// </list>
         /// Exceptions are caught internally and logged as WARNING to prioritise continuation of the main diff processing.
@@ -72,14 +73,14 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> is 0 or negative. / maxParallel が 0 以下の場合にスローされます。</exception>
         /// <seealso cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/>
         /// <seealso cref="ILCache"/>
-        public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
+        public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(filesAbsolutePaths);
 
             if (_config.OptimizeForNetworkShares)
             {
-                // When network-share optimisation is on, skip MD5 pre-warming and IL cache prefetch
-                // ネットワーク共有最適化時は、MD5 プリウォームおよび IL キャッシュ先読みをスキップ
+                // When network-share optimisation is on, skip SHA256 pre-warming and IL cache prefetch
+                // ネットワーク共有最適化時は、SHA256 プリウォームおよび IL キャッシュ先読みをスキップ
                 _logger.LogMessage(AppLogLevel.Info, LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP, shouldOutputMessageToConsole: true);
                 return;
             }
@@ -94,25 +95,15 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 await _ilCache.PrecomputeAsync(filesAbsolutePaths, maxParallel);
+                cancellationToken.ThrowIfCancellationRequested();
                 // Prefetch disassembly cache for .NET executables only
                 // .NET 実行可能のみを対象に、逆アセンブル用キャッシュをプリフェッチ
-                await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel);
+                await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel, cancellationToken);
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                or InvalidOperationException or NotSupportedException)
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (NotSupportedException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute MD5 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute SHA256 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
         }
 
@@ -122,7 +113,7 @@ namespace FolderDiffIL4DotNet.Services
         /// old/new の .NET アセンブリを同一逆アセンブラで逆アセンブルし、MVID などの除外行を適用したうえで IL を比較します。
         /// <paramref name="shouldOutputIlText"/> が true の場合は IL テキストをファイルに出力します。
         /// </summary>
-        public async Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+        public async Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)
         {
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
@@ -130,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
             // Disassemble old/new with the same disassembler (same version identity).
             // old/new を同一逆アセンブラ（同一バージョン識別）で逆アセンブルする。
             var (ilText1, commandString1, ilText2, commandString2) =
-                await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath);
+                await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
             var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
 
             // Split into lines and exclude MVID lines and configured ignore-strings before comparison.
@@ -188,7 +179,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Normalises the strings used for contains-based line exclusion during IL comparison (removes null/whitespace, trims, deduplicates).
         /// IL 比較時に「含む」判定で除外対象とする文字列を正規化します（null/空白除外、trim、重複排除）。
         /// </summary>
-        private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
+        private static List<string> GetNormalizedIlIgnoreContainingStrings(IReadOnlyConfigSettings config)
         {
             if (config?.ILIgnoreLineContainingStrings == null)
             {

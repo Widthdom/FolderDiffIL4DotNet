@@ -108,37 +108,37 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         }
 
         [Fact]
-        public void ComputeFileMd5Hex_EmptyFile_ReturnsKnownHash()
+        public void ComputeFileSha256Hex_EmptyFile_ReturnsKnownHash()
         {
             var file = CreateTempFile("empty.bin", Array.Empty<byte>());
-            var hash = FileComparer.ComputeFileMd5Hex(file);
-            // MD5 of empty input / 空入力の MD5 = d41d8cd98f00b204e9800998ecf8427e
-            Assert.Equal("d41d8cd98f00b204e9800998ecf8427e", hash);
+            var hash = FileComparer.ComputeFileSha256Hex(file);
+            // SHA256 of empty input / 空入力の SHA256
+            Assert.Equal("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", hash);
         }
 
         [Fact]
-        public void ComputeFileMd5Hex_KnownContent_ReturnsExpectedHash()
+        public void ComputeFileSha256Hex_KnownContent_ReturnsExpectedHash()
         {
             var file = CreateTempFile("test.bin", System.Text.Encoding.UTF8.GetBytes("hello"));
-            var hash = FileComparer.ComputeFileMd5Hex(file);
-            // MD5("hello") / MD5("hello") = 5d41402abc4b2a76b9719d911017c592
-            Assert.Equal("5d41402abc4b2a76b9719d911017c592", hash);
+            var hash = FileComparer.ComputeFileSha256Hex(file);
+            // SHA256("hello") / SHA256("hello")
+            Assert.Equal("2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824", hash);
         }
 
         [Fact]
-        public void ComputeFileMd5Hex_SameContentSameHash()
+        public void ComputeFileSha256Hex_SameContentSameHash()
         {
             var file1 = CreateTempFile("a.bin", System.Text.Encoding.UTF8.GetBytes("test data"));
             var file2 = CreateTempFile("b.bin", System.Text.Encoding.UTF8.GetBytes("test data"));
-            Assert.Equal(FileComparer.ComputeFileMd5Hex(file1), FileComparer.ComputeFileMd5Hex(file2));
+            Assert.Equal(FileComparer.ComputeFileSha256Hex(file1), FileComparer.ComputeFileSha256Hex(file2));
         }
 
         [Fact]
-        public void ComputeFileMd5Hex_DifferentContentDifferentHash()
+        public void ComputeFileSha256Hex_DifferentContentDifferentHash()
         {
             var file1 = CreateTempFile("a.bin", System.Text.Encoding.UTF8.GetBytes("aaa"));
             var file2 = CreateTempFile("b.bin", System.Text.Encoding.UTF8.GetBytes("bbb"));
-            Assert.NotEqual(FileComparer.ComputeFileMd5Hex(file1), FileComparer.ComputeFileMd5Hex(file2));
+            Assert.NotEqual(FileComparer.ComputeFileSha256Hex(file1), FileComparer.ComputeFileSha256Hex(file2));
         }
     }
 }

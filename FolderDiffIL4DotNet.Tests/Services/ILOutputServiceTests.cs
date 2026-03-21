@@ -11,6 +11,10 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
+    /// <summary>
+    /// Tests for <see cref="ILOutputService"/> covering IL line exclusion, precompute argument validation, and network-share optimization skip.
+    /// <see cref="ILOutputService"/> のテスト。IL 行除外、事前計算の引数バリデーション、ネットワーク共有最適化時のスキップを検証します。
+    /// </summary>
     public sealed class ILOutputServiceTests
     {
         [Fact]

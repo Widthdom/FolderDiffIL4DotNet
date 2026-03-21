@@ -23,7 +23,7 @@ namespace FolderDiffIL4DotNet.Services
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config)
+            IReadOnlyConfigSettings config)
         {
             sb.AppendLine($"<h1>{I18n("Folder Diff Report", "フォルダ差分レポート")}</h1>");
             sb.AppendLine("<ul class=\"meta\">");
@@ -74,7 +74,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <li>{I18n("Legend", "凡例")}:");
             sb.AppendLine("    <table class=\"legend-table\">");
             sb.AppendLine("      <tbody>");
-            sb.AppendLine($"        <tr><td><code>MD5Match</code> / <code>MD5Mismatch</code></td><td>{I18n("MD5 hash match / mismatch", "MD5 ハッシュ 一致 / 不一致")}</td></tr>");
+            sb.AppendLine($"        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{I18n("SHA256 hash match / mismatch", "SHA256 ハッシュ 一致 / 不一致")}</td></tr>");
             sb.AppendLine($"        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{I18n("IL(Intermediate Language) match / mismatch", "IL（中間言語）一致 / 不一致")}</td></tr>");
             sb.AppendLine($"        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{I18n("Text match / mismatch", "テキスト 一致 / 不一致")}</td></tr>");
             sb.AppendLine("      </tbody>");
@@ -87,7 +87,7 @@ namespace FolderDiffIL4DotNet.Services
             StringBuilder sb,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
-            ConfigSettings config)
+            IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.IgnoredFilesRelativePathToLocation
                 .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase).ToList();
@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
             StringBuilder sb,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
-            ConfigSettings config)
+            IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.UnchangedFilesRelativePath
                 .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
@@ -149,7 +149,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</tbody></table></div>");
         }
 
-        private void AppendAddedSection(StringBuilder sb, ConfigSettings config)
+        private void AppendAddedSection(StringBuilder sb, IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.AddedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
@@ -169,7 +169,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</tbody></table></div>");
         }
 
-        private void AppendRemovedSection(StringBuilder sb, ConfigSettings config)
+        private void AppendRemovedSection(StringBuilder sb, IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.RemovedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
@@ -194,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache)
         {
             var items = _fileDiffResultLists.ModifiedFilesRelativePath
@@ -248,7 +248,7 @@ namespace FolderDiffIL4DotNet.Services
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             FileDiffResultLists.DiffDetailResult diffDetail,
             string disassemblerLabel,
             ILCache? ilCache,
@@ -366,7 +366,7 @@ namespace FolderDiffIL4DotNet.Services
             int idx,
             string assemblyPath,
             AssemblySemanticChangesSummary summary,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             string sectionPrefix = "mod")
         {
             int recordNo = idx + 1;
@@ -504,7 +504,7 @@ namespace FolderDiffIL4DotNet.Services
         private static string ChangeToStatusBg(string change)
             => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Modified" => TH_BG_MODIFIED, _ => "" };
 
-        private void AppendSummarySection(StringBuilder sb, ConfigSettings config)
+        private void AppendSummarySection(StringBuilder sb, IReadOnlyConfigSettings config)
         {
             sb.AppendLine($"<h2 class=\"section-heading\">{I18n("Summary", "サマリー")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
@@ -542,35 +542,35 @@ namespace FolderDiffIL4DotNet.Services
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache)
         {
-            bool hasMd5 = _fileDiffResultLists.HasAnyMd5Mismatch;
+            bool hasSha256 = _fileDiffResultLists.HasAnySha256Mismatch;
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
-            if (!hasMd5 && !hasTs) return;
+            if (!hasSha256 && !hasTs) return;
 
             sb.AppendLine($"<h2 class=\"section-heading\"><span class=\"warn-icon\">&#x26A0;</span> {I18n("Warnings", "警告")}</h2>");
             sb.AppendLine("<ul class=\"warnings\">");
-            if (hasMd5)
-                sb.AppendLine($"  <li>{I18n("One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible.", "1つ以上のファイルが MD5Mismatch として分類されました。MD5 ハッシュ比較のみが可能だったため、手動レビューを推奨します。")}</li>");
+            if (hasSha256)
+                sb.AppendLine($"  <li>{I18n("One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.", "1つ以上のファイルが SHA256Mismatch として分類されました。SHA256 ハッシュ比較のみが可能だったため、手動レビューを推奨します。")}</li>");
             if (hasTs)
                 sb.AppendLine($"  <li>{I18n("One or more modified files in new have older last-modified timestamps than the corresponding files in old.", "new 内の1つ以上の変更ファイルが、old 内の対応するファイルより古い更新日時を持っています。")}</li>");
             sb.AppendLine("</ul>");
 
-            // MD5Mismatch files table (same style as Modified Files)
-            if (hasMd5)
+            // SHA256Mismatch files table (same style as Modified Files)
+            if (hasSha256)
             {
-                var md5Files = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
-                    .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.MD5Mismatch)
+                var sha256Files = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
+                    .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                     .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                     .ToList();
-                if (md5Files.Count > 0)
+                if (sha256Files.Count > 0)
                 {
-                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("MD5Mismatch (Manual Review Recommended)", "MD5Mismatch（手動レビュー推奨）")} ({md5Files.Count})</h2>");
+                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("SHA256Mismatch (Manual Review Recommended)", "SHA256Mismatch（手動レビュー推奨）")} ({sha256Files.Count})</h2>");
                     AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
                     sb.AppendLine("<tbody>");
                     int idx = 0;
-                    foreach (var kv in md5Files)
+                    foreach (var kv in sha256Files)
                     {
                         string ts = "";
                         if (config.ShouldOutputFileTimestamps)
@@ -580,7 +580,7 @@ namespace FolderDiffIL4DotNet.Services
                             ts = $"{oldTs}{TIMESTAMP_ARROW}{newTs}";
                         }
                         string col6 = BuildDiffDetailDisplay(kv.Value);
-                        AppendFileRow(sb, "md5w", idx, kv.Key, ts, col6);
+                        AppendFileRow(sb, "sha256w", idx, kv.Key, ts, col6);
                         idx++;
                     }
                     sb.AppendLine("</tbody></table></div>");

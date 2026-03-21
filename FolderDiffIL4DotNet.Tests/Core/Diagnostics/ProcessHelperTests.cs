@@ -4,6 +4,10 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.Diagnostics
 {
+    /// <summary>
+    /// Tests for <see cref="ProcessHelper"/> command tokenization and label-building utilities.
+    /// <see cref="ProcessHelper"/> のコマンドトークン化およびラベル生成ユーティリティのテスト。
+    /// </summary>
     public class ProcessHelperTests
     {
 

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using FolderDiffIL4DotNet.Core.Text;
+using FolderDiffIL4DotNet.Models;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.Text
@@ -207,7 +208,7 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             var old = Enumerable.Range(1, 3000).Select(i => $"line{i}").ToArray();
             var @new = Enumerable.Range(1, 2000).Select(i => $"line{i}").ToArray();
 
-            var result = TextDiffer.Compute(old, @new, contextLines: 0, maxOutputLines: 10000);
+            var result = TextDiffer.Compute(old, @new, contextLines: 0, maxOutputLines: ConfigSettings.DefaultInlineDiffMaxOutputLines);
 
             // Old LCS guard returned Truncated, but Myers diff produces the correct diff
             // 旧 LCS ガードでは Truncated が返っていたが、Myers diff では正しく差分が得られる

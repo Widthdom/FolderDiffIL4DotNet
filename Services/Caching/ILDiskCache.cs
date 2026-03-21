@@ -62,15 +62,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 return await File.ReadAllTextAsync(cacheFileAbsolutePath);
             }
-            catch (IOException ex)
-            {
-                LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
             }
@@ -95,15 +87,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 await File.WriteAllTextAsync(cacheFileAbsolutePath, ilText);
                 EnforceQuota();
             }
-            catch (IOException ex)
-            {
-                LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
             }
@@ -130,23 +114,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     File.Delete(cacheFileAbsolutePath);
                 }
             }
-            catch (IOException ex)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction.",
-                    shouldOutputMessageToConsole: true,
-                    ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction.",
-                    shouldOutputMessageToConsole: true,
-                    ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
@@ -168,19 +136,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 Directory.CreateDirectory(cacheDirectoryAbsolutePath);
                 return true;
             }
-            catch (ArgumentException ex)
-            {
-                LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
-            }
-            catch (IOException ex)
-            {
-                LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
             }
@@ -292,15 +248,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 file.Delete();
                 return true;
             }
-            catch (IOException ex)
-            {
-                LogDeleteFailure(file.FullName, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                LogDeleteFailure(file.FullName, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 LogDeleteFailure(file.FullName, ex);
             }

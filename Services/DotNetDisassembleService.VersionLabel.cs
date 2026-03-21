@@ -41,19 +41,7 @@ namespace FolderDiffIL4DotNet.Services
                     return tempAsciiPath;
                 }
             }
-            catch (ArgumentException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (IOException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
-            }
-            catch (NotSupportedException ex)
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
@@ -208,23 +196,7 @@ namespace FolderDiffIL4DotNet.Services
                 var errorOutput = errTask.Result;
                 return (ExitCode: process.ExitCode, Stdout: stdOutput, Stderr: errorOutput, Error: null);
             }
-            catch (System.ComponentModel.Win32Exception ex)
-            {
-                return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
-            }
-            catch (IOException ex)
-            {
-                return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
-            }
-            catch (NotSupportedException ex)
-            {
-                return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
-            }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException or NotSupportedException or UnauthorizedAccessException)
             {
                 return (ExitCode: int.MinValue, Stdout: null, Stderr: null, Error: ex);
             }

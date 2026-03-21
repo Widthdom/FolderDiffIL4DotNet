@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -239,6 +240,44 @@ namespace FolderDiffIL4DotNet.Tests.Services
             finally
             {
                 try { File.SetUnixFileMode(tempDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch { }
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that concurrent LogMessage calls do not throw IOException.
+        /// 並列 LogMessage 呼び出しで IOException が発生しないことを検証する。
+        /// </summary>
+        [Fact]
+        public void LogMessage_ConcurrentCalls_DoNotThrow()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_concurrent.log");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                var ex = Record.Exception(() =>
+                {
+                    Parallel.For(0, 100, i =>
+                    {
+                        logger.LogMessage(AppLogLevel.Info, $"Concurrent message {i}", shouldOutputMessageToConsole: false);
+                    });
+                });
+
+                Assert.Null(ex);
+
+                var logText = File.ReadAllText(tempLogPath);
+                for (int i = 0; i < 100; i++)
+                {
+                    Assert.Contains($"Concurrent message {i}", logText);
+                }
+            }
+            finally
+            {
                 TryDeleteDirectory(tempDir);
             }
         }

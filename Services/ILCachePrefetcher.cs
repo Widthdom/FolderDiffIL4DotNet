@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Services
     internal sealed class ILCachePrefetcher
     {
         private const string ILSPY_FLAG_IL = "-il";
-        private readonly ConfigSettings _config;
+        private readonly IReadOnlyConfigSettings _config;
         private readonly ILCache? _ilCache;
         private readonly ILoggerService _logger;
         private readonly DotNetDisassemblerCache _dotNetDisassemblerCache;
@@ -34,7 +34,7 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <exception cref="ArgumentNullException"><paramref name="config"/>, <paramref name="logger"/>, or <paramref name="dotNetDisassemblerCache"/> is null. / <paramref name="config"/>、<paramref name="logger"/>、または <paramref name="dotNetDisassemblerCache"/> が null の場合。</exception>
         internal ILCachePrefetcher(
-            ConfigSettings config,
+            IReadOnlyConfigSettings config,
             ILCache? ilCache,
             ILoggerService logger,
             DotNetDisassemblerCache dotNetDisassemblerCache)
@@ -58,7 +58,7 @@ namespace FolderDiffIL4DotNet.Services
         /// キャッシュが無効、または対象が空の場合は即座に返ります。
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> is 0 or negative. / <paramref name="maxParallel"/> が 0 以下の場合。</exception>
-        internal async Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel)
+        internal async Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
         {
             if (dotNetAssemblyFilesAbsolutePaths == null || !_config.EnableILCache || _ilCache == null)
             {
@@ -89,25 +89,13 @@ namespace FolderDiffIL4DotNet.Services
             int processed = 0;
             long lastLogTicks = DateTime.UtcNow.Ticks;
 
-            await Parallel.ForEachAsync(assemblies, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (dotNetAssemblyFileAbsolutePath, _) =>
+            await Parallel.ForEachAsync(assemblies, new ParallelOptions { MaxDegreeOfParallelism = maxParallel, CancellationToken = cancellationToken }, async (dotNetAssemblyFileAbsolutePath, ct) =>
             {
                 try
                 {
                     await TryHitCacheForAssemblyAsync(dotNetAssemblyFileAbsolutePath, disassembleCommandAndItsVersionList);
                 }
-                catch (IOException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                }
-                catch (UnauthorizedAccessException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
-                }
-                catch (NotSupportedException ex)
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
                 {
                     _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }
