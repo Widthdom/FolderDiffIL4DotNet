@@ -795,6 +795,37 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_NoCaveatWhenNoStructuralChanges()
+        {
+            // When no structural changes are detected (empty Entries), the caveat note
+            // should NOT appear — the "No structural changes" message already directs
+            // the user to the IL diff.
+            // 構造的変更なし（Entries 空）の場合、注意書きは不要。
+            var (oldDir, newDir, reportDir) = MakeDirs("semantic-no-caveat");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>(),
+            };
+
+            var config = CreateConfig(enableInlineDiff: true);
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // The "No structural changes" message should be present
+            Assert.Contains("No structural changes detected", html);
+            // But the caveat note should NOT be in the base64-encoded content
+            // (it would be encoded, but we can check the decoded content isn't generated)
+            Assert.DoesNotContain("supplementary information", html);
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_AssemblySemanticChanges_NotShownWhenDisabled()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("semantic-changes-off");
