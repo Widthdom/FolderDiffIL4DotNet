@@ -94,6 +94,8 @@ namespace FolderDiffIL4DotNet.Services
                    font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
+    /* ── Row hover highlight ─────────────────────────────────────────────── */
+    tbody tr:not(.diff-row):hover { background: #f3eef8; }
     td.col-reason input[type=""text""], td.col-notes input[type=""text""] {
       width: 100%; border: none; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; font-family: inherit; }
@@ -167,6 +169,7 @@ namespace FolderDiffIL4DotNet.Services
     table.semantic-changes-table.sc-count tr.group-cont td:nth-child(1) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(2) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
+    table.semantic-changes-table tbody tr:hover td { background: #f3eef8; }
     /* sc colgroup widths */
     col.sc-col-cb-g { width: 3.2em; }
     col.sc-col-class-g { width: var(--sc-class-w); }
