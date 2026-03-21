@@ -416,7 +416,7 @@ namespace FolderDiffIL4DotNet.Services
                     string changeMarker = ChangeToMarker(e.Change);
                     string statusBg = ChangeToStatusBg(e.Change);
                     string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
-                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}><code>{changeMarker}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                     scRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -483,7 +483,7 @@ namespace FolderDiffIL4DotNet.Services
                 string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
                 string cntStatusBg = ChangeToStatusBg(change);
                 string cntStatusStyle = cntStatusBg.Length > 0 ? $" style=\"background:{cntStatusBg}\"" : "";
-                sb.AppendLine($"{trOpen}<td>{classTd}</td><td{cntStatusStyle}><code>{ChangeToMarker(change)}</code></td><td>{count}</td></tr>");
+                sb.AppendLine($"{trOpen}<td>{classTd}</td><td{cntStatusStyle}>{ChangeToMarker(change)}</td><td>{count}</td></tr>");
             }
             sb.AppendLine("</tbody></table>");
         }
