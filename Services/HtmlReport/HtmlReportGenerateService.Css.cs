@@ -178,7 +178,7 @@ namespace FolderDiffIL4DotNet.Services
     table.semantic-changes-table.sc-count tr.group-cont td:nth-child(1) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(2) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
-    table.semantic-changes-table tbody tr:hover td { background: #f3eef8; }
+    table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }
     /* sc colgroup widths */
     col.sc-col-cb-g { width: 3.2em; }
     col.sc-col-class-g { width: var(--sc-class-w); }
