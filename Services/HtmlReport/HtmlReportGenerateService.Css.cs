@@ -109,7 +109,7 @@ namespace FolderDiffIL4DotNet.Services
     ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
     .warn-icon { color: #f5a623; font-size: 1.1em; }
     /* ── Inline diff ─────────────────────────────────────────────────────── */
-    tr.diff-row { background: #f6f8fa; }
+    tr.diff-row { background: #edf0f4; }
     tr.diff-row > td { padding: 0; border-top: none; }
     .diff-added-cnt { color: #22863a; font-weight: 600; }
     .diff-removed-cnt { color: #b31d28; font-weight: 600; }
