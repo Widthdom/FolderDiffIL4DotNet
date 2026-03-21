@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.6.0] - 2026-03-21
+
 #### Changed
 
 - **Immutable ConfigSettings via IReadOnlyConfigSettings** — Introduced `IReadOnlyConfigSettings` interface exposing all `ConfigSettings` properties as read-only (list properties return `IReadOnlyList<string>`). `ConfigSettings` now implements this interface. All downstream service constructors (`FolderDiffService`, `FileDiffService`, `ILOutputService`, `DotNetDisassembleService`, `ILCachePrefetcher`, `ProgressReportService`, `FolderDiffExecutionStrategy`, `ReportGenerateService`, `HtmlReportGenerateService`) and `ReportWriteContext` accept `IReadOnlyConfigSettings` instead of the mutable `ConfigSettings`. Only `ProgramRunner.ApplyCliOverrides` retains mutable access. Added tests `ConfigSettings_ImplementsIReadOnlyConfigSettings` and `IReadOnlyConfigSettings_ListProperties_AreReadOnly` in `ConfigSettingsTests`.
@@ -453,6 +455,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.6.0] - 2026-03-21
+
 #### 変更
 
 - **IReadOnlyConfigSettings による ConfigSettings の不変化** — `ConfigSettings` の全プロパティを読み取り専用で公開する `IReadOnlyConfigSettings` インターフェースを導入（リストプロパティは `IReadOnlyList<string>` として返却）。`ConfigSettings` がこのインターフェースを実装。下流の全サービスコンストラクタ（`FolderDiffService`、`FileDiffService`、`ILOutputService`、`DotNetDisassembleService`、`ILCachePrefetcher`、`ProgressReportService`、`FolderDiffExecutionStrategy`、`ReportGenerateService`、`HtmlReportGenerateService`）および `ReportWriteContext` がミュータブルな `ConfigSettings` の代わりに `IReadOnlyConfigSettings` を受け取るよう変更。`ProgramRunner.ApplyCliOverrides` のみミュータブルアクセスを保持。`ConfigSettingsTests` に `ConfigSettings_ImplementsIReadOnlyConfigSettings` および `IReadOnlyConfigSettings_ListProperties_AreReadOnly` テストを追加。
@@ -888,7 +892,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.3.0...v1.4.0
