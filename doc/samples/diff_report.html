@@ -98,7 +98,7 @@
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Row hover highlight ─────────────────────────────────────────────── */
-    tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }
+    :not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }
     td input[type="text"] {
       width: 100%; border: 0; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; box-shadow: none;
@@ -686,9 +686,9 @@
   <tbody>
     <tr><td class="stat-label">Ignored</td><td class="stat-value">3</td></tr>
     <tr><td class="stat-label">Unchanged</td><td class="stat-value">5</td></tr>
-    <tr><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
-    <tr><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
-    <tr><td class="stat-label">Modified</td><td class="stat-value">12</td></tr>
+    <tr style="background:#e6ffed"><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
+    <tr style="background:#ffeef0"><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
+    <tr style="background:#e3f2fd"><td class="stat-label">Modified</td><td class="stat-value">12</td></tr>
     <tr><td class="stat-label">Compared</td><td class="stat-value">21 (Old) vs 21 (New)</td></tr>
   </tbody>
 </table>

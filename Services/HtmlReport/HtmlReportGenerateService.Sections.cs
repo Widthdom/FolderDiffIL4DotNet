@@ -506,9 +506,9 @@ namespace FolderDiffIL4DotNet.Services
             if (config.ShouldIncludeIgnoredFiles)
                 sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Ignored", "除外")}</td><td class=\"stat-value\">{stats.IgnoredCount}</td></tr>");
             sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Unchanged", "変更なし")}</td><td class=\"stat-value\">{stats.UnchangedCount}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Added", "追加")}</td><td class=\"stat-value\">{stats.AddedCount}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Removed", "削除")}</td><td class=\"stat-value\">{stats.RemovedCount}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Modified", "変更")}</td><td class=\"stat-value\">{stats.ModifiedCount}</td></tr>");
+            sb.AppendLine($"    <tr style=\"background:{TH_BG_ADDED}\"><td class=\"stat-label\">{I18n("Added", "追加")}</td><td class=\"stat-value\">{stats.AddedCount}</td></tr>");
+            sb.AppendLine($"    <tr style=\"background:{TH_BG_REMOVED}\"><td class=\"stat-label\">{I18n("Removed", "削除")}</td><td class=\"stat-value\">{stats.RemovedCount}</td></tr>");
+            sb.AppendLine($"    <tr style=\"background:{TH_BG_MODIFIED}\"><td class=\"stat-label\">{I18n("Modified", "変更")}</td><td class=\"stat-value\">{stats.ModifiedCount}</td></tr>");
             sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Compared", "比較")}</td><td class=\"stat-value\">{_fileDiffResultLists.OldFilesAbsolutePath.Count} ({I18n("Old", "旧")}) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} ({I18n("New", "新")})</td></tr>");
             sb.AppendLine("  </tbody>");
             sb.AppendLine("</table>");
