@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
+- **MD5Mismatch detail table in Warnings section** — When one or more files are classified as `MD5Mismatch`, the Warnings section now includes a detail table titled `[ ! ] Modified Files — MD5Mismatch (Manual Review Recommended)` listing all affected files with their timestamps, diff detail, and disassembler columns. The table uses the same column layout and blue color scheme as the existing `[ ! ] Modified Files — Timestamps Regressed` table. Files are sorted alphabetically by path. Applies to both Markdown (`diff_report.md`) and HTML (`diff_report.html`) reports. The MD5Mismatch table appears before the Timestamps Regressed table when both warnings are present. Updated [`doc/samples/diff_report.md`](doc/samples/diff_report.md) and [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added tests `Md5MismatchWarning_IncludesDetailTable`, `Md5MismatchTable_AppearsBeforeTimestampRegressedTable` in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) and `WritesMd5MismatchDetailTable_WhenMd5MismatchExists`, `Md5MismatchTable_AppearsBeforeTimestampRegressedTable` in [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs).
+
 - **Semantic summary caveat note** — Added a caveat note to the HTML report's Assembly Semantic Changes section reminding users that the semantic summary is supplementary and to verify details in the IL diff. Styled with `.sc-caveat` CSS class (italic, grey). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added tests `ShowsCaveatNote`, `CaveatCssExists` in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
 
 #### Removed
@@ -438,6 +440,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Property/Field の型・修飾子変更検出** — 型の変更（例: `string` → `int`）、アクセス修飾子の変更、修飾子の変更がプロパティおよびフィールドで `Modified` エントリとして検出されるようになりました。以前は、プロパティ・フィールドのキーが名前ベースのみで、一致するキーに対する `Modified` 比較がなかったため、同名の型変更やアクセス修飾子変更が報告されませんでした。
 
 #### 追加
+
+- **警告セクションに MD5Mismatch 詳細テーブルを追加** — 1つ以上のファイルが `MD5Mismatch` に分類された場合、警告セクションに `[ ! ] Modified Files — MD5Mismatch (Manual Review Recommended)` というタイトルの詳細テーブルを表示し、該当ファイルのタイムスタンプ、diff 詳細、逆アセンブラ情報を一覧します。既存の `[ ! ] Modified Files — Timestamps Regressed` テーブルと同じ列レイアウト・青色スキームを使用。ファイルはパスのアルファベット順でソート。Markdown（`diff_report.md`）および HTML（`diff_report.html`）の両レポートに適用。両方の警告が存在する場合、MD5Mismatch テーブルは Timestamps Regressed テーブルの前に表示されます。[`doc/samples/diff_report.md`](doc/samples/diff_report.md) と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に `Md5MismatchWarning_IncludesDetailTable`、`Md5MismatchTable_AppearsBeforeTimestampRegressedTable` テストを追加。[`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs) に `WritesMd5MismatchDetailTable_WhenMd5MismatchExists`、`Md5MismatchTable_AppearsBeforeTimestampRegressedTable` テストを追加。
 
 - **セマンティックサマリーの注意書き** — HTML レポートの Assembly Semantic Changes セクションに、セマンティックサマリーは補助情報であり最終確認は IL diff で行うべき旨の注意書きを追加。`.sc-caveat` CSS クラスでスタイリング（イタリック、グレー）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に `ShowsCaveatNote`、`CaveatCssExists` テストを追加。
 

@@ -136,7 +136,7 @@ The HTML report is a self-contained single file that opens in any browser — no
 
 Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
-**Table sort order:** Unchanged Files rows are sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `MD5Mismatch`), then by File Path ascending.
+**Table sort order:** Unchanged Files rows are sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `MD5Mismatch`), then by File Path ascending. The MD5Mismatch warning table in the Warnings section lists files alphabetically by path.
 
 Inline diff `<summary>` labels also include a one-based `#N` prefix such as `#3 Show diff` / `#3 Show IL diff`; this number matches the leftmost `#` column for the same row.
 
@@ -464,7 +464,7 @@ Notes:
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#config-en-textfileextensions).
 - Timestamp-regression warnings are evaluated only for files classified as **modified** (files that exist in both `old` and `new` but whose content differs). Unchanged files are excluded even if their timestamps are reversed.
-- If any file ends as `MD5Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion.
+- If any file ends as `MD5Mismatch`, the report writes that warning in the final `Warnings` section before any timestamp-regression entries, and the same message is printed once at run completion. A detail table titled `[ ! ] Modified Files — MD5Mismatch (Manual Review Recommended)` lists all affected files with their timestamps and diff detail.
 
 <a id="readme-en-generated-artifacts"></a>
 ## Generated Artifacts
@@ -624,7 +624,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 
 Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 
-**テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`MD5Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `MD5Mismatch`）の順でソートされ、次にファイルパスの昇順でソートされます。
+**テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`MD5Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `MD5Mismatch`）の順でソートされ、次にファイルパスの昇順でソートされます。警告セクション内の MD5Mismatch 警告テーブルはファイルパスのアルファベット順でソートされます。
 
 インライン差分の `<summary>` ラベルにも `#3 Show diff` / `#3 Show IL diff` のような 1 始まりの `#N` プレフィックスが付き、この番号は同じ行の左端 `#` 列と一致します。
 
@@ -951,7 +951,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#config-ja-textfileextensions) に空文字（`""`）を含めてください。
 - 更新日時逆転の警告は、**Modified（内容変更あり）と判定されたファイル**のみを対象に判定します。内容が同一の Unchanged ファイルは、更新日時が逆転していても警告対象外です。
-- `MD5Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。
+- `MD5Mismatch` が1件でもある場合、その警告はレポート末尾の `Warnings` セクションで更新日時逆転警告より先に出し、同じ文言を実行終了時のコンソールにも1回だけ出力します。`[ ! ] Modified Files — MD5Mismatch (Manual Review Recommended)` というタイトルの詳細テーブルに、該当ファイルのタイムスタンプと diff 詳細が一覧されます。
 
 <a id="readme-ja-generated-artifacts"></a>
 ## 生成物

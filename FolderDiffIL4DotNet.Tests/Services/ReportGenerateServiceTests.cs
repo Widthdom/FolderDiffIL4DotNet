@@ -337,6 +337,107 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal));
         }
 
+        /// <summary>
+        /// Verifies that Markdown Warnings section includes the MD5Mismatch detail table with file listing.
+        /// Markdown の警告セクションに MD5Mismatch 詳細テーブル（ファイル一覧）が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_WritesMd5MismatchDetailTable_WhenMd5MismatchExists()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-md5-table");
+            var newDir = Path.Combine(_rootDir, "new-md5-table");
+            var reportDir = Path.Combine(_rootDir, "report-md5-table");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var oldFile1 = Path.Combine(oldDir, "alpha.bin");
+            var newFile1 = Path.Combine(newDir, "alpha.bin");
+            File.WriteAllText(oldFile1, "old");
+            File.WriteAllText(newFile1, "new");
+
+            var oldFile2 = Path.Combine(oldDir, "beta.bin");
+            var newFile2 = Path.Combine(newDir, "beta.bin");
+            File.WriteAllText(oldFile2, "old");
+            File.WriteAllText(newFile2, "new");
+
+            _resultLists.SetOldFilesAbsolutePath(new List<string> { oldFile1, oldFile2 });
+            _resultLists.SetNewFilesAbsolutePath(new List<string> { newFile1, newFile2 });
+            _resultLists.AddModifiedFileRelativePath("alpha.bin");
+            _resultLists.RecordDiffDetail("alpha.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.AddModifiedFileRelativePath("beta.bin");
+            _resultLists.RecordDiffDetail("beta.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            // TextMismatch file should NOT appear in the MD5Mismatch table
+            _resultLists.AddModifiedFileRelativePath("gamma.txt");
+            _resultLists.RecordDiffDetail("gamma.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: "00:00:01.000",
+                computerName: "test-host", config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+
+            // Table heading should exist with count
+            Assert.Contains("MD5Mismatch (Manual Review Recommended) (2)", reportText);
+
+            // Extract the MD5Mismatch table section
+            int md5TableStart = reportText.IndexOf("MD5Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            Assert.True(md5TableStart >= 0, "MD5Mismatch detail table heading should exist");
+            string md5Section = reportText.Substring(md5TableStart);
+
+            // Both MD5Mismatch files should appear
+            Assert.Contains("alpha.bin", md5Section);
+            Assert.Contains("beta.bin", md5Section);
+
+            // Files should be sorted alphabetically (alpha before beta)
+            int alphaIdx = md5Section.IndexOf("alpha.bin", StringComparison.Ordinal);
+            int betaIdx = md5Section.IndexOf("beta.bin", StringComparison.Ordinal);
+            Assert.True(alphaIdx < betaIdx, "MD5Mismatch files should be sorted alphabetically");
+
+            // TextMismatch file should NOT appear in MD5Mismatch table
+            string md5TableEnd = md5Section;
+            int tsTableIdx = md5TableEnd.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            if (tsTableIdx > 0) md5TableEnd = md5TableEnd.Substring(0, tsTableIdx);
+            Assert.DoesNotContain("gamma.txt", md5TableEnd);
+        }
+
+        /// <summary>
+        /// Verifies that MD5Mismatch detail table appears before Timestamps Regressed table in Markdown when both warnings exist.
+        /// 両方の警告が存在する場合、Markdown で MD5Mismatch 詳細テーブルがタイムスタンプ逆行テーブルの前に表示されることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_Md5MismatchTable_AppearsBeforeTimestampRegressedTable()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-md5-before-ts");
+            var newDir = Path.Combine(_rootDir, "new-md5-before-ts");
+            var reportDir = Path.Combine(_rootDir, "report-md5-before-ts");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.AddModifiedFileRelativePath("payload.bin");
+            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("payload.bin", "2026-03-14 10:00:00", "2026-03-14 09:00:00");
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: "00:00:01.000",
+                computerName: "test-host", config);
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+
+            int md5TableIdx = reportText.IndexOf("MD5Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            int tsTableIdx = reportText.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            Assert.True(md5TableIdx >= 0, "MD5Mismatch detail table should exist");
+            Assert.True(tsTableIdx >= 0, "Timestamps Regressed table should exist");
+            Assert.True(md5TableIdx < tsTableIdx, "MD5Mismatch table should appear before Timestamps Regressed table");
+        }
+
         [Fact]
         public void GenerateDiffReport_DoesNotEmitConsoleWarningLog_WhenMd5MismatchExists()
         {
@@ -939,19 +1040,19 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // In the Warnings section, expected order: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), MD5Mismatch (zzz-md5.bin)
-            // 警告セクションの期待される順序: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), MD5Mismatch (zzz-md5.bin)
-            // Only look at the Warnings section (after "## Warnings")
-            int warningsSectionStart = reportText.IndexOf("## Warnings", StringComparison.Ordinal);
-            Assert.True(warningsSectionStart >= 0, "Warnings section should exist");
-            string warningsSection = reportText.Substring(warningsSectionStart);
+            // In the Timestamps Regressed table, expected order: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), MD5Mismatch (zzz-md5.bin)
+            // タイムスタンプ逆行テーブルの期待される順序: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), MD5Mismatch (zzz-md5.bin)
+            // Only look at the Timestamps Regressed section (after "Timestamps Regressed")
+            int tsRegressedStart = reportText.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            Assert.True(tsRegressedStart >= 0, "Timestamps Regressed section should exist");
+            string tsRegressedSection = reportText.Substring(tsRegressedStart);
 
-            int text_bbb = warningsSection.IndexOf("bbb-text.config", StringComparison.Ordinal);
-            int il_aaa = warningsSection.IndexOf("aaa-il.dll", StringComparison.Ordinal);
-            int md5_zzz = warningsSection.IndexOf("zzz-md5.bin", StringComparison.Ordinal);
+            int text_bbb = tsRegressedSection.IndexOf("bbb-text.config", StringComparison.Ordinal);
+            int il_aaa = tsRegressedSection.IndexOf("aaa-il.dll", StringComparison.Ordinal);
+            int md5_zzz = tsRegressedSection.IndexOf("zzz-md5.bin", StringComparison.Ordinal);
 
-            Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch in Warnings");
-            Assert.True(il_aaa < md5_zzz, "ILMismatch should appear before MD5Mismatch in Warnings");
+            Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch in Timestamps Regressed table");
+            Assert.True(il_aaa < md5_zzz, "ILMismatch should appear before MD5Mismatch in Timestamps Regressed table");
         }
 
         private static ConfigSettings CreateConfig() => new()
