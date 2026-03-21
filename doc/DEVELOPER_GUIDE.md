@@ -214,7 +214,7 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 10. Build the run-scoped DI container.
 11. Run the folder diff and finish progress display.
 12. Generate [`diff_report.md`](samples/diff_report.md) from aggregated results.
-13. Generate [`diff_report.html`](samples/diff_report.html) from aggregated results when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `true` (default). The HTML file is a self-contained interactive review document with localStorage auto-save and a download function that bakes the current review state into a portable snapshot.
+13. Generate [`diff_report.html`](samples/diff_report.html) from aggregated results when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `true` (default). The HTML file is a self-contained interactive review document with localStorage auto-save, a download function that bakes the current review state into a portable snapshot, and an EN/JP language toggle (`I18n()` helper wraps all user-facing text in `<span class="i18n" data-en="..." data-ja="...">` elements).
 14. Convert the phase result into a process exit code: `0` on success, `2` for invalid CLI/input paths, `3` for configuration load/parse/validation failures, `4` for diff/report execution failures, and `1` only for unexpected internal errors.
 
 The implementation keeps `RunAsync()` short by treating those steps as explicit phases and delegating each phase to focused private helpers.
@@ -842,7 +842,7 @@ sequenceDiagram
 10. 実行単位の DI コンテナを構築します。
 11. フォルダ比較を実行し、進捗表示を終了します。
 12. 集約結果から [`diff_report.md`](samples/diff_report.md) を生成します。
-13. [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `true`（既定）のとき、集約結果から [`diff_report.html`](samples/diff_report.html) を生成します。HTML ファイルは localStorage 自動保存とダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。
+13. [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `true`（既定）のとき、集約結果から [`diff_report.html`](samples/diff_report.html) を生成します。HTML ファイルは localStorage 自動保存、ダウンロード機能、および日英言語切り替え（`I18n()` ヘルパーがすべてのユーザー向けテキストを `<span class="i18n" data-en="..." data-ja="...">` 要素で囲む）を持つ自己完結型インタラクティブレビュードキュメントです。
 14. フェーズ結果をプロセス終了コードへ変換します。成功は `0`、CLI/入力パス不正は `2`、設定読込/解析/バリデーション失敗は `3`、差分実行/レポート生成失敗は `4`、分類外の想定外エラーだけを `1` にします。
 
 実装上は、`RunAsync()` 自体を短く保つため、これらを明示的なフェーズとして private helper へ分割しています。

@@ -36,9 +36,21 @@ namespace FolderDiffIL4DotNet.Services
                 if (!ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings) return;
 
                 var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
-                writer.WriteLine("- " + (ilIgnoreStrings.Count == 0
-                    ? NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY
-                    : $"Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored: {string.Join(REPORT_LIST_SEPARATOR, ilIgnoreStrings.Select(v => $"\"{v}\""))}."));
+                if (ilIgnoreStrings.Count == 0)
+                {
+                    writer.WriteLine("- " + NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY);
+                }
+                else
+                {
+                    writer.WriteLine($"- Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored:");
+                    writer.WriteLine();
+                    writer.WriteLine("| Ignored String |");
+                    writer.WriteLine("|----------------|");
+                    foreach (var v in ilIgnoreStrings)
+                    {
+                        writer.WriteLine($"| \"{v}\" |");
+                    }
+                }
             }
         }
 
@@ -48,9 +60,12 @@ namespace FolderDiffIL4DotNet.Services
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_LEGEND_HEADER);
-                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}`: MD5 hash match / mismatch");
-                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}`: IL(Intermediate Language) match / mismatch");
-                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}`: Text match / mismatch");
+                writer.WriteLine();
+                writer.WriteLine("| Label | Description |");
+                writer.WriteLine("|-------|-------------|");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}` | MD5 hash match / mismatch |");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}` | IL(Intermediate Language) match / mismatch |");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}` | Text match / mismatch |");
             }
         }
 
@@ -63,6 +78,9 @@ namespace FolderDiffIL4DotNet.Services
 
                 int count = ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_IGNORED} {REPORT_LABEL_IGNORED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
+                writer.WriteLine();
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var entry in ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
                 {
                     bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
@@ -73,16 +91,14 @@ namespace FolderDiffIL4DotNet.Services
                             ? Path.Combine(ctx.OldFolderAbsolutePath, entry.Key)
                             : Path.Combine(ctx.NewFolderAbsolutePath, entry.Key);
 
-                    var line = $"- [ x ] {displayPath}";
                     var locationLabel = GetIgnoredFileLocationLabel(entry.Value);
-                    if (!string.IsNullOrEmpty(locationLabel)) line += " " + locationLabel;
-
+                    string tsCol = "";
                     if (ctx.Config.ShouldOutputFileTimestamps)
                     {
                         var timestampInfo = BuildIgnoredFileTimestampInfo(entry, ctx.OldFolderAbsolutePath, ctx.NewFolderAbsolutePath);
-                        if (!string.IsNullOrEmpty(timestampInfo)) line += $" {timestampInfo}";
+                        if (!string.IsNullOrEmpty(timestampInfo)) tsCol = timestampInfo;
                     }
-                    writer.WriteLine(line);
+                    writer.WriteLine($"| `{REPORT_MARKER_IGNORED}` | {displayPath} {locationLabel} | {tsCol} | | |");
                 }
             }
         }
@@ -96,21 +112,22 @@ namespace FolderDiffIL4DotNet.Services
 
                 int count = ctx.FileDiffResultLists.UnchangedFilesRelativePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_UNCHANGED} {REPORT_LABEL_UNCHANGED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
+                writer.WriteLine();
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var fileRelativePath in ctx.FileDiffResultLists.UnchangedFilesRelativePath)
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                     var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    string tsCol = "";
                     if (ctx.Config.ShouldOutputFileTimestamps)
                     {
                         string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.OldFolderAbsolutePath, fileRelativePath));
                         string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
-                        string updateInfo = oldTs != newTs ? $"[{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}]" : $"[{newTs}]";
-                        writer.WriteLine($"- [ = ] {fileRelativePath} {updateInfo} {diffDetailDisplay}");
+                        tsCol = oldTs != newTs ? $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}" : newTs;
                     }
-                    else
-                    {
-                        writer.WriteLine($"- [ = ] {fileRelativePath} {diffDetailDisplay}");
-                    }
+                    writer.WriteLine($"| `{REPORT_MARKER_UNCHANGED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
             }
         }
@@ -122,11 +139,14 @@ namespace FolderDiffIL4DotNet.Services
             {
                 int count = ctx.FileDiffResultLists.AddedFilesAbsolutePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_ADDED} {REPORT_LABEL_ADDED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
+                writer.WriteLine();
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var newFileAbsolutePath in ctx.FileDiffResultLists.AddedFilesAbsolutePath)
                 {
-                    writer.WriteLine(ctx.Config.ShouldOutputFileTimestamps
-                        ? $"- [ + ] {newFileAbsolutePath} [{Caching.TimestampCache.GetOrAdd(newFileAbsolutePath)}]"
-                        : $"- [ + ] {newFileAbsolutePath}");
+                    string tsCol = ctx.Config.ShouldOutputFileTimestamps
+                        ? Caching.TimestampCache.GetOrAdd(newFileAbsolutePath) : "";
+                    writer.WriteLine($"| `{REPORT_MARKER_ADDED}` | {newFileAbsolutePath} | {tsCol} | | |");
                 }
             }
         }
@@ -138,11 +158,14 @@ namespace FolderDiffIL4DotNet.Services
             {
                 int count = ctx.FileDiffResultLists.RemovedFilesAbsolutePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_REMOVED} {REPORT_LABEL_REMOVED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
+                writer.WriteLine();
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var oldFileAbsolutePath in ctx.FileDiffResultLists.RemovedFilesAbsolutePath)
                 {
-                    writer.WriteLine(ctx.Config.ShouldOutputFileTimestamps
-                        ? $"- [ - ] {oldFileAbsolutePath} [{Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath)}]"
-                        : $"- [ - ] {oldFileAbsolutePath}");
+                    string tsCol = ctx.Config.ShouldOutputFileTimestamps
+                        ? Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath) : "";
+                    writer.WriteLine($"| `{REPORT_MARKER_REMOVED}` | {oldFileAbsolutePath} | {tsCol} | | |");
                 }
             }
         }
@@ -154,20 +177,22 @@ namespace FolderDiffIL4DotNet.Services
             {
                 int count = ctx.FileDiffResultLists.ModifiedFilesRelativePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_MODIFIED} {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
+                writer.WriteLine();
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var fileRelativePath in ctx.FileDiffResultLists.ModifiedFilesRelativePath)
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                     var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    string tsCol = "";
                     if (ctx.Config.ShouldOutputFileTimestamps)
                     {
                         string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.OldFolderAbsolutePath, fileRelativePath));
                         string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
-                        writer.WriteLine($"- [ * ] {fileRelativePath} [{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}] {diffDetailDisplay}");
+                        tsCol = $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
                     }
-                    else
-                    {
-                        writer.WriteLine($"- [ * ] {fileRelativePath} {diffDetailDisplay}");
-                    }
+                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
             }
         }
@@ -178,16 +203,19 @@ namespace FolderDiffIL4DotNet.Services
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_SECTION_SUMMARY);
+                writer.WriteLine();
+                writer.WriteLine("| Category | Count |");
+                writer.WriteLine("|----------|------:|");
                 var stats = ctx.FileDiffResultLists.SummaryStatistics;
                 if (ctx.Config.ShouldIncludeIgnoredFiles)
                 {
-                    writer.WriteLine($"- {REPORT_LABEL_IGNORED,-10}: {stats.IgnoredCount}");
+                    writer.WriteLine($"| {REPORT_LABEL_IGNORED} | {stats.IgnoredCount} |");
                 }
-                writer.WriteLine($"- {REPORT_LABEL_UNCHANGED,-10}: {stats.UnchangedCount}");
-                writer.WriteLine($"- {REPORT_LABEL_ADDED,-10}: {stats.AddedCount}");
-                writer.WriteLine($"- {REPORT_LABEL_REMOVED,-10}: {stats.RemovedCount}");
-                writer.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {stats.ModifiedCount}");
-                writer.WriteLine($"- {REPORT_LABEL_COMPARED,-10}: {ctx.FileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {ctx.FileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
+                writer.WriteLine($"| {REPORT_LABEL_UNCHANGED} | {stats.UnchangedCount} |");
+                writer.WriteLine($"| {REPORT_LABEL_ADDED} | {stats.AddedCount} |");
+                writer.WriteLine($"| {REPORT_LABEL_REMOVED} | {stats.RemovedCount} |");
+                writer.WriteLine($"| {REPORT_LABEL_MODIFIED} | {stats.ModifiedCount} |");
+                writer.WriteLine($"| {REPORT_LABEL_COMPARED} | {ctx.FileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {ctx.FileDiffResultLists.NewFilesAbsolutePath.Count} (New) |");
                 writer.WriteLine();
             }
         }
@@ -280,12 +308,15 @@ namespace FolderDiffIL4DotNet.Services
 
                 var stats = ctx.IlCache.GetReportStats();
                 writer.WriteLine(REPORT_SECTION_IL_CACHE_STATS);
-                writer.WriteLine($"- Hits    : {stats.Hits}");
-                writer.WriteLine($"- Misses  : {stats.Misses}");
-                writer.WriteLine($"- Hit Rate: {stats.HitRatePct:F1}%");
-                writer.WriteLine($"- Stores  : {stats.Stores}");
-                writer.WriteLine($"- Evicted : {stats.Evicted}");
-                writer.WriteLine($"- Expired : {stats.Expired}");
+                writer.WriteLine();
+                writer.WriteLine("| Metric | Value |");
+                writer.WriteLine("|--------|------:|");
+                writer.WriteLine($"| Hits | {stats.Hits} |");
+                writer.WriteLine($"| Misses | {stats.Misses} |");
+                writer.WriteLine($"| Hit Rate | {stats.HitRatePct:F1}% |");
+                writer.WriteLine($"| Stores | {stats.Stores} |");
+                writer.WriteLine($"| Evicted | {stats.Evicted} |");
+                writer.WriteLine($"| Expired | {stats.Expired} |");
                 writer.WriteLine();
             }
         }
@@ -305,10 +336,18 @@ namespace FolderDiffIL4DotNet.Services
                 if (!ctx.HasTimestampRegressionWarning) return;
 
                 writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
+                writer.WriteLine();
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var warning in ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
                 {
-                    writer.WriteLine($"  - {warning.FileRelativePath} [{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}]");
+                    var fileRelativePath = warning.FileRelativePath;
+                    var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                    var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    string tsCol = $"{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}";
+                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
             }
         }

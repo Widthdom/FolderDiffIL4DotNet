@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added **Assembly Semantic Changes** — member-level change detection for `ILMismatch` assemblies using `System.Reflection.Metadata`. For each modified .NET assembly, the report now shows type/method/property/field additions, removals, and method body changes. Controlled by the new `ShouldIncludeAssemblySemanticChangesInReport` config setting (default: `true`).
   - **Report placement**: appears between **Summary** and **IL Cache Stats** in the Markdown report; shown as an expandable inline row above the IL diff in the HTML report.
-  - **Table columns** (12 in HTML including checkbox; 11 in Markdown): `✓` (checkbox, HTML only), `Class` (fully qualified type name), `BaseType` (base class + interfaces), `Change` (`Added`/`Removed`/`Modified`), `Kind` (`Class`/`Record`/`Struct`/`Interface`/`Enum`/`Constructor`/`StaticConstructor`/`Method`/`Property`/`Field`), `Access` (`public`/`internal`/`protected`/`private`), `Modifiers` (`static`/`abstract`/`virtual`/`override`/`sealed`/`readonly`/`const`/`static literal`/`static readonly`), `Type` (declared type for Field/Property only), `Name`, `ReturnType`, `Parameters` (displayed without parentheses), `Body` (`Changed` when method body or field initializer IL has changed; otherwise empty).
+  - **Table columns** (12 in HTML including checkbox; 11 in Markdown): `✓` (checkbox, HTML only), `Class` (fully qualified type name), `BaseType` (base class + interfaces), `Status` (`Added`/`Removed`/`Modified` with `[ + ]`/`[ - ]`/`[ * ]` markers), `Kind` (`Class`/`Record`/`Struct`/`Interface`/`Enum`/`Constructor`/`StaticConstructor`/`Method`/`Property`/`Field`), `Access` (`public`/`internal`/`protected`/`private`), `Modifiers` (`static`/`abstract`/`virtual`/`override`/`sealed`/`readonly`/`const`/`static literal`/`static readonly`), `Type` (declared type for Field/Property only), `Name`, `ReturnType`, `Parameters` (displayed without parentheses), `Body` (`Changed` when method body or field initializer IL has changed; otherwise empty).
   - **Summary count table**: a second table grouped by Class showing `Added`/`Removed`/`Modified` counts. Consecutive rows for the same class merge the Class cell.
   - **Record detection**: records are identified heuristically by the presence of an `EqualityContract` property.
   - **HTML styling**: table header background `#98989d` (light grey), data cell (`td`) background `#fff` (white) for contrast against the `diff-row` grey, per-row checkbox with auto-save, resizable columns via CSS custom properties and drag handles.
@@ -22,11 +22,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - **Tests**: [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs), [`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs), and new assertions in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) (`TableHeaderUsesLighterGray`, `ThScColCbCssRuleExists`, `TdHasWhiteBackground`).
   - **Docs**: added bilingual **Assembly Semantic Changes** section to [README.md](README.md), [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs) and [`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs) to [TESTING_GUIDE.md](doc/TESTING_GUIDE.md), updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) and [`doc/samples/diff_report.md`](doc/samples/diff_report.md).
 
+#### Changed
+
+- **Legend section** — Converted from bullet list to table format in both Markdown (`| Label | Description |`) and HTML (`<table class="legend-table">`). Added CSS for `table.legend-table` with borders and padding.
+
+- **IL Cache Stats and Summary sections** — Converted from bullet list to table format in Markdown report (`| Category | Count |` and `| Metric | Value |`). Added visible borders (`1px solid #ddd`) to `table.stat-table td` in HTML report CSS.
+
+- **File listing sections** — Converted Ignored, Unchanged, Added, Removed, and Modified file sections from checkbox bullet lists to tables in Markdown report with columns: `| Status | File Path | Timestamp | Legend | Disassembler |`.
+
+- **`InlineDiffMaxEditDistance` highlighting** — Added `<code>` tag wrapping for `InlineDiffMaxEditDistance` in HTML report truncation messages, matching the existing `InlineDiffMaxDiffLines` code styling.
+
+- **Diff row background color** — Changed `tr.diff-row` background from `#f6f8fa` to `#edf0f4` for better contrast with white semantic changes tables.
+
+- **Myers Diff citation** — Bolded the volume number "1" after "Algorithmica" (`<b>1</b>(2)` / `**1**(2)`) across all Markdown and HTML report files.
+
+- **Clipboard copy button** — Added a per-row clipboard copy button (two overlapping squares icon) to each File Path cell in HTML report tables. The `copyPath(btn)` function copies the individual file path to clipboard with a checkmark feedback animation. Replaced the previous column-header-level copy button.
+
+- **Row hover highlight** — Added light purple hover highlight (`#f3eef8`) to file table rows and semantic changes table rows. Stat tables (Summary, IL Cache Stats), Legend table, and IL ignore strings table are excluded from hover highlighting.
+
+- **Summary table row colors** — Added background colors to Summary table rows in the HTML report: Added (`#e6ffed` green), Removed (`#ffeef0` red), Modified (`#e3f2fd` blue), matching the corresponding section header colors.
+
+- **Legend table width** — Constrained the Legend table width in HTML report (`max-width: 44em`) to prevent it from stretching too wide since its content is fixed text.
+
+- **IL ignore strings table** — Converted the IL line-ignore-by-contains strings from an inline comma-separated list to a table format in both Markdown (`| Ignored String |`) and HTML (`<table class="legend-table">`), with one string per row for better readability.
+
+- **Timestamp brackets removed** — Removed the `[` and `]` brackets from Timestamp column values in Markdown report tables, since brackets are unnecessary when timestamps are already in table cells.
+
 ### [1.4.1] - 2026-03-20
 
 #### Added
 
-- Added a [Myers Diff Algorithm](http://www.xmailserver.org/diff2.pdf) reference note to the HTML report header: a clickable citation of E. W. Myers, "An O(ND) Difference Algorithm and Its Variations," *Algorithmica* 1(2), 1986, noting that inline diffs for `ILMismatch` and `TextMismatch` are computed using this algorithm. Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) to match. Added test `GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference` to [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
+- Added a [Myers Diff Algorithm](http://www.xmailserver.org/diff2.pdf) reference note to the HTML report header: a clickable citation of E. W. Myers, "An O(ND) Difference Algorithm and Its Variations," *Algorithmica* **1**(2), 1986, noting that inline diffs for `ILMismatch` and `TextMismatch` are computed using this algorithm. Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) to match. Added test `GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference` to [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
 
 #### Changed
 
@@ -116,7 +142,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added [`DisassemblerBlacklistTtlMinutes`](Models/ConfigSettings.cs) (default `10`) to [`ConfigSettings`](Models/ConfigSettings.cs). The new property controls the blacklist TTL for a disassembler tool that has failed consecutively `DISASSEMBLE_FAIL_THRESHOLD` (3) times. Previously the TTL was hardcoded at 10 minutes. [`DotNetDisassembleService`](Services/DotNetDisassembleService.cs) now reads this setting from config at construction time instead of using a static `TimeSpan.FromMinutes(10)`. Updated [`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs) to assert the new default and JSON round-trip behavior.
 - Extracted [`DisassemblerBlacklist`](Services/DisassemblerBlacklist.cs) out of [`DotNetDisassembleService`](Services/DotNetDisassembleService.cs) into its own class, encapsulating the [`ConcurrentDictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0), TTL, and fail-threshold logic. Added `InjectEntry` / `ContainsEntry` test-only helpers on the class, and updated [`DotNetDisassembleServiceTests`](FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) to use instance-level reflection (`_blacklist`) instead of the old static-field access. New [`DisassemblerBlacklistTests`](FolderDiffIL4DotNet.Tests/Services/DisassemblerBlacklistTests.cs) covers threshold boundary, TTL expiry, `Clear`, `ResetFailure`, null-safe handling, and two concurrent-access scenarios (B-4).
-- Introduced [`IReportSectionWriter`](Services/IReportSectionWriter.cs) interface and [`ReportWriteContext`](Services/ReportWriteContext.cs) context class. [`ReportGenerateService`](Services/ReportGenerateService.cs) now defines a static `_sectionWriters` list of 10 private nested-class implementations (`HeaderSectionWriter`, `LegendSectionWriter`, `IgnoredFilesSectionWriter`, `UnchangedFilesSectionWriter`, `AddedFilesSectionWriter`, `RemovedFilesSectionWriter`, `ModifiedFilesSectionWriter`, `SummarySectionWriter`, `ILCacheStatsSectionWriter`, `WarningsSectionWriter`) and iterates over them in `WriteReportSections`. Each section can be exercised in isolation by constructing a `ReportWriteContext` without needing the full service.
+- Introduced [`IReportSectionWriter`](Services/IReportSectionWriter.cs) interface and [`ReportWriteContext`](Services/ReportWriteContext.cs) context class. [`ReportGenerateService`](Services/ReportGenerateService.cs) now defines a static `_sectionWriters` list of 11 private nested-class implementations (`HeaderSectionWriter`, `LegendSectionWriter`, `IgnoredFilesSectionWriter`, `UnchangedFilesSectionWriter`, `AddedFilesSectionWriter`, `RemovedFilesSectionWriter`, `ModifiedFilesSectionWriter`, `SummarySectionWriter`, `AssemblySemanticChangesSectionWriter`, `ILCacheStatsSectionWriter`, `WarningsSectionWriter`) and iterates over them in `WriteReportSections`. Each section can be exercised in isolation by constructing a `ReportWriteContext` without needing the full service.
 - Added Unicode-filename report tests to [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs): `GenerateDiffReport_UnicodeFileNames_AreIncludedInReport` and `GenerateDiffReport_UnicodeFileNames_InUnchangedSection` verify that Japanese, Umlauted-Latin, and Chinese relative paths appear verbatim in the Markdown report (B-2).
 - Added large-file-count summary snapshot test `GenerateDiffReport_LargeFileCount_SummaryStatisticsAreCorrect` to [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs): seeds 10 500 unchanged files and asserts that `Unchanged` and `Compared` counts in the Summary section match the seeded count (B-3).
 
@@ -382,7 +408,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Assembly Semantic Changes** を追加 — `System.Reflection.Metadata` を使用した `ILMismatch` アセンブリのメンバーレベル変更検出。変更のあった各 .NET アセンブリについて、型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更をレポートに出力します。新しい設定項目 `ShouldIncludeAssemblySemanticChangesInReport`（既定: `true`）で制御可能。
   - **レポート配置**: Markdown レポートでは **Summary** と **IL Cache Stats** の間に表示。HTML レポートでは IL diff の上に展開可能なインライン行として表示。
-  - **テーブル列**（HTML: チェックボックス含む 12 列、Markdown: 11 列）: `✓`（チェックボックス、HTML のみ）、`Class`（完全修飾型名）、`BaseType`（基底クラス＋インターフェース）、`Change`（`Added`/`Removed`/`Modified`）、`Kind`（`Class`/`Record`/`Struct`/`Interface`/`Enum`/`Constructor`/`StaticConstructor`/`Method`/`Property`/`Field`）、`Access`（`public`/`internal`/`protected`/`private`）、`Modifiers`（`static`/`abstract`/`virtual`/`override`/`sealed`/`readonly`/`const`/`static literal`/`static readonly`）、`Type`（Field/Property の宣言型のみ）、`Name`、`ReturnType`、`Parameters`（括弧なしで表示）、`Body`（メソッドボディまたはフィールド初期化子の IL 変更時に `Changed`、それ以外は空欄）。
+  - **テーブル列**（HTML: チェックボックス含む 12 列、Markdown: 11 列）: `✓`（チェックボックス、HTML のみ）、`Class`（完全修飾型名）、`BaseType`（基底クラス＋インターフェース）、`Status`（`Added`/`Removed`/`Modified`、`[ + ]`/`[ - ]`/`[ * ]` マーカー付き）、`Kind`（`Class`/`Record`/`Struct`/`Interface`/`Enum`/`Constructor`/`StaticConstructor`/`Method`/`Property`/`Field`）、`Access`（`public`/`internal`/`protected`/`private`）、`Modifiers`（`static`/`abstract`/`virtual`/`override`/`sealed`/`readonly`/`const`/`static literal`/`static readonly`）、`Type`（Field/Property の宣言型のみ）、`Name`、`ReturnType`、`Parameters`（括弧なしで表示）、`Body`（メソッドボディまたはフィールド初期化子の IL 変更時に `Changed`、それ以外は空欄）。
   - **集計テーブル**: Class 別に `Added`/`Removed`/`Modified` の件数を表示する第二テーブル。同一クラスの連続行は Class セルを結合。
   - **Record 検出**: `EqualityContract` プロパティの有無で Record 型をヒューリスティックに判定。
   - **HTML スタイル**: テーブルヘッダ背景 `#98989d`（ライトグレー）、データセル（`td`）背景 `#fff`（白）で `diff-row` グレーとのコントラストを確保、行単位チェックボックス（auto-save 対応）、CSS カスタムプロパティとドラッグハンドルによるリサイズ可能な列。
@@ -391,11 +417,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - **テスト**: [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs)、[`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs)、[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に新規アサーション（`TableHeaderUsesLighterGray`、`ThScColCbCssRuleExists`、`TdHasWhiteBackground`）。
   - **ドキュメント**: [README.md](README.md) にバイリンガルの **Assembly Semantic Changes** セクションを追加、[TESTING_GUIDE.md](doc/TESTING_GUIDE.md) に [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs)・[`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs) を追加、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)・[`doc/samples/diff_report.md`](doc/samples/diff_report.md) を同期。
 
+#### 変更
+
+- **凡例セクション** — Markdown（`| Label | Description |`）および HTML（`<table class="legend-table">`）の両方で箇条書きからテーブル形式に変換。`table.legend-table` の CSS（ボーダー、パディング）を追加。
+
+- **IL Cache Stats および Summary セクション** — Markdown レポートで箇条書きからテーブル形式（`| Category | Count |`、`| Metric | Value |`）に変換。HTML レポートの `table.stat-table td` に可視ボーダー（`1px solid #ddd`）を追加。
+
+- **ファイル一覧セクション** — Ignored、Unchanged、Added、Removed、Modified のファイルセクションを Markdown レポートでチェックボックス箇条書きからテーブルに変換（列: `| Status | File Path | Timestamp | Legend | Disassembler |`）。
+
+- **`InlineDiffMaxEditDistance` ハイライト** — HTML レポートの切り詰めメッセージで `InlineDiffMaxEditDistance` に `<code>` タグを追加し、既存の `InlineDiffMaxDiffLines` のコードスタイルと統一。
+
+- **差分行の背景色** — `tr.diff-row` の背景を `#f6f8fa` から `#edf0f4` に変更し、白いセマンティック変更テーブルとのコントラストを向上。
+
+- **Myers Diff 引用** — すべての Markdown および HTML レポートファイルで "Algorithmica" の後の巻番号 "1" を太字化（`<b>1</b>(2)` / `**1**(2)`）。
+
+- **クリップボードコピーボタン** — HTML レポートテーブルの各 File Path セルに行単位のクリップボードコピーボタン（重なった四角アイコン）を追加。`copyPath(btn)` 関数が個別のファイルパスをクリップボードにコピーし、チェックマークのフィードバックアニメーションを表示。従来の列ヘッダレベルのコピーボタンを置き換え。
+
+- **行ホバーハイライト** — ファイルテーブル行およびセマンティック変更テーブル行にライトパープルのホバーハイライト（`#f3eef8`）を追加。統計テーブル（Summary、IL Cache Stats）、凡例テーブル、IL 無視文字列テーブルはホバーハイライト対象外。
+
+- **Summary テーブル行色分け** — HTML レポートの Summary テーブルの行に背景色を追加: Added（`#e6ffed` 緑）、Removed（`#ffeef0` 赤）、Modified（`#e3f2fd` 青）。対応するセクションヘッダ色と統一。
+
+- **凡例テーブル幅** — HTML レポートの凡例テーブルの幅を制限（`max-width: 44em`）。内容が固定テキストのため、過度に横に伸びることを防止。
+
+- **IL 無視文字列テーブル** — IL 行含有文字列無視のリストを、インラインのカンマ区切りリストから Markdown（`| Ignored String |`）および HTML（`<table class="legend-table">`）の両方でテーブル形式に変換。1行1文字列で可読性を向上。
+
+- **タイムスタンプ括弧削除** — Markdown レポートテーブルの Timestamp 列値から `[` と `]` の括弧を削除。テーブルセル内では括弧は不要なため。
+
 ### [1.4.1] - 2026-03-20
 
 #### 追加
 
-- HTML レポートヘッダに [Myers Diff Algorithm](http://www.xmailserver.org/diff2.pdf) の参照注記を追加: `ILMismatch` および `TextMismatch` のインライン差分が本アルゴリズムで計算されていることを示すクリック可能な引用（E. W. Myers, "An O(ND) Difference Algorithm and Its Variations," *Algorithmica* 1(2), 1986）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を同期。テスト `GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference` を [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に追加。
+- HTML レポートヘッダに [Myers Diff Algorithm](http://www.xmailserver.org/diff2.pdf) の参照注記を追加: `ILMismatch` および `TextMismatch` のインライン差分が本アルゴリズムで計算されていることを示すクリック可能な引用（E. W. Myers, "An O(ND) Difference Algorithm and Its Variations," *Algorithmica* **1**(2), 1986）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を同期。テスト `GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference` を [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に追加。
 
 #### 変更
 
@@ -485,7 +537,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - [`ConfigSettings`](Models/ConfigSettings.cs) に [`DisassemblerBlacklistTtlMinutes`](Models/ConfigSettings.cs)（既定値 `10`）を追加しました。このプロパティは、`DISASSEMBLE_FAIL_THRESHOLD`（3 回）以上連続失敗した逆アセンブラツールのブラックリスト有効期間（分）を制御します。従来は 10 分固定でしたが、[`DotNetDisassembleService`](Services/DotNetDisassembleService.cs) が起動時に設定値を読み込むようになりました。[`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs) に既定値と JSON ラウンドトリップを検証するテストを追加しました。
 - [`DisassemblerBlacklist`](Services/DisassemblerBlacklist.cs) を [`DotNetDisassembleService`](Services/DotNetDisassembleService.cs) から独立したクラスとして抽出しました。[`ConcurrentDictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0)、TTL、失敗しきい値ロジックをカプセル化し、テスト専用ヘルパー `InjectEntry` / `ContainsEntry` を追加しました。[`DotNetDisassembleServiceTests`](FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) はインスタンスレベルのリフレクション（`_blacklist`）を使うように更新しました。新規 [`DisassemblerBlacklistTests`](FolderDiffIL4DotNet.Tests/Services/DisassemblerBlacklistTests.cs) は、しきい値境界、TTL 期限切れ、`Clear`、`ResetFailure`、null 安全性、並列アクセス 2 シナリオ（B-4）をカバーします。
-- [`IReportSectionWriter`](Services/IReportSectionWriter.cs) インターフェイスと [`ReportWriteContext`](Services/ReportWriteContext.cs) コンテキストクラスを導入しました。[`ReportGenerateService`](Services/ReportGenerateService.cs) は `_sectionWriters` 静的リストに 10 個のプライベートネストクラス実装（`HeaderSectionWriter`、`LegendSectionWriter`、`IgnoredFilesSectionWriter`、`UnchangedFilesSectionWriter`、`AddedFilesSectionWriter`、`RemovedFilesSectionWriter`、`ModifiedFilesSectionWriter`、`SummarySectionWriter`、`ILCacheStatsSectionWriter`、`WarningsSectionWriter`）を持ち、`WriteReportSections` でそれらを順に呼び出します。各セクションはサービス全体を必要とせず `ReportWriteContext` を構築するだけで単独テストできます。
+- [`IReportSectionWriter`](Services/IReportSectionWriter.cs) インターフェイスと [`ReportWriteContext`](Services/ReportWriteContext.cs) コンテキストクラスを導入しました。[`ReportGenerateService`](Services/ReportGenerateService.cs) は `_sectionWriters` 静的リストに 11 個のプライベートネストクラス実装（`HeaderSectionWriter`、`LegendSectionWriter`、`IgnoredFilesSectionWriter`、`UnchangedFilesSectionWriter`、`AddedFilesSectionWriter`、`RemovedFilesSectionWriter`、`ModifiedFilesSectionWriter`、`SummarySectionWriter`、`AssemblySemanticChangesSectionWriter`、`ILCacheStatsSectionWriter`、`WarningsSectionWriter`）を持ち、`WriteReportSections` でそれらを順に呼び出します。各セクションはサービス全体を必要とせず `ReportWriteContext` を構築するだけで単独テストできます。
 - [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs) に Unicode ファイル名テストを追加しました: `GenerateDiffReport_UnicodeFileNames_AreIncludedInReport` と `GenerateDiffReport_UnicodeFileNames_InUnchangedSection` は、日本語・ウムラウト付きラテン文字・中国語の相対パスが Markdown レポートにそのまま含まれることを検証します（B-2）。
 - [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs) に大件数ファイルのサマリースナップショットテスト `GenerateDiffReport_LargeFileCount_SummaryStatisticsAreCorrect` を追加しました: 10 500 件の Unchanged ファイルを投入し、Summary セクションの `Unchanged` および `Compared` カウントが投入件数と一致することを検証します（B-3）。
 

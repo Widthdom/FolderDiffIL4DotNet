@@ -268,12 +268,12 @@ namespace FolderDiffIL4DotNet.Services
             {
                 var oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key));
                 var newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key));
-                return $"[{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}]";
+                return $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
             }
             var ts = hasOld
                 ? Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, entry.Key))
                 : Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, entry.Key));
-            return $"[{ts}]";
+            return ts;
         }
 
         private static string BuildDisassemblerHeaderText(FileDiffResultLists fileDiffResultLists)
@@ -310,13 +310,18 @@ namespace FolderDiffIL4DotNet.Services
 
         private static string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
         {
+            return $"`{diffDetail}`";
+        }
+
+        private static string BuildDisassemblerDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
+        {
             if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch || diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&
                 fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(fileRelativePath, out var label) &&
                 !string.IsNullOrWhiteSpace(label))
             {
-                return $"`{diffDetail}` `{label}`";
+                return $"`{label}`";
             }
-            return $"`{diffDetail}`";
+            return "";
         }
 
         private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)

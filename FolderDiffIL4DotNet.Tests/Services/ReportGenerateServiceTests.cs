@@ -179,9 +179,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("lines containing any of the configured strings are ignored", reportText);
-            Assert.Contains("\"buildserver\"", reportText);
-            Assert.Contains("\"buildPath\"", reportText);
+            Assert.Contains("lines containing any of the configured strings are ignored:", reportText);
+            Assert.Contains("| Ignored String |", reportText);
+            Assert.Contains("| \"buildserver\" |", reportText);
+            Assert.Contains("| \"buildPath\" |", reportText);
         }
 
         [Fact]
@@ -385,7 +386,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Path.Combine("nested", "payload.bin"),
                 "2026-03-14 10:00:00",
                 "2026-03-14 09:00:00");
-            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail(Path.Combine("nested", "payload.bin"), FileDiffResultLists.DiffDetailResult.MD5Mismatch);
 
             var config = CreateConfig();
             _service.GenerateDiffReport(
@@ -402,9 +403,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("## Warnings", reportText);
             Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
             Assert.Contains("- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
-            Assert.Contains("  - nested", reportText);
-            Assert.Contains("[2026-03-14 10:00:00 → 2026-03-14 09:00:00]", reportText);
-            Assert.EndsWith("[2026-03-14 10:00:00 → 2026-03-14 09:00:00]", reportText.TrimEnd());
+            Assert.Contains("| Status | File Path | Timestamp | Legend | Disassembler |", reportText);
+            Assert.Contains("|:------:|-----------|:---------:|--------|--------------|", reportText);
+            Assert.Contains("| nested", reportText);
+            Assert.Contains("2026-03-14 10:00:00 → 2026-03-14 09:00:00", reportText);
             Assert.True(
                 reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal) <
                 reportText.IndexOf("**modified** files in `new` have older last-modified timestamps", StringComparison.Ordinal));
@@ -473,12 +475,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("## IL Cache Stats", reportText);
-            Assert.Contains("- Hits    :", reportText);
-            Assert.Contains("- Misses  :", reportText);
-            Assert.Contains("- Hit Rate:", reportText);
-            Assert.Contains("- Stores  :", reportText);
-            Assert.Contains("- Evicted :", reportText);
-            Assert.Contains("- Expired :", reportText);
+            Assert.Contains("| Hits |", reportText);
+            Assert.Contains("| Misses |", reportText);
+            Assert.Contains("| Hit Rate |", reportText);
+            Assert.Contains("| Stores |", reportText);
+            Assert.Contains("| Evicted |", reportText);
+            Assert.Contains("| Expired |", reportText);
             // IL Cache Stats section must appear between Summary and Warnings
             // IL Cache Stats セクションは Summary と Warnings の間に出力されること
             int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);
@@ -587,10 +589,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // Summary counts must match (labels are left-padded to 10 chars)
-            // サマリーカウントが一致すること（ラベルは 10 文字に左寄せ）
-            Assert.Contains($"- {"Unchanged",-10}: {fileCount}", reportText, StringComparison.Ordinal);
-            Assert.Contains($"- {"Compared",-10}: {fileCount} (Old) vs {fileCount} (New)", reportText, StringComparison.Ordinal);
+            // Summary counts must match (table format)
+            // サマリーカウントが一致すること（テーブル形式）
+            Assert.Contains($"| Unchanged | {fileCount} |", reportText, StringComparison.Ordinal);
+            Assert.Contains($"| Compared | {fileCount} (Old) vs {fileCount} (New) |", reportText, StringComparison.Ordinal);
         }
 
         [Fact]

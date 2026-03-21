@@ -19,6 +19,13 @@ namespace FolderDiffIL4DotNet.Services
     ul.meta li { margin-bottom: 3px; line-height: 1.65; }
     ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
     ul.meta ul li { margin-bottom: 1px; }
+    /* ── Legend table ────────────────────────────────────────────────────── */
+    table.legend-table { width: auto; max-width: 44em; margin: 4px 0 2px; border-collapse: collapse; }
+    table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
+    table.legend-table td:first-child { white-space: nowrap; }
+    .il-ignore-scroll { overflow-x: auto; max-width: 80em; }
+    table.il-ignore-table { max-width: none; }
+    table.il-ignore-table td { white-space: nowrap; font-size: 12px; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;
@@ -50,7 +57,7 @@ namespace FolderDiffIL4DotNet.Services
       background: transparent; color: #1d1d1f;
     }
     .btn-clear:hover { background: #f5f5f7; }
-    .save-status { font-size: 12px; color: #86868b; }
+.save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em;
@@ -68,7 +75,7 @@ namespace FolderDiffIL4DotNet.Services
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
-    table:not(.stat-table):not(.diff-table):not(.semantic-changes-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
+    table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
@@ -84,35 +91,52 @@ namespace FolderDiffIL4DotNet.Services
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
-    td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    td.col-path { white-space: nowrap; overflow: hidden; }
+    td.col-path .path-wrap { display: flex; align-items: center; }
+    td.col-path .path-text { overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
     td.col-ts    { white-space: nowrap; text-align: center; }
     td.col-diff  { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                    font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
-    td.col-reason input[type=""text""], td.col-notes input[type=""text""] {
-      width: 100%; border: none; padding: 2px 4px; font-size: 12px;
-      background: transparent; outline: none; font-family: inherit; }
-    td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
+    /* ── Row hover highlight ─────────────────────────────────────────────── */
+    :not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }
+    td input[type=""text""] {
+      width: 100%; border: 0; padding: 2px 4px; font-size: 12px;
+      background: transparent; outline: none; box-shadow: none;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      font-family: inherit; }
+    td input[type=""text""]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    /* ── Per-row copy path button ────────────────────────────────────────── */
+    .btn-copy-path {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 1.4em; height: 1.4em; padding: 0; margin-left: 0.4em;
+      background: transparent; border: none; border-radius: 3px;
+      cursor: pointer; font-size: 11px; vertical-align: middle;
+      transition: background 0.12s; line-height: 1;
+      color: #bbb; flex-shrink: 0;
+    }
+    .btn-copy-path:hover { background: #e8e8ed; color: #333; }
+    .btn-copy-path svg { pointer-events: none; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
-    table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
+    table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }
     table.stat-table td.stat-label { color: #444; white-space: nowrap; }
     table.stat-table td.stat-value { text-align: right; }
     ul.warnings { margin: 0.3rem 0 0 1.4rem; }
     ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
     .warn-icon { color: #f5a623; font-size: 1.1em; }
     /* ── Inline diff ─────────────────────────────────────────────────────── */
-    tr.diff-row { background: #f6f8fa; }
+    tr.diff-row { background: #edf0f4; }
     tr.diff-row > td { padding: 0; border-top: none; }
     .diff-added-cnt { color: #22863a; font-weight: 600; }
     .diff-removed-cnt { color: #b31d28; font-weight: 600; }
     summary.diff-summary {
       display: inline-flex; align-items: center; gap: 0.4em;
       cursor: pointer; font-size: 12px; color: #0051c3;
-      padding: 3px 6px; user-select: none; list-style: none; }
+      padding: 3px 6px; padding-left: 3.2em; user-select: none; list-style: none; }
     summary.diff-summary::-webkit-details-marker { display: none; }
     summary.diff-summary::before { content: '▶'; font-size: 10px; transition: transform 0.15s; }
     details[open] > summary.diff-summary::before { transform: rotate(90deg); }
@@ -135,7 +159,7 @@ namespace FolderDiffIL4DotNet.Services
     tr.diff-trunc-tr { background: #fffbdd; }
     td.diff-trunc-td { color: #735c0f; padding: 2px 8px; font-style: italic; }
     p.diff-skipped { color: #735c0f; font-size: 12px; padding: 4px 8px;
-                     background: #fffbdd; margin: 0; }
+                     padding-left: 3.2em; background: #fffbdd; margin: 0; }
     /* ── Assembly semantic changes ─────────────────────────────────────── */
     .semantic-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
     .semantic-changes p { margin: 4px 0 2px; }
@@ -154,6 +178,7 @@ namespace FolderDiffIL4DotNet.Services
     table.semantic-changes-table.sc-count tr.group-cont td:nth-child(1) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(2) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
+    table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }
     /* sc colgroup widths */
     col.sc-col-cb-g { width: 3.2em; }
     col.sc-col-class-g { width: var(--sc-class-w); }

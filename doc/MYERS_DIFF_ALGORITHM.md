@@ -8,7 +8,7 @@
 >
 > **Reference paper** — ["E. W. Myers,
 > An O(ND) Difference Algorithm and Its Variations,
-> _Algorithmica_ 1(2), 1986."](http://www.xmailserver.org/diff2.pdf)
+> _Algorithmica_ **1**(2), 1986."](http://www.xmailserver.org/diff2.pdf)
 
 ---
 
@@ -672,7 +672,7 @@ needed for clean backtracking, and D is capped at 4000, keeping memory bounded.
 >
 > **参照論文** — ["E. W. Myers,
 > An O(ND) Difference Algorithm and Its Variations",
-> _Algorithmica_ 1(2), 1986.](http://www.xmailserver.org/diff2.pdf)
+> _Algorithmica_ **1**(2), 1986.](http://www.xmailserver.org/diff2.pdf)
 
 ---
 
