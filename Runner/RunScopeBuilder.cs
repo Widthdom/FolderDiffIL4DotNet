@@ -56,6 +56,7 @@ namespace FolderDiffIL4DotNet.Runner
             services.AddScoped<ProgressReportService>();
             services.AddScoped<ReportGenerateService>();
             services.AddScoped<HtmlReportGenerateService>();
+            services.AddScoped<AuditLogGenerateService>();
             services.AddScoped<IFileSystemService, FileSystemService>();
             services.AddScoped<IFolderDiffExecutionStrategy, FolderDiffExecutionStrategy>();
             services.AddScoped<IFileComparisonService, FileComparisonService>();

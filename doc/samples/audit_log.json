@@ -1,0 +1,151 @@
+{
+  "appVersion": "1.0.0",
+  "computerName": "dev-machine",
+  "oldFolderPath": "/Users/UserA/workspace/old",
+  "newFolderPath": "/Users/UserA/workspace/new",
+  "timestamp": "2026-03-15T09:15:30.1234567+09:00",
+  "elapsedTime": "0h 0m 1.2s",
+  "summary": {
+    "added": 1,
+    "removed": 1,
+    "modified": 12,
+    "unchanged": 5,
+    "ignored": 3
+  },
+  "reportSha256": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "htmlReportSha256": "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5",
+  "files": [
+    {
+      "relativePath": "guide.md",
+      "category": "Added",
+      "diffDetail": "",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "bin/App.pdb",
+      "category": "Ignored",
+      "diffDetail": "",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "build.cache",
+      "category": "Ignored",
+      "diffDetail": "",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "debug.log",
+      "category": "Ignored",
+      "diffDetail": "",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "config/app.config",
+      "category": "Modified",
+      "diffDetail": "TextMismatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "config/settings.ini",
+      "category": "Modified",
+      "diffDetail": "TextMismatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "lib/Core.dll",
+      "category": "Modified",
+      "diffDetail": "ILMismatch",
+      "disassembler": "dotnet-ildasm (version: 0.12.2)"
+    },
+    {
+      "relativePath": "payload.bin",
+      "category": "Modified",
+      "diffDetail": "SHA256Mismatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "src/App.dll",
+      "category": "Modified",
+      "diffDetail": "ILMismatch",
+      "disassembler": "dotnet-ildasm (version: 0.12.2)"
+    },
+    {
+      "relativePath": "src/BigModule.dll",
+      "category": "Modified",
+      "diffDetail": "ILMismatch",
+      "disassembler": "dotnet-ildasm (version: 0.12.2)"
+    },
+    {
+      "relativePath": "src/DataModel.edmx",
+      "category": "Modified",
+      "diffDetail": "TextMismatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "src/LargeConfig.xml",
+      "category": "Modified",
+      "diffDetail": "TextMismatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "src/Service.dll",
+      "category": "Modified",
+      "diffDetail": "ILMismatch",
+      "disassembler": "dotnet-ildasm (version: 0.12.2)"
+    },
+    {
+      "relativePath": "src/Strings.resx",
+      "category": "Modified",
+      "diffDetail": "TextMismatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "src/Web.config",
+      "category": "Modified",
+      "diffDetail": "TextMismatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "util/Legacy.dll",
+      "category": "Modified",
+      "diffDetail": "ILMismatch",
+      "disassembler": "dotnet-ildasm (version: 0.12.2)"
+    },
+    {
+      "relativePath": "old-tool.txt",
+      "category": "Removed",
+      "diffDetail": "",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "appsettings.json",
+      "category": "Unchanged",
+      "diffDetail": "TextMatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "data/schema.bin",
+      "category": "Unchanged",
+      "diffDetail": "SHA256Match",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "docs/notes.md",
+      "category": "Unchanged",
+      "diffDetail": "TextMatch",
+      "disassembler": ""
+    },
+    {
+      "relativePath": "util/Helper.dll",
+      "category": "Unchanged",
+      "diffDetail": "ILMatch",
+      "disassembler": "dotnet-ildasm (version: 0.12.2)"
+    },
+    {
+      "relativePath": "vendor/lib.dll",
+      "category": "Unchanged",
+      "diffDetail": "SHA256Match",
+      "disassembler": ""
+    }
+  ]
+}

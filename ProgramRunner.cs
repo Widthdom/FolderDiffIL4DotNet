@@ -383,6 +383,14 @@ namespace FolderDiffIL4DotNet
                 computerName,
                 config,
                 ilCache);
+            scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(
+                executionContext.OldFolderAbsolutePath,
+                executionContext.NewFolderAbsolutePath,
+                executionContext.ReportsFolderAbsolutePath,
+                appVersion,
+                elapsedTimeString,
+                computerName,
+                config.ShouldGenerateAuditLog);
         }
 
         private void PromptForExitKeyIfNeeded(CliOptions opts)

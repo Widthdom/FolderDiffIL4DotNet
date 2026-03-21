@@ -415,6 +415,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(0, config.InlineDiffContextLines);
             Assert.Equal(ConfigSettings.DefaultInlineDiffMaxDiffLines, config.InlineDiffMaxDiffLines);
             Assert.Equal(ConfigSettings.DefaultInlineDiffMaxOutputLines, config.InlineDiffMaxOutputLines);
+            Assert.True(config.ShouldGenerateAuditLog);
         }
 
         /// <summary>
@@ -438,6 +439,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(config.EnableILCache, readOnly.EnableILCache);
             Assert.Equal(config.SkipIL, readOnly.SkipIL);
             Assert.Equal(config.EnableInlineDiff, readOnly.EnableInlineDiff);
+            Assert.Equal(config.ShouldGenerateAuditLog, readOnly.ShouldGenerateAuditLog);
         }
 
         /// <summary>

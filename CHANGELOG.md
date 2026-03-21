@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Audit log and tamper detection (`audit_log.json` + reviewed HTML integrity)** — Added `AuditLogGenerateService` that generates a structured JSON audit log alongside the diff reports. The audit log records per-file comparison results (category, diff detail, disassembler used), run metadata (app version, computer name, old/new paths, ISO 8601 timestamp, elapsed time), summary statistics, and SHA256 integrity hashes of the generated `diff_report.md` and `diff_report.html` for tamper detection. Generation is controlled by the new `ShouldGenerateAuditLog` config setting (default: `true`). New model classes: `AuditLogRecord`, `AuditLogFileEntry`, `AuditLogSummary` in `Models/AuditLogEntry.cs`. The service is registered in `RunScopeBuilder` and invoked after HTML report generation in `ProgramRunner.GenerateReport()`. Added sample [`doc/samples/audit_log.json`](doc/samples/audit_log.json). Updated `IReadOnlyConfigSettings` interface with `ShouldGenerateAuditLog` property. The "Download as reviewed" workflow now also computes a SHA256 hash of the reviewed HTML using the Web Crypto API, embeds it inside the file via a placeholder technique, and downloads a companion `.sha256` verification file. The reviewed HTML's header includes a "Verify integrity" button that re-reads the file, recomputes the hash, and displays a pass/fail dialog. The `.sha256` file follows the `sha256sum`/`shasum` format and can be verified on any OS (Linux: `sha256sum -c`, macOS: `shasum -a 256 -c`, Windows: `Get-FileHash` in PowerShell). Submitting the reviewed HTML together with the `.sha256` file constitutes a tamper-proof audit record. Added 18 tests: 17 in [`AuditLogGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs) and 1 in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs). Updated `ConfigSettingsTests` to assert the new default.
+
 ### [1.6.0] - 2026-03-21
 
 #### Changed
@@ -454,6 +458,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **監査ログと改竄検知 (`audit_log.json` + レビュー済み HTML 整合性検証)** — 差分レポートと合わせて構造化 JSON 監査ログを生成する `AuditLogGenerateService` を追加。監査ログにはファイルごとの比較結果（カテゴリ、diff 詳細、使用した逆アセンブラ）、実行メタデータ（アプリバージョン、マシン名、旧/新パス、ISO 8601 タイムスタンプ、経過時間）、サマリー統計、および改竄検知用の `diff_report.md` / `diff_report.html` の SHA256 インテグリティハッシュを記録。新設定 `ShouldGenerateAuditLog`（既定: `true`）で生成を制御。新モデルクラス: `AuditLogRecord`、`AuditLogFileEntry`、`AuditLogSummary`（`Models/AuditLogEntry.cs`）。`RunScopeBuilder` にサービスを登録し、`ProgramRunner.GenerateReport()` で HTML レポート生成後に呼び出し。サンプル [`doc/samples/audit_log.json`](doc/samples/audit_log.json) を追加。`IReadOnlyConfigSettings` インターフェースに `ShouldGenerateAuditLog` プロパティを追加。「Download as reviewed」ワークフローでも Web Crypto API を用いてレビュー済み HTML の SHA256 ハッシュを計算し、プレースホルダ方式でファイル自体に埋め込んだうえ、コンパニオン `.sha256` 検証ファイルをダウンロード。レビュー済み HTML のヘッダーに「Verify integrity」ボタンを追加し、クリックするとファイルを再読み込み → ハッシュ再計算 → 合格/不合格ダイアログが表示される。`.sha256` ファイルは `sha256sum`/`shasum` 形式に従い、全 OS で検証可能（Linux: `sha256sum -c`、macOS: `shasum -a 256 -c`、Windows: PowerShell の `Get-FileHash`）。レビュー済み HTML と `.sha256` ファイルを一緒に提出することで、改竄のない監査記録となる。テストを 18 件追加: [`AuditLogGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs) に 17 件、[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に 1 件。`ConfigSettingsTests` に新既定値のアサーションを追加。
 
 ### [1.6.0] - 2026-03-21
 
