@@ -70,7 +70,7 @@
 |:------:|-----------|:---------:|
 | `[ - ]` | /Users/UserA/workspace/old/legacy/old-tool.txt | 2026-03-15 08:55:00 |
 
-## [ * ] Modified Files (13)
+## [ * ] Modified Files (14)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|:---------:|--------|--------------|
@@ -84,6 +84,7 @@
 | `[ * ]` | src/ApiClient.dll | 2026-03-15 08:55:00 → 2026-03-15 09:04:00 | `ILMismatch High` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/App.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMismatch Medium` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch Medium` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ * ]` | lib/Logging.dll | 2026-03-15 08:52:00 → 2026-03-15 09:03:00 | `ILMismatch Medium` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch Low` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch Low` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | |
@@ -96,8 +97,8 @@
 | Unchanged | 5 |
 | Added | 1 |
 | Removed | 1 |
-| Modified | 13 |
-| Compared | 22 (Old) vs 22 (New) |
+| Modified | 14 |
+| Compared | 23 (Old) vs 23 (New) |
 
 ## IL Cache Stats
 

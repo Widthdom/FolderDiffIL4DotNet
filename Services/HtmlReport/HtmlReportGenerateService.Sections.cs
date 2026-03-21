@@ -457,7 +457,7 @@ namespace FolderDiffIL4DotNet.Services
 
             string detailsId = $"semantic_{sectionPrefix}_{idx}";
             string highSuffix = summary.HighImportanceCount > 0
-                ? $" (\u25B2 {summary.HighImportanceCount} High)"
+                ? $" ({summary.HighImportanceCount} High)"
                 : "";
             string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {I18n("Show assembly semantic changes", "アセンブリ意味変更を表示")}{highSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();

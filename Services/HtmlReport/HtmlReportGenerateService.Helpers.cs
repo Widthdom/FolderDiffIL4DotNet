@@ -223,9 +223,9 @@ namespace FolderDiffIL4DotNet.Services
         private static string ImportanceToMarker(ChangeImportance importance)
             => importance switch
             {
-                ChangeImportance.High => "\u25B2 High",
-                ChangeImportance.Medium => "\u25A0 Med",
-                ChangeImportance.Low => "\u25CB Low",
+                ChangeImportance.High => "High",
+                ChangeImportance.Medium => "Medium",
+                ChangeImportance.Low => "Low",
                 _ => ""
             };
 
