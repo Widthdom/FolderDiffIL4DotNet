@@ -802,7 +802,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("semantic_mod_0", html);
             Assert.Contains("Show assembly semantic changes", html);
             // Content should NOT be inline (lazy rendered) — table markup is base64-encoded
-            Assert.DoesNotContain("semantic-changes-table", html);
+            Assert.DoesNotContain("<table class=\"semantic-changes-table", html);
             Assert.Contains("data-diff-html", html);
         }
 

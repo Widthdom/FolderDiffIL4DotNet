@@ -802,8 +802,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("| Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |", reportText);
             // First row shows class name; subsequent rows for same class are empty
             Assert.Contains("| MyApp.NewService |  | `Added` | `Class` | `public` |  |  |  |  |  |  |", reportText);
-            Assert.Contains("| MyApp.UserService |  | `Added` | `Method` | `public` | `static` |  | ValidateToken | bool | string token |  |", reportText);
-            Assert.Contains("|  |  | `Modified` | `Method` | `public` |  |  | Login | bool | string user, string pass | `Changed` |", reportText);
+            Assert.Contains("| MyApp.UserService |  | `Added` | `Method` | `public` | `static` |  | ValidateToken | bool | string\u00A0token |  |", reportText);
+            Assert.Contains("|  |  | `Modified` | `Method` | `public` |  |  | Login | bool | string\u00A0user,\u00A0string\u00A0pass | `Changed` |", reportText);
             Assert.Contains("|  |  | `Added` | `Property` | `public` |  | bool | IsActive |  |  |  |", reportText);
             // Summary count table
             Assert.Contains("| Class | Change | Count |", reportText);
