@@ -189,6 +189,31 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("localStorage", html);
         }
 
+        /// <summary>
+        /// Verifies that the generated HTML includes SHA256 integrity verification code
+        /// for the "Download as reviewed" workflow.
+        /// 「Download as reviewed」ワークフロー用の SHA256 整合性検証コードが
+        /// 生成 HTML に含まれることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_ContainsSha256IntegrityVerification_ForReviewedDownload()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("sha256-reviewed");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // Web Crypto API SHA256 computation
+            Assert.Contains("crypto.subtle.digest", html);
+            Assert.Contains("SHA-256", html);
+            // Companion .sha256 verification file download
+            Assert.Contains(".sha256", html);
+            Assert.Contains("sha256Text", html);
+        }
+
         [Fact]
         public void HtmlEncode_EscapesAllSpecialCharacters()
         {

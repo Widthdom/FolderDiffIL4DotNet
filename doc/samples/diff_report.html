@@ -911,7 +911,7 @@
     if (status) status.textContent = 'Auto-saved at ' + formatTs(new Date());
   }
 
-  function downloadReviewed() {
+  async function downloadReviewed() {
     var state   = collectState();
     var slug    = 'diff_report_' + __reportDate__;
     var root    = document.documentElement;
@@ -952,14 +952,35 @@
     // Replace controls bar with reviewed banner
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
       '<div class="reviewed-banner">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</div>');
+    // 3. Compute SHA256 integrity hash of the reviewed HTML for tamper detection
+    var reviewedFileName = slug + '_reviewed.html';
+    var encoded = new TextEncoder().encode(html);
+    var hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+    var hashArray = Array.from(new Uint8Array(hashBuffer));
+    var hashHex = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    // Download reviewed HTML
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a    = document.createElement('a');
     a.href   = URL.createObjectURL(blob);
-    a.download = slug + '_reviewed.html';
+    a.download = reviewedFileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+    // Download companion SHA256 verification file (brief delay avoids browser download blocking)
+    setTimeout(function(){
+      var sha256Text = hashHex + '  ' + reviewedFileName + '\n';
+      var sha256Blob = new Blob([sha256Text], { type: 'text/plain;charset=utf-8' });
+      var a2 = document.createElement('a');
+      a2.href = URL.createObjectURL(sha256Blob);
+      a2.download = reviewedFileName + '.sha256';
+      document.body.appendChild(a2);
+      a2.click();
+      document.body.removeChild(a2);
+      setTimeout(function(){ URL.revokeObjectURL(a.href); URL.revokeObjectURL(a2.href); }, 1000);
+    }, 500);
+    // Display hash in save-status for manual verification
+    var status = document.getElementById('save-status');
+    if (status) status.textContent = 'SHA256: ' + hashHex;
   }
 
   function collapseAll() {
