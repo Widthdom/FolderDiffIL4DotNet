@@ -1334,6 +1334,39 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(il_aaa < md5_zzz, "ILMismatch should appear before MD5Mismatch in Warnings");
         }
 
+        // ── Embedded resource tests ─────────────────────────────────────────
+
+        [Fact]
+        public void LoadEmbeddedResource_CssResource_ReturnsNonEmptyString()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+            Assert.False(string.IsNullOrWhiteSpace(css));
+            Assert.Contains("box-sizing", css);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_JsResource_ReturnsNonEmptyString()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js");
+            Assert.False(string.IsNullOrWhiteSpace(js));
+            Assert.Contains("function", js);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_JsResource_ContainsPlaceholders()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js");
+            Assert.Contains("{{STORAGE_KEY}}", js);
+            Assert.Contains("{{REPORT_DATE}}", js);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_InvalidResource_ThrowsFileNotFoundException()
+        {
+            Assert.Throws<FileNotFoundException>(() =>
+                HtmlReportGenerateService.LoadEmbeddedResource("NonExistent.Resource.Name"));
+        }
+
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()
         {
             IgnoredExtensions = new List<string>(),
