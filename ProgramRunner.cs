@@ -205,7 +205,7 @@ namespace FolderDiffIL4DotNet
                 var reportLabel = args[2];
                 RunPreflightValidator.ValidateReportLabel(_logger, reportLabel);
                 string reportsFolderAbsolutePath = RunPreflightValidator.GetReportsFolderAbsolutePath(reportLabel);
-                RunPreflightValidator.ValidateRunDirectories(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
+                RunPreflightValidator.ValidateRunDirectories(_logger, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
                 return StepResult<RunArguments>.FromValue(new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath));
             }

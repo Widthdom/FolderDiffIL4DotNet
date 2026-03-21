@@ -230,6 +230,7 @@ Failure behavior:
 - Exit code `1` is reserved for unexpected internal errors that escape the explicit phase classification.
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
 - [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) logs and rethrows expected runtime exceptions such as path-validation errors, [`DirectoryNotFoundException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.directorynotfoundexception?view=net-8.0), [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0), [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0), and [`NotSupportedException`](https://learn.microsoft.com/en-us/dotnet/api/system.notsupportedexception?view=net-8.0); only truly unexpected exceptions use the separate "unexpected error" log wording.
+- The preflight write-permission check ([`CheckReportsParentWritableOrThrow`](../Runner/RunPreflightValidator.cs)) logs and re-throws both [`UnauthorizedAccessException`](https://learn.microsoft.com/en-us/dotnet/api/system.unauthorizedaccessexception?view=net-8.0) and [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0) with cause-specific messages. No I/O error is silently swallowed.
 - Read-only protection on output files remains best-effort and warning-only.
 
 <a id="guide-en-di-layout"></a>
@@ -867,6 +868,7 @@ sequenceDiagram
 - 明示分類から漏れた想定外の内部エラーだけを終了コード `1` として扱います。
 - IL 比較由来の [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は致命的な例外扱いとし、実行全体を止めるものとします。
 - [`FolderDiffService.ExecuteFolderDiffAsync()`](../Services/FolderDiffService.cs) は、パス検証エラーや [`DirectoryNotFoundException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.directorynotfoundexception?view=net-8.0)、[`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0)、[`NotSupportedException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.notsupportedexception?view=net-8.0) などの想定される実行時例外を error として記録して再スローします。本当に想定外の例外だけを別文言の "unexpected error" として記録します。
+- プリフライト書込権限チェック（[`CheckReportsParentWritableOrThrow`](../Runner/RunPreflightValidator.cs)）は、[`UnauthorizedAccessException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.unauthorizedaccessexception?view=net-8.0) と [`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0) の両方を原因別メッセージとともにログ出力して再スローします。I/O エラーは一切握りつぶしません。
 - 出力ファイルの読み取り専用化はベストエフォートで、失敗しても警告止まりです。
 
 <a id="guide-ja-di-layout"></a>
