@@ -95,6 +95,69 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReport_HeaderShowsDisassemblerAvailabilityTable()
+        {
+            // Arrange: populate availability with one available and one unavailable tool
+            // 1 つ利用可能、1 つ利用不可のツールで可用性を設定
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", true, "0.12.2", "/usr/local/bin/dotnet-ildasm"),
+                new("ilspycmd", false, null, null),
+            };
+
+            var oldDir = Path.Combine(_rootDir, "old-avail");
+            var newDir = Path.Combine(_rootDir, "new-avail");
+            var reportDir = Path.Combine(_rootDir, "report-avail");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Assert: availability table structure and content
+            // テーブルの構造と内容を検証
+            Assert.Contains("- Disassembler Availability:", reportText);
+            Assert.Contains("| Tool | Available | Version |", reportText);
+            Assert.Contains("| dotnet-ildasm | Yes | 0.12.2 |", reportText);
+            Assert.Contains("| ilspycmd | No | N/A |", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull()
+        {
+            // Arrange: no probe results (default: null)
+            // プローブ結果なし（既定値: null）
+            var oldDir = Path.Combine(_rootDir, "old-no-probe");
+            var newDir = Path.Combine(_rootDir, "new-no-probe");
+            var reportDir = Path.Combine(_rootDir, "report-no-probe");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test",
+                elapsedTimeString: "00:00:01.000",
+                computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Assert: no availability table when probe results are null
+            // プローブ結果が null の場合、テーブルは出力されない
+            Assert.DoesNotContain("Disassembler Availability", reportText);
+        }
+
+        [Fact]
         public void GenerateDiffReport_HeaderShowsMvidReasonNote()
         {
             var oldDir = Path.Combine(_rootDir, "old-mvid-note");

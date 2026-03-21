@@ -116,6 +116,8 @@ Before loading configuration, three preflight checks run against the reports out
 2. **Disk space** — at least 100 MB of free space is required on the drive that will hold the reports folder. The check is best-effort and skips silently when drive information is unavailable (e.g., network shares).
 3. **Write permission** — a temporary probe file is created and deleted in the `Reports/` parent directory to verify that the process has write access before any actual output is produced. Both `UnauthorizedAccessException` and `IOException` are treated as fatal: the cause is logged with a descriptive message and the run fails immediately (fail-fast).
 
+The report header includes a **Disassembler Availability** table that lists every candidate IL disassembler (`dotnet-ildasm`, `ilspycmd`) and whether it was available or unavailable in the current environment, along with its version. This helps readers understand the confidence level of IL-based comparison results at a glance.
+
 See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample of the Markdown report.
 
 <a id="readme-en-html-report"></a>
@@ -656,6 +658,8 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 1. **パス長** — 構築した `Reports/<label>` パスが OS の上限を超えていないこと（Windows 標準は 260 文字、macOS は 1024 文字、Linux は 4096 文字）。
 2. **ディスク空き容量** — レポートフォルダを作成するドライブに 100 MB 以上の空き容量があること。ドライブ情報を取得できない場合（ネットワーク共有など）は best-effort でスキップします。
 3. **書き込み権限** — `Reports/` 親ディレクトリに一時プローブファイルを作成・削除して、プロセスが書き込み権限を持つことを確認します。`UnauthorizedAccessException` と `IOException` の両方を致命的エラーとして扱い、原因を説明的なメッセージとともにログ出力し、即座に実行を中断します（fail-fast）。
+
+レポートヘッダには **逆アセンブラ利用可否（Disassembler Availability）** テーブルが含まれ、すべての候補 IL 逆アセンブラ（`dotnet-ildasm`、`ilspycmd`）が現在の環境で利用可能か否か、およびバージョンを一覧表示します。これにより、IL ベースの比較結果の信頼度を一目で把握できます。
 
 Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samples/diff_report.md) を参照してください。
 

@@ -76,8 +76,30 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public string HtmlReportSha256 { get; init; } = string.Empty;
 
+        /// <summary>
+        /// Disassembler availability probed at startup. Null when not probed.
+        /// 起動時にプローブされた逆アセンブラの利用可否。プローブされていない場合は null。
+        /// </summary>
+        public List<AuditLogDisassemblerAvailability>? DisassemblerAvailability { get; init; }
+
         /// <summary>Per-file comparison results. / ファイルごとの比較結果一覧。</summary>
         public List<AuditLogFileEntry> Files { get; init; } = new();
+    }
+
+    /// <summary>
+    /// Disassembler availability entry for the audit log.
+    /// 監査ログ用の逆アセンブラ利用可否エントリ。
+    /// </summary>
+    public sealed class AuditLogDisassemblerAvailability
+    {
+        /// <summary>Tool name (e.g. <c>dotnet-ildasm</c>). / ツール名。</summary>
+        public string ToolName { get; init; } = string.Empty;
+
+        /// <summary>Whether the tool is available. / ツールが利用可能か。</summary>
+        public bool Available { get; init; }
+
+        /// <summary>Version string, or empty if unavailable. / バージョン文字列。利用不可時は空。</summary>
+        public string Version { get; init; } = string.Empty;
     }
 
     /// <summary>

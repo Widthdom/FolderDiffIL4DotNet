@@ -12,6 +12,18 @@
     "unchanged": 5,
     "ignored": 3
   },
+  "disassemblerAvailability": [
+    {
+      "toolName": "dotnet-ildasm",
+      "available": true,
+      "version": "0.12.2"
+    },
+    {
+      "toolName": "ilspycmd",
+      "available": false,
+      "version": ""
+    }
+  ],
   "reportSha256": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
   "htmlReportSha256": "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5",
   "files": [

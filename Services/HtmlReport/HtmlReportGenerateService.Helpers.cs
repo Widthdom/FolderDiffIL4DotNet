@@ -196,6 +196,35 @@ namespace FolderDiffIL4DotNet.Services
                 .ToList();
         }
 
+        /// <summary>
+        /// Appends the Disassembler Availability table to the HTML report header.
+        /// HTML レポートヘッダに逆アセンブラ利用可否テーブルを追加します。
+        /// </summary>
+        private static void AppendDisassemblerAvailabilityTable(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults)
+        {
+            if (probeResults == null || probeResults.Count == 0)
+            {
+                return;
+            }
+            sb.AppendLine($"  <li>{I18n("Disassembler Availability", "逆アセンブラ利用可否")}:");
+            sb.AppendLine("    <table class=\"legend-table\">");
+            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Tool</th><th style=\"background:{TH_BG_DEFAULT}\">Available</th><th style=\"background:{TH_BG_DEFAULT}\">Version</th></tr></thead>");
+            sb.AppendLine("      <tbody>");
+            foreach (var probe in probeResults)
+            {
+                var available = probe.Available
+                    ? "<span style=\"color:#22863a\">Yes</span>"
+                    : "<span style=\"color:#b31d28\">No</span>";
+                var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
+                    ? HtmlEncode(probe.Version)
+                    : "N/A";
+                sb.AppendLine($"        <tr><td>{HtmlEncode(probe.ToolName)}</td><td style=\"text-align:center\">{available}</td><td>{version}</td></tr>");
+            }
+            sb.AppendLine("      </tbody>");
+            sb.AppendLine("    </table>");
+            sb.AppendLine("  </li>");
+        }
+
         // ── Utilities ────────────────────────────────────────────────────────
 
         internal static string HtmlEncode(string text)

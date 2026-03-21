@@ -437,6 +437,67 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Throws<ArgumentNullException>(() => new AuditLogGenerateService(_resultLists, null!));
         }
 
+        // ── Disassembler Availability / 逆アセンブラ利用可否 ───────────────────
+
+        /// <summary>
+        /// Verifies that disassemblerAvailability is present in audit log when probe results exist.
+        /// プローブ結果が存在する場合、監査ログに disassemblerAvailability が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateAuditLog_IncludesDisassemblerAvailability_WhenProbed()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("disasm-avail");
+
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", true, "0.12.2", "/usr/local/bin/dotnet-ildasm"),
+                new("ilspycmd", false, null, null),
+            };
+
+            _service.GenerateAuditLog(oldDir, newDir, reportDir,
+                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
+                computerName: "test-host", shouldGenerate: true);
+
+            var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
+            var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            Assert.True(root.TryGetProperty("disassemblerAvailability", out var availArr));
+            Assert.Equal(JsonValueKind.Array, availArr.ValueKind);
+            Assert.Equal(2, availArr.GetArrayLength());
+
+            var first = availArr[0];
+            Assert.Equal("dotnet-ildasm", first.GetProperty("toolName").GetString());
+            Assert.True(first.GetProperty("available").GetBoolean());
+            Assert.Equal("0.12.2", first.GetProperty("version").GetString());
+
+            var second = availArr[1];
+            Assert.Equal("ilspycmd", second.GetProperty("toolName").GetString());
+            Assert.False(second.GetProperty("available").GetBoolean());
+            Assert.Equal("", second.GetProperty("version").GetString());
+        }
+
+        /// <summary>
+        /// Verifies that disassemblerAvailability is null in audit log when no probing was done.
+        /// プローブが実行されていない場合、disassemblerAvailability が null であることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateAuditLog_DisassemblerAvailabilityIsNull_WhenNotProbed()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("no-probe");
+
+            _service.GenerateAuditLog(oldDir, newDir, reportDir,
+                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
+                computerName: "test-host", shouldGenerate: true);
+
+            var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
+            var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            Assert.True(root.TryGetProperty("disassemblerAvailability", out var availProp));
+            Assert.Equal(JsonValueKind.Null, availProp.ValueKind);
+        }
+
         // ── Helpers / ヘルパー ────────────────────────────────────────────────────
 
         private (string oldDir, string newDir, string reportDir) MakeDirs(string label)
