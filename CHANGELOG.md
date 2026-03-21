@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.5.0] - 2026-03-21
+
 #### Added
 
 - Added **Assembly Semantic Changes** — member-level change detection for `ILMismatch` assemblies using `System.Reflection.Metadata`. For each modified .NET assembly, the report now shows type/method/property/field additions, removals, and method body changes. Controlled by the new `ShouldIncludeAssemblySemanticChangesInReport` config setting (default: `true`).
@@ -403,6 +405,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.5.0] - 2026-03-21
 
 #### 追加
 
