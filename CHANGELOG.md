@@ -26,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- Added a [Myers Diff Algorithm](http://www.xmailserver.org/diff2.pdf) reference note to the HTML report header: a clickable citation of E. W. Myers, "An O(ND) Difference Algorithm and Its Variations," *Algorithmica* 1(2), 1986, noting that inline diffs for `ILMismatch` and `TextMismatch` are computed using this algorithm. Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) to match. Added test `GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference` to [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
+- Added a [Myers Diff Algorithm](http://www.xmailserver.org/diff2.pdf) reference note to the HTML report header: a clickable citation of E. W. Myers, "An O(ND) Difference Algorithm and Its Variations," *Algorithmica* **1**(2), 1986, noting that inline diffs for `ILMismatch` and `TextMismatch` are computed using this algorithm. Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) to match. Added test `GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference` to [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
 
 #### Changed
 
@@ -395,7 +395,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 追加
 
-- HTML レポートヘッダに [Myers Diff Algorithm](http://www.xmailserver.org/diff2.pdf) の参照注記を追加: `ILMismatch` および `TextMismatch` のインライン差分が本アルゴリズムで計算されていることを示すクリック可能な引用（E. W. Myers, "An O(ND) Difference Algorithm and Its Variations," *Algorithmica* 1(2), 1986）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を同期。テスト `GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference` を [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に追加。
+- HTML レポートヘッダに [Myers Diff Algorithm](http://www.xmailserver.org/diff2.pdf) の参照注記を追加: `ILMismatch` および `TextMismatch` のインライン差分が本アルゴリズムで計算されていることを示すクリック可能な引用（E. W. Myers, "An O(ND) Difference Algorithm and Its Variations," *Algorithmica* **1**(2), 1986）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を同期。テスト `GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference` を [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に追加。
 
 #### 変更
 
