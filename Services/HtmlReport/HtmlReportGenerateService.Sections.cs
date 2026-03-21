@@ -299,8 +299,10 @@ namespace FolderDiffIL4DotNet.Services
             // Single Truncated line: edit distance too large — show message directly without expand arrow
             if (diffLines.Count == 1 && diffLines[0].Kind == TextDiffer.Truncated)
             {
+                string encoded = HtmlEncode(diffLines[0].Text)
+                    .Replace("InlineDiffMaxEditDistance", "<code>InlineDiffMaxEditDistance</code>");
                 sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} {HtmlEncode(diffLines[0].Text)}</p></td>");
+                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
                 sb.AppendLine("</tr>");
                 return;
             }
