@@ -888,7 +888,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.4.1...v1.5.0
+[1.4.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.2.0...v1.2.1
