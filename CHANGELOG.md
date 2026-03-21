@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.7.0] - 2026-03-21
+
+#### Added
+
+- **Structured JSON audit log (`audit_log.json`)** — Added `AuditLogGenerateService` that generates a structured JSON audit log alongside the diff reports. The audit log records per-file comparison results (category, diff detail, disassembler used), run metadata (app version, computer name, old/new paths, ISO 8601 timestamp, elapsed time), summary statistics, and SHA256 integrity hashes of the generated `diff_report.md` and `diff_report.html` for tamper detection. Generation is controlled by the new `ShouldGenerateAuditLog` config setting (default: `true`). New model classes: `AuditLogRecord`, `AuditLogFileEntry`, `AuditLogSummary` in `Models/AuditLogEntry.cs`. The service is registered in `RunScopeBuilder` and invoked after HTML report generation in `ProgramRunner.GenerateReport()`. Added 17 tests in [`AuditLogGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs) covering: file creation/skip, metadata recording, summary statistics, file entry categories and diff details, sort order, report integrity hashes (SHA256), tamper detection (different content produces different hash), valid JSON output, empty results, and constructor null checks. Updated `ConfigSettingsTests` to assert the new default. Added sample [`doc/samples/audit_log.json`](doc/samples/audit_log.json). Updated `IReadOnlyConfigSettings` interface with `ShouldGenerateAuditLog` property.
+
 ### [1.6.0] - 2026-03-21
 
 #### Changed
@@ -454,6 +460,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.7.0] - 2026-03-21
+
+#### 追加
+
+- **構造化 JSON 監査ログ (`audit_log.json`)** — 差分レポートと合わせて構造化 JSON 監査ログを生成する `AuditLogGenerateService` を追加。監査ログにはファイルごとの比較結果（カテゴリ、diff 詳細、使用した逆アセンブラ）、実行メタデータ（アプリバージョン、マシン名、旧/新パス、ISO 8601 タイムスタンプ、経過時間）、サマリー統計、および改ざん検知用の `diff_report.md` / `diff_report.html` の SHA256 インテグリティハッシュを記録。新設定 `ShouldGenerateAuditLog`（既定: `true`）で生成を制御。新モデルクラス: `AuditLogRecord`、`AuditLogFileEntry`、`AuditLogSummary`（`Models/AuditLogEntry.cs`）。`RunScopeBuilder` にサービスを登録し、`ProgramRunner.GenerateReport()` で HTML レポート生成後に呼び出し。[`AuditLogGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs) に 17 件のテストを追加（ファイル生成/スキップ、メタデータ記録、サマリー統計、ファイルエントリのカテゴリと diff 詳細、ソート順、レポートインテグリティハッシュ（SHA256）、改ざん検知、有効な JSON 出力、空結果、コンストラクタ null チェック）。`ConfigSettingsTests` に新既定値のアサーションを追加。サンプル [`doc/samples/audit_log.json`](doc/samples/audit_log.json) を追加。`IReadOnlyConfigSettings` インターフェースに `ShouldGenerateAuditLog` プロパティを追加。
 
 ### [1.6.0] - 2026-03-21
 

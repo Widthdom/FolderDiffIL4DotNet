@@ -101,6 +101,7 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 Main output:
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
 - `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json))
+- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) — structured audit log with SHA256 integrity hashes for tamper detection (disable with `"ShouldGenerateAuditLog": false`)
 - Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#config-en-shouldoutputiltext) is `true`
 
 Process exit codes:
@@ -427,6 +428,11 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>When <code>true</code>, generates <a href="doc/samples/diff_report.html"><code>diff_report.html</code></a> alongside <a href="doc/samples/diff_report.md"><code>diff_report.md</code></a>. The HTML file is a self-contained interactive review document with checkboxes, text inputs, localStorage auto-save, and a download function that bakes the current review state into a portable snapshot. Set to <code>false</code> to produce only the Markdown report.</td>
     </tr>
+    <tr id="config-en-shouldgenerateauditlog">
+      <td><code>ShouldGenerateAuditLog</code></td>
+      <td><code>true</code></td>
+      <td>When <code>true</code>, generates <a href="doc/samples/audit_log.json"><code>audit_log.json</code></a> alongside the diff reports. The JSON file records per-file comparison results, run metadata (app version, computer name, timestamps), summary statistics, and SHA256 integrity hashes of <code>diff_report.md</code> and <code>diff_report.html</code> for tamper detection. Set to <code>false</code> to skip audit log generation.</td>
+    </tr>
   </tbody>
 </table>
 
@@ -471,6 +477,7 @@ Notes:
 
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
 - `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (unless [`ShouldGenerateHtmlReport`](#config-en-shouldgeneratehtmlreport) is `false`)
+- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) (unless [`ShouldGenerateAuditLog`](#config-en-shouldgenerateauditlog) is `false`)
 - `Logs/log_YYYYMMDD.log`
 - Optional: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
@@ -589,6 +596,7 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 主な出力:
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
 - `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化可）
+- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) — 改ざん検知用 SHA256 インテグリティハッシュを含む構造化監査ログ（`"ShouldGenerateAuditLog": false` で無効化可）
 - [`ShouldOutputILText`](#config-ja-shouldoutputiltext) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
 
 プロセス終了コード:
@@ -914,6 +922,11 @@ flowchart TD
       <td><code>true</code></td>
       <td><code>true</code> の場合、<a href="doc/samples/diff_report.md"><code>diff_report.md</code></a> と並んで <a href="doc/samples/diff_report.html"><code>diff_report.html</code></a> を生成します。HTML ファイルはチェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型インタラクティブレビュードキュメントです。<code>false</code> にすると Markdown レポートのみを生成します。</td>
     </tr>
+    <tr id="config-ja-shouldgenerateauditlog">
+      <td><code>ShouldGenerateAuditLog</code></td>
+      <td><code>true</code></td>
+      <td><code>true</code> の場合、差分レポートと合わせて <a href="doc/samples/audit_log.json"><code>audit_log.json</code></a> を生成します。JSON ファイルにはファイルごとの比較結果、実行メタデータ（アプリバージョン、マシン名、タイムスタンプ）、サマリー統計、および改ざん検知用の <code>diff_report.md</code> / <code>diff_report.html</code> の SHA256 インテグリティハッシュが含まれます。<code>false</code> にすると監査ログ生成をスキップします。</td>
+    </tr>
   </tbody>
 </table>
 
@@ -958,6 +971,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
 - `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`ShouldGenerateHtmlReport`](#config-ja-shouldgeneratehtmlreport) が `false` の場合は生成されません）
+- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json)（[`ShouldGenerateAuditLog`](#config-ja-shouldgenerateauditlog) が `false` の場合は生成されません）
 - `Logs/log_YYYYMMDD.log`
 - 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 

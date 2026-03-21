@@ -70,6 +70,7 @@ Generated during a run:
 - `Reports/<label>/[`diff_report.html`](samples/diff_report.html)` when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `true` (default)
 - `Reports/<label>/IL/old/*.txt` and `Reports/<label>/IL/new/*.txt` when [`ShouldOutputILText`](../Models/ConfigSettings.cs) is `true`
 - `Logs/log_YYYYMMDD.log`
+- `Reports/<label>/[`audit_log.json`](samples/audit_log.json)` when [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) is `true` (default) — structured JSON audit log with per-file results, run metadata, and SHA256 integrity hashes of generated reports for tamper detection
 - `ILCache/` under the OS-standard user-local data directory (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache` on Windows, `~/.local/share/FolderDiffIL4DotNet/ILCache` on macOS/Linux) when [`EnableILCache`](../Models/ConfigSettings.cs) is `true` and [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) is not configured
 
 ## Partial Class File Layout
@@ -296,6 +297,8 @@ Why this matters:
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; iterates `_sectionWriters` via [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside [`ReportGenerateService`](../Services/ReportGenerateService.cs) |
 | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
+| [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | Structured JSON audit log generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) and computes SHA256 integrity hashes of `diff_report.md` / `diff_report.html`; produces [`audit_log.json`](samples/audit_log.json); skipped when [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) is `false` |
+| [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | Audit log data models | [`AuditLogRecord`](../Models/AuditLogEntry.cs) (top-level), [`AuditLogFileEntry`](../Models/AuditLogEntry.cs) (per-file), [`AuditLogSummary`](../Models/AuditLogEntry.cs) (counts) |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object |
 
 <a id="guide-en-comparison-pipeline"></a>
@@ -444,6 +447,7 @@ The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed re
 | Cache | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | Controls IL cache lifetime, storage, and large-tree precompute batching |
 | Network-share mode | [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs), [`AutoDetectNetworkShares`](../Models/ConfigSettings.cs) | Prevents high-I/O behavior on slower remote storage |
 | Report output | [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) | Controls whether the interactive HTML review report is generated alongside the Markdown report |
+| Audit log | [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) | Controls whether a structured JSON audit log with integrity hashes is generated for tamper detection |
 | Logging / UX | [`MaxLogGenerations`](../Models/ConfigSettings.cs), [`SpinnerFrames`](../Models/ConfigSettings.cs) | Controls log file retention and the console spinner animation |
 
 Additional internal defaults:
@@ -704,6 +708,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 - [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `true`（既定）のとき `Reports/<label>/[`diff_report.html`](samples/diff_report.html)`
 - [`ShouldOutputILText`](../Models/ConfigSettings.cs) が `true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
 - `Logs/log_YYYYMMDD.log`
+- [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `true`（既定）のとき `Reports/<label>/[`audit_log.json`](samples/audit_log.json)` — ファイルごとの比較結果・実行メタデータ・レポートの SHA256 インテグリティハッシュを含む構造化 JSON 監査ログ（改ざん検知用）
 - [`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は OS 標準のユーザーローカルデータディレクトリ配下の `ILCache/`（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux: `~/.local/share/FolderDiffIL4DotNet/ILCache`）
 
 ## Partial Class ファイル構成
@@ -929,6 +934,8 @@ sequenceDiagram
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；`_sectionWriters` を [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) 経由で反復 |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | [`ReportGenerateService`](../Services/ReportGenerateService.cs) 内に 10 個のプライベートネストクラスで実装 |
 | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
+| [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | 構造化 JSON 監査ログ生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読み、`diff_report.md` / `diff_report.html` の SHA256 インテグリティハッシュを計算；[`audit_log.json`](samples/audit_log.json) を生成；[`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
+| [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | 監査ログデータモデル | [`AuditLogRecord`](../Models/AuditLogEntry.cs)（トップレベル）、[`AuditLogFileEntry`](../Models/AuditLogEntry.cs)（ファイル単位）、[`AuditLogSummary`](../Models/AuditLogEntry.cs)（件数集計） |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態 |
 
 <a id="guide-ja-comparison-pipeline"></a>
@@ -1075,6 +1082,7 @@ catch (Exception ex)
 | キャッシュ | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | IL キャッシュの寿命、保存先、大規模ツリー向け事前計算バッチを制御 |
 | ネットワーク共有向け | [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs), [`AutoDetectNetworkShares`](../Models/ConfigSettings.cs) | 遅いストレージでの高 I/O 挙動抑制 |
 | レポート出力 | [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) | Markdown レポートと並行してインタラクティブ HTML レビューレポートを生成するかを制御 |
+| 監査ログ | [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) | 改ざん検知用のインテグリティハッシュを含む構造化 JSON 監査ログを生成するかを制御 |
 | ログ / UX | [`MaxLogGenerations`](../Models/ConfigSettings.cs), [`SpinnerFrames`](../Models/ConfigSettings.cs) | ログファイルの保持世代数とコンソールスピナーアニメーションを制御 |
 
 補足の内部既定値:

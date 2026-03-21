@@ -40,6 +40,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Whether to generate an interactive HTML report. / インタラクティブ HTML レポートを生成するかどうか。</summary>
         bool ShouldGenerateHtmlReport { get; }
 
+        /// <summary>Whether to generate a structured JSON audit log. / 構造化 JSON 監査ログを生成するかどうか。</summary>
+        bool ShouldGenerateAuditLog { get; }
+
         /// <summary>Whether to output full IL text. / IL全文を出力するか否か。</summary>
         bool ShouldOutputILText { get; }
 

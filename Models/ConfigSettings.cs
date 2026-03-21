@@ -145,6 +145,16 @@ namespace FolderDiffIL4DotNet.Models
         public bool ShouldGenerateHtmlReport { get; set; } = true;
 
         /// <summary>
+        /// Whether to generate a structured JSON audit log (audit_log.json) alongside the diff reports.
+        /// The audit log records per-file comparison results, run metadata, summary statistics,
+        /// and SHA256 integrity hashes of the generated reports (diff_report.md, diff_report.html) for tamper detection.
+        /// 差分レポートと合わせて構造化 JSON 監査ログ (audit_log.json) を生成するかどうか。
+        /// 監査ログにはファイルごとの比較結果、実行メタデータ、サマリー統計、
+        /// および改ざん検知用のレポート SHA256 ハッシュ（diff_report.md, diff_report.html）を記録します。
+        /// </summary>
+        public bool ShouldGenerateAuditLog { get; set; } = true;
+
+        /// <summary>
         /// Whether to output full IL text.
         /// IL全文を出力するか否か。
         /// </summary>
