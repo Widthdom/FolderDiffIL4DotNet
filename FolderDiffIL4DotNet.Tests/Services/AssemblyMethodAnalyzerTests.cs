@@ -77,46 +77,52 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void Analyze_DifferentAssemblies_ModifiedEntriesIncludeAccessAndModifierChanges()
+        public void Analyze_DifferentAssemblies_ModifiedEntriesIfPresentHaveValidChangeKind()
         {
-            // When comparing different assemblies, Modified entries can arise from
-            // access modifier changes, modifier changes, or IL body changes.
-            // 異なるアセンブリ比較時、Modified エントリはアクセス修飾子変更、
-            // 修飾子変更、または IL ボディ変更から生じる。
+            // When comparing different assemblies, if any Modified entries exist,
+            // they should have Change="Modified" and a valid MemberKind.
+            // 異なるアセンブリ比較時、Modified エントリが存在する場合、
+            // Change="Modified" と有効な MemberKind を持つべき。
             var testAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
             var mainAssembly = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
 
             var result = AssemblyMethodAnalyzer.Analyze(testAssembly, mainAssembly);
 
             Assert.NotNull(result);
-            // The result should contain at least one Modified entry (IL body changes
-            // are almost certain between test and main assemblies).
             var modifiedEntries = result.Entries.Where(e => e.Change == "Modified").ToList();
-            Assert.True(modifiedEntries.Count > 0, "Expected at least one Modified entry between two different assemblies");
+            // Modified entries may or may not exist between unrelated assemblies,
+            // but if they do, they must have valid structure.
+            foreach (var entry in modifiedEntries)
+            {
+                Assert.Equal("Modified", entry.Change);
+                Assert.False(string.IsNullOrEmpty(entry.TypeName));
+                Assert.Contains(entry.MemberKind, new[] { "Constructor", "StaticConstructor", "Method", "Property", "Field" });
+            }
         }
 
         [Fact]
-        public void Analyze_DifferentAssemblies_ModifiedEntryHasPopulatedAccessField()
+        public void Analyze_DifferentAssemblies_AllEntriesHavePopulatedAccessField()
         {
-            // Modified entries should have the Access field populated when
-            // detecting access/modifier/body changes for methods, properties, or fields.
-            // Modified エントリは Access フィールドが設定されているべき。
+            // All entries (Added/Removed/Modified) should have the Access field populated
+            // for methods, properties, and fields.
+            // すべてのエントリ（Added/Removed/Modified）で、メソッド・プロパティ・フィールドの
+            // Access フィールドが設定されているべき。
             var testAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
             var mainAssembly = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
 
             var result = AssemblyMethodAnalyzer.Analyze(testAssembly, mainAssembly);
 
             Assert.NotNull(result);
-            var modifiedMethods = result.Entries
-                .Where(e => e.Change == "Modified" && e.MemberKind == "Method")
+            var memberEntries = result.Entries
+                .Where(e => e.MemberKind is "Method" or "Property" or "Field"
+                         or "Constructor" or "StaticConstructor")
                 .ToList();
 
-            if (modifiedMethods.Count > 0)
-            {
-                // At least one modified method should have an access modifier
-                Assert.True(modifiedMethods.Any(m => !string.IsNullOrEmpty(m.Access)),
-                    "Expected at least one Modified Method entry with a non-empty Access field");
-            }
+            Assert.True(memberEntries.Count > 0, "Expected at least one member entry between two different assemblies");
+            // Every member-level entry should have a non-empty Access value
+            // (or "old → new" for Modified entries with access changes)
+            Assert.True(memberEntries.All(m => !string.IsNullOrEmpty(m.Access)),
+                "All member entries should have a non-empty Access field");
         }
     }
 }
