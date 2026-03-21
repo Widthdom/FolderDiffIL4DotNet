@@ -74,7 +74,7 @@ namespace FolderDiffIL4DotNet.Runner
         /// Validates the old-folder, new-folder, and report-folder paths.
         /// 旧フォルダ・新フォルダ・レポートフォルダのパスを検証する。
         /// </summary>
-        internal static void ValidateRunDirectories(string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath)
+        internal static void ValidateRunDirectories(ILoggerService logger, string oldFolderAbsolutePath, string newFolderAbsolutePath, string reportsFolderAbsolutePath)
         {
             // 1. Path-length check (must not exceed OS limit)
             // パス長チェック（OS 制限を超えていないか）
@@ -105,7 +105,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             // 5. Write-permission check on the reports parent directory
             // レポート親ディレクトリへの書き込み権限チェック
-            CheckReportsParentWritableOrThrow(reportsFolderAbsolutePath);
+            CheckReportsParentWritableOrThrow(logger, reportsFolderAbsolutePath);
         }
 
         /// <summary>
@@ -147,10 +147,12 @@ namespace FolderDiffIL4DotNet.Runner
         /// <summary>
         /// Checks write permission on the reports parent directory by creating a temporary probe file.
         /// Skipped if the parent directory does not exist.
+        /// Logs and re-throws all I/O errors with cause-specific messages to enable fail-fast diagnostics.
         /// レポートフォルダの親ディレクトリへの書き込み権限を一時プローブファイルで確認する。
         /// 親ディレクトリが存在しない場合は確認をスキップする。
+        /// すべての I/O エラーを原因別メッセージでログ出力し、fail-fast のため再スローする。
         /// </summary>
-        internal static void CheckReportsParentWritableOrThrow(string reportsFolderAbsolutePath)
+        internal static void CheckReportsParentWritableOrThrow(ILoggerService logger, string reportsFolderAbsolutePath)
         {
             var parent = Path.GetDirectoryName(reportsFolderAbsolutePath);
             if (string.IsNullOrEmpty(parent) || !Directory.Exists(parent))
@@ -168,9 +170,17 @@ namespace FolderDiffIL4DotNet.Runner
                 throw new UnauthorizedAccessException(
                     $"The reports parent directory is not writable: '{parent}'. Ensure the process has write permission.");
             }
-            catch (IOException)
+            catch (IOException ex)
             {
-                return; // I/O errors already covered by disk-space check / I/O エラーはディスク容量チェック側で捕捉済みのためスキップ
+                // Log the original cause and fail fast instead of silently returning.
+                // 原因を記録して、サイレントリターンではなく fail-fast する。
+                logger.LogMessage(
+                    AppLogLevel.Error,
+                    $"Write-permission probe failed on '{parent}': {ex.GetType().Name}: {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    exception: ex);
+                throw new IOException(
+                    $"Cannot write to the reports parent directory '{parent}': {ex.Message}", ex);
             }
             finally
             {
