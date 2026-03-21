@@ -95,8 +95,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      + '; --sc-name-w: '     + curWidths['--sc-name-w']");
             sb.AppendLine("      + '; --sc-rettype-w: '  + curWidths['--sc-rettype-w']");
             sb.AppendLine("      + '; --sc-params-w: '   + curWidths['--sc-params-w']");
-            sb.AppendLine("      + '; --sc-body-w: '     + curWidths['--sc-body-w']
-      + '; --sc-cnt-class-w: ' + curWidths['--sc-cnt-class-w'] + '; }');");
+            sb.AppendLine("      + '; --sc-body-w: '     + curWidths['--sc-body-w']");
+            sb.AppendLine("      + '; --sc-cnt-class-w: ' + curWidths['--sc-cnt-class-w'] + '; }');");
             sb.AppendLine("    // Remove inline col-var overrides from <html> element (now baked into :root)");
             sb.AppendLine("    html = html.replace(/(<html\\b[^>]*?) style=\"[^\"]*\"/, '$1');");
             sb.AppendLine("    // Replace controls bar with reviewed banner");
