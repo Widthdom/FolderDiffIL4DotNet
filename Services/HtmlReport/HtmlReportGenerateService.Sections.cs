@@ -62,13 +62,15 @@ namespace FolderDiffIL4DotNet.Services
                 "<a href=\"http://www.xmailserver.org/diff2.pdf\">" +
                 "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> 1(2), 1986)</a>.</li>");
 
-            // Legend (as meta bullet items)
+            // Legend (as compact table)
             sb.AppendLine("  <li>Legend:");
-            sb.AppendLine("    <ul>");
-            sb.AppendLine($"      <li><code>MD5Match</code> / <code>MD5Mismatch</code>: MD5 hash match / mismatch</li>");
-            sb.AppendLine($"      <li><code>ILMatch</code> / <code>ILMismatch</code>: IL(Intermediate Language) match / mismatch</li>");
-            sb.AppendLine($"      <li><code>TextMatch</code> / <code>TextMismatch</code>: Text match / mismatch</li>");
-            sb.AppendLine("    </ul>");
+            sb.AppendLine("    <table class=\"legend-table\">");
+            sb.AppendLine("      <tbody>");
+            sb.AppendLine("        <tr><td><code>MD5Match</code> / <code>MD5Mismatch</code></td><td>MD5 hash match / mismatch</td></tr>");
+            sb.AppendLine("        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>");
+            sb.AppendLine("        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>Text match / mismatch</td></tr>");
+            sb.AppendLine("      </tbody>");
+            sb.AppendLine("    </table>");
             sb.AppendLine("  </li>");
             sb.AppendLine("</ul>");
         }

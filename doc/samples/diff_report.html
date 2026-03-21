@@ -17,6 +17,10 @@
     ul.meta li { margin-bottom: 3px; line-height: 1.65; }
     ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
     ul.meta ul li { margin-bottom: 1px; }
+    /* ── Legend table ────────────────────────────────────────────────────── */
+    table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
+    table.legend-table td { padding: 2px 12px 2px 0; border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
+    table.legend-table td:first-child { white-space: nowrap; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;
@@ -192,11 +196,13 @@
   <li>Note: When diffing IL, lines containing any of the configured strings are ignored: &quot;buildserver1_&quot;, &quot;buildserver2_&quot;, &quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;, &quot;.publickeytoken = ( &quot;, &quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;, &quot;// Code size &quot;.</li>
   <li>Note: Inline diffs for ILMismatch and TextMismatch are computed using the <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> 1(2), 1986)</a>.</li>
   <li>Legend:
-    <ul>
-      <li><code>MD5Match</code> / <code>MD5Mismatch</code>: MD5 hash match / mismatch</li>
-      <li><code>ILMatch</code> / <code>ILMismatch</code>: IL(Intermediate Language) match / mismatch</li>
-      <li><code>TextMatch</code> / <code>TextMismatch</code>: Text match / mismatch</li>
-    </ul>
+    <table class="legend-table">
+      <tbody>
+        <tr><td><code>MD5Match</code> / <code>MD5Mismatch</code></td><td>MD5 hash match / mismatch</td></tr>
+        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>
+        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>Text match / mismatch</td></tr>
+      </tbody>
+    </table>
   </li>
 </ul>
 <h2>[ x ] Ignored Files (3)</h2>

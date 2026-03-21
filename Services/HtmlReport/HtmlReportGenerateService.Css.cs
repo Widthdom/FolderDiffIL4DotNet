@@ -19,6 +19,10 @@ namespace FolderDiffIL4DotNet.Services
     ul.meta li { margin-bottom: 3px; line-height: 1.65; }
     ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
     ul.meta ul li { margin-bottom: 1px; }
+    /* ── Legend table ────────────────────────────────────────────────────── */
+    table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
+    table.legend-table td { padding: 2px 12px 2px 0; border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
+    table.legend-table td:first-child { white-space: nowrap; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;

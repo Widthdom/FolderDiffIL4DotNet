@@ -48,9 +48,12 @@ namespace FolderDiffIL4DotNet.Services
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_LEGEND_HEADER);
-                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}`: MD5 hash match / mismatch");
-                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}`: IL(Intermediate Language) match / mismatch");
-                writer.WriteLine($"  - `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}`: Text match / mismatch");
+                writer.WriteLine();
+                writer.WriteLine("| Label | Description |");
+                writer.WriteLine("|-------|-------------|");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.MD5Match}` / `{FileDiffResultLists.DiffDetailResult.MD5Mismatch}` | MD5 hash match / mismatch |");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}` | IL(Intermediate Language) match / mismatch |");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}` | Text match / mismatch |");
             }
         }
 
