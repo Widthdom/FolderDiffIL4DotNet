@@ -13,10 +13,14 @@ namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// Compares two .NET assemblies at the metadata level using <see cref="System.Reflection.Metadata"/>
-    /// to detect type, method, property, and field additions/removals and method body changes.
+    /// to detect type, method, property, and field additions/removals/modifications.
+    /// Modified detection includes: method IL body changes, access modifier changes (e.g. public → internal),
+    /// modifier changes (e.g. adding/removing static/virtual), and property/field type changes.
     /// Returns structured <see cref="MemberChangeEntry"/> records for table-style rendering.
     /// <see cref="System.Reflection.Metadata"/> を使用して 2 つの .NET アセンブリのメタデータを比較し、
-    /// 型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更を検出します。
+    /// 型・メソッド・プロパティ・フィールドの追加・削除・変更を検出します。
+    /// 変更検出にはメソッド IL ボディ変更、アクセス修飾子変更（例: public → internal）、
+    /// 修飾子変更（例: static/virtual の追加・削除）、プロパティ/フィールドの型変更を含みます。
     /// 表形式レンダリング向けの構造化 <see cref="MemberChangeEntry"/> レコードを返します。
     /// </summary>
     internal static class AssemblyMethodAnalyzer
@@ -71,11 +75,17 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 foreach (var key in oldSnapshot.Methods.Keys.Intersect(newSnapshot.Methods.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
                 {
-                    if (!oldSnapshot.Methods[key].IlBytes.AsSpan().SequenceEqual(newSnapshot.Methods[key].IlBytes.AsSpan()))
+                    var oldM = oldSnapshot.Methods[key];
+                    var newM = newSnapshot.Methods[key];
+                    bool bodyChanged = !oldM.IlBytes.AsSpan().SequenceEqual(newM.IlBytes.AsSpan());
+                    bool accessChanged = !string.Equals(oldM.Access, newM.Access, StringComparison.Ordinal);
+                    bool modifiersChanged = !string.Equals(oldM.Modifiers, newM.Modifiers, StringComparison.Ordinal);
+
+                    if (bodyChanged || accessChanged || modifiersChanged)
                     {
-                        var m = newSnapshot.Methods[key];
-                        string kind = ToMemberKind(m.MethodName);
-                        entries.Add(new MemberChangeEntry("Modified", m.TypeName, LookupBaseType(m.TypeName, newSnapshot, oldSnapshot), m.Access, m.Modifiers, kind, ToCSharpMethodName(m.MethodName, m.TypeName), "", m.ReturnType, m.Parameters, "Changed"));
+                        string kind = ToMemberKind(newM.MethodName);
+                        string body = bodyChanged ? "Changed" : "";
+                        entries.Add(new MemberChangeEntry("Modified", newM.TypeName, LookupBaseType(newM.TypeName, newSnapshot, oldSnapshot), newM.Access, newM.Modifiers, kind, ToCSharpMethodName(newM.MethodName, newM.TypeName), "", newM.ReturnType, newM.Parameters, body));
                     }
                 }
 
@@ -90,6 +100,19 @@ namespace FolderDiffIL4DotNet.Services
                     var p = oldSnapshot.Properties[key];
                     entries.Add(new MemberChangeEntry("Removed", p.TypeName, LookupBaseType(p.TypeName, oldSnapshot, newSnapshot), p.Access, p.Modifiers, "Property", p.PropertyName, p.PropertyType, "", "", ""));
                 }
+                foreach (var key in oldSnapshot.Properties.Keys.Intersect(newSnapshot.Properties.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    var oldP = oldSnapshot.Properties[key];
+                    var newP = newSnapshot.Properties[key];
+                    bool typeChanged = !string.Equals(oldP.PropertyType, newP.PropertyType, StringComparison.Ordinal);
+                    bool accessChanged = !string.Equals(oldP.Access, newP.Access, StringComparison.Ordinal);
+                    bool modifiersChanged = !string.Equals(oldP.Modifiers, newP.Modifiers, StringComparison.Ordinal);
+
+                    if (typeChanged || accessChanged || modifiersChanged)
+                    {
+                        entries.Add(new MemberChangeEntry("Modified", newP.TypeName, LookupBaseType(newP.TypeName, newSnapshot, oldSnapshot), newP.Access, newP.Modifiers, "Property", newP.PropertyName, newP.PropertyType, "", "", ""));
+                    }
+                }
 
                 // Fields
                 foreach (var key in newSnapshot.Fields.Keys.Except(oldSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
@@ -101,6 +124,19 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     var f = oldSnapshot.Fields[key];
                     entries.Add(new MemberChangeEntry("Removed", f.TypeName, LookupBaseType(f.TypeName, oldSnapshot, newSnapshot), f.Access, f.Modifiers, "Field", f.FieldName, StripColonPrefix(f.Details), "", "", ""));
+                }
+                foreach (var key in oldSnapshot.Fields.Keys.Intersect(newSnapshot.Fields.Keys, StringComparer.Ordinal).OrderBy(k => k, StringComparer.Ordinal))
+                {
+                    var oldF = oldSnapshot.Fields[key];
+                    var newF = newSnapshot.Fields[key];
+                    bool detailsChanged = !string.Equals(oldF.Details, newF.Details, StringComparison.Ordinal);
+                    bool accessChanged = !string.Equals(oldF.Access, newF.Access, StringComparison.Ordinal);
+                    bool modifiersChanged = !string.Equals(oldF.Modifiers, newF.Modifiers, StringComparison.Ordinal);
+
+                    if (detailsChanged || accessChanged || modifiersChanged)
+                    {
+                        entries.Add(new MemberChangeEntry("Modified", newF.TypeName, LookupBaseType(newF.TypeName, newSnapshot, oldSnapshot), newF.Access, newF.Modifiers, "Field", newF.FieldName, StripColonPrefix(newF.Details), "", "", ""));
+                    }
                 }
 
                 // Sort: by TypeName, then by Change order (Added → Removed → Modified)
@@ -313,7 +349,13 @@ namespace FolderDiffIL4DotNet.Services
         private static string StripColonPrefix(string details)
             => details.StartsWith(": ", StringComparison.Ordinal) ? details[2..] : details;
 
-        /// <summary>Build a key for method matching (without access modifier so access changes don't cause false add/remove pairs).</summary>
+        /// <summary>
+        /// Build a key for method matching (without access modifier so access changes
+        /// don't cause false add/remove pairs; access changes are detected separately
+        /// as Modified entries).
+        /// アクセス修飾子の変更が誤った追加/削除ペアを生じさせないよう、アクセス修飾子を
+        /// 含まないメソッド一致キーを構築します。アクセス修飾子の変更は別途 Modified として検出します。
+        /// </summary>
         private static string BuildMethodMatchKey(MetadataReader reader, string typeName, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
         {
             string methodName = reader.GetString(methodDef.Name);

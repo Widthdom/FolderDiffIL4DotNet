@@ -372,6 +372,7 @@ namespace FolderDiffIL4DotNet.Services
             int recordNo = idx + 1;
             var contentBuilder = new StringBuilder();
             contentBuilder.AppendLine("<div class=\"semantic-changes\">");
+            contentBuilder.AppendLine($"<p class=\"sc-caveat\">{I18n("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below.", "注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。")}</p>");
 
             if (summary.Entries.Count > 0)
             {

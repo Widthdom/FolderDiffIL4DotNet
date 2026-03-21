@@ -237,6 +237,9 @@ namespace FolderDiffIL4DotNet.Services
 
                 writer.WriteLine(REPORT_SECTION_ASSEMBLY_SEMANTIC_CHANGES);
 
+                writer.WriteLine();
+                writer.WriteLine("> **Note / 注:** The semantic summary is supplementary information. Always verify the final details in the inline IL diff. / セマンティックサマリーは補助情報です。最終確認は必ず IL インライン差分で行ってください。");
+
                 foreach (var (filePath, summary) in changes.OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase))
                 {
                     writer.WriteLine($"\n### {filePath}");

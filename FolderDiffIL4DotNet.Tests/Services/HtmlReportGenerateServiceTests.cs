@@ -752,6 +752,49 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_ShowsCaveatNote()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("semantic-caveat");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Added", "MyApp.Service", "", "public", "", "Method", "NewMethod", "", "void", "", ""),
+                },
+            };
+
+            var config = CreateConfig(enableInlineDiff: true);
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // Caveat note should be present in the semantic changes section (EN text)
+            // セマンティック変更セクションに注意書きが存在すべき
+            Assert.Contains("sc-caveat", html);
+            Assert.Contains("supplementary information", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_CaveatCssExists()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("semantic-caveat-css");
+            var config = CreateConfig();
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // CSS rule for .sc-caveat should exist in the stylesheet
+            Assert.Contains(".semantic-changes p.sc-caveat", html);
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_AssemblySemanticChanges_NotShownWhenDisabled()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("semantic-changes-off");

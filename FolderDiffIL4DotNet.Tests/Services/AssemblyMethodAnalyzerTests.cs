@@ -75,5 +75,48 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(firstEntry.Change, new[] { "Added", "Removed", "Modified" });
             Assert.Contains(firstEntry.MemberKind, new[] { "Class", "Record", "Struct", "Interface", "Enum", "Constructor", "StaticConstructor", "Method", "Property", "Field" });
         }
+
+        [Fact]
+        public void Analyze_DifferentAssemblies_ModifiedEntriesIncludeAccessAndModifierChanges()
+        {
+            // When comparing different assemblies, Modified entries can arise from
+            // access modifier changes, modifier changes, or IL body changes.
+            // 異なるアセンブリ比較時、Modified エントリはアクセス修飾子変更、
+            // 修飾子変更、または IL ボディ変更から生じる。
+            var testAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var mainAssembly = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
+
+            var result = AssemblyMethodAnalyzer.Analyze(testAssembly, mainAssembly);
+
+            Assert.NotNull(result);
+            // The result should contain at least one Modified entry (IL body changes
+            // are almost certain between test and main assemblies).
+            var modifiedEntries = result.Entries.Where(e => e.Change == "Modified").ToList();
+            Assert.True(modifiedEntries.Count > 0, "Expected at least one Modified entry between two different assemblies");
+        }
+
+        [Fact]
+        public void Analyze_DifferentAssemblies_ModifiedEntryHasPopulatedAccessField()
+        {
+            // Modified entries should have the Access field populated when
+            // detecting access/modifier/body changes for methods, properties, or fields.
+            // Modified エントリは Access フィールドが設定されているべき。
+            var testAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var mainAssembly = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
+
+            var result = AssemblyMethodAnalyzer.Analyze(testAssembly, mainAssembly);
+
+            Assert.NotNull(result);
+            var modifiedMethods = result.Entries
+                .Where(e => e.Change == "Modified" && e.MemberKind == "Method")
+                .ToList();
+
+            if (modifiedMethods.Count > 0)
+            {
+                // At least one modified method should have an access modifier
+                Assert.True(modifiedMethods.Any(m => !string.IsNullOrEmpty(m.Access)),
+                    "Expected at least one Modified Method entry with a non-empty Access field");
+            }
+        }
     }
 }

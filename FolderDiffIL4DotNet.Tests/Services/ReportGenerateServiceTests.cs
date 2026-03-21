@@ -823,6 +823,43 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReport_AssemblySemanticChanges_ContainsCaveatNote()
+        {
+            // The semantic changes section should contain a caveat note telling users
+            // that the semantic summary is supplementary and to verify in the inline diff.
+            // セマンティック変更セクションにセマンティックサマリーが補助情報であり、
+            // インライン差分で最終確認すべきとの注意書きが含まれるべき。
+            var oldDir = Path.Combine(_rootDir, "old-asc-caveat");
+            var newDir = Path.Combine(_rootDir, "new-asc-caveat");
+            var reportDir = Path.Combine(_rootDir, "report-asc-caveat");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Added", "Foo", "", "public", "", "Method", "Bar", "", "void", "", ""),
+                },
+            };
+
+            var config = CreateConfig();
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("supplementary information", reportText);
+            Assert.Contains("セマンティックサマリーは補助情報です", reportText);
+        }
+
+        [Fact]
         public void GenerateDiffReport_AssemblySemanticChanges_NotIncludedWhenDisabled()
         {
             var oldDir = Path.Combine(_rootDir, "old-asc-off");

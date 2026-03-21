@@ -199,9 +199,9 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | Category | Detected changes |
 |----------|-----------------|
 | **Type** | Additions and removals (including nested types), with base type and implemented interfaces |
-| **Method** | Additions, removals, and IL body modifications |
-| **Property** | Additions and removals (with get/set accessor info) |
-| **Field** | Additions and removals (with type and default value) |
+| **Method** | Additions, removals, IL body modifications, access modifier changes, and modifier changes |
+| **Property** | Additions, removals, type changes, access modifier changes, and modifier changes |
+| **Field** | Additions, removals, type changes, access modifier changes, and modifier changes |
 | **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
 | **Modifiers** | For types: `sealed`, `abstract`, `static`. For members: `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
 
@@ -224,6 +224,8 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 Controlled by [`ShouldIncludeAssemblySemanticChangesInReport`](#config-en-shouldincludeassemblysemanticchangesinreport) (default: `true`).
 
 A summary count table (`Class | Change | Count`) follows, grouping entries by class and change kind. Consecutive rows with the same class name suppress the class column for readability.
+
+> **Note:** The semantic summary is supplementary information. Always verify the final details in the inline IL diff.
 
 ## Configuration ([`config.json`](config.json))
 
@@ -686,9 +688,9 @@ flowchart TD
 | カテゴリ | 検出内容 |
 |---------|---------|
 | **Type** | 型の追加・削除（ネスト型を含む）、基底型および実装インターフェース情報付き |
-| **Method** | メソッドの追加・削除・IL ボディの変更 |
-| **Property** | プロパティの追加・削除（get/set アクセサ情報付き） |
-| **Field** | フィールドの追加・削除（型と既定値付き） |
+| **Method** | メソッドの追加・削除・IL ボディの変更・アクセス修飾子の変更・修飾子の変更 |
+| **Property** | プロパティの追加・削除・型の変更・アクセス修飾子の変更・修飾子の変更 |
+| **Field** | フィールドの追加・削除・型の変更・アクセス修飾子の変更・修飾子の変更 |
 | **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
 | **Modifiers** | 型: `sealed`, `abstract`, `static`。メンバー: `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
 
@@ -711,6 +713,8 @@ flowchart TD
 [`ShouldIncludeAssemblySemanticChangesInReport`](#config-ja-shouldincludeassemblysemanticchangesinreport)（既定値: `true`）で制御します。
 
 テーブル下に集計テーブル（`Class | Change | Count`）を表示し、クラスと変更種別ごとのカウントをまとめます。同一クラスが連続する場合、Class 列は先頭行のみに表示されます。
+
+> **注:** セマンティックサマリーは補助情報です。最終確認は必ず IL インライン差分で行ってください。
 
 ## 設定（[`config.json`](config.json)）
 

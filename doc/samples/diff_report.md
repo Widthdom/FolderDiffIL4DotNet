@@ -85,6 +85,59 @@
 | Modified | 12 |
 | Compared | 21 (Old) vs 21 (New) |
 
+## Assembly Semantic Changes
+
+> **Note / 注:** The semantic summary is supplementary information. Always verify the final details in the inline IL diff. / セマンティックサマリーは補助情報です。最終確認は必ず IL インライン差分で行ってください。
+
+### lib/Core.dll
+
+| Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
+|-------|----------|:------:|:----:|:------:|:---------:|------|------|------------|------------|------|
+| MyApp.CoreEngine |  | `Added` | `Method` | `public` |  |  | Initialize | System.Void |  |  |
+|  |  | `Removed` | `Method` | `public` | `virtual` |  | LegacyInit | System.Void | System.String\u00A0config |  |
+|  |  | `Modified` | `Method` | `internal` |  |  | ProcessData | System.Boolean | System.Int32\u00A0id | `Changed` |
+|  |  | `Modified` | `Property` | `public` |  | System.String | Status |  |  |  |
+
+| Class | Change | Count |
+|-------|:------:|------:|
+| MyApp.CoreEngine | `Added` | 1 |
+|  | `Removed` | 1 |
+|  | `Modified` | 2 |
+
+### src/App.dll
+
+| Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
+|-------|----------|:------:|:----:|:------:|:---------:|------|------|------------|------------|------|
+| MyApp.UserService |  | `Modified` | `Method` | `internal` |  |  | HandleRequest | System.Void | System.String\u00A0request | `Changed` |
+
+| Class | Change | Count |
+|-------|:------:|------:|
+| MyApp.UserService | `Modified` | 1 |
+
+### src/BigModule.dll
+
+- No structural changes detected. See IL diff for implementation-level differences.
+
+### src/Service.dll
+
+| Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
+|-------|----------|:------:|:----:|:------:|:---------:|------|------|------------|------------|------|
+| MyApp.Service |  | `Modified` | `Field` | `public` | `readonly` | System.Int32 | MaxRetries |  |  |  |
+
+| Class | Change | Count |
+|-------|:------:|------:|
+| MyApp.Service | `Modified` | 1 |
+
+### util/Legacy.dll
+
+| Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |
+|-------|----------|:------:|:----:|:------:|:---------:|------|------|------------|------------|------|
+| Legacy.Helper |  | `Modified` | `Method` | `public` |  |  | Convert | System.String | System.Object\u00A0input | `Changed` |
+
+| Class | Change | Count |
+|-------|:------:|------:|
+| Legacy.Helper | `Modified` | 1 |
+
 ## IL Cache Stats
 
 | Metric | Value |

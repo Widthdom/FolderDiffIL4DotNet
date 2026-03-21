@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Method access modifier change detection** — Access modifier changes (e.g. `public` → `internal`) and modifier changes (e.g. adding/removing `static`, `virtual`) are now detected as `Modified` entries in the Assembly Semantic Changes table. Previously, the method match key excluded access modifiers and the intersection comparison only checked IL body bytes, so access-only or modifier-only changes were invisible in the semantic summary.
+
+- **Property/Field type and modifier change detection** — Type changes (e.g. `string` → `int`), access modifier changes, and modifier changes for properties and fields are now detected as `Modified` entries. Previously, property and field keys were name-based only, with no `Modified` comparison for matching keys, so same-name type changes or access changes were not reported.
+
+#### Added
+
+- **Semantic summary caveat note** — Added a bilingual note ("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below." / "注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。") to both HTML and Markdown reports in the Assembly Semantic Changes section. Styled with `.sc-caveat` CSS class (italic, grey). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) and [`doc/samples/diff_report.md`](doc/samples/diff_report.md) to include this note. Added tests `ShowsCaveatNote`, `CaveatCssExists` in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) and `ContainsCaveatNote` in [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs).
+
 #### Changed
 
 - **Unchanged Files table sort order** — Rows are now sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Previously sorted by File Path only. Applies to both Markdown and HTML reports.
@@ -413,6 +423,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **メソッドのアクセス修飾子変更検出** — アクセス修飾子の変更（例: `public` → `internal`）および修飾子の変更（例: `static`、`virtual` の追加・削除）が、Assembly Semantic Changes テーブルで `Modified` エントリとして検出されるようになりました。以前は、メソッドの一致キーにアクセス修飾子が含まれず、交差比較が IL ボディバイトのみを確認していたため、アクセス修飾子のみまたは修飾子のみの変更はセマンティックサマリーに表示されませんでした。
+
+- **Property/Field の型・修飾子変更検出** — 型の変更（例: `string` → `int`）、アクセス修飾子の変更、修飾子の変更がプロパティおよびフィールドで `Modified` エントリとして検出されるようになりました。以前は、プロパティ・フィールドのキーが名前ベースのみで、一致するキーに対する `Modified` 比較がなかったため、同名の型変更やアクセス修飾子変更が報告されませんでした。
+
+#### 追加
+
+- **セマンティックサマリーの注意書き** — Assembly Semantic Changes セクションの HTML および Markdown レポートに、日英バイリンガルの注意書き（「注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。」）を追加。`.sc-caveat` CSS クラスでスタイリング（イタリック、グレー）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) と [`doc/samples/diff_report.md`](doc/samples/diff_report.md) も更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に `ShowsCaveatNote`、`CaveatCssExists`、[`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs) に `ContainsCaveatNote` テストを追加。
 
 #### 変更
 
