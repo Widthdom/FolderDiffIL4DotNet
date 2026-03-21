@@ -922,7 +922,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Removed Files: 3 列ヘッダ（Legend・Disassembler なし）
             int removedIdx = reportText.IndexOf("## [ - ] Removed Files", StringComparison.Ordinal);
             Assert.True(removedIdx >= 0);
-            string removedSection = reportText.Substring(removedIdx, reportText.IndexOf("## Summary", StringComparison.Ordinal) - removedIdx);
+            int removedEnd = reportText.IndexOf("## [", removedIdx + 1, StringComparison.Ordinal);
+            if (removedEnd < 0) removedEnd = reportText.IndexOf("## Summary", StringComparison.Ordinal);
+            string removedSection = reportText.Substring(removedIdx, removedEnd - removedIdx);
             Assert.Contains("| Status | File Path | Timestamp |", removedSection);
             Assert.DoesNotContain("Legend", removedSection);
             Assert.DoesNotContain("Disassembler", removedSection);
