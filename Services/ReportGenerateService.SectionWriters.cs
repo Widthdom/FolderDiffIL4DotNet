@@ -337,12 +337,17 @@ namespace FolderDiffIL4DotNet.Services
 
                 writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
                 writer.WriteLine();
-                writer.WriteLine("| File Path | Timestamp |");
-                writer.WriteLine("|-----------|:---------:|");
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var warning in ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
                 {
-                    writer.WriteLine($"| {warning.FileRelativePath} | {warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp} |");
+                    var fileRelativePath = warning.FileRelativePath;
+                    var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                    var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    string tsCol = $"{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}";
+                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
             }
         }

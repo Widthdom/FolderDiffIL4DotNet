@@ -91,7 +91,8 @@ namespace FolderDiffIL4DotNet.Services
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
-    td.col-path { white-space: nowrap; overflow: hidden; display: flex; align-items: center; }
+    td.col-path { white-space: nowrap; overflow: hidden; }
+    td.col-path .path-wrap { display: flex; align-items: center; }
     td.col-path .path-text { overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
     td.col-ts    { white-space: nowrap; text-align: center; }
     td.col-diff  { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
@@ -99,7 +100,7 @@ namespace FolderDiffIL4DotNet.Services
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Row hover highlight ─────────────────────────────────────────────── */
-    tbody tr:not(.diff-row):hover { background: #f3eef8; }
+    tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }
     td input[type=""text""] {
       width: 100%; border: 0; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; box-shadow: none;
