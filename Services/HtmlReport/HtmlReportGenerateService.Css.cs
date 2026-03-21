@@ -25,7 +25,7 @@ namespace FolderDiffIL4DotNet.Services
     table.legend-table td:first-child { white-space: nowrap; }
     .il-ignore-scroll { overflow-x: auto; max-width: 80em; }
     table.il-ignore-table { max-width: none; }
-    table.il-ignore-table td { white-space: nowrap; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
+    table.il-ignore-table td { white-space: nowrap; font-size: 12px; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;
@@ -102,7 +102,8 @@ namespace FolderDiffIL4DotNet.Services
     tbody tr:not(.diff-row):hover { background: #f3eef8; }
     td.col-reason input[type=""text""], td.col-notes input[type=""text""] {
       width: 100%; border: none; padding: 2px 4px; font-size: 12px;
-      background: transparent; outline: none; font-family: inherit; }
+      background: transparent; outline: none; box-shadow: none;
+      appearance: none; -webkit-appearance: none; font-family: inherit; }
     td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
