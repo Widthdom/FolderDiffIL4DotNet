@@ -29,11 +29,11 @@
 
 ## [ x ] Ignored Files (3)
 
-| Status | File Path | Timestamp | Legend | Disassembler |
-|:------:|-----------|:---------:|--------|--------------|
-| `[ x ]` | /Users/UserA/workspace/old/logs/debug.log (old) | 2026-03-15 08:50:00 | | |
-| `[ x ]` | /Users/UserA/workspace/new/obj/build.cache (new) | 2026-03-15 09:05:00 | | |
-| `[ x ]` | bin/App.pdb (old/new) | 2026-03-15 08:57:00 → 2026-03-15 09:03:00 | | |
+| Status | File Path | Timestamp | Legend |
+|:------:|-----------|:---------:|--------|
+| `[ x ]` | /Users/UserA/workspace/old/logs/debug.log (old) | 2026-03-15 08:50:00 | |
+| `[ x ]` | /Users/UserA/workspace/new/obj/build.cache (new) | 2026-03-15 09:05:00 | |
+| `[ x ]` | bin/App.pdb (old/new) | 2026-03-15 08:57:00 → 2026-03-15 09:03:00 | |
 
 ## [ = ] Unchanged Files (5)
 
@@ -47,15 +47,15 @@
 
 ## [ + ] Added Files (1)
 
-| Status | File Path | Timestamp | Legend | Disassembler |
-|:------:|-----------|:---------:|--------|--------------|
-| `[ + ]` | /Users/UserA/workspace/new/docs/guide.md | 2026-03-15 09:01:00 | | |
+| Status | File Path | Timestamp |
+|:------:|-----------|:---------:|
+| `[ + ]` | /Users/UserA/workspace/new/docs/guide.md | 2026-03-15 09:01:00 |
 
 ## [ - ] Removed Files (1)
 
-| Status | File Path | Timestamp | Legend | Disassembler |
-|:------:|-----------|:---------:|--------|--------------|
-| `[ - ]` | /Users/UserA/workspace/old/legacy/old-tool.txt | 2026-03-15 08:55:00 | | |
+| Status | File Path | Timestamp |
+|:------:|-----------|:---------:|
+| `[ - ]` | /Users/UserA/workspace/old/legacy/old-tool.txt | 2026-03-15 08:55:00 |
 
 ## [ * ] Modified Files (12)
 
@@ -102,16 +102,16 @@
 
 ### [ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended) (1)
 
-| Status | File Path | Timestamp | Legend | Disassembler |
-|:------:|-----------|:---------:|--------|--------------|
-| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | |
+| Status | File Path | Timestamp | Legend |
+|:------:|-----------|:---------:|--------|
+| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` |
 
 ### [ ! ] Modified Files — Timestamps Regressed (5)
 
-| Status | File Path | Timestamp | Legend | Disassembler |
-|:------:|-----------|:---------:|--------|--------------|
-| `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
-| `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | |
+| Status | File Path | Timestamp | Legend |
+|:------:|-----------|:---------:|--------|
+| `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` |
+| `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` |
+| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` |
+| `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` |
+| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` |

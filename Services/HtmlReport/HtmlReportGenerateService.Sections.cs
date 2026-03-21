@@ -94,7 +94,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h2>[ x ] {I18n("Ignored Files", "除外ファイル")} ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
 
-            AppendTableStart(sb, TH_BG_DEFAULT, "Location");
+            AppendTableStart(sb, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var entry in items)
@@ -143,7 +143,8 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 string col6 = BuildDiffDetailDisplay(diffDetail);
-                AppendFileRow(sb, "unch", idx, path, ts, col6);
+                _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
+                AppendFileRow(sb, "unch", idx, path, ts, col6, asm ?? "");
                 idx++;
             }
             sb.AppendLine("</tbody></table></div>");
@@ -156,7 +157,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] {I18n("Added Files", "追加ファイル")} ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
 
-            AppendTableStart(sb, TH_BG_ADDED, "Diff Reason");
+            AppendTableStart(sb, TH_BG_ADDED, "Diff Reason", hideClasses: "hide-col6 hide-disasm");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
@@ -176,7 +177,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] {I18n("Removed Files", "削除ファイル")} ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
 
-            AppendTableStart(sb, TH_BG_REMOVED, "Diff Reason");
+            AppendTableStart(sb, TH_BG_REMOVED, "Diff Reason", hideClasses: "hide-col6 hide-disasm");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
@@ -342,7 +343,7 @@ namespace FolderDiffIL4DotNet.Services
             string diffViewHtml = BuildDiffViewHtml(diffLines);
 
             sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine("  <td colspan=\"8\">");
+            sb.AppendLine($"  <td colspan=\"8\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(diffViewHtml));
@@ -567,7 +568,7 @@ namespace FolderDiffIL4DotNet.Services
                 if (sha256Files.Count > 0)
                 {
                     sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("SHA256Mismatch (Manual Review Recommended)", "SHA256Mismatch（手動レビュー推奨）")} ({sha256Files.Count})</h2>");
-                    AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
+                    AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                     sb.AppendLine("<tbody>");
                     int idx = 0;
                     foreach (var kv in sha256Files)
@@ -594,7 +595,7 @@ namespace FolderDiffIL4DotNet.Services
                     .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
                 sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("Timestamps Regressed", "タイムスタンプ逆行")} ({warnings.Count})</h2>");
-                AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
+                AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                 sb.AppendLine("<tbody>");
                 int idx = 0;
                 foreach (var w in warnings)
@@ -603,7 +604,7 @@ namespace FolderDiffIL4DotNet.Services
                     _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var diffDetail);
                     _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(w.FileRelativePath, out var asm);
                     string col6 = BuildDiffDetailDisplay(diffDetail);
-                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6, asm ?? "");
+                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6);
 
                     if (config.EnableInlineDiff &&
                         (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||

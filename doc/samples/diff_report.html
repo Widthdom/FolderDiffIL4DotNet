@@ -97,6 +97,16 @@
                   font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
+    /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
+    table.hide-disasm col.col-disasm-g,
+    table.hide-col6 col.col-diff-g { width: 0 !important; }
+    table.hide-disasm .col-disasm-hd,
+    table.hide-disasm td.col-disasm,
+    table.hide-col6 .col-diff-hd,
+    table.hide-col6 td.col-diff {
+      padding: 0 !important; border-color: transparent !important;
+      overflow: hidden; max-width: 0; visibility: hidden;
+    }
     /* ── Row hover highlight ─────────────────────────────────────────────── */
     :not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }
     td input[type="text"] {
@@ -241,7 +251,7 @@
 </ul>
 <h2>[ x ] Ignored Files (3)</h2>
 <div class="table-scroll">
-<table>
+<table class="hide-disasm">
 <colgroup>
   <col class="col-no-g">
   <col class="col-cb-g">
@@ -259,8 +269,8 @@
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
-  <th>Location</th>
-  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
+  <th class="col-diff-hd">Location</th>
+  <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -315,8 +325,8 @@
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
-  <th>Diff Reason</th>
-  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
+  <th class="col-diff-hd">Diff Reason</th>
+  <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -347,7 +357,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">util/Helper.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMatch</code></td>
-  <td class="col-disasm"></td>
+  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr>
   <td class="col-no">4</td>
@@ -373,7 +383,7 @@
 </div>
 <h2 style="color:#22863a">[ + ] Added Files (1)</h2>
 <div class="table-scroll">
-<table>
+<table class="hide-col6 hide-disasm">
 <colgroup>
   <col class="col-no-g">
   <col class="col-cb-g">
@@ -391,8 +401,8 @@
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
-  <th>Diff Reason</th>
-  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
+  <th class="col-diff-hd">Diff Reason</th>
+  <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -409,7 +419,7 @@
 </div>
 <h2 style="color:#b31d28">[ - ] Removed Files (1)</h2>
 <div class="table-scroll">
-<table>
+<table class="hide-col6 hide-disasm">
 <colgroup>
   <col class="col-no-g">
   <col class="col-cb-g">
@@ -427,8 +437,8 @@
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
-  <th>Diff Reason</th>
-  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
+  <th class="col-diff-hd">Diff Reason</th>
+  <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -463,8 +473,8 @@
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
-  <th>Diff Reason</th>
-  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
+  <th class="col-diff-hd">Diff Reason</th>
+  <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -711,7 +721,7 @@
 </ul>
 <h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; SHA256Mismatch (Manual Review Recommended) (1)</h2>
 <div class="table-scroll">
-<table>
+<table class="hide-disasm">
 <colgroup>
   <col class="col-no-g">
   <col class="col-cb-g">
@@ -729,8 +739,8 @@
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
-  <th>Diff Reason</th>
-  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
+  <th class="col-diff-hd">Diff Reason</th>
+  <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -747,7 +757,7 @@
 </div>
 <h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; Timestamps Regressed (5)</h2>
 <div class="table-scroll">
-<table>
+<table class="hide-disasm">
 <colgroup>
   <col class="col-no-g">
   <col class="col-cb-g">
@@ -765,8 +775,8 @@
   <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
   <th>Timestamp</th>
-  <th>Diff Reason</th>
-  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
+  <th class="col-diff-hd">Diff Reason</th>
+  <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -794,7 +804,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Core.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:12:00 &#x2192; 2026-03-15 09:03:00</td>
   <td class="col-diff"><code>ILMismatch</code></td>
-  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
   <td colspan="8">
@@ -818,7 +828,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code></td>
-  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#3 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 3200 vs 3200 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
@@ -831,7 +841,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Service.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00</td>
   <td class="col-diff"><code>ILMismatch</code></td>
-  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+  <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
   <td colspan="8">
@@ -1059,11 +1069,23 @@
       var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
       return (parseFloat(s) || fb) * emPx;
     };
-    var w = (3.2 + 2.2 + 16) * emPx
-          + px('--col-reason-w', 10) + px('--col-notes-w', 10)
-          + px('--col-path-w', 22)   + px('--col-diff-w', 9)
-          + px('--col-disasm-w', 28);
+    var colW = {
+      'col-no-g': 3.2 * emPx, 'col-cb-g': 2.2 * emPx, 'col-ts-g': 16 * emPx,
+      'col-reason-g': px('--col-reason-w', 10), 'col-notes-g': px('--col-notes-w', 10),
+      'col-path-g': px('--col-path-w', 22), 'col-diff-g': px('--col-diff-w', 9),
+      'col-disasm-g': px('--col-disasm-w', 28)
+    };
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table)').forEach(function(t) {
+      var cg = t.querySelector('colgroup');
+      if (!cg) return;
+      var hideDisasm = t.classList.contains('hide-disasm');
+      var hideCol6 = t.classList.contains('hide-col6');
+      var w = 0;
+      cg.querySelectorAll('col').forEach(function(col) {
+        if (hideDisasm && col.classList.contains('col-disasm-g')) return;
+        if (hideCol6 && col.classList.contains('col-diff-g')) return;
+        if (colW[col.className] !== undefined) w += colW[col.className];
+      });
       t.style.width = w + 'px';
     });
   }

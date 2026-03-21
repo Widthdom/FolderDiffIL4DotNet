@@ -79,8 +79,8 @@ namespace FolderDiffIL4DotNet.Services
                 int count = ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_IGNORED} {REPORT_LABEL_IGNORED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                writer.WriteLine("| Status | File Path | Timestamp | Legend |");
+                writer.WriteLine("|:------:|-----------|:---------:|--------|");
                 foreach (var entry in ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
                 {
                     bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
@@ -98,7 +98,7 @@ namespace FolderDiffIL4DotNet.Services
                         var timestampInfo = BuildIgnoredFileTimestampInfo(entry, ctx.OldFolderAbsolutePath, ctx.NewFolderAbsolutePath);
                         if (!string.IsNullOrEmpty(timestampInfo)) tsCol = timestampInfo;
                     }
-                    writer.WriteLine($"| `{REPORT_MARKER_IGNORED}` | {displayPath} {locationLabel} | {tsCol} | | |");
+                    writer.WriteLine($"| `{REPORT_MARKER_IGNORED}` | {displayPath} {locationLabel} | {tsCol} | |");
                 }
             }
         }
@@ -143,13 +143,13 @@ namespace FolderDiffIL4DotNet.Services
                 int count = ctx.FileDiffResultLists.AddedFilesAbsolutePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_ADDED} {REPORT_LABEL_ADDED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                writer.WriteLine("| Status | File Path | Timestamp |");
+                writer.WriteLine("|:------:|-----------|:---------:|");
                 foreach (var newFileAbsolutePath in ctx.FileDiffResultLists.AddedFilesAbsolutePath)
                 {
                     string tsCol = ctx.Config.ShouldOutputFileTimestamps
                         ? Caching.TimestampCache.GetOrAdd(newFileAbsolutePath) : "";
-                    writer.WriteLine($"| `{REPORT_MARKER_ADDED}` | {newFileAbsolutePath} | {tsCol} | | |");
+                    writer.WriteLine($"| `{REPORT_MARKER_ADDED}` | {newFileAbsolutePath} | {tsCol} |");
                 }
             }
         }
@@ -162,13 +162,13 @@ namespace FolderDiffIL4DotNet.Services
                 int count = ctx.FileDiffResultLists.RemovedFilesAbsolutePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_REMOVED} {REPORT_LABEL_REMOVED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                writer.WriteLine("| Status | File Path | Timestamp |");
+                writer.WriteLine("|:------:|-----------|:---------:|");
                 foreach (var oldFileAbsolutePath in ctx.FileDiffResultLists.RemovedFilesAbsolutePath)
                 {
                     string tsCol = ctx.Config.ShouldOutputFileTimestamps
                         ? Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath) : "";
-                    writer.WriteLine($"| `{REPORT_MARKER_REMOVED}` | {oldFileAbsolutePath} | {tsCol} | | |");
+                    writer.WriteLine($"| `{REPORT_MARKER_REMOVED}` | {oldFileAbsolutePath} | {tsCol} |");
                 }
             }
         }
@@ -277,8 +277,8 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine();
                         writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch (Manual Review Recommended) ({sha256Files.Count})");
                         writer.WriteLine();
-                        writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                        writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                        writer.WriteLine("| Status | File Path | Timestamp | Legend |");
+                        writer.WriteLine("|:------:|-----------|:---------:|--------|");
                         foreach (var kv in sha256Files)
                         {
                             string tsCol = "";
@@ -288,7 +288,7 @@ namespace FolderDiffIL4DotNet.Services
                                 string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, kv.Key));
                                 tsCol = $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
                             }
-                            writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {kv.Key} | {tsCol} | `{kv.Value}` | |");
+                            writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {kv.Key} | {tsCol} | `{kv.Value}` |");
                         }
                     }
                 }
@@ -303,16 +303,15 @@ namespace FolderDiffIL4DotNet.Services
                         .ToList();
                     writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — Timestamps Regressed ({tsWarnings.Count})");
                     writer.WriteLine();
-                    writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                    writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                    writer.WriteLine("| Status | File Path | Timestamp | Legend |");
+                    writer.WriteLine("|:------:|-----------|:---------:|--------|");
                     foreach (var warning in tsWarnings)
                     {
                         var fileRelativePath = warning.FileRelativePath;
                         var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                         var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
-                        var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
                         string tsCol = $"{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}";
-                        writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
+                        writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} |");
                     }
                 }
             }

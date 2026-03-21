@@ -245,12 +245,28 @@
       var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
       return (parseFloat(s) || fb) * emPx;
     };
-    var w = (3.2 + 2.2 + 16) * emPx
-          + px('--col-reason-w', 10) + px('--col-notes-w', 10)
-          + px('--col-path-w', 22)   + px('--col-diff-w', 9)
-          + px('--col-disasm-w', 28);
-    document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table)').forEach(function(t) {
-      t.style.width = w + 'px';
+    var colW = {
+      'col-no-g': 3.2 * emPx,
+      'col-cb-g': 2.2 * emPx,
+      'col-reason-g': px('--col-reason-w', 10),
+      'col-notes-g': px('--col-notes-w', 10),
+      'col-path-g': px('--col-path-w', 22),
+      'col-ts-g': 16 * emPx,
+      'col-diff-g': px('--col-diff-w', 9),
+      'col-disasm-g': px('--col-disasm-w', 28)
+    };
+    document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
+      var cg = t.querySelector('colgroup');
+      if (!cg) return;
+      var hideDisasm = t.classList.contains('hide-disasm');
+      var hideCol6 = t.classList.contains('hide-col6');
+      var w = 0;
+      cg.querySelectorAll('col').forEach(function(col) {
+        if (hideDisasm && col.classList.contains('col-disasm-g')) return;
+        if (hideCol6 && col.classList.contains('col-diff-g')) return;
+        if (colW[col.className] !== undefined) w += colW[col.className];
+      });
+      if (w > 0) t.style.width = w + 'px';
     });
   }
 

@@ -90,6 +90,16 @@
                    font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
+    /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
+    table.hide-disasm col.col-disasm-g,
+    table.hide-col6 col.col-diff-g { width: 0 !important; }
+    table.hide-disasm .col-disasm-hd,
+    table.hide-disasm td.col-disasm,
+    table.hide-col6 .col-diff-hd,
+    table.hide-col6 td.col-diff {
+      padding: 0 !important; border-color: transparent !important;
+      overflow: hidden; max-width: 0; visibility: hidden;
+    }
     /* ── Row hover highlight ─────────────────────────────────────────────── */
     :not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }
     td input[type="text"] {

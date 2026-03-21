@@ -14,11 +14,13 @@ namespace FolderDiffIL4DotNet.Services
     {
         // ── Table helpers ────────────────────────────────────────────────────
 
-        private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header)
+        private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header,
+            string hideClasses = "")
         {
             string bg = headerBgColor ?? TH_BG_DEFAULT;
+            string tableCls = string.IsNullOrEmpty(hideClasses) ? "" : $" class=\"{hideClasses}\"";
             sb.AppendLine("<div class=\"table-scroll\">");
-            sb.AppendLine("<table>");
+            sb.AppendLine($"<table{tableCls}>");
             sb.AppendLine("<colgroup>");
             sb.AppendLine("  <col class=\"col-no-g\">");
             sb.AppendLine("  <col class=\"col-cb-g\">");
@@ -36,8 +38,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-notes-w\">{I18n("Notes", "備考")}</th>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">{I18n("File Path", "ファイルパス")}</th>");
             sb.AppendLine($"  <th>{I18n("Timestamp", "タイムスタンプ")}</th>");
-            sb.AppendLine($"  <th>{I18n(col6Header, GetCol6HeaderJa(col6Header))}</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-disasm-w\">{I18n("Disassembler", "逆アセンブラ")}</th>");
+            sb.AppendLine($"  <th class=\"col-diff-hd\">{I18n(col6Header, GetCol6HeaderJa(col6Header))}</th>");
+            sb.AppendLine($"  <th class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{I18n("Disassembler", "逆アセンブラ")}</th>");
             sb.AppendLine("</tr></thead>");
         }
 

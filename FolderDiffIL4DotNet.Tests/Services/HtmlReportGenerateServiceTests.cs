@@ -816,6 +816,66 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("data-diff-html", html);  // JS references the attribute name
         }
 
+        // ── Column structure: per-table columns / テーブルごとの列構成 ─────────
+
+        /// <summary>
+        /// Verifies HTML tables have the correct column sets:
+        /// Ignored=no Disassembler, Added/Removed=no Diff Reason &amp; no Disassembler,
+        /// Unchanged=has Disassembler (with ILMatch label), Modified=all columns.
+        /// HTML テーブルが正しい列構成を持つことを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_ColumnStructure_PerTableColumns()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("col-struct");
+
+            _resultLists.AddUnchangedFileRelativePath("same.dll");
+            _resultLists.RecordDiffDetail("same.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "added.txt"));
+            _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "removed.txt"));
+            _resultLists.AddModifiedFileRelativePath("mod.dll");
+            _resultLists.RecordDiffDetail("mod.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            var config = CreateConfig();
+            config.ShouldIncludeIgnoredFiles = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // All tables have all 8 columns (cols kept in DOM for stability)
+            // 全テーブルに8列すべてが存在する（DOM安定性のため列は維持）
+            Assert.Contains("col-disasm-g", html);
+            Assert.Contains("col-diff-g", html);
+            Assert.Contains("dotnet-ildasm (version: 0.12.0)", html); // Unchanged ILMatch shows disassembler label
+
+            // Verify Ignored table has hide-disasm CSS class
+            // Ignored テーブルに hide-disasm CSSクラスがあることを確認
+            int ignoredStart = html.IndexOf("Ignored Files", StringComparison.Ordinal);
+            int unchangedStart = html.IndexOf("Unchanged Files", StringComparison.Ordinal);
+            string ignoredSection = html.Substring(ignoredStart, unchangedStart - ignoredStart);
+            Assert.Contains("hide-disasm", ignoredSection);
+            Assert.DoesNotContain("hide-col6", ignoredSection);
+
+            // Verify Unchanged table has NO hide classes (shows all columns)
+            // Unchanged テーブルにはhideクラスがないことを確認（全列表示）
+            int addedStart = html.IndexOf("Added Files", StringComparison.Ordinal);
+            string unchangedSection = html.Substring(unchangedStart, addedStart - unchangedStart);
+            Assert.DoesNotContain("hide-disasm", unchangedSection);
+            Assert.DoesNotContain("hide-col6", unchangedSection);
+
+            // Verify Added table has hide-col6 and hide-disasm CSS classes
+            // Added テーブルに hide-col6, hide-disasm CSSクラスがあることを確認
+            int removedStart = html.IndexOf("Removed Files", StringComparison.Ordinal);
+            string addedSection = html.Substring(addedStart, removedStart - addedStart);
+            Assert.Contains("hide-col6", addedSection);
+            Assert.Contains("hide-disasm", addedSection);
+            Assert.Contains("col-diff-g", addedSection);   // column present in DOM
+            Assert.Contains("col-disasm-g", addedSection);  // column present in DOM
+        }
+
         // ── Assembly Semantic Changes / アセンブリ意味変更 ─────────────────────
 
         [Fact]
