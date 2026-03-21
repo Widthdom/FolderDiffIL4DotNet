@@ -19,33 +19,48 @@
 | `TextMatch` / `TextMismatch` | Text match / mismatch |
 
 ## [ x ] Ignored Files (3)
-- [ x ] /Users/UserA/workspace/old/logs/debug.log (old) [2026-03-15 08:50:00]
-- [ x ] /Users/UserA/workspace/new/obj/build.cache (new) [2026-03-15 09:05:00]
-- [ x ] bin/App.pdb (old/new) [2026-03-15 08:57:00 → 2026-03-15 09:03:00]
+
+| Status | File Path | Timestamp | Legend | Disassembler |
+|:------:|-----------|-----------|--------|--------------|
+| `[ x ]` | /Users/UserA/workspace/old/logs/debug.log (old) | [2026-03-15 08:50:00] | | |
+| `[ x ]` | /Users/UserA/workspace/new/obj/build.cache (new) | [2026-03-15 09:05:00] | | |
+| `[ x ]` | bin/App.pdb (old/new) | [2026-03-15 08:57:00 → 2026-03-15 09:03:00] | | |
 
 ## [ = ] Unchanged Files (5)
-- [ = ] vendor/lib.dll [2026-03-15 09:00:00] `MD5Match`
-- [ = ] appsettings.json [2026-03-15 09:00:00] `TextMatch`
-- [ = ] data/schema.bin [2026-03-15 08:30:00 → 2026-03-15 09:00:00] `MD5Match`
-- [ = ] docs/notes.md [2026-03-15 08:00:00 → 2026-03-15 09:00:00] `TextMatch`
-- [ = ] util/Helper.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMatch` `dotnet-ildasm (version: 0.12.2)`
+
+| Status | File Path | Timestamp | Legend | Disassembler |
+|:------:|-----------|-----------|--------|--------------|
+| `[ = ]` | appsettings.json | [2026-03-15 09:00:00] | `TextMatch` | |
+| `[ = ]` | data/schema.bin | [2026-03-15 08:30:00 → 2026-03-15 09:00:00] | `MD5Match` | |
+| `[ = ]` | docs/notes.md | [2026-03-15 08:00:00 → 2026-03-15 09:00:00] | `TextMatch` | |
+| `[ = ]` | util/Helper.dll | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `ILMatch` `dotnet-ildasm (version: 0.12.2)` | |
+| `[ = ]` | vendor/lib.dll | [2026-03-15 09:00:00] | `MD5Match` | |
 
 ## [ + ] Added Files (1)
-- [ + ] /Users/UserA/workspace/new/docs/guide.md [2026-03-15 09:01:00]
+
+| Status | File Path | Timestamp | Legend | Disassembler |
+|:------:|-----------|-----------|--------|--------------|
+| `[ + ]` | /Users/UserA/workspace/new/docs/guide.md | [2026-03-15 09:01:00] | | |
 
 ## [ - ] Removed Files (1)
-- [ - ] /Users/UserA/workspace/old/legacy/old-tool.txt [2026-03-15 08:55:00]
+
+| Status | File Path | Timestamp | Legend | Disassembler |
+|:------:|-----------|-----------|--------|--------------|
+| `[ - ]` | /Users/UserA/workspace/old/legacy/old-tool.txt | [2026-03-15 08:55:00] | | |
 
 ## [ * ] Modified Files (9)
-- [ * ] config/app.config [2026-03-15 08:56:00 → 2026-03-15 09:01:00] `TextMismatch`
-- [ * ] payload.bin [2026-03-15 08:59:00 → 2026-03-15 08:54:00] `MD5Mismatch`
-- [ * ] src/App.dll [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
-- [ * ] src/Main.cs [2026-03-15 08:58:00 → 2026-03-15 09:02:00] `TextMismatch`
-- [ * ] src/Service.dll [2026-03-15 09:05:00 → 2026-03-15 09:00:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
-- [ * ] src/Utils.cs [2026-03-15 08:57:00 → 2026-03-15 09:03:00] `TextMismatch`
-- [ * ] src/BigSchema.cs [2026-03-15 08:55:00 → 2026-03-15 09:04:00] `TextMismatch`
-- [ * ] src/LargeConfig.xml [2026-03-15 08:54:00 → 2026-03-15 09:05:00] `TextMismatch`
-- [ * ] util/Legacy.dll [2026-03-15 08:50:00 → 2026-03-15 09:01:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
+
+| Status | File Path | Timestamp | Legend | Disassembler |
+|:------:|-----------|-----------|--------|--------------|
+| `[ * ]` | config/app.config | [2026-03-15 08:56:00 → 2026-03-15 09:01:00] | `TextMismatch` | |
+| `[ * ]` | payload.bin | [2026-03-15 08:59:00 → 2026-03-15 08:54:00] | `MD5Mismatch` | |
+| `[ * ]` | src/App.dll | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `ILMismatch` `dotnet-ildasm (version: 0.12.2)` | |
+| `[ * ]` | src/Main.cs | [2026-03-15 08:58:00 → 2026-03-15 09:02:00] | `TextMismatch` | |
+| `[ * ]` | src/Service.dll | [2026-03-15 09:05:00 → 2026-03-15 09:00:00] | `ILMismatch` `dotnet-ildasm (version: 0.12.2)` | |
+| `[ * ]` | src/Utils.cs | [2026-03-15 08:57:00 → 2026-03-15 09:03:00] | `TextMismatch` | |
+| `[ * ]` | src/BigSchema.cs | [2026-03-15 08:55:00 → 2026-03-15 09:04:00] | `TextMismatch` | |
+| `[ * ]` | src/LargeConfig.xml | [2026-03-15 08:54:00 → 2026-03-15 09:05:00] | `TextMismatch` | |
+| `[ * ]` | util/Legacy.dll | [2026-03-15 08:50:00 → 2026-03-15 09:01:00] | `ILMismatch` `dotnet-ildasm (version: 0.12.2)` | |
 
 ## Summary
 
