@@ -32,12 +32,12 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<thead><tr style=\"background:{bg}\">");
             sb.AppendLine($"  <th class=\"col-no\">#</th>");
             sb.AppendLine($"  <th class=\"col-cb\">&#x2713;</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-reason-w\">Justification</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-notes-w\">Notes</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">File Path <button class=\"btn-copy-paths\" onclick=\"copyColumnPaths(this)\" title=\"Copy all file paths\">&#x1F4CB;</button></th>");
-            sb.AppendLine($"  <th>Timestamp</th>");
-            sb.AppendLine($"  <th>{HtmlEncode(col6Header)}</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-disasm-w\">Disassembler</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-reason-w\">{I18n("Justification", "判定根拠")}</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-notes-w\">{I18n("Notes", "備考")}</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">{I18n("File Path", "ファイルパス")} <button class=\"btn-copy-paths\" onclick=\"copyColumnPaths(this)\" title=\"{HtmlEncode("Copy all file paths")}\">&#x1F4CB;</button></th>");
+            sb.AppendLine($"  <th>{I18n("Timestamp", "タイムスタンプ")}</th>");
+            sb.AppendLine($"  <th>{I18n(col6Header, GetCol6HeaderJa(col6Header))}</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-disasm-w\">{I18n("Disassembler", "逆アセンブラ")}</th>");
             sb.AppendLine("</tr></thead>");
         }
 
@@ -180,5 +180,20 @@ namespace FolderDiffIL4DotNet.Services
                 .Replace("\"", "&quot;")
                 .Replace("'", "&#39;");
         }
+
+        /// <summary>
+        /// Produces a bilingual span for EN/JP toggle support.
+        /// 日英切り替えに対応するバイリンガル span を生成します。
+        /// </summary>
+        internal static string I18n(string en, string ja)
+            => $"<span class=\"i18n\" data-en=\"{HtmlEncode(en)}\" data-ja=\"{HtmlEncode(ja)}\">{HtmlEncode(en)}</span>";
+
+        private static string GetCol6HeaderJa(string col6Header)
+            => col6Header switch
+            {
+                "Location" => "場所",
+                "Diff Reason" => "差分理由",
+                _ => col6Header
+            };
     }
 }

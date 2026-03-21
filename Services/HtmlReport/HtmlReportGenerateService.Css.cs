@@ -54,6 +54,11 @@ namespace FolderDiffIL4DotNet.Services
       background: transparent; color: #1d1d1f;
     }
     .btn-clear:hover { background: #f5f5f7; }
+    .btn-lang {
+      background: transparent; color: #1d1d1f;
+      border: 1.5px solid #86868b; font-size: 12px;
+    }
+    .btn-lang:hover { background: #f5f5f7; border-color: #424245; }
     .save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */

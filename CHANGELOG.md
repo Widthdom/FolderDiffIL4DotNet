@@ -22,6 +22,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - **Tests**: [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs), [`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs), and new assertions in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) (`TableHeaderUsesLighterGray`, `ThScColCbCssRuleExists`, `TdHasWhiteBackground`).
   - **Docs**: added bilingual **Assembly Semantic Changes** section to [README.md](README.md), [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs) and [`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs) to [TESTING_GUIDE.md](doc/TESTING_GUIDE.md), updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) and [`doc/samples/diff_report.md`](doc/samples/diff_report.md).
 
+- **EN/JP Language Toggle** — Added a language toggle button (`日本語` / `English`) to the HTML report controls bar. All user-facing text in the report (title, section headings, table headers, legend descriptions, summary labels, IL cache stat labels, diff labels, warning messages, meta notes) is wrapped in `<span class="i18n" data-en="..." data-ja="...">` elements. Clicking the toggle switches all text between English and Japanese. Language preference is persisted in `localStorage` and restored on page load. When downloading as reviewed, the current language is baked into the HTML (`data-lang` attribute) and the toggle button remains available in the reviewed copy. `clearAll()` resets language to English. Lazy-loaded diff content also receives the current language when expanded.
+  - **Implementation**: `I18n(string en, string ja)` helper in [`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), `setLang(lang)` / `toggleLang()` / `__currentLang__` in [`HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs), `.btn-lang` CSS in [`HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs).
+
+#### Changed
+
+- **Legend section** — Converted from bullet list to table format in both Markdown (`| Label | Description |`) and HTML (`<table class="legend-table">`). Added CSS for `table.legend-table` with borders and padding.
+
+- **IL Cache Stats and Summary sections** — Converted from bullet list to table format in Markdown report (`| Category | Count |` and `| Metric | Value |`). Added visible borders (`1px solid #ddd`) to `table.stat-table td` in HTML report CSS.
+
+- **File listing sections** — Converted Ignored, Unchanged, Added, Removed, and Modified file sections from checkbox bullet lists to tables in Markdown report with columns: `| Status | File Path | Timestamp | Legend | Disassembler |`.
+
+- **`InlineDiffMaxEditDistance` highlighting** — Added `<code>` tag wrapping for `InlineDiffMaxEditDistance` in HTML report truncation messages, matching the existing `InlineDiffMaxDiffLines` code styling.
+
+- **Diff row background color** — Changed `tr.diff-row` background from `#f6f8fa` to `#edf0f4` for better contrast with white semantic changes tables.
+
+- **Myers Diff citation** — Bolded the volume number "1" after "Algorithmica" (`<b>1</b>(2)` / `**1**(2)`) across all Markdown and HTML report files.
+
+- **Clipboard copy button** — Added a clipboard copy button (📋) to the File Path column header in HTML report tables. The `copyColumnPaths(btn)` function collects all `td.col-path` text from the parent table and copies to clipboard.
+
+- **Row hover highlight** — Added light purple hover highlight (`#f3eef8`) to file table rows (`tbody tr:not(.diff-row):hover`) and semantic changes table rows (`table.semantic-changes-table tbody tr:hover td`).
+
 ### [1.4.1] - 2026-03-20
 
 #### Added
@@ -390,6 +411,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   - **新規ファイル**: [`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs)、[`AssemblySemanticChangesSummary`](Models/AssemblySemanticChangesSummary.cs)（算出プロパティ `AddedCount`/`RemovedCount`/`ModifiedCount`）。
   - **テスト**: [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs)、[`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs)、[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に新規アサーション（`TableHeaderUsesLighterGray`、`ThScColCbCssRuleExists`、`TdHasWhiteBackground`）。
   - **ドキュメント**: [README.md](README.md) にバイリンガルの **Assembly Semantic Changes** セクションを追加、[TESTING_GUIDE.md](doc/TESTING_GUIDE.md) に [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs)・[`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs) を追加、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)・[`doc/samples/diff_report.md`](doc/samples/diff_report.md) を同期。
+
+- **日英言語切り替え** — HTML レポートのコントロールバーに言語切り替えボタン（`日本語` / `English`）を追加。レポート内のすべてのユーザー向けテキスト（タイトル、セクション見出し、テーブルヘッダ、凡例説明、サマリーラベル、IL キャッシュ統計ラベル、差分ラベル、警告メッセージ、メタ情報注記）を `<span class="i18n" data-en="..." data-ja="...">` 要素で囲み、切り替えボタンで英語と日本語を即座に切替可能。言語設定は `localStorage` に保持され、ページロード時に復元。レビュー済みとしてダウンロードする際、現在の言語が HTML に焼き込まれ（`data-lang` 属性）、レビュー済みコピーでも切り替えボタンが利用可能。`clearAll()` で英語にリセット。遅延ロードされた差分コンテンツも展開時に現在の言語が適用。
+  - **実装**: [`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) の `I18n(string en, string ja)` ヘルパー、[`HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs) の `setLang(lang)` / `toggleLang()` / `__currentLang__`、[`HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs) の `.btn-lang` CSS。
+
+#### 変更
+
+- **凡例セクション** — Markdown（`| Label | Description |`）および HTML（`<table class="legend-table">`）の両方で箇条書きからテーブル形式に変換。`table.legend-table` の CSS（ボーダー、パディング）を追加。
+
+- **IL Cache Stats および Summary セクション** — Markdown レポートで箇条書きからテーブル形式（`| Category | Count |`、`| Metric | Value |`）に変換。HTML レポートの `table.stat-table td` に可視ボーダー（`1px solid #ddd`）を追加。
+
+- **ファイル一覧セクション** — Ignored、Unchanged、Added、Removed、Modified のファイルセクションを Markdown レポートでチェックボックス箇条書きからテーブルに変換（列: `| Status | File Path | Timestamp | Legend | Disassembler |`）。
+
+- **`InlineDiffMaxEditDistance` ハイライト** — HTML レポートの切り詰めメッセージで `InlineDiffMaxEditDistance` に `<code>` タグを追加し、既存の `InlineDiffMaxDiffLines` のコードスタイルと統一。
+
+- **差分行の背景色** — `tr.diff-row` の背景を `#f6f8fa` から `#edf0f4` に変更し、白いセマンティック変更テーブルとのコントラストを向上。
+
+- **Myers Diff 引用** — すべての Markdown および HTML レポートファイルで "Algorithmica" の後の巻番号 "1" を太字化（`<b>1</b>(2)` / `**1**(2)`）。
+
+- **クリップボードコピーボタン** — HTML レポートテーブルの File Path 列ヘッダにクリップボードコピーボタン（📋）を追加。`copyColumnPaths(btn)` 関数が親テーブルの `td.col-path` テキストを収集してクリップボードにコピー。
+
+- **行ホバーハイライト** — ファイルテーブル行（`tbody tr:not(.diff-row):hover`）およびセマンティック変更テーブル行（`table.semantic-changes-table tbody tr:hover td`）にライトパープルのホバーハイライト（`#f3eef8`）を追加。
 
 ### [1.4.1] - 2026-03-20
 

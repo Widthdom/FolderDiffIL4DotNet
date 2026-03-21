@@ -138,6 +138,8 @@ Column headers for Added / Removed / Modified use colour-coded backgrounds (**gr
 
 Inline diff `<summary>` labels also include a one-based `#N` prefix such as `#3 Show diff` / `#3 Show IL diff`; this number matches the leftmost `#` column for the same row.
 
+A **language toggle** button (`日本語` / `English`) in the controls bar switches all user-facing text between English and Japanese. The preference is persisted in `localStorage` and baked into the downloaded reviewed copy (which also retains the toggle button).
+
 See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live sample (open in a browser).
 
 ### Review workflow
@@ -621,6 +623,8 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 
 インライン差分の `<summary>` ラベルにも `#3 Show diff` / `#3 Show IL diff` のような 1 始まりの `#N` プレフィックスが付き、この番号は同じ行の左端 `#` 列と一致します。
+
+コントロールバーの**言語切り替え**ボタン（`日本語` / `English`）で、すべてのユーザー向けテキストを英語と日本語に即座に切り替えられます。言語設定は `localStorage` に保持され、レビュー済みダウンロードにも焼き込まれます（切り替えボタンも引き継がれます）。
 
 ライブサンプルは [doc/samples/diff_report.html](doc/samples/diff_report.html) を参照してください（ブラウザで開いてください）。
 

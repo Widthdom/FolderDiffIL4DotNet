@@ -106,8 +106,9 @@ namespace FolderDiffIL4DotNet.Services
             // Controls bar (markers allow stripping in downloadReviewed)
             sb.AppendLine("<!--CTRL-->");
             sb.AppendLine("<div class=\"controls\">");
-            sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; Download as reviewed</button>");
-            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; Clear all</button>");
+            sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + I18n("Download as reviewed", "レビュー済みとしてダウンロード") + "</button>");
+            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + I18n("Clear all", "すべてクリア") + "</button>");
+            sb.AppendLine("  <button class=\"btn btn-lang\" onclick=\"toggleLang()\" id=\"btn-lang\">" + I18n("日本語", "English") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
             sb.AppendLine("<!--/CTRL-->");
