@@ -17,7 +17,7 @@ namespace FolderDiffIL4DotNet.Services
     /// and SHA256 integrity hashes of the generated reports for tamper detection.
     /// 差分レポートと合わせて構造化 JSON 監査ログ (<c>audit_log.json</c>) を生成するサービス。
     /// 監査ログにはファイルごとの比較結果、実行メタデータ、サマリー統計、
-    /// および改ざん検知用のレポート SHA256 ハッシュを記録します。
+    /// および改竄検知用のレポート SHA256 ハッシュを記録します。
     /// </summary>
     public sealed class AuditLogGenerateService
     {

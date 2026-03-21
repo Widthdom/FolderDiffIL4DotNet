@@ -36,7 +36,7 @@ namespace FolderDiffIL4DotNet.Models
     /// Top-level audit log record containing run metadata, file entries,
     /// summary statistics, and an integrity hash for tamper detection.
     /// 監査ログのトップレベルレコード。実行メタデータ、ファイルエントリ、
-    /// サマリー統計、および改ざん検知用のインテグリティハッシュを含みます。
+    /// サマリー統計、および改竄検知用のインテグリティハッシュを含みます。
     /// </summary>
     public sealed class AuditLogRecord
     {
@@ -66,13 +66,13 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>
         /// SHA256 hash of the generated diff_report.md for integrity verification.
-        /// 改ざん検知用の diff_report.md の SHA256 ハッシュ。
+        /// 改竄検知用の diff_report.md の SHA256 ハッシュ。
         /// </summary>
         public string ReportSha256 { get; init; } = string.Empty;
 
         /// <summary>
         /// SHA256 hash of the generated diff_report.html for integrity verification (empty if HTML report was not generated).
-        /// 改ざん検知用の diff_report.html の SHA256 ハッシュ（HTML レポート未生成時は空）。
+        /// 改竄検知用の diff_report.html の SHA256 ハッシュ（HTML レポート未生成時は空）。
         /// </summary>
         public string HtmlReportSha256 { get; init; } = string.Empty;
 

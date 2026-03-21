@@ -708,7 +708,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 - [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `true`（既定）のとき `Reports/<label>/[`diff_report.html`](samples/diff_report.html)`
 - [`ShouldOutputILText`](../Models/ConfigSettings.cs) が `true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
 - `Logs/log_YYYYMMDD.log`
-- [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `true`（既定）のとき `Reports/<label>/[`audit_log.json`](samples/audit_log.json)` — ファイルごとの比較結果・実行メタデータ・レポートの SHA256 インテグリティハッシュを含む構造化 JSON 監査ログ（改ざん検知用）
+- [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `true`（既定）のとき `Reports/<label>/[`audit_log.json`](samples/audit_log.json)` — ファイルごとの比較結果・実行メタデータ・レポートの SHA256 インテグリティハッシュを含む構造化 JSON 監査ログ（改竄検知用）
 - [`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は OS 標準のユーザーローカルデータディレクトリ配下の `ILCache/`（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux: `~/.local/share/FolderDiffIL4DotNet/ILCache`）
 
 ## Partial Class ファイル構成
@@ -1082,7 +1082,7 @@ catch (Exception ex)
 | キャッシュ | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | IL キャッシュの寿命、保存先、大規模ツリー向け事前計算バッチを制御 |
 | ネットワーク共有向け | [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs), [`AutoDetectNetworkShares`](../Models/ConfigSettings.cs) | 遅いストレージでの高 I/O 挙動抑制 |
 | レポート出力 | [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) | Markdown レポートと並行してインタラクティブ HTML レビューレポートを生成するかを制御 |
-| 監査ログ | [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) | 改ざん検知用のインテグリティハッシュを含む構造化 JSON 監査ログを生成するかを制御 |
+| 監査ログ | [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) | 改竄検知用のインテグリティハッシュを含む構造化 JSON 監査ログを生成するかを制御 |
 | ログ / UX | [`MaxLogGenerations`](../Models/ConfigSettings.cs), [`SpinnerFrames`](../Models/ConfigSettings.cs) | ログファイルの保持世代数とコンソールスピナーアニメーションを制御 |
 
 補足の内部既定値:

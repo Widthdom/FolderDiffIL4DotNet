@@ -304,7 +304,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         /// <summary>
         /// Verifies that modifying diff_report.md changes the reportSha256 value (tamper detection).
-        /// diff_report.md を変更すると reportSha256 の値が変わること（改ざん検知）を確認する。
+        /// diff_report.md を変更すると reportSha256 の値が変わること（改竄検知）を確認する。
         /// </summary>
         [Fact]
         public void GenerateAuditLog_DifferentReportContent_ProducesDifferentHash()

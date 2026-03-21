@@ -150,7 +150,7 @@ namespace FolderDiffIL4DotNet.Models
         /// and SHA256 integrity hashes of the generated reports (diff_report.md, diff_report.html) for tamper detection.
         /// 差分レポートと合わせて構造化 JSON 監査ログ (audit_log.json) を生成するかどうか。
         /// 監査ログにはファイルごとの比較結果、実行メタデータ、サマリー統計、
-        /// および改ざん検知用のレポート SHA256 ハッシュ（diff_report.md, diff_report.html）を記録します。
+        /// および改竄検知用のレポート SHA256 ハッシュ（diff_report.md, diff_report.html）を記録します。
         /// </summary>
         public bool ShouldGenerateAuditLog { get; set; } = true;
 
