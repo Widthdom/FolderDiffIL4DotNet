@@ -27,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Modified entry old→new display** — For `Modified` entries in the Assembly Semantic Changes table, the Access, Modifiers, and Type columns now show old and new values in `old → new` format when the value has changed (e.g. `public → internal`, `System.String → System.Int32`). When unchanged, only the current value is shown.
 
+- **Access and Modifiers columns — no code emphasis** — The Access and Modifiers column body cells in the Assembly Semantic Changes table no longer use `<code>` emphasis. These columns may contain `old → new` arrow notation, and applying monospace emphasis to such transitional text was visually inconsistent. Kind and Body columns still use `<code>` emphasis. Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) (added a row demonstrating Modifiers `old → new`). Updated test `KindBodyUseCodeEmphasis_AccessModifiersDoNot` in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
+
 - **Unchanged Files table sort order** — Rows are now sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Previously sorted by File Path only. Applies to both Markdown and HTML reports.
 
 - **Modified Files table sort order** — Rows are now sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `MD5Mismatch`), then by File Path ascending. Previously sorted by File Path only. Applies to both Markdown and HTML reports.
@@ -446,6 +448,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 変更
 
 - **Modified エントリの旧→新表示** — Assembly Semantic Changes テーブルの `Modified` エントリで、Access、Modifiers、Type 列に値が変更された場合は `旧 → 新` 形式で表示するよう変更（例: `public → internal`、`System.String → System.Int32`）。変更がない場合は現在の値のみ表示。
+
+- **Access・Modifiers 列の code 強調表示を廃止** — Assembly Semantic Changes テーブルの Access 列および Modifiers 列ボディセルで `<code>` 強調表示を使用しないよう変更。これらの列は `旧 → 新` の矢印表記を含む可能性があり、等幅強調を適用すると視覚的に不整合となるため。Kind 列および Body 列は引き続き `<code>` 強調表示を使用。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新（Modifiers `旧 → 新` を示す行を追加）。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) のテスト `KindBodyUseCodeEmphasis_AccessModifiersDoNot` を更新。
 
 - **Unchanged Files テーブルのソート順** — diff-detail 結果（`MD5Match` → `ILMatch` → `TextMatch`）でソートし、次にファイルパスの昇順でソートするよう変更。以前はファイルパスのみでソートしていました。Markdown および HTML レポートの両方に適用。
 

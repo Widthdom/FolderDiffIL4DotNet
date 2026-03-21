@@ -939,11 +939,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that Kind, Access, and Modifiers column body cells use code emphasis (like TextMatch).
-        /// Kind, Access, Modifiers 列ボディが code 強調表示を使用すること（TextMatch と同等）を確認する。
+        /// Verifies that Kind and Body column body cells use code emphasis, while Access and Modifiers do not.
+        /// Kind, Body 列ボディは code 強調表示を使用し、Access, Modifiers 列ボディは強調表示しないことを確認する。
         /// </summary>
         [Fact]
-        public void GenerateDiffReportHtml_AssemblySemanticChanges_KindAccessModifiersUseCodeEmphasis()
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_KindBodyUseCodeEmphasis_AccessModifiersDoNot()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("sc-emphasis");
 
@@ -965,11 +965,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Kind, Access, and Modifiers must use <code> emphasis (matching TextMatch in other tables)
-            // Kind、Access、Modifiers は <code> 強調表示を使うこと（他テーブルの TextMatch と同様）
-            Assert.Contains("<code>Method</code>", html);        // Kind
-            Assert.Contains("<code>public</code>", html);        // Access
-            Assert.Contains("<code>virtual</code>", html);       // Modifiers
+            // Kind and Body use <code> emphasis; Access and Modifiers do not
+            // Kind, Body は <code> 強調表示を使用し、Access, Modifiers は強調表示しない
+            Assert.Contains("<code>Method</code>", html);        // Kind — uses code emphasis
+            Assert.DoesNotContain("<code>public</code>", html);  // Access — no code emphasis
+            Assert.DoesNotContain("<code>virtual</code>", html); // Modifiers — no code emphasis
+            Assert.Contains(">public<", html);                   // Access — plain text
+            Assert.Contains(">virtual<", html);                  // Modifiers — plain text
             Assert.Contains("style=\"background:#e3f2fd\">[ * ]", html); // Status cell with blue bg (no code emphasis)
             Assert.Contains("<code>Changed</code>", html);       // Body
         }
