@@ -190,16 +190,16 @@ Important details:
 <a id="readme-en-assembly-semantic-changes"></a>
 ## Assembly Semantic Changes
 
-When an assembly is classified as `ILMismatch`, the tool performs an additional **semantic analysis** using [`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) to identify exactly what changed at the member level. Results appear in the **Assembly Semantic Changes** section of the Markdown report and as an expandable inline row in the HTML report.
+When an assembly is classified as `ILMismatch`, the tool performs an additional **semantic analysis** using [`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) to identify exactly what changed at the member level. Results appear as an expandable inline row in the HTML report (the Markdown report does not include this section).
 
 ### What is detected
 
 | Category | Detected changes |
 |----------|-----------------|
 | **Type** | Additions and removals (including nested types), with base type and implemented interfaces |
-| **Method** | Additions, removals, and IL body modifications |
-| **Property** | Additions and removals (with get/set accessor info) |
-| **Field** | Additions and removals (with type and default value) |
+| **Method** | Additions, removals, IL body modifications, access modifier changes, and modifier changes |
+| **Property** | Additions, removals, type changes, access modifier changes, and modifier changes |
+| **Field** | Additions, removals, type changes, access modifier changes, and modifier changes |
 | **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
 | **Modifiers** | For types: `sealed`, `abstract`, `static`. For members: `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
 
@@ -211,9 +211,9 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | BaseType | Base type and implemented interfaces (omits trivial bases like System.Object) | MyApp.BaseController, System.IDisposable |
 | Status | `[ + ]` (Added), `[ - ]` (Removed), or `[ * ]` (Modified) | `[ + ]` |
 | Kind | Member kind: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
-| Access | Access modifier | `public` |
-| Modifiers | Other modifiers (for types: `sealed`, `abstract`, `static`; for members: `static`, `virtual`, `override`, etc.) | `sealed` |
-| Type | Declared type for Field/Property using fully qualified .NET type names (empty for Method/Constructor/Class/Record) | System.Int32 |
+| Access | Access modifier. For `Modified` entries, shows old → new when access changed (e.g. public → internal) | public, public → internal |
+| Modifiers | Other modifiers (for types: sealed, abstract, static; for members: static, virtual, override, etc.). For `Modified` entries, shows old → new when modifiers changed | sealed, virtual → override |
+| Type | Declared type for Field/Property using fully qualified .NET type names (empty for Method/Constructor/Class/Record). For `Modified` entries, shows old → new when type changed (e.g. System.String → System.Int32) | System.Int32, System.String → System.Int32 |
 | Name | Member name (constructors use the class name; empty for Class/Record/Struct/Interface/Enum entries) | DoWork |
 | ReturnType | Return type for Method/Constructor using fully qualified .NET type names (empty for Field/Property/Class/Record) | System.Void |
 | Parameters | Parameter list for Method/Constructor using fully qualified .NET type names (empty for Field/Property/Class/Record) | System.String name, System.Int32 count = 0 |
@@ -222,6 +222,8 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 Controlled by [`ShouldIncludeAssemblySemanticChangesInReport`](#config-en-shouldincludeassemblysemanticchangesinreport) (default: `true`).
 
 A summary count table (`Class | Status | Count`) follows, grouping entries by class and status. Consecutive rows with the same class name suppress the class column for readability.
+
+> **Note:** The semantic summary is supplementary information. Always verify the final details in the inline IL diff.
 
 ## Configuration ([`config.json`](config.json))
 
@@ -283,7 +285,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-shouldincludeassemblysemanticchangesinreport">
       <td><code>ShouldIncludeAssemblySemanticChangesInReport</code></td>
       <td><code>true</code></td>
-      <td>When <code>true</code>, includes an <code>Assembly Semantic Changes</code> section for <code>ILMismatch</code> assemblies between <code>Summary</code> and <code>IL Cache Stats</code>. Uses <code>System.Reflection.Metadata</code> to detect type/method/property/field additions, removals, and method body changes. In the HTML report, this appears as an expandable inline row above the IL diff.</td>
+      <td>When <code>true</code>, includes <code>Assembly Semantic Changes</code> for <code>ILMismatch</code> assemblies. Uses <code>System.Reflection.Metadata</code> to detect type/method/property/field additions, removals, and modifications. Shown as an expandable inline row above the IL diff in the HTML report.</td>
     </tr>
     <tr id="config-en-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
@@ -675,16 +677,16 @@ flowchart TD
 <a id="readme-ja-assembly-semantic-changes"></a>
 ## アセンブリ セマンティック変更
 
-アセンブリが `ILMismatch` に分類された場合、[`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) を使用してメンバーレベルの**セマンティック解析**を追加実行します。結果は Markdown レポートの **Assembly Semantic Changes** セクション、および HTML レポートの展開可能なインライン行に表示されます。
+アセンブリが `ILMismatch` に分類された場合、[`System.Reflection.Metadata`](https://learn.microsoft.com/dotnet/api/system.reflection.metadata) を使用してメンバーレベルの**セマンティック解析**を追加実行します。結果は HTML レポートの展開可能なインライン行に表示されます（Markdown レポートにはこのセクションは含まれません）。
 
 ### 検出対象
 
 | カテゴリ | 検出内容 |
 |---------|---------|
 | **Type** | 型の追加・削除（ネスト型を含む）、基底型および実装インターフェース情報付き |
-| **Method** | メソッドの追加・削除・IL ボディの変更 |
-| **Property** | プロパティの追加・削除（get/set アクセサ情報付き） |
-| **Field** | フィールドの追加・削除（型と既定値付き） |
+| **Method** | メソッドの追加・削除・IL ボディの変更・アクセス修飾子の変更・修飾子の変更 |
+| **Property** | プロパティの追加・削除・型の変更・アクセス修飾子の変更・修飾子の変更 |
+| **Field** | フィールドの追加・削除・型の変更・アクセス修飾子の変更・修飾子の変更 |
 | **Access** | `public`, `protected`, `internal`, `private`, `protected internal`, `private protected` |
 | **Modifiers** | 型: `sealed`, `abstract`, `static`。メンバー: `static`, `abstract`, `virtual`, `override`, `sealed override`, `const`, `readonly` |
 
@@ -696,9 +698,9 @@ flowchart TD
 | BaseType | 基底型および実装インターフェース（System.Object 等の自明な基底型は省略） | MyApp.BaseController, System.IDisposable |
 | Status | `[ + ]`（Added）、`[ - ]`（Removed）、`[ * ]`（Modified） | `[ + ]` |
 | Kind | メンバー種別: `Class`, `Record`, `Struct`, `Interface`, `Enum`, `Constructor`, `StaticConstructor`, `Method`, `Property`, `Field` | `Method` |
-| Access | アクセス修飾子 | `public` |
-| Modifiers | その他の修飾子（型: `sealed`, `abstract`, `static`、メンバー: `static`, `virtual` 等） | `sealed` |
-| Type | Field/Property の宣言型（完全修飾 .NET 型名、Method/Constructor/Class/Record の場合は空） | System.Int32 |
+| Access | アクセス修飾子。`Modified` エントリでアクセス修飾子が変更された場合は 旧 → 新 で表示（例: public → internal） | public、public → internal |
+| Modifiers | その他の修飾子（型: sealed, abstract, static、メンバー: static, virtual 等）。`Modified` エントリで修飾子が変更された場合は 旧 → 新 で表示 | sealed、virtual → override |
+| Type | Field/Property の宣言型（完全修飾 .NET 型名、Method/Constructor/Class/Record の場合は空）。`Modified` エントリで型が変更された場合は 旧 → 新 で表示（例: System.String → System.Int32） | System.Int32、System.String → System.Int32 |
 | Name | メンバー名（コンストラクタはクラス名、Class/Record/Struct/Interface/Enum エントリの場合は空） | DoWork |
 | ReturnType | Method/Constructor の戻り値型（完全修飾 .NET 型名、Field/Property/Class/Record の場合は空） | System.Void |
 | Parameters | Method/Constructor のパラメータ一覧（完全修飾 .NET 型名、Field/Property/Class/Record の場合は空） | System.String name, System.Int32 count = 0 |
@@ -707,6 +709,8 @@ flowchart TD
 [`ShouldIncludeAssemblySemanticChangesInReport`](#config-ja-shouldincludeassemblysemanticchangesinreport)（既定値: `true`）で制御します。
 
 テーブル下に集計テーブル（`Class | Status | Count`）を表示し、クラスとステータスごとのカウントをまとめます。同一クラスが連続する場合、Class 列は先頭行のみに表示されます。
+
+> **注:** セマンティックサマリーは補助情報です。最終確認は必ず IL インライン差分で行ってください。
 
 ## 設定（[`config.json`](config.json)）
 
@@ -768,7 +772,7 @@ flowchart TD
     <tr id="config-ja-shouldincludeassemblysemanticchangesinreport">
       <td><code>ShouldIncludeAssemblySemanticChangesInReport</code></td>
       <td><code>true</code></td>
-      <td><code>true</code> の場合、<code>ILMismatch</code> と判定された .NET アセンブリについて、<code>Summary</code> と <code>IL Cache Stats</code> の間に <code>Assembly Semantic Changes</code> セクションを出力します。<code>System.Reflection.Metadata</code> を使用して型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更を検出します。HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。</td>
+      <td><code>true</code> の場合、<code>ILMismatch</code> と判定された .NET アセンブリについて <code>Assembly Semantic Changes</code> を出力します。<code>System.Reflection.Metadata</code> を使用して型・メソッド・プロパティ・フィールドの増減および変更を検出します。HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。</td>
     </tr>
     <tr id="config-ja-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>

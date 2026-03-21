@@ -75,5 +75,54 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(firstEntry.Change, new[] { "Added", "Removed", "Modified" });
             Assert.Contains(firstEntry.MemberKind, new[] { "Class", "Record", "Struct", "Interface", "Enum", "Constructor", "StaticConstructor", "Method", "Property", "Field" });
         }
+
+        [Fact]
+        public void Analyze_DifferentAssemblies_ModifiedEntriesIfPresentHaveValidChangeKind()
+        {
+            // When comparing different assemblies, if any Modified entries exist,
+            // they should have Change="Modified" and a valid MemberKind.
+            // 異なるアセンブリ比較時、Modified エントリが存在する場合、
+            // Change="Modified" と有効な MemberKind を持つべき。
+            var testAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var mainAssembly = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
+
+            var result = AssemblyMethodAnalyzer.Analyze(testAssembly, mainAssembly);
+
+            Assert.NotNull(result);
+            var modifiedEntries = result.Entries.Where(e => e.Change == "Modified").ToList();
+            // Modified entries may or may not exist between unrelated assemblies,
+            // but if they do, they must have valid structure.
+            foreach (var entry in modifiedEntries)
+            {
+                Assert.Equal("Modified", entry.Change);
+                Assert.False(string.IsNullOrEmpty(entry.TypeName));
+                Assert.Contains(entry.MemberKind, new[] { "Constructor", "StaticConstructor", "Method", "Property", "Field" });
+            }
+        }
+
+        [Fact]
+        public void Analyze_DifferentAssemblies_AllEntriesHavePopulatedAccessField()
+        {
+            // All entries (Added/Removed/Modified) should have the Access field populated
+            // for methods, properties, and fields.
+            // すべてのエントリ（Added/Removed/Modified）で、メソッド・プロパティ・フィールドの
+            // Access フィールドが設定されているべき。
+            var testAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var mainAssembly = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
+
+            var result = AssemblyMethodAnalyzer.Analyze(testAssembly, mainAssembly);
+
+            Assert.NotNull(result);
+            var memberEntries = result.Entries
+                .Where(e => e.MemberKind is "Method" or "Property" or "Field"
+                         or "Constructor" or "StaticConstructor")
+                .ToList();
+
+            Assert.True(memberEntries.Count > 0, "Expected at least one member entry between two different assemblies");
+            // Every member-level entry should have a non-empty Access value
+            // (or "old → new" for Modified entries with access changes)
+            Assert.True(memberEntries.All(m => !string.IsNullOrEmpty(m.Access)),
+                "All member entries should have a non-empty Access field");
+        }
     }
 }

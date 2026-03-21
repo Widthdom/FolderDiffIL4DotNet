@@ -375,6 +375,11 @@ namespace FolderDiffIL4DotNet.Services
 
             if (summary.Entries.Count > 0)
             {
+                contentBuilder.AppendLine($"<p class=\"sc-caveat\">{I18n("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below.", "注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。")}</p>");
+            }
+
+            if (summary.Entries.Count > 0)
+            {
                 contentBuilder.AppendLine("<table class=\"semantic-changes-table sc-detail\">");
                 contentBuilder.AppendLine("<colgroup>");
                 contentBuilder.AppendLine("  <col class=\"sc-col-cb-g\">");
