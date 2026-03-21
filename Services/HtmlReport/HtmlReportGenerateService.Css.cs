@@ -142,7 +142,7 @@ namespace FolderDiffIL4DotNet.Services
     table.semantic-changes-table { border-collapse: collapse; margin: 4px 0; font-size: 12px; table-layout: fixed; }
     table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #bbb; background: #98989d; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
     table.semantic-changes-table th.th-resizable { position: relative; }
-    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #fff; }
     table.semantic-changes-table th.sc-col-cb { width: 3.2em; text-align: center; }
     table.semantic-changes-table td.sc-col-cb { width: 3.2em; text-align: center; }
     /* sc-detail: checkbox(1) Class(2) BaseType(3) Change(4) Kind(5) Access(6) Modifiers(7) Type(8)… */
