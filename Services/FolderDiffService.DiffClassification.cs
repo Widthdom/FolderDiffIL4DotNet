@@ -15,10 +15,11 @@ namespace FolderDiffIL4DotNet.Services
         /// into Unchanged / Modified / Removed and updating progress.
         /// 逐次（単一スレッド）で差分判定を行い、old 側を 1 件ずつ Unchanged / Modified / Removed に分類して進捗を更新します。
         /// </summary>
-        private async Task<int> DetermineDiffsSequentiallyAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar)
+        private async Task<int> DetermineDiffsSequentiallyAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar, CancellationToken cancellationToken = default)
         {
             foreach (var oldFileAbsolutePath in _fileDiffResultLists.OldFilesAbsolutePath)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var fileRelativePath = Path.GetRelativePath(_oldFolderAbsolutePath, oldFileAbsolutePath);
                 var newFileAbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
 
@@ -28,7 +29,7 @@ namespace FolderDiffIL4DotNet.Services
                     bool areEqual;
                     try
                     {
-                        areEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath);
+                        areEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, cancellationToken: cancellationToken);
                     }
                     catch (FileNotFoundException)
                     {
@@ -66,7 +67,7 @@ namespace FolderDiffIL4DotNet.Services
         /// 並列に差分判定を行います。new 側の未処理集合へのアクセスのみ低粒度ロックで保護し、
         /// 分類結果の追加はスレッドセーフなコレクション API で記録します。
         /// </summary>
-        private async Task<int> DetermineDiffsInParallelAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar, int maxParallel)
+        private async Task<int> DetermineDiffsInParallelAsync(HashSet<string> remainingNewFilesAbsolutePathHashSet, int totalFilesRelativePathCount, int processedFileCountSoFar, int maxParallel, CancellationToken cancellationToken = default)
         {
             // Lock that serialises access to remainingNewFilesAbsolutePathHashSet so that
             // Contains-then-Remove is atomic, preventing duplicate comparisons and race conditions.
@@ -76,7 +77,7 @@ namespace FolderDiffIL4DotNet.Services
             var lockRemaining = new object();
             int processedFileCount = processedFileCountSoFar;
 
-            await Parallel.ForEachAsync(_fileDiffResultLists.OldFilesAbsolutePath, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (oldFileAbsolutePath, cancellationToken) =>
+            await Parallel.ForEachAsync(_fileDiffResultLists.OldFilesAbsolutePath, new ParallelOptions { MaxDegreeOfParallelism = maxParallel, CancellationToken = cancellationToken }, async (oldFileAbsolutePath, ct) =>
             {
                 var fileRelativePath = Path.GetRelativePath(_oldFolderAbsolutePath, oldFileAbsolutePath);
                 var newFileAbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
@@ -94,7 +95,7 @@ namespace FolderDiffIL4DotNet.Services
                     bool areFilesEqual;
                     try
                     {
-                        areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel);
+                        areFilesEqual = await _fileDiffService.FilesAreEqualAsync(fileRelativePath, maxParallel, ct);
                     }
                     catch (FileNotFoundException)
                     {

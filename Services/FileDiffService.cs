@@ -69,7 +69,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Runs IL-cache pre-computation (delegated to <see cref="ILOutputService"/>).
         /// IL キャッシュ関連の事前計算を実行します（実体は <see cref="ILOutputService"/> に委譲）。
         /// </summary>
-        public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel)
+        public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePath, int maxParallel, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(filesAbsolutePath);
             if (_config.SkipIL)
@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Services
                 return Task.CompletedTask;
             }
 
-            return _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel);
+            return _ilOutputService.PrecomputeAsync(filesAbsolutePath, maxParallel, cancellationToken);
         }
 
         /// <summary>
@@ -86,8 +86,9 @@ namespace FolderDiffIL4DotNet.Services
         /// 2つのファイルが等しいかを判定し、SHA256→IL→テキストの順で比較を試みる統合メソッド。
         /// 判定結果は <see cref="FileDiffResultLists"/> に記録され、ネットワーク最適化や拡張子設定にも追従します。
         /// </summary>
-        public async Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1)
+        public async Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string file1AbsolutePath = Path.Combine(_oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
             try
@@ -120,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     try
                     {
-                        var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText);
+                        var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText, cancellationToken);
                         _fileDiffResultLists.RecordDiffDetail(
                             fileRelativePath,
                             areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch,

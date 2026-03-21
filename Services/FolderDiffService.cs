@@ -132,7 +132,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Unchanged / Added / Removed / Modified を分類し、<see cref="FileDiffResultLists"/> に集計します。
         /// 進捗は old と new の相対パスの和集合件数を母数として 1 件ごとに報告します。
         /// </summary>
-        public async Task ExecuteFolderDiffAsync()
+        public async Task ExecuteFolderDiffAsync(CancellationToken cancellationToken = default)
         {
             LogExecutionMode();
             ClearResultCollections();
@@ -158,7 +158,7 @@ namespace FolderDiffIL4DotNet.Services
                 var maxParallel = _executionStrategy.DetermineMaxParallel();
                 LogDiscoveryAndParallelStats(totalFilesRelativePathCount, maxParallel);
 
-                await PrecomputeIlCachesAsync(maxParallel);
+                await PrecomputeIlCachesAsync(maxParallel, cancellationToken);
                 _progressReporter.ReportProgress(0.0);
 
                 CreateIlOutputDirectoriesIfNeeded();
@@ -167,11 +167,11 @@ namespace FolderDiffIL4DotNet.Services
                 int processedFileCount = 0;
                 if (maxParallel <= 1)
                 {
-                    processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount);
+                    processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, cancellationToken);
                 }
                 else
                 {
-                    processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, maxParallel);
+                    processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, maxParallel, cancellationToken);
                 }
 
                 ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);

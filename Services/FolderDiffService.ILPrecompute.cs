@@ -16,7 +16,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Runs IL-cache pre-computation for all old/new files: SHA256 hashing, internal key generation, and disassembler-result cache warm-up.
         /// 新旧すべてのファイルを対象に、IL キャッシュ用の事前計算（SHA256 計算、内部キー生成、逆アセンブラ結果キャッシュのウォームアップ）を実行します。
         /// </summary>
-        private async Task PrecomputeIlCachesAsync(int maxParallel)
+        private async Task PrecomputeIlCachesAsync(int maxParallel, CancellationToken cancellationToken = default)
         {
             // In network-optimised mode, skip SHA256/IL cache warm-up and only reset progress to zero.
             // ネットワーク最適化モードでは SHA256/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
@@ -42,7 +42,8 @@ namespace FolderDiffIL4DotNet.Services
                     // そのため、ここは best-effort として warning を残しつつ継続する。
                     foreach (var batch in EnumerateDistinctPrecomputeBatches(precomputeBatchSize))
                     {
-                        await _fileDiffService.PrecomputeAsync(batch, maxParallel);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        await _fileDiffService.PrecomputeAsync(batch, maxParallel, cancellationToken);
                     }
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)

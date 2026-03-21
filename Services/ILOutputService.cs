@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
@@ -72,7 +73,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> is 0 or negative. / maxParallel が 0 以下の場合にスローされます。</exception>
         /// <seealso cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/>
         /// <seealso cref="ILCache"/>
-        public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
+        public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(filesAbsolutePaths);
 
@@ -94,9 +95,10 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 await _ilCache.PrecomputeAsync(filesAbsolutePaths, maxParallel);
+                cancellationToken.ThrowIfCancellationRequested();
                 // Prefetch disassembly cache for .NET executables only
                 // .NET 実行可能のみを対象に、逆アセンブル用キャッシュをプリフェッチ
-                await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel);
+                await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel, cancellationToken);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
                 or InvalidOperationException or NotSupportedException)
@@ -111,7 +113,7 @@ namespace FolderDiffIL4DotNet.Services
         /// old/new の .NET アセンブリを同一逆アセンブラで逆アセンブルし、MVID などの除外行を適用したうえで IL を比較します。
         /// <paramref name="shouldOutputIlText"/> が true の場合は IL テキストをファイルに出力します。
         /// </summary>
-        public async Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+        public async Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)
         {
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
@@ -119,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
             // Disassemble old/new with the same disassembler (same version identity).
             // old/new を同一逆アセンブラ（同一バージョン識別）で逆アセンブルする。
             var (ilText1, commandString1, ilText2, commandString2) =
-                await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath);
+                await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
             var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
 
             // Split into lines and exclude MVID lines and configured ignore-strings before comparison.

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FolderDiffIL4DotNet.Services
@@ -13,15 +14,18 @@ namespace FolderDiffIL4DotNet.Services
         /// Disassembles an old/new .NET assembly pair using the same disassembler.
         /// old/new の .NET アセンブリペアを同一の逆アセンブラで逆アセンブルします。
         /// </summary>
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
         /// <returns>A tuple containing IL text and disassembly command strings for both old and new. / old/new それぞれの IL テキストおよび逆アセンブルコマンド文字列を含むタプル。</returns>
         Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
             string oldDotNetAssemblyFileAbsolutePath,
-            string newDotNetAssemblyFileAbsolutePath);
+            string newDotNetAssemblyFileAbsolutePath,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Pre-fetches the IL cache for the specified assemblies asynchronously.
         /// 指定アセンブリ群の IL キャッシュを非同期で事前取得します。
         /// </summary>
-        Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel);
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
+        Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default);
     }
 }

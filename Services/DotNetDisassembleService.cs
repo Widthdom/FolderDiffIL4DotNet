@@ -139,7 +139,8 @@ namespace FolderDiffIL4DotNet.Services
         /// <inheritdoc />
         public async Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
             string oldDotNetAssemblyFileAbsolutePath,
-            string newDotNetAssemblyFileAbsolutePath)
+            string newDotNetAssemblyFileAbsolutePath,
+            CancellationToken cancellationToken = default)
         {
             Exception? lastError = null;
             foreach (var candidateDisassembleCommand in CandidateDisassembleCommands())
@@ -201,8 +202,8 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <inheritdoc />
-        public Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel)
-            => _prefetcher.PrefetchIlCacheAsync(dotNetAssemblyFilesAbsolutePaths, maxParallel);
+        public Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
+            => _prefetcher.PrefetchIlCacheAsync(dotNetAssemblyFilesAbsolutePaths, maxParallel, cancellationToken);
 
         /// <summary>
         /// Attempts disassembly with the given command, creating a temp ASCII path if needed

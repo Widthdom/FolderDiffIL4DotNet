@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace FolderDiffIL4DotNet.Services
@@ -12,6 +13,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Executes folder diff comparison and outputs the results as a report.
         /// フォルダ差分比較を実行し、結果をレポートとして出力します。
         /// </summary>
-        Task ExecuteFolderDiffAsync();
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
+        Task ExecuteFolderDiffAsync(CancellationToken cancellationToken = default);
     }
 }

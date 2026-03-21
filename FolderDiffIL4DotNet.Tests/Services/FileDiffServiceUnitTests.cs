@@ -476,13 +476,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public int PrecomputeCallCount { get; private set; }
 
-            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel)
+            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
             {
                 PrecomputeCallCount++;
                 return Task.CompletedTask;
             }
 
-            public Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText)
+            public Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)
             {
                 DiffCalls.Add(new DiffCall(fileRelativePath, oldFolderAbsolutePath, newFolderAbsolutePath, shouldOutputIlText));
                 if (DiffException != null)

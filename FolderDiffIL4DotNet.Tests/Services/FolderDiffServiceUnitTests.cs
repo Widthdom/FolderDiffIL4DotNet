@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
@@ -626,6 +627,38 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(6, precomputeCall.FilesAbsolutePath.Count);
         }
 
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenCancelled_ThrowsOperationCanceledException()
+        {
+            const string oldDir = "/virtual/old-cancel";
+            const string newDir = "/virtual/new-cancel";
+            const string reportDir = "/virtual/report-cancel";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "file.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "file.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["file.txt"] = true
+            });
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteFolderDiffAsync(cts.Token));
+        }
+
         private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = 2048) => new()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
@@ -726,13 +759,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public ConcurrentQueue<FilesAreEqualCall> FilesAreEqualCalls { get; } = new();
 
-            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePath, int maxParallel)
+            public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePath, int maxParallel, CancellationToken cancellationToken = default)
             {
                 PrecomputeCalls.Enqueue(new PrecomputeCall(filesAbsolutePath.ToArray(), maxParallel));
                 return Task.CompletedTask;
             }
 
-            public Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1)
+            public Task<bool> FilesAreEqualAsync(string fileRelativePath, int maxParallel = 1, CancellationToken cancellationToken = default)
             {
                 FilesAreEqualCalls.Enqueue(new FilesAreEqualCall(fileRelativePath, maxParallel));
                 if (FilesAreEqualException != null)

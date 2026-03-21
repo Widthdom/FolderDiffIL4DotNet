@@ -58,7 +58,7 @@ namespace FolderDiffIL4DotNet.Services
         /// キャッシュが無効、または対象が空の場合は即座に返ります。
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> is 0 or negative. / <paramref name="maxParallel"/> が 0 以下の場合。</exception>
-        internal async Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel)
+        internal async Task PrefetchIlCacheAsync(IEnumerable<string> dotNetAssemblyFilesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
         {
             if (dotNetAssemblyFilesAbsolutePaths == null || !_config.EnableILCache || _ilCache == null)
             {
@@ -89,7 +89,7 @@ namespace FolderDiffIL4DotNet.Services
             int processed = 0;
             long lastLogTicks = DateTime.UtcNow.Ticks;
 
-            await Parallel.ForEachAsync(assemblies, new ParallelOptions { MaxDegreeOfParallelism = maxParallel }, async (dotNetAssemblyFileAbsolutePath, _) =>
+            await Parallel.ForEachAsync(assemblies, new ParallelOptions { MaxDegreeOfParallelism = maxParallel, CancellationToken = cancellationToken }, async (dotNetAssemblyFileAbsolutePath, ct) =>
             {
                 try
                 {
