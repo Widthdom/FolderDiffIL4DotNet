@@ -845,27 +845,35 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Added and Removed tables should NOT have col-diff-g or col-disasm-g columns
-            // Added/Removed テーブルに col-diff-g, col-disasm-g カラムが無いことを確認
-            // Modified table SHOULD have col-disasm-g
-            // Modified テーブルには col-disasm-g があることを確認
-            Assert.Contains("col-disasm-g", html); // Present in Modified and Unchanged tables
+            // All tables have all 8 columns (cols kept in DOM for stability)
+            // 全テーブルに8列すべてが存在する（DOM安定性のため列は維持）
+            Assert.Contains("col-disasm-g", html);
+            Assert.Contains("col-diff-g", html);
             Assert.Contains("dotnet-ildasm (version: 0.12.0)", html); // Unchanged ILMatch shows disassembler label
 
-            // Verify Ignored table does not have Disassembler header
-            // Ignored テーブルに Disassembler ヘッダが無いことを確認
+            // Verify Ignored table has hide-disasm CSS class
+            // Ignored テーブルに hide-disasm CSSクラスがあることを確認
             int ignoredStart = html.IndexOf("Ignored Files", StringComparison.Ordinal);
             int unchangedStart = html.IndexOf("Unchanged Files", StringComparison.Ordinal);
             string ignoredSection = html.Substring(ignoredStart, unchangedStart - ignoredStart);
-            Assert.DoesNotContain("col-disasm-g", ignoredSection);
+            Assert.Contains("hide-disasm", ignoredSection);
+            Assert.DoesNotContain("hide-col6", ignoredSection);
 
-            // Verify Added table does not have Diff Reason or Disassembler columns
-            // Added テーブルに Diff Reason, Disassembler カラムが無いことを確認
+            // Verify Unchanged table has NO hide classes (shows all columns)
+            // Unchanged テーブルにはhideクラスがないことを確認（全列表示）
             int addedStart = html.IndexOf("Added Files", StringComparison.Ordinal);
+            string unchangedSection = html.Substring(unchangedStart, addedStart - unchangedStart);
+            Assert.DoesNotContain("hide-disasm", unchangedSection);
+            Assert.DoesNotContain("hide-col6", unchangedSection);
+
+            // Verify Added table has hide-col6 and hide-disasm CSS classes
+            // Added テーブルに hide-col6, hide-disasm CSSクラスがあることを確認
             int removedStart = html.IndexOf("Removed Files", StringComparison.Ordinal);
             string addedSection = html.Substring(addedStart, removedStart - addedStart);
-            Assert.DoesNotContain("col-diff-g", addedSection);
-            Assert.DoesNotContain("col-disasm-g", addedSection);
+            Assert.Contains("hide-col6", addedSection);
+            Assert.Contains("hide-disasm", addedSection);
+            Assert.Contains("col-diff-g", addedSection);   // column present in DOM
+            Assert.Contains("col-disasm-g", addedSection);  // column present in DOM
         }
 
         // ── Assembly Semantic Changes / アセンブリ意味変更 ─────────────────────

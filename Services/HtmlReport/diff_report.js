@@ -258,8 +258,12 @@
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
       var cg = t.querySelector('colgroup');
       if (!cg) return;
+      var hideDisasm = t.classList.contains('hide-disasm');
+      var hideCol6 = t.classList.contains('hide-col6');
       var w = 0;
       cg.querySelectorAll('col').forEach(function(col) {
+        if (hideDisasm && col.classList.contains('col-disasm-g')) return;
+        if (hideCol6 && col.classList.contains('col-diff-g')) return;
         if (colW[col.className] !== undefined) w += colW[col.className];
       });
       if (w > 0) t.style.width = w + 'px';

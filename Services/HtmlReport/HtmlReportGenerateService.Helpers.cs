@@ -15,11 +15,12 @@ namespace FolderDiffIL4DotNet.Services
         // ── Table helpers ────────────────────────────────────────────────────
 
         private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header,
-            bool showCol6 = true, bool showDisasm = true)
+            string hideClasses = "")
         {
             string bg = headerBgColor ?? TH_BG_DEFAULT;
+            string tableCls = string.IsNullOrEmpty(hideClasses) ? "" : $" class=\"{hideClasses}\"";
             sb.AppendLine("<div class=\"table-scroll\">");
-            sb.AppendLine("<table>");
+            sb.AppendLine($"<table{tableCls}>");
             sb.AppendLine("<colgroup>");
             sb.AppendLine("  <col class=\"col-no-g\">");
             sb.AppendLine("  <col class=\"col-cb-g\">");
@@ -27,8 +28,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <col class=\"col-notes-g\">");
             sb.AppendLine("  <col class=\"col-path-g\">");
             sb.AppendLine("  <col class=\"col-ts-g\">");
-            if (showCol6) sb.AppendLine("  <col class=\"col-diff-g\">");
-            if (showDisasm) sb.AppendLine("  <col class=\"col-disasm-g\">");
+            sb.AppendLine("  <col class=\"col-diff-g\">");
+            sb.AppendLine("  <col class=\"col-disasm-g\">");
             sb.AppendLine("</colgroup>");
             sb.AppendLine($"<thead><tr style=\"background:{bg}\">");
             sb.AppendLine($"  <th class=\"col-no\">#</th>");
@@ -37,8 +38,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-notes-w\">{I18n("Notes", "備考")}</th>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">{I18n("File Path", "ファイルパス")}</th>");
             sb.AppendLine($"  <th>{I18n("Timestamp", "タイムスタンプ")}</th>");
-            if (showCol6) sb.AppendLine($"  <th>{I18n(col6Header, GetCol6HeaderJa(col6Header))}</th>");
-            if (showDisasm) sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-disasm-w\">{I18n("Disassembler", "逆アセンブラ")}</th>");
+            sb.AppendLine($"  <th class=\"col-diff-hd\">{I18n(col6Header, GetCol6HeaderJa(col6Header))}</th>");
+            sb.AppendLine($"  <th class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{I18n("Disassembler", "逆アセンブラ")}</th>");
             sb.AppendLine("</tr></thead>");
         }
 
@@ -49,9 +50,7 @@ namespace FolderDiffIL4DotNet.Services
             string path,
             string timestamp,
             string col6,
-            string disasm = "",
-            bool showCol6 = true,
-            bool showDisasm = true)
+            string disasm = "")
         {
             string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
@@ -64,16 +63,10 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\"></td>");
             sb.AppendLine($"  <td class=\"col-path\"><div class=\"path-wrap\"><span class=\"path-text\">{HtmlEncode(path)}</span><button class=\"btn-copy-path\" onclick=\"copyPath(this)\" title=\"Copy\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg></button></div></td>");
             sb.AppendLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
-            if (showCol6)
-            {
-                string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
-                sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
-            }
-            if (showDisasm)
-            {
-                string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
-                sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
-            }
+            string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
+            sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
+            string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
+            sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
             sb.AppendLine("</tr>");
         }
 
