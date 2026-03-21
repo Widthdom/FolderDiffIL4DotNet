@@ -17,9 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **Semantic summary caveat note** — Added a bilingual note ("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below." / "注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。") to both HTML and Markdown reports in the Assembly Semantic Changes section. Styled with `.sc-caveat` CSS class (italic, grey). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) and [`doc/samples/diff_report.md`](doc/samples/diff_report.md) to include this note. Added tests `ShowsCaveatNote`, `CaveatCssExists` in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) and `ContainsCaveatNote` in [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs).
+- **Semantic summary caveat note** — Added a bilingual note ("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below." / "注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。") to the HTML report's Assembly Semantic Changes section. Styled with `.sc-caveat` CSS class (italic, grey). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added tests `ShowsCaveatNote`, `CaveatCssExists` in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
+
+#### Removed
+
+- **Assembly Semantic Changes section in Markdown report** — The `## Assembly Semantic Changes` section has been removed from the Markdown report (`diff_report.md`). Assembly Semantic Changes are now shown only in the HTML report as expandable inline rows. Removed `AssemblySemanticChangesSectionWriter` and its helper methods from `ReportGenerateService.SectionWriters.cs`. Removed the corresponding section from [`doc/samples/diff_report.md`](doc/samples/diff_report.md). Updated tests in [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs) to assert the section does not appear.
 
 #### Changed
+
+- **Modified entry old→new display** — For `Modified` entries in the Assembly Semantic Changes table, the Access, Modifiers, and Type columns now show old and new values in `old → new` format when the value has changed (e.g. `public → internal`, `System.String → System.Int32`). When unchanged, only the current value is shown.
 
 - **Unchanged Files table sort order** — Rows are now sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Previously sorted by File Path only. Applies to both Markdown and HTML reports.
 
@@ -32,15 +38,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Added
 
 - Added **Assembly Semantic Changes** — member-level change detection for `ILMismatch` assemblies using `System.Reflection.Metadata`. For each modified .NET assembly, the report now shows type/method/property/field additions, removals, and method body changes. Controlled by the new `ShouldIncludeAssemblySemanticChangesInReport` config setting (default: `true`).
-  - **Report placement**: appears between **Summary** and **IL Cache Stats** in the Markdown report; shown as an expandable inline row above the IL diff in the HTML report.
-  - **Table columns** (12 in HTML including checkbox; 11 in Markdown): `✓` (checkbox, HTML only), `Class` (fully qualified type name), `BaseType` (base class + interfaces), `Status` (`Added`/`Removed`/`Modified` with `[ + ]`/`[ - ]`/`[ * ]` markers), `Kind` (`Class`/`Record`/`Struct`/`Interface`/`Enum`/`Constructor`/`StaticConstructor`/`Method`/`Property`/`Field`), `Access` (`public`/`internal`/`protected`/`private`), `Modifiers` (`static`/`abstract`/`virtual`/`override`/`sealed`/`readonly`/`const`/`static literal`/`static readonly`), `Type` (declared type for Field/Property only), `Name`, `ReturnType`, `Parameters` (displayed without parentheses), `Body` (`Changed` when method body or field initializer IL has changed; otherwise empty).
+  - **Report placement**: shown as an expandable inline row above the IL diff in the HTML report.
+  - **Table columns** (12 including checkbox): `✓` (checkbox), `Class` (fully qualified type name), `BaseType` (base class + interfaces), `Status` (`Added`/`Removed`/`Modified` with `[ + ]`/`[ - ]`/`[ * ]` markers), `Kind` (`Class`/`Record`/`Struct`/`Interface`/`Enum`/`Constructor`/`StaticConstructor`/`Method`/`Property`/`Field`), `Access` (`public`/`internal`/`protected`/`private`), `Modifiers` (`static`/`abstract`/`virtual`/`override`/`sealed`/`readonly`/`const`/`static literal`/`static readonly`), `Type` (declared type for Field/Property only), `Name`, `ReturnType`, `Parameters` (displayed without parentheses), `Body` (`Changed` when method body or field initializer IL has changed; otherwise empty).
   - **Summary count table**: a second table grouped by Class showing `Added`/`Removed`/`Modified` counts. Consecutive rows for the same class merge the Class cell.
   - **Record detection**: records are identified heuristically by the presence of an `EqualityContract` property.
   - **HTML styling**: table header background `#98989d` (light grey), data cell (`td`) background `#fff` (white) for contrast against the `diff-row` grey, per-row checkbox with auto-save, resizable columns via CSS custom properties and drag handles.
-  - **Markdown styling**: multi-word Modifiers (e.g. `static literal`) use non-breaking spaces to prevent wrapping.
   - **New files**: [`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs), [`AssemblySemanticChangesSummary`](Models/AssemblySemanticChangesSummary.cs) (with computed `AddedCount`/`RemovedCount`/`ModifiedCount` properties).
   - **Tests**: [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs), [`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs), and new assertions in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) (`TableHeaderUsesLighterGray`, `ThScColCbCssRuleExists`, `TdHasWhiteBackground`).
-  - **Docs**: added bilingual **Assembly Semantic Changes** section to [README.md](README.md), [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs) and [`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs) to [TESTING_GUIDE.md](doc/TESTING_GUIDE.md), updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) and [`doc/samples/diff_report.md`](doc/samples/diff_report.md).
+  - **Docs**: added bilingual **Assembly Semantic Changes** section to [README.md](README.md), [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs) and [`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs) to [TESTING_GUIDE.md](doc/TESTING_GUIDE.md), updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
 
 #### Changed
 
@@ -432,9 +437,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 追加
 
-- **セマンティックサマリーの注意書き** — Assembly Semantic Changes セクションの HTML および Markdown レポートに、日英バイリンガルの注意書き（「注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。」）を追加。`.sc-caveat` CSS クラスでスタイリング（イタリック、グレー）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) と [`doc/samples/diff_report.md`](doc/samples/diff_report.md) も更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に `ShowsCaveatNote`、`CaveatCssExists`、[`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs) に `ContainsCaveatNote` テストを追加。
+- **セマンティックサマリーの注意書き** — HTML レポートの Assembly Semantic Changes セクションに、日英バイリンガルの注意書き（「注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。」）を追加。`.sc-caveat` CSS クラスでスタイリング（イタリック、グレー）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に `ShowsCaveatNote`、`CaveatCssExists` テストを追加。
+
+#### 削除
+
+- **Markdown レポートの Assembly Semantic Changes セクション** — Markdown レポート（`diff_report.md`）から `## Assembly Semantic Changes` セクションを削除しました。Assembly Semantic Changes は HTML レポートの展開可能なインライン行としてのみ表示されます。`ReportGenerateService.SectionWriters.cs` から `AssemblySemanticChangesSectionWriter` とそのヘルパーメソッドを削除。[`doc/samples/diff_report.md`](doc/samples/diff_report.md) から該当セクションを削除。[`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs) のテストを更新し、セクションが出力されないことを確認。
 
 #### 変更
+
+- **Modified エントリの旧→新表示** — Assembly Semantic Changes テーブルの `Modified` エントリで、Access、Modifiers、Type 列に値が変更された場合は `旧 → 新` 形式で表示するよう変更（例: `public → internal`、`System.String → System.Int32`）。変更がない場合は現在の値のみ表示。
 
 - **Unchanged Files テーブルのソート順** — diff-detail 結果（`MD5Match` → `ILMatch` → `TextMatch`）でソートし、次にファイルパスの昇順でソートするよう変更。以前はファイルパスのみでソートしていました。Markdown および HTML レポートの両方に適用。
 
@@ -447,15 +458,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 追加
 
 - **Assembly Semantic Changes** を追加 — `System.Reflection.Metadata` を使用した `ILMismatch` アセンブリのメンバーレベル変更検出。変更のあった各 .NET アセンブリについて、型・メソッド・プロパティ・フィールドの増減およびメソッドボディの変更をレポートに出力します。新しい設定項目 `ShouldIncludeAssemblySemanticChangesInReport`（既定: `true`）で制御可能。
-  - **レポート配置**: Markdown レポートでは **Summary** と **IL Cache Stats** の間に表示。HTML レポートでは IL diff の上に展開可能なインライン行として表示。
-  - **テーブル列**（HTML: チェックボックス含む 12 列、Markdown: 11 列）: `✓`（チェックボックス、HTML のみ）、`Class`（完全修飾型名）、`BaseType`（基底クラス＋インターフェース）、`Status`（`Added`/`Removed`/`Modified`、`[ + ]`/`[ - ]`/`[ * ]` マーカー付き）、`Kind`（`Class`/`Record`/`Struct`/`Interface`/`Enum`/`Constructor`/`StaticConstructor`/`Method`/`Property`/`Field`）、`Access`（`public`/`internal`/`protected`/`private`）、`Modifiers`（`static`/`abstract`/`virtual`/`override`/`sealed`/`readonly`/`const`/`static literal`/`static readonly`）、`Type`（Field/Property の宣言型のみ）、`Name`、`ReturnType`、`Parameters`（括弧なしで表示）、`Body`（メソッドボディまたはフィールド初期化子の IL 変更時に `Changed`、それ以外は空欄）。
+  - **レポート配置**: HTML レポートでは IL diff の上に展開可能なインライン行として表示。
+  - **テーブル列**（チェックボックス含む 12 列）: `✓`（チェックボックス）、`Class`（完全修飾型名）、`BaseType`（基底クラス＋インターフェース）、`Status`（`Added`/`Removed`/`Modified`、`[ + ]`/`[ - ]`/`[ * ]` マーカー付き）、`Kind`（`Class`/`Record`/`Struct`/`Interface`/`Enum`/`Constructor`/`StaticConstructor`/`Method`/`Property`/`Field`）、`Access`（`public`/`internal`/`protected`/`private`）、`Modifiers`（`static`/`abstract`/`virtual`/`override`/`sealed`/`readonly`/`const`/`static literal`/`static readonly`）、`Type`（Field/Property の宣言型のみ）、`Name`、`ReturnType`、`Parameters`（括弧なしで表示）、`Body`（メソッドボディまたはフィールド初期化子の IL 変更時に `Changed`、それ以外は空欄）。
   - **集計テーブル**: Class 別に `Added`/`Removed`/`Modified` の件数を表示する第二テーブル。同一クラスの連続行は Class セルを結合。
   - **Record 検出**: `EqualityContract` プロパティの有無で Record 型をヒューリスティックに判定。
   - **HTML スタイル**: テーブルヘッダ背景 `#98989d`（ライトグレー）、データセル（`td`）背景 `#fff`（白）で `diff-row` グレーとのコントラストを確保、行単位チェックボックス（auto-save 対応）、CSS カスタムプロパティとドラッグハンドルによるリサイズ可能な列。
-  - **Markdown スタイル**: 複数語の Modifiers（例: `static literal`）にノーブレークスペースを適用し折り返しを防止。
   - **新規ファイル**: [`AssemblyMethodAnalyzer`](Services/AssemblyMethodAnalyzer.cs)、[`AssemblySemanticChangesSummary`](Models/AssemblySemanticChangesSummary.cs)（算出プロパティ `AddedCount`/`RemovedCount`/`ModifiedCount`）。
   - **テスト**: [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs)、[`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs)、[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に新規アサーション（`TableHeaderUsesLighterGray`、`ThScColCbCssRuleExists`、`TdHasWhiteBackground`）。
-  - **ドキュメント**: [README.md](README.md) にバイリンガルの **Assembly Semantic Changes** セクションを追加、[TESTING_GUIDE.md](doc/TESTING_GUIDE.md) に [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs)・[`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs) を追加、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)・[`doc/samples/diff_report.md`](doc/samples/diff_report.md) を同期。
+  - **ドキュメント**: [README.md](README.md) にバイリンガルの **Assembly Semantic Changes** セクションを追加、[TESTING_GUIDE.md](doc/TESTING_GUIDE.md) に [`AssemblyMethodAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs)・[`AssemblySemanticChangesSummaryTests`](FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs) を追加、[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を同期。
 
 #### 変更
 

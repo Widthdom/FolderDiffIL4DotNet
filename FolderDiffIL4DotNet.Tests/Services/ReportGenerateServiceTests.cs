@@ -756,10 +756,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
         }
 
-        // ── Assembly Semantic Changes / アセンブリ意味変更 ─────────────────────
+        // ── Assembly Semantic Changes removed from Markdown report ─────────────
+        // Assembly Semantic Changes are only shown in the HTML report (as expandable
+        // inline rows above IL diffs). The Markdown report no longer outputs this section.
+        // アセンブリ意味変更は HTML レポートのみに表示（IL diff 上の展開可能行）。
+        // Markdown レポートにはこのセクションを出力しない。
 
         [Fact]
-        public void GenerateDiffReport_AssemblySemanticChanges_IncludedBetweenSummaryAndILCacheStats()
+        public void GenerateDiffReport_AssemblySemanticChanges_NotIncludedInMarkdownReport()
         {
             var oldDir = Path.Combine(_rootDir, "old-asc");
             var newDir = Path.Combine(_rootDir, "new-asc");
@@ -771,168 +775,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddModifiedFileRelativePath("src/App.dll");
             _resultLists.RecordDiffDetail("src/App.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
-            var summary = new AssemblySemanticChangesSummary
-            {
-                Entries = new List<MemberChangeEntry>
-                {
-                    new("Added", "MyApp.NewService", "", "public", "", "Class", "", "", "", "", ""),
-                    new("Added", "MyApp.UserService", "", "public", "static", "Method", "ValidateToken", "", "bool", "string token", ""),
-                    new("Added", "MyApp.UserService", "", "internal", "", "Method", "RefreshSession", "", "void", "int userId", ""),
-                    new("Removed", "MyApp.UserService", "", "public", "virtual", "Method", "LegacyAuth", "", "void", "string key", ""),
-                    new("Modified", "MyApp.UserService", "", "public", "", "Method", "Login", "", "bool", "string user, string pass", "Changed"),
-                    new("Added", "MyApp.UserService", "", "public", "", "Property", "IsActive", "bool", "", "", ""),
-                    new("Added", "MyApp.UserService", "", "private", "readonly", "Field", "_cache", "object", "", "", ""),
-                },
-            };
-            _resultLists.FileRelativePathToAssemblySemanticChanges["src/App.dll"] = summary;
-
-            // Also add IL Cache Stats to verify ordering
-            var config = CreateConfig();
-            config.ShouldIncludeILCacheStatsInReport = true;
-            var ilCache = new ILCache(ilCacheDirectoryAbsolutePath: string.Empty);
-
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config, ilCache);
-
-            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
-
-            // Content checks — table format
-            Assert.Contains("## Assembly Semantic Changes", reportText);
-            Assert.Contains("### src/App.dll", reportText);
-            Assert.Contains("| Class | BaseType | Change | Kind | Access | Modifiers | Type | Name | ReturnType | Parameters | Body |", reportText);
-            // First row shows class name; subsequent rows for same class are empty
-            Assert.Contains("| MyApp.NewService |  | `Added` | `Class` | `public` |  |  |  |  |  |  |", reportText);
-            Assert.Contains("| MyApp.UserService |  | `Added` | `Method` | `public` | `static` |  | ValidateToken | bool | string\u00A0token |  |", reportText);
-            Assert.Contains("|  |  | `Modified` | `Method` | `public` |  |  | Login | bool | string\u00A0user,\u00A0string\u00A0pass | `Changed` |", reportText);
-            Assert.Contains("|  |  | `Added` | `Property` | `public` |  | bool | IsActive |  |  |  |", reportText);
-            // Summary count table
-            Assert.Contains("| Class | Change | Count |", reportText);
-            Assert.Contains("| MyApp.NewService | `Added` | 1 |", reportText);
-            Assert.Contains("| MyApp.UserService | `Added` | 4 |", reportText);
-            Assert.Contains("|  | `Removed` | 1 |", reportText);
-            Assert.Contains("|  | `Modified` | 1 |", reportText);
-
-            // Ordering: Summary < Assembly Semantic Changes < IL Cache Stats
-            int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);
-            int semanticIdx = reportText.IndexOf("## Assembly Semantic Changes", StringComparison.Ordinal);
-            int ilCacheIdx = reportText.IndexOf("## IL Cache Stats", StringComparison.Ordinal);
-            Assert.True(summaryIdx < semanticIdx, "Assembly Semantic Changes should appear after Summary");
-            Assert.True(semanticIdx < ilCacheIdx, "Assembly Semantic Changes should appear before IL Cache Stats");
-        }
-
-        [Fact]
-        public void GenerateDiffReport_AssemblySemanticChanges_ContainsCaveatNote()
-        {
-            // The semantic changes section should contain a caveat note telling users
-            // that the semantic summary is supplementary and to verify in the inline diff.
-            // セマンティック変更セクションにセマンティックサマリーが補助情報であり、
-            // インライン差分で最終確認すべきとの注意書きが含まれるべき。
-            var oldDir = Path.Combine(_rootDir, "old-asc-caveat");
-            var newDir = Path.Combine(_rootDir, "new-asc-caveat");
-            var reportDir = Path.Combine(_rootDir, "report-asc-caveat");
-            Directory.CreateDirectory(oldDir);
-            Directory.CreateDirectory(newDir);
-            Directory.CreateDirectory(reportDir);
-
-            _resultLists.AddModifiedFileRelativePath("lib.dll");
-            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
-
-            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
-            {
-                Entries = new List<MemberChangeEntry>
-                {
-                    new("Added", "Foo", "", "public", "", "Method", "Bar", "", "void", "", ""),
-                },
-            };
-
-            var config = CreateConfig();
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
-
-            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
-            Assert.Contains("supplementary information", reportText);
-            Assert.Contains("セマンティックサマリーは補助情報です", reportText);
-        }
-
-        [Fact]
-        public void GenerateDiffReport_AssemblySemanticChanges_NotIncludedWhenDisabled()
-        {
-            var oldDir = Path.Combine(_rootDir, "old-asc-off");
-            var newDir = Path.Combine(_rootDir, "new-asc-off");
-            var reportDir = Path.Combine(_rootDir, "report-asc-off");
-            Directory.CreateDirectory(oldDir);
-            Directory.CreateDirectory(newDir);
-            Directory.CreateDirectory(reportDir);
-
             _resultLists.FileRelativePathToAssemblySemanticChanges["src/App.dll"] = new AssemblySemanticChangesSummary
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "Foo", "", "public", "", "Method", "Bar", "", "void", "", ""),
-                },
-            };
-
-            var config = CreateConfig();
-            config.ShouldIncludeAssemblySemanticChangesInReport = false;
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
-
-            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
-            Assert.DoesNotContain("## Assembly Semantic Changes", reportText);
-        }
-
-        [Fact]
-        public void GenerateDiffReport_AssemblySemanticChanges_NotIncludedWhenNoChanges()
-        {
-            var oldDir = Path.Combine(_rootDir, "old-asc-empty");
-            var newDir = Path.Combine(_rootDir, "new-asc-empty");
-            var reportDir = Path.Combine(_rootDir, "report-asc-empty");
-            Directory.CreateDirectory(oldDir);
-            Directory.CreateDirectory(newDir);
-            Directory.CreateDirectory(reportDir);
-
-            // No method-level changes recorded
-            var config = CreateConfig();
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
-
-            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
-            Assert.DoesNotContain("## Assembly Semantic Changes", reportText);
-        }
-
-        /// <summary>
-        /// Verifies that multi-word Modifiers (e.g. "static literal") use non-breaking spaces in the Markdown report.
-        /// 複数語の Modifiers（例: "static literal"）が Markdown レポートでノーブレークスペースを使用することを確認する。
-        /// </summary>
-        [Fact]
-        public void GenerateDiffReport_AssemblySemanticChanges_MultiWordModifiersUseNonBreakingSpace()
-        {
-            var oldDir = Path.Combine(_rootDir, "old-asc-nbsp");
-            var newDir = Path.Combine(_rootDir, "new-asc-nbsp");
-            var reportDir = Path.Combine(_rootDir, "report-asc-nbsp");
-            Directory.CreateDirectory(oldDir);
-            Directory.CreateDirectory(newDir);
-            Directory.CreateDirectory(reportDir);
-
-            _resultLists.AddModifiedFileRelativePath("src/Lib.dll");
-            _resultLists.RecordDiffDetail("src/Lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
-
-            _resultLists.FileRelativePathToAssemblySemanticChanges["src/Lib.dll"] = new AssemblySemanticChangesSummary
-            {
-                Entries = new List<MemberChangeEntry>
-                {
-                    new("Added", "MyApp.Status", "", "public", "static literal", "Field", "Active", "System.Int32", "", "", ""),
-                    new("Added", "MyApp.Status", "", "public", "static readonly", "Field", "Default", "System.TimeSpan", "", "", ""),
+                    new("Added", "MyApp.NewService", "", "public", "", "Class", "", "", "", "", ""),
+                    new("Modified", "MyApp.UserService", "", "public", "", "Method", "Login", "", "bool", "string user, string pass", "Changed"),
                 },
             };
 
@@ -945,14 +793,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // Multi-word modifiers must use non-breaking space (U+00A0) to prevent wrapping
-            // 複数語修飾子は折り返し防止のためノーブレークスペース (U+00A0) を使用すること
-            Assert.Contains("`static\u00A0literal`", reportText);
-            Assert.Contains("`static\u00A0readonly`", reportText);
-            // Regular space must NOT appear in these modifier values
-            // これらの修飾子値に通常スペースが含まれないこと
-            Assert.DoesNotContain("`static literal`", reportText);
-            Assert.DoesNotContain("`static readonly`", reportText);
+            // Markdown report must NOT contain the Assembly Semantic Changes section
+            // Markdown レポートに Assembly Semantic Changes セクションが含まれないこと
+            Assert.DoesNotContain("## Assembly Semantic Changes", reportText);
+            Assert.DoesNotContain("semantic", reportText.ToLowerInvariant());
         }
 
         // ── Sort order: Unchanged files / Unchanged ファイルのソート順 ─────────

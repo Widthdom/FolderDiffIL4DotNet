@@ -85,7 +85,9 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         string kind = ToMemberKind(newM.MethodName);
                         string body = bodyChanged ? "Changed" : "";
-                        entries.Add(new MemberChangeEntry("Modified", newM.TypeName, LookupBaseType(newM.TypeName, newSnapshot, oldSnapshot), newM.Access, newM.Modifiers, kind, ToCSharpMethodName(newM.MethodName, newM.TypeName), "", newM.ReturnType, newM.Parameters, body));
+                        string accessDisplay = accessChanged ? $"{oldM.Access} → {newM.Access}" : newM.Access;
+                        string modifiersDisplay = modifiersChanged ? $"{oldM.Modifiers} → {newM.Modifiers}" : newM.Modifiers;
+                        entries.Add(new MemberChangeEntry("Modified", newM.TypeName, LookupBaseType(newM.TypeName, newSnapshot, oldSnapshot), accessDisplay, modifiersDisplay, kind, ToCSharpMethodName(newM.MethodName, newM.TypeName), "", newM.ReturnType, newM.Parameters, body));
                     }
                 }
 
@@ -110,7 +112,10 @@ namespace FolderDiffIL4DotNet.Services
 
                     if (typeChanged || accessChanged || modifiersChanged)
                     {
-                        entries.Add(new MemberChangeEntry("Modified", newP.TypeName, LookupBaseType(newP.TypeName, newSnapshot, oldSnapshot), newP.Access, newP.Modifiers, "Property", newP.PropertyName, newP.PropertyType, "", "", ""));
+                        string accessDisplay = accessChanged ? $"{oldP.Access} → {newP.Access}" : newP.Access;
+                        string modifiersDisplay = modifiersChanged ? $"{oldP.Modifiers} → {newP.Modifiers}" : newP.Modifiers;
+                        string typeDisplay = typeChanged ? $"{oldP.PropertyType} → {newP.PropertyType}" : newP.PropertyType;
+                        entries.Add(new MemberChangeEntry("Modified", newP.TypeName, LookupBaseType(newP.TypeName, newSnapshot, oldSnapshot), accessDisplay, modifiersDisplay, "Property", newP.PropertyName, typeDisplay, "", "", ""));
                     }
                 }
 
@@ -135,7 +140,10 @@ namespace FolderDiffIL4DotNet.Services
 
                     if (detailsChanged || accessChanged || modifiersChanged)
                     {
-                        entries.Add(new MemberChangeEntry("Modified", newF.TypeName, LookupBaseType(newF.TypeName, newSnapshot, oldSnapshot), newF.Access, newF.Modifiers, "Field", newF.FieldName, StripColonPrefix(newF.Details), "", "", ""));
+                        string accessDisplay = accessChanged ? $"{oldF.Access} → {newF.Access}" : newF.Access;
+                        string modifiersDisplay = modifiersChanged ? $"{oldF.Modifiers} → {newF.Modifiers}" : newF.Modifiers;
+                        string typeDisplay = detailsChanged ? $"{StripColonPrefix(oldF.Details)} → {StripColonPrefix(newF.Details)}" : StripColonPrefix(newF.Details);
+                        entries.Add(new MemberChangeEntry("Modified", newF.TypeName, LookupBaseType(newF.TypeName, newSnapshot, oldSnapshot), accessDisplay, modifiersDisplay, "Field", newF.FieldName, typeDisplay, "", "", ""));
                     }
                 }
 
