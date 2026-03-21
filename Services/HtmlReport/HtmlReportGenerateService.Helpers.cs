@@ -208,7 +208,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             sb.AppendLine($"  <li>{I18n("Disassembler Availability", "逆アセンブラ利用可否")}:");
             sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine("      <thead><tr><th>Tool</th><th>Available</th><th>Version</th></tr></thead>");
+            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Tool</th><th style=\"background:{TH_BG_DEFAULT}\">Available</th><th style=\"background:{TH_BG_DEFAULT}\">Version</th></tr></thead>");
             sb.AppendLine("      <tbody>");
             foreach (var probe in probeResults)
             {
