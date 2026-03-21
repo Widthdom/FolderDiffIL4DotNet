@@ -392,7 +392,7 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("  <th class=\"sc-col-cb\">&#x2713;</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-class-w\">{I18n("Class", "クラス")}</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">{I18n("BaseType", "基底型")}</th>");
-                contentBuilder.AppendLine($"  <th>{I18n("Change", "変更")}</th><th>{I18n("Kind", "種別")}</th><th>{I18n("Access", "アクセス")}</th><th>{I18n("Modifiers", "修飾子")}</th>");
+                contentBuilder.AppendLine($"  <th>{I18n("Status", "状態")}</th><th>{I18n("Kind", "種別")}</th><th>{I18n("Access", "アクセス")}</th><th>{I18n("Modifiers", "修飾子")}</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-type-w\">{I18n("Type", "型")}</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-name-w\">{I18n("Name", "名前")}</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-rettype-w\">{I18n("ReturnType", "戻り値型")}</th>");
@@ -413,7 +413,10 @@ namespace FolderDiffIL4DotNet.Services
                     string modifiersTd = e.Modifiers.Length > 0 ? $"<code>{HtmlEncode(e.Modifiers)}</code>" : "";
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
                     string cbId = $"sc_{sectionPrefix}_{idx}_{scRowIdx}";
-                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td><code>{HtmlEncode(e.Change)}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    string changeMarker = ChangeToMarker(e.Change);
+                    string statusBg = ChangeToStatusBg(e.Change);
+                    string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
+                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}><code>{changeMarker}</code></td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                     scRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -468,7 +471,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</colgroup>");
             sb.AppendLine("<thead><tr>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-cnt-class-w\">{I18n("Class", "クラス")}</th>");
-            sb.AppendLine($"  <th>{I18n("Change", "変更")}</th><th>{I18n("Count", "件数")}</th>");
+            sb.AppendLine($"  <th>{I18n("Status", "状態")}</th><th>{I18n("Count", "件数")}</th>");
             sb.AppendLine("</tr></thead>");
             sb.AppendLine("<tbody>");
             string prevType = "";
@@ -478,13 +481,21 @@ namespace FolderDiffIL4DotNet.Services
                 string classTd = !isCont ? HtmlEncode(typeName) : "";
                 prevType = typeName;
                 string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
-                sb.AppendLine($"{trOpen}<td>{classTd}</td><td><code>{HtmlEncode(change)}</code></td><td>{count}</td></tr>");
+                string cntStatusBg = ChangeToStatusBg(change);
+                string cntStatusStyle = cntStatusBg.Length > 0 ? $" style=\"background:{cntStatusBg}\"" : "";
+                sb.AppendLine($"{trOpen}<td>{classTd}</td><td{cntStatusStyle}><code>{ChangeToMarker(change)}</code></td><td>{count}</td></tr>");
             }
             sb.AppendLine("</tbody></table>");
         }
 
         private static int ChangeOrder(string change)
             => change switch { "Added" => 0, "Removed" => 1, "Modified" => 2, _ => 3 };
+
+        private static string ChangeToMarker(string change)
+            => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Modified" => "[ * ]", _ => change };
+
+        private static string ChangeToStatusBg(string change)
+            => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Modified" => TH_BG_MODIFIED, _ => "" };
 
         private void AppendSummarySection(StringBuilder sb, ConfigSettings config)
         {
