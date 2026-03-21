@@ -9,8 +9,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
-### [1.7.0] - 2026-03-21
-
 #### Added
 
 - **Audit log and tamper detection (`audit_log.json` + reviewed HTML integrity)** — Added `AuditLogGenerateService` that generates a structured JSON audit log alongside the diff reports. The audit log records per-file comparison results (category, diff detail, disassembler used), run metadata (app version, computer name, old/new paths, ISO 8601 timestamp, elapsed time), summary statistics, and SHA256 integrity hashes of the generated `diff_report.md` and `diff_report.html` for tamper detection. Generation is controlled by the new `ShouldGenerateAuditLog` config setting (default: `true`). New model classes: `AuditLogRecord`, `AuditLogFileEntry`, `AuditLogSummary` in `Models/AuditLogEntry.cs`. The service is registered in `RunScopeBuilder` and invoked after HTML report generation in `ProgramRunner.GenerateReport()`. Added sample [`doc/samples/audit_log.json`](doc/samples/audit_log.json). Updated `IReadOnlyConfigSettings` interface with `ShouldGenerateAuditLog` property. The "Download as reviewed" workflow now also computes a SHA256 hash of the reviewed HTML using the Web Crypto API, embeds it inside the file via a placeholder technique, and downloads a companion `.sha256` verification file. The reviewed HTML's header includes a "Verify integrity" button that re-reads the file, recomputes the hash, and displays a pass/fail dialog. The `.sha256` file follows the `sha256sum`/`shasum` format and can be verified on any OS (Linux: `sha256sum -c`, macOS: `shasum -a 256 -c`, Windows: `Get-FileHash` in PowerShell). Submitting the reviewed HTML together with the `.sha256` file constitutes a tamper-proof audit record. Added 18 tests: 17 in [`AuditLogGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs) and 1 in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs). Updated `ConfigSettingsTests` to assert the new default.
@@ -460,8 +458,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
-
-### [1.7.0] - 2026-03-21
 
 #### 追加
 
