@@ -23,6 +23,9 @@ namespace FolderDiffIL4DotNet.Services
     table.legend-table { width: auto; max-width: 44em; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
     table.legend-table td:first-child { white-space: nowrap; }
+    .il-ignore-scroll { overflow-x: auto; max-width: 80em; }
+    table.il-ignore-table { max-width: none; }
+    table.il-ignore-table td { white-space: nowrap; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;
@@ -54,12 +57,7 @@ namespace FolderDiffIL4DotNet.Services
       background: transparent; color: #1d1d1f;
     }
     .btn-clear:hover { background: #f5f5f7; }
-    .btn-lang {
-      background: transparent; color: #1d1d1f;
-      border: 1.5px solid #86868b; font-size: 12px;
-    }
-    .btn-lang:hover { background: #f5f5f7; border-color: #424245; }
-    .save-status { font-size: 12px; color: #86868b; }
+.save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em;

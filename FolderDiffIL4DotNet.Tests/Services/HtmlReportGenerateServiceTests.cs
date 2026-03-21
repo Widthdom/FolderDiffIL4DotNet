@@ -131,12 +131,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Summary stat labels are wrapped in i18n spans
-            // サマリー統計ラベルは i18n span で囲まれる
-            Assert.Contains("data-en=\"Unchanged\"", html);
-            Assert.Contains("data-en=\"Added\"", html);
-            Assert.Contains("data-en=\"Removed\"", html);
-            Assert.Contains("data-en=\"Modified\"", html);
+            Assert.Contains("stat-label\">Unchanged</td>", html);
+            Assert.Contains("stat-label\">Added</td>", html);
+            Assert.Contains("stat-label\">Removed</td>", html);
+            Assert.Contains("stat-label\">Modified</td>", html);
             Assert.Contains("stat-value\">1</td>", html);
             Assert.Contains("3 (Old) vs 3 (New)", html);
         }
@@ -155,7 +153,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("#22863a", html);
-            Assert.Contains("data-en=\"Added Files\"", html);
+            Assert.Contains("[ + ] Added Files", html);
         }
 
         [Fact]
@@ -172,7 +170,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("#b31d28", html);
-            Assert.Contains("data-en=\"Removed Files\"", html);
+            Assert.Contains("[ - ] Removed Files", html);
         }
 
         [Fact]
@@ -239,7 +237,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("section-heading\">", html);
-            Assert.Contains("data-en=\"Warnings\"", html);
+            Assert.Contains("Warnings</h2>", html);
             Assert.Contains("MD5Mismatch", html);
         }
 
@@ -479,12 +477,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("<td class=\"col-no\">1</td>", html);
             Assert.Contains("<td class=\"col-no\">2</td>", html);
-            // Inline diff summaries use i18n-wrapped labels with 1-based numbering
-            // インライン差分 summary は i18n 包装ラベルと 1 始まりの番号を使用
             Assert.Contains(">#1 ", html);
             Assert.Contains(">#2 ", html);
             Assert.DoesNotContain(">#0 ", html);
-            Assert.Contains("data-en=\"Show diff\"", html);
+            Assert.Contains("Show diff", html);
         }
 
         // Verify DIFF REASON / Location / Timestamp body cells have text-align: center, but Notes column does not
@@ -1061,101 +1057,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
         // ── Req9: Language toggle / 言語切り替え ────────────────────────────────
 
         [Fact]
-        public void GenerateDiffReportHtml_LanguageToggle_ButtonPresent()
-        {
-            var (oldDir, newDir, reportDir) = MakeDirs("lang-toggle");
-            var config = CreateConfig();
-
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
-
-            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("btn-lang", html);
-            Assert.Contains("toggleLang()", html);
-        }
-
-        [Fact]
-        public void GenerateDiffReportHtml_I18nSpans_PresentInHeader()
-        {
-            var (oldDir, newDir, reportDir) = MakeDirs("i18n-header");
-            var config = CreateConfig();
-
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
-
-            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Title and labels should have i18n spans with both EN and JA
-            // タイトルとラベルに EN/JA 両方の i18n span があること
-            Assert.Contains("data-en=\"Folder Diff Report\"", html);
-            Assert.Contains("data-ja=\"フォルダ差分レポート\"", html);
-            Assert.Contains("data-en=\"App Version\"", html);
-            Assert.Contains("data-ja=\"アプリバージョン\"", html);
-        }
-
-        [Fact]
-        public void GenerateDiffReportHtml_I18nSpans_PresentInTableHeaders()
-        {
-            var (oldDir, newDir, reportDir) = MakeDirs("i18n-th");
-
-            _resultLists.AddModifiedFileRelativePath("src/app.dll");
-            _resultLists.RecordDiffDetail("src/app.dll", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
-
-            var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
-
-            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("data-en=\"Justification\"", html);
-            Assert.Contains("data-ja=\"判定根拠\"", html);
-            Assert.Contains("data-en=\"Notes\"", html);
-            Assert.Contains("data-ja=\"備考\"", html);
-            Assert.Contains("data-en=\"File Path\"", html);
-            Assert.Contains("data-ja=\"ファイルパス\"", html);
-        }
-
-        [Fact]
-        public void GenerateDiffReportHtml_SetLangFunction_PresentInJs()
-        {
-            var (oldDir, newDir, reportDir) = MakeDirs("setlang-js");
-            var config = CreateConfig();
-
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
-
-            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("function setLang(lang)", html);
-            Assert.Contains("function toggleLang()", html);
-            Assert.Contains("__currentLang__", html);
-        }
-
-        [Fact]
-        public void GenerateDiffReportHtml_DownloadReviewed_BakesLanguageState()
-        {
-            var (oldDir, newDir, reportDir) = MakeDirs("download-lang");
-            var config = CreateConfig();
-
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
-
-            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // downloadReviewed should bake language and include toggle button in reviewed banner
-            Assert.Contains("data-lang", html);
-            Assert.Contains("btn-lang", html);
-        }
-
-        [Fact]
-        public void I18n_ProducesCorrectSpanMarkup()
+        public void I18n_ReturnsHtmlEncodedEnglishText()
         {
             string result = HtmlReportGenerateService.I18n("Hello", "こんにちは");
-            Assert.Contains("class=\"i18n\"", result);
-            Assert.Contains("data-en=\"Hello\"", result);
-            Assert.Contains("data-ja=\"こんにちは\"", result);
-            Assert.Contains(">Hello</span>", result);
+            Assert.Equal("Hello", result);
         }
 
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()

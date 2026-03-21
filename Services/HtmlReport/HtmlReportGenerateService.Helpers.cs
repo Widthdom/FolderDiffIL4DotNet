@@ -181,12 +181,8 @@ namespace FolderDiffIL4DotNet.Services
                 .Replace("'", "&#39;");
         }
 
-        /// <summary>
-        /// Produces a bilingual span for EN/JP toggle support.
-        /// 日英切り替えに対応するバイリンガル span を生成します。
-        /// </summary>
         internal static string I18n(string en, string ja)
-            => $"<span class=\"i18n\" data-en=\"{HtmlEncode(en)}\" data-ja=\"{HtmlEncode(ja)}\">{HtmlEncode(en)}</span>";
+            => HtmlEncode(en);
 
         private static string GetCol6HeaderJa(string col6Header)
             => col6Header switch

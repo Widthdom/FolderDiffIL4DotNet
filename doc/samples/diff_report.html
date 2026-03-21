@@ -21,6 +21,9 @@
     table.legend-table { width: auto; max-width: 44em; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; }
     table.legend-table td:first-child { white-space: nowrap; }
+    .il-ignore-scroll { overflow-x: auto; max-width: 80em; }
+    table.il-ignore-table { max-width: none; }
+    table.il-ignore-table td { white-space: nowrap; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;
@@ -52,11 +55,6 @@
       background: transparent; color: #1d1d1f;
     }
     .btn-clear:hover { background: #f5f5f7; }
-    .btn-lang {
-      background: transparent; color: #1d1d1f;
-      border: 1.5px solid #86868b; font-size: 12px;
-    }
-    .btn-lang:hover { background: #f5f5f7; border-color: #424245; }
     .save-status { font-size: 12px; color: #86868b; }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
@@ -195,27 +193,26 @@
 <body>
 <!--CTRL-->
 <div class="controls">
-  <button class="btn" onclick="downloadReviewed()">&#x2913; <span class="i18n" data-en="Download as reviewed" data-ja="レビュー済みとしてダウンロード">Download as reviewed</span></button>
-  <button class="btn btn-clear" onclick="clearAll()">&#x2715; <span class="i18n" data-en="Clear all" data-ja="すべてクリア">Clear all</span></button>
-  <button class="btn btn-lang" onclick="toggleLang()" id="btn-lang"><span class="i18n" data-en="日本語" data-ja="English">日本語</span></button>
+  <button class="btn" onclick="downloadReviewed()">&#x2913; Download as reviewed</button>
+  <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
   <span id="save-status" class="save-status"></span>
 </div>
 <!--/CTRL-->
 <main>
-<h1><span class="i18n" data-en="Folder Diff Report" data-ja="フォルダ差分レポート">Folder Diff Report</span></h1>
+<h1>Folder Diff Report</h1>
 <ul class="meta">
-  <li><span class="i18n" data-en="App Version" data-ja="アプリバージョン">App Version</span>: FolderDiffIL4DotNet 1.0.0</li>
-  <li><span class="i18n" data-en="Computer" data-ja="コンピュータ">Computer</span>: dev-machine</li>
-  <li><span class="i18n" data-en="Old" data-ja="旧">Old</span>: /Users/UserA/workspace/old</li>
-  <li><span class="i18n" data-en="New" data-ja="新">New</span>: /Users/UserA/workspace/new</li>
-  <li><span class="i18n" data-en="Ignored Extensions" data-ja="除外拡張子">Ignored Extensions</span>: .cache, .DS_Store, .db, .ilcache, .log, .pdb</li>
-  <li><span class="i18n" data-en="Text File Extensions" data-ja="テキストファイル拡張子">Text File Extensions</span>: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml</li>
-  <li><span class="i18n" data-en="IL Disassembler" data-ja="IL 逆アセンブラ">IL Disassembler</span>: dotnet-ildasm (version: 0.12.2)</li>
-  <li><span class="i18n" data-en="Elapsed Time" data-ja="処理時間">Elapsed Time</span>: 0h 0m 1.2s</li>
-  <li><span class="i18n" data-en="Timestamps (timezone)" data-ja="タイムスタンプ (タイムゾーン)">Timestamps (timezone)</span>: +09:00</li>
-  <li><span class="i18n" data-en="Note" data-ja="注">Note</span>: <span class="i18n" data-en="When diffing IL, lines starting with" data-ja="IL 差分比較時、">When diffing IL, lines starting with</span> <code>// MVID:</code> <span class="i18n" data-en="(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed." data-ja="（存在する場合）で始まる行は、リビルド時に変更されうる逆アセンブラ出力のモジュールバージョン ID メタデータを含むため無視されます。">(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</span></li>
-  <li><span class="i18n" data-en="Note" data-ja="注">Note</span>: <span class="i18n" data-en="When diffing IL, lines containing any of the configured strings are ignored:" data-ja="IL 差分比較時、設定された文字列を含む行は無視されます:">When diffing IL, lines containing any of the configured strings are ignored:</span>
-    <table class="legend-table">
+  <li>App Version: FolderDiffIL4DotNet 1.0.0</li>
+  <li>Computer: dev-machine</li>
+  <li>Old: /Users/UserA/workspace/old</li>
+  <li>New: /Users/UserA/workspace/new</li>
+  <li>Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb</li>
+  <li>Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml</li>
+  <li>IL Disassembler: dotnet-ildasm (version: 0.12.2)</li>
+  <li>Elapsed Time: 0h 0m 1.2s</li>
+  <li>Timestamps (timezone): +09:00</li>
+  <li>Note: When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>
+  <li>Note: When diffing IL, lines containing any of the configured strings are ignored:
+    <div class="il-ignore-scroll"><table class="legend-table il-ignore-table">
       <tbody>
         <tr><td>&quot;buildserver1_&quot;</td></tr>
         <tr><td>&quot;buildserver2_&quot;</td></tr>
@@ -224,20 +221,20 @@
         <tr><td>&quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;</td></tr>
         <tr><td>&quot;// Code size &quot;</td></tr>
       </tbody>
-    </table>
+    </table></div>
   </li>
-  <li><span class="i18n" data-en="Note" data-ja="注">Note</span>: <span class="i18n" data-en="Inline diffs for ILMismatch and TextMismatch are computed using the" data-ja="ILMismatch および TextMismatch のインライン差分は以下のアルゴリズムで計算されます:">Inline diffs for ILMismatch and TextMismatch are computed using the</span> <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>
-  <li><span class="i18n" data-en="Legend" data-ja="凡例">Legend</span>:
+  <li>Note: Inline diffs for ILMismatch and TextMismatch are computed using the <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>
+  <li>Legend:
     <table class="legend-table">
       <tbody>
-        <tr><td><code>MD5Match</code> / <code>MD5Mismatch</code></td><td><span class="i18n" data-en="MD5 hash match / mismatch" data-ja="MD5 ハッシュ 一致 / 不一致">MD5 hash match / mismatch</span></td></tr>
-        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td><span class="i18n" data-en="IL(Intermediate Language) match / mismatch" data-ja="IL（中間言語）一致 / 不一致">IL(Intermediate Language) match / mismatch</span></td></tr>
-        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td><span class="i18n" data-en="Text match / mismatch" data-ja="テキスト 一致 / 不一致">Text match / mismatch</span></td></tr>
+        <tr><td><code>MD5Match</code> / <code>MD5Mismatch</code></td><td>MD5 hash match / mismatch</td></tr>
+        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>
+        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>Text match / mismatch</td></tr>
       </tbody>
     </table>
   </li>
 </ul>
-<h2>[ x ] <span class="i18n" data-en="Ignored Files" data-ja="除外ファイル">Ignored Files</span> (3)</h2>
+<h2>[ x ] Ignored Files (3)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -253,12 +250,12 @@
 <thead><tr style="background:#fafafa">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
-  <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
-  <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
-  <th><span class="i18n" data-en="Location" data-ja="場所">Location</span></th>
-  <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
+  <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th>Timestamp</th>
+  <th>Location</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -293,7 +290,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2>[ = ] <span class="i18n" data-en="Unchanged Files" data-ja="変更なしファイル">Unchanged Files</span> (5)</h2>
+<h2>[ = ] Unchanged Files (5)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -309,12 +306,12 @@
 <thead><tr style="background:#fafafa">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
-  <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
-  <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
-  <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
-  <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
+  <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -369,7 +366,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#22863a">[ + ] <span class="i18n" data-en="Added Files" data-ja="追加ファイル">Added Files</span> (1)</h2>
+<h2 style="color:#22863a">[ + ] Added Files (1)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -385,12 +382,12 @@
 <thead><tr style="background:#e6ffed">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
-  <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
-  <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
-  <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
-  <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
+  <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -405,7 +402,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#b31d28">[ - ] <span class="i18n" data-en="Removed Files" data-ja="削除ファイル">Removed Files</span> (1)</h2>
+<h2 style="color:#b31d28">[ - ] Removed Files (1)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -421,12 +418,12 @@
 <thead><tr style="background:#ffeef0">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
-  <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
-  <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
-  <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
-  <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
+  <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -441,7 +438,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#0051c3">[ * ] <span class="i18n" data-en="Modified Files" data-ja="変更ファイル">Modified Files</span> (9)</h2>
+<h2 style="color:#0051c3">[ * ] Modified Files (9)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -457,12 +454,12 @@
 <thead><tr style="background:#e3f2fd">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
-  <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
-  <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
-  <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
-  <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
+  <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -478,7 +475,7 @@
 <tr class="diff-row">
   <td colspan="8">
         <details id="diff_mod_0" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTMgKzMsMiBAQDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1kZWwtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+MzwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1kZWwtdGQiPi0gICZsdDthZGQga2V5PSZxdW90O0Vudmlyb25tZW50JnF1b3Q7IHZhbHVlPSZxdW90O3N0YWdpbmcmcXVvdDsgLyZndDs8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtYWRkLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj4zPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAmbHQ7YWRkIGtleT0mcXVvdDtFbnZpcm9ubWVudCZxdW90OyB2YWx1ZT0mcXVvdDtwcm9kdWN0aW9uJnF1b3Q7IC8mZ3Q7PC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+NDwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWFkZC10ZCI+KyAgJmx0O2FkZCBrZXk9JnF1b3Q7TG9nTGV2ZWwmcXVvdDsgdmFsdWU9JnF1b3Q7V2FybmluZyZxdW90OyAvJmd0OzwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICA8L3Rib2R5PgogICAgICAgIDwvdGFibGU+CiAgICAgIDwvZGl2Pg==">
-      <summary class="diff-summary">#1 <span class="i18n" data-en="Show diff" data-ja="差分を表示">Show diff</span> (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-1</span>)</summary>
+      <summary class="diff-summary">#1 Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-1</span>)</summary>
     </details>
   </td>
 </tr>
@@ -512,7 +509,7 @@
 <tr class="diff-row">
   <td colspan="8">
         <details id="diff_mod_2" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTEyLDIgKzEyLDMgQEA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtZGVsLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjEyPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWRlbC10ZCI+LSAgICBJTF8wMDA0OiBsZGMuaTQucyAgIDQyPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWRlbC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj4xMzwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1kZWwtdGQiPi0gICAgSUxfMDAwNjogc3Rsb2MuMDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1hZGQtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjEyPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAgIElMXzAwMDQ6IGxkYy5pNC5zICAgMTAwPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+MTM8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1hZGQtdGQiPisgICAgSUxfMDAwNjogc3Rsb2MuMDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1hZGQtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjE0PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAgIElMXzAwMDc6IG5vcDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICA8L3Rib2R5PgogICAgICAgIDwvdGFibGU+CiAgICAgIDwvZGl2Pg==">
-      <summary class="diff-summary">#3 <span class="i18n" data-en="Show IL diff" data-ja="IL 差分を表示">Show IL diff</span> (<span class="diff-added-cnt">+3</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+      <summary class="diff-summary">#3 Show IL diff (<span class="diff-added-cnt">+3</span> / <span class="diff-removed-cnt">-2</span>)</summary>
     </details>
   </td>
 </tr>
@@ -529,7 +526,7 @@
 <tr class="diff-row">
   <td colspan="8">
         <details id="diff_mod_3" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTgsMiArOCwyIEBAPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWRlbC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj44PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWRlbC10ZCI+LSAgICAgICAgQ29uc29sZS5Xcml0ZUxpbmUoJnF1b3Q7SGVsbG8sIFdvcmxkISZxdW90Oyk7PC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWRlbC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj45PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWRlbC10ZCI+LSAgICAgICAgcmV0dXJuIDA7PC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+ODwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWFkZC10ZCI+KyAgICAgICAgQ29uc29sZS5Xcml0ZUxpbmUoJnF1b3Q7SGVsbG8sIFJlbGVhc2UhJnF1b3Q7KTs8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtYWRkLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj45PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAgICAgICByZXR1cm4gRXhpdENvZGUuU3VjY2Vzczs8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgPC90Ym9keT4KICAgICAgICA8L3RhYmxlPgogICAgICA8L2Rpdj4=">
-      <summary class="diff-summary">#4 <span class="i18n" data-en="Show diff" data-ja="差分を表示">Show diff</span> (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+      <summary class="diff-summary">#4 Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
     </details>
   </td>
 </tr>
@@ -553,7 +550,7 @@
 <tr class="diff-row">
   <td colspan="8">
         <details id="diff_mod_4" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTIwLDIgKzIwLDIgQEA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtZGVsLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjIwPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWRlbC10ZCI+LSAgICBJTF8wMDA4OiBsZGMuaTQucyAgIDMwPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWRlbC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj4yMTwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1kZWwtdGQiPi0gICAgSUxfMDAwYTogY2FsbCAgICAgICB2b2lkIFtTeXN0ZW0uQ29uc29sZV1TeXN0ZW0uQ29uc29sZTo6U2V0QnVmZmVyU2l6ZShpbnQzMixpbnQzMik8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtYWRkLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj4yMDwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWFkZC10ZCI+KyAgICBJTF8wMDA4OiBsZGMuaTQucyAgIDUwPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+MjE8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1hZGQtdGQiPisgICAgSUxfMDAwYTogY2FsbCAgICAgICB2b2lkIFtTeXN0ZW0uQ29uc29sZV1TeXN0ZW0uQ29uc29sZTo6U2V0V2luZG93U2l6ZShpbnQzMixpbnQzMik8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgPC90Ym9keT4KICAgICAgICA8L3RhYmxlPgogICAgICA8L2Rpdj4=">
-      <summary class="diff-summary">#5 <span class="i18n" data-en="Show IL diff" data-ja="IL 差分を表示">Show IL diff</span> (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+      <summary class="diff-summary">#5 Show IL diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
     </details>
   </td>
 </tr>
@@ -570,7 +567,7 @@
 <tr class="diff-row">
   <td colspan="8">
         <details id="diff_mod_5" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTE1ICsxNSBAQDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1kZWwtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+MTU8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtZGVsLXRkIj4tICAgICAgICBwcml2YXRlIGNvbnN0IGludCBNYXhSZXRyeSA9IDM7PC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+MTU8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1hZGQtdGQiPisgICAgICAgIHByaXZhdGUgY29uc3QgaW50IE1heFJldHJ5ID0gNTs8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgPC90Ym9keT4KICAgICAgICA8L3RhYmxlPgogICAgICA8L2Rpdj4=">
-      <summary class="diff-summary">#6 <span class="i18n" data-en="Show diff" data-ja="差分を表示">Show diff</span> (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
+      <summary class="diff-summary">#6 Show diff (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
     </details>
   </td>
 </tr>
@@ -620,40 +617,40 @@
 <tr class="diff-row">
   <td colspan="8">
         <details id="diff_mod_8" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTUgKzUgQEA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtZGVsLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjU8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtZGVsLXRkIj4tICAgIC52ZXIgMTowOjA6MDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1hZGQtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjU8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1hZGQtdGQiPisgICAgLnZlciAxOjA6MTowPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgIDwvdGJvZHk+CiAgICAgICAgPC90YWJsZT4KICAgICAgPC9kaXY+Cg==">
-      <summary class="diff-summary">#9 <span class="i18n" data-en="Show IL diff" data-ja="IL 差分を表示">Show IL diff</span> (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
+      <summary class="diff-summary">#9 Show IL diff (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
     </details>
   </td>
 </tr>
 </tbody></table>
 </div>
-<h2 class="section-heading"><span class="i18n" data-en="Summary" data-ja="サマリー">Summary</span></h2>
+<h2 class="section-heading">Summary</h2>
 <table class="stat-table">
   <tbody>
-    <tr><td class="stat-label"><span class="i18n" data-en="Ignored" data-ja="除外">Ignored</span></td><td class="stat-value">3</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Unchanged" data-ja="変更なし">Unchanged</span></td><td class="stat-value">5</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Added" data-ja="追加">Added</span></td><td class="stat-value">1</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Removed" data-ja="削除">Removed</span></td><td class="stat-value">1</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Modified" data-ja="変更">Modified</span></td><td class="stat-value">9</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Compared" data-ja="比較">Compared</span></td><td class="stat-value">18 (Old) vs 18 (New)</td></tr>
+    <tr><td class="stat-label">Ignored</td><td class="stat-value">3</td></tr>
+    <tr><td class="stat-label">Unchanged</td><td class="stat-value">5</td></tr>
+    <tr><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
+    <tr><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
+    <tr><td class="stat-label">Modified</td><td class="stat-value">9</td></tr>
+    <tr><td class="stat-label">Compared</td><td class="stat-value">18 (Old) vs 18 (New)</td></tr>
   </tbody>
 </table>
-<h2 class="section-heading"><span class="i18n" data-en="IL Cache Stats" data-ja="IL キャッシュ統計">IL Cache Stats</span></h2>
+<h2 class="section-heading">IL Cache Stats</h2>
 <table class="stat-table">
   <tbody>
-    <tr><td class="stat-label"><span class="i18n" data-en="Hits" data-ja="ヒット">Hits</span></td><td class="stat-value">42</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Misses" data-ja="ミス">Misses</span></td><td class="stat-value">8</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Hit Rate" data-ja="ヒット率">Hit Rate</span></td><td class="stat-value">84.0%</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Stores" data-ja="保存">Stores</span></td><td class="stat-value">8</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Evicted" data-ja="エビクト">Evicted</span></td><td class="stat-value">0</td></tr>
-    <tr><td class="stat-label"><span class="i18n" data-en="Expired" data-ja="期限切れ">Expired</span></td><td class="stat-value">0</td></tr>
+    <tr><td class="stat-label">Hits</td><td class="stat-value">42</td></tr>
+    <tr><td class="stat-label">Misses</td><td class="stat-value">8</td></tr>
+    <tr><td class="stat-label">Hit Rate</td><td class="stat-value">84.0%</td></tr>
+    <tr><td class="stat-label">Stores</td><td class="stat-value">8</td></tr>
+    <tr><td class="stat-label">Evicted</td><td class="stat-value">0</td></tr>
+    <tr><td class="stat-label">Expired</td><td class="stat-value">0</td></tr>
   </tbody>
 </table>
-<h2 class="section-heading"><span class="warn-icon">&#x26A0;</span> <span class="i18n" data-en="Warnings" data-ja="警告">Warnings</span></h2>
+<h2 class="section-heading"><span class="warn-icon">&#x26A0;</span> Warnings</h2>
 <ul class="warnings">
-  <li><span class="i18n" data-en="One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible." data-ja="1つ以上のファイルが MD5Mismatch として分類されました。MD5 ハッシュ比較のみが可能だったため、手動レビューを推奨します。">One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible.</span></li>
-  <li><span class="i18n" data-en="One or more modified files in new have older last-modified timestamps than the corresponding files in old." data-ja="new 内の1つ以上の変更ファイルが、old 内の対応するファイルより古い更新日時を持っています。">One or more modified files in new have older last-modified timestamps than the corresponding files in old.</span></li>
+  <li>One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible.</li>
+  <li>One or more modified files in new have older last-modified timestamps than the corresponding files in old.</li>
 </ul>
-<h2 style="color:#0051c3">[ ! ] <span class="i18n" data-en="Modified Files" data-ja="変更ファイル">Modified Files</span> &#x2014; <span class="i18n" data-en="Timestamps Regressed" data-ja="タイムスタンプ後退">Timestamps Regressed</span> (2)</h2>
+<h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; Timestamps Regressed (5)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -669,12 +666,12 @@
 <thead><tr style="background:#e3f2fd">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
-  <th class="th-resizable" data-col-var="--col-reason-w"><span class="i18n" data-en="Justification" data-ja="判定根拠">Justification</span></th>
-  <th class="th-resizable" data-col-var="--col-notes-w"><span class="i18n" data-en="Notes" data-ja="備考">Notes</span></th>
-  <th class="th-resizable" data-col-var="--col-path-w"><span class="i18n" data-en="File Path" data-ja="ファイルパス">File Path</span></th>
-  <th><span class="i18n" data-en="Timestamp" data-ja="タイムスタンプ">Timestamp</span></th>
-  <th><span class="i18n" data-en="Diff Reason" data-ja="差分理由">Diff Reason</span></th>
-  <th class="th-resizable" data-col-var="--col-disasm-w"><span class="i18n" data-en="Disassembler" data-ja="逆アセンブラ">Disassembler</span></th>
+  <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
+  <th class="th-resizable" data-col-var="--col-notes-w">Notes</th>
+  <th class="th-resizable" data-col-var="--col-path-w">File Path</th>
+  <th>Timestamp</th>
+  <th>Diff Reason</th>
+  <th class="th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
 <tr>
@@ -700,7 +697,61 @@
 <tr class="diff-row">
   <td colspan="8">
         <details id="diff_tsw_1" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTIwLDIgKzIwLDIgQEA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtZGVsLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjIwPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWRlbC10ZCI+LSAgICBJTF8wMDA4OiBsZGMuaTQucyAgIDMwPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWRlbC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj4yMTwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1kZWwtdGQiPi0gICAgSUxfMDAwYTogY2FsbCAgICAgICB2b2lkIFtTeXN0ZW0uQ29uc29sZV1TeXN0ZW0uQ29uc29sZTo6U2V0QnVmZmVyU2l6ZShpbnQzMixpbnQzMik8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtYWRkLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj4yMDwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWFkZC10ZCI+KyAgICBJTF8wMDA4OiBsZGMuaTQucyAgIDUwPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+MjE8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1hZGQtdGQiPisgICAgSUxfMDAwYTogY2FsbCAgICAgICB2b2lkIFtTeXN0ZW0uQ29uc29sZV1TeXN0ZW0uQ29uc29sZTo6U2V0V2luZG93U2l6ZShpbnQzMixpbnQzMik8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgPC90Ym9keT4KICAgICAgICA8L3RhYmxlPgogICAgICA8L2Rpdj4=">
-      <summary class="diff-summary">#2 <span class="i18n" data-en="Show IL diff" data-ja="IL 差分を表示">Show IL diff</span> (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+      <summary class="diff-summary">#2 Show IL diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
+    </details>
+  </td>
+</tr>
+<tr>
+  <td class="col-no">3</td>
+  <td class="col-cb"><input type="checkbox" id="cb_tsw_2"></td>
+  <td class="col-reason"><input type="text" id="reason_tsw_2"></td>
+  <td class="col-notes"><input type="text" id="notes_tsw_2"></td>
+  <td class="col-path"><span class="path-text">src/BigModule.cs</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
+  <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
+  <td class="col-diff"><code>TextMismatch</code></td>
+  <td class="col-disasm"></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8"><p class="diff-skipped">#3 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 3200 vs 3200 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
+</tr>
+<tr>
+  <td class="col-no">4</td>
+  <td class="col-cb"><input type="checkbox" id="cb_tsw_3"></td>
+  <td class="col-reason"><input type="text" id="reason_tsw_3"></td>
+  <td class="col-notes"><input type="text" id="notes_tsw_3"></td>
+  <td class="col-path"><span class="path-text">config/settings.ini</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
+  <td class="col-ts">2026-03-15 09:08:00 &#x2192; 2026-03-15 09:01:00</td>
+  <td class="col-diff"><code>TextMismatch</code></td>
+  <td class="col-disasm"></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+        <details id="diff_tsw_3" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTEwICsxMCBAQDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1kZWwtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+MTA8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtZGVsLXRkIj4tICAgIHRpbWVvdXQgPSAzMDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1hZGQtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjEwPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAgIHRpbWVvdXQgPSA2MDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICA8L3Rib2R5PgogICAgICAgIDwvdGFibGU+CiAgICAgIDwvZGl2Pg==">
+      <summary class="diff-summary">#4 Show diff (<span class="diff-added-cnt">+1</span> / <span class="diff-removed-cnt">-1</span>)</summary>
+    </details>
+  </td>
+</tr>
+<tr>
+  <td class="col-no">5</td>
+  <td class="col-cb"><input type="checkbox" id="cb_tsw_4"></td>
+  <td class="col-reason"><input type="text" id="reason_tsw_4"></td>
+  <td class="col-notes"><input type="text" id="notes_tsw_4"></td>
+  <td class="col-path"><span class="path-text">lib/Core.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></td>
+  <td class="col-ts">2026-03-15 09:12:00 &#x2192; 2026-03-15 09:03:00</td>
+  <td class="col-diff"><code>ILMismatch</code></td>
+  <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+        <details id="semantic_tsw_4" data-diff-html="PGRpdiBjbGFzcz0ic2VtYW50aWMtY2hhbmdlcyI+Cjx0YWJsZSBjbGFzcz0ic2VtYW50aWMtY2hhbmdlcy10YWJsZSBzYy1kZXRhaWwiPgo8Y29sZ3JvdXA+CiAgPGNvbCBjbGFzcz0ic2MtY29sLWNiLWciPgogIDxjb2wgY2xhc3M9InNjLWNvbC1jbGFzcy1nIj4KICA8Y29sIGNsYXNzPSJzYy1jb2wtYmFzZXR5cGUtZyI+CiAgPGNvbCBjbGFzcz0ic2MtY29sLWNoYW5nZS1nIj4KICA8Y29sIGNsYXNzPSJzYy1jb2wta2luZC1nIj4KICA8Y29sIGNsYXNzPSJzYy1jb2wtYWNjZXNzLWciPgogIDxjb2wgY2xhc3M9InNjLWNvbC1tb2RzLWciPgogIDxjb2wgY2xhc3M9InNjLWNvbC10eXBlLWciPgogIDxjb2wgY2xhc3M9InNjLWNvbC1uYW1lLWciPgogIDxjb2wgY2xhc3M9InNjLWNvbC1yZXR0eXBlLWciPgogIDxjb2wgY2xhc3M9InNjLWNvbC1wYXJhbXMtZyI+CiAgPGNvbCBjbGFzcz0ic2MtY29sLWJvZHktZyI+CjwvY29sZ3JvdXA+Cjx0aGVhZD48dHI+CiAgPHRoIGNsYXNzPSJzYy1jb2wtY2IiPiYjeDI3MTM7PC90aD4KICA8dGggY2xhc3M9InRoLXJlc2l6YWJsZSIgZGF0YS1jb2wtdmFyPSItLXNjLWNsYXNzLXciPkNsYXNzPC90aD4KICA8dGggY2xhc3M9InRoLXJlc2l6YWJsZSIgZGF0YS1jb2wtdmFyPSItLXNjLWJhc2V0eXBlLXciPkJhc2VUeXBlPC90aD4KICA8dGg+Q2hhbmdlPC90aD48dGg+S2luZDwvdGg+PHRoPkFjY2VzczwvdGg+PHRoPk1vZGlmaWVyczwvdGg+CiAgPHRoIGNsYXNzPSJ0aC1yZXNpemFibGUiIGRhdGEtY29sLXZhcj0iLS1zYy10eXBlLXciPlR5cGU8L3RoPgogIDx0aCBjbGFzcz0idGgtcmVzaXphYmxlIiBkYXRhLWNvbC12YXI9Ii0tc2MtbmFtZS13Ij5OYW1lPC90aD4KICA8dGggY2xhc3M9InRoLXJlc2l6YWJsZSIgZGF0YS1jb2wtdmFyPSItLXNjLXJldHR5cGUtdyI+UmV0dXJuVHlwZTwvdGg+CiAgPHRoIGNsYXNzPSJ0aC1yZXNpemFibGUiIGRhdGEtY29sLXZhcj0iLS1zYy1wYXJhbXMtdyI+UGFyYW1ldGVyczwvdGg+CiAgPHRoIGNsYXNzPSJ0aC1yZXNpemFibGUiIGRhdGEtY29sLXZhcj0iLS1zYy1ib2R5LXciPkJvZHk8L3RoPgo8L3RyPjwvdGhlYWQ+Cjx0Ym9keT4KPHRyPjx0ZCBjbGFzcz0ic2MtY29sLWNiIj48aW5wdXQgdHlwZT0iY2hlY2tib3giIGlkPSJzY190c3dfNF8wIj48L3RkPjx0ZD5BcHBTZXJ2aWNlPC90ZD48dGQ+U3lzdGVtLk9iamVjdDwvdGQ+PHRkPjxjb2RlPkFkZGVkPC9jb2RlPjwvdGQ+PHRkPjxjb2RlPk1ldGhvZDwvY29kZT48L3RkPjx0ZD48Y29kZT5wdWJsaWM8L2NvZGU+PC90ZD48dGQ+PC90ZD48dGQ+PC90ZD48dGQ+R2V0U3RhdHVzPC90ZD48dGQ+c3RyaW5nPC90ZD48dGQ+KCk8L3RkPjx0ZD48Y29kZT5JTDwvY29kZT48L3RkPjwvdHI+Cjx0ciBjbGFzcz0iZ3JvdXAtY29udCI+PHRkIGNsYXNzPSJzYy1jb2wtY2IiPjxpbnB1dCB0eXBlPSJjaGVja2JveCIgaWQ9InNjX3Rzd180XzEiPjwvdGQ+PHRkPjwvdGQ+PHRkPjwvdGQ+PHRkPjxjb2RlPk1vZGlmaWVkPC9jb2RlPjwvdGQ+PHRkPjxjb2RlPkZpZWxkPC9jb2RlPjwvdGQ+PHRkPjxjb2RlPnByaXZhdGU8L2NvZGU+PC90ZD48dGQ+PGNvZGU+c3RhdGljPC9jb2RlPjwvdGQ+PHRkPmludDwvdGQ+PHRkPl9yZXRyeUNvdW50PC90ZD48dGQ+PC90ZD48dGQ+PC90ZD48dGQ+PGNvZGU+SUw8L2NvZGU+PC90ZD48L3RyPgo8L3Rib2R5PjwvdGFibGU+Cjx0YWJsZSBjbGFzcz0ic2VtYW50aWMtY2hhbmdlcy10YWJsZSBzYy1jb3VudCI+Cjxjb2xncm91cD4KICA8Y29sIGNsYXNzPSJzYy1jbnQtY2xhc3MtZyI+CiAgPGNvbCBjbGFzcz0ic2MtY250LWNoYW5nZS1nIj4KICA8Y29sIGNsYXNzPSJzYy1jbnQtY291bnQtZyI+CjwvY29sZ3JvdXA+Cjx0aGVhZD48dHI+CiAgPHRoPkNsYXNzPC90aD48dGg+Q2hhbmdlPC90aD48dGg+Q291bnQ8L3RoPgo8L3RyPjwvdGhlYWQ+Cjx0Ym9keT4KPHRyPjx0ZD5BcHBTZXJ2aWNlPC90ZD48dGQ+PGNvZGU+QWRkZWQ8L2NvZGU+PC90ZD48dGQ+MTwvdGQ+PC90cj4KPHRyIGNsYXNzPSJncm91cC1jb250Ij48dGQ+PC90ZD48dGQ+PGNvZGU+TW9kaWZpZWQ8L2NvZGU+PC90ZD48dGQ+MTwvdGQ+PC90cj4KPC90Ym9keT48L3RhYmxlPgo8L2Rpdj4K">
+      <summary class="diff-summary">#5 Show assembly semantic changes</summary>
+    </details>
+  </td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+        <details id="diff_tsw_4" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTIwLDIgKzIwLDIgQEA8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtZGVsLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjIwPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1uZXctbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWRlbC10ZCI+LSAgICBJTF8wMDA4OiBsZGMuaTQucyAgIDMwPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWRlbC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj4yMTwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1kZWwtdGQiPi0gICAgSUxfMDAwYTogY2FsbCAgICAgICB2b2lkIFtTeXN0ZW0uQ29uc29sZV1TeXN0ZW0uQ29uc29sZTo6U2V0QnVmZmVyU2l6ZShpbnQzMixpbnQzMik8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtYWRkLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj4yMDwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWFkZC10ZCI+KyAgICBJTF8wMDA4OiBsZGMuaTQucyAgIDUwPC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+MjE8L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1hZGQtdGQiPisgICAgSUxfMDAwYTogY2FsbCAgICAgICB2b2lkIFtTeXN0ZW0uQ29uc29sZV1TeXN0ZW0uQ29uc29sZTo6U2V0V2luZG93U2l6ZShpbnQzMixpbnQzMik8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgPC90Ym9keT4KICAgICAgICA8L3RhYmxlPgogICAgICA8L2Rpdj4=">
+      <summary class="diff-summary">#5 Show IL diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-2</span>)</summary>
     </details>
   </td>
 </tr>
@@ -742,10 +793,6 @@
     initColResize();
     syncTableWidths();
     syncScTableWidths();
-    var savedLang = (__savedState__ !== null)
-      ? (document.documentElement.getAttribute('data-lang') || 'en')
-      : (localStorage.getItem(__storageKey__ + '_lang') || 'en');
-    setLang(savedLang);
   });
 
   function collectState() {
@@ -800,14 +847,9 @@
       + '; --sc-cnt-class-w: ' + curWidths['--sc-cnt-class-w'] + '; }');
     // Remove inline col-var overrides from <html> element (now baked into :root)
     html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
-    // Bake current language into downloaded HTML
-    html = html.replace(/(<html\b[^>]*?)(?:\s+data-lang="[^"]*")?>/,
-      '$1 data-lang="' + __currentLang__ + '">');
-    // Replace controls bar with reviewed banner + language toggle
+    // Replace controls bar with reviewed banner
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
-      '<div class="reviewed-banner">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only'
-      + ' <button class="btn btn-lang" onclick="toggleLang()" id="btn-lang">'
-      + (__currentLang__ === 'en' ? '日本語' : 'English') + '</button></div>');
+      '<div class="reviewed-banner">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</div>');
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a    = document.createElement('a');
     a.href   = URL.createObjectURL(blob);
@@ -829,8 +871,6 @@
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
     localStorage.removeItem(__storageKey__);
-    localStorage.removeItem(__storageKey__ + '_lang');
-    setLang('en');
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
   }
@@ -891,11 +931,6 @@
           if (__savedState__ !== null) {
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
           }
-          // Apply current language to newly rendered i18n elements
-          d.querySelectorAll('.i18n').forEach(function(el) {
-            var text = el.getAttribute('data-' + __currentLang__);
-            if (text !== null) el.textContent = text;
-          });
         } catch(e) {}
       });
     });
@@ -957,21 +992,6 @@
     });
   }
 
-  var __currentLang__ = 'en';
-
-  function setLang(lang) {
-    __currentLang__ = lang;
-    document.querySelectorAll('.i18n').forEach(function(el) {
-      var text = el.getAttribute('data-' + lang);
-      if (text !== null) el.textContent = text;
-    });
-    document.documentElement.setAttribute('data-lang', lang);
-    try { localStorage.setItem(__storageKey__ + '_lang', lang); } catch(e) {}
-  }
-
-  function toggleLang() {
-    setLang(__currentLang__ === 'en' ? 'ja' : 'en');
-  }
 
   function copyPath(btn) {
     var td = btn.closest('td');

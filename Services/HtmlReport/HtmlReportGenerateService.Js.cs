@@ -45,11 +45,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    syncTableWidths();");
             sb.AppendLine("    syncScTableWidths();");
             sb.AppendLine("    setupLazyDiff();");
-            // Restore language preference
-            sb.AppendLine("    var savedLang = (__savedState__ !== null)");
-            sb.AppendLine("      ? (document.documentElement.getAttribute('data-lang') || 'en')");
-            sb.AppendLine("      : (localStorage.getItem(__storageKey__ + '_lang') || 'en');");
-            sb.AppendLine("    setLang(savedLang);");
             sb.AppendLine("  });");
             sb.AppendLine();
             sb.AppendLine("  function collectState() {");
@@ -104,14 +99,9 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      + '; --sc-cnt-class-w: ' + curWidths['--sc-cnt-class-w'] + '; }');");
             sb.AppendLine("    // Remove inline col-var overrides from <html> element (now baked into :root)");
             sb.AppendLine("    html = html.replace(/(<html\\b[^>]*?) style=\"[^\"]*\"/, '$1');");
-            // Bake current language into downloaded HTML so it opens in the same language
-            sb.AppendLine("    html = html.replace(/(<html\\b[^>]*?)(?:\\s+data-lang=\"[^\"]*\")?>/,");
-            sb.AppendLine("      '$1 data-lang=\"' + __currentLang__ + '\">');");
-            sb.AppendLine("    // Replace controls bar with reviewed banner + language toggle");
+            sb.AppendLine("    // Replace controls bar with reviewed banner");
             sb.AppendLine("    html = html.replace(/<!--CTRL-->[\\s\\S]*?<!--\\/CTRL-->/g,");
-            sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only'");
-            sb.AppendLine("      + ' <button class=\"btn btn-lang\" onclick=\"toggleLang()\" id=\"btn-lang\">'");
-            sb.AppendLine("      + (__currentLang__ === 'en' ? '日本語' : 'English') + '</button></div>');");
+            sb.AppendLine("      '<div class=\"reviewed-banner\">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</div>');");
             sb.AppendLine("    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });");
             sb.AppendLine("    var a    = document.createElement('a');");
             sb.AppendLine("    a.href   = URL.createObjectURL(blob);");
@@ -133,8 +123,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    // Close all open diff/IL-diff details");
             sb.AppendLine("    document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });");
             sb.AppendLine("    localStorage.removeItem(__storageKey__);");
-            sb.AppendLine("    localStorage.removeItem(__storageKey__ + '_lang');");
-            sb.AppendLine("    setLang('en');");
             sb.AppendLine("    var status = document.getElementById('save-status');");
             sb.AppendLine("    if (status) status.textContent = 'Cleared.';");
             sb.AppendLine("  }");
@@ -183,11 +171,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("          if (__savedState__ !== null) {");
             sb.AppendLine("            d.querySelectorAll('input[type=\"checkbox\"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });");
             sb.AppendLine("          }");
-            sb.AppendLine("          // Apply current language to newly rendered i18n elements");
-            sb.AppendLine("          d.querySelectorAll('.i18n').forEach(function(el) {");
-            sb.AppendLine("            var text = el.getAttribute('data-' + __currentLang__);");
-            sb.AppendLine("            if (text !== null) el.textContent = text;");
-            sb.AppendLine("          });");
             sb.AppendLine("        } catch(e) {}");
             sb.AppendLine("      });");
             sb.AppendLine("    });");
@@ -263,22 +246,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    document.querySelectorAll('th.th-resizable').forEach(function(th) {");
             sb.AppendLine("      initColResizeSingle(th);");
             sb.AppendLine("    });");
-            sb.AppendLine("  }");
-            sb.AppendLine();
-            sb.AppendLine("  var __currentLang__ = 'en';");
-            sb.AppendLine();
-            sb.AppendLine("  function setLang(lang) {");
-            sb.AppendLine("    __currentLang__ = lang;");
-            sb.AppendLine("    document.querySelectorAll('.i18n').forEach(function(el) {");
-            sb.AppendLine("      var text = el.getAttribute('data-' + lang);");
-            sb.AppendLine("      if (text !== null) el.textContent = text;");
-            sb.AppendLine("    });");
-            sb.AppendLine("    document.documentElement.setAttribute('data-lang', lang);");
-            sb.AppendLine("    try { localStorage.setItem(__storageKey__ + '_lang', lang); } catch(e) {}");
-            sb.AppendLine("  }");
-            sb.AppendLine();
-            sb.AppendLine("  function toggleLang() {");
-            sb.AppendLine("    setLang(__currentLang__ === 'en' ? 'ja' : 'en');");
             sb.AppendLine("  }");
             sb.AppendLine();
             sb.AppendLine("  function copyPath(btn) {");
