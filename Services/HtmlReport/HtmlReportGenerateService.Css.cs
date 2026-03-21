@@ -143,8 +143,8 @@ namespace FolderDiffIL4DotNet.Services
     table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #bbb; background: #98989d; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
     table.semantic-changes-table th.th-resizable { position: relative; }
     table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    table.semantic-changes-table th.sc-col-cb { width: 2.2em; text-align: center; }
-    table.semantic-changes-table td.sc-col-cb { width: 2.2em; text-align: center; }
+    table.semantic-changes-table th.sc-col-cb { width: 3.2em; text-align: center; }
+    table.semantic-changes-table td.sc-col-cb { width: 3.2em; text-align: center; }
     /* sc-detail: checkbox(1) Class(2) BaseType(3) Change(4) Kind(5) Access(6) Modifiers(7) Type(8)… */
     table.semantic-changes-table.sc-detail td:nth-child(4), table.semantic-changes-table.sc-detail td:nth-child(5),
     table.semantic-changes-table.sc-detail td:nth-child(6), table.semantic-changes-table.sc-detail td:nth-child(7) { text-align: center; }
@@ -155,7 +155,7 @@ namespace FolderDiffIL4DotNet.Services
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(2) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
     /* sc colgroup widths */
-    col.sc-col-cb-g { width: 2.2em; }
+    col.sc-col-cb-g { width: 3.2em; }
     col.sc-col-class-g { width: var(--sc-class-w); }
     col.sc-col-basetype-g { width: var(--sc-basetype-w); }
     col.sc-col-change-g { width: 7em; }

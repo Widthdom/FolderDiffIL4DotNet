@@ -199,7 +199,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("      var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);");
             sb.AppendLine("      return (parseFloat(s) || fb) * scEmPx;");
             sb.AppendLine("    };");
-            sb.AppendLine("    var detW = 2.2 * scEmPx");
+            sb.AppendLine("    var detW = 3.2 * scEmPx");
             sb.AppendLine("            + px('--sc-class-w', 14) + px('--sc-basetype-w', 16)");
             sb.AppendLine("            + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx");
             sb.AppendLine("            + px('--sc-type-w', 12) + px('--sc-name-w', 10)");

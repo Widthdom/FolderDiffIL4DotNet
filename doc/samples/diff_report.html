@@ -141,8 +141,8 @@
     table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #bbb; background: #98989d; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
     table.semantic-changes-table th.th-resizable { position: relative; }
     table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    table.semantic-changes-table th.sc-col-cb { width: 2.2em; text-align: center; }
-    table.semantic-changes-table td.sc-col-cb { width: 2.2em; text-align: center; }
+    table.semantic-changes-table th.sc-col-cb { width: 3.2em; text-align: center; }
+    table.semantic-changes-table td.sc-col-cb { width: 3.2em; text-align: center; }
     table.semantic-changes-table.sc-detail td:nth-child(4), table.semantic-changes-table.sc-detail td:nth-child(5),
     table.semantic-changes-table.sc-detail td:nth-child(6), table.semantic-changes-table.sc-detail td:nth-child(7) { text-align: center; }
     /* sc-count: Class(1) Change(2) Count(3) — no checkbox column */
@@ -151,7 +151,7 @@
     table.semantic-changes-table.sc-count tr.group-cont td:nth-child(1) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(2) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
-    col.sc-col-cb-g { width: 2.2em; }
+    col.sc-col-cb-g { width: 3.2em; }
     col.sc-col-class-g { width: var(--sc-class-w); }
     col.sc-col-basetype-g { width: var(--sc-basetype-w); }
     col.sc-col-change-g { width: 7em; }
@@ -854,7 +854,7 @@
       var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
       return (parseFloat(s) || fb) * scEmPx;
     };
-    var detW = 2.2 * scEmPx
+    var detW = 3.2 * scEmPx
             + px('--sc-class-w', 14) + px('--sc-basetype-w', 16)
             + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx
             + px('--sc-type-w', 12) + px('--sc-name-w', 10)
