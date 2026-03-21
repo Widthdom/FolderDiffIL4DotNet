@@ -115,7 +115,10 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
                 writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
-                foreach (var fileRelativePath in ctx.FileDiffResultLists.UnchangedFilesRelativePath)
+                var sortedUnchanged = ctx.FileDiffResultLists.UnchangedFilesRelativePath
+                    .OrderBy(p => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
+                    .ThenBy(p => p, StringComparer.OrdinalIgnoreCase);
+                foreach (var fileRelativePath in sortedUnchanged)
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                     var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
@@ -180,7 +183,10 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
                 writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
-                foreach (var fileRelativePath in ctx.FileDiffResultLists.ModifiedFilesRelativePath)
+                var sortedModified = ctx.FileDiffResultLists.ModifiedFilesRelativePath
+                    .OrderBy(p => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetModifiedSortOrder(d) : 3)
+                    .ThenBy(p => p, StringComparer.OrdinalIgnoreCase);
+                foreach (var fileRelativePath in sortedModified)
                 {
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                     var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
@@ -340,7 +346,8 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
                 writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
                 foreach (var warning in ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
-                    .OrderBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
+                    .OrderBy(entry => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(entry.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
+                    .ThenBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
                 {
                     var fileRelativePath = warning.FileRelativePath;
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
