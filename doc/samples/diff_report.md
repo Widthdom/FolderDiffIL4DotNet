@@ -98,13 +98,14 @@
 
 ## Warnings
 - **WARNING:** One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only an SHA256 hash comparison was possible.
-- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.
 
 ### [ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended) (1)
 
 | Status | File Path | Timestamp | Legend |
 |:------:|-----------|:---------:|--------|
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` |
+
+- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.
 
 ### [ ! ] Modified Files — Timestamps Regressed (5)
 

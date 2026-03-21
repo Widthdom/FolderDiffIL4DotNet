@@ -248,7 +248,10 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        /// <summary>Writes the Warnings section. / 警告セクションを書き込みます。</summary>
+        /// <summary>
+        /// Writes the Warnings section. Each warning bullet is immediately followed by its detail table.
+        /// 警告セクションを書き込みます。各警告メッセージの直下に対応する詳細テーブルを配置します。
+        /// </summary>
         private sealed class WarningsSectionWriter : IReportSectionWriter
         {
             public void Write(StreamWriter writer, ReportWriteContext ctx)
@@ -256,18 +259,13 @@ namespace FolderDiffIL4DotNet.Services
                 if (!ctx.HasSha256Mismatch && !ctx.HasTimestampRegressionWarning) return;
 
                 writer.WriteLine(REPORT_SECTION_WARNINGS);
+
+                // SHA256Mismatch warning + detail table (grouped together)
+                // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
                 if (ctx.HasSha256Mismatch)
                 {
                     writer.WriteLine($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}");
-                }
-                if (ctx.HasTimestampRegressionWarning)
-                {
-                    writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
-                }
 
-                // SHA256Mismatch detail table
-                if (ctx.HasSha256Mismatch)
-                {
                     var sha256Files = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary
                         .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                         .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
@@ -293,9 +291,12 @@ namespace FolderDiffIL4DotNet.Services
                     }
                 }
 
-                // Timestamp-regressed detail table
+                // Timestamp-regressed warning + detail table (grouped together)
+                // タイムスタンプ逆行 警告 + 詳細テーブル（まとめて配置）
                 if (ctx.HasTimestampRegressionWarning)
                 {
+                    writer.WriteLine();
+                    writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
                     writer.WriteLine();
                     var tsWarnings = ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                         .OrderBy(entry => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(entry.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
