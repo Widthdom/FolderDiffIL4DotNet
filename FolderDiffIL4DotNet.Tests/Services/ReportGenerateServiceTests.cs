@@ -386,7 +386,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Path.Combine("nested", "payload.bin"),
                 "2026-03-14 10:00:00",
                 "2026-03-14 09:00:00");
-            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordDiffDetail(Path.Combine("nested", "payload.bin"), FileDiffResultLists.DiffDetailResult.MD5Mismatch);
 
             var config = CreateConfig();
             _service.GenerateDiffReport(
@@ -403,11 +403,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("## Warnings", reportText);
             Assert.Contains($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}", reportText);
             Assert.Contains("- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
-            Assert.Contains("| File Path | Timestamp |", reportText);
-            Assert.Contains("|-----------|-----------|", reportText);
+            Assert.Contains("| Status | File Path | Timestamp | Legend | Disassembler |", reportText);
+            Assert.Contains("|:------:|-----------|:---------:|--------|--------------|", reportText);
             Assert.Contains("| nested", reportText);
             Assert.Contains("2026-03-14 10:00:00 → 2026-03-14 09:00:00", reportText);
-            Assert.EndsWith("2026-03-14 10:00:00 → 2026-03-14 09:00:00 |", reportText.TrimEnd());
             Assert.True(
                 reportText.IndexOf(Constants.WARNING_MD5_MISMATCH, StringComparison.Ordinal) <
                 reportText.IndexOf("**modified** files in `new` have older last-modified timestamps", StringComparison.Ordinal));

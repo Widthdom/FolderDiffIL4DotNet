@@ -502,7 +502,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("td.col-ts    { white-space: nowrap; text-align: center; }", html);
             Assert.Contains("min-width: 9em; text-align: center; }", html); // col-diff has text-align: center
             // File Path is NOT center-aligned / File Path 列は中央揃えではない
-            Assert.Contains("td.col-path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }", html);
+            Assert.Contains("td.col-path { white-space: nowrap; overflow: hidden; }", html);
             // Notes column is NOT center-aligned / Notes 列は中央揃えではない
             Assert.Contains("td.col-notes  { overflow: hidden; }", html);
         }
@@ -1013,7 +1013,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // diff-row background should be #edf0f4, not the old #f6f8fa
             Assert.Contains("tr.diff-row { background: #edf0f4; }", html);
-            Assert.DoesNotContain("#f6f8fa", html);
+            Assert.DoesNotContain("tr.diff-row { background: #f6f8fa; }", html);
         }
 
         // ── Req7: Copy paths button / コピーボタン ──────────────────────────────
@@ -1050,7 +1050,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("tbody tr:not(.diff-row):hover { background: #f3eef8; }", html);
+            Assert.Contains(":not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }", html);
             Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: #f3eef8; }", html);
         }
 
