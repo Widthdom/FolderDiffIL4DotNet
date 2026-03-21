@@ -100,11 +100,12 @@ namespace FolderDiffIL4DotNet.Services
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Row hover highlight ─────────────────────────────────────────────── */
     tbody tr:not(.diff-row):hover { background: #f3eef8; }
-    td.col-reason input[type=""text""], td.col-notes input[type=""text""] {
-      width: 100%; border: none; padding: 2px 4px; font-size: 12px;
+    td input[type=""text""] {
+      width: 100%; border: 0; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; box-shadow: none;
-      appearance: none; -webkit-appearance: none; font-family: inherit; }
-    td.col-reason input[type=""text""]:focus, td.col-notes input[type=""text""]:focus {
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      font-family: inherit; }
+    td input[type=""text""]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
     /* ── Per-row copy path button ────────────────────────────────────────── */
