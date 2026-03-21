@@ -102,7 +102,7 @@ namespace FolderDiffIL4DotNet.Services
     input[type=""checkbox""] { width: 1.1em; height: 1.1em; cursor: pointer; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
-    table.stat-table td { border: none; padding: 2px 20px 2px 0; font-size: 13px; }
+    table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }
     table.stat-table td.stat-label { color: #444; white-space: nowrap; }
     table.stat-table td.stat-value { text-align: right; }
     ul.warnings { margin: 0.3rem 0 0 1.4rem; }

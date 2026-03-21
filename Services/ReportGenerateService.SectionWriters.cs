@@ -181,16 +181,19 @@ namespace FolderDiffIL4DotNet.Services
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_SECTION_SUMMARY);
+                writer.WriteLine();
+                writer.WriteLine("| Category | Count |");
+                writer.WriteLine("|----------|------:|");
                 var stats = ctx.FileDiffResultLists.SummaryStatistics;
                 if (ctx.Config.ShouldIncludeIgnoredFiles)
                 {
-                    writer.WriteLine($"- {REPORT_LABEL_IGNORED,-10}: {stats.IgnoredCount}");
+                    writer.WriteLine($"| {REPORT_LABEL_IGNORED} | {stats.IgnoredCount} |");
                 }
-                writer.WriteLine($"- {REPORT_LABEL_UNCHANGED,-10}: {stats.UnchangedCount}");
-                writer.WriteLine($"- {REPORT_LABEL_ADDED,-10}: {stats.AddedCount}");
-                writer.WriteLine($"- {REPORT_LABEL_REMOVED,-10}: {stats.RemovedCount}");
-                writer.WriteLine($"- {REPORT_LABEL_MODIFIED,-10}: {stats.ModifiedCount}");
-                writer.WriteLine($"- {REPORT_LABEL_COMPARED,-10}: {ctx.FileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {ctx.FileDiffResultLists.NewFilesAbsolutePath.Count} (New)");
+                writer.WriteLine($"| {REPORT_LABEL_UNCHANGED} | {stats.UnchangedCount} |");
+                writer.WriteLine($"| {REPORT_LABEL_ADDED} | {stats.AddedCount} |");
+                writer.WriteLine($"| {REPORT_LABEL_REMOVED} | {stats.RemovedCount} |");
+                writer.WriteLine($"| {REPORT_LABEL_MODIFIED} | {stats.ModifiedCount} |");
+                writer.WriteLine($"| {REPORT_LABEL_COMPARED} | {ctx.FileDiffResultLists.OldFilesAbsolutePath.Count} (Old) vs {ctx.FileDiffResultLists.NewFilesAbsolutePath.Count} (New) |");
                 writer.WriteLine();
             }
         }
@@ -283,12 +286,15 @@ namespace FolderDiffIL4DotNet.Services
 
                 var stats = ctx.IlCache.GetReportStats();
                 writer.WriteLine(REPORT_SECTION_IL_CACHE_STATS);
-                writer.WriteLine($"- Hits    : {stats.Hits}");
-                writer.WriteLine($"- Misses  : {stats.Misses}");
-                writer.WriteLine($"- Hit Rate: {stats.HitRatePct:F1}%");
-                writer.WriteLine($"- Stores  : {stats.Stores}");
-                writer.WriteLine($"- Evicted : {stats.Evicted}");
-                writer.WriteLine($"- Expired : {stats.Expired}");
+                writer.WriteLine();
+                writer.WriteLine("| Metric | Value |");
+                writer.WriteLine("|--------|------:|");
+                writer.WriteLine($"| Hits | {stats.Hits} |");
+                writer.WriteLine($"| Misses | {stats.Misses} |");
+                writer.WriteLine($"| Hit Rate | {stats.HitRatePct:F1}% |");
+                writer.WriteLine($"| Stores | {stats.Stores} |");
+                writer.WriteLine($"| Evicted | {stats.Evicted} |");
+                writer.WriteLine($"| Expired | {stats.Expired} |");
                 writer.WriteLine();
             }
         }

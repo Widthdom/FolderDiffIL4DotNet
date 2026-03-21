@@ -473,12 +473,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("## IL Cache Stats", reportText);
-            Assert.Contains("- Hits    :", reportText);
-            Assert.Contains("- Misses  :", reportText);
-            Assert.Contains("- Hit Rate:", reportText);
-            Assert.Contains("- Stores  :", reportText);
-            Assert.Contains("- Evicted :", reportText);
-            Assert.Contains("- Expired :", reportText);
+            Assert.Contains("| Hits |", reportText);
+            Assert.Contains("| Misses |", reportText);
+            Assert.Contains("| Hit Rate |", reportText);
+            Assert.Contains("| Stores |", reportText);
+            Assert.Contains("| Evicted |", reportText);
+            Assert.Contains("| Expired |", reportText);
             // IL Cache Stats section must appear between Summary and Warnings
             // IL Cache Stats セクションは Summary と Warnings の間に出力されること
             int summaryIdx = reportText.IndexOf("## Summary", StringComparison.Ordinal);
@@ -587,10 +587,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // Summary counts must match (labels are left-padded to 10 chars)
-            // サマリーカウントが一致すること（ラベルは 10 文字に左寄せ）
-            Assert.Contains($"- {"Unchanged",-10}: {fileCount}", reportText, StringComparison.Ordinal);
-            Assert.Contains($"- {"Compared",-10}: {fileCount} (Old) vs {fileCount} (New)", reportText, StringComparison.Ordinal);
+            // Summary counts must match (table format)
+            // サマリーカウントが一致すること（テーブル形式）
+            Assert.Contains($"| Unchanged | {fileCount} |", reportText, StringComparison.Ordinal);
+            Assert.Contains($"| Compared | {fileCount} (Old) vs {fileCount} (New) |", reportText, StringComparison.Ordinal);
         }
 
         [Fact]

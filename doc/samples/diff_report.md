@@ -48,12 +48,15 @@
 - [ * ] util/Legacy.dll [2026-03-15 08:50:00 → 2026-03-15 09:01:00] `ILMismatch` `dotnet-ildasm (version: 0.12.2)`
 
 ## Summary
-- Ignored   : 3
-- Unchanged : 5
-- Added     : 1
-- Removed   : 1
-- Modified  : 9
-- Compared  : 18 (Old) vs 18 (New)
+
+| Category | Count |
+|----------|------:|
+| Ignored | 3 |
+| Unchanged | 5 |
+| Added | 1 |
+| Removed | 1 |
+| Modified | 9 |
+| Compared | 18 (Old) vs 18 (New) |
 
 ## Assembly Semantic Changes
 
@@ -150,12 +153,15 @@
 - No structural changes detected. See IL diff for implementation-level differences.
 
 ## IL Cache Stats
-- Hits    : 42
-- Misses  : 8
-- Hit Rate: 84.0%
-- Stores  : 8
-- Evicted : 0
-- Expired : 0
+
+| Metric | Value |
+|--------|------:|
+| Hits | 42 |
+| Misses | 8 |
+| Hit Rate | 84.0% |
+| Stores | 8 |
+| Evicted | 0 |
+| Expired | 0 |
 
 ## Warnings
 - **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
