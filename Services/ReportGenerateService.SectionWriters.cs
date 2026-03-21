@@ -67,6 +67,10 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.SHA256Match}` / `{FileDiffResultLists.DiffDetailResult.SHA256Mismatch}` | SHA256 hash match / mismatch |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}` | IL(Intermediate Language) match / mismatch |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}` | Text match / mismatch |");
+                writer.WriteLine(REPORT_IMPORTANCE_LEGEND_HEADER);
+                writer.WriteLine();
+                writer.WriteLine("| Label | Description |");
+                writer.WriteLine("|-------|-------------|");
                 writer.WriteLine($"| `High` | Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change |");
                 writer.WriteLine($"| `Medium` | Notable change: public/protected member addition, modifier change, access widening, internal removal |");
                 writer.WriteLine($"| `Low` | Low-impact change: body-only modification, internal/private member addition |");

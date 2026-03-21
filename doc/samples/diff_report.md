@@ -25,13 +25,17 @@
 | ".publickeytoken = ( " |
 | ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( " |
 | "// Code size " |
-- Legend:
+- Legend (Diff Detail):
 
 | Label | Description |
 |-------|-------------|
 | `SHA256Match` / `SHA256Mismatch` | SHA256 hash match / mismatch |
 | `ILMatch` / `ILMismatch` | IL(Intermediate Language) match / mismatch |
 | `TextMatch` / `TextMismatch` | Text match / mismatch |
+- Legend (Change Importance):
+
+| Label | Description |
+|-------|-------------|
 | `High` | Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change |
 | `Medium` | Notable change: public/protected member addition, modifier change, access widening, internal removal |
 | `Low` | Low-impact change: body-only modification, internal/private member addition |

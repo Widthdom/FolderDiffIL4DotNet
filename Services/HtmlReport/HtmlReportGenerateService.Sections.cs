@@ -71,13 +71,21 @@ namespace FolderDiffIL4DotNet.Services
                 "<a href=\"http://www.xmailserver.org/diff2.pdf\">" +
                 "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>");
 
-            // Legend (as compact table)
-            sb.AppendLine($"  <li>{I18n("Legend", "凡例")}:");
+            // Legend — Diff Detail (as compact table)
+            sb.AppendLine($"  <li>{I18n("Legend (Diff Detail)", "凡例（差分判定）")}:");
             sb.AppendLine("    <table class=\"legend-table\">");
             sb.AppendLine("      <tbody>");
             sb.AppendLine($"        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{I18n("SHA256 hash match / mismatch", "SHA256 ハッシュ 一致 / 不一致")}</td></tr>");
             sb.AppendLine($"        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{I18n("IL(Intermediate Language) match / mismatch", "IL（中間言語）一致 / 不一致")}</td></tr>");
             sb.AppendLine($"        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{I18n("Text match / mismatch", "テキスト 一致 / 不一致")}</td></tr>");
+            sb.AppendLine("      </tbody>");
+            sb.AppendLine("    </table>");
+            sb.AppendLine("  </li>");
+
+            // Legend — Change Importance (as compact table)
+            sb.AppendLine($"  <li>{I18n("Legend (Change Importance)", "凡例（変更の重要度）")}:");
+            sb.AppendLine("    <table class=\"legend-table\">");
+            sb.AppendLine("      <tbody>");
             sb.AppendLine($"        <tr><td><code>High</code></td><td>{I18n("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change", "破壊的変更候補: public/protected API 削除、アクセス縮小、戻り値型・パラメータ・メンバー型変更")}</td></tr>");
             sb.AppendLine($"        <tr><td><code>Medium</code></td><td>{I18n("Notable change: public/protected member addition, modifier change, access widening, internal removal", "注目すべき変更: public/protected メンバー追加、修飾子変更、アクセス拡大、internal メンバー削除")}</td></tr>");
             sb.AppendLine($"        <tr><td><code>Low</code></td><td>{I18n("Low-impact change: body-only modification, internal/private member addition", "低影響変更: 本体のみの変更、internal/private メンバー追加")}</td></tr>");

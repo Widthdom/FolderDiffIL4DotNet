@@ -251,12 +251,18 @@
     </table></div>
   </li>
   <li>Note: Inline diffs for ILMismatch and TextMismatch are computed using the <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>
-  <li>Legend:
+  <li>Legend (Diff Detail):
     <table class="legend-table">
       <tbody>
         <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>SHA256 hash match / mismatch</td></tr>
         <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>
         <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>Text match / mismatch</td></tr>
+      </tbody>
+    </table>
+  </li>
+  <li>Legend (Change Importance):
+    <table class="legend-table">
+      <tbody>
         <tr><td><code>High</code></td><td>Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
         <tr><td><code>Medium</code></td><td>Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
         <tr><td><code>Low</code></td><td>Low-impact change: body-only modification, internal/private member addition</td></tr>
