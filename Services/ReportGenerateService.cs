@@ -296,7 +296,10 @@ namespace FolderDiffIL4DotNet.Services
 
         private static string BuildDiffDetailDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
         {
-            return $"`{diffDetail}`";
+            var importance = fileDiffResultLists.GetMaxImportance(fileRelativePath);
+            if (importance == null)
+                return $"`{diffDetail}`";
+            return $"`{diffDetail} {importance.Value}`";
         }
 
         private static string BuildDisassemblerDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
@@ -334,6 +337,19 @@ namespace FolderDiffIL4DotNet.Services
                 FileDiffResultLists.DiffDetailResult.ILMismatch => 1,
                 FileDiffResultLists.DiffDetailResult.SHA256Mismatch => 2,
                 _ => 3
+            };
+
+        /// <summary>
+        /// Returns a sort ordinal for <see cref="ChangeImportance"/> (High=0 first).
+        /// <see cref="ChangeImportance"/> のソート序数を返します（High=0 が先頭）。
+        /// </summary>
+        private static int GetImportanceSortOrder(ChangeImportance? importance)
+            => importance switch
+            {
+                ChangeImportance.High => 0,
+                ChangeImportance.Medium => 1,
+                ChangeImportance.Low => 2,
+                _ => 3 // null / no semantic changes
             };
 
         private static List<string> GetNormalizedIlIgnoreContainingStrings(IReadOnlyConfigSettings config)

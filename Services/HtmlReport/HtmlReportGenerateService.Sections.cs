@@ -78,6 +78,9 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{I18n("SHA256 hash match / mismatch", "SHA256 ハッシュ 一致 / 不一致")}</td></tr>");
             sb.AppendLine($"        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{I18n("IL(Intermediate Language) match / mismatch", "IL（中間言語）一致 / 不一致")}</td></tr>");
             sb.AppendLine($"        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{I18n("Text match / mismatch", "テキスト 一致 / 不一致")}</td></tr>");
+            sb.AppendLine($"        <tr><td><code>High</code></td><td>{I18n("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change", "破壊的変更候補: public/protected API 削除、アクセス縮小、戻り値型・パラメータ・メンバー型変更")}</td></tr>");
+            sb.AppendLine($"        <tr><td><code>Medium</code></td><td>{I18n("Notable change: public/protected member addition, modifier change, access widening, internal removal", "注目すべき変更: public/protected メンバー追加、修飾子変更、アクセス拡大、internal メンバー削除")}</td></tr>");
+            sb.AppendLine($"        <tr><td><code>Low</code></td><td>{I18n("Low-impact change: body-only modification, internal/private member addition", "低影響変更: 本体のみの変更、internal/private メンバー追加")}</td></tr>");
             sb.AppendLine("      </tbody>");
             sb.AppendLine("    </table>");
             sb.AppendLine("  </li>");
@@ -201,6 +204,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.ModifiedFilesRelativePath
                 .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetModifiedSortOrder(d) : 3)
+                .ThenBy(p => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(p)))
                 .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
             sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] {I18n("Modified Files", "変更ファイル")} ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
@@ -219,7 +223,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
-                string col6 = BuildDiffDetailDisplay(diffDetail);
+                string col6 = BuildDiffDetailDisplayWithImportance(diffDetail, path);
                 AppendFileRow(sb, "mod", idx, path, ts, col6, asm ?? "");
 
                 // Method-level changes row (above IL diff)
@@ -388,6 +392,7 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("  <col class=\"sc-col-class-g\">");
                 contentBuilder.AppendLine("  <col class=\"sc-col-basetype-g\">");
                 contentBuilder.AppendLine("  <col class=\"sc-col-change-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-importance-g\">");
                 contentBuilder.AppendLine("  <col class=\"sc-col-kind-g\">");
                 contentBuilder.AppendLine("  <col class=\"sc-col-access-g\">");
                 contentBuilder.AppendLine("  <col class=\"sc-col-mods-g\">");
@@ -401,7 +406,7 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("  <th class=\"sc-col-cb\">&#x2713;</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-class-w\">{I18n("Class", "クラス")}</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">{I18n("BaseType", "基底型")}</th>");
-                contentBuilder.AppendLine($"  <th>{I18n("Status", "状態")}</th><th>{I18n("Kind", "種別")}</th><th>{I18n("Access", "アクセス")}</th><th>{I18n("Modifiers", "修飾子")}</th>");
+                contentBuilder.AppendLine($"  <th>{I18n("Status", "状態")}</th><th>{I18n("Importance", "重要度")}</th><th>{I18n("Kind", "種別")}</th><th>{I18n("Access", "アクセス")}</th><th>{I18n("Modifiers", "修飾子")}</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-type-w\">{I18n("Type", "型")}</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-name-w\">{I18n("Name", "名前")}</th>");
                 contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-rettype-w\">{I18n("ReturnType", "戻り値型")}</th>");
@@ -411,7 +416,7 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("<tbody>");
                 string prevType = "";
                 int scRowIdx = 0;
-                foreach (var e in summary.Entries)
+                foreach (var e in summary.EntriesByImportance)
                 {
                     bool isCont = e.TypeName == prevType;
                     string classTd = !isCont ? HtmlEncode(e.TypeName) : "";
@@ -425,7 +430,10 @@ namespace FolderDiffIL4DotNet.Services
                     string changeMarker = ChangeToMarker(e.Change);
                     string statusBg = ChangeToStatusBg(e.Change);
                     string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
-                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    string impMarker = ImportanceToMarker(e.Importance);
+                    string impBg = ImportanceToStatusBg(e.Importance);
+                    string impStyle = impBg.Length > 0 ? $" style=\"background:{impBg}\"" : "";
+                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                     scRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -440,7 +448,10 @@ namespace FolderDiffIL4DotNet.Services
             contentBuilder.AppendLine("</div>");
 
             string detailsId = $"semantic_{sectionPrefix}_{idx}";
-            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {I18n("Show assembly semantic changes", "アセンブリ意味変更を表示")}</summary>";
+            string highSuffix = summary.HighImportanceCount > 0
+                ? $" (\u25B2 {summary.HighImportanceCount} High)"
+                : "";
+            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {I18n("Show assembly semantic changes", "アセンブリ意味変更を表示")}{highSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
 
             sb.AppendLine("<tr class=\"diff-row\">");
@@ -465,26 +476,37 @@ namespace FolderDiffIL4DotNet.Services
 
         private static void AppendSummaryCountTable(StringBuilder sb, AssemblySemanticChangesSummary summary)
         {
-            var counts = new Dictionary<(string TypeName, string Change), int>();
+            // Group by (TypeName, Change) and count per importance level.
+            // (TypeName, Change) でグループ化し、重要度ごとにカウント。
+            var counts = new Dictionary<(string TypeName, string Change), (int High, int Medium, int Low)>();
             foreach (var e in summary.Entries)
             {
                 var key = (e.TypeName, e.Change);
-                counts[key] = counts.TryGetValue(key, out int c) ? c + 1 : 1;
+                if (!counts.TryGetValue(key, out var c)) c = (0, 0, 0);
+                counts[key] = e.Importance switch
+                {
+                    ChangeImportance.High => (c.High + 1, c.Medium, c.Low),
+                    ChangeImportance.Medium => (c.High, c.Medium + 1, c.Low),
+                    _ => (c.High, c.Medium, c.Low + 1),
+                };
             }
 
             sb.AppendLine("<table class=\"semantic-changes-table sc-count\">");
             sb.AppendLine("<colgroup>");
             sb.AppendLine("  <col class=\"sc-cnt-class-g\">");
             sb.AppendLine("  <col class=\"sc-cnt-change-g\">");
-            sb.AppendLine("  <col class=\"sc-cnt-count-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-high-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-medium-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-low-g\">");
+            sb.AppendLine("  <col class=\"sc-cnt-total-g\">");
             sb.AppendLine("</colgroup>");
             sb.AppendLine("<thead><tr>");
             sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-cnt-class-w\">{I18n("Class", "クラス")}</th>");
-            sb.AppendLine($"  <th>{I18n("Status", "状態")}</th><th>{I18n("Count", "件数")}</th>");
+            sb.AppendLine($"  <th>{I18n("Status", "状態")}</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th>");
             sb.AppendLine("</tr></thead>");
             sb.AppendLine("<tbody>");
             string prevType = "";
-            foreach (var ((typeName, change), count) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => ChangeOrder(kv.Key.Change)))
+            foreach (var ((typeName, change), (high, medium, low)) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => ChangeOrder(kv.Key.Change)))
             {
                 bool isCont = typeName == prevType;
                 string classTd = !isCont ? HtmlEncode(typeName) : "";
@@ -492,7 +514,10 @@ namespace FolderDiffIL4DotNet.Services
                 string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
                 string cntStatusBg = ChangeToStatusBg(change);
                 string cntStatusStyle = cntStatusBg.Length > 0 ? $" style=\"background:{cntStatusBg}\"" : "";
-                sb.AppendLine($"{trOpen}<td>{classTd}</td><td{cntStatusStyle}>{ChangeToMarker(change)}</td><td>{count}</td></tr>");
+                int total = high + medium + low;
+                string highTd = high > 0 ? $"<span style=\"color:#c00;font-weight:bold\">{high}</span>" : "0";
+                string mediumTd = medium > 0 ? $"<span style=\"color:#856404\">{medium}</span>" : "0";
+                sb.AppendLine($"{trOpen}<td>{classTd}</td><td{cntStatusStyle}>{ChangeToMarker(change)}</td><td>{highTd}</td><td>{mediumTd}</td><td>{low}</td><td>{total}</td></tr>");
             }
             sb.AppendLine("</tbody></table>");
         }
@@ -563,7 +588,8 @@ namespace FolderDiffIL4DotNet.Services
 
                 var sha256Files = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                     .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
-                    .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(kv => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(kv.Key)))
+                    .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                     .ToList();
                 if (sha256Files.Count > 0)
                 {
@@ -580,7 +606,7 @@ namespace FolderDiffIL4DotNet.Services
                             string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, kv.Key));
                             ts = $"{oldTs}{TIMESTAMP_ARROW}{newTs}";
                         }
-                        string col6 = BuildDiffDetailDisplay(kv.Value);
+                        string col6 = BuildDiffDetailDisplayWithImportance(kv.Value, kv.Key);
                         AppendFileRow(sb, "sha256w", idx, kv.Key, ts, col6);
                         idx++;
                     }
@@ -598,6 +624,7 @@ namespace FolderDiffIL4DotNet.Services
 
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
+                    .ThenBy(w => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(w.FileRelativePath)))
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
                 sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("Timestamps Regressed", "タイムスタンプ逆行")} ({warnings.Count})</h2>");
                 AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
@@ -608,7 +635,7 @@ namespace FolderDiffIL4DotNet.Services
                     string ts = $"{HtmlEncode(w.OldTimestamp)}{TIMESTAMP_ARROW}{HtmlEncode(w.NewTimestamp)}";
                     _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var diffDetail);
                     _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(w.FileRelativePath, out var asm);
-                    string col6 = BuildDiffDetailDisplay(diffDetail);
+                    string col6 = BuildDiffDetailDisplayWithImportance(diffDetail, w.FileRelativePath);
                     AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6);
 
                     if (config.EnableInlineDiff &&

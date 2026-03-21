@@ -15,6 +15,7 @@ namespace FolderDiffIL4DotNet.Models
     /// <param name="Parameters">For Method/Constructor: the parameter list without parentheses (e.g. "int page", "string name, int count = 0"). Empty string for no-arg methods. Empty for Type/Field/Property entries. / メソッド・コンストラクタのパラメータ一覧（括弧なし）。引数なしは空文字列。Type/Field/Property の場合は空。</param>
     /// <param name="BaseType">Base type and implemented interfaces of the owning type (e.g. "MyApp.BaseController, System.IDisposable"). Omits trivial bases (System.Object, System.ValueType, System.Enum). / 所属型の基底型および実装インターフェース。自明な基底型は省略。</param>
     /// <param name="Body">"Changed" when the method body or field initializer IL has changed; otherwise empty. / メソッドボディまたはフィールド初期化子の IL が変更された場合 "Changed"、それ以外は空。</param>
+    /// <param name="Importance">Auto-assigned importance level for this change. Defaults to <see cref="ChangeImportance.Low"/>. / この変更に自動付与された重要度レベル。デフォルトは <see cref="ChangeImportance.Low"/>。</param>
     public sealed record MemberChangeEntry(
         string Change,
         string TypeName,
@@ -26,5 +27,6 @@ namespace FolderDiffIL4DotNet.Models
         string MemberType,
         string ReturnType,
         string Parameters,
-        string Body);
+        string Body,
+        ChangeImportance Importance = ChangeImportance.Low);
 }

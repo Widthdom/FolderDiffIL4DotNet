@@ -55,6 +55,71 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal("string", entry.ReturnType);
             Assert.Equal("string id", entry.Parameters);
             Assert.Equal("", entry.Body);
+            Assert.Equal(ChangeImportance.Low, entry.Importance);
+        }
+
+        [Fact]
+        public void Entries_ImportanceCanBeSetExplicitly()
+        {
+            var entry = new MemberChangeEntry("Removed", "MyApp.Service", "", "public", "", "Method", "Execute", "", "void", "", "", ChangeImportance.High);
+            Assert.Equal(ChangeImportance.High, entry.Importance);
+        }
+
+        [Fact]
+        public void ImportanceCounts_ReturnCorrectValues()
+        {
+            var summary = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Removed", "MyApp.Service", "", "public", "", "Method", "A", "", "void", "", "", ChangeImportance.High),
+                    new("Removed", "MyApp.Service", "", "public", "", "Method", "B", "", "void", "", "", ChangeImportance.High),
+                    new("Added", "MyApp.Service", "", "public", "", "Method", "C", "", "void", "", "", ChangeImportance.Medium),
+                    new("Modified", "MyApp.Service", "", "public", "", "Method", "D", "", "void", "", "Changed", ChangeImportance.Low),
+                },
+            };
+            Assert.Equal(2, summary.HighImportanceCount);
+            Assert.Equal(1, summary.MediumImportanceCount);
+            Assert.Equal(1, summary.LowImportanceCount);
+        }
+
+        [Fact]
+        public void MaxImportance_ReturnsHighest()
+        {
+            var summary = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Modified", "MyApp.Service", "", "public", "", "Method", "A", "", "void", "", "Changed", ChangeImportance.Low),
+                    new("Added", "MyApp.Service", "", "public", "", "Method", "B", "", "void", "", "", ChangeImportance.Medium),
+                },
+            };
+            Assert.Equal(ChangeImportance.Medium, summary.MaxImportance);
+        }
+
+        [Fact]
+        public void MaxImportance_EmptyEntries_ReturnsLow()
+        {
+            var summary = new AssemblySemanticChangesSummary();
+            Assert.Equal(ChangeImportance.Low, summary.MaxImportance);
+        }
+
+        [Fact]
+        public void EntriesByImportance_SortsHighFirst()
+        {
+            var summary = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Modified", "MyApp.Service", "", "public", "", "Method", "Low1", "", "void", "", "Changed", ChangeImportance.Low),
+                    new("Removed", "MyApp.Service", "", "public", "", "Method", "High1", "", "void", "", "", ChangeImportance.High),
+                    new("Added", "MyApp.Service", "", "public", "", "Method", "Med1", "", "void", "", "", ChangeImportance.Medium),
+                },
+            };
+            var sorted = summary.EntriesByImportance;
+            Assert.Equal(ChangeImportance.High, sorted[0].Importance);
+            Assert.Equal(ChangeImportance.Medium, sorted[1].Importance);
+            Assert.Equal(ChangeImportance.Low, sorted[2].Importance);
         }
     }
 }

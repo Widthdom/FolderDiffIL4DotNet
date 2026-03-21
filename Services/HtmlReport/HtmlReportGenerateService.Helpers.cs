@@ -161,6 +161,75 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Builds a display string combining DiffDetail and the file-level max importance (e.g. "ILMismatch High").
+        /// DiffDetail とファイルレベルの最大重要度を結合した表示文字列を生成します（例: "ILMismatch High"）。
+        /// </summary>
+        private string BuildDiffDetailDisplayWithImportance(
+            FileDiffResultLists.DiffDetailResult diffDetail,
+            string fileRelativePath)
+        {
+            string baseDisplay = diffDetail.ToString();
+            var importance = _fileDiffResultLists.GetMaxImportance(fileRelativePath);
+            if (importance == null)
+                return baseDisplay;
+            return $"{baseDisplay} {ImportanceToLabel(importance.Value)}";
+        }
+
+        /// <summary>
+        /// Returns a short display label for a <see cref="ChangeImportance"/> value.
+        /// <see cref="ChangeImportance"/> 値の短い表示ラベルを返します。
+        /// </summary>
+        private static string ImportanceToLabel(ChangeImportance importance)
+            => importance switch
+            {
+                ChangeImportance.High => "High",
+                ChangeImportance.Medium => "Medium",
+                ChangeImportance.Low => "Low",
+                _ => ""
+            };
+
+        /// <summary>
+        /// Returns a sort ordinal for <see cref="ChangeImportance"/> (High=0 first).
+        /// <see cref="ChangeImportance"/> のソート序数を返します（High=0 が先頭）。
+        /// </summary>
+        private static int GetImportanceSortOrder(ChangeImportance? importance)
+            => importance switch
+            {
+                ChangeImportance.High => 0,
+                ChangeImportance.Medium => 1,
+                ChangeImportance.Low => 2,
+                _ => 3 // null / no semantic changes
+            };
+
+        private static readonly string TH_BG_IMPORTANCE_HIGH = "#ffcccc";
+        private static readonly string TH_BG_IMPORTANCE_MEDIUM = "#fff3cd";
+
+        /// <summary>
+        /// Returns the background color for an importance level.
+        /// 重要度レベルの背景色を返します。
+        /// </summary>
+        private static string ImportanceToStatusBg(ChangeImportance importance)
+            => importance switch
+            {
+                ChangeImportance.High => TH_BG_IMPORTANCE_HIGH,
+                ChangeImportance.Medium => TH_BG_IMPORTANCE_MEDIUM,
+                _ => ""
+            };
+
+        /// <summary>
+        /// Returns the display marker for an importance level.
+        /// 重要度レベルの表示マーカーを返します。
+        /// </summary>
+        private static string ImportanceToMarker(ChangeImportance importance)
+            => importance switch
+            {
+                ChangeImportance.High => "\u25B2 High",
+                ChangeImportance.Medium => "\u25A0 Med",
+                ChangeImportance.Low => "\u25CB Low",
+                _ => ""
+            };
+
+        /// <summary>
         /// Returns the display order for Unchanged files: SHA256Match → ILMatch → TextMatch.
         /// Unchanged ファイルの表示順序を返します: SHA256Match → ILMatch → TextMatch。
         /// </summary>

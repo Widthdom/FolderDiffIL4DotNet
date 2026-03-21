@@ -134,12 +134,12 @@ The HTML report is a self-contained single file that opens in any browser — no
 | Notes | Free-text input — additional remarks |
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
-| Diff Reason | Diff type only: `SHA256Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. (Unchanged/Modified/Warnings only; not shown for Added/Removed) |
+| Diff Reason | Diff type only: `SHA256Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. For `ILMismatch` entries with assembly semantic changes, the file-level max importance is appended (e.g. `ILMismatch High`). (Unchanged/Modified/Warnings only; not shown for Added/Removed) |
 | Disassembler | Disassembler label and version used for IL comparison (e.g. [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm 0.12.2.0)`); shown only for Unchanged and Modified sections |
 
 Not all columns appear in every table. Added and Removed tables show only ✓, Justification, Notes, File Path, and Timestamp. Ignored tables additionally show Diff Reason (as "Location"). Unchanged and Modified tables show all columns including Disassembler. Warning tables (SHA256Mismatch, Timestamps Regressed) show Diff Reason but not Disassembler. Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
-**Table sort order:** Unchanged Files rows are sorted by diff-detail result (`SHA256Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `SHA256Mismatch`), then by File Path ascending. The SHA256Mismatch warning table in the Warnings section lists files alphabetically by path.
+**Table sort order:** Unchanged Files rows are sorted by diff-detail result (`SHA256Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `SHA256Mismatch`), then by Change Importance (`High` → `Medium` → `Low`), then by File Path ascending. The SHA256Mismatch warning table in the Warnings section lists files alphabetically by path.
 
 Inline diff `<summary>` labels also include a one-based `#N` prefix such as `#3 Show diff` / `#3 Show IL diff`; this number matches the leftmost `#` column for the same row.
 
@@ -267,10 +267,13 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 | ReturnType | Return type for Method/Constructor using fully qualified .NET type names (empty for Field/Property/Class/Record) | System.Void |
 | Parameters | Parameter list for Method/Constructor using fully qualified .NET type names (empty for Field/Property/Class/Record) | System.String name, System.Int32 count = 0 |
 | Body | `Changed` when method body or field initializer IL has changed; otherwise empty | `Changed` |
+| Importance | Auto-assigned change importance: `High` (breaking change candidate), `Medium` (notable change), `Low` (low-impact change). See [Legend](#readme-en-legend) for classification rules | `High` |
 
 Controlled by [`ShouldIncludeAssemblySemanticChangesInReport`](#config-en-shouldincludeassemblysemanticchangesinreport) (default: `true`).
 
-A summary count table (`Class | Status | Count`) follows, grouping entries by class and status. Consecutive rows with the same class name suppress the class column for readability.
+A summary count table (`Class | Status | High | Medium | Low | Total`) follows, grouping entries by class and status with per-importance counts. Consecutive rows with the same class name suppress the class column for readability.
+
+The Diff Reason column in the Modified Files table appends the file-level max importance after `ILMismatch` (e.g. `ILMismatch High`) when assembly semantic changes are available.
 
 > **Note:** The semantic summary is supplementary information. Always verify the final details in the inline IL diff.
 
@@ -677,12 +680,12 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | Notes | 自由テキスト入力 — 補足メモ |
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
-| Diff Reason | 差分タイプのみ: `SHA256Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など（Unchanged/Modified/Warnings のみ。Added/Removed には表示されない） |
+| Diff Reason | 差分タイプのみ: `SHA256Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など。`ILMismatch` でアセンブリ セマンティック変更がある場合、ファイルレベルの最大重要度が追記される（例: `ILMismatch High`）。（Unchanged/Modified/Warnings のみ。Added/Removed には表示されない） |
 | Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm 0.12.2.0)`）。Unchanged と Modified セクションのみに表示 |
 
 すべてのテーブルに全列が表示されるわけではありません。Added・Removed テーブルには ✓・Justification・Notes・File Path・Timestamp のみが表示されます。Ignored テーブルにはさらに Diff Reason（「Location」として表示）が追加されます。Unchanged・Modified テーブルには Disassembler を含むすべての列が表示されます。警告テーブル（SHA256Mismatch、Timestamps Regressed）には Diff Reason が表示されますが Disassembler は表示されません。Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 
-**テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）の順でソートされ、次にファイルパスの昇順でソートされます。警告セクション内の SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソートされます。
+**テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）の順、次に変更の重要度（`High` → `Medium` → `Low`）の順、次にファイルパスの昇順でソートされます。警告セクション内の SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソートされます。
 
 インライン差分の `<summary>` ラベルにも `#3 Show diff` / `#3 Show IL diff` のような 1 始まりの `#N` プレフィックスが付き、この番号は同じ行の左端 `#` 列と一致します。
 
@@ -809,10 +812,13 @@ flowchart TD
 | ReturnType | Method/Constructor の戻り値型（完全修飾 .NET 型名、Field/Property/Class/Record の場合は空） | System.Void |
 | Parameters | Method/Constructor のパラメータ一覧（完全修飾 .NET 型名、Field/Property/Class/Record の場合は空） | System.String name, System.Int32 count = 0 |
 | Body | メソッドボディまたはフィールド初期化子の IL が変更された場合 `Changed`、それ以外は空 | `Changed` |
+| Importance | 自動付与される変更の重要度: `High`（破壊的変更候補）、`Medium`（注目すべき変更）、`Low`（低影響の変更）。分類ルールは[凡例](#readme-ja-legend)を参照 | `High` |
 
 [`ShouldIncludeAssemblySemanticChangesInReport`](#config-ja-shouldincludeassemblysemanticchangesinreport)（既定値: `true`）で制御します。
 
-テーブル下に集計テーブル（`Class | Status | Count`）を表示し、クラスとステータスごとのカウントをまとめます。同一クラスが連続する場合、Class 列は先頭行のみに表示されます。
+テーブル下に集計テーブル（`Class | Status | High | Medium | Low | Total`）を表示し、クラスとステータスごとに重要度別のカウントをまとめます。同一クラスが連続する場合、Class 列は先頭行のみに表示されます。
+
+Modified Files テーブルの Diff Reason 列では、アセンブリ セマンティック変更が利用可能な場合に `ILMismatch` の後ろにファイルレベルの最大重要度を追記します（例: `ILMismatch High`）。
 
 > **注:** セマンティックサマリーは補助情報です。最終確認は必ず IL インライン差分で行ってください。
 
