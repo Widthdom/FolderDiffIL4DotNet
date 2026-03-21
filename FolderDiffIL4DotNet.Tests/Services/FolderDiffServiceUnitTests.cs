@@ -549,6 +549,41 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenCompleted_LogsFolderDiffCompletedViaLogger()
+        {
+            const string oldDir = "/virtual/old-logcheck";
+            const string newDir = "/virtual/new-logcheck";
+            const string reportDir = "/virtual/report-logcheck";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "file.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "file.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["file.txt"] = true
+            });
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Info
+                    && entry.Message.Contains("Folder diff completed.", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public async Task ExecuteFolderDiffAsync_WhenILPrecomputeBatchSizeIsZero_UsesDefaultBatchSizeAndCallsPrecomputeOnce()
         {
             const string oldDir = "/virtual/old-zerobatch";

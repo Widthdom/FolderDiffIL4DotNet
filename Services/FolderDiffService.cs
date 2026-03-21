@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
-using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 
@@ -194,11 +193,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (folderDiffCompleted)
                 {
-                    lock (ConsoleRenderCoordinator.RenderSyncRoot)
-                    {
-                        Console.WriteLine(LOG_FOLDER_DIFF_COMPLETED);
-                        Console.Out.Flush();
-                    }
+                    _logger.LogMessage(AppLogLevel.Info, LOG_FOLDER_DIFF_COMPLETED, shouldOutputMessageToConsole: true);
                 }
             }
         }
