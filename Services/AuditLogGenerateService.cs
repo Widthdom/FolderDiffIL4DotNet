@@ -109,6 +109,15 @@ namespace FolderDiffIL4DotNet.Services
             var htmlReportHash = ComputeFileHash(
                 Path.Combine(reportsFolderAbsolutePath, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
+            var disassemblerAvailability = _fileDiffResultLists.DisassemblerAvailability?
+                .Select(p => new AuditLogDisassemblerAvailability
+                {
+                    ToolName = p.ToolName,
+                    Available = p.Available,
+                    Version = p.Available && !string.IsNullOrWhiteSpace(p.Version) ? p.Version : string.Empty,
+                })
+                .ToList();
+
             return new AuditLogRecord
             {
                 AppVersion = appVersion,
@@ -125,6 +134,7 @@ namespace FolderDiffIL4DotNet.Services
                     Unchanged = stats.UnchangedCount,
                     Ignored = stats.IgnoredCount
                 },
+                DisassemblerAvailability = disassemblerAvailability,
                 ReportSha256 = mdReportHash,
                 HtmlReportSha256 = htmlReportHash,
                 Files = files

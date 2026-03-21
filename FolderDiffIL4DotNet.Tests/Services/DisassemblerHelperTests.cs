@@ -281,5 +281,52 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var names = DisassemblerHelper.EnumerateExecutableNames("mytool.bat").ToList();
             Assert.Equal(1, names.Count(n => n.EndsWith(".bat", StringComparison.OrdinalIgnoreCase)));
         }
+        // ── ProbeAllCandidates / 全候補プローブ ────────────────────────────────
+
+        /// <summary>
+        /// Verifies that ProbeAllCandidates returns a non-empty list with unique tool names.
+        /// ProbeAllCandidates が一意のツール名を持つ空でないリストを返すことを確認する。
+        /// </summary>
+        [Fact]
+        public void ProbeAllCandidates_ReturnsNonEmptyList_WithUniqueToolNames()
+        {
+            var results = DisassemblerHelper.ProbeAllCandidates();
+
+            Assert.NotNull(results);
+            Assert.NotEmpty(results);
+
+            var toolNames = results.Select(r => r.ToolName).ToList();
+            Assert.Equal(toolNames.Count, toolNames.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        }
+
+        /// <summary>
+        /// Verifies that ProbeAllCandidates includes both dotnet-ildasm and ilspycmd candidates.
+        /// ProbeAllCandidates が dotnet-ildasm と ilspycmd の両方を含むことを確認する。
+        /// </summary>
+        [Fact]
+        public void ProbeAllCandidates_IncludesExpectedToolNames()
+        {
+            var results = DisassemblerHelper.ProbeAllCandidates();
+
+            var toolNames = results.Select(r => r.ToolName).ToList();
+            Assert.Contains(FolderDiffIL4DotNet.Common.Constants.DOTNET_ILDASM, toolNames);
+            Assert.Contains(FolderDiffIL4DotNet.Common.Constants.ILSPY_CMD, toolNames);
+        }
+
+        /// <summary>
+        /// Verifies that each ProbeAllCandidates result has a non-empty ToolName.
+        /// 各プローブ結果が空でない ToolName を持つことを確認する。
+        /// </summary>
+        [Fact]
+        public void ProbeAllCandidates_AllResultsHaveNonEmptyToolName()
+        {
+            var results = DisassemblerHelper.ProbeAllCandidates();
+
+            foreach (var result in results)
+            {
+                Assert.False(string.IsNullOrWhiteSpace(result.ToolName),
+                    $"ToolName should not be null or whitespace, got: '{result.ToolName}'");
+            }
+        }
     }
 }

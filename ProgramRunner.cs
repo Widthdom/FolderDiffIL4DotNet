@@ -333,6 +333,7 @@ namespace FolderDiffIL4DotNet
             ConfigSettings config)
         {
             var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
+            resultLists.DisassemblerAvailability = DisassemblerHelper.ProbeAllCandidates();
             var elapsedTimeString = await ExecuteDiffAsync(scopedProvider);
             GenerateReport(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config);
             return new RunCompletionState(resultLists.HasAnySha256Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);

@@ -34,6 +34,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <li>{I18n("Ignored Extensions", "除外拡張子")}: {HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</li>");
             sb.AppendLine($"  <li>{I18n("Text File Extensions", "テキストファイル拡張子")}: {HtmlEncode(string.Join(", ", config.TextFileExtensions))}</li>");
             sb.AppendLine($"  <li>{I18n("IL Disassembler", "IL 逆アセンブラ")}: {HtmlEncode(BuildDisassemblerHeaderText())}</li>");
+            AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
             if (!string.IsNullOrWhiteSpace(elapsedTimeString))
                 sb.AppendLine($"  <li>{I18n("Elapsed Time", "処理時間")}: {HtmlEncode(elapsedTimeString)}</li>");
             if (config.ShouldOutputFileTimestamps)

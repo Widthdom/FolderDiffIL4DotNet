@@ -24,6 +24,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"- Ignored Extensions: {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.IgnoredExtensions)}");
                 writer.WriteLine($"- Text File Extensions: {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.TextFileExtensions)}");
                 writer.WriteLine($"- IL Disassembler: {BuildDisassemblerHeaderText(ctx.FileDiffResultLists)}");
+                WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability);
                 if (!string.IsNullOrWhiteSpace(ctx.ElapsedTimeString))
                 {
                     writer.WriteLine($"- Elapsed Time: {ctx.ElapsedTimeString}");

@@ -1498,6 +1498,55 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 HtmlReportGenerateService.LoadEmbeddedResource("NonExistent.Resource.Name"));
         }
 
+        [Fact]
+        public void GenerateDiffReportHtml_HeaderShowsDisassemblerAvailabilityTable()
+        {
+            // Arrange: populate availability probe results
+            // 利用可否プローブ結果を設定
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", true, "0.12.2", "/usr/local/bin/dotnet-ildasm"),
+                new("ilspycmd", false, null, null),
+            };
+
+            var (oldDir, newDir, reportDir) = MakeDirs("disasm-avail");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: "0h 0m 1.0s",
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: table structure and content present in HTML
+            // テーブルの構造と内容が HTML に含まれていることを検証
+            Assert.Contains("Disassembler Availability", html);
+            Assert.Contains("dotnet-ildasm", html);
+            Assert.Contains("ilspycmd", html);
+            Assert.Contains("color:#22863a", html); // green for Yes
+            Assert.Contains("color:#b31d28", html); // red for No
+            Assert.Contains("0.12.2", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull()
+        {
+            // Arrange: no probe results (default: null)
+            // プローブ結果なし（既定値: null）
+            var (oldDir, newDir, reportDir) = MakeDirs("no-probe-html");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: "0h 0m 1.0s",
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: no availability table when probe results are null
+            // プローブ結果が null の場合テーブルは出力されない
+            Assert.DoesNotContain("Disassembler Availability", html);
+        }
+
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()
         {
             IgnoredExtensions = new List<string>(),

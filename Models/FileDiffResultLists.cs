@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 
 namespace FolderDiffIL4DotNet.Models
 {
@@ -113,6 +114,24 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public ConcurrentDictionary<string, AssemblySemanticChangesSummary> FileRelativePathToAssemblySemanticChanges { get; } = new ConcurrentDictionary<string, AssemblySemanticChangesSummary>(StringComparer.Ordinal);
 
+        /// <summary>
+        /// Disassembler availability results probed at startup (null until probed).
+        /// 起動時にプローブされた逆アセンブラ利用可否の結果（プローブ前は null）。
+        /// </summary>
+        private IReadOnlyList<DisassemblerProbeResult>? _disassemblerAvailability;
+
+        /// <summary>
+        /// Gets or sets the disassembler availability probe results.
+        /// Thread-safe via <see cref="Volatile"/>.
+        /// 逆アセンブラ利用可否プローブ結果を取得・設定します。
+        /// <see cref="Volatile"/> によりスレッドセーフです。
+        /// </summary>
+        public IReadOnlyList<DisassemblerProbeResult>? DisassemblerAvailability
+        {
+            get => Volatile.Read(ref _disassemblerAvailability);
+            set => Volatile.Write(ref _disassemblerAvailability, value);
+        }
+
         public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
 
         /// <summary>
@@ -175,6 +194,7 @@ namespace FolderDiffIL4DotNet.Models
             DisassemblerToolVersionsFromCache.Clear();
             NewFileTimestampOlderThanOldWarnings.Clear();
             FileRelativePathToAssemblySemanticChanges.Clear();
+            DisassemblerAvailability = null;
         }
 
         /// <summary>

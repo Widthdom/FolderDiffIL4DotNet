@@ -6,6 +6,12 @@
 - Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
 - Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
 - IL Disassembler: dotnet-ildasm (version: 0.12.2)
+- Disassembler Availability:
+
+| Tool | Available | Version |
+|------|:---------:|---------|
+| dotnet-ildasm | Yes | 0.12.2 |
+| ilspycmd | No | N/A |
 - Elapsed Time: 0h 0m 1.2s
 - Timestamps (timezone): +09:00
 - Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.

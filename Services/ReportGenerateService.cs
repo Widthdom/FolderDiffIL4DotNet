@@ -345,5 +345,29 @@ namespace FolderDiffIL4DotNet.Services
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
         }
+
+        /// <summary>
+        /// Writes the Disassembler Availability table to the Markdown report header.
+        /// Markdown レポートヘッダに逆アセンブラ利用可否テーブルを書き込みます。
+        /// </summary>
+        private static void WriteDisassemblerAvailabilityTable(StreamWriter writer, IReadOnlyList<DisassemblerProbeResult>? probeResults)
+        {
+            if (probeResults == null || probeResults.Count == 0)
+            {
+                return;
+            }
+            writer.WriteLine("- Disassembler Availability:");
+            writer.WriteLine();
+            writer.WriteLine("| Tool | Available | Version |");
+            writer.WriteLine("|------|:---------:|---------|");
+            foreach (var probe in probeResults)
+            {
+                var available = probe.Available ? "Yes" : "No";
+                var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
+                    ? probe.Version
+                    : REPORT_DISASSEMBLER_NOT_USED;
+                writer.WriteLine($"| {probe.ToolName} | {available} | {version} |");
+            }
+        }
     }
 }

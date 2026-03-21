@@ -290,7 +290,8 @@ Why this matters:
 | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | Method-level change detection via `System.Reflection.Metadata` | Best-effort; returns `null` on failure. Detects type/method/property/field additions, removals, and modifications (access modifier changes, modifier changes, type changes, IL body changes) |
 | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | Tool probing, disassembly execution, cache hit/store tracking, blacklist handling | Central tool boundary; delegates prefetch to [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) |
 | [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL-cache prefetch (pre-hit verification for all candidate command/arg patterns) | Extracted from [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs); owns its own hit counter |
-| [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | Shared static helpers: command identification, candidate enumeration, executable path resolution | Used by both [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) and [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs); no instance state |
+| [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | Shared static helpers: command identification, candidate enumeration, executable path resolution, availability probing | Used by both [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) and [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs); `ProbeAllCandidates()` returns [`DisassemblerProbeResult`](../Models/DisassemblerProbeResult.cs) list for report header; no instance state |
+| [`Models/DisassemblerProbeResult.cs`](../Models/DisassemblerProbeResult.cs) | Disassembler availability probe result record | `ToolName`, `Available`, `Version`, `Path`; stored in [`FileDiffResultLists.DisassemblerAvailability`](../Models/FileDiffResultLists.cs) |
 | [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | Per-tool fail-count tracking and configurable TTL blacklist | Thread-safe [`ConcurrentDictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0); TTL defaults to [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) from config |
 | [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | Public cache facade and coordinator for IL artifacts | Delegates memory/disk details to focused cache components |
 | [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | In-memory IL/SHA256 cache with LRU and TTL | Owns transient retention policy |
@@ -420,6 +421,7 @@ catch (Exception ex)
 - Ignored file locations
 - Timestamp-regression warnings for files whose `new` last-modified time is older than `old`
 - Disassembler labels used during IL comparison
+- Disassembler availability probe results (`DisassemblerAvailability`) for the report header
 
 The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed record (`AddedCount`, `RemovedCount`, `ModifiedCount`, `UnchangedCount`, `IgnoredCount`) and the `SummaryStatistics` computed property provide a single consistent snapshot of the five bucket counts. [`ReportGenerateService`](../Services/ReportGenerateService.cs) reads `SummaryStatistics` once per report to write the summary section, so callers do not need to access each collection individually.
 
@@ -929,7 +931,8 @@ sequenceDiagram
 | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | `System.Reflection.Metadata` によるメソッドレベル変更検出 | ベストエフォート；失敗時は `null` を返す。型・メソッド・プロパティ・フィールドの追加・削除・変更（アクセス修飾子変更、修飾子変更、型変更、IL ボディ変更）を検出 |
 | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | ツール探索、逆アセンブル実行、キャッシュヒット/ストア追跡、ブラックリスト | 外部ツール境界；プリフェッチは [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) へ委譲 |
 | [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL キャッシュのプリフェッチ（全候補コマンド×引数パターンの事前ヒット確認） | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) から分離；独自のヒットカウンタを保持 |
-| [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | 共有静的ヘルパー：コマンド判定・候補列挙・実行ファイルパス解決 | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) と [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) の両方が使用；インスタンス状態なし |
+| [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | 共有静的ヘルパー：コマンド判定・候補列挙・実行ファイルパス解決・利用可否プローブ | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) と [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) の両方が使用；`ProbeAllCandidates()` はレポートヘッダ用に [`DisassemblerProbeResult`](../Models/DisassemblerProbeResult.cs) リストを返す；インスタンス状態なし |
+| [`Models/DisassemblerProbeResult.cs`](../Models/DisassemblerProbeResult.cs) | 逆アセンブラ利用可否プローブ結果レコード | `ToolName`, `Available`, `Version`, `Path`；[`FileDiffResultLists.DisassemblerAvailability`](../Models/FileDiffResultLists.cs) に格納 |
 | [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | ツール別失敗数管理・設定可能な TTL ブラックリスト | スレッドセーフな [`ConcurrentDictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0)；TTL は設定値 [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) を使用 |
 | [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | IL キャッシュの公開 API と調停 | メモリ/ディスクの詳細は専用コンポーネントへ委譲 |
 | [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | メモリ上の IL / SHA256 キャッシュ | LRU と TTL を担当 |
@@ -1057,6 +1060,7 @@ catch (Exception ex)
 - 無視対象ファイルの所在情報
 - Modified と判定されたファイルのうち、`new` 側の更新日時が `old` 側より古いものの警告情報
 - IL 比較で使用した逆アセンブラ表示ラベル
+- レポートヘッダ用の逆アセンブラ利用可否プローブ結果（`DisassemblerAvailability`）
 
 ネストされた [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed レコード（`AddedCount`、`RemovedCount`、`ModifiedCount`、`UnchangedCount`、`IgnoredCount`）と `SummaryStatistics` 計算プロパティが、5 つのバケット数を一度に取得できる一貫したスナップショットを提供します。[`ReportGenerateService`](../Services/ReportGenerateService.cs) はレポートのサマリーセクションを書く際に `SummaryStatistics` を一度参照するため、各コレクションを個別に参照する必要はありません。
 

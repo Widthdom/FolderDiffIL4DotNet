@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Models;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -98,6 +101,109 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Probes all candidate disassemblers and returns their availability.
+        /// Each unique tool name is probed once; duplicate candidates (e.g. <c>dotnet-ildasm</c>
+        /// in PATH vs per-user tools directory) are collapsed into a single result.
+        /// すべての逆アセンブラ候補をプローブし、利用可否を返します。
+        /// 同一ツール名の重複候補は単一の結果にまとめられます。
+        /// </summary>
+        internal static IReadOnlyList<DisassemblerProbeResult> ProbeAllCandidates()
+        {
+            var results = new List<DisassemblerProbeResult>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var candidate in CandidateDisassembleCommands())
+            {
+                var toolName = NormalizeCandidateName(candidate);
+                if (!seen.Add(toolName))
+                {
+                    continue;
+                }
+
+                var (available, version, resolvedPath) = ProbeCandidate(candidate);
+                results.Add(new DisassemblerProbeResult(toolName, available, version, resolvedPath));
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Probes a single disassembler candidate by attempting to execute <c>--version</c>.
+        /// 単一の逆アセンブラ候補を <c>--version</c> 実行でプローブします。
+        /// </summary>
+        private static (bool Available, string? Version, string? ResolvedPath) ProbeCandidate(string candidate)
+        {
+            try
+            {
+                var resolved = ResolveExecutablePath(candidate);
+                var isMuxer = IsDotnetMuxer(candidate);
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = candidate,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+
+                if (isMuxer)
+                {
+                    psi.ArgumentList.Add(Constants.ILDASM_LABEL);
+                }
+                psi.ArgumentList.Add("--version");
+
+                using var process = new Process { StartInfo = psi };
+                process.Start();
+
+                var stdout = process.StandardOutput.ReadToEnd();
+                var stderr = process.StandardError.ReadToEnd();
+
+                if (!process.WaitForExit(millisecondsTimeout: 10_000))
+                {
+                    try { process.Kill(); } catch { /* best-effort */ }
+                    return (false, null, resolved);
+                }
+
+                if (process.ExitCode == 0)
+                {
+                    var versionText = (stdout ?? stderr ?? string.Empty)
+                        .Replace("\r", " ").Replace("\n", " ").Trim();
+                    return (true, string.IsNullOrEmpty(versionText) ? null : versionText, resolved);
+                }
+
+                return (false, null, resolved);
+            }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException or NotSupportedException or UnauthorizedAccessException)
+            {
+                return (false, null, null);
+            }
+        }
+
+        /// <summary>
+        /// Normalises a candidate command string to a human-readable tool name.
+        /// 候補コマンド文字列を人間が読みやすいツール名に正規化します。
+        /// </summary>
+        private static string NormalizeCandidateName(string candidate)
+        {
+            if (IsDotnetMuxer(candidate))
+            {
+                return Constants.DOTNET_ILDASM;
+            }
+
+            var fileName = Path.GetFileName(candidate);
+            if (string.Equals(fileName, Constants.DOTNET_ILDASM, StringComparison.OrdinalIgnoreCase))
+            {
+                return Constants.DOTNET_ILDASM;
+            }
+            if (string.Equals(fileName, Constants.ILSPY_CMD, StringComparison.OrdinalIgnoreCase))
+            {
+                return Constants.ILSPY_CMD;
+            }
+            return fileName ?? candidate;
         }
 
         /// <summary>
