@@ -107,7 +107,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<!--CTRL-->");
             sb.AppendLine("<div class=\"controls\">");
             sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
-            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">&#x25B2; " + HtmlEncode("Fold all detail") + "</button>");
+            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">&#x25B2; " + HtmlEncode("Fold all details") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
