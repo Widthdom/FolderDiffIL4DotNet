@@ -4,6 +4,10 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services.Caching
 {
+    /// <summary>
+    /// Tests for the internal <see cref="DotNetDisassemblerCache"/> disassembler-info parsing and normalization.
+    /// 内部クラス <see cref="DotNetDisassemblerCache"/> の逆アセンブラ情報解析・正規化のテスト。
+    /// </summary>
     public sealed class DotNetDisassemblerCacheTests
     {
         [Fact]

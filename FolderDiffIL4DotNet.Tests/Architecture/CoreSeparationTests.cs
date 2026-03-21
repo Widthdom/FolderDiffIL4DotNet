@@ -9,8 +9,14 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Architecture
 {
+    /// <summary>
+    /// Verifies that reusable utility types remain in the Core assembly and the legacy Utils namespace is not re-introduced.
+    /// 再利用可能なユーティリティ型が Core アセンブリに存在し続け、レガシーの Utils 名前空間が再導入されていないことを検証します。
+    /// </summary>
     public sealed class CoreSeparationTests
     {
+        // All utility types must be defined in FolderDiffIL4DotNet.Core, not in the main assembly.
+        // すべてのユーティリティ型はメインアセンブリではなく FolderDiffIL4DotNet.Core に定義されている必要があります。
         [Fact]
         public void UtilityTypes_AreDefinedInCoreAssembly()
         {
@@ -33,6 +39,8 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.All(utilityTypes, utilityType => Assert.Same(coreAssembly, utilityType.Assembly));
         }
 
+        // The main assembly must not re-introduce the legacy FolderDiffIL4DotNet.Utils namespace.
+        // メインアセンブリにレガシーの FolderDiffIL4DotNet.Utils 名前空間が再導入されていないことを確認します。
         [Fact]
         public void MainAssembly_DoesNotDefineLegacyUtilsNamespace()
         {

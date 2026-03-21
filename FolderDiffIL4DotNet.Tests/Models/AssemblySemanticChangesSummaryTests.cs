@@ -4,6 +4,10 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Models
 {
+    /// <summary>
+    /// Tests for <see cref="AssemblySemanticChangesSummary"/> and <see cref="MemberChangeEntry"/> model classes.
+    /// <see cref="AssemblySemanticChangesSummary"/> および <see cref="MemberChangeEntry"/> モデルクラスのテスト。
+    /// </summary>
     public sealed class AssemblySemanticChangesSummaryTests
     {
         [Fact]

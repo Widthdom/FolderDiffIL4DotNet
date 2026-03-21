@@ -11,6 +11,10 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
+    /// <summary>
+    /// Unit tests for <see cref="FileDiffService"/> using fake I/O collaborators (no real disk access).
+    /// フェイク I/O 協力オブジェクトを使用した <see cref="FileDiffService"/> のユニットテスト（実ディスクアクセスなし）。
+    /// </summary>
     [Trait("Category", "Unit")]
     public sealed class FileDiffServiceUnitTests
     {
@@ -375,6 +379,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             return new FileDiffService(config, ilOutputService, executionContext, resultLists, logger, fileComparisonService);
         }
 
+        /// <summary>
+        /// Fake file comparison service that returns preconfigured results without touching real files.
+        /// 実ファイルにアクセスせず事前設定された結果を返すフェイク比較サービス。
+        /// </summary>
         private sealed class FakeFileComparisonService : IFileComparisonService
         {
             private readonly Dictionary<string, byte[]> _fileContentsByPath = new(StringComparer.OrdinalIgnoreCase);
@@ -466,6 +474,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        /// <summary>
+        /// Fake IL output service that records calls and returns preconfigured results.
+        /// 呼び出しを記録し事前設定された結果を返すフェイク IL 出力サービス。
+        /// </summary>
         private sealed class FakeILOutputService : IILOutputService
         {
             public (bool AreEqual, string? DisassemblerLabel) DiffResult { get; set; }
