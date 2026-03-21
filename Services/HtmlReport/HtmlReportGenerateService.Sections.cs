@@ -554,15 +554,46 @@ namespace FolderDiffIL4DotNet.Services
             if (hasMd5)
                 sb.AppendLine($"  <li>{I18n("One or more files were classified as MD5Mismatch. Manual review is recommended because only an MD5 hash comparison was possible.", "1つ以上のファイルが MD5Mismatch として分類されました。MD5 ハッシュ比較のみが可能だったため、手動レビューを推奨します。")}</li>");
             if (hasTs)
+                sb.AppendLine($"  <li>{I18n("One or more modified files in new have older last-modified timestamps than the corresponding files in old.", "new 内の1つ以上の変更ファイルが、old 内の対応するファイルより古い更新日時を持っています。")}</li>");
+            sb.AppendLine("</ul>");
+
+            // MD5Mismatch files table (same style as Modified Files)
+            if (hasMd5)
+            {
+                var md5Files = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
+                    .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.MD5Mismatch)
+                    .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (md5Files.Count > 0)
+                {
+                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("MD5Mismatch (Manual Review Recommended)", "MD5Mismatch（手動レビュー推奨）")} ({md5Files.Count})</h2>");
+                    AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
+                    sb.AppendLine("<tbody>");
+                    int idx = 0;
+                    foreach (var kv in md5Files)
+                    {
+                        string ts = "";
+                        if (config.ShouldOutputFileTimestamps)
+                        {
+                            string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(oldFolderAbsolutePath, kv.Key));
+                            string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, kv.Key));
+                            ts = $"{oldTs}{TIMESTAMP_ARROW}{newTs}";
+                        }
+                        string col6 = BuildDiffDetailDisplay(kv.Value);
+                        AppendFileRow(sb, "md5w", idx, kv.Key, ts, col6);
+                        idx++;
+                    }
+                    sb.AppendLine("</tbody></table></div>");
+                }
+            }
+
+            // Timestamp-regressed files table (same style as Modified Files)
+            if (hasTs)
             {
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
-                sb.AppendLine($"  <li>{I18n("One or more modified files in new have older last-modified timestamps than the corresponding files in old.", "new 内の1つ以上の変更ファイルが、old 内の対応するファイルより古い更新日時を持っています。")}</li>");
-                sb.AppendLine("</ul>");
-
-                // Timestamp-regressed files table (same style as Modified Files)
-                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} — {I18n("Timestamps Regressed", "タイムスタンプ逆行")} ({warnings.Count})</h2>");
+                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("Timestamps Regressed", "タイムスタンプ逆行")} ({warnings.Count})</h2>");
                 AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
                 sb.AppendLine("<tbody>");
                 int idx = 0;
@@ -585,9 +616,7 @@ namespace FolderDiffIL4DotNet.Services
                     idx++;
                 }
                 sb.AppendLine("</tbody></table></div>");
-                return;
             }
-            sb.AppendLine("</ul>");
         }
     }
 }

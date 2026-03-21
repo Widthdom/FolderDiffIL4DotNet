@@ -260,22 +260,60 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     writer.WriteLine($"- **WARNING:** {Constants.WARNING_MD5_MISMATCH}");
                 }
-                if (!ctx.HasTimestampRegressionWarning) return;
-
-                writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
-                writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
-                foreach (var warning in ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
-                    .OrderBy(entry => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(entry.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
-                    .ThenBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase))
+                if (ctx.HasTimestampRegressionWarning)
                 {
-                    var fileRelativePath = warning.FileRelativePath;
-                    var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
-                    var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
-                    var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
-                    string tsCol = $"{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}";
-                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
+                    writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
+                }
+
+                // MD5Mismatch detail table
+                if (ctx.HasMd5Mismatch)
+                {
+                    var md5Files = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary
+                        .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.MD5Mismatch)
+                        .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    if (md5Files.Count > 0)
+                    {
+                        writer.WriteLine();
+                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — MD5Mismatch (Manual Review Recommended) ({md5Files.Count})");
+                        writer.WriteLine();
+                        writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                        writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                        foreach (var kv in md5Files)
+                        {
+                            string tsCol = "";
+                            if (ctx.Config.ShouldOutputFileTimestamps)
+                            {
+                                string oldTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.OldFolderAbsolutePath, kv.Key));
+                                string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, kv.Key));
+                                tsCol = $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
+                            }
+                            writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {kv.Key} | {tsCol} | `{kv.Value}` | |");
+                        }
+                    }
+                }
+
+                // Timestamp-regressed detail table
+                if (ctx.HasTimestampRegressionWarning)
+                {
+                    writer.WriteLine();
+                    var tsWarnings = ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
+                        .OrderBy(entry => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(entry.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
+                        .ThenBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                    writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — Timestamps Regressed ({tsWarnings.Count})");
+                    writer.WriteLine();
+                    writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
+                    writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                    foreach (var warning in tsWarnings)
+                    {
+                        var fileRelativePath = warning.FileRelativePath;
+                        var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
+                        var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                        var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                        string tsCol = $"{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}";
+                        writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
+                    }
                 }
             }
         }

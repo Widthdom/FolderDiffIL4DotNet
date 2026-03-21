@@ -241,6 +241,76 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("MD5Mismatch", html);
         }
 
+        /// <summary>
+        /// Verifies that HTML Warnings section includes the MD5Mismatch detail table with file listing.
+        /// HTML の警告セクションに MD5Mismatch 詳細テーブル（ファイル一覧）が含まれることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_Md5MismatchWarning_IncludesDetailTable()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("md5-table");
+
+            _resultLists.AddModifiedFileRelativePath("alpha.bin");
+            _resultLists.RecordDiffDetail("alpha.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.AddModifiedFileRelativePath("beta.bin");
+            _resultLists.RecordDiffDetail("beta.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            // TextMismatch file should NOT appear in the MD5Mismatch table
+            _resultLists.AddModifiedFileRelativePath("gamma.txt");
+            _resultLists.RecordDiffDetail("gamma.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Table heading should exist with count
+            Assert.Contains("MD5Mismatch (Manual Review Recommended) (2)</h2>", html);
+
+            // Extract the MD5Mismatch table section
+            int md5TableStart = html.IndexOf("MD5Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            Assert.True(md5TableStart >= 0, "MD5Mismatch detail table heading should exist");
+            string md5Section = html.Substring(md5TableStart);
+
+            // Both MD5Mismatch files should appear
+            Assert.Contains("alpha.bin", md5Section);
+            Assert.Contains("beta.bin", md5Section);
+
+            // Files should be sorted alphabetically (alpha before beta)
+            int alphaIdx = md5Section.IndexOf("alpha.bin", StringComparison.Ordinal);
+            int betaIdx = md5Section.IndexOf("beta.bin", StringComparison.Ordinal);
+            Assert.True(alphaIdx < betaIdx, "MD5Mismatch files should be sorted alphabetically");
+        }
+
+        /// <summary>
+        /// Verifies that MD5Mismatch detail table appears before Timestamps Regressed table when both warnings exist.
+        /// 両方の警告が存在する場合、MD5Mismatch 詳細テーブルがタイムスタンプ逆行テーブルの前に表示されることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_Md5MismatchTable_AppearsBeforeTimestampRegressedTable()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("md5-before-ts");
+
+            _resultLists.AddModifiedFileRelativePath("payload.bin");
+            _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("payload.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            var config = CreateConfig();
+            config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            int md5TableIdx = html.IndexOf("MD5Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            int tsTableIdx = html.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            Assert.True(md5TableIdx >= 0, "MD5Mismatch detail table should exist");
+            Assert.True(tsTableIdx >= 0, "Timestamps Regressed table should exist");
+            Assert.True(md5TableIdx < tsTableIdx, "MD5Mismatch table should appear before Timestamps Regressed table");
+        }
+
         [Fact]
         public void GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference()
         {

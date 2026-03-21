@@ -100,6 +100,14 @@
 - **WARNING:** One or more files were classified as `MD5Mismatch`. Manual review is recommended because only an MD5 hash comparison was possible.
 - **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.
 
+### [ ! ] Modified Files — MD5Mismatch (Manual Review Recommended) (1)
+
+| Status | File Path | Timestamp | Legend | Disassembler |
+|:------:|-----------|:---------:|--------|--------------|
+| `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `MD5Mismatch` | |
+
+### [ ! ] Modified Files — Timestamps Regressed (5)
+
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|:---------:|--------|--------------|
 | `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
