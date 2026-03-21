@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Unchanged Files table sort order** — Rows are now sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Previously sorted by File Path only. Applies to both Markdown and HTML reports.
+
+- **Modified Files table sort order** — Rows are now sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `MD5Mismatch`), then by File Path ascending. Previously sorted by File Path only. Applies to both Markdown and HTML reports.
+
+- **Modified Files — Timestamps Regressed table sort order** — Same sort order as Modified Files table (`TextMismatch` → `ILMismatch` → `MD5Mismatch`, then path). Previously sorted by File Path only. Applies to both Markdown and HTML reports.
+
 ### [1.5.0] - 2026-03-21
 
 #### Added
@@ -405,6 +413,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **Unchanged Files テーブルのソート順** — diff-detail 結果（`MD5Match` → `ILMatch` → `TextMatch`）でソートし、次にファイルパスの昇順でソートするよう変更。以前はファイルパスのみでソートしていました。Markdown および HTML レポートの両方に適用。
+
+- **Modified Files テーブルのソート順** — diff-detail 結果（`TextMismatch` → `ILMismatch` → `MD5Mismatch`）でソートし、次にファイルパスの昇順でソートするよう変更。以前はファイルパスのみでソートしていました。Markdown および HTML レポートの両方に適用。
+
+- **Modified Files — Timestamps Regressed テーブルのソート順** — Modified Files テーブルと同じソート順（`TextMismatch` → `ILMismatch` → `MD5Mismatch`、次にパス）に変更。以前はファイルパスのみでソートしていました。Markdown および HTML レポートの両方に適用。
 
 ### [1.5.0] - 2026-03-21
 

@@ -324,6 +324,32 @@ namespace FolderDiffIL4DotNet.Services
             return "";
         }
 
+        /// <summary>
+        /// Returns the display order for Unchanged files: MD5Match → ILMatch → TextMatch.
+        /// Unchanged ファイルの表示順序を返します: MD5Match → ILMatch → TextMatch。
+        /// </summary>
+        private static int GetUnchangedSortOrder(FileDiffResultLists.DiffDetailResult detail)
+            => detail switch
+            {
+                FileDiffResultLists.DiffDetailResult.MD5Match => 0,
+                FileDiffResultLists.DiffDetailResult.ILMatch => 1,
+                FileDiffResultLists.DiffDetailResult.TextMatch => 2,
+                _ => 3
+            };
+
+        /// <summary>
+        /// Returns the display order for Modified files: TextMismatch → ILMismatch → MD5Mismatch.
+        /// Modified ファイルの表示順序を返します: TextMismatch → ILMismatch → MD5Mismatch。
+        /// </summary>
+        private static int GetModifiedSortOrder(FileDiffResultLists.DiffDetailResult detail)
+            => detail switch
+            {
+                FileDiffResultLists.DiffDetailResult.TextMismatch => 0,
+                FileDiffResultLists.DiffDetailResult.ILMismatch => 1,
+                FileDiffResultLists.DiffDetailResult.MD5Mismatch => 2,
+                _ => 3
+            };
+
         private static List<string> GetNormalizedIlIgnoreContainingStrings(ConfigSettings config)
         {
             if (config?.ILIgnoreLineContainingStrings == null) return new List<string>();

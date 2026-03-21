@@ -420,6 +420,7 @@ The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed re
 - The detail-result [`Dictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2?view=net-8.0) must not contain stale entries left over from a previous run.
 - IL tool labels are only present for IL-based comparisons.
 - Report generation reads execution results only and must not start new comparisons.
+- **Table sort order**: Unchanged Files rows are sorted by diff-detail result (`MD5Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `MD5Mismatch`), then by File Path ascending. This applies to both Markdown and HTML reports.
 
 <a id="guide-en-config-runtime"></a>
 ## Configuration and Runtime Modes
@@ -1048,6 +1049,7 @@ catch (Exception ex)
 - 前回の実行に由来する不要なエントリが詳細結果の [`Dictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.generic.dictionary-2?view=net-8.0) に残っていないこと
 - IL のラベルは IL 比較時だけ存在すること
 - レポート生成は、実行結果の読み取りであり、新しい比較を開始しないこと
+- **テーブルのソート順**: Unchanged Files の行は diff-detail 結果（`MD5Match` → `ILMatch` → `TextMatch`）でソートし、次にファイルパス昇順。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `MD5Mismatch`）でソートし、次にファイルパス昇順。Markdown および HTML レポートの両方に適用。
 
 <a id="guide-ja-config-runtime"></a>
 ## 設定と実行モード

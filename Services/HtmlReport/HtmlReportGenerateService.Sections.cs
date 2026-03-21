@@ -124,7 +124,8 @@ namespace FolderDiffIL4DotNet.Services
             ConfigSettings config)
         {
             var items = _fileDiffResultLists.UnchangedFilesRelativePath
-                .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
+                .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
+                .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
             sb.AppendLine($"<h2>[ = ] {I18n("Unchanged Files", "変更なしファイル")} ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
 
@@ -197,7 +198,8 @@ namespace FolderDiffIL4DotNet.Services
             ILCache? ilCache)
         {
             var items = _fileDiffResultLists.ModifiedFilesRelativePath
-                .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
+                .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetModifiedSortOrder(d) : 3)
+                .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
             sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] {I18n("Modified Files", "変更ファイル")} ({items.Count})</h2>");
             if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
 
@@ -549,7 +551,8 @@ namespace FolderDiffIL4DotNet.Services
             if (hasTs)
             {
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
-                    .OrderBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
+                    .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
+                    .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
                 sb.AppendLine($"  <li>{I18n("One or more modified files in new have older last-modified timestamps than the corresponding files in old.", "new 内の1つ以上の変更ファイルが、old 内の対応するファイルより古い更新日時を持っています。")}</li>");
                 sb.AppendLine("</ul>");
 

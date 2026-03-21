@@ -918,6 +918,161 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain("`static readonly`", reportText);
         }
 
+        // ── Sort order: Unchanged files / Unchanged ファイルのソート順 ─────────
+
+        /// <summary>
+        /// Verifies that Unchanged files are sorted by MD5Match → ILMatch → TextMatch, then by File Path ascending.
+        /// Unchanged ファイルが MD5Match → ILMatch → TextMatch の順でソートされ、その後ファイルパス昇順であることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_UnchangedFiles_SortedByDiffDetailThenPath()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-unch-sort");
+            var newDir = Path.Combine(_rootDir, "new-unch-sort");
+            var reportDir = Path.Combine(_rootDir, "report-unch-sort");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // Add files in deliberately wrong order (TextMatch first, then MD5Match, then ILMatch)
+            // 意図的に異なる順序でファイルを追加する（TextMatch → MD5Match → ILMatch）
+            _resultLists.AddUnchangedFileRelativePath("zzz-text.config");
+            _resultLists.RecordDiffDetail("zzz-text.config", FileDiffResultLists.DiffDetailResult.TextMatch);
+            _resultLists.AddUnchangedFileRelativePath("aaa-md5.bin");
+            _resultLists.RecordDiffDetail("aaa-md5.bin", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _resultLists.AddUnchangedFileRelativePath("bbb-il.dll");
+            _resultLists.RecordDiffDetail("bbb-il.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.AddUnchangedFileRelativePath("ccc-md5.bin");
+            _resultLists.RecordDiffDetail("ccc-md5.bin", FileDiffResultLists.DiffDetailResult.MD5Match);
+            _resultLists.AddUnchangedFileRelativePath("aaa-text.txt");
+            _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMatch);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Expected order: MD5Match (aaa-md5.bin, ccc-md5.bin), ILMatch (bbb-il.dll), TextMatch (aaa-text.txt, zzz-text.config)
+            // 期待される順序: MD5Match (aaa-md5.bin, ccc-md5.bin), ILMatch (bbb-il.dll), TextMatch (aaa-text.txt, zzz-text.config)
+            int md5_aaa = reportText.IndexOf("aaa-md5.bin", StringComparison.Ordinal);
+            int md5_ccc = reportText.IndexOf("ccc-md5.bin", StringComparison.Ordinal);
+            int il_bbb = reportText.IndexOf("bbb-il.dll", StringComparison.Ordinal);
+            int text_aaa = reportText.IndexOf("aaa-text.txt", StringComparison.Ordinal);
+            int text_zzz = reportText.IndexOf("zzz-text.config", StringComparison.Ordinal);
+
+            Assert.True(md5_aaa < md5_ccc, "MD5Match files should be sorted by path (aaa < ccc)");
+            Assert.True(md5_ccc < il_bbb, "MD5Match should appear before ILMatch");
+            Assert.True(il_bbb < text_aaa, "ILMatch should appear before TextMatch");
+            Assert.True(text_aaa < text_zzz, "TextMatch files should be sorted by path (aaa < zzz)");
+        }
+
+        // ── Sort order: Modified files / Modified ファイルのソート順 ─────────
+
+        /// <summary>
+        /// Verifies that Modified files are sorted by TextMismatch → ILMismatch → MD5Mismatch, then by File Path ascending.
+        /// Modified ファイルが TextMismatch → ILMismatch → MD5Mismatch の順でソートされ、その後ファイルパス昇順であることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_ModifiedFiles_SortedByDiffDetailThenPath()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-mod-sort");
+            var newDir = Path.Combine(_rootDir, "new-mod-sort");
+            var reportDir = Path.Combine(_rootDir, "report-mod-sort");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // Add files in deliberately wrong order (MD5Mismatch first, then ILMismatch, then TextMismatch)
+            // 意図的に異なる順序でファイルを追加する（MD5Mismatch → ILMismatch → TextMismatch）
+            _resultLists.AddModifiedFileRelativePath("zzz-md5.bin");
+            _resultLists.RecordDiffDetail("zzz-md5.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.AddModifiedFileRelativePath("aaa-il.dll");
+            _resultLists.RecordDiffDetail("aaa-il.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.AddModifiedFileRelativePath("bbb-text.config");
+            _resultLists.RecordDiffDetail("bbb-text.config", FileDiffResultLists.DiffDetailResult.TextMismatch);
+            _resultLists.AddModifiedFileRelativePath("ccc-il.dll");
+            _resultLists.RecordDiffDetail("ccc-il.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.AddModifiedFileRelativePath("aaa-text.txt");
+            _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Expected order: TextMismatch (aaa-text.txt, bbb-text.config), ILMismatch (aaa-il.dll, ccc-il.dll), MD5Mismatch (zzz-md5.bin)
+            // 期待される順序: TextMismatch (aaa-text.txt, bbb-text.config), ILMismatch (aaa-il.dll, ccc-il.dll), MD5Mismatch (zzz-md5.bin)
+            int text_aaa = reportText.IndexOf("aaa-text.txt", StringComparison.Ordinal);
+            int text_bbb = reportText.IndexOf("bbb-text.config", StringComparison.Ordinal);
+            int il_aaa = reportText.IndexOf("aaa-il.dll", StringComparison.Ordinal);
+            int il_ccc = reportText.IndexOf("ccc-il.dll", StringComparison.Ordinal);
+            int md5_zzz = reportText.IndexOf("zzz-md5.bin", StringComparison.Ordinal);
+
+            Assert.True(text_aaa < text_bbb, "TextMismatch files should be sorted by path (aaa < bbb)");
+            Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch");
+            Assert.True(il_aaa < il_ccc, "ILMismatch files should be sorted by path (aaa < ccc)");
+            Assert.True(il_ccc < md5_zzz, "ILMismatch should appear before MD5Mismatch");
+        }
+
+        // ── Sort order: Warnings timestamp-regressed table / 警告タイムスタンプ逆行テーブルのソート順 ─────────
+
+        /// <summary>
+        /// Verifies that the Warnings timestamp-regressed table is sorted by TextMismatch → ILMismatch → MD5Mismatch, then by File Path ascending.
+        /// 警告セクションのタイムスタンプ逆行テーブルが TextMismatch → ILMismatch → MD5Mismatch の順でソートされ、その後ファイルパス昇順であることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReport_WarningsTimestampRegressed_SortedByDiffDetailThenPath()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-warn-sort");
+            var newDir = Path.Combine(_rootDir, "new-warn-sort");
+            var reportDir = Path.Combine(_rootDir, "report-warn-sort");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // Register modified files and timestamp regression warnings in deliberately wrong order
+            // 意図的に異なる順序で変更ファイルとタイムスタンプ逆行警告を登録する
+            _resultLists.AddModifiedFileRelativePath("zzz-md5.bin");
+            _resultLists.RecordDiffDetail("zzz-md5.bin", FileDiffResultLists.DiffDetailResult.MD5Mismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("zzz-md5.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            _resultLists.AddModifiedFileRelativePath("aaa-il.dll");
+            _resultLists.RecordDiffDetail("aaa-il.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("aaa-il.dll", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            _resultLists.AddModifiedFileRelativePath("bbb-text.config");
+            _resultLists.RecordDiffDetail("bbb-text.config", FileDiffResultLists.DiffDetailResult.TextMismatch);
+            _resultLists.RecordNewFileTimestampOlderThanOldWarning("bbb-text.config", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(
+                oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host",
+                config);
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // In the Warnings section, expected order: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), MD5Mismatch (zzz-md5.bin)
+            // 警告セクションの期待される順序: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), MD5Mismatch (zzz-md5.bin)
+            // Only look at the Warnings section (after "## Warnings")
+            int warningsSectionStart = reportText.IndexOf("## Warnings", StringComparison.Ordinal);
+            Assert.True(warningsSectionStart >= 0, "Warnings section should exist");
+            string warningsSection = reportText.Substring(warningsSectionStart);
+
+            int text_bbb = warningsSection.IndexOf("bbb-text.config", StringComparison.Ordinal);
+            int il_aaa = warningsSection.IndexOf("aaa-il.dll", StringComparison.Ordinal);
+            int md5_zzz = warningsSection.IndexOf("zzz-md5.bin", StringComparison.Ordinal);
+
+            Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch in Warnings");
+            Assert.True(il_aaa < md5_zzz, "ILMismatch should appear before MD5Mismatch in Warnings");
+        }
+
         private static ConfigSettings CreateConfig() => new()
         {
             IgnoredExtensions = new List<string>(),
