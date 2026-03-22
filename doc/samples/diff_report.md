@@ -43,7 +43,7 @@
 ## [ x ] Ignored Files (3)
 
 | Status | File Path | Timestamp | Legend |
-|:------:|-----------|:---------:|--------|
+|:------:|-----------|:---------:|:------:|
 | `[ x ]` | /Users/UserA/workspace/old/logs/debug.log (old) | 2026-03-15 08:50:00 | |
 | `[ x ]` | /Users/UserA/workspace/new/obj/build.cache (new) | 2026-03-15 09:05:00 | |
 | `[ x ]` | bin/App.pdb (old/new) | 2026-03-15 08:57:00 → 2026-03-15 09:03:00 | |
@@ -51,7 +51,7 @@
 ## [ = ] Unchanged Files (5)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
-|:------:|-----------|:---------:|--------|--------------|
+|:------:|-----------|:---------:|:------:|--------------|
 | `[ = ]` | data/schema.bin | 2026-03-15 08:30:00 → 2026-03-15 09:00:00 | `SHA256Match` | |
 | `[ = ]` | vendor/lib.dll | 2026-03-15 09:00:00 | `SHA256Match` | |
 | `[ = ]` | util/Helper.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMatch` | `dotnet-ildasm (version: 0.12.2)` |
@@ -73,7 +73,7 @@
 ## [ * ] Modified Files (14)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
-|:------:|-----------|:---------:|--------|--------------|
+|:------:|-----------|:---------:|:------:|--------------|
 | `[ * ]` | config/app.config | 2026-03-15 08:56:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
 | `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
 | `[ * ]` | src/DataModel.edmx | 2026-03-15 08:55:00 → 2026-03-15 09:04:00 | `TextMismatch` | |
@@ -112,12 +112,12 @@
 | Expired | 0 |
 
 ## Warnings
-- **WARNING:** One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only an SHA256 hash comparison was possible.
+- **WARNING:** One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only a SHA256 hash comparison was possible.
 
 ### [ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended) (1)
 
 | Status | File Path | Timestamp | Legend |
-|:------:|-----------|:---------:|--------|
+|:------:|-----------|:---------:|:------:|
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` |
 
 - **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.
@@ -125,7 +125,7 @@
 ### [ ! ] Modified Files — Timestamps Regressed (5)
 
 | Status | File Path | Timestamp | Legend |
-|:------:|-----------|:---------:|--------|
+|:------:|-----------|:---------:|:------:|
 | `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` |
 | `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` `High` |
 | `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` |

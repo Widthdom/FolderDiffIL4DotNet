@@ -617,7 +617,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}", reportText);
             Assert.Contains("- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
             Assert.Contains("| Status | File Path | Timestamp | Legend |", reportText);
-            Assert.Contains("|:------:|-----------|:---------:|--------|", reportText);
+            Assert.Contains("|:------:|-----------|:---------:|:------:|", reportText);
             Assert.Contains("| nested", reportText);
             Assert.Contains("2026-03-14 10:00:00 → 2026-03-14 09:00:00", reportText);
             Assert.True(

@@ -88,7 +88,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_IGNORED} {REPORT_LABEL_IGNORED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend |");
-                writer.WriteLine("|:------:|-----------|:---------:|--------|");
+                writer.WriteLine("|:------:|-----------|:---------:|:------:|");
                 foreach (var entry in ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, StringComparer.OrdinalIgnoreCase))
                 {
                     bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
@@ -122,7 +122,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_UNCHANGED} {REPORT_LABEL_UNCHANGED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                writer.WriteLine("|:------:|-----------|:---------:|:------:|--------------|");
                 var sortedUnchanged = ctx.FileDiffResultLists.UnchangedFilesRelativePath
                     .OrderBy(p => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
                     .ThenBy(p => p, StringComparer.OrdinalIgnoreCase);
@@ -190,7 +190,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_MODIFIED} {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
                 writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|--------|--------------|");
+                writer.WriteLine("|:------:|-----------|:---------:|:------:|--------------|");
                 var sortedModified = ctx.FileDiffResultLists.ModifiedFilesRelativePath
                     .OrderBy(p => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(p => GetImportanceSortOrder(ctx.FileDiffResultLists.GetMaxImportance(p)))
@@ -285,7 +285,7 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch (Manual Review Recommended) ({sha256Files.Count})");
                         writer.WriteLine();
                         writer.WriteLine("| Status | File Path | Timestamp | Legend |");
-                        writer.WriteLine("|:------:|-----------|:---------:|--------|");
+                        writer.WriteLine("|:------:|-----------|:---------:|:------:|");
                         foreach (var kv in sha256Files)
                         {
                             string tsCol = "";
@@ -315,7 +315,7 @@ namespace FolderDiffIL4DotNet.Services
                     writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — Timestamps Regressed ({tsWarnings.Count})");
                     writer.WriteLine();
                     writer.WriteLine("| Status | File Path | Timestamp | Legend |");
-                    writer.WriteLine("|:------:|-----------|:---------:|--------|");
+                    writer.WriteLine("|:------:|-----------|:---------:|:------:|");
                     foreach (var warning in tsWarnings)
                     {
                         var fileRelativePath = warning.FileRelativePath;

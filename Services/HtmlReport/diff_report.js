@@ -279,7 +279,7 @@
     };
     var detW = 3.2 * scEmPx
             + px('--sc-class-w', 14) + px('--sc-basetype-w', 16)
-            + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx
+            + 7 * scEmPx + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx
             + px('--sc-type-w', 12) + px('--sc-name-w', 10)
             + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
             + px('--sc-body-w', 5);

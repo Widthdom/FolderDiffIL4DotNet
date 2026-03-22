@@ -547,6 +547,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             sb.AppendLine($"<h2 class=\"section-heading\">{I18n("Summary", "サマリー")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
+            sb.AppendLine("  <thead><tr><th>Category</th><th>Count</th></tr></thead>");
             sb.AppendLine("  <tbody>");
             var stats = _fileDiffResultLists.SummaryStatistics;
             if (config.ShouldIncludeIgnoredFiles)
@@ -565,6 +566,7 @@ namespace FolderDiffIL4DotNet.Services
             var stats = ilCache.GetReportStats();
             sb.AppendLine($"<h2 class=\"section-heading\">{I18n("IL Cache Stats", "IL キャッシュ統計")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
+            sb.AppendLine("  <thead><tr><th>Metric</th><th>Value</th></tr></thead>");
             sb.AppendLine("  <tbody>");
             sb.AppendLine($"    <tr><td class=\"stat-label\">Hits</td><td class=\"stat-value\">{stats.Hits}</td></tr>");
             sb.AppendLine($"    <tr><td class=\"stat-label\">Misses</td><td class=\"stat-value\">{stats.Misses}</td></tr>");

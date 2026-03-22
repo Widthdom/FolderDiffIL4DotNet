@@ -92,7 +92,7 @@
     td.col-path { white-space: nowrap; overflow: hidden; }
     td.col-path .path-wrap { display: flex; align-items: center; }
     td.col-path .path-text { overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
-    td.col-ts   { white-space: nowrap; text-align: center; }
+    td.col-ts    { white-space: nowrap; text-align: center; }
     td.col-diff { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                   font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -130,6 +130,7 @@
     .btn-copy-path svg { pointer-events: none; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
+    table.stat-table th { border: 1px solid #bbb; padding: 3px 14px; font-size: 13px; text-align: left; white-space: nowrap; }
     table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }
     table.stat-table td.stat-label { color: #444; white-space: nowrap; }
     table.stat-table td.stat-value { text-align: right; }
@@ -191,10 +192,12 @@
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(2) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
     table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }
+    /* sc colgroup widths */
     col.sc-col-cb-g { width: 3.2em; }
     col.sc-col-class-g { width: var(--sc-class-w); }
     col.sc-col-basetype-g { width: var(--sc-basetype-w); }
     col.sc-col-change-g { width: 7em; }
+    col.sc-col-importance-g { width: 7em; }
     col.sc-col-kind-g { width: 10em; }
     col.sc-col-access-g { width: 8em; }
     col.sc-col-mods-g { width: 11em; }
@@ -634,7 +637,7 @@
 </tr>
 <tr class="diff-row">
   <td colspan="8">
-        <details id="semantic_mod_7a" data-diff-html="PGRpdiBjbGFzcz0ic2VtYW50aWMtY2hhbmdlcyI+CjxwIGNsYXNzPSJzYy1jYXZlYXQiPk5vdGU6IFRoZSBzZW1hbnRpYyBzdW1tYXJ5IGlzIHN1cHBsZW1lbnRhcnkgaW5mb3JtYXRpb24uIEFsd2F5cyB2ZXJpZnkgdGhlIGZpbmFsIGRldGFpbHMgaW4gdGhlIGlubGluZSBJTCBkaWZmIGJlbG93LjwvcD4KPHA+Tm8gc2VtYW50aWMgY2hhbmdlcyBkZXRlY3RlZCBmb3IgdGhpcyBhc3NlbWJseS48L3A+CjwvZGl2Pgo=">
+        <details id="semantic_mod_7a" data-diff-html="PGRpdiBjbGFzcz0ic2VtYW50aWMtY2hhbmdlcyI+CjxwPk5vIHN0cnVjdHVyYWwgY2hhbmdlcyBkZXRlY3RlZC4gU2VlIElMIGRpZmYgZm9yIGltcGxlbWVudGF0aW9uLWxldmVsIGRpZmZlcmVuY2VzLjwvcD4KPC9kaXY+Cg==">
       <summary class="diff-summary">#8 Show assembly semantic changes</summary>
     </details>
   </td>
@@ -769,6 +772,7 @@
 </div>
 <h2 class="section-heading">Summary</h2>
 <table class="stat-table">
+  <thead><tr><th>Category</th><th>Count</th></tr></thead>
   <tbody>
     <tr><td class="stat-label">Ignored</td><td class="stat-value">3</td></tr>
     <tr><td class="stat-label">Unchanged</td><td class="stat-value">5</td></tr>
@@ -780,6 +784,7 @@
 </table>
 <h2 class="section-heading">IL Cache Stats</h2>
 <table class="stat-table">
+  <thead><tr><th>Metric</th><th>Value</th></tr></thead>
   <tbody>
     <tr><td class="stat-label">Hits</td><td class="stat-value">42</td></tr>
     <tr><td class="stat-label">Misses</td><td class="stat-value">8</td></tr>
@@ -791,7 +796,7 @@
 </table>
 <h2 class="section-heading"><span class="warn-icon">&#x26A0;</span> Warnings</h2>
 <ul class="warnings">
-  <li>One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.</li>
+  <li>One or more files were classified as SHA256Mismatch. Manual review is recommended because only a SHA256 hash comparison was possible.</li>
 </ul>
 <h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; SHA256Mismatch (Manual Review Recommended) (1)</h2>
 <div class="table-scroll">
@@ -981,10 +986,10 @@
         el.addEventListener('input',  autoSave);
       });
     }
-    setupLazyDiff();
     initColResize();
     syncTableWidths();
     syncScTableWidths();
+    setupLazyDiff();
   });
 
   function collectState() {
@@ -1139,35 +1144,6 @@
     if (status) status.textContent = 'Cleared.';
   }
 
-  function syncTableWidths() {
-    var root = document.documentElement;
-    var emPx = parseFloat(getComputedStyle(root).fontSize) || 16;
-    var px = function(v, fb) {
-      var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
-      return (parseFloat(s) || fb) * emPx;
-    };
-    var colW = {
-      'col-no-g': 3.2 * emPx, 'col-cb-g': 2.2 * emPx, 'col-ts-g': 16 * emPx,
-      'col-reason-g': px('--col-reason-w', 10), 'col-notes-g': px('--col-notes-w', 10),
-      'col-path-g': px('--col-path-w', 22), 'col-diff-g': px('--col-diff-w', 9),
-      'col-disasm-g': px('--col-disasm-w', 28)
-    };
-    document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table)').forEach(function(t) {
-      var cg = t.querySelector('colgroup');
-      if (!cg) return;
-      var hideDisasm = t.classList.contains('hide-disasm');
-      var hideCol6 = t.classList.contains('hide-col6');
-      var w = 0;
-      cg.querySelectorAll('col').forEach(function(col) {
-        if (hideDisasm && col.classList.contains('col-disasm-g')) return;
-        if (hideCol6 && col.classList.contains('col-diff-g')) return;
-        if (colW[col.className] !== undefined) w += colW[col.className];
-      });
-      t.style.width = w + 'px';
-    });
-  }
-
-
   function decodeDiffHtml(b64) {
     var binary = atob(b64);
     var bytes = new Uint8Array(binary.length);
@@ -1175,6 +1151,8 @@
     return new TextDecoder('utf-8').decode(bytes);
   }
 
+  // Lazy-render: diff table HTML is stored base64-encoded in data-diff-html.
+  // On first open, decode and insert into DOM, then remove the attribute.
   function setupLazyDiff() {
     document.querySelectorAll('details[data-diff-html]').forEach(function(d) {
       d.addEventListener('toggle', function onToggle() {
@@ -1185,16 +1163,19 @@
         d.removeEventListener('toggle', onToggle);
         try {
           d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+          // Re-init column resize handles on newly rendered tables
           d.querySelectorAll('th.th-resizable').forEach(function(th) {
             if (th.querySelector('.col-resize-handle')) return;
             initColResizeSingle(th);
           });
           syncScTableWidths();
+          // Wire up save events on new checkboxes
           if (__savedState__ === null) {
             d.querySelectorAll('input').forEach(function(el) {
               el.addEventListener('change', autoSave);
             });
           }
+          // Restore state for new inputs
           var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');
           if (toRestore) {
             d.querySelectorAll('input[id]').forEach(function(el) {
@@ -1212,6 +1193,38 @@
     });
   }
 
+  function syncTableWidths() {
+    var root = document.documentElement;
+    var emPx = parseFloat(getComputedStyle(root).fontSize) || 16;
+    var px = function(v, fb) {
+      var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
+      return (parseFloat(s) || fb) * emPx;
+    };
+    var colW = {
+      'col-no-g': 3.2 * emPx,
+      'col-cb-g': 2.2 * emPx,
+      'col-reason-g': px('--col-reason-w', 10),
+      'col-notes-g': px('--col-notes-w', 10),
+      'col-path-g': px('--col-path-w', 22),
+      'col-ts-g': 16 * emPx,
+      'col-diff-g': px('--col-diff-w', 9),
+      'col-disasm-g': px('--col-disasm-w', 28)
+    };
+    document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
+      var cg = t.querySelector('colgroup');
+      if (!cg) return;
+      var hideDisasm = t.classList.contains('hide-disasm');
+      var hideCol6 = t.classList.contains('hide-col6');
+      var w = 0;
+      cg.querySelectorAll('col').forEach(function(col) {
+        if (hideDisasm && col.classList.contains('col-disasm-g')) return;
+        if (hideCol6 && col.classList.contains('col-diff-g')) return;
+        if (colW[col.className] !== undefined) w += colW[col.className];
+      });
+      if (w > 0) t.style.width = w + 'px';
+    });
+  }
+
   function syncScTableWidths() {
     var scEmPx = 12;
     var root = document.documentElement;
@@ -1221,7 +1234,7 @@
     };
     var detW = 3.2 * scEmPx
             + px('--sc-class-w', 14) + px('--sc-basetype-w', 16)
-            + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx
+            + 7 * scEmPx + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx
             + px('--sc-type-w', 12) + px('--sc-name-w', 10)
             + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
             + px('--sc-body-w', 5);
@@ -1267,7 +1280,6 @@
       initColResizeSingle(th);
     });
   }
-
 
   function copyPath(btn) {
     var td = btn.closest('td');
