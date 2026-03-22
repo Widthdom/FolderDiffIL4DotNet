@@ -195,7 +195,7 @@
 
   function collapseAll() {
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
-    scheduleSave();
+    autoSave();
   }
 
   function clearAll() {

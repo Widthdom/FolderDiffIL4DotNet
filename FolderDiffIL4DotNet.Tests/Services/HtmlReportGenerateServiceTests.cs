@@ -1140,11 +1140,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that Kind and Body column body cells use code emphasis, while Access and Modifiers do not.
-        /// Kind, Body 列ボディは code 強調表示を使用し、Access, Modifiers 列ボディは強調表示しないことを確認する。
+        /// Verifies that Kind, Body, Access, and Modifiers column body cells use code emphasis.
+        /// Kind, Body, Access, Modifiers 列ボディが code 強調表示を使用することを確認する。
         /// </summary>
         [Fact]
-        public void GenerateDiffReportHtml_AssemblySemanticChanges_KindBodyUseCodeEmphasis_AccessModifiersDoNot()
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_KindBodyAccessModifiersUseCodeEmphasis()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("sc-emphasis");
 
@@ -1166,15 +1166,46 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 computerName: "test-host", config);
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Kind and Body use <code> emphasis; Access and Modifiers do not
-            // Kind, Body は <code> 強調表示を使用し、Access, Modifiers は強調表示しない
-            Assert.Contains("<code>Method</code>", html);        // Kind — uses code emphasis
-            Assert.DoesNotContain("<code>public</code>", html);  // Access — no code emphasis
-            Assert.DoesNotContain("<code>virtual</code>", html); // Modifiers — no code emphasis
-            Assert.Contains(">public<", html);                   // Access — plain text
-            Assert.Contains(">virtual<", html);                  // Modifiers — plain text
+            // Kind, Body, Access, and Modifiers all use <code> emphasis
+            // Kind, Body, Access, Modifiers はすべて <code> 強調表示を使用する
+            Assert.Contains("<code>Method</code>", html);        // Kind
+            Assert.Contains("<code>public</code>", html);        // Access
+            Assert.Contains("<code>virtual</code>", html);       // Modifiers
             Assert.Contains("style=\"background:#e3f2fd\">[ * ]", html); // Status cell with blue bg (no code emphasis)
             Assert.Contains("<code>Changed</code>", html);       // Body
+        }
+
+        /// <summary>
+        /// Verifies that Access column with arrow notation wraps each side in code tags individually.
+        /// Access 列の矢印表記で各側を個別に code タグで囲むことを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateDiffReportHtml_AssemblySemanticChanges_AccessArrowWrapsEachSideInCode()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("sc-arrow-code");
+
+            _resultLists.AddModifiedFileRelativePath("lib.dll");
+            _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.FileRelativePathToAssemblySemanticChanges["lib.dll"] = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Modified", "MyApp.Svc", "", "public \u2192 internal", "virtual \u2192 sealed", "Method", "Run", "", "void", "", "Changed"),
+                },
+            };
+
+            var config = CreateConfig(enableInlineDiff: true, lazyRender: false);
+            config.ShouldIncludeAssemblySemanticChangesInReport = true;
+            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null,
+                computerName: "test-host", config);
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // Arrow notation wraps each side individually: <code>old</code> → <code>new</code>
+            // 矢印表記は各側を個別に囲む: <code>旧</code> → <code>新</code>
+            Assert.Contains("<code>public</code> \u2192 <code>internal</code>", html);
+            Assert.Contains("<code>virtual</code> \u2192 <code>sealed</code>", html);
         }
 
         /// <summary>
