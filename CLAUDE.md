@@ -149,6 +149,11 @@ This is the single most important rule in this repository.
 - **Do NOT create git tags** without explicit user permission. Tags trigger the release workflow (`release.yml`) and must be created only when the user explicitly requests it.
 - **git tag はユーザーの明示的な許可なく作成しないこと。** タグはリリースワークフロー（`release.yml`）を起動するため、ユーザーが明確に指示した場合のみ作成する。
 
+## Communication / コミュニケーション
+
+- When chatting with the repository maintainer in the console, **always use Japanese**.
+- コンソールでリポジトリメンテナーと会話する際は、**常に日本語を使うこと。**
+
 ## Common Pitfalls / よくある落とし穴
 
 1. **Markdown in tables**: Don't nest `[link](url)` inside backtick-quoted text in table cells — it renders incorrectly
