@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -221,7 +222,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             public List<(string, string)> HashCalls { get; } = new();
             public List<string> DotNetDetectionCalls { get; } = new();
             public List<(string, string)> TextDiffCalls { get; } = new();
-            public List<(string Path, long Offset, int Length)> ReadChunkCalls { get; } = new();
+            public ConcurrentBag<(string Path, long Offset, int Length)> ReadChunkCalls { get; } = new();
 
             public void SetFileContent(string path, string content)
                 => _contentsByPath[path] = System.Text.Encoding.UTF8.GetBytes(content);

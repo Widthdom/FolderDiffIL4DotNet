@@ -93,7 +93,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **dotnet-stryker 4.4.2 not found on NuGet** — Updated from non-existent version `4.4.2` to `4.14.0` in [`.config/dotnet-tools.json`](.config/dotnet-tools.json).
 
-- **coverlet.collector 6.0.3+ regression causes missing coverage report** — Downgraded `coverlet.collector` from `6.0.4` to `6.0.2` in [`FolderDiffIL4DotNet.Tests.csproj`](FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj). Version 6.0.3 introduced a [regression](https://github.com/coverlet-coverage/coverlet/issues/1726) where include/exclude filters in `coverlet.runsettings` cause the `coverage.cobertura.xml` file to not be generated, breaking the CI `reportgenerator` step.
+- **coverlet.collector 6.0.3+ regression causes missing coverage report** — Downgraded `coverlet.collector` from `6.0.4` to `6.0.2` in [`FolderDiffIL4DotNet.Tests.csproj`](FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj). Version 6.0.3 introduced a [regression](https://github.com/coverlet-coverage/coverlet/issues/1726) where include/exclude filters in `coverlet.runsettings` cause the `coverage.cobertura.xml` file to not be generated, breaking the CI `reportgenerator` step. Also removed `opencover` from the coverage format in [`coverlet.runsettings`](coverlet.runsettings) because the OpenCover reporter does not support `DeterministicReport=true`.
+
+- **LargeFileComparisonTests race condition on ReadChunkCalls** — Changed `ReadChunkCalls` from `List<>` to `ConcurrentBag<>` in [`LargeFileComparisonTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/LargeFileComparisonTests.cs). The non-thread-safe `List.Add` was called concurrently from `Parallel.ForEachAsync`, causing sporadic exceptions caught by the `CompareAsTextAsync` fallback handler, which then returned `false` from the sequential comparison path.
 
 - **Legend table header border color mismatch** — Changed `legend-table th` border from `1px solid #ddd` to `1px solid #bbb` in both [`diff_report.css`](Services/HtmlReport/diff_report.css) and [`doc/samples/diff_report.html`](doc/samples/diff_report.html), matching the standard table header border color used by `[ x ] Ignored Files` and other file listing tables.
 
@@ -647,7 +649,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **dotnet-stryker 4.4.2 が NuGet に存在しない問題** — [`.config/dotnet-tools.json`](.config/dotnet-tools.json) で存在しないバージョン `4.4.2` を `4.14.0` に更新。
 
-- **coverlet.collector 6.0.3+ リグレッションによるカバレッジレポート欠落** — [`FolderDiffIL4DotNet.Tests.csproj`](FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) の `coverlet.collector` を `6.0.4` から `6.0.2` にダウングレード。バージョン 6.0.3 で導入された[リグレッション](https://github.com/coverlet-coverage/coverlet/issues/1726)により、`coverlet.runsettings` の include/exclude フィルタ使用時に `coverage.cobertura.xml` が生成されず、CI の `reportgenerator` ステップが失敗する問題を修正。
+- **coverlet.collector 6.0.3+ リグレッションによるカバレッジレポート欠落** — [`FolderDiffIL4DotNet.Tests.csproj`](FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) の `coverlet.collector` を `6.0.4` から `6.0.2` にダウングレード。バージョン 6.0.3 で導入された[リグレッション](https://github.com/coverlet-coverage/coverlet/issues/1726)により、`coverlet.runsettings` の include/exclude フィルタ使用時に `coverage.cobertura.xml` が生成されず、CI の `reportgenerator` ステップが失敗する問題を修正。また OpenCover レポーターが `DeterministicReport=true` をサポートしないため、[`coverlet.runsettings`](coverlet.runsettings) のカバレッジフォーマットから `opencover` を削除。
+
+- **LargeFileComparisonTests の ReadChunkCalls レースコンディション** — [`LargeFileComparisonTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/LargeFileComparisonTests.cs) の `ReadChunkCalls` を `List<>` から `ConcurrentBag<>` に変更。スレッドセーフでない `List.Add` が `Parallel.ForEachAsync` から並列に呼ばれ、散発的に例外が発生し `CompareAsTextAsync` のフォールバックハンドラに捕捉されて逐次比較パス（`false` を返す）に落ちる問題を修正。
 
 - **凡例テーブルヘッダの枠線色の不一致** — `legend-table th` の枠線を `1px solid #ddd` から `1px solid #bbb` に変更し、[`diff_report.css`](Services/HtmlReport/diff_report.css) と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) の両方で `[ x ] Ignored Files` 等のファイル一覧テーブルのヘッダ枠線色と一致させました。
 

@@ -6,9 +6,9 @@
     <DataCollectors>
       <DataCollector friendlyName="XPlat Code Coverage">
         <Configuration>
-          <!-- Output format: Cobertura XML for CI threshold enforcement + opencover for detailed analysis.
-               出力フォーマット: CI 閾値チェック用の Cobertura XML + 詳細分析用の opencover。 -->
-          <Format>cobertura,opencover</Format>
+          <!-- Output format: Cobertura XML for CI threshold enforcement and report generation.
+               出力フォーマット: CI 閾値チェックおよびレポート生成用の Cobertura XML。 -->
+          <Format>cobertura</Format>
 
           <!-- Exclude test projects and auto-generated code from coverage.
                テストプロジェクトおよび自動生成コードをカバレッジ対象から除外。 -->
