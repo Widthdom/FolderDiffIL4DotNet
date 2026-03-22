@@ -483,6 +483,98 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Theory]
+        [InlineData("dotnet-ildasm sample.dll (version: dotnet ildasm 0.12.0)", "dotnet ildasm 0.12.0")]
+        [InlineData("ilspycmd sample.dll (version: ilspycmd 9.1.0)", "ilspycmd 9.1.0")]
+        [InlineData("dotnet-ildasm sample.dll", null)]
+        [InlineData("dotnet-ildasm (version: )", null)]
+        [InlineData("", null)]
+        [InlineData(null, null)]
+        [Trait("Category", "Unit")]
+        public void ExtractVersionFromLabel_VariousLabels_ReturnsExpectedVersion(string? label, string? expected)
+        {
+            // Tests the ExtractVersionFromLabel helper for various branch paths.
+            // ExtractVersionFromLabel ヘルパーの各分岐パスをテスト。
+            var method = typeof(DotNetDisassembleService).GetMethod("ExtractVersionFromLabel", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(null, [label]) as string;
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("dotnet-ildasm", "dotnet-ildasm")]
+        [InlineData("dotnet", "dotnet-ildasm")]
+        [InlineData("ilspycmd", "ilspycmd")]
+        [InlineData("ildasm", "ildasm")]
+        [InlineData("", "")]
+        [InlineData(null, null)]
+        [Trait("Category", "Unit")]
+        public void NormalizeDisassemblerName_VariousCommands_ReturnsExpectedToolName(string? command, string? expected)
+        {
+            // Tests the NormalizeDisassemblerName helper for various tool name branches.
+            // NormalizeDisassemblerName ヘルパーの各ツール名分岐をテスト。
+            var method = typeof(DotNetDisassembleService).GetMethod("NormalizeDisassemblerName", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(null, [command]) as string;
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void AreSameDisassemblerVersion_MatchingVersions_ReturnsTrue()
+        {
+            // Tests that two labels with the same version are considered equal.
+            // 同じバージョンの2つのラベルが等しいと判定されることをテスト。
+            var method = typeof(DotNetDisassembleService).GetMethod("AreSameDisassemblerVersion", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = (bool)method.Invoke(null, ["tool sample.dll (version: 1.0.0)", "tool other.dll (version: 1.0.0)"])!;
+            Assert.True(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void AreSameDisassemblerVersion_DifferentVersions_ReturnsFalse()
+        {
+            // Tests that two labels with different versions are not considered equal.
+            // 異なるバージョンの2つのラベルが等しくないと判定されることをテスト。
+            var method = typeof(DotNetDisassembleService).GetMethod("AreSameDisassemblerVersion", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = (bool)method.Invoke(null, ["tool sample.dll (version: 1.0.0)", "tool other.dll (version: 2.0.0)"])!;
+            Assert.False(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BuildArgSets_IlspyCommand_IncludesOutputFileArguments()
+        {
+            // Tests that ilspycmd arg sets include the -o flag with temp output path.
+            // ilspycmd の引数セットに -o フラグと一時出力パスが含まれることをテスト。
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildArgSets", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var argSetsObject = method.Invoke(null, ["ilspycmd", "/tmp/sample.dll", null]);
+            var argSets = Assert.IsAssignableFrom<System.Collections.IEnumerable>(argSetsObject);
+
+            bool hasOutputArg = false;
+            foreach (var item in argSets)
+            {
+                var itemType = item.GetType();
+                var argsField = itemType.GetField("Item2");
+                Assert.NotNull(argsField);
+                var args = Assert.IsType<string[]>(argsField.GetValue(item));
+                if (Array.IndexOf(args, "-o") >= 0)
+                {
+                    hasOutputArg = true;
+                }
+            }
+
+            Assert.True(hasOutputArg, "ilspycmd arg sets should include -o output flag");
+        }
+
         // ── Helpers / ヘルパー ──────────────────────────────────────────────────
 
         private static ConfigSettings CreateConfig(bool enableIlCache) => new ConfigSettingsBuilder()

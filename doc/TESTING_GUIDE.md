@@ -23,7 +23,7 @@ Related documents:
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
-Current tree has `654` test methods (`619` `[Fact]`/`[SkippableFact]` + `35` `[Theory]` with `114` `[InlineData]` cases) in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`): `1` skipped (E2E test requiring a real disassembler binary).
+Current tree has `677` test methods (`640` `[Fact]`/`[SkippableFact]` + `37` `[Theory]` with `126` `[InlineData]` cases) in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`): `1` skipped (E2E test requiring a real disassembler binary).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
@@ -216,7 +216,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 <a id="testing-ja-scope-map"></a>
 ## 現在のテスト範囲マップ
 
-直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）のテストメソッド数は `654` 件（`619` `[Fact]`/`[SkippableFact]` + `35` `[Theory]`（`114` `[InlineData]` ケース付き））です。スキップ `1`（実際の逆アセンブラバイナリが必要な E2E テスト）。
+直近のフル実行（`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`）のテストメソッド数は `677` 件（`640` `[Fact]`/`[SkippableFact]` + `37` `[Theory]`（`126` `[InlineData]` ケース付き））です。スキップ `1`（実際の逆アセンブラバイナリが必要な E2E テスト）。
 
 | 領域 | 主なテストクラス | 主な検証内容 |
 | --- | --- | --- |

@@ -41,12 +41,17 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed class ConfigSettings : IReadOnlyConfigSettings
     {
+        // ── Numeric defaults / 数値デフォルト ──────────────────────────────
         /// <summary>Default value for <see cref="MaxLogGenerations"/>. / <see cref="MaxLogGenerations"/> の既定値。</summary>
         public const int DefaultMaxLogGenerations = 5;
+        /// <summary>Default value for <see cref="MaxParallelism"/>. / <see cref="MaxParallelism"/> の既定値。</summary>
+        public const int DefaultMaxParallelism = 0;
         /// <summary>Default value for <see cref="TextDiffParallelThresholdKilobytes"/>. / <see cref="TextDiffParallelThresholdKilobytes"/> の既定値。</summary>
         public const int DefaultTextDiffParallelThresholdKilobytes = 512;
         /// <summary>Default value for <see cref="TextDiffChunkSizeKilobytes"/>. / <see cref="TextDiffChunkSizeKilobytes"/> の既定値。</summary>
         public const int DefaultTextDiffChunkSizeKilobytes = 64;
+        /// <summary>Default value for <see cref="TextDiffParallelMemoryLimitMegabytes"/>. / <see cref="TextDiffParallelMemoryLimitMegabytes"/> の既定値。</summary>
+        public const int DefaultTextDiffParallelMemoryLimitMegabytes = 0;
         /// <summary>Default value for <see cref="ILCacheStatsLogIntervalSeconds"/>. / <see cref="ILCacheStatsLogIntervalSeconds"/> の既定値。</summary>
         public const int DefaultILCacheStatsLogIntervalSeconds = 60;
         /// <summary>Default value for <see cref="ILCacheMaxDiskFileCount"/>. / <see cref="ILCacheMaxDiskFileCount"/> の既定値。</summary>
@@ -61,12 +66,48 @@ namespace FolderDiffIL4DotNet.Models
         public const int DefaultDisassemblerBlacklistTtlMinutes = 10;
         /// <summary>Default value for <see cref="DisassemblerTimeoutSeconds"/>. / <see cref="DisassemblerTimeoutSeconds"/> の既定値。</summary>
         public const int DefaultDisassemblerTimeoutSeconds = 300;
+        /// <summary>Default value for <see cref="InlineDiffContextLines"/>. / <see cref="InlineDiffContextLines"/> の既定値。</summary>
+        public const int DefaultInlineDiffContextLines = 0;
         /// <summary>Default value for <see cref="InlineDiffMaxEditDistance"/>. / <see cref="InlineDiffMaxEditDistance"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxEditDistance = 4000;
         /// <summary>Default value for <see cref="InlineDiffMaxDiffLines"/>. / <see cref="InlineDiffMaxDiffLines"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxDiffLines = 10000;
         /// <summary>Default value for <see cref="InlineDiffMaxOutputLines"/>. / <see cref="InlineDiffMaxOutputLines"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxOutputLines = 10000;
+
+        // ── Boolean defaults / 真偽値デフォルト ──────────────────────────
+        /// <summary>Default value for <see cref="ShouldIncludeUnchangedFiles"/>. / <see cref="ShouldIncludeUnchangedFiles"/> の既定値。</summary>
+        public const bool DefaultShouldIncludeUnchangedFiles = true;
+        /// <summary>Default value for <see cref="ShouldIncludeIgnoredFiles"/>. / <see cref="ShouldIncludeIgnoredFiles"/> の既定値。</summary>
+        public const bool DefaultShouldIncludeIgnoredFiles = true;
+        /// <summary>Default value for <see cref="ShouldIncludeAssemblySemanticChangesInReport"/>. / <see cref="ShouldIncludeAssemblySemanticChangesInReport"/> の既定値。</summary>
+        public const bool DefaultShouldIncludeAssemblySemanticChangesInReport = true;
+        /// <summary>Default value for <see cref="ShouldIncludeILCacheStatsInReport"/>. / <see cref="ShouldIncludeILCacheStatsInReport"/> の既定値。</summary>
+        public const bool DefaultShouldIncludeILCacheStatsInReport = false;
+        /// <summary>Default value for <see cref="ShouldGenerateHtmlReport"/>. / <see cref="ShouldGenerateHtmlReport"/> の既定値。</summary>
+        public const bool DefaultShouldGenerateHtmlReport = true;
+        /// <summary>Default value for <see cref="ShouldGenerateAuditLog"/>. / <see cref="ShouldGenerateAuditLog"/> の既定値。</summary>
+        public const bool DefaultShouldGenerateAuditLog = true;
+        /// <summary>Default value for <see cref="ShouldOutputILText"/>. / <see cref="ShouldOutputILText"/> の既定値。</summary>
+        public const bool DefaultShouldOutputILText = true;
+        /// <summary>Default value for <see cref="ShouldIgnoreILLinesContainingConfiguredStrings"/>. / <see cref="ShouldIgnoreILLinesContainingConfiguredStrings"/> の既定値。</summary>
+        public const bool DefaultShouldIgnoreILLinesContainingConfiguredStrings = false;
+        /// <summary>Default value for <see cref="ShouldOutputFileTimestamps"/>. / <see cref="ShouldOutputFileTimestamps"/> の既定値。</summary>
+        public const bool DefaultShouldOutputFileTimestamps = true;
+        /// <summary>Default value for <see cref="ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp"/>. / <see cref="ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp"/> の既定値。</summary>
+        public const bool DefaultShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
+        /// <summary>Default value for <see cref="EnableILCache"/>. / <see cref="EnableILCache"/> の既定値。</summary>
+        public const bool DefaultEnableILCache = true;
+        /// <summary>Default value for <see cref="OptimizeForNetworkShares"/>. / <see cref="OptimizeForNetworkShares"/> の既定値。</summary>
+        public const bool DefaultOptimizeForNetworkShares = false;
+        /// <summary>Default value for <see cref="AutoDetectNetworkShares"/>. / <see cref="AutoDetectNetworkShares"/> の既定値。</summary>
+        public const bool DefaultAutoDetectNetworkShares = true;
+        /// <summary>Default value for <see cref="SkipIL"/>. / <see cref="SkipIL"/> の既定値。</summary>
+        public const bool DefaultSkipIL = false;
+        /// <summary>Default value for <see cref="EnableInlineDiff"/>. / <see cref="EnableInlineDiff"/> の既定値。</summary>
+        public const bool DefaultEnableInlineDiff = true;
+        /// <summary>Default value for <see cref="InlineDiffLazyRender"/>. / <see cref="InlineDiffLazyRender"/> の既定値。</summary>
+        public const bool DefaultInlineDiffLazyRender = true;
 
         internal static readonly string[] DefaultIgnoredExtensionsValues =
         {

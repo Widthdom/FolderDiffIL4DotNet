@@ -77,7 +77,7 @@ This is the single most important rule in this repository.
 
 - **Methods**: Keep under ~100 lines. Extract helpers when a method exceeds this.
 - **Classes**: Keep under ~500 lines per file. Use `partial class` splits for larger services.
-- Already-split examples: `HtmlReportGenerateService` (5 files), `AssemblyMethodAnalyzer` (3 files), `DotNetDisassembleService` (2 files)
+- Already-split examples: `HtmlReportGenerateService` (5 files), `AssemblyMethodAnalyzer` (3 files), `DotNetDisassembleService` (2 files), `FileDiffService` (2 files)
 
 #### Naming conventions
 
@@ -214,7 +214,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 
 - メソッドは約100行以内。超えたらヘルパーに抽出する。
 - クラスは1ファイル約500行以内。大きいサービスは `partial class` で分割する。
-- 分割済みの例: `HtmlReportGenerateService`（5 ファイル）、`AssemblyMethodAnalyzer`（3 ファイル）、`DotNetDisassembleService`（2 ファイル）
+- 分割済みの例: `HtmlReportGenerateService`（5 ファイル）、`AssemblyMethodAnalyzer`（3 ファイル）、`DotNetDisassembleService`（2 ファイル）、`FileDiffService`（2 ファイル）
 
 #### 命名規則
 

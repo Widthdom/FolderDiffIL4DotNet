@@ -37,28 +37,28 @@ namespace FolderDiffIL4DotNet.Models
         public int MaxLogGenerations { get; set; } = ConfigSettings.DefaultMaxLogGenerations;
 
         /// <inheritdoc cref="ConfigSettings.ShouldIncludeUnchangedFiles"/>
-        public bool ShouldIncludeUnchangedFiles { get; set; } = true;
+        public bool ShouldIncludeUnchangedFiles { get; set; } = ConfigSettings.DefaultShouldIncludeUnchangedFiles;
 
         /// <inheritdoc cref="ConfigSettings.ShouldIncludeIgnoredFiles"/>
-        public bool ShouldIncludeIgnoredFiles { get; set; } = true;
+        public bool ShouldIncludeIgnoredFiles { get; set; } = ConfigSettings.DefaultShouldIncludeIgnoredFiles;
 
         /// <inheritdoc cref="ConfigSettings.ShouldIncludeAssemblySemanticChangesInReport"/>
-        public bool ShouldIncludeAssemblySemanticChangesInReport { get; set; } = true;
+        public bool ShouldIncludeAssemblySemanticChangesInReport { get; set; } = ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport;
 
         /// <inheritdoc cref="ConfigSettings.ShouldIncludeILCacheStatsInReport"/>
-        public bool ShouldIncludeILCacheStatsInReport { get; set; } = false;
+        public bool ShouldIncludeILCacheStatsInReport { get; set; } = ConfigSettings.DefaultShouldIncludeILCacheStatsInReport;
 
         /// <inheritdoc cref="ConfigSettings.ShouldGenerateHtmlReport"/>
-        public bool ShouldGenerateHtmlReport { get; set; } = true;
+        public bool ShouldGenerateHtmlReport { get; set; } = ConfigSettings.DefaultShouldGenerateHtmlReport;
 
         /// <inheritdoc cref="ConfigSettings.ShouldGenerateAuditLog"/>
-        public bool ShouldGenerateAuditLog { get; set; } = true;
+        public bool ShouldGenerateAuditLog { get; set; } = ConfigSettings.DefaultShouldGenerateAuditLog;
 
         /// <inheritdoc cref="ConfigSettings.ShouldOutputILText"/>
-        public bool ShouldOutputILText { get; set; } = true;
+        public bool ShouldOutputILText { get; set; } = ConfigSettings.DefaultShouldOutputILText;
 
         /// <inheritdoc cref="ConfigSettings.ShouldIgnoreILLinesContainingConfiguredStrings"/>
-        public bool ShouldIgnoreILLinesContainingConfiguredStrings { get; set; } = false;
+        public bool ShouldIgnoreILLinesContainingConfiguredStrings { get; set; } = ConfigSettings.DefaultShouldIgnoreILLinesContainingConfiguredStrings;
 
         /// <inheritdoc cref="ConfigSettings.ILIgnoreLineContainingStrings"/>
         public List<string> ILIgnoreLineContainingStrings
@@ -68,13 +68,13 @@ namespace FolderDiffIL4DotNet.Models
         }
 
         /// <inheritdoc cref="ConfigSettings.ShouldOutputFileTimestamps"/>
-        public bool ShouldOutputFileTimestamps { get; set; } = true;
+        public bool ShouldOutputFileTimestamps { get; set; } = ConfigSettings.DefaultShouldOutputFileTimestamps;
 
         /// <inheritdoc cref="ConfigSettings.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp"/>
-        public bool ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp { get; set; } = true;
+        public bool ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp { get; set; } = ConfigSettings.DefaultShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp;
 
         /// <inheritdoc cref="ConfigSettings.MaxParallelism"/>
-        public int MaxParallelism { get; set; }
+        public int MaxParallelism { get; set; } = ConfigSettings.DefaultMaxParallelism;
 
         /// <inheritdoc cref="ConfigSettings.TextDiffParallelThresholdKilobytes"/>
         public int TextDiffParallelThresholdKilobytes { get; set; } = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes;
@@ -83,10 +83,10 @@ namespace FolderDiffIL4DotNet.Models
         public int TextDiffChunkSizeKilobytes { get; set; } = ConfigSettings.DefaultTextDiffChunkSizeKilobytes;
 
         /// <inheritdoc cref="ConfigSettings.TextDiffParallelMemoryLimitMegabytes"/>
-        public int TextDiffParallelMemoryLimitMegabytes { get; set; }
+        public int TextDiffParallelMemoryLimitMegabytes { get; set; } = ConfigSettings.DefaultTextDiffParallelMemoryLimitMegabytes;
 
         /// <inheritdoc cref="ConfigSettings.EnableILCache"/>
-        public bool EnableILCache { get; set; } = true;
+        public bool EnableILCache { get; set; } = ConfigSettings.DefaultEnableILCache;
 
         /// <inheritdoc cref="ConfigSettings.ILCacheDirectoryAbsolutePath"/>
         public string ILCacheDirectoryAbsolutePath
@@ -111,10 +111,10 @@ namespace FolderDiffIL4DotNet.Models
         public int ILPrecomputeBatchSize { get; set; } = ConfigSettings.DefaultILPrecomputeBatchSize;
 
         /// <inheritdoc cref="ConfigSettings.OptimizeForNetworkShares"/>
-        public bool OptimizeForNetworkShares { get; set; }
+        public bool OptimizeForNetworkShares { get; set; } = ConfigSettings.DefaultOptimizeForNetworkShares;
 
         /// <inheritdoc cref="ConfigSettings.AutoDetectNetworkShares"/>
-        public bool AutoDetectNetworkShares { get; set; } = true;
+        public bool AutoDetectNetworkShares { get; set; } = ConfigSettings.DefaultAutoDetectNetworkShares;
 
         /// <inheritdoc cref="ConfigSettings.DisassemblerBlacklistTtlMinutes"/>
         public int DisassemblerBlacklistTtlMinutes { get; set; } = ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes;
@@ -123,13 +123,13 @@ namespace FolderDiffIL4DotNet.Models
         public int DisassemblerTimeoutSeconds { get; set; } = ConfigSettings.DefaultDisassemblerTimeoutSeconds;
 
         /// <inheritdoc cref="ConfigSettings.SkipIL"/>
-        public bool SkipIL { get; set; }
+        public bool SkipIL { get; set; } = ConfigSettings.DefaultSkipIL;
 
         /// <inheritdoc cref="ConfigSettings.EnableInlineDiff"/>
-        public bool EnableInlineDiff { get; set; } = true;
+        public bool EnableInlineDiff { get; set; } = ConfigSettings.DefaultEnableInlineDiff;
 
         /// <inheritdoc cref="ConfigSettings.InlineDiffContextLines"/>
-        public int InlineDiffContextLines { get; set; } = 0;
+        public int InlineDiffContextLines { get; set; } = ConfigSettings.DefaultInlineDiffContextLines;
 
         /// <inheritdoc cref="ConfigSettings.InlineDiffMaxEditDistance"/>
         public int InlineDiffMaxEditDistance { get; set; } = ConfigSettings.DefaultInlineDiffMaxEditDistance;
@@ -141,7 +141,7 @@ namespace FolderDiffIL4DotNet.Models
         public int InlineDiffMaxOutputLines { get; set; } = ConfigSettings.DefaultInlineDiffMaxOutputLines;
 
         /// <inheritdoc cref="ConfigSettings.InlineDiffLazyRender"/>
-        public bool InlineDiffLazyRender { get; set; } = true;
+        public bool InlineDiffLazyRender { get; set; } = ConfigSettings.DefaultInlineDiffLazyRender;
 
         /// <inheritdoc cref="ConfigSettings.SpinnerFrames"/>
         public List<string> SpinnerFrames

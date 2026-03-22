@@ -90,15 +90,18 @@ namespace FolderDiffIL4DotNet.Services
                 string typeModifiers = GetTypeModifiers(typeDef.Attributes);
                 snapshot.TypeNames[typeName] = new TypeInfo { Access = typeAccess, Kind = typeKind, BaseType = baseType, Modifiers = typeModifiers };
 
-                ReadMethodsFromType(reader, peReader, typeDef, typeName, typeProvider, snapshot);
-                ReadPropertiesFromType(reader, typeDef, typeName, typeProvider, snapshot);
-                ReadFieldsFromType(reader, typeDef, typeName, typeProvider, snapshot);
+                // Build type-level generic context once per type / 型レベルのジェネリックコンテキストを型ごとに1回構築
+                var typeGenericContext = GenericContext.FromType(reader, typeDef);
+
+                ReadMethodsFromType(reader, peReader, typeDef, typeName, typeProvider, typeGenericContext, snapshot);
+                ReadPropertiesFromType(reader, typeDef, typeName, typeProvider, typeGenericContext, snapshot);
+                ReadFieldsFromType(reader, typeDef, typeName, typeProvider, typeGenericContext, snapshot);
             }
 
             return snapshot;
         }
 
-        private static void ReadMethodsFromType(MetadataReader reader, PEReader peReader, TypeDefinition typeDef, string typeName, SimpleSignatureTypeProvider typeProvider, AssemblySnapshot snapshot)
+        private static void ReadMethodsFromType(MetadataReader reader, PEReader peReader, TypeDefinition typeDef, string typeName, SimpleSignatureTypeProvider typeProvider, GenericContext typeGenericContext, AssemblySnapshot snapshot)
         {
             foreach (var methodHandle in typeDef.GetMethods())
             {
@@ -106,8 +109,12 @@ namespace FolderDiffIL4DotNet.Services
                 string access = GetAccessModifier(methodDef.Attributes);
                 string modifiers = GetMethodModifiers(methodDef.Attributes);
                 string methodName = reader.GetString(methodDef.Name);
-                string matchKey = BuildMethodMatchKey(reader, typeName, methodDef, typeProvider);
-                var (retType, parameters) = BuildMethodSignatureParts(reader, methodDef, typeProvider);
+
+                // Build method-level generic context (type + method params) / メソッドレベルのジェネリックコンテキストを構築
+                var methodGenericContext = GenericContext.FromMethod(reader, typeDef, methodDef);
+
+                string matchKey = BuildMethodMatchKey(reader, typeName, methodDef, typeProvider, methodGenericContext);
+                var (retType, parameters) = BuildMethodSignatureParts(reader, methodDef, typeProvider, methodGenericContext);
                 byte[] ilBytes = ReadIlBytes(peReader, methodDef);
 
                 snapshot.Methods[matchKey] = new MethodDetail
@@ -123,7 +130,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private static void ReadPropertiesFromType(MetadataReader reader, TypeDefinition typeDef, string typeName, SimpleSignatureTypeProvider typeProvider, AssemblySnapshot snapshot)
+        private static void ReadPropertiesFromType(MetadataReader reader, TypeDefinition typeDef, string typeName, SimpleSignatureTypeProvider typeProvider, GenericContext typeGenericContext, AssemblySnapshot snapshot)
         {
             foreach (var propHandle in typeDef.GetProperties())
             {
@@ -132,8 +139,8 @@ namespace FolderDiffIL4DotNet.Services
                 string propKey = $"{typeName}::{propName}";
                 string propAccess = GetPropertyAccess(reader, propDef);
                 string propModifiers = GetPropertyModifiers(reader, propDef);
-                string propType = BuildPropertyType(reader, propDef, typeProvider);
-                string propDetails = BuildPropertyDetails(reader, propDef, typeProvider);
+                string propType = BuildPropertyType(reader, propDef, typeProvider, typeGenericContext);
+                string propDetails = BuildPropertyDetails(reader, propDef, typeProvider, typeGenericContext);
 
                 snapshot.Properties[propKey] = new PropertyDetail
                 {
@@ -147,7 +154,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private static void ReadFieldsFromType(MetadataReader reader, TypeDefinition typeDef, string typeName, SimpleSignatureTypeProvider typeProvider, AssemblySnapshot snapshot)
+        private static void ReadFieldsFromType(MetadataReader reader, TypeDefinition typeDef, string typeName, SimpleSignatureTypeProvider typeProvider, GenericContext typeGenericContext, AssemblySnapshot snapshot)
         {
             foreach (var fieldHandle in typeDef.GetFields())
             {
@@ -156,7 +163,7 @@ namespace FolderDiffIL4DotNet.Services
                 string fieldKey = $"{typeName}::{fieldName}";
                 string fieldAccess = GetFieldAccessModifier(fieldDef.Attributes);
                 string fieldModifiers = GetFieldModifiers(fieldDef.Attributes);
-                string fieldDetails = BuildFieldDetails(reader, fieldDef, typeProvider);
+                string fieldDetails = BuildFieldDetails(reader, fieldDef, typeProvider, typeGenericContext);
 
                 snapshot.Fields[fieldKey] = new FieldDetail
                 {
@@ -193,14 +200,14 @@ namespace FolderDiffIL4DotNet.Services
         /// アクセス修飾子の変更が誤った追加/削除ペアを生じさせないよう、アクセス修飾子を
         /// 含まないメソッド一致キーを構築します。アクセス修飾子の変更は別途 Modified として検出します。
         /// </summary>
-        private static string BuildMethodMatchKey(MetadataReader reader, string typeName, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
+        private static string BuildMethodMatchKey(MetadataReader reader, string typeName, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider, GenericContext? genericContext)
         {
             string methodName = reader.GetString(methodDef.Name);
 
             try
             {
                 var sigBlobReader = reader.GetBlobReader(methodDef.Signature);
-                var decoder = new SignatureDecoder<string, object?>(typeProvider, reader, genericContext: null);
+                var decoder = new SignatureDecoder<string, GenericContext?>(typeProvider, reader, genericContext);
                 var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
                 string parameters = string.Join(", ", signature.ParameterTypes);
                 return $"{typeName}::{methodName}({parameters}) : {signature.ReturnType}";
@@ -218,12 +225,12 @@ namespace FolderDiffIL4DotNet.Services
         /// Build separate return type and parameter strings for a method.
         /// メソッドの戻り値型とパラメータ文字列を個別に構築します。
         /// </summary>
-        private static (string ReturnType, string Parameters) BuildMethodSignatureParts(MetadataReader reader, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider)
+        private static (string ReturnType, string Parameters) BuildMethodSignatureParts(MetadataReader reader, MethodDefinition methodDef, SimpleSignatureTypeProvider typeProvider, GenericContext? genericContext)
         {
             try
             {
                 var sigBlobReader = reader.GetBlobReader(methodDef.Signature);
-                var decoder = new SignatureDecoder<string, object?>(typeProvider, reader, genericContext: null);
+                var decoder = new SignatureDecoder<string, GenericContext?>(typeProvider, reader, genericContext);
                 var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
 
                 // Collect parameter metadata (names and default values)
@@ -272,12 +279,12 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>Extract the declared type of a property (without accessor info). / プロパティの宣言型を抽出（アクセサ情報なし）。</summary>
-        private static string BuildPropertyType(MetadataReader reader, PropertyDefinition propDef, SimpleSignatureTypeProvider typeProvider)
+        private static string BuildPropertyType(MetadataReader reader, PropertyDefinition propDef, SimpleSignatureTypeProvider typeProvider, GenericContext? genericContext)
         {
             try
             {
                 var sigBlobReader = reader.GetBlobReader(propDef.Signature);
-                var decoder = new SignatureDecoder<string, object?>(typeProvider, reader, genericContext: null);
+                var decoder = new SignatureDecoder<string, GenericContext?>(typeProvider, reader, genericContext);
                 var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
                 return signature.ReturnType;
             }
@@ -290,12 +297,12 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>Build property details: ": Type { get; set; }".</summary>
-        private static string BuildPropertyDetails(MetadataReader reader, PropertyDefinition propDef, SimpleSignatureTypeProvider typeProvider)
+        private static string BuildPropertyDetails(MetadataReader reader, PropertyDefinition propDef, SimpleSignatureTypeProvider typeProvider, GenericContext? genericContext)
         {
             try
             {
                 var sigBlobReader = reader.GetBlobReader(propDef.Signature);
-                var decoder = new SignatureDecoder<string, object?>(typeProvider, reader, genericContext: null);
+                var decoder = new SignatureDecoder<string, GenericContext?>(typeProvider, reader, genericContext);
                 var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
                 string propType = signature.ReturnType;
 
@@ -319,11 +326,11 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>Build field details: ": Type" or ": Type = defaultValue".</summary>
-        private static string BuildFieldDetails(MetadataReader reader, FieldDefinition fieldDef, SimpleSignatureTypeProvider typeProvider)
+        private static string BuildFieldDetails(MetadataReader reader, FieldDefinition fieldDef, SimpleSignatureTypeProvider typeProvider, GenericContext? genericContext)
         {
             try
             {
-                string fieldType = fieldDef.DecodeSignature(typeProvider, null);
+                string fieldType = fieldDef.DecodeSignature(typeProvider, genericContext);
                 string result = $": {fieldType}";
 
                 var defaultHandle = fieldDef.GetDefaultValue();
@@ -614,14 +621,72 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning restore CA1031
         }
 
+        // ── Generic context for signature decoding ─────────────────────────
+
+        /// <summary>
+        /// Holds generic parameter names for both the enclosing type and the method,
+        /// enabling the signature decoder to resolve <c>!0</c> → <c>T</c> and <c>!!0</c> → <c>TResult</c>.
+        /// 囲み型およびメソッドのジェネリックパラメータ名を保持し、シグネチャデコーダが
+        /// <c>!0</c> → <c>T</c>、<c>!!0</c> → <c>TResult</c> のように解決できるようにします。
+        /// </summary>
+        internal sealed class GenericContext
+        {
+            public ImmutableArray<string> TypeParameters { get; }
+            public ImmutableArray<string> MethodParameters { get; }
+
+            public GenericContext(ImmutableArray<string> typeParameters, ImmutableArray<string> methodParameters)
+            {
+                TypeParameters = typeParameters;
+                MethodParameters = methodParameters;
+            }
+
+            /// <summary>
+            /// Build a context with only type-level generic parameters.
+            /// 型レベルのジェネリックパラメータのみを持つコンテキストを構築します。
+            /// </summary>
+            public static GenericContext FromType(MetadataReader reader, TypeDefinition typeDef)
+            {
+                var typeParams = ReadGenericParamNames(reader, typeDef.GetGenericParameters());
+                return new GenericContext(typeParams, ImmutableArray<string>.Empty);
+            }
+
+            /// <summary>
+            /// Build a context with both type-level and method-level generic parameters.
+            /// 型レベルとメソッドレベル両方のジェネリックパラメータを持つコンテキストを構築します。
+            /// </summary>
+            public static GenericContext FromMethod(MetadataReader reader, TypeDefinition typeDef, MethodDefinition methodDef)
+            {
+                var typeParams = ReadGenericParamNames(reader, typeDef.GetGenericParameters());
+                var methodParams = ReadGenericParamNames(reader, methodDef.GetGenericParameters());
+                return new GenericContext(typeParams, methodParams);
+            }
+
+            private static ImmutableArray<string> ReadGenericParamNames(MetadataReader reader, GenericParameterHandleCollection handles)
+            {
+                if (handles.Count == 0) return ImmutableArray<string>.Empty;
+
+                var builder = ImmutableArray.CreateBuilder<string>(handles.Count);
+                foreach (var handle in handles)
+                {
+                    var param = reader.GetGenericParameter(handle);
+                    builder.Add(reader.GetString(param.Name));
+                }
+                return builder.MoveToImmutable();
+            }
+        }
+
         // ── Signature type provider ──────────────────────────────────────────
 
         /// <summary>
-        /// Minimal <see cref="ISignatureTypeProvider{TType, TGenericContext}"/> that decodes
+        /// <see cref="ISignatureTypeProvider{TType, TGenericContext}"/> that decodes
         /// method parameter and return types into human-readable strings.
-        /// メソッドパラメータおよび戻り値の型を可読文字列にデコードする最小限の実装。
+        /// Resolves generic parameter indices to their declared names via <see cref="GenericContext"/>,
+        /// preserves function pointer signatures, and retains custom modifier annotations.
+        /// メソッドパラメータおよび戻り値の型を可読文字列にデコードする実装。
+        /// <see cref="GenericContext"/> 経由でジェネリックパラメータインデックスを宣言名に解決し、
+        /// 関数ポインタシグネチャを保持し、カスタム修飾子注釈を維持します。
         /// </summary>
-        internal sealed class SimpleSignatureTypeProvider : ISignatureTypeProvider<string, object?>
+        internal sealed class SimpleSignatureTypeProvider : ISignatureTypeProvider<string, GenericContext?>
         {
             private readonly MetadataReader _reader;
 
@@ -665,10 +730,10 @@ namespace FolderDiffIL4DotNet.Services
                 return string.IsNullOrEmpty(ns) ? name : $"{ns}.{name}";
             }
 
-            public string GetTypeFromSpecification(MetadataReader reader, object? genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
+            public string GetTypeFromSpecification(MetadataReader reader, GenericContext? genericContext, TypeSpecificationHandle handle, byte rawTypeKind)
             {
                 var sigReader = reader.GetBlobReader(reader.GetTypeSpecification(handle).Signature);
-                return new SignatureDecoder<string, object?>(this, reader, genericContext).DecodeType(ref sigReader);
+                return new SignatureDecoder<string, GenericContext?>(this, reader, genericContext).DecodeType(ref sigReader);
             }
 
             public string GetSZArrayType(string elementType) => $"{elementType}[]";
@@ -676,13 +741,59 @@ namespace FolderDiffIL4DotNet.Services
             public string GetByReferenceType(string elementType) => $"{elementType}&";
             public string GetGenericInstantiation(string genericType, ImmutableArray<string> typeArguments)
                 => $"{genericType}<{string.Join(", ", typeArguments)}>";
-            public string GetGenericMethodParameter(object? genericContext, int index) => $"!!{index}";
-            public string GetGenericTypeParameter(object? genericContext, int index) => $"!{index}";
-            public string GetPinnedType(string elementType) => elementType;
-            public string GetModifiedType(string modifier, string unmodifiedType, bool isRequired) => unmodifiedType;
+
+            /// <summary>
+            /// Resolve a generic method parameter index to its declared name (e.g. <c>!!0</c> → <c>TResult</c>).
+            /// Falls back to <c>!!index</c> when context is unavailable.
+            /// ジェネリックメソッドパラメータインデックスを宣言名に解決します（例: <c>!!0</c> → <c>TResult</c>）。
+            /// コンテキストが無い場合は <c>!!index</c> にフォールバックします。
+            /// </summary>
+            public string GetGenericMethodParameter(GenericContext? genericContext, int index)
+            {
+                if (genericContext != null && index >= 0 && index < genericContext.MethodParameters.Length)
+                    return genericContext.MethodParameters[index];
+                return $"!!{index}";
+            }
+
+            /// <summary>
+            /// Resolve a generic type parameter index to its declared name (e.g. <c>!0</c> → <c>T</c>).
+            /// Falls back to <c>!index</c> when context is unavailable.
+            /// ジェネリック型パラメータインデックスを宣言名に解決します（例: <c>!0</c> → <c>T</c>）。
+            /// コンテキストが無い場合は <c>!index</c> にフォールバックします。
+            /// </summary>
+            public string GetGenericTypeParameter(GenericContext? genericContext, int index)
+            {
+                if (genericContext != null && index >= 0 && index < genericContext.TypeParameters.Length)
+                    return genericContext.TypeParameters[index];
+                return $"!{index}";
+            }
+
+            public string GetPinnedType(string elementType) => $"pinned {elementType}";
+
+            /// <summary>
+            /// Preserve custom modifier annotations (modreq / modopt) so that changes to
+            /// volatile / IsConst / other modifiers are detected during comparison.
+            /// カスタム修飾子注釈（modreq / modopt）を保持し、volatile / IsConst 等の
+            /// 修飾子変更を比較時に検出できるようにします。
+            /// </summary>
+            public string GetModifiedType(string modifier, string unmodifiedType, bool isRequired)
+                => isRequired ? $"{unmodifiedType} modreq({modifier})" : $"{unmodifiedType} modopt({modifier})";
+
             public string GetArrayType(string elementType, ArrayShape shape)
                 => $"{elementType}[{new string(',', shape.Rank - 1)}]";
-            public string GetFunctionPointerType(MethodSignature<string> signature) => "delegate*";
+
+            /// <summary>
+            /// Expand function pointer signatures instead of returning a fixed <c>"delegate*"</c> string,
+            /// so that changes to the pointed-to signature are detected.
+            /// 関数ポインタシグネチャを固定文字列 <c>"delegate*"</c> ではなく展開し、
+            /// ポイント先のシグネチャの変更を検出できるようにします。
+            /// </summary>
+            public string GetFunctionPointerType(MethodSignature<string> signature)
+            {
+                if (signature.ParameterTypes.Length == 0)
+                    return $"delegate*<{signature.ReturnType}>";
+                return $"delegate*<{string.Join(", ", signature.ParameterTypes)}, {signature.ReturnType}>";
+            }
         }
     }
 }

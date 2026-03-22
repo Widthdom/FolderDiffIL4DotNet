@@ -83,8 +83,8 @@ jobs:
           import sys
           import xml.etree.ElementTree as ET
 
-          line_threshold = 73.0
-          branch_threshold = 71.0
+          line_threshold = 80.0
+          branch_threshold = 75.0
 
           matches = glob.glob("TestResults/**/coverage.cobertura.xml", recursive=True)
           if not matches:

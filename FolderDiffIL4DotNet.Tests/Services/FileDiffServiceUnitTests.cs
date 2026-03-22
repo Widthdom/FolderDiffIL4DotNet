@@ -428,6 +428,219 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.False(areEqual);
         }
 
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenDotNetDetectionFails_LogsWarningAndSkipsIL()
+        {
+            // When DetectDotNetExecutable returns a failure, the service should log a
+            // warning and skip IL comparison (fall through to text/binary comparison).
+            // DetectDotNetExecutable が失敗を返した場合、警告をログに記録し IL 比較をスキップすべき。
+            const string relativePath = "detect-fail.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(
+                    DotNetExecutableDetectionStatus.Failed,
+                    new IOException("detection error"))
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Mismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            Assert.Empty(ilOutputService.DiffCalls);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Failed to detect", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenILDiffReturnsEqual_RecordsILMatch()
+        {
+            // When IL comparison returns equal, DiffDetail should be ILMatch.
+            // IL 比較が一致を返した場合、DiffDetail は ILMatch であるべき。
+            const string relativePath = "matched.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffResult = (AreEqual: true, DisassemblerLabel: "dotnet-ildasm v1.0")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.True(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.ILMatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            Assert.Single(ilOutputService.DiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenILDiffThrowsInvalidOperationException_LogsErrorAndRethrows()
+        {
+            // InvalidOperationException from IL diff should be caught, logged as Error, and re-thrown.
+            // IL 差分からの InvalidOperationException はキャッチされ、Error としてログされ、再スローされるべき。
+            const string relativePath = "invalid-op.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffException = new InvalidOperationException("no disassembler")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => service.FilesAreEqualAsync(relativePath));
+
+            Assert.Equal("no disassembler", ex.Message);
+            Assert.Contains(logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Message.Contains("IL diff failed", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenTextFileMatchesSequentially_RecordsTextMatch()
+        {
+            // Sequential text comparison (network-optimized) should record TextMatch on equality.
+            // 逐次テキスト比較（ネットワーク最適化時）は一致時に TextMatch を記録すべき。
+            const string relativePath = "file.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                optimizeForNetworkShares: true);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.True(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            Assert.Single(fileComparisonService.TextDiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenTextFileDiffersSequentially_RecordsTextMismatch()
+        {
+            // Sequential text comparison should record TextMismatch when files differ.
+            // 逐次テキスト比較でファイルが異なる場合 TextMismatch を記録すべき。
+            const string relativePath = "diff.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = false
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                optimizeForNetworkShares: true);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenILMismatchAndSemanticAnalysisDisabled_DoesNotAnalyze()
+        {
+            // When ShouldIncludeAssemblySemanticChangesInReport is false, semantic analysis
+            // should be skipped even on ILMismatch.
+            // ShouldIncludeAssemblySemanticChangesInReport が false の場合、ILMismatch でも
+            // セマンティック分析をスキップすべき。
+            const string relativePath = "no-semantic.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffResult = (AreEqual: false, DisassemblerLabel: "test-tool")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.ShouldIncludeAssemblySemanticChangesInReport = false);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.ILMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            Assert.False(resultLists.FileRelativePathToAssemblySemanticChanges.ContainsKey(relativePath));
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenSmallTextFile_UsesSequentialComparison()
+        {
+            // Files below the parallel threshold should use sequential text comparison
+            // even when not in network-optimized mode.
+            // 並列閾値未満のファイルはネットワーク最適化モードでなくても逐次テキスト比較を使用すべき。
+            const string relativePath = "small.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldPath, "small");
+            fileComparisonService.SetFileContent(newPath, "small");
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                optimizeForNetworkShares: false);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 4);
+
+            Assert.True(areEqual);
+            Assert.Single(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task PrecomputeAsync_NullArgument_ThrowsArgumentNullException()
+        {
+            // PrecomputeAsync should validate its filesAbsolutePath argument.
+            // PrecomputeAsync は filesAbsolutePath 引数をバリデーションすべき。
+            var ilOutputService = new FakeILOutputService();
+            var fileComparisonService = new FakeFileComparisonService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            await Assert.ThrowsAsync<ArgumentNullException>(
+                () => service.PrecomputeAsync(null!, maxParallel: 1));
+        }
+
         private static FileDiffService CreateService(
             FakeFileComparisonService fileComparisonService,
             FakeILOutputService ilOutputService,
