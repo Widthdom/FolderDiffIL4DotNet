@@ -44,7 +44,7 @@ namespace FolderDiffIL4DotNet
             "Options:\n" +
             "  --help, -h                  Show this help message and exit.\n" +
             "  --version                   Show the application version and exit.\n" +
-            "  --print-config              Print the effective configuration as JSON and exit.\n" +
+            "  --print-config              Print the effective configuration as indented JSON and exit.\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +
             "  --config <path>             Path to config.json (default: <exe>/config.json).\n" +
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
