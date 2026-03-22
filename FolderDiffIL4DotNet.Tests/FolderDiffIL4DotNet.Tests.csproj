@@ -5,7 +5,7 @@
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <NoWarn>$(NoWarn);CA1031</NoWarn>
+    <NoWarn>$(NoWarn);CA1031;CS8600;CS8603;CS8604;CS8605;CS8618;CS8619;CS8620;CS8625;xUnit1012</NoWarn>
   </PropertyGroup>
 
   <!-- Exclude FakeDisassembler helper sources from being compiled into the test project -->

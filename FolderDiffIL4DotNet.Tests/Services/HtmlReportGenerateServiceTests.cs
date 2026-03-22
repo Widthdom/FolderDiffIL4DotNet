@@ -1727,7 +1727,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("data-section");
             File.WriteAllText(Path.Combine(newDir, "new.dll"), "new-content");
             var config = CreateConfig();
-            _resultLists.AddedFiles.Add(Path.Combine(newDir, "new.dll"));
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new.dll"));
 
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
@@ -1744,7 +1744,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("data-ext");
             File.WriteAllText(Path.Combine(newDir, "new.dll"), "new-content");
             var config = CreateConfig();
-            _resultLists.AddedFiles.Add(Path.Combine(newDir, "new.dll"));
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new.dll"));
 
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
@@ -1764,9 +1764,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllBytes(Path.Combine(oldDir, fileName), new byte[] { 1, 2, 3 });
             File.WriteAllBytes(Path.Combine(newDir, fileName), new byte[] { 4, 5, 6 });
             var config = CreateConfig();
-            _resultLists.ModifiedFiles.Add(new FileDiffResultLists.ModifiedFileInfo(
-                fileName,
-                FileDiffResultLists.DiffDetailResult.SHA256Mismatch));
+            _resultLists.AddModifiedFileRelativePath(fileName);
+            _resultLists.RecordDiffDetail(fileName, FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             // Set up importance via semantic changes
             var summary = new AssemblySemanticChangesSummary
