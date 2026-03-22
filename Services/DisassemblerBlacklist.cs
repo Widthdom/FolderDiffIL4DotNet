@@ -13,6 +13,12 @@ namespace FolderDiffIL4DotNet.Services
         private readonly int _failThreshold;
         private readonly TimeSpan _ttl;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DisassemblerBlacklist"/>.
+        /// <see cref="DisassemblerBlacklist"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="failThreshold">Number of consecutive failures before a tool is blacklisted. / ブラックリスト化までの連続失敗回数。</param>
+        /// <param name="ttl">Time-to-live after which a blacklisted tool is automatically reinstated. / ブラックリスト自動解除までの有効期間。</param>
         public DisassemblerBlacklist(int failThreshold, TimeSpan ttl)
         {
             _failThreshold = failThreshold;

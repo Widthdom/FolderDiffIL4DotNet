@@ -20,6 +20,10 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
         private readonly string _ilNewFolderAbsolutePath;
         private readonly ILoggerService _logger;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ILTextOutputService"/>.
+        /// <see cref="ILTextOutputService"/> の新しいインスタンスを初期化します。
+        /// </summary>
         public ILTextOutputService(DiffExecutionContext executionContext, ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(executionContext);

@@ -32,6 +32,12 @@ namespace FolderDiffIL4DotNet.Services
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly ILoggerService _logger;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="AuditLogGenerateService"/>.
+        /// <see cref="AuditLogGenerateService"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="fileDiffResultLists">Comparison results to include in the audit log. / 監査ログに含める比較結果。</param>
+        /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
         public AuditLogGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);

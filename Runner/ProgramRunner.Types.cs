@@ -68,7 +68,9 @@ namespace FolderDiffIL4DotNet
 
         /// <summary>
         /// A lightweight Result type that holds either a success value or a failure result for each execution phase.
+        /// Supports railway-oriented chaining via <see cref="Bind{TNext}"/> and <see cref="BindAsync{TNext}"/>.
         /// 各実行フェーズの成功値または失敗結果を保持する簡易 Result 型です。
+        /// <see cref="Bind{TNext}"/> と <see cref="BindAsync{TNext}"/> により Railway 指向のチェーンを実現します。
         /// </summary>
         /// <typeparam name="TValue">The type of the success value. / 成功時の値型。</typeparam>
         private sealed class StepResult<TValue>
@@ -82,6 +84,20 @@ namespace FolderDiffIL4DotNet
 
             public static StepResult<TValue> FromFailure(ProgramRunResult failure)
                 => new(false, default, failure);
+
+            /// <summary>
+            /// Chains a synchronous step: on success, applies <paramref name="next"/>; on failure, short-circuits.
+            /// 成功時に <paramref name="next"/> を適用し、失敗時はショートサーキットする同期チェーン。
+            /// </summary>
+            public StepResult<TNext> Bind<TNext>(System.Func<TValue, StepResult<TNext>> next)
+                => IsSuccess ? next(Value!) : StepResult<TNext>.FromFailure(Failure!);
+
+            /// <summary>
+            /// Chains an asynchronous step: on success, applies <paramref name="next"/>; on failure, short-circuits.
+            /// 成功時に <paramref name="next"/> を適用し、失敗時はショートサーキットする非同期チェーン。
+            /// </summary>
+            public async System.Threading.Tasks.Task<StepResult<TNext>> BindAsync<TNext>(System.Func<TValue, System.Threading.Tasks.Task<StepResult<TNext>>> next)
+                => IsSuccess ? await next(Value!) : StepResult<TNext>.FromFailure(Failure!);
 
             private StepResult(bool isSuccess, TValue? value, ProgramRunResult? failure)
             {

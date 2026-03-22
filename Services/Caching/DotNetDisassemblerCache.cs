@@ -33,6 +33,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private readonly ConcurrentDictionary<string, string> _disassemblerVersionCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly ILoggerService _logger;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DotNetDisassemblerCache"/>.
+        /// <see cref="DotNetDisassemblerCache"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
         public DotNetDisassemblerCache(ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(logger);

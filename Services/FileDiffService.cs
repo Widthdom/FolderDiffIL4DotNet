@@ -26,6 +26,10 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILoggerService _logger;
         private readonly IFileComparisonService _fileComparisonService;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="FileDiffService"/> with the default <see cref="FileComparisonService"/>.
+        /// 既定の <see cref="FileComparisonService"/> で <see cref="FileDiffService"/> を初期化します。
+        /// </summary>
         public FileDiffService(
             IReadOnlyConfigSettings config,
             IILOutputService ilOutputService,

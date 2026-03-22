@@ -21,6 +21,11 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public IReadOnlyList<string> Errors { get; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ConfigValidationResult"/>.
+        /// <see cref="ConfigValidationResult"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="errors">Validation error messages (empty when valid). / バリデーションエラーメッセージ（正常時は空）。</param>
         public ConfigValidationResult(IReadOnlyList<string> errors)
         {
             Errors = errors;
@@ -36,19 +41,27 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed class ConfigSettings : IReadOnlyConfigSettings
     {
-        // Public default-value constants for numeric settings.
-        // 数値設定の既定値を公開定数として定義します。
-
+        /// <summary>Default value for <see cref="MaxLogGenerations"/>. / <see cref="MaxLogGenerations"/> の既定値。</summary>
         public const int DefaultMaxLogGenerations = 5;
+        /// <summary>Default value for <see cref="TextDiffParallelThresholdKilobytes"/>. / <see cref="TextDiffParallelThresholdKilobytes"/> の既定値。</summary>
         public const int DefaultTextDiffParallelThresholdKilobytes = 512;
+        /// <summary>Default value for <see cref="TextDiffChunkSizeKilobytes"/>. / <see cref="TextDiffChunkSizeKilobytes"/> の既定値。</summary>
         public const int DefaultTextDiffChunkSizeKilobytes = 64;
+        /// <summary>Default value for <see cref="ILCacheStatsLogIntervalSeconds"/>. / <see cref="ILCacheStatsLogIntervalSeconds"/> の既定値。</summary>
         public const int DefaultILCacheStatsLogIntervalSeconds = 60;
+        /// <summary>Default value for <see cref="ILCacheMaxDiskFileCount"/>. / <see cref="ILCacheMaxDiskFileCount"/> の既定値。</summary>
         public const int DefaultILCacheMaxDiskFileCount = 1000;
+        /// <summary>Default value for <see cref="ILCacheMaxDiskMegabytes"/>. / <see cref="ILCacheMaxDiskMegabytes"/> の既定値。</summary>
         public const int DefaultILCacheMaxDiskMegabytes = 512;
+        /// <summary>Default value for <see cref="ILPrecomputeBatchSize"/>. / <see cref="ILPrecomputeBatchSize"/> の既定値。</summary>
         public const int DefaultILPrecomputeBatchSize = 2048;
+        /// <summary>Default value for <see cref="DisassemblerBlacklistTtlMinutes"/>. / <see cref="DisassemblerBlacklistTtlMinutes"/> の既定値。</summary>
         public const int DefaultDisassemblerBlacklistTtlMinutes = 10;
+        /// <summary>Default value for <see cref="InlineDiffMaxEditDistance"/>. / <see cref="InlineDiffMaxEditDistance"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxEditDistance = 4000;
+        /// <summary>Default value for <see cref="InlineDiffMaxDiffLines"/>. / <see cref="InlineDiffMaxDiffLines"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxDiffLines = 10000;
+        /// <summary>Default value for <see cref="InlineDiffMaxOutputLines"/>. / <see cref="InlineDiffMaxOutputLines"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxOutputLines = 10000;
 
         internal static readonly string[] DefaultIgnoredExtensionsValues =

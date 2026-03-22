@@ -108,10 +108,15 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed class AuditLogSummary
     {
+        /// <summary>Number of files present only in the new folder. / 新フォルダにのみ存在するファイル数。</summary>
         public int Added { get; init; }
+        /// <summary>Number of files present only in the old folder. / 旧フォルダにのみ存在するファイル数。</summary>
         public int Removed { get; init; }
+        /// <summary>Number of files that differ between old and new. / 旧新間で差異のあるファイル数。</summary>
         public int Modified { get; init; }
+        /// <summary>Number of files identical between old and new. / 旧新間で同一のファイル数。</summary>
         public int Unchanged { get; init; }
+        /// <summary>Number of files excluded by IgnoredExtensions. / IgnoredExtensions により除外されたファイル数。</summary>
         public int Ignored { get; init; }
     }
 }

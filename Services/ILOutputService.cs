@@ -27,6 +27,10 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
         private readonly ILoggerService _logger;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ILOutputService"/>.
+        /// <see cref="ILOutputService"/> の新しいインスタンスを初期化します。
+        /// </summary>
         public ILOutputService(
             IReadOnlyConfigSettings config,
             DiffExecutionContext executionContext,

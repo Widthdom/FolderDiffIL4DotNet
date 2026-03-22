@@ -34,6 +34,11 @@ namespace FolderDiffIL4DotNet.Services
         private bool _keepAliveTimerStarted;
         private bool _disposed;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ProgressReportService"/>.
+        /// <see cref="ProgressReportService"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
         public ProgressReportService(IReadOnlyConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(config);
@@ -88,6 +93,11 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
+        /// <summary>
+        /// Updates the label prefix displayed alongside the progress percentage.
+        /// プログレス表示に添えるラベルプレフィックスを更新します。
+        /// </summary>
+        /// <param name="label">Label text, or <see langword="null"/>/whitespace to clear. / ラベルテキスト（null/空白でクリア）。</param>
         public void SetLabel(string label)
         {
             if (_disposed)

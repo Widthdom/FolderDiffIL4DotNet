@@ -34,6 +34,7 @@ namespace FolderDiffIL4DotNet
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more modified files in 'new' have older last-modified timestamps than the corresponding files in 'old'. See diff_report.md for details.";
+        private const string TIP_PRINT_CONFIG = "Tip: Run with --print-config to display the effective configuration as JSON.";
         private const string HELP_TEXT =
             "Usage: " + Constants.APP_NAME + " <oldFolder> <newFolder> <reportLabel> [options]\n\n" +
             "Arguments:\n" +
@@ -63,11 +64,21 @@ namespace FolderDiffIL4DotNet
             "  2  Invalid arguments or input paths.\n" +
             "  3  Configuration load or parse error.\n" +
             "  4  Diff execution or report generation failure.\n" +
-            "  1  Unexpected internal error.";
+            "  1  Unexpected internal error.\n\n" +
+            "Tip:\n" +
+            "  Use --print-config to display the effective configuration\n" +
+            "  (config.json + environment variable overrides) as JSON and exit.\n" +
+            "  This is useful for verifying which settings are active before a run.";
 
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ProgramRunner"/>.
+        /// <see cref="ProgramRunner"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
+        /// <param name="configService">Service for loading configuration files. / 設定ファイル読込サービス。</param>
         public ProgramRunner(ILoggerService logger, ConfigService configService)
         {
             ArgumentNullException.ThrowIfNull(logger);
@@ -120,37 +131,26 @@ namespace FolderDiffIL4DotNet
                 var appVersion = InitializeLoggerAndGetAppVersion();
                 var computerName = SystemInfo.GetComputerName();
 
-                var runArgumentsResult = TryValidateAndBuildRunArguments(args, opts);
-                if (!runArgumentsResult.IsSuccess)
-                {
-                    return runArgumentsResult.Failure!;
-                }
+                // Railway-oriented pipeline: each step short-circuits on failure.
+                // Railway 指向パイプライン: 各ステップは失敗時にショートサーキットします。
+                var argsResult = TryValidateAndBuildRunArguments(args, opts)
+                    .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath)
+                        .Bind(_ => StepResult<RunArguments>.FromValue(runArgs)));
 
-                var runArguments = runArgumentsResult.Value!;
-                var prepareReportsDirectoryResult = TryPrepareReportsDirectory(runArguments.ReportsFolderAbsolutePath);
-                if (!prepareReportsDirectoryResult.IsSuccess)
-                {
-                    return prepareReportsDirectoryResult.Failure!;
-                }
+                var pipelineResult = await argsResult
+                    .BindAsync(async runArgs =>
+                    {
+                        var builderResult = await TryLoadConfigBuilderAsync(opts.ConfigPath);
+                        return builderResult.Bind(builder =>
+                        {
+                            ApplyCliOverrides(builder, opts);
+                            return TryBuildConfig(builder);
+                        }).Bind(config => StepResult<(RunArguments RunArgs, ConfigSettings Config)>.FromValue((runArgs, config)));
+                    });
 
-                var builderResult = await TryLoadConfigBuilderAsync(opts.ConfigPath);
-                if (!builderResult.IsSuccess)
-                {
-                    return builderResult.Failure!;
-                }
+                var completionStateResult = await pipelineResult
+                    .BindAsync(ctx => TryExecuteRunAsync(ctx.RunArgs, ctx.Config, appVersion, computerName));
 
-                var builder = builderResult.Value!;
-                ApplyCliOverrides(builder, opts);
-
-                var configResult = TryBuildConfig(builder);
-                if (!configResult.IsSuccess)
-                {
-                    return configResult.Failure!;
-                }
-
-                var config = configResult.Value!;
-
-                var completionStateResult = await TryExecuteRunAsync(runArguments, config, appVersion, computerName);
                 if (!completionStateResult.IsSuccess)
                 {
                     return completionStateResult.Failure!;
@@ -328,6 +328,12 @@ namespace FolderDiffIL4DotNet
         {
             _logger.LogMessage(AppLogLevel.Error, exception.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, exception);
             _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
+
+            if (exitCode == ProgramExitCode.ConfigurationError)
+            {
+                Console.Error.WriteLine(TIP_PRINT_CONFIG);
+            }
+
             return ProgramRunResult.Failure(exitCode);
         }
 

@@ -30,6 +30,13 @@ namespace FolderDiffIL4DotNet.Services
         private const string TH_BG_MODIFIED = "#e3f2fd";
         private const string TH_BG_DEFAULT  = "#f0f0f2";
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="HtmlReportGenerateService"/>.
+        /// <see cref="HtmlReportGenerateService"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="fileDiffResultLists">Comparison results to render in the HTML report. / HTML レポートに描画する比較結果。</param>
+        /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
+        /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
         public HtmlReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IReadOnlyConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);

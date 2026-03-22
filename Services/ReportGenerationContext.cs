@@ -61,6 +61,18 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public ILCache? IlCache { get; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ReportGenerationContext"/>.
+        /// <see cref="ReportGenerationContext"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="oldFolderAbsolutePath">Absolute path to the baseline (old) folder. / 旧フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">Absolute path to the comparison (new) folder. / 新フォルダの絶対パス。</param>
+        /// <param name="reportsFolderAbsolutePath">Absolute path to the report output folder. / レポート出力先フォルダの絶対パス。</param>
+        /// <param name="appVersion">Application version string. / アプリケーションバージョン文字列。</param>
+        /// <param name="elapsedTimeString">Formatted elapsed time. / 書式化された経過時間。</param>
+        /// <param name="computerName">Name of the executing machine. / 実行マシン名。</param>
+        /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
+        /// <param name="ilCache">Optional IL cache instance. / IL キャッシュインスタンス（省略可）。</param>
         public ReportGenerationContext(
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
