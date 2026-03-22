@@ -88,9 +88,9 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("    <table class=\"legend-table\">");
             sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{I18n("Label", "ラベル")}</th><th style=\"background:{TH_BG_DEFAULT}\">{I18n("Description", "説明")}</th></tr></thead>");
             sb.AppendLine("      <tbody>");
-            sb.AppendLine($"        <tr><td><code>High</code></td><td>{I18n("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change", "破壊的変更候補: public/protected API 削除、アクセス縮小、戻り値型・パラメータ・メンバー型変更")}</td></tr>");
-            sb.AppendLine($"        <tr><td><code>Medium</code></td><td>{I18n("Notable change: public/protected member addition, modifier change, access widening, internal removal", "注目すべき変更: public/protected メンバー追加、修飾子変更、アクセス拡大、internal メンバー削除")}</td></tr>");
-            sb.AppendLine($"        <tr><td><code>Low</code></td><td>{I18n("Low-impact change: body-only modification, internal/private member addition", "低影響変更: 本体のみの変更、internal/private メンバー追加")}</td></tr>");
+            sb.AppendLine($"        <tr><td style=\"color:#d1242f;font-weight:bold\">High</td><td>{I18n("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change", "破壊的変更候補: public/protected API 削除、アクセス縮小、戻り値型・パラメータ・メンバー型変更")}</td></tr>");
+            sb.AppendLine($"        <tr><td style=\"color:#d97706;font-weight:bold\">Medium</td><td>{I18n("Notable change: public/protected member addition, modifier change, access widening, internal removal", "注目すべき変更: public/protected メンバー追加、修飾子変更、アクセス拡大、internal メンバー削除")}</td></tr>");
+            sb.AppendLine($"        <tr><td>Low</td><td>{I18n("Low-impact change: body-only modification, internal/private member addition", "低影響変更: 本体のみの変更、internal/private メンバー追加")}</td></tr>");
             sb.AppendLine("      </tbody>");
             sb.AppendLine("    </table>");
             sb.AppendLine("  </li>");
