@@ -393,7 +393,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             FileDiffResultLists resultLists,
             TestLogger logger,
             bool optimizeForNetworkShares = false,
-            Action<ConfigSettingsBuilder> configure = null)
+            Action<ConfigSettingsBuilder>? configure = null)
         {
             var builder = new ConfigSettingsBuilder
             {
@@ -567,7 +567,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private sealed class TestLogger : ILoggerService
         {
-            public string LogFileAbsolutePath => null;
+            public string? LogFileAbsolutePath => null;
 
             public List<LogEntry> Entries { get; } = new();
 
@@ -579,15 +579,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
             }
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
                 => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
                 => Entries.Add(new LogEntry(logLevel, message, exception));
         }
 
         private sealed record DiffCall(string FileRelativePath, string OldFolderAbsolutePath, string NewFolderAbsolutePath, bool ShouldOutputIlText);
 
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception Exception);
+        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }

@@ -236,16 +236,16 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
 
         private sealed class TestLogger : ILoggerService
         {
-            public string LogFileAbsolutePath => null;
+            public string? LogFileAbsolutePath => null;
             public List<LogEntry> Entries { get; } = new();
             public void Initialize() { }
             public void CleanupOldLogFiles(int max) { }
-            public void LogMessage(AppLogLevel level, string msg, bool console, Exception ex = null)
+            public void LogMessage(AppLogLevel level, string msg, bool console, Exception? ex = null)
                 => LogMessage(level, msg, console, null, ex);
-            public void LogMessage(AppLogLevel level, string msg, bool console, ConsoleColor? color, Exception ex = null)
+            public void LogMessage(AppLogLevel level, string msg, bool console, ConsoleColor? color, Exception? ex = null)
                 => Entries.Add(new LogEntry(level, msg, ex));
         }
 
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception Exception);
+        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }

@@ -208,7 +208,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             return Assert.IsType<List<string>>(result);
         }
 
-        private static ILOutputService CreateILOutputService(ConfigSettings config, string ilOldFolder = null, string ilNewFolder = null)
+        private static ILOutputService CreateILOutputService(ConfigSettings config, string? ilOldFolder = null, string? ilNewFolder = null)
         {
             var logger = new LoggerService();
             var oldDir = ilOldFolder ?? Path.Combine(Path.GetTempPath(), "fd-iloutput-old-" + Guid.NewGuid().ToString("N"));

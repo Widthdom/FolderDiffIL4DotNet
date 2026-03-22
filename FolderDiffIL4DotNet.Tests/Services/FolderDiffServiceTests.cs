@@ -150,8 +150,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             WriteFile(oldDir, fileRelativePath, "before");
             WriteFile(newDir, fileRelativePath, "after");
 
-            var config = CreateConfig(maxParallelism: 1);
-            config.TextFileExtensions = new List<string> { ".TXT" };
+            var config = CreateConfig(maxParallelism: 1, textFileExtensions: new List<string> { ".TXT" });
             using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
@@ -234,8 +233,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.SetLastWriteTimeUtc(Path.Combine(oldDir, fileRelativePath), new DateTime(2026, 3, 14, 1, 0, 0, DateTimeKind.Utc));
             File.SetLastWriteTimeUtc(Path.Combine(newDir, fileRelativePath), new DateTime(2026, 3, 14, 0, 0, 0, DateTimeKind.Utc));
 
-            var config = CreateConfig(maxParallelism: 1);
-            config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
+            var config = CreateConfig(maxParallelism: 1, shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp: false);
             using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = CreateService(config, progressReporter, oldDir, newDir, reportDir);
 
@@ -278,21 +276,24 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match, _resultLists.FileRelativePathToDiffDetailDictionary["linked.txt"]);
         }
 
-        private static ConfigSettings CreateConfig(int maxParallelism) => new()
+        private static ConfigSettings CreateConfig(
+            int maxParallelism,
+            List<string> textFileExtensions = null,
+            bool shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true) => new ConfigSettingsBuilder()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
-            TextFileExtensions = new List<string> { ".txt" },
+            TextFileExtensions = textFileExtensions ?? new List<string> { ".txt" },
             ShouldIncludeUnchangedFiles = true,
             ShouldIncludeIgnoredFiles = true,
             ShouldOutputILText = false,
             ShouldIgnoreILLinesContainingConfiguredStrings = false,
             ILIgnoreLineContainingStrings = new List<string>(),
             ShouldOutputFileTimestamps = false,
-            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true,
+            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = shouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp,
             MaxParallelism = maxParallelism,
             OptimizeForNetworkShares = false,
             AutoDetectNetworkShares = false
-        };
+        }.Build();
 
         private FolderDiffService CreateService(ConfigSettings config, ProgressReportService progressReporter, string oldDir, string newDir, string reportDir)
         {

@@ -234,11 +234,11 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
 
         private sealed class TestLogger : ILoggerService
         {
-            public string LogFileAbsolutePath => null;
+            public string? LogFileAbsolutePath => null;
             public void Initialize() { }
             public void CleanupOldLogFiles(int max) { }
-            public void LogMessage(AppLogLevel level, string msg, bool console, Exception ex = null) { }
-            public void LogMessage(AppLogLevel level, string msg, bool console, ConsoleColor? color, Exception ex = null) { }
+            public void LogMessage(AppLogLevel level, string msg, bool console, Exception? ex = null) { }
+            public void LogMessage(AppLogLevel level, string msg, bool console, ConsoleColor? color, Exception? ex = null) { }
         }
     }
 }

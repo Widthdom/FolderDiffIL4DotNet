@@ -230,7 +230,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 // Make directory read-only to prevent file deletion
                 // ディレクトリを読み取り専用にしてファイル削除を阻止
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(tempDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
 
                 // Should catch IOException or UnauthorizedAccessException and continue
                 // IOException または UnauthorizedAccessException をキャッチして継続することを確認
@@ -239,7 +241,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             finally
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 try { File.SetUnixFileMode(tempDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch { }
+#pragma warning restore CA1416
                 TryDeleteDirectory(tempDir);
             }
         }

@@ -259,14 +259,18 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             File.WriteAllText(roFile, "locked");
             try
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(roDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
                 // Directory is not writable, so deletion raises IOException or UnauthorizedAccessException
                 // ディレクトリが書き込み不可なので削除は IOException または UnauthorizedAccessException
                 FileSystemUtility.DeleteFileSilent(roFile); // should not throw / 例外なし
             }
             finally
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 try { File.SetUnixFileMode(roDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch { }
+#pragma warning restore CA1416
             }
         }
 

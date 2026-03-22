@@ -395,7 +395,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 
             // Make cache directory read-only so disk Remove fails with UnauthorizedAccessException
             // キャッシュディレクトリを読み取り専用にしてディスク Remove を失敗させる
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
             File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
             try
             {
                 // Adding file2 triggers LRU eviction of file1; disk Remove catches UnauthorizedAccessException silently
@@ -404,7 +406,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             }
             finally
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
             }
         }
 
@@ -437,7 +441,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
             if (cacheFiles.Length > 0)
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
                 try
                 {
                     var file2 = CreateTestFile("trim-ro-2.dll", "unique-ro-content-2");
@@ -447,7 +453,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
                 }
                 finally
                 {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                     File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
                 }
             }
         }

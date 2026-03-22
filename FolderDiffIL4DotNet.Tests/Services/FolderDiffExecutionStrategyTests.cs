@@ -105,12 +105,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             IFileSystemService fileSystem)
             => new(config, executionContext, resultLists, fileSystem);
 
-        private static ConfigSettings CreateConfig(int maxParallelism = 0) => new()
+        private static ConfigSettings CreateConfig(int maxParallelism = 0) => new ConfigSettingsBuilder()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
             ShouldIncludeIgnoredFiles = true,
             MaxParallelism = maxParallelism
-        };
+        }.Build();
 
         private static DiffExecutionContext CreateExecutionContext(
             string oldDir,

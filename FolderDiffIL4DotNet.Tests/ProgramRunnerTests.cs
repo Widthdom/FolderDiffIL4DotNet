@@ -759,7 +759,9 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 // Remove write permission from the directory (read + execute only)
                 // ディレクトリから書き込み権限を削除（読み取り＋実行のみ）
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
 
                 // Pass a path whose parent is `dir` -- the check probes a file inside `dir`
                 // 親ディレクトリが `dir` のパスを渡す — チェックは `dir` 内のファイルを調べる
@@ -770,7 +772,9 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 try
                 {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                     File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
                 }
                 catch (IOException) { }
                 catch (UnauthorizedAccessException) { }
@@ -1077,12 +1081,12 @@ namespace FolderDiffIL4DotNet.Tests
             {
             }
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
             {
                 Messages.Add(message);
             }
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
             {
                 Messages.Add(message);
             }

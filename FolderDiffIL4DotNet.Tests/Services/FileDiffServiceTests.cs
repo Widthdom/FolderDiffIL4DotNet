@@ -217,7 +217,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 _onEntry = onEntry;
             }
 
-            public string LogFileAbsolutePath => null;
+            public string? LogFileAbsolutePath => null;
 
             public List<LogEntry> Entries { get; } = new();
 
@@ -225,10 +225,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public void CleanupOldLogFiles(int maxLogGenerations) { }
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
                 => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
             {
                 var entry = new LogEntry(logLevel, message, exception);
                 Entries.Add(entry);
@@ -236,6 +236,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception Exception);
+        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }

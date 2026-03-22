@@ -186,12 +186,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
         private ILCachePrefetcher CreatePrefetcherWithNullCache()
             => new ILCachePrefetcher(CreateConfig(enableIlCache: true), ilCache: null, _logger, _disassemblerCache);
 
-        private static ConfigSettings CreateConfig(bool enableIlCache) => new()
+        private static ConfigSettings CreateConfig(bool enableIlCache) => new ConfigSettingsBuilder()
         {
             EnableILCache = enableIlCache,
             IgnoredExtensions = new(),
             TextFileExtensions = new()
-        };
+        }.Build();
 
         private static void SeedDisassemblerVersionCache(DotNetDisassemblerCache cache, string command, string version)
         {

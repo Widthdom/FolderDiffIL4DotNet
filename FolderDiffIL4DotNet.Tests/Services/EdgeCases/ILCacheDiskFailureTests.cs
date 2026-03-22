@@ -55,8 +55,10 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             {
                 if (Directory.Exists(path))
                 {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                     File.SetUnixFileMode(path,
                         UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
                 }
             }
             catch { }
@@ -78,7 +80,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             await cache.SetILAsync(file1, tool, "IL-first");
 
             // Make directory read-only (simulate network write failure)
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
             File.SetUnixFileMode(cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
             try
             {
                 var file2 = CreateTestFile("second.dll", "content-2");
@@ -91,8 +95,10 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             }
             finally
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(cacheDir,
                     UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
             }
         }
 
