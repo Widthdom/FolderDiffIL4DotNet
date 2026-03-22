@@ -71,17 +71,11 @@ namespace FolderDiffIL4DotNet.Services
         /// Generates the <see cref="DIFF_REPORT_FILE_NAME"/> Markdown report.
         /// <see cref="DIFF_REPORT_FILE_NAME"/> Markdown レポートを生成します。
         /// </summary>
-        public void GenerateDiffReport(
-            string oldFolderAbsolutePath,
-            string newFolderAbsolutePath,
-            string reportsFolderAbsolutePath,
-            string appVersion,
-            string elapsedTimeString,
-            string computerName,
-            IReadOnlyConfigSettings config,
-            ILCache? ilCache = null)
+        public void GenerateDiffReport(ReportGenerationContext context)
         {
-            string diffReportAbsolutePath = GetDiffReportAbsolutePath(reportsFolderAbsolutePath);
+            ArgumentNullException.ThrowIfNull(context);
+
+            string diffReportAbsolutePath = GetDiffReportAbsolutePath(context.ReportsFolderAbsolutePath);
             bool hasSha256Mismatch = _fileDiffResultLists.HasAnySha256Mismatch;
             bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT, frames: _spinnerFrames);
@@ -90,15 +84,15 @@ namespace FolderDiffIL4DotNet.Services
             {
                 WriteDiffReport(
                     diffReportAbsolutePath,
-                    oldFolderAbsolutePath,
-                    newFolderAbsolutePath,
-                    appVersion,
-                    elapsedTimeString,
-                    computerName,
-                    config,
+                    context.OldFolderAbsolutePath,
+                    context.NewFolderAbsolutePath,
+                    context.AppVersion,
+                    context.ElapsedTimeString,
+                    context.ComputerName,
+                    context.Config,
                     hasSha256Mismatch,
                     hasTimestampRegressionWarning,
-                    ilCache);
+                    context.IlCache);
                 reportGenerated = true;
             }
             catch (ArgumentException)

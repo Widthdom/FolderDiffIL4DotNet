@@ -13,36 +13,36 @@ namespace FolderDiffIL4DotNet.Tests.Services
         private static readonly string ConfigFilePath = Path.Combine(AppContext.BaseDirectory, "config.json");
 
         [Fact]
-        public async Task LoadConfigAsync_ConfigFileMissing_ThrowsFileNotFoundException()
+        public async Task LoadConfigBuilderAsync_ConfigFileMissing_ThrowsFileNotFoundException()
         {
             await WithConfigFileAsync(content: string.Empty, async () =>
             {
                 var service = new ConfigService();
-                await Assert.ThrowsAsync<FileNotFoundException>(() => service.LoadConfigAsync());
+                await Assert.ThrowsAsync<FileNotFoundException>(() => service.LoadConfigBuilderAsync());
             }, deleteConfig: true);
         }
 
         [Fact]
-        public async Task LoadConfigAsync_InvalidJson_ThrowsInvalidDataException()
+        public async Task LoadConfigBuilderAsync_InvalidJson_ThrowsInvalidDataException()
         {
             await WithConfigFileAsync("{ invalid-json", async () =>
             {
                 var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
                 Assert.IsType<JsonException>(ex.InnerException);
                 Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_TrailingCommaInObject_ThrowsInvalidDataExceptionWithHint()
+        public async Task LoadConfigBuilderAsync_TrailingCommaInObject_ThrowsInvalidDataExceptionWithHint()
         {
             // Common mistake: trailing comma after the last property in a JSON object
             // よくあるミス: オブジェクトの最後のプロパティ後にカンマを入れてしまう
             await WithConfigFileAsync("{ \"MaxLogGenerations\": 5, }", async () =>
             {
                 var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
                 Assert.IsType<JsonException>(ex.InnerException);
                 Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -50,14 +50,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public async Task LoadConfigAsync_TrailingCommaInArray_ThrowsInvalidDataExceptionWithHint()
+        public async Task LoadConfigBuilderAsync_TrailingCommaInArray_ThrowsInvalidDataExceptionWithHint()
         {
             // Common mistake: trailing comma after the last element in a JSON array
             // よくあるミス: 配列の最後の要素後にカンマを入れてしまう
             await WithConfigFileAsync("{ \"IgnoredExtensions\": [\".pdb\", \".log\",] }", async () =>
             {
                 var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
                 Assert.IsType<JsonException>(ex.InnerException);
                 Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -65,7 +65,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public async Task LoadConfigAsync_TrailingCommaError_MessageIncludesLineNumber()
+        public async Task LoadConfigBuilderAsync_TrailingCommaError_MessageIncludesLineNumber()
         {
             // Verify that line number information is included in the error message
             // 行番号情報がメッセージに含まれることを確認
@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             await WithConfigFileAsync(json, async () =>
             {
                 var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
                 Assert.IsType<JsonException>(ex.InnerException);
                 // Message should contain a line number (integer >= 1)
                 // メッセージに行番号（1 以上の整数）が含まれている
@@ -86,7 +86,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public async Task LoadConfigAsync_ValidJson_ReturnsDeserializedSettings()
+        public async Task LoadConfigBuilderAsync_ValidJson_ReturnsDeserializedBuilder()
         {
             const string json = """
                 {
@@ -101,111 +101,105 @@ namespace FolderDiffIL4DotNet.Tests.Services
             await WithConfigFileAsync(json, async () =>
             {
                 var service = new ConfigService();
-                var config = await service.LoadConfigAsync();
+                var builder = await service.LoadConfigBuilderAsync();
 
-                Assert.NotNull(config);
-                Assert.Equal(42, config.MaxLogGenerations);
-                Assert.False(config.ShouldIncludeUnchangedFiles);
-                Assert.False(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
-                Assert.Equal(new[] { ".tmp" }, config.IgnoredExtensions);
-                Assert.Equal(new[] { ".cs", ".json" }, config.TextFileExtensions);
+                Assert.NotNull(builder);
+                Assert.Equal(42, builder.MaxLogGenerations);
+                Assert.False(builder.ShouldIncludeUnchangedFiles);
+                Assert.False(builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+                Assert.Equal(new[] { ".tmp" }, builder.IgnoredExtensions);
+                Assert.Equal(new[] { ".cs", ".json" }, builder.TextFileExtensions);
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EmptyObject_UsesCodeDefinedDefaults()
+        public async Task LoadConfigBuilderAsync_EmptyObject_UsesCodeDefinedDefaults()
         {
             await WithConfigFileAsync("{}", async () =>
             {
                 var service = new ConfigService();
-                var config = await service.LoadConfigAsync();
+                var builder = await service.LoadConfigBuilderAsync();
 
-                Assert.NotNull(config);
-                Assert.Equal(5, config.MaxLogGenerations);
-                Assert.True(config.ShouldIncludeUnchangedFiles);
-                Assert.True(config.ShouldIncludeIgnoredFiles);
-                Assert.True(config.ShouldOutputILText);
-                Assert.True(config.ShouldOutputFileTimestamps);
-                Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
-                Assert.True(config.EnableILCache);
-                Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);
-                Assert.True(config.AutoDetectNetworkShares);
-                Assert.Contains(".cs", config.TextFileExtensions);
-                Assert.Contains(".pdb", config.IgnoredExtensions);
+                Assert.NotNull(builder);
+                Assert.Equal(5, builder.MaxLogGenerations);
+                Assert.True(builder.ShouldIncludeUnchangedFiles);
+                Assert.True(builder.ShouldIncludeIgnoredFiles);
+                Assert.True(builder.ShouldOutputILText);
+                Assert.True(builder.ShouldOutputFileTimestamps);
+                Assert.True(builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+                Assert.True(builder.EnableILCache);
+                Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, builder.ILCacheStatsLogIntervalSeconds);
+                Assert.True(builder.AutoDetectNetworkShares);
+                Assert.Contains(".cs", builder.TextFileExtensions);
+                Assert.Contains(".pdb", builder.IgnoredExtensions);
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_NullJson_ThrowsInvalidDataException()
+        public async Task LoadConfigBuilderAsync_NullJson_ThrowsInvalidDataException()
         {
             await WithConfigFileAsync("null", async () =>
             {
                 var service = new ConfigService();
-                await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
+                await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_InvalidMaxLogGenerations_ThrowsInvalidDataExceptionWithDetails()
+        public void Validate_InvalidMaxLogGenerations_ReturnsErrorWithDetails()
         {
-            const string json = """{ "MaxLogGenerations": 0 }""";
+            var builder = new ConfigSettingsBuilder { MaxLogGenerations = 0 };
+            var result = builder.Validate();
 
-            await WithConfigFileAsync(json, async () =>
-            {
-                var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
-                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
-                Assert.Contains("MaxLogGenerations", ex.Message, StringComparison.Ordinal);
-            });
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("MaxLogGenerations", StringComparison.Ordinal));
         }
 
         [Fact]
-        public async Task LoadConfigAsync_InvalidTextDiffThreshold_ThrowsInvalidDataExceptionWithDetails()
+        public void Validate_InvalidTextDiffThreshold_ReturnsErrorWithDetails()
         {
-            const string json = """{ "TextDiffParallelThresholdKilobytes": -1 }""";
+            var builder = new ConfigSettingsBuilder { TextDiffParallelThresholdKilobytes = -1 };
+            var result = builder.Validate();
 
-            await WithConfigFileAsync(json, async () =>
-            {
-                var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
-                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
-                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
-            });
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
         }
 
         [Fact]
-        public async Task LoadConfigAsync_ChunkSizeEqualToThreshold_ThrowsInvalidDataExceptionWithDetails()
+        public void Validate_ChunkSizeEqualToThreshold_ReturnsErrorWithDetails()
         {
-            const string json = """{ "TextDiffChunkSizeKilobytes": 64, "TextDiffParallelThresholdKilobytes": 64 }""";
-
-            await WithConfigFileAsync(json, async () =>
+            var builder = new ConfigSettingsBuilder
             {
-                var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
-                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
-                Assert.Contains("TextDiffChunkSizeKilobytes", ex.Message, StringComparison.Ordinal);
-                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
-            });
+                TextDiffChunkSizeKilobytes = 64,
+                TextDiffParallelThresholdKilobytes = 64
+            };
+            var result = builder.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e =>
+                e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal) &&
+                e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
         }
 
         [Fact]
-        public async Task LoadConfigAsync_MultipleInvalidSettings_ThrowsWithAllErrorDetails()
+        public void Validate_MultipleInvalidSettings_ReturnsAllErrorDetails()
         {
-            const string json = """{ "MaxLogGenerations": 0, "TextDiffParallelThresholdKilobytes": 0, "TextDiffChunkSizeKilobytes": 0 }""";
-
-            await WithConfigFileAsync(json, async () =>
+            var builder = new ConfigSettingsBuilder
             {
-                var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
-                Assert.Contains(ConfigService.ERROR_CONFIG_VALIDATION_PREFIX, ex.Message, StringComparison.Ordinal);
-                Assert.Contains("MaxLogGenerations", ex.Message, StringComparison.Ordinal);
-                Assert.Contains("TextDiffParallelThresholdKilobytes", ex.Message, StringComparison.Ordinal);
-                Assert.Contains("TextDiffChunkSizeKilobytes", ex.Message, StringComparison.Ordinal);
-            });
+                MaxLogGenerations = 0,
+                TextDiffParallelThresholdKilobytes = 0,
+                TextDiffChunkSizeKilobytes = 0
+            };
+            var result = builder.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("MaxLogGenerations", StringComparison.Ordinal));
+            Assert.Contains(result.Errors, e => e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
+            Assert.Contains(result.Errors, e => e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal));
         }
 
         [Fact]
-        public async Task LoadConfigAsync_ValidCustomSettings_ReturnsSettings()
+        public async Task LoadConfigBuilderAsync_ValidCustomSettings_ReturnsBuilder()
         {
             const string json = """
                 {
@@ -218,18 +212,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
             await WithConfigFileAsync(json, async () =>
             {
                 var service = new ConfigService();
-                var config = await service.LoadConfigAsync();
+                var builder = await service.LoadConfigBuilderAsync();
 
-                Assert.Equal(3, config.MaxLogGenerations);
-                Assert.Equal(256, config.TextDiffParallelThresholdKilobytes);
-                Assert.Equal(32, config.TextDiffChunkSizeKilobytes);
+                Assert.Equal(3, builder.MaxLogGenerations);
+                Assert.Equal(256, builder.TextDiffParallelThresholdKilobytes);
+                Assert.Equal(32, builder.TextDiffChunkSizeKilobytes);
             });
         }
 
         // ── configFilePath parameter tests / configFilePath パラメータテスト ──
 
         [Fact]
-        public async Task LoadConfigAsync_CustomConfigFilePath_LoadsFromSpecifiedPath()
+        public async Task LoadConfigBuilderAsync_CustomConfigFilePath_LoadsFromSpecifiedPath()
         {
             var customConfigPath = Path.Combine(Path.GetTempPath(), $"test-custom-{Guid.NewGuid():N}.json");
             const string json = """{ "MaxLogGenerations": 99 }""";
@@ -238,10 +232,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             try
             {
                 var service = new ConfigService();
-                var config = await service.LoadConfigAsync(customConfigPath);
+                var builder = await service.LoadConfigBuilderAsync(customConfigPath);
 
-                Assert.NotNull(config);
-                Assert.Equal(99, config.MaxLogGenerations);
+                Assert.NotNull(builder);
+                Assert.Equal(99, builder.MaxLogGenerations);
             }
             finally
             {
@@ -253,42 +247,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public async Task LoadConfigAsync_CustomConfigFilePathMissing_ThrowsFileNotFoundException()
+        public async Task LoadConfigBuilderAsync_CustomConfigFilePathMissing_ThrowsFileNotFoundException()
         {
             var service = new ConfigService();
 
             await Assert.ThrowsAsync<FileNotFoundException>(
-                () => service.LoadConfigAsync("/nonexistent/path/to/config.json"));
+                () => service.LoadConfigBuilderAsync("/nonexistent/path/to/config.json"));
         }
 
         [Fact]
-        public async Task LoadConfigAsync_NullConfigFilePath_FallsBackToDefaultPath()
+        public async Task LoadConfigBuilderAsync_NullConfigFilePath_FallsBackToDefaultPath()
         {
             await WithConfigFileAsync("{}", async () =>
             {
                 var service = new ConfigService();
-                var config = await service.LoadConfigAsync(null);
+                var builder = await service.LoadConfigBuilderAsync(null);
 
-                Assert.NotNull(config);
+                Assert.NotNull(builder);
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EmptyConfigFilePath_FallsBackToDefaultPath()
+        public async Task LoadConfigBuilderAsync_EmptyConfigFilePath_FallsBackToDefaultPath()
         {
             await WithConfigFileAsync("{}", async () =>
             {
                 var service = new ConfigService();
-                var config = await service.LoadConfigAsync(string.Empty);
+                var builder = await service.LoadConfigBuilderAsync(string.Empty);
 
-                Assert.NotNull(config);
+                Assert.NotNull(builder);
             });
         }
 
         // ── Environment variable override tests / 環境変数オーバーライドテスト ──
 
         [Fact]
-        public async Task LoadConfigAsync_EnvVarOverridesIntProperty_AppliesOverride()
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesIntProperty_AppliesOverride()
         {
             await WithConfigFileAsync("{}", async () =>
             {
@@ -297,15 +291,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     async () =>
                     {
                         var service = new ConfigService();
-                        var config = await service.LoadConfigAsync();
+                        var builder = await service.LoadConfigBuilderAsync();
 
-                        Assert.Equal(8, config.MaxParallelism);
+                        Assert.Equal(8, builder.MaxParallelism);
                     });
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EnvVarOverridesBoolProperty_TrueValue_AppliesOverride()
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesBoolProperty_TrueValue_AppliesOverride()
         {
             await WithConfigFileAsync("{}", async () =>
             {
@@ -314,15 +308,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     async () =>
                     {
                         var service = new ConfigService();
-                        var config = await service.LoadConfigAsync();
+                        var builder = await service.LoadConfigBuilderAsync();
 
-                        Assert.False(config.EnableILCache);
+                        Assert.False(builder.EnableILCache);
                     });
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EnvVarOverridesBoolProperty_OneZero_AppliesOverride()
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesBoolProperty_OneZero_AppliesOverride()
         {
             await WithConfigFileAsync("{}", async () =>
             {
@@ -331,15 +325,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     async () =>
                     {
                         var service = new ConfigService();
-                        var config = await service.LoadConfigAsync();
+                        var builder = await service.LoadConfigBuilderAsync();
 
-                        Assert.False(config.ShouldGenerateHtmlReport);
+                        Assert.False(builder.ShouldGenerateHtmlReport);
                     });
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EnvVarOverridesStringProperty_AppliesOverride()
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesStringProperty_AppliesOverride()
         {
             await WithConfigFileAsync("{}", async () =>
             {
@@ -348,15 +342,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     async () =>
                     {
                         var service = new ConfigService();
-                        var config = await service.LoadConfigAsync();
+                        var builder = await service.LoadConfigBuilderAsync();
 
-                        Assert.Equal("/tmp/custom-il-cache", config.ILCacheDirectoryAbsolutePath);
+                        Assert.Equal("/tmp/custom-il-cache", builder.ILCacheDirectoryAbsolutePath);
                     });
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EnvVarOverridesJsonValue_EnvVarWins()
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesJsonValue_EnvVarWins()
         {
             const string json = """{ "MaxParallelism": 4 }""";
 
@@ -367,15 +361,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     async () =>
                     {
                         var service = new ConfigService();
-                        var config = await service.LoadConfigAsync();
+                        var builder = await service.LoadConfigBuilderAsync();
 
-                        Assert.Equal(16, config.MaxParallelism);
+                        Assert.Equal(16, builder.MaxParallelism);
                     });
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EnvVarWithInvalidIntValue_IsIgnored()
+        public async Task LoadConfigBuilderAsync_EnvVarWithInvalidIntValue_IsIgnored()
         {
             await WithConfigFileAsync("{}", async () =>
             {
@@ -384,15 +378,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     async () =>
                     {
                         var service = new ConfigService();
-                        var config = await service.LoadConfigAsync();
+                        var builder = await service.LoadConfigBuilderAsync();
 
-                        Assert.Equal(0, config.MaxParallelism);  // default
+                        Assert.Equal(0, builder.MaxParallelism);  // default
                     });
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EnvVarWithInvalidBoolValue_IsIgnored()
+        public async Task LoadConfigBuilderAsync_EnvVarWithInvalidBoolValue_IsIgnored()
         {
             await WithConfigFileAsync("{}", async () =>
             {
@@ -401,18 +395,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     async () =>
                     {
                         var service = new ConfigService();
-                        var config = await service.LoadConfigAsync();
+                        var builder = await service.LoadConfigBuilderAsync();
 
-                        Assert.True(config.EnableILCache);  // default unchanged
+                        Assert.True(builder.EnableILCache);  // default unchanged
                     });
             });
         }
 
         [Fact]
-        public async Task LoadConfigAsync_EnvVarOverridesInvalidValue_ValidationStillRuns()
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesInvalidValue_ValidationCatchesIt()
         {
-            // Env var sets an invalid value (MaxLogGenerations=0), triggering validation failure
-            // 環境変数が不正値（MaxLogGenerations=0）を設定し、バリデーション失敗を引き起こす
+            // Env var sets an invalid value (MaxLogGenerations=0), validation catches it
+            // 環境変数が不正値（MaxLogGenerations=0）を設定し、バリデーションがそれを検出する
             await WithConfigFileAsync("{}", async () =>
             {
                 await WithEnvVarsAsync(
@@ -420,8 +414,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     async () =>
                     {
                         var service = new ConfigService();
-                        var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigAsync());
-                        Assert.Contains("MaxLogGenerations", ex.Message, StringComparison.Ordinal);
+                        var builder = await service.LoadConfigBuilderAsync();
+                        var result = builder.Validate();
+
+                        Assert.False(result.IsValid);
+                        Assert.Contains(result.Errors, e => e.Contains("MaxLogGenerations", StringComparison.Ordinal));
                     });
             });
         }
@@ -431,10 +428,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             foreach (var trueVal in new[] { "true", "TRUE", "True", "1" })
             {
-                var config = new ConfigSettings { ShouldGenerateHtmlReport = false };
+                var builder = new ConfigSettingsBuilder { ShouldGenerateHtmlReport = false };
                 WithEnvVar("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", trueVal,
-                    () => ConfigService.ApplyEnvironmentVariableOverrides(config));
-                Assert.True(config.ShouldGenerateHtmlReport, $"Expected true for value '{trueVal}'");
+                    () => ConfigService.ApplyEnvironmentVariableOverrides(builder));
+                Assert.True(builder.ShouldGenerateHtmlReport, $"Expected true for value '{trueVal}'");
             }
         }
 
@@ -443,17 +440,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             foreach (var falseVal in new[] { "false", "FALSE", "False", "0" })
             {
-                var config = new ConfigSettings { ShouldGenerateHtmlReport = true };
+                var builder = new ConfigSettingsBuilder { ShouldGenerateHtmlReport = true };
                 WithEnvVar("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", falseVal,
-                    () => ConfigService.ApplyEnvironmentVariableOverrides(config));
-                Assert.False(config.ShouldGenerateHtmlReport, $"Expected false for value '{falseVal}'");
+                    () => ConfigService.ApplyEnvironmentVariableOverrides(builder));
+                Assert.False(builder.ShouldGenerateHtmlReport, $"Expected false for value '{falseVal}'");
             }
         }
 
         [Fact]
         public void ApplyEnvironmentVariableOverrides_MultipleVars_AllApplied()
         {
-            var config = new ConfigSettings();
+            var builder = new ConfigSettingsBuilder();
             WithEnvVars(
                 new[] {
                     ("FOLDERDIFF_MAXPARALLELISM", "12"),
@@ -461,12 +458,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     ("FOLDERDIFF_SHOULDGENERATEHTMLREPORT", "false"),
                     ("FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH", "/ci/cache"),
                 },
-                () => ConfigService.ApplyEnvironmentVariableOverrides(config));
+                () => ConfigService.ApplyEnvironmentVariableOverrides(builder));
 
-            Assert.Equal(12, config.MaxParallelism);
-            Assert.True(config.SkipIL);
-            Assert.False(config.ShouldGenerateHtmlReport);
-            Assert.Equal("/ci/cache", config.ILCacheDirectoryAbsolutePath);
+            Assert.Equal(12, builder.MaxParallelism);
+            Assert.True(builder.SkipIL);
+            Assert.False(builder.ShouldGenerateHtmlReport);
+            Assert.Equal("/ci/cache", builder.ILCacheDirectoryAbsolutePath);
         }
 
         private static async Task WithEnvVarsAsync(

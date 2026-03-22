@@ -133,14 +133,22 @@ namespace FolderDiffIL4DotNet
                     return prepareReportsDirectoryResult.Failure!;
                 }
 
-                var configResult = await TryLoadConfigurationAsync(opts.ConfigPath);
+                var builderResult = await TryLoadConfigBuilderAsync(opts.ConfigPath);
+                if (!builderResult.IsSuccess)
+                {
+                    return builderResult.Failure!;
+                }
+
+                var builder = builderResult.Value!;
+                ApplyCliOverrides(builder, opts);
+
+                var configResult = TryBuildConfig(builder);
                 if (!configResult.IsSuccess)
                 {
                     return configResult.Failure!;
                 }
 
                 var config = configResult.Value!;
-                ApplyCliOverrides(config, opts);
 
                 var completionStateResult = await TryExecuteRunAsync(runArguments, config, appVersion, computerName);
                 if (!completionStateResult.IsSuccess)
@@ -249,18 +257,41 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
-        /// Returns the configuration loading phase as a typed result.
-        /// 設定読込フェーズを型付き結果として返します。
+        /// Returns the configuration builder loading phase as a typed result.
+        /// 設定ビルダー読込フェーズを型付き結果として返します。
         /// </summary>
-        private async Task<StepResult<ConfigSettings>> TryLoadConfigurationAsync(string? configPath)
+        private async Task<StepResult<ConfigSettingsBuilder>> TryLoadConfigBuilderAsync(string? configPath)
         {
             try
             {
-                var config = await LoadConfigurationAsync(configPath);
-                return StepResult<ConfigSettings>.FromValue(config);
+                var builder = await LoadConfigBuilderAsync(configPath);
+                return StepResult<ConfigSettingsBuilder>.FromValue(builder);
             }
             catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                return StepResult<ConfigSettingsBuilder>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
+            }
+        }
+
+        /// <summary>
+        /// Validates and builds the immutable <see cref="ConfigSettings"/> from the builder.
+        /// ビルダーを検証し、イミュータブルな <see cref="ConfigSettings"/> を構築します。
+        /// </summary>
+        private StepResult<ConfigSettings> TryBuildConfig(ConfigSettingsBuilder builder)
+        {
+            try
+            {
+                var validationResult = builder.Validate();
+                if (!validationResult.IsValid)
+                {
+                    var details = string.Join(System.Environment.NewLine, validationResult.Errors);
+                    throw new InvalidDataException($"{ConfigService.ERROR_CONFIG_VALIDATION_PREFIX}{System.Environment.NewLine}{details}");
+                }
+
+                return StepResult<ConfigSettings>.FromValue(builder.Build());
+            }
+            catch (Exception ex) when (ex is InvalidDataException)
             {
                 return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
             }
@@ -314,15 +345,15 @@ namespace FolderDiffIL4DotNet
             Directory.CreateDirectory(reportsFolderAbsolutePath);
         }
 
-        private async Task<ConfigSettings> LoadConfigurationAsync(string? configPath)
+        private async Task<ConfigSettingsBuilder> LoadConfigBuilderAsync(string? configPath)
         {
             _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
-            var config = await _configService.LoadConfigAsync(configPath);
+            var builder = await _configService.LoadConfigBuilderAsync(configPath);
             _logger.LogMessage(AppLogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
-            _logger.CleanupOldLogFiles(config.MaxLogGenerations);
+            _logger.CleanupOldLogFiles(builder.MaxLogGenerations);
             TimestampCache.Clear();
             _logger.LogMessage(AppLogLevel.Info, LOG_APP_STARTING, shouldOutputMessageToConsole: true);
-            return config;
+            return builder;
         }
 
         private async Task<RunCompletionState> ExecuteScopedRunAsync(
@@ -366,7 +397,7 @@ namespace FolderDiffIL4DotNet
             ConfigSettings config)
         {
             var ilCache = scopedProvider.GetService<ILCache>();
-            scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(
+            var reportContext = new ReportGenerationContext(
                 executionContext.OldFolderAbsolutePath,
                 executionContext.NewFolderAbsolutePath,
                 executionContext.ReportsFolderAbsolutePath,
@@ -375,23 +406,9 @@ namespace FolderDiffIL4DotNet
                 computerName,
                 config,
                 ilCache);
-            scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(
-                executionContext.OldFolderAbsolutePath,
-                executionContext.NewFolderAbsolutePath,
-                executionContext.ReportsFolderAbsolutePath,
-                appVersion,
-                elapsedTimeString,
-                computerName,
-                config,
-                ilCache);
-            scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(
-                executionContext.OldFolderAbsolutePath,
-                executionContext.NewFolderAbsolutePath,
-                executionContext.ReportsFolderAbsolutePath,
-                appVersion,
-                elapsedTimeString,
-                computerName,
-                config.ShouldGenerateAuditLog);
+            scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(reportContext);
+            scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(reportContext);
+            scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(reportContext);
         }
 
         private void PromptForExitKeyIfNeeded(CliOptions opts)
@@ -418,11 +435,6 @@ namespace FolderDiffIL4DotNet
                 || Console.IsOutputRedirected
                 || Console.IsErrorRedirected;
 
-        private static ILCache? CreateIlCache(ConfigSettings config, ILoggerService logger)
-        {
-            return RunScopeBuilder.CreateIlCache(config, logger);
-        }
-
         /// <summary>
         /// Formats elapsed time in a human-readable form (e.g. <c>0h 5m 30.1s</c>).
         /// Seconds are shown to one decimal place (tenths, truncated).
@@ -446,8 +458,8 @@ namespace FolderDiffIL4DotNet
         {
             try
             {
-                var config = await _configService.LoadConfigAsync(configPath);
-                Console.WriteLine(JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
+                var builder = await _configService.LoadConfigBuilderAsync(configPath);
+                Console.WriteLine(JsonSerializer.Serialize(builder, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
             catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
@@ -459,29 +471,29 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
-        /// Overrides <see cref="ConfigSettings"/> values with CLI options, giving CLI flags priority over config.json.
-        /// CLI オプションの値で <see cref="ConfigSettings"/> を上書きします。config.json よりも CLI フラグを優先させます。
+        /// Overrides <see cref="ConfigSettingsBuilder"/> values with CLI options, giving CLI flags priority over config.json.
+        /// CLI オプションの値で <see cref="ConfigSettingsBuilder"/> を上書きします。config.json よりも CLI フラグを優先させます。
         /// </summary>
-        private static void ApplyCliOverrides(ConfigSettings config, CliOptions opts)
+        private static void ApplyCliOverrides(ConfigSettingsBuilder builder, CliOptions opts)
         {
             if (opts.ThreadsOverride.HasValue)
             {
-                config.MaxParallelism = opts.ThreadsOverride.Value;
+                builder.MaxParallelism = opts.ThreadsOverride.Value;
             }
 
             if (opts.NoIlCache)
             {
-                config.EnableILCache = false;
+                builder.EnableILCache = false;
             }
 
             if (opts.SkipIL)
             {
-                config.SkipIL = true;
+                builder.SkipIL = true;
             }
 
             if (opts.NoTimestampWarnings)
             {
-                config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
+                builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
             }
         }
     }

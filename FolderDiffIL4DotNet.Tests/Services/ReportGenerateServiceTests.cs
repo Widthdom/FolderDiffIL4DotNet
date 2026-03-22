@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-report-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
-            _service = new ReportGenerateService(_resultLists, _logger, new ConfigSettings());
+            _service = new ReportGenerateService(_resultLists, _logger, new ConfigSettingsBuilder().Build());
             ClearResultLists();
         }
 
@@ -53,14 +53,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -80,14 +73,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -113,12 +99,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -143,12 +124,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -168,14 +144,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -201,14 +170,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: dotnet ildasm 0.12.0)");
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -231,14 +193,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIgnoreILLinesContainingConfiguredStrings = true;
             config.ILIgnoreLineContainingStrings = new List<string> { "buildserver", " buildPath ", "", "buildserver" };
 
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -262,14 +217,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIgnoreILLinesContainingConfiguredStrings = false;
             config.ILIgnoreLineContainingStrings = new List<string> { "buildserver" };
 
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -290,14 +238,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIgnoreILLinesContainingConfiguredStrings = true;
             config.ILIgnoreLineContainingStrings = new List<string> { "", "   ", "\t" };
 
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -339,14 +280,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig();
             config.ShouldIncludeIgnoredFiles = true;
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -379,14 +313,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -435,10 +362,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("gamma.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: "00:00:01.000",
-                computerName: "test-host", config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -486,10 +410,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordNewFileTimestampOlderThanOldWarning("payload.bin", "2026-03-14 10:00:00", "2026-03-14 09:00:00");
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: "00:00:01.000",
-                computerName: "test-host", config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -523,10 +444,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordNewFileTimestampOlderThanOldWarning("payload.bin", "2026-03-14 10:00:00", "2026-03-14 09:00:00");
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: "00:00:01.000",
-                computerName: "test-host", config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -573,14 +491,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var logger = new TestLogger();
             var config = CreateConfig();
             var service = new ReportGenerateService(_resultLists, logger, config);
-            service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             Assert.DoesNotContain(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message == Constants.WARNING_SHA256_MISMATCH);
         }
@@ -602,14 +513,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail(Path.Combine("nested", "payload.bin"), FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
-                oldDir,
-                newDir,
-                reportDir,
-                appVersion: "test",
-                elapsedTimeString: "00:00:01.000",
-                computerName: "test-host",
-                config);
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
@@ -636,10 +540,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(reportDir);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.DoesNotContain("## IL Cache Stats", reportText);
@@ -657,10 +561,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig();
             config.ShouldIncludeILCacheStatsInReport = true;
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config, ilCache: null);
+                config, ilCache: null));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.DoesNotContain("## IL Cache Stats", reportText);
@@ -681,10 +585,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var ilCache = new ILCache(ilCacheDirectoryAbsolutePath: string.Empty);
 
             _resultLists.RecordDiffDetail("some.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config, ilCache);
+                config, ilCache));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("## IL Cache Stats", reportText);
@@ -731,10 +635,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             foreach (var relPath in unicodePaths)
@@ -758,10 +662,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail(unicodePath, FileDiffResultLists.DiffDetailResult.SHA256Match);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains(unicodePath, reportText, StringComparison.Ordinal);
@@ -795,10 +699,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig();
             config.ShouldIncludeUnchangedFiles = false; // skip writing 10k lines to report
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -827,8 +731,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var config = CreateConfig();
             config.ShouldOutputFileTimestamps = true;
 
-            _service.GenerateDiffReport(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+            _service.GenerateDiffReport(new ReportGenerationContext(
+                oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("unchanged.txt", reportText);
@@ -854,8 +759,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var config = CreateConfig();
             config.ShouldOutputFileTimestamps = true;
 
-            _service.GenerateDiffReport(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+            _service.GenerateDiffReport(new ReportGenerationContext(
+                oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("modified.txt", reportText);
@@ -881,8 +787,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIncludeIgnoredFiles = true;
             config.ShouldOutputFileTimestamps = true;
 
-            _service.GenerateDiffReport(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+            _service.GenerateDiffReport(new ReportGenerationContext(
+                oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("ignored.dll", reportText);
@@ -906,8 +813,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIncludeIgnoredFiles = true;
             config.ShouldOutputFileTimestamps = true;
 
-            _service.GenerateDiffReport(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+            _service.GenerateDiffReport(new ReportGenerationContext(
+                oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("new-only-ignored.dll", reportText);
@@ -929,10 +837,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.DisassemblerToolVersions["ilspycmd (version: 7.0.0)"] = 0;
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("ildasm (version: 1.0.0)", reportText);
@@ -960,10 +868,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             config.ShouldIncludeIgnoredFiles = true;
             config.ShouldOutputFileTimestamps = true;
 
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             // Report should generate without throwing / レポートが例外なく生成される
             Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
@@ -999,9 +907,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig();
             config.ShouldIncludeIgnoredFiles = true;
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: null, computerName: "test-host", config);
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host", config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -1065,9 +973,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordNewFileTimestampOlderThanOldWarning("lib.dll", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
-                appVersion: "test", elapsedTimeString: null, computerName: "test-host", config);
+                appVersion: "test", elapsedTimeString: null, computerName: "test-host", config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -1115,10 +1023,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig();
             config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -1158,10 +1066,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -1209,10 +1117,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -1261,10 +1169,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordNewFileTimestampOlderThanOldWarning("bbb-text.config", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
 
             var config = CreateConfig();
-            _service.GenerateDiffReport(
+            _service.GenerateDiffReport(new ReportGenerationContext(
                 oldDir, newDir, reportDir,
                 appVersion: "test", elapsedTimeString: null, computerName: "test-host",
-                config);
+                config));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
@@ -1283,7 +1191,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(il_aaa < sha256_zzz, "ILMismatch should appear before SHA256Mismatch in Timestamps Regressed table");
         }
 
-        private static ConfigSettings CreateConfig() => new()
+        private static ReportGenerationContext CreateReportContext(
+            string oldDir, string newDir, string reportDir,
+            ConfigSettings config, ILCache? ilCache = null)
+            => new(oldDir, newDir, reportDir,
+                appVersion: "test", elapsedTimeString: "00:00:01.000",
+                computerName: "test-host", config, ilCache);
+
+        private static ConfigSettings CreateConfig() => new ConfigSettingsBuilder()
         {
             IgnoredExtensions = new List<string>(),
             TextFileExtensions = new List<string>(),
@@ -1291,7 +1206,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             ShouldIncludeIgnoredFiles = false,
             ShouldOutputFileTimestamps = false,
             ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true
-        };
+        }.Build();
 
         private void ClearResultLists()
         {

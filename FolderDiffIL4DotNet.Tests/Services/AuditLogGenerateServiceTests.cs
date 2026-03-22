@@ -53,9 +53,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("basic");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var auditLogPath = Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME);
             Assert.True(File.Exists(auditLogPath), "audit_log.json should be created");
@@ -70,9 +68,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("disabled");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: false);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir, shouldGenerateAuditLog: false));
 
             var auditLogPath = Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME);
             Assert.False(File.Exists(auditLogPath), "audit_log.json should not be created when disabled");
@@ -89,9 +85,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("metadata");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
+            _service.GenerateAuditLog(new ReportGenerationContext(
+                oldDir, newDir, reportDir,
                 appVersion: "2.1.0", elapsedTimeString: "0h 5m 30.1s",
-                computerName: "build-server-01", shouldGenerate: true);
+                computerName: "build-server-01",
+                new ConfigSettingsBuilder { ShouldGenerateAuditLog = true }.Build(),
+                ilCache: null));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             Assert.Contains("\"appVersion\": \"2.1.0\"", json);
@@ -121,9 +120,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("unchanged.config", FileDiffResultLists.DiffDetailResult.SHA256Match);
             _resultLists.RecordIgnoredFile("ignored.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var record = JsonSerializer.Deserialize<JsonElement>(json);
@@ -151,9 +148,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddUnchangedFileRelativePath("lib/utils.dll");
             _resultLists.RecordDiffDetail("lib/utils.dll", FileDiffResultLists.DiffDetailResult.SHA256Match);
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             Assert.Contains("\"category\": \"Modified\"", json);
@@ -175,9 +170,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new-file.txt"));
             _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "old-file.txt"));
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var record = JsonSerializer.Deserialize<JsonElement>(json);
@@ -211,9 +204,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddUnchangedFileRelativePath("aaa.config");
             _resultLists.RecordDiffDetail("aaa.config", FileDiffResultLists.DiffDetailResult.SHA256Match);
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var record = JsonSerializer.Deserialize<JsonElement>(json);
@@ -246,9 +237,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Create a mock diff_report.md / ダミーの diff_report.md を作成
             File.WriteAllText(Path.Combine(reportDir, "diff_report.md"), "# Test Report\nContent here.");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var record = JsonSerializer.Deserialize<JsonElement>(json);
@@ -270,9 +259,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             File.WriteAllText(Path.Combine(reportDir, "diff_report.html"), "<html><body>Test</body></html>");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var record = JsonSerializer.Deserialize<JsonElement>(json);
@@ -292,9 +279,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("hash-missing");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var record = JsonSerializer.Deserialize<JsonElement>(json);
@@ -337,9 +322,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddModifiedFileRelativePath("src/app.dll");
             _resultLists.RecordDiffDetail("src/app.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
 
@@ -398,9 +381,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("empty");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 0.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var record = JsonSerializer.Deserialize<JsonElement>(json);
@@ -454,9 +435,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 new("ilspycmd", false, null, null),
             };
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var doc = JsonDocument.Parse(json);
@@ -486,9 +465,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("no-probe");
 
-            _service.GenerateAuditLog(oldDir, newDir, reportDir,
-                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", shouldGenerate: true);
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
 
             var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
             var doc = JsonDocument.Parse(json);
@@ -499,6 +476,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         // ── Helpers / ヘルパー ────────────────────────────────────────────────────
+
+        private static ReportGenerationContext CreateReportContext(
+            string oldDir, string newDir, string reportDir,
+            bool shouldGenerateAuditLog = true)
+            => new(oldDir, newDir, reportDir,
+                appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
+                computerName: "test-host",
+                new ConfigSettingsBuilder { ShouldGenerateAuditLog = shouldGenerateAuditLog }.Build(),
+                ilCache: null);
 
         private (string oldDir, string newDir, string reportDir) MakeDirs(string label)
         {

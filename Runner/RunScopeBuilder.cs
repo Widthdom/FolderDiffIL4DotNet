@@ -24,7 +24,7 @@ namespace FolderDiffIL4DotNet.Runner
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
-            ConfigSettings config)
+            IReadOnlyConfigSettings config)
         {
             bool detectedNetworkOld = config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(oldFolderAbsolutePath);
             bool detectedNetworkNew = config.AutoDetectNetworkShares && FileSystemUtility.IsLikelyNetworkPath(newFolderAbsolutePath);
@@ -47,7 +47,6 @@ namespace FolderDiffIL4DotNet.Runner
         {
             var services = new ServiceCollection();
             services.AddSingleton<ILoggerService>(logger);
-            services.AddSingleton(config);
             services.AddSingleton<IReadOnlyConfigSettings>(config);
             services.AddSingleton(executionContext);
             services.AddScoped<FileDiffResultLists>();
@@ -72,7 +71,7 @@ namespace FolderDiffIL4DotNet.Runner
         /// Creates an <see cref="ILCache"/> based on configuration. Returns null when caching is disabled.
         /// 設定に基づいて <see cref="ILCache"/> を生成する。キャッシュが無効な場合は null を返す。
         /// </summary>
-        internal static ILCache? CreateIlCache(ConfigSettings config, ILoggerService logger)
+        internal static ILCache? CreateIlCache(IReadOnlyConfigSettings config, ILoggerService logger)
         {
             if (!config.EnableILCache)
             {

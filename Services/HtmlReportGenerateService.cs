@@ -42,27 +42,21 @@ namespace FolderDiffIL4DotNet.Services
         // ── Public entry point ───────────────────────────────────────────────
 
         /// <summary>
-        /// Generates diff_report.html and writes it to <paramref name="reportsFolderAbsolutePath"/>.
-        /// No-op when <see cref="ConfigSettings.ShouldGenerateHtmlReport"/> is <see langword="false"/>.
-        /// diff_report.html を生成して <paramref name="reportsFolderAbsolutePath"/> へ書き込みます。
-        /// <see cref="ConfigSettings.ShouldGenerateHtmlReport"/> が <see langword="false"/> の場合は何もしません。
+        /// Generates diff_report.html using the specified <paramref name="context"/>.
+        /// No-op when <see cref="IReadOnlyConfigSettings.ShouldGenerateHtmlReport"/> is <see langword="false"/>.
+        /// 指定された <paramref name="context"/> を使って diff_report.html を生成します。
+        /// <see cref="IReadOnlyConfigSettings.ShouldGenerateHtmlReport"/> が <see langword="false"/> の場合は何もしません。
         /// </summary>
-        public void GenerateDiffReportHtml(
-            string oldFolderAbsolutePath,
-            string newFolderAbsolutePath,
-            string reportsFolderAbsolutePath,
-            string appVersion,
-            string elapsedTimeString,
-            string computerName,
-            IReadOnlyConfigSettings config,
-            ILCache? ilCache = null)
+        public void GenerateDiffReportHtml(ReportGenerationContext context)
         {
-            if (!config.ShouldGenerateHtmlReport) return;
+            ArgumentNullException.ThrowIfNull(context);
 
-            string htmlPath = Path.Combine(reportsFolderAbsolutePath, DIFF_REPORT_HTML_FILE_NAME);
+            if (!context.Config.ShouldGenerateHtmlReport) return;
+
+            string htmlPath = Path.Combine(context.ReportsFolderAbsolutePath, DIFF_REPORT_HTML_FILE_NAME);
             string html = BuildHtml(
-                oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath,
-                appVersion, elapsedTimeString, computerName, config, ilCache);
+                context.OldFolderAbsolutePath, context.NewFolderAbsolutePath, context.ReportsFolderAbsolutePath,
+                context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache);
             try
             {
                 File.WriteAllText(htmlPath, html, Encoding.UTF8);

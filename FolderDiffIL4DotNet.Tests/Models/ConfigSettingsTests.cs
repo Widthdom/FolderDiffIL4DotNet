@@ -27,7 +27,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Constructor_UsesCodeDefinedDefaults()
         {
-            var config = new ConfigSettings();
+            var config = new ConfigSettingsBuilder().Build();
 
             AssertMatchesDefaults(config);
         }
@@ -35,7 +35,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void JsonDeserialize_EmptyObject_UsesCodeDefinedDefaults()
         {
-            var config = JsonSerializer.Deserialize<ConfigSettings>("{}");
+            var config = JsonSerializer.Deserialize<ConfigSettingsBuilder>("{}")!.Build();
 
             Assert.NotNull(config);
             AssertMatchesDefaults(config);
@@ -75,7 +75,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 }
                 """;
 
-            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+            var config = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)!.Build();
 
             Assert.NotNull(config);
             Assert.Equal(new[] { ".tmp" }, config.IgnoredExtensions);
@@ -111,7 +111,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         {
             const string json = """{ "SpinnerFrames": null }""";
 
-            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+            var config = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)!.Build();
 
             Assert.NotNull(config);
             Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
@@ -120,9 +120,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Validate_EmptySpinnerFrames_ReturnsError()
         {
-            var config = new ConfigSettings { SpinnerFrames = new System.Collections.Generic.List<string>() };
+            var builder = new ConfigSettingsBuilder { SpinnerFrames = new System.Collections.Generic.List<string>() };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, e => e.Contains("SpinnerFrames", StringComparison.Ordinal));
@@ -140,7 +140,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 }
                 """;
 
-            var config = JsonSerializer.Deserialize<ConfigSettings>(json);
+            var config = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)!.Build();
 
             Assert.NotNull(config);
             Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
@@ -153,9 +153,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Validate_DefaultSettings_IsValid()
         {
-            var config = new ConfigSettings();
+            var builder = new ConfigSettingsBuilder();
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.True(result.IsValid);
             Assert.Empty(result.Errors);
@@ -167,9 +167,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [InlineData(int.MinValue)]
         public void Validate_MaxLogGenerationsLessThanOne_ReturnsError(int value)
         {
-            var config = new ConfigSettings { MaxLogGenerations = value };
+            var builder = new ConfigSettingsBuilder { MaxLogGenerations = value };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.False(result.IsValid);
             Assert.Single(result.Errors);
@@ -183,9 +183,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [InlineData(int.MinValue)]
         public void Validate_TextDiffParallelThresholdKilobytesLessThanOne_ReturnsError(int value)
         {
-            var config = new ConfigSettings { TextDiffParallelThresholdKilobytes = value };
+            var builder = new ConfigSettingsBuilder { TextDiffParallelThresholdKilobytes = value };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, e => e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
@@ -197,9 +197,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [InlineData(int.MinValue)]
         public void Validate_TextDiffChunkSizeKilobytesLessThanOne_ReturnsError(int value)
         {
-            var config = new ConfigSettings { TextDiffChunkSizeKilobytes = value };
+            var builder = new ConfigSettingsBuilder { TextDiffChunkSizeKilobytes = value };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, e => e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal));
@@ -210,13 +210,13 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [InlineData(128, 64)]  // chunk > threshold
         public void Validate_ChunkSizeGreaterThanOrEqualToThreshold_ReturnsError(int chunkKb, int thresholdKb)
         {
-            var config = new ConfigSettings
+            var builder = new ConfigSettingsBuilder
             {
                 TextDiffChunkSizeKilobytes = chunkKb,
                 TextDiffParallelThresholdKilobytes = thresholdKb,
             };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, e =>
@@ -227,13 +227,13 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Validate_ChunkSizeSmallerThanThreshold_IsValid()
         {
-            var config = new ConfigSettings
+            var builder = new ConfigSettingsBuilder
             {
                 TextDiffChunkSizeKilobytes = 63,
                 TextDiffParallelThresholdKilobytes = 64,
             };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.True(result.IsValid);
         }
@@ -241,14 +241,14 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Validate_MultipleErrors_ReturnsAllErrors()
         {
-            var config = new ConfigSettings
+            var builder = new ConfigSettingsBuilder
             {
                 MaxLogGenerations = 0,
                 TextDiffParallelThresholdKilobytes = 0,
                 TextDiffChunkSizeKilobytes = 0,
             };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.False(result.IsValid);
             Assert.Equal(3, result.Errors.Count);
@@ -259,7 +259,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Constructor_DisassemblerBlacklistTtlMinutes_DefaultIsTen()
         {
-            var config = new ConfigSettings();
+            var config = new ConfigSettingsBuilder().Build();
             Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
         }
 
@@ -267,7 +267,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         public void JsonDeserialize_DisassemblerBlacklistTtlMinutes_IsApplied()
         {
             const string json = """{ "DisassemblerBlacklistTtlMinutes": 30 }""";
-            var config = System.Text.Json.JsonSerializer.Deserialize<ConfigSettings>(json);
+            var config = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)!.Build();
             Assert.NotNull(config);
             Assert.Equal(30, config.DisassemblerBlacklistTtlMinutes);
         }
@@ -278,8 +278,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [InlineData(60)]
         public void Validate_DisassemblerBlacklistTtlMinutes_PositiveValues_IsValid(int minutes)
         {
-            var config = new ConfigSettings { DisassemblerBlacklistTtlMinutes = minutes };
-            var result = config.Validate();
+            var builder = new ConfigSettingsBuilder { DisassemblerBlacklistTtlMinutes = minutes };
+            var result = builder.Validate();
             Assert.True(result.IsValid);
         }
 
@@ -290,8 +290,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
         {
             // Values <= 0 are treated as the default (10 min), so Validate passes
             // 0 以下は既定値（10 分）として扱われるため Validate エラーにならない
-            var config = new ConfigSettings { DisassemblerBlacklistTtlMinutes = minutes };
-            var result = config.Validate();
+            var builder = new ConfigSettingsBuilder { DisassemblerBlacklistTtlMinutes = minutes };
+            var result = builder.Validate();
             Assert.True(result.IsValid);
         }
 
@@ -299,12 +299,12 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Validate_ChunkSizeExactlyOneBeforeThreshold_IsValid()
         {
-            var config = new ConfigSettings
+            var builder = new ConfigSettingsBuilder
             {
                 TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes - 1,
                 TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
             };
-            var result = config.Validate();
+            var result = builder.Validate();
             Assert.True(result.IsValid);
             Assert.Empty(result.Errors);
         }
@@ -313,12 +313,12 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Validate_ChunkSizeEqualToThreshold_ReturnsError()
         {
-            var config = new ConfigSettings
+            var builder = new ConfigSettingsBuilder
             {
                 TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
                 TextDiffParallelThresholdKilobytes = ConfigSettings.DefaultTextDiffParallelThresholdKilobytes,
             };
-            var result = config.Validate();
+            var result = builder.Validate();
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, e =>
                 e.Contains("TextDiffChunkSizeKilobytes", StringComparison.Ordinal) &&
@@ -330,7 +330,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Constructor_InlineDiffDefaults_AreCorrect()
         {
-            var config = new ConfigSettings();
+            var config = new ConfigSettingsBuilder().Build();
 
             Assert.True(config.EnableInlineDiff);
             Assert.Equal(0, config.InlineDiffContextLines);
@@ -350,7 +350,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 }
                 """;
 
-            var config = System.Text.Json.JsonSerializer.Deserialize<ConfigSettings>(json);
+            var config = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)!.Build();
 
             Assert.NotNull(config);
             Assert.False(config.EnableInlineDiff);
@@ -364,9 +364,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [InlineData(int.MinValue)]
         public void Validate_InlineDiffContextLines_Negative_ReturnsError(int value)
         {
-            var config = new ConfigSettings { InlineDiffContextLines = value };
+            var builder = new ConfigSettingsBuilder { InlineDiffContextLines = value };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.False(result.IsValid);
             Assert.Contains(result.Errors, e => e.Contains("InlineDiffContextLines", StringComparison.Ordinal));
@@ -375,9 +375,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void Validate_InlineDiffContextLines_Zero_IsValid()
         {
-            var config = new ConfigSettings { InlineDiffContextLines = 0 };
+            var builder = new ConfigSettingsBuilder { InlineDiffContextLines = 0 };
 
-            var result = config.Validate();
+            var result = builder.Validate();
 
             Assert.True(result.IsValid);
         }
@@ -425,7 +425,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void ConfigSettings_ImplementsIReadOnlyConfigSettings()
         {
-            var config = new ConfigSettings();
+            var config = new ConfigSettingsBuilder().Build();
 
             IReadOnlyConfigSettings readOnly = config;
 
@@ -449,7 +449,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         [Fact]
         public void IReadOnlyConfigSettings_ListProperties_AreReadOnly()
         {
-            var config = new ConfigSettings();
+            var config = new ConfigSettingsBuilder().Build();
             IReadOnlyConfigSettings readOnly = config;
 
             // IReadOnlyList does not expose Add/Remove, verifying type constraint

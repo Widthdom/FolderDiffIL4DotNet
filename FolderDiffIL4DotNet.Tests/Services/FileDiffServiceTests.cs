@@ -52,14 +52,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, "old-content");
             File.WriteAllText(newFileAbsolutePath, "new");
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
                 ShouldOutputILText = false,
                 EnableILCache = false,
                 OptimizeForNetworkShares = true
-            };
+            }.Build();
 
             FileStream exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
             var logger = new TestLogger(entry =>
@@ -116,7 +116,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, new string('A', 2048));
             File.WriteAllText(newFileAbsolutePath, new string('B', 2048));
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
@@ -125,7 +125,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 1,
                 TextDiffChunkSizeKilobytes = 1
-            };
+            }.Build();
 
             var logger = new TestLogger();
             var resultLists = new FileDiffResultLists();
@@ -167,7 +167,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, new string('A', 2 * 1024 * 1024));
             File.WriteAllText(newFileAbsolutePath, new string('B', 2 * 1024 * 1024));
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
@@ -176,7 +176,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 64,
                 TextDiffChunkSizeKilobytes = 32
-            };
+            }.Build();
 
             var logger = new TestLogger();
             var resultLists = new FileDiffResultLists();

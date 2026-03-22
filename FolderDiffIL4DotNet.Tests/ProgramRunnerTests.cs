@@ -134,11 +134,11 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void CreateIlCache_WhenStatsIntervalIsNonPositive_UsesDocumentedDefaults()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 EnableILCache = true,
                 ILCacheStatsLogIntervalSeconds = 0
-            };
+            }.Build();
 
             var cache = InvokeCreateIlCache(config, new TestLogger());
 
@@ -156,11 +156,11 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void CreateIlCache_WhenPathIsEmpty_DefaultsToLocalApplicationDataSubfolder()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 EnableILCache = true,
                 ILCacheDirectoryAbsolutePath = ""
-            };
+            }.Build();
 
             var cache = InvokeCreateIlCache(config, new TestLogger());
 
@@ -975,7 +975,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(ex);
         }
 
-        private static ILCache InvokeCreateIlCache(ConfigSettings config, ILoggerService logger)
+        private static ILCache InvokeCreateIlCache(IReadOnlyConfigSettings config, ILoggerService logger)
         {
             var method = typeof(RunScopeBuilder).GetMethod("CreateIlCache", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);

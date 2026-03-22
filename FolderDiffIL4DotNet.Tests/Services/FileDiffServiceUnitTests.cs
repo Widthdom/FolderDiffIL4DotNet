@@ -354,9 +354,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             FileDiffResultLists resultLists,
             TestLogger logger,
             bool optimizeForNetworkShares = false,
-            Action<ConfigSettings> configure = null)
+            Action<ConfigSettingsBuilder> configure = null)
         {
-            var config = new ConfigSettings
+            var builder = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
@@ -367,7 +367,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 TextDiffChunkSizeKilobytes = ConfigSettings.DefaultTextDiffChunkSizeKilobytes,
                 TextDiffParallelMemoryLimitMegabytes = 0
             };
-            configure?.Invoke(config);
+            configure?.Invoke(builder);
+            var config = builder.Build();
 
             var executionContext = new DiffExecutionContext(
                 "/virtual/old",

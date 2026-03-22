@@ -37,10 +37,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void GetNormalizedIlIgnoreContainingStrings_RemovesEmptyTrimAndDuplicates()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 ILIgnoreLineContainingStrings = new List<string> { "buildserver", " buildpath ", "", "buildserver", "   " }
-            };
+            }.Build();
 
             var result = InvokeGetNormalizedIlIgnoreContainingStrings(config);
 
@@ -103,13 +103,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task PrecomputeAsync_WhenOptimizeForNetworkShares_ExitsWithoutThrowing()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 OptimizeForNetworkShares = true,
                 EnableILCache = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
-            };
+            }.Build();
 
             var service = CreateILOutputService(config);
             await service.PrecomputeAsync(new[] { "/tmp/non-existent.dll" }, maxParallel: 0);
@@ -118,13 +118,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task PrecomputeAsync_WithInvalidMaxParallel_ThrowsWhenNotNetworkOptimized()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 OptimizeForNetworkShares = false,
                 EnableILCache = false,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
-            };
+            }.Build();
 
             var service = CreateILOutputService(config);
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.PrecomputeAsync(Array.Empty<string>(), maxParallel: 0));
@@ -133,13 +133,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task PrecomputeAsync_WithCacheDisabled_ReturnsWithoutThrowing()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 OptimizeForNetworkShares = false,
                 EnableILCache = false,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
-            };
+            }.Build();
             var service = CreateILOutputService(config);
             await service.PrecomputeAsync(new[] { "/tmp/non-existent.dll" }, maxParallel: 1);
         }

@@ -210,8 +210,8 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 3. Initialize logging and print application version.
 4. Validate `old`, `new`, and `reportLabel` arguments. Unknown CLI flags surface here as exit code `2`.
 5. Create `Reports/<label>` early and fail if the label already exists.
-6. Load the config file — from the path given to `--config` if supplied, otherwise from [`AppContext.BaseDirectory`](https://learn.microsoft.com/en-us/dotnet/api/system.appcontext.basedirectory?view=net-8.0) — and overlay it onto the code-defined defaults in [`ConfigSettings`](../Models/ConfigSettings.cs). Immediately after deserialization, [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) applies any `FOLDERDIFF_<PROPERTYNAME>` environment variable overrides (e.g. `FOLDERDIFF_MAXPARALLELISM=4`). Then [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) is called; if any value is out of range, the run fails with exit code `3`.
-7. Apply CLI overrides on top of the loaded config: `--threads` sets [`MaxParallelism`](../Models/ConfigSettings.cs); `--no-il-cache` sets [`EnableILCache`](../Models/ConfigSettings.cs) `= false`; `--skip-il` sets [`SkipIL`](../Models/ConfigSettings.cs) `= true`; `--no-timestamp-warnings` sets [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) `= false`.
+6. Load the config file — from the path given to `--config` if supplied, otherwise from [`AppContext.BaseDirectory`](https://learn.microsoft.com/en-us/dotnet/api/system.appcontext.basedirectory?view=net-8.0) — and deserialize it into a mutable [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs). Immediately after deserialization, [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) applies any `FOLDERDIFF_<PROPERTYNAME>` environment variable overrides (e.g. `FOLDERDIFF_MAXPARALLELISM=4`) to the builder.
+7. Apply CLI overrides on top of the builder: `--threads` sets [`MaxParallelism`](../Models/ConfigSettingsBuilder.cs); `--no-il-cache` sets [`EnableILCache`](../Models/ConfigSettingsBuilder.cs) `= false`; `--skip-il` sets [`SkipIL`](../Models/ConfigSettingsBuilder.cs) `= true`; `--no-timestamp-warnings` sets [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettingsBuilder.cs) `= false`. Then [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) is called; if any value is out of range, the run fails with exit code `3`. Finally, [`ConfigSettingsBuilder.Build()`](../Models/ConfigSettingsBuilder.cs) produces an immutable [`ConfigSettings`](../Models/ConfigSettings.cs) instance used for the remainder of the run.
 8. Clear transient shared helpers such as [`TimestampCache`](../Services/Caching/TimestampCache.cs).
 9. Compute [`DiffExecutionContext`](../Services/DiffExecutionContext.cs), including network-share decisions.
 10. Build the run-scoped DI container.
@@ -225,7 +225,7 @@ The implementation keeps `RunAsync()` short by treating those steps as explicit 
 Failure behavior:
 - [`ProgramRunner`](../ProgramRunner.cs) now uses small typed step results at the application boundary instead of flattening every failure into one catch-all exit code.
 - Argument validation, unknown flags, and missing input paths map to exit code `2`.
-- [`ConfigService`](../Services/ConfigService.cs) failures such as missing [`config.json`](../config.json), parse failures, config-read I/O errors, or settings that fail [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) map to exit code `3`.
+- [`ConfigService`](../Services/ConfigService.cs) failures such as missing [`config.json`](../config.json), parse failures, config-read I/O errors, or settings that fail [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) map to exit code `3`.
 - Diff execution and report-generation failures, including fatal IL comparison failures surfaced as [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0), map to exit code `4`.
 - Exit code `1` is reserved for unexpected internal errors that escape the explicit phase classification.
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
@@ -247,9 +247,9 @@ This root container is intentionally small. It should not accumulate run-specifi
 
 ### Run-scoped container
 
-Registered in [`ProgramRunner.BuildRunServiceProvider(...)`](../ProgramRunner.cs):
+Registered in [`RunScopeBuilder.Build(...)`](../Runner/RunScopeBuilder.cs):
 - Singletons inside the run scope
-- [`ConfigSettings`](../Models/ConfigSettings.cs)
+- [`IReadOnlyConfigSettings`](../Models/IReadOnlyConfigSettings.cs) (immutable [`ConfigSettings`](../Models/ConfigSettings.cs) built from [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs))
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs)
 - [`ILoggerService`](../Services/ILoggerService.cs) (shared logger instance)
 - Scoped services
@@ -895,8 +895,8 @@ sequenceDiagram
 3. ログを初期化し、アプリのバージョンを表示します。
 4. `old`、`new`、`reportLabel` 引数を検証します。未知の CLI フラグはここで終了コード `2` として検出されます。
 5. `Reports/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。
-6. `--config` で指定されたパス（未指定なら [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0)）から設定ファイルを読み込み、[`ConfigSettings`](../Models/ConfigSettings.cs) のコード既定値へ上書きします。デシリアライズ直後に [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) が `FOLDERDIFF_<PROPERTYNAME>` 環境変数オーバーライド（例: `FOLDERDIFF_MAXPARALLELISM=4`）を適用します。その後 [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) を呼び出し、範囲外の値がある場合は終了コード `3` で失敗させます。
-7. CLI オプションをコンフィグに上書き適用します。`--threads` → [`MaxParallelism`](../Models/ConfigSettings.cs)、`--no-il-cache` → [`EnableILCache`](../Models/ConfigSettings.cs) `= false`、`--skip-il` → [`SkipIL`](../Models/ConfigSettings.cs) `= true`、`--no-timestamp-warnings` → [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettings.cs) `= false`。
+6. `--config` で指定されたパス（未指定なら [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0)）から設定ファイルを読み込み、ミュータブルな [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs) へデシリアライズします。デシリアライズ直後に [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) が `FOLDERDIFF_<PROPERTYNAME>` 環境変数オーバーライド（例: `FOLDERDIFF_MAXPARALLELISM=4`）をビルダーに適用します。
+7. CLI オプションをビルダーに上書き適用します。`--threads` → [`MaxParallelism`](../Models/ConfigSettingsBuilder.cs)、`--no-il-cache` → [`EnableILCache`](../Models/ConfigSettingsBuilder.cs) `= false`、`--skip-il` → [`SkipIL`](../Models/ConfigSettingsBuilder.cs) `= true`、`--no-timestamp-warnings` → [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettingsBuilder.cs) `= false`。その後 [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) を呼び出し、範囲外の値がある場合は終了コード `3` で失敗させます。最後に [`ConfigSettingsBuilder.Build()`](../Models/ConfigSettingsBuilder.cs) がイミュータブルな [`ConfigSettings`](../Models/ConfigSettings.cs) インスタンスを生成し、以降の実行で使用します。
 8. [`TimestampCache`](../Services/Caching/TimestampCache.cs) などの一時共有ヘルパーをクリアします。
 9. ネットワーク共有判定を含む [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) を組み立てます。
 10. 実行単位の DI コンテナを構築します。
@@ -932,9 +932,9 @@ sequenceDiagram
 
 ### 実行単位コンテナ
 
-[`ProgramRunner.BuildRunServiceProvider(...)`](../ProgramRunner.cs) で登録:
+[`RunScopeBuilder.Build(...)`](../Runner/RunScopeBuilder.cs) で登録:
 - 実行スコープ内シングルトン
-- [`ConfigSettings`](../Models/ConfigSettings.cs)
+- [`IReadOnlyConfigSettings`](../Models/IReadOnlyConfigSettings.cs)（[`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs) から構築されたイミュータブルな [`ConfigSettings`](../Models/ConfigSettings.cs)）
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs)
 - [`ILoggerService`](../Services/ILoggerService.cs)（共有ロガー）
 - スコープサービス

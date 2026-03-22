@@ -41,33 +41,28 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Generates audit_log.json and writes it to <paramref name="reportsFolderAbsolutePath"/>.
-        /// No-op when <paramref name="shouldGenerate"/> is <see langword="false"/>.
-        /// audit_log.json を生成して <paramref name="reportsFolderAbsolutePath"/> へ書き込みます。
-        /// <paramref name="shouldGenerate"/> が <see langword="false"/> の場合は何もしません。
+        /// Generates audit_log.json using the specified <paramref name="context"/>.
+        /// No-op when <see cref="IReadOnlyConfigSettings.ShouldGenerateAuditLog"/> is <see langword="false"/>.
+        /// 指定された <paramref name="context"/> を使って audit_log.json を生成します。
+        /// <see cref="IReadOnlyConfigSettings.ShouldGenerateAuditLog"/> が <see langword="false"/> の場合は何もしません。
         /// </summary>
-        public void GenerateAuditLog(
-            string oldFolderAbsolutePath,
-            string newFolderAbsolutePath,
-            string reportsFolderAbsolutePath,
-            string appVersion,
-            string elapsedTimeString,
-            string computerName,
-            bool shouldGenerate)
+        public void GenerateAuditLog(ReportGenerationContext context)
         {
-            if (!shouldGenerate) return;
+            ArgumentNullException.ThrowIfNull(context);
 
-            var auditLogPath = Path.Combine(reportsFolderAbsolutePath, AUDIT_LOG_FILE_NAME);
+            if (!context.Config.ShouldGenerateAuditLog) return;
+
+            var auditLogPath = Path.Combine(context.ReportsFolderAbsolutePath, AUDIT_LOG_FILE_NAME);
 
             try
             {
                 var record = BuildAuditLogRecord(
-                    oldFolderAbsolutePath,
-                    newFolderAbsolutePath,
-                    appVersion,
-                    elapsedTimeString,
-                    computerName,
-                    reportsFolderAbsolutePath);
+                    context.OldFolderAbsolutePath,
+                    context.NewFolderAbsolutePath,
+                    context.AppVersion,
+                    context.ElapsedTimeString,
+                    context.ComputerName,
+                    context.ReportsFolderAbsolutePath);
 
                 var jsonOptions = new JsonSerializerOptions
                 {
