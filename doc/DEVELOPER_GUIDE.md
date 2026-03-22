@@ -37,6 +37,7 @@ Common commands:
 dotnet restore FolderDiffIL4DotNet.sln
 dotnet build FolderDiffIL4DotNet.sln --configuration Release
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false
+npm run test:js   # Jest unit tests for diff_report.js / diff_report.js の Jest ユニットテスト
 ```
 
 Refresh the documentation site locally:
