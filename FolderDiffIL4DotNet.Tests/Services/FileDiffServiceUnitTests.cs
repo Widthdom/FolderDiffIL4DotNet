@@ -362,6 +362,48 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task FilesAreEqualAsync_WhenSemanticAnalysisThrows_LogsWarningAndDoesNotCrash()
+        {
+            // When ILMismatch triggers TryAnalyzeAssemblySemanticChanges and the analysis
+            // fails (e.g. non-existent or corrupt file), the CA1031 catch-all should log a
+            // warning and allow the diff to complete normally.
+            // ILMismatch 時に TryAnalyzeAssemblySemanticChanges が発火し解析が失敗（存在しない
+            // ファイル等）した場合、CA1031 catch-all が警告をログし、差分処理は正常に完了すべき。
+            const string relativePath = "assembly.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                // IL diff returns not-equal, which triggers semantic analysis
+                DiffResult = (AreEqual: false, DisassemblerLabel: "test-tool")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.ShouldIncludeAssemblySemanticChangesInReport = true);
+
+            // Should complete without throwing — the CA1031 catch-all in
+            // TryAnalyzeAssemblySemanticChanges handles the failure.
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.ILMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+
+            // Semantic analysis failed on virtual paths — should log a warning
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Method-level analysis failed", StringComparison.Ordinal));
+
+            // No semantic changes should be recorded since analysis failed
+            Assert.False(resultLists.FileRelativePathToAssemblySemanticChanges.ContainsKey(relativePath));
+        }
+
+        [Fact]
         public async Task FilesAreEqualAsync_WhenSkipILIsTrueAndDotNetAssembly_SkipsILAndFallsThroughToTextOrBinaryDiff()
         {
             const string relativePath = "assembly.dll";
