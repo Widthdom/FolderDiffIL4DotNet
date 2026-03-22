@@ -206,7 +206,9 @@ namespace FolderDiffIL4DotNet.Services
                     catch (OperationCanceledException)
                     {
                         // Timeout — kill the process / タイムアウト — プロセスを強制終了
+#pragma warning disable CA1031 // best-effort process kill / ベストエフォートのプロセス強制終了
                         try { process.Kill(entireProcessTree: true); } catch { /* best effort / ベストエフォート */ }
+#pragma warning restore CA1031
                         return (ExitCode: int.MinValue, Stdout: null, Stderr: null,
                             Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds."));
                     }
