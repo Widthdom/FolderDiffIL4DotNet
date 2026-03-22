@@ -28,7 +28,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string TH_BG_ADDED    = "#e6ffed";
         private const string TH_BG_REMOVED  = "#ffeef0";
         private const string TH_BG_MODIFIED = "#e3f2fd";
-        private const string TH_BG_DEFAULT  = "#fafafa";
+        private const string TH_BG_DEFAULT  = "#f0f0f2";
 
         public HtmlReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IReadOnlyConfigSettings config)
         {

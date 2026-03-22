@@ -183,7 +183,7 @@
     table.semantic-changes-table.sc-detail td:nth-child(6), table.semantic-changes-table.sc-detail td:nth-child(7),
     table.semantic-changes-table.sc-detail td:nth-child(8) { text-align: center; }
     /* sc-count: Class(1) Change(2) High(3) Medium(4) Low(5) Total(6) — no checkbox column */
-    table.semantic-changes-table.sc-count { width: auto; }
+    table.semantic-changes-table.sc-count { width: auto; table-layout: auto; }
     table.semantic-changes-table.sc-count td:nth-child(2) { text-align: center; }
     table.semantic-changes-table.sc-count td:nth-child(3), table.semantic-changes-table.sc-count td:nth-child(4),
     table.semantic-changes-table.sc-count td:nth-child(5), table.semantic-changes-table.sc-count td:nth-child(6) { text-align: right; }
@@ -229,7 +229,7 @@
   <li>IL Disassembler: dotnet-ildasm (version: 0.12.2)</li>
   <li>Disassembler Availability:
     <table class="legend-table">
-      <thead><tr><th style="background:#fafafa">Tool</th><th style="background:#fafafa">Available</th><th style="background:#fafafa">Version</th></tr></thead>
+      <thead><tr><th style="background:#f0f0f2">Tool</th><th style="background:#f0f0f2">Available</th><th style="background:#f0f0f2">Version</th></tr></thead>
       <tbody>
         <tr><td>dotnet-ildasm</td><td style="text-align:center"><span style="color:#22863a">Yes</span></td><td>0.12.2</td></tr>
         <tr><td>ilspycmd</td><td style="text-align:center"><span style="color:#b31d28">No</span></td><td>N/A</td></tr>
@@ -254,6 +254,7 @@
   <li>Note: Inline diffs for ILMismatch and TextMismatch are computed using the <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>
   <li>Legend (Diff Detail):
     <table class="legend-table">
+      <thead><tr><th style="background:#f0f0f2">Label</th><th style="background:#f0f0f2">Description</th></tr></thead>
       <tbody>
         <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>SHA256 hash match / mismatch</td></tr>
         <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>
@@ -263,6 +264,7 @@
   </li>
   <li>Legend (Change Importance):
     <table class="legend-table">
+      <thead><tr><th style="background:#f0f0f2">Label</th><th style="background:#f0f0f2">Description</th></tr></thead>
       <tbody>
         <tr><td><code>High</code></td><td>Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
         <tr><td><code>Medium</code></td><td>Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
@@ -284,7 +286,7 @@
   <col class="col-diff-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#fafafa">
+<thead><tr style="background:#f0f0f2">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -340,7 +342,7 @@
   <col class="col-diff-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#fafafa">
+<thead><tr style="background:#f0f0f2">
   <th class="col-no">#</th>
   <th class="col-cb">&#x2713;</th>
   <th class="th-resizable" data-col-var="--col-reason-w">Justification</th>
