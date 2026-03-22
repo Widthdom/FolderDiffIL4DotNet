@@ -162,58 +162,7 @@ namespace FolderDiffIL4DotNet.Services
                 string fileExtension = Path.GetExtension(file1AbsolutePath);
                 if (_config.TextFileExtensions.Any(configuredExtension => string.Equals(configuredExtension, fileExtension, StringComparison.OrdinalIgnoreCase)))
                 {
-                    int textDiffParallelThresholdBytes = GetEffectiveBytesFromConfiguredKilobytes(
-                        configuredKilobytes: _config.TextDiffParallelThresholdKilobytes,
-                        defaultBytes: DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES);
-                    int textDiffChunkSizeBytes = GetEffectiveBytesFromConfiguredKilobytes(
-                        configuredKilobytes: _config.TextDiffChunkSizeKilobytes,
-                        defaultBytes: DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES);
-                    bool areTextFilesEqual;
-                    try
-                    {
-                        if (_optimizeForNetworkShares)
-                        {
-                            // Under network-share optimisation, avoid parallel comparison (which opens/closes per chunk) and compare sequentially.
-                            // ネットワーク共有最適化時は、チャンク毎のOpen/Closeを伴う並列比較は避け、逐次読みで比較
-                            areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                        }
-                        else
-                        {
-                            long file1Length = _fileComparisonService.GetFileLength(file1AbsolutePath);
-                            if (file1Length >= textDiffParallelThresholdBytes)
-                            {
-                                int effectiveMaxParallel = DetermineEffectiveTextDiffParallelism(fileRelativePath, maxParallel, textDiffChunkSizeBytes);
-                                if (effectiveMaxParallel == 1)
-                                {
-                                    // Fall back to sequential comparison to avoid extra buffer allocation when the memory budget is small.
-                                    // メモリ予算が小さい場合は追加バッファ確保を抑えるため逐次比較へ切り替える。
-                                    areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                                }
-                                else
-                                {
-                                    // Speed up large files with parallel chunk comparison.
-                                    // 大きいファイルは並列チャンク比較で高速化
-                                    areTextFilesEqual = await DiffTextFilesParallelAsync(
-                                        file1AbsolutePath,
-                                        file2AbsolutePath,
-                                        largeFileSizeThresholdBytes: textDiffParallelThresholdBytes,
-                                        chunkSizeBytes: textDiffChunkSizeBytes,
-                                        maxParallel: effectiveMaxParallel);
-                                }
-                            }
-                            else
-                            {
-                                // Sequential line comparison for small files to avoid parallelisation overhead.
-                                // 小さいファイルは逐次行比較（並列化のオーバーヘッドを避ける）
-                                areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                            }
-                        }
-                    }
-                    catch (Exception ex) when (ex is ArgumentOutOfRangeException or IOException or UnauthorizedAccessException or NotSupportedException)
-                    {
-                        _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
-                        areTextFilesEqual = await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
-                    }
+                    bool areTextFilesEqual = await CompareAsTextAsync(fileRelativePath, file1AbsolutePath, file2AbsolutePath, maxParallel);
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
                     return areTextFilesEqual;
                 }
@@ -280,6 +229,59 @@ namespace FolderDiffIL4DotNet.Services
                 $"An unexpected error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
                 shouldOutputMessageToConsole: true,
                 exception);
+        }
+
+        /// <summary>
+        /// Compares two text files using sequential or chunk-parallel strategies depending on file size and network mode.
+        /// ファイルサイズやネットワークモードに応じて逐次比較またはチャンク並列比較でテキストファイルを比較します。
+        /// </summary>
+        private async Task<bool> CompareAsTextAsync(string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, int maxParallel)
+        {
+            int textDiffParallelThresholdBytes = GetEffectiveBytesFromConfiguredKilobytes(
+                configuredKilobytes: _config.TextDiffParallelThresholdKilobytes,
+                defaultBytes: DEFAULT_TEXT_DIFF_PARALLEL_THRESHOLD_BYTES);
+            int textDiffChunkSizeBytes = GetEffectiveBytesFromConfiguredKilobytes(
+                configuredKilobytes: _config.TextDiffChunkSizeKilobytes,
+                defaultBytes: DEFAULT_TEXT_DIFF_CHUNK_SIZE_BYTES);
+            try
+            {
+                if (_optimizeForNetworkShares)
+                {
+                    // Under network-share optimisation, avoid parallel comparison (which opens/closes per chunk) and compare sequentially.
+                    // ネットワーク共有最適化時は、チャンク毎のOpen/Closeを伴う並列比較は避け、逐次読みで比較
+                    return await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                }
+
+                long file1Length = _fileComparisonService.GetFileLength(file1AbsolutePath);
+                if (file1Length >= textDiffParallelThresholdBytes)
+                {
+                    int effectiveMaxParallel = DetermineEffectiveTextDiffParallelism(fileRelativePath, maxParallel, textDiffChunkSizeBytes);
+                    if (effectiveMaxParallel == 1)
+                    {
+                        // Fall back to sequential comparison to avoid extra buffer allocation when the memory budget is small.
+                        // メモリ予算が小さい場合は追加バッファ確保を抑えるため逐次比較へ切り替える。
+                        return await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+                    }
+
+                    // Speed up large files with parallel chunk comparison.
+                    // 大きいファイルは並列チャンク比較で高速化
+                    return await DiffTextFilesParallelAsync(
+                        file1AbsolutePath,
+                        file2AbsolutePath,
+                        largeFileSizeThresholdBytes: textDiffParallelThresholdBytes,
+                        chunkSizeBytes: textDiffChunkSizeBytes,
+                        maxParallel: effectiveMaxParallel);
+                }
+
+                // Sequential line comparison for small files to avoid parallelisation overhead.
+                // 小さいファイルは逐次行比較（並列化のオーバーヘッドを避ける）
+                return await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+            }
+            catch (Exception ex) when (ex is ArgumentOutOfRangeException or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
+                return await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
+            }
         }
 
         /// <summary>
