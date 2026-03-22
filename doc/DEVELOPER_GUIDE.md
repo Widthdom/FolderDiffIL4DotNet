@@ -425,6 +425,19 @@ catch (Exception ex)
 - Disassembler labels used during IL comparison
 - Disassembler availability probe results (`DisassemblerAvailability`) for the report header
 
+**Disassembler Availability table — edge cases:**
+`DisassemblerHelper.ProbeAllCandidates()` is called **unconditionally** in [`ProgramRunner.ExecuteScopedRunAsync()`](../ProgramRunner.cs) before any file comparison begins, regardless of file types or the `SkipIL` setting. The probed results are stored in `FileDiffResultLists.DisassemblerAvailability` and used by both report generators.
+
+| Scenario | Probe runs? | Table shown? | Content |
+| --- | --- | --- | --- |
+| Normal run with .NET assemblies | Yes | Yes | Each tool shows Yes/No + version |
+| All files are text (no .dll/.exe) | Yes | Yes | Table still appears; IL comparison is simply not attempted for any file |
+| `SkipIL = true` | Yes | Yes | Table still appears; IL comparison is bypassed during diff |
+| No disassembler tools available | Yes | Yes | All tools show "No" (red) and "N/A" for version |
+| `DisassemblerAvailability` is null or empty | N/A | No | Guard check `if (probeResults == null \|\| probeResults.Count == 0) return;` suppresses output |
+
+In practice, `ProbeAllCandidates()` always returns a non-empty list because the candidate set is hard-coded. The null/empty guard exists for defensive safety and is covered by tests (`GenerateDiffReport_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull` / `GenerateDiffReportHtml_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull`).
+
 The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed record (`AddedCount`, `RemovedCount`, `ModifiedCount`, `UnchangedCount`, `IgnoredCount`) and the `SummaryStatistics` computed property provide a single consistent snapshot of the five bucket counts. [`ReportGenerateService`](../Services/ReportGenerateService.cs) reads `SummaryStatistics` once per report to write the summary section, so callers do not need to access each collection individually.
 
 [`ReportGenerateService`](../Services/ReportGenerateService.cs) depends on these assumptions:
@@ -1065,6 +1078,19 @@ catch (Exception ex)
 - Modified と判定されたファイルのうち、`new` 側の更新日時が `old` 側より古いものの警告情報
 - IL 比較で使用した逆アセンブラ表示ラベル
 - レポートヘッダ用の逆アセンブラ利用可否プローブ結果（`DisassemblerAvailability`）
+
+**Disassembler Availability テーブル — エッジケース:**
+`DisassemblerHelper.ProbeAllCandidates()` は [`ProgramRunner.ExecuteScopedRunAsync()`](../ProgramRunner.cs) にてファイル比較の開始前に**無条件で**呼ばれます。ファイル種別や `SkipIL` 設定には依存しません。プローブ結果は `FileDiffResultLists.DisassemblerAvailability` に格納され、両レポート生成で参照されます。
+
+| シナリオ | プローブ実行 | テーブル表示 | 内容 |
+| --- | --- | --- | --- |
+| .NET アセンブリを含む通常の実行 | はい | はい | 各ツールに Yes/No ＋ バージョンを表示 |
+| 全ファイルがテキスト（.dll/.exe なし） | はい | はい | テーブルは表示される。IL 比較はどのファイルにも実行されない |
+| `SkipIL = true` | はい | はい | テーブルは表示される。差分処理中の IL 比較はスキップされる |
+| 逆アセンブラツールが一切見つからない | はい | はい | 全ツールが "No"（赤）と "N/A" で表示される |
+| `DisassemblerAvailability` が null または空 | — | いいえ | ガードチェック `if (probeResults == null \|\| probeResults.Count == 0) return;` により出力を抑制 |
+
+実際には `ProbeAllCandidates()` は候補セットがハードコードされているため常に非空のリストを返します。null/空のガードは防御的安全策として存在し、テスト（`GenerateDiffReport_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull` / `GenerateDiffReportHtml_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull`）でカバーされています。
 
 ネストされた [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed レコード（`AddedCount`、`RemovedCount`、`ModifiedCount`、`UnchangedCount`、`IgnoredCount`）と `SummaryStatistics` 計算プロパティが、5 つのバケット数を一度に取得できる一貫したスナップショットを提供します。[`ReportGenerateService`](../Services/ReportGenerateService.cs) はレポートのサマリーセクションを書く際に `SummaryStatistics` を一度参照するため、各コレクションを個別に参照する必要はありません。
 
