@@ -12,7 +12,7 @@
     ul.meta ul li { margin-bottom: 1px; }
     /* ── Legend table ────────────────────────────────────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
-    table.legend-table th { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
+    table.legend-table th { border: 1px solid #bbb; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
     table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; white-space: nowrap; }
     .il-ignore-scroll { overflow-x: auto; max-width: 80em; }
     table.il-ignore-table { max-width: none; }
