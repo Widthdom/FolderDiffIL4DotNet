@@ -37,6 +37,15 @@
     syncTableWidths();
     syncScTableWidths();
     setupLazyDiff();
+    // Pre-create hidden file input for Verify integrity so the accept
+    // filter is ready before the first click (some browsers ignore accept
+    // on dynamically created inputs that are clicked immediately)
+    var vi = document.createElement('input');
+    vi.type = 'file';
+    vi.accept = '.sha256';
+    vi.style.display = 'none';
+    vi.id = '__verifyInput__';
+    document.body.appendChild(vi);
   });
 
   function collectState() {
@@ -147,14 +156,10 @@
       alert('This report has not been downloaded as reviewed yet.');
       return;
     }
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.sha256';
-    input.style.display = 'none';
-    document.body.appendChild(input);
+    var input = document.getElementById('__verifyInput__');
+    input.value = '';
     input.onchange = async function() {
       var file = input.files[0];
-      document.body.removeChild(input);
       if (!file) return;
       if (!file.name.endsWith('.sha256')) {
         alert('Please select a .sha256 file.');
@@ -175,7 +180,7 @@
           + '\n.sha256:  ' + fileHash);
       }
     };
-    setTimeout(function() { input.click(); }, 0);
+    input.click();
   }
 
   function collapseAll() {
