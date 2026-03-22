@@ -131,7 +131,7 @@ Both [`FolderDiffIL4DotNet.csproj`](../FolderDiffIL4DotNet.csproj) and [`FolderD
 
 The generated `diff_report.html` applies two layers of XSS mitigation:
 
-1. **HTML encoding** — All user-supplied data (file paths, timestamps, version strings, disassembler output) is encoded via `System.Net.WebUtility.HtmlEncode` in [`HtmlReportGenerateService.Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs). This covers backticks, non-ASCII characters, and all standard HTML special characters.
+1. **HTML encoding** — All user-supplied data (file paths, timestamps, version strings, disassembler output) is encoded via `System.Net.WebUtility.HtmlEncode` in [`HtmlReportGenerateService.Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), followed by explicit backtick replacement (`` ` `` → `&#96;`). `WebUtility.HtmlEncode` does not encode backtick characters, so the extra `.Replace()` step prevents template-literal injection in embedded JavaScript contexts.
 
 2. **Content-Security-Policy** — A `<meta http-equiv="Content-Security-Policy">` tag in the `<head>` restricts the execution environment: `default-src 'none'` blocks everything by default; `style-src 'unsafe-inline'` and `script-src 'unsafe-inline'` allow only the report's own inline styles/scripts; `img-src 'self'` allows only same-origin images. This prevents loading of external scripts, stylesheets, fonts, frames, and form targets.
 
@@ -710,6 +710,40 @@ Before merging behavior changes, check:
 9. Were tests added or updated for the changed execution path?
 10. If CI, release, or security assumptions changed, were [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml), [`.github/workflows/release.yml`](../.github/workflows/release.yml), [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml), [`.github/dependabot.yml`](../.github/dependabot.yml), and [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) updated together?
 
+## Cross-Platform Pitfalls
+
+This project runs CI on both Linux and Windows. The following patterns have caused real CI failures and should be kept in mind when writing production code or tests.
+
+### Path separator consistency
+
+On Windows, `Path.GetRelativePath` normalizes output to `\`, but `Path.Combine` does **not** normalize the second argument's separators. This means a round-trip like:
+
+```csharp
+var rel = Path.GetRelativePath(baseDir, absolutePath);   // "sub\file.txt" on Windows
+var rebuilt = Path.Combine(otherBase, rel);               // "/other\sub\file.txt"
+```
+
+produces a different string from the original `Path.Combine(otherBase, "sub/file.txt")` → `"/other\sub/file.txt"` (mixed separators). `OrdinalIgnoreCase` string comparison treats `\` and `/` as different characters, so `HashSet<string>` lookups fail silently.
+
+**Rule**: When constructing relative paths that contain subdirectory separators, always use `Path.Combine("sub", "file.txt")` instead of `"sub/file.txt"`. In production code, avoid comparing raw `Path.Combine` output against `Path.GetRelativePath` output without normalization.
+
+### Timer resolution and timing-sensitive tests
+
+On Windows, `DateTime.UtcNow` and `Thread.Sleep` interact with the OS timer resolution (~15.6ms by default). A test that sets a TTL of 1ms and sleeps 20ms can fail because:
+
+1. `RegisterFailure()` records `DateTime.UtcNow` at time T.
+2. The test calls `Assert.True(IsBlacklisted(...))` — but if the code path from `RegisterFailure` to `IsBlacklisted` takes > 1ms (easily possible on a loaded CI runner), the TTL has already expired and the assertion fails.
+
+**Rule**: Use TTL values of at least 500ms and sleep durations of at least 1.4× the TTL in timing-sensitive tests. Avoid sub-millisecond TTLs entirely.
+
+### `WebUtility.HtmlEncode` does not encode backticks
+
+`System.Net.WebUtility.HtmlEncode` encodes `&`, `<`, `>`, `"`, `'` but does **not** encode backtick (`` ` ``). Since the HTML report embeds file paths in JavaScript contexts, backticks must be explicitly encoded to prevent template-literal injection. The `HtmlEncode()` helper in `HtmlReportGenerateService.Helpers.cs` adds `.Replace("`", "&#96;")` as a post-processing step.
+
+### Local tool versions (`dotnet-stryker`, etc.)
+
+The CI workflow runs `dotnet tool restore` using [`.config/dotnet-tools.json`](../.config/dotnet-tools.json). If a pinned version is removed from NuGet, CI fails at the restore step. Always verify that tool versions exist on NuGet before updating the manifest.
+
 ## Debugging Tips
 
 - Start with `Logs/log_YYYYMMDD.log` for the exact failure point.
@@ -883,7 +917,7 @@ TryValidateAndBuildRunArguments
 
 生成される `diff_report.html` は 2 層の XSS 緩和策を適用しています:
 
-1. **HTML エンコーディング** — すべてのユーザー提供データ（ファイルパス、タイムスタンプ、バージョン文字列、逆アセンブラ出力）は [`HtmlReportGenerateService.Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) の `System.Net.WebUtility.HtmlEncode` でエンコードされます。バッククォート、非 ASCII 文字、標準的な HTML 特殊文字すべてに対応。
+1. **HTML エンコーディング** — すべてのユーザー提供データ（ファイルパス、タイムスタンプ、バージョン文字列、逆アセンブラ出力）は [`HtmlReportGenerateService.Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) の `System.Net.WebUtility.HtmlEncode` でエンコードされ、さらにバッククォートの明示的な置換（`` ` `` → `&#96;`）が行われます。`WebUtility.HtmlEncode` はバッククォートをエンコードしないため、埋め込み JavaScript コンテキストでのテンプレートリテラル注入を防ぐ追加ステップです。
 
 2. **Content-Security-Policy** — `<head>` 内の `<meta http-equiv="Content-Security-Policy">` タグが実行環境を制限: `default-src 'none'` ですべてをブロックし、`style-src 'unsafe-inline'` と `script-src 'unsafe-inline'` でレポート自身のインラインスタイル/スクリプトのみを許可、`img-src 'self'` で同一オリジン画像のみを許可。外部スクリプト・スタイルシート・フォント・フレーム・フォームターゲットの読み込みを防止。
 
@@ -1458,6 +1492,40 @@ API リファレンス生成とサイト構築には DocFX を使います。
 8. [`README.md`](../README.md)、このガイド、[`doc/TESTING_GUIDE.md`](TESTING_GUIDE.md) がユーザー向け挙動と同期しているか。
 9. 変更した実行経路に対するテストを追加・更新したか。
 10. CI / リリース / セキュリティ前提が変わったなら、[`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml)、[`.github/workflows/release.yml`](../.github/workflows/release.yml)、[`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml)、[`.github/dependabot.yml`](../.github/dependabot.yml)、[`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) をまとめて更新したか。
+
+## クロスプラットフォームの注意点
+
+このプロジェクトは CI を Linux と Windows の両方で実行しています。以下のパターンは実際に CI 失敗を引き起こしたものであり、プロダクションコードやテストを書く際に注意が必要です。
+
+### パスセパレータの一貫性
+
+Windows では `Path.GetRelativePath` が出力を `\` に正規化しますが、`Path.Combine` は第二引数のセパレータを正規化**しません**。そのため、次のようなラウンドトリップ：
+
+```csharp
+var rel = Path.GetRelativePath(baseDir, absolutePath);   // Windows では "sub\file.txt"
+var rebuilt = Path.Combine(otherBase, rel);               // "/other\sub\file.txt"
+```
+
+は、元の `Path.Combine(otherBase, "sub/file.txt")` → `"/other\sub/file.txt"`（混在セパレータ）とは異なる文字列を生成します。`OrdinalIgnoreCase` 文字列比較は `\` と `/` を異なる文字として扱うため、`HashSet<string>` のルックアップがサイレントに失敗します。
+
+**ルール**: サブディレクトリセパレータを含む相対パスを構成する場合は、`"sub/file.txt"` ではなく常に `Path.Combine("sub", "file.txt")` を使用すること。プロダクションコードでは、正規化なしに `Path.Combine` の出力と `Path.GetRelativePath` の出力を直接比較しないこと。
+
+### タイマー解像度とタイミング依存テスト
+
+Windows では `DateTime.UtcNow` と `Thread.Sleep` は OS のタイマー解像度（デフォルトで約 15.6ms）の影響を受けます。TTL を 1ms に設定し 20ms スリープするテストは、以下の理由で失敗する可能性があります：
+
+1. `RegisterFailure()` が時刻 T で `DateTime.UtcNow` を記録する。
+2. テストが `Assert.True(IsBlacklisted(...))` を呼ぶ — しかし `RegisterFailure` から `IsBlacklisted` までのコードパスが 1ms 以上かかった場合（負荷のかかった CI ランナーでは容易に起こり得る）、TTL はすでに期限切れとなりアサーションが失敗する。
+
+**ルール**: タイミング依存テストでは TTL を最低 500ms、スリープ時間を TTL の最低 1.4 倍に設定すること。サブミリ秒の TTL は完全に避けること。
+
+### `WebUtility.HtmlEncode` はバッククォートをエンコードしない
+
+`System.Net.WebUtility.HtmlEncode` は `&`、`<`、`>`、`"`、`'` をエンコードしますが、バッククォート（`` ` ``）はエンコード**しません**。HTML レポートはファイルパスを JavaScript コンテキストに埋め込むため、テンプレートリテラル注入を防ぐためにバッククォートを明示的にエンコードする必要があります。`HtmlReportGenerateService.Helpers.cs` の `HtmlEncode()` ヘルパーは後処理ステップとして `.Replace("`", "&#96;")` を追加しています。
+
+### ローカルツールのバージョン（`dotnet-stryker` 等）
+
+CI ワークフローは [`.config/dotnet-tools.json`](../.config/dotnet-tools.json) を使用して `dotnet tool restore` を実行します。固定されたバージョンが NuGet から削除された場合、CI はリストアステップで失敗します。マニフェストを更新する前に、ツールバージョンが NuGet に存在することを必ず確認してください。
 
 ## デバッグのコツ
 
