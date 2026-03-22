@@ -127,16 +127,18 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             var equalityMap = new Dictionary<string, bool>(StringComparer.Ordinal);
 
             // Shared files: 100 matching, 80 modified
+            // Use Path.Combine for sub-paths to ensure consistent path separators on Windows.
+            // Windows でのパスセパレータ一貫性のため Path.Combine でサブパスを構成する。
             for (int i = 0; i < 100; i++)
             {
-                var rel = $"shared/match-{i:D3}.txt";
+                var rel = Path.Combine("shared", $"match-{i:D3}.txt");
                 oldFiles.Add(Path.Combine(oldDir, rel));
                 newFiles.Add(Path.Combine(newDir, rel));
                 equalityMap[rel] = true;
             }
             for (int i = 0; i < 80; i++)
             {
-                var rel = $"shared/changed-{i:D3}.txt";
+                var rel = Path.Combine("shared", $"changed-{i:D3}.txt");
                 oldFiles.Add(Path.Combine(oldDir, rel));
                 newFiles.Add(Path.Combine(newDir, rel));
                 equalityMap[rel] = false;
@@ -144,11 +146,11 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
 
             // 40 removed (old only)
             for (int i = 0; i < 40; i++)
-                oldFiles.Add(Path.Combine(oldDir, $"removed/file-{i:D3}.txt"));
+                oldFiles.Add(Path.Combine(oldDir, Path.Combine("removed", $"file-{i:D3}.txt")));
 
             // 30 added (new only)
             for (int i = 0; i < 30; i++)
-                newFiles.Add(Path.Combine(newDir, $"added/file-{i:D3}.txt"));
+                newFiles.Add(Path.Combine(newDir, Path.Combine("added", $"file-{i:D3}.txt")));
 
             fileSystem.SetFiles(oldDir, oldFiles.ToArray());
             fileSystem.SetFiles(newDir, newFiles.ToArray());

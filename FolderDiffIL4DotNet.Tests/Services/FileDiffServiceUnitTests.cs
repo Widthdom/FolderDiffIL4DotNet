@@ -57,8 +57,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Both file hashes should have been seeded into the IL cache
             Assert.Equal(2, ilOutputService.PreSeedCalls.Count);
-            Assert.Equal("/virtual/old/sample.txt", ilOutputService.PreSeedCalls[0].Path);
-            Assert.Equal("/virtual/new/sample.txt", ilOutputService.PreSeedCalls[1].Path);
+            Assert.Equal(Path.Combine("/virtual/old", "sample.txt"), ilOutputService.PreSeedCalls[0].Path);
+            Assert.Equal(Path.Combine("/virtual/new", "sample.txt"), ilOutputService.PreSeedCalls[1].Path);
         }
 
         [Fact]

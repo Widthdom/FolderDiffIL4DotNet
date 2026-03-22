@@ -85,6 +85,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Progress overflow crash on Windows due to path separator mismatch** — `FolderDiffService.ProcessAddedFiles` could throw `ArgumentOutOfRangeException` ("Progress must be between 0.00 and 100.00") on Windows when file relative paths contained subdirectory separators. The root cause was an inconsistency between `Path.GetRelativePath` (which normalizes to `\` on Windows) and the raw `HashSet<string>` of new-side absolute paths (which preserved original `/` separators from `Path.Combine`). Added `Math.Min(..., 100.0)` defense-in-depth clamping to all progress calculations in [`FolderDiffService.cs`](Services/FolderDiffService.cs) and [`FolderDiffService.DiffClassification.cs`](Services/FolderDiffService.DiffClassification.cs). Fixed test relative path construction in [`FolderDiffConcurrencyStressTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/FolderDiffConcurrencyStressTests.cs) and [`FileDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs) to use `Path.Combine` instead of hardcoded forward-slash separators.
+
+- **HtmlEncode did not encode backticks** — `System.Net.WebUtility.HtmlEncode` does not encode backtick characters (`` ` ``), leaving embedded JavaScript contexts vulnerable to template-literal injection. Added explicit `.Replace("`", "&#96;")` post-processing in [`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs).
+
+- **DisassemblerBlacklist TTL tests flaky on Windows CI** — Tests using 1ms TTL with 20ms sleep were failing because the TTL could expire between `RegisterFailure` and the subsequent `Assert.True(IsBlacklisted)` assertion on slow CI runners. Increased TTL to 500ms and sleep to 700ms in [`DisassemblerBlacklistTtlRecoveryTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/DisassemblerBlacklistTtlRecoveryTests.cs).
+
+- **dotnet-stryker 4.4.2 not found on NuGet** — Updated from non-existent version `4.4.2` to `4.14.0` in [`.config/dotnet-tools.json`](.config/dotnet-tools.json).
+
 - **Legend table header border color mismatch** — Changed `legend-table th` border from `1px solid #ddd` to `1px solid #bbb` in both [`diff_report.css`](Services/HtmlReport/diff_report.css) and [`doc/samples/diff_report.html`](doc/samples/diff_report.html), matching the standard table header border color used by `[ x ] Ignored Files` and other file listing tables.
 
 - **Missing importance column width in semantic changes table** — Added `col.sc-col-importance-g { width: 7em; }` CSS rule that was present in the source CSS but missing from [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Also added the importance column (7em) to the `syncScTableWidths()` `detW` calculation in [`diff_report.js`](Services/HtmlReport/diff_report.js), fixing an underestimated detail table width.
@@ -628,6 +636,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **`.sha256` ファイルの Verify integrity を簡素化** — `.sha256` ファイルの検証時に、レビュー済み HTML 自体が最終ハッシュを埋め込んでいるため、2 つ目のファイル選択ダイアログが不要になりました。ダウンロード時に第 2 プレースホルダ方式（`fff...f`）で `__finalSha256__` 定数に最終ハッシュを埋め込みます。`.sha256` 検証パスではファイル内容を `__finalSha256__` と直接比較し、合格/不合格の結果を表示します。[`diff_report.js`](Services/HtmlReport/diff_report.js) および [`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
 
 #### 修正
+
+- **Windows でのパスセパレータ不整合による進捗オーバーフロークラッシュ** — ファイルの相対パスにサブディレクトリセパレータが含まれる場合、`FolderDiffService.ProcessAddedFiles` が Windows で `ArgumentOutOfRangeException`（「Progress must be between 0.00 and 100.00」）をスローする問題を修正。根本原因は `Path.GetRelativePath`（Windows では `\` に正規化）と new 側絶対パスの生の `HashSet<string>`（`Path.Combine` からの `/` セパレータを保持）の不整合。[`FolderDiffService.cs`](Services/FolderDiffService.cs) と [`FolderDiffService.DiffClassification.cs`](Services/FolderDiffService.DiffClassification.cs) の全進捗計算に `Math.Min(..., 100.0)` の防御的クランプを追加。[`FolderDiffConcurrencyStressTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/FolderDiffConcurrencyStressTests.cs) と [`FileDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs) のテスト相対パス構成をハードコードのフォワードスラッシュから `Path.Combine` に修正。
+
+- **HtmlEncode がバッククォートをエンコードしない問題** — `System.Net.WebUtility.HtmlEncode` はバッククォート文字（`` ` ``）をエンコードせず、埋め込み JavaScript コンテキストがテンプレートリテラル注入に対して脆弱になる問題を修正。[`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) に `.Replace("`", "&#96;")` の明示的後処理を追加。
+
+- **DisassemblerBlacklist TTL テストが Windows CI で不安定** — 1ms TTL と 20ms スリープを使用するテストが、遅い CI ランナーで `RegisterFailure` と直後の `Assert.True(IsBlacklisted)` アサーション間で TTL が切れるために失敗する問題を修正。[`DisassemblerBlacklistTtlRecoveryTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/DisassemblerBlacklistTtlRecoveryTests.cs) で TTL を 500ms、スリープを 700ms に増加。
+
+- **dotnet-stryker 4.4.2 が NuGet に存在しない問題** — [`.config/dotnet-tools.json`](.config/dotnet-tools.json) で存在しないバージョン `4.4.2` を `4.14.0` に更新。
 
 - **凡例テーブルヘッダの枠線色の不一致** — `legend-table th` の枠線を `1px solid #ddd` から `1px solid #bbb` に変更し、[`diff_report.css`](Services/HtmlReport/diff_report.css) と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) の両方で `[ x ] Ignored Files` 等のファイル一覧テーブルのヘッダ枠線色と一致させました。
 

@@ -301,7 +301,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _fileDiffResultLists.AddAddedFileAbsolutePath(newFileAbsolutePath);
                 processedFileCount++;
-                _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
+                _progressReporter.ReportProgress(Math.Min((double)processedFileCount * 100.0 / totalFilesRelativePathCount, 100.0));
             }
         }
 

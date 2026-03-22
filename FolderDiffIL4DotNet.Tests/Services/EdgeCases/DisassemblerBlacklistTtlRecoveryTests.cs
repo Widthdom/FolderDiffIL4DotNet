@@ -24,36 +24,42 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
         [Fact]
         public void TtlRecovery_ToolIsReinstatedAfterTtlExpiry_AndCanBeBlacklistedAgain()
         {
-            // Verify that a tool can go through multiple blacklist → TTL recovery → re-blacklist cycles
-            // ツールがブラックリスト → TTL 復旧 → 再ブラックリストのサイクルを複数回経ることができることを確認
-            var bl = new DisassemblerBlacklist(failThreshold: 2, ttl: TimeSpan.FromMilliseconds(1));
+            // Verify that a tool can go through multiple blacklist → TTL recovery → re-blacklist cycles.
+            // Use a TTL well above Windows timer resolution (~15.6ms) so the entry does not expire
+            // between RegisterFailure and the subsequent IsBlacklisted assertion.
+            // ツールがブラックリスト → TTL 復旧 → 再ブラックリストのサイクルを複数回経ることができることを確認。
+            // Windows のタイマー解像度（約 15.6ms）より十分大きい TTL を使用し、
+            // RegisterFailure と直後の IsBlacklisted アサーション間で期限切れにならないようにする。
+            var bl = new DisassemblerBlacklist(failThreshold: 2, ttl: TimeSpan.FromMilliseconds(500));
 
             // Cycle 1: blacklist and recover
             bl.RegisterFailure(ToolA);
             bl.RegisterFailure(ToolA);
             Assert.True(bl.IsBlacklisted(ToolA));
-            Thread.Sleep(20);
+            Thread.Sleep(700);
             Assert.False(bl.IsBlacklisted(ToolA));
 
             // Cycle 2: blacklist again after recovery
             bl.RegisterFailure(ToolA);
             bl.RegisterFailure(ToolA);
             Assert.True(bl.IsBlacklisted(ToolA));
-            Thread.Sleep(20);
+            Thread.Sleep(700);
             Assert.False(bl.IsBlacklisted(ToolA));
         }
 
         [Fact]
         public void TtlRecovery_MultipleToolsRecoverIndependently()
         {
-            // Different tools with different TTL expiry points recover independently
-            // 異なる TTL 満了タイミングを持つ複数ツールが独立して復旧することを確認
-            var bl = new DisassemblerBlacklist(failThreshold: 1, ttl: TimeSpan.FromMilliseconds(1));
+            // Different tools with different TTL expiry points recover independently.
+            // Use a TTL well above Windows timer resolution (~15.6ms).
+            // 異なる TTL 満了タイミングを持つ複数ツールが独立して復旧することを確認。
+            // Windows のタイマー解像度（約 15.6ms）より十分大きい TTL を使用。
+            var bl = new DisassemblerBlacklist(failThreshold: 1, ttl: TimeSpan.FromMilliseconds(500));
 
             bl.RegisterFailure(ToolA);
             Assert.True(bl.IsBlacklisted(ToolA));
 
-            Thread.Sleep(20);
+            Thread.Sleep(700);
             bl.RegisterFailure(ToolB); // ToolB blacklisted AFTER ToolA's TTL should have expired
             Assert.True(bl.IsBlacklisted(ToolB));
 
@@ -64,16 +70,18 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
         [Fact]
         public void TtlRecovery_FailureAfterTtlExpiry_StartsNewFailCountFromZero()
         {
-            // After TTL expiry clears the entry, new failures start from count 0
-            // TTL 満了でエントリがクリアされた後、新しい失敗は 0 からカウント開始される
-            var bl = new DisassemblerBlacklist(failThreshold: 3, ttl: TimeSpan.FromMilliseconds(1));
+            // After TTL expiry clears the entry, new failures start from count 0.
+            // Use a TTL well above Windows timer resolution (~15.6ms).
+            // TTL 満了でエントリがクリアされた後、新しい失敗は 0 からカウント開始される。
+            // Windows のタイマー解像度（約 15.6ms）より十分大きい TTL を使用。
+            var bl = new DisassemblerBlacklist(failThreshold: 3, ttl: TimeSpan.FromMilliseconds(500));
 
             bl.RegisterFailure(ToolA);
             bl.RegisterFailure(ToolA);
             bl.RegisterFailure(ToolA);
             Assert.True(bl.IsBlacklisted(ToolA));
 
-            Thread.Sleep(20);
+            Thread.Sleep(700);
             Assert.False(bl.IsBlacklisted(ToolA));
             Assert.False(bl.ContainsEntry(ToolA)); // Entry purged
 

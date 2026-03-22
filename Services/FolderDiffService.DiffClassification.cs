@@ -38,7 +38,7 @@ namespace FolderDiffIL4DotNet.Services
                         _logger.LogMessage(AppLogLevel.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_FILE_DELETED_DURING_COMPARISON, fileRelativePath), shouldOutputMessageToConsole: true);
                         _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                         processedFileCountSoFar++;
-                        _progressReporter.ReportProgress((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount);
+                        _progressReporter.ReportProgress(Math.Min((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount, 100.0));
                         continue;
                     }
                     if (areEqual)
@@ -56,7 +56,7 @@ namespace FolderDiffIL4DotNet.Services
                     _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                 }
                 processedFileCountSoFar++;
-                _progressReporter.ReportProgress((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount);
+                _progressReporter.ReportProgress(Math.Min((double)processedFileCountSoFar * 100.0 / totalFilesRelativePathCount, 100.0));
             }
             return processedFileCountSoFar;
         }
@@ -104,7 +104,7 @@ namespace FolderDiffIL4DotNet.Services
                         _logger.LogMessage(AppLogLevel.Warning, string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_FILE_DELETED_DURING_COMPARISON, fileRelativePath), shouldOutputMessageToConsole: true);
                         _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                         var doneOnDelete = Interlocked.Increment(ref processedFileCount);
-                        _progressReporter.ReportProgress((double)doneOnDelete * 100.0 / totalFilesRelativePathCount);
+                        _progressReporter.ReportProgress(Math.Min((double)doneOnDelete * 100.0 / totalFilesRelativePathCount, 100.0));
                         return;
                     }
                     if (areFilesEqual)
@@ -122,7 +122,7 @@ namespace FolderDiffIL4DotNet.Services
                     _fileDiffResultLists.AddRemovedFileAbsolutePath(oldFileAbsolutePath);
                 }
                 var done = Interlocked.Increment(ref processedFileCount);
-                _progressReporter.ReportProgress((double)done * 100.0 / totalFilesRelativePathCount);
+                _progressReporter.ReportProgress(Math.Min((double)done * 100.0 / totalFilesRelativePathCount, 100.0));
             });
 
             return processedFileCount;
