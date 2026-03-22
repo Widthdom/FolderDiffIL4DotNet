@@ -186,7 +186,7 @@
     col.sc-col-change-g { width: 7em; }
     col.sc-col-importance-g { width: 7em; }
     col.sc-col-kind-g { width: 10em; }
-    col.sc-col-access-g { width: 8em; }
+    col.sc-col-access-g { width: 16em; }
     col.sc-col-mods-g { width: 11em; }
     col.sc-col-type-g { width: var(--sc-type-w); }
     col.sc-col-name-g { width: var(--sc-name-w); }
