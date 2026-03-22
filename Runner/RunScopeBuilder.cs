@@ -85,7 +85,8 @@ namespace FolderDiffIL4DotNet.Runner
                 timeToLive: TimeSpan.FromHours(Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS),
                 statsLogIntervalSeconds: config.ILCacheStatsLogIntervalSeconds <= 0 ? Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS : config.ILCacheStatsLogIntervalSeconds,
                 ilCacheMaxDiskFileCount: config.ILCacheMaxDiskFileCount,
-                ilCacheMaxDiskMegabytes: config.ILCacheMaxDiskMegabytes);
+                ilCacheMaxDiskMegabytes: config.ILCacheMaxDiskMegabytes,
+                ilCacheMaxMemoryMegabytes: config.ILCacheMaxMemoryMegabytes);
         }
     }
 }

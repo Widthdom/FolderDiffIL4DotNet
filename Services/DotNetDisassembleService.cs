@@ -274,7 +274,7 @@ namespace FolderDiffIL4DotNet.Services
 
             // Cache miss — launch the process to obtain the IL text.
             // キャッシュミス — プロセスを起動して IL テキストを取得する。
-            var (exitCode, stdout, stderr, error) = await RunProcessAsync(disassembleCommand, argset.workingDirectory, argset.args);
+            var (exitCode, stdout, stderr, error) = await RunProcessAsync(disassembleCommand, argset.workingDirectory, argset.args, _config.DisassemblerTimeoutSeconds);
             if (error != null)
             {
                 // Process failed to start — blacklist and return failure.

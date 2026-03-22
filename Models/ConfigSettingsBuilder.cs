@@ -104,6 +104,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.ILCacheMaxDiskMegabytes"/>
         public int ILCacheMaxDiskMegabytes { get; set; } = ConfigSettings.DefaultILCacheMaxDiskMegabytes;
 
+        /// <inheritdoc cref="ConfigSettings.ILCacheMaxMemoryMegabytes"/>
+        public int ILCacheMaxMemoryMegabytes { get; set; } = ConfigSettings.DefaultILCacheMaxMemoryMegabytes;
+
         /// <inheritdoc cref="ConfigSettings.ILPrecomputeBatchSize"/>
         public int ILPrecomputeBatchSize { get; set; } = ConfigSettings.DefaultILPrecomputeBatchSize;
 
@@ -115,6 +118,9 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <inheritdoc cref="ConfigSettings.DisassemblerBlacklistTtlMinutes"/>
         public int DisassemblerBlacklistTtlMinutes { get; set; } = ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes;
+
+        /// <inheritdoc cref="ConfigSettings.DisassemblerTimeoutSeconds"/>
+        public int DisassemblerTimeoutSeconds { get; set; } = ConfigSettings.DefaultDisassemblerTimeoutSeconds;
 
         /// <inheritdoc cref="ConfigSettings.SkipIL"/>
         public bool SkipIL { get; set; }

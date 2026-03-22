@@ -10,7 +10,7 @@ FolderDiffIL4DotNet のよくある問題と解決策。
 
 ### "ildasm not found" / IL disassembler unavailable
 
-**Symptom:** The report shows all .NET assemblies compared by `SHA256Mismatch` instead of `ILMatch`/`ILMismatch`. The Disassembler Availability table shows all tools as "Unavailable".
+**Symptom:** The report shows all .NET assemblies compared by `SHA256Mismatch` instead of `ILMatch`/`ILMismatch`. The Disassembler Availability table shows all tools with `Available` = `No`.
 
 **Cause:** No IL disassembler is installed or is not on `PATH`.
 
@@ -172,7 +172,7 @@ Or limit the text diff memory budget:
 
 ### 「ildasm が見つからない」/ IL 逆アセンブラが利用不可
 
-**症状:** レポートですべての .NET アセンブリが `ILMatch`/`ILMismatch` ではなく `SHA256Mismatch` で比較されている。Disassembler Availability テーブルですべてのツールが「Unavailable」と表示される。
+**症状:** レポートですべての .NET アセンブリが `ILMatch`/`ILMismatch` ではなく `SHA256Mismatch` で比較されている。Disassembler Availability テーブルですべてのツールの `Available` 列が `No` と表示される。
 
 **原因:** IL 逆アセンブラがインストールされていないか、`PATH` に含まれていない。
 

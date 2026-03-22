@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
@@ -165,10 +166,14 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// Launches the command, waits for exit, and returns exit code / stdout / stderr.
         /// Returns the exception instead of throwing when the process cannot start.
+        /// When <paramref name="timeoutSeconds"/> is positive and the process exceeds it, the process is killed
+        /// and a <see cref="TimeoutException"/> is returned.
         /// 指定コマンドを起動して終了を待ち、終了コードと標準出力/標準エラーを返します。
         /// 起動失敗時は例外をタプルに含めて返します。
+        /// <paramref name="timeoutSeconds"/> が正の値でプロセスが制限時間を超えた場合、プロセスを強制終了し
+        /// <see cref="TimeoutException"/> を返します。
         /// </summary>
-        private static async Task<(int ExitCode, string? Stdout, string? Stderr, Exception? Error)> RunProcessAsync(string disassembleCommand, string workingDirectoryAbsolutePath, string[] args)
+        private static async Task<(int ExitCode, string? Stdout, string? Stderr, Exception? Error)> RunProcessAsync(string disassembleCommand, string workingDirectoryAbsolutePath, string[] args, int timeoutSeconds = 0)
         {
             try
             {
@@ -190,8 +195,30 @@ namespace FolderDiffIL4DotNet.Services
                 process.Start();
                 var outTask = process.StandardOutput.ReadToEndAsync();
                 var errTask = process.StandardError.ReadToEndAsync();
+
+                if (timeoutSeconds > 0)
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
+                    try
+                    {
+                        await process.WaitForExitAsync(cts.Token);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Timeout — kill the process / タイムアウト — プロセスを強制終了
+#pragma warning disable CA1031 // best-effort process kill / ベストエフォートのプロセス強制終了
+                        try { process.Kill(entireProcessTree: true); } catch { /* best effort / ベストエフォート */ }
+#pragma warning restore CA1031
+                        return (ExitCode: int.MinValue, Stdout: null, Stderr: null,
+                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds."));
+                    }
+                }
+                else
+                {
+                    await process.WaitForExitAsync();
+                }
+
                 await Task.WhenAll(outTask, errTask);
-                await process.WaitForExitAsync();
                 var stdOutput = outTask.Result;
                 var errorOutput = errTask.Result;
                 return (ExitCode: process.ExitCode, Stdout: stdOutput, Stderr: errorOutput, Error: null);

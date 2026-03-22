@@ -65,13 +65,15 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "ILCacheStatsLogIntervalSeconds": 30,
                   "ILCacheMaxDiskFileCount": 10,
                   "ILCacheMaxDiskMegabytes": 20,
+                  "ILCacheMaxMemoryMegabytes": 256,
                   "ILPrecomputeBatchSize": 512,
                   "OptimizeForNetworkShares": true,
                   "AutoDetectNetworkShares": false,
                   "SkipIL": true,
                   "ShouldIncludeILCacheStatsInReport": true,
                   "SpinnerFrames": [">", ">>", ">>>"],
-                  "DisassemblerBlacklistTtlMinutes": 25
+                  "DisassemblerBlacklistTtlMinutes": 25,
+                  "DisassemblerTimeoutSeconds": 600
                 }
                 """;
 
@@ -97,6 +99,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(30, config.ILCacheStatsLogIntervalSeconds);
             Assert.Equal(10, config.ILCacheMaxDiskFileCount);
             Assert.Equal(20, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(256, config.ILCacheMaxMemoryMegabytes);
             Assert.Equal(512, config.ILPrecomputeBatchSize);
             Assert.True(config.OptimizeForNetworkShares);
             Assert.False(config.AutoDetectNetworkShares);
@@ -104,6 +107,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.True(config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { ">", ">>", ">>>" }, config.SpinnerFrames);
             Assert.Equal(25, config.DisassemblerBlacklistTtlMinutes);
+            Assert.Equal(600, config.DisassemblerTimeoutSeconds);
         }
 
         [Fact]
@@ -404,6 +408,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);
             Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskFileCount, config.ILCacheMaxDiskFileCount);
             Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskMegabytes, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(ConfigSettings.DefaultILCacheMaxMemoryMegabytes, config.ILCacheMaxMemoryMegabytes);
             Assert.Equal(ConfigSettings.DefaultILPrecomputeBatchSize, config.ILPrecomputeBatchSize);
             Assert.False(config.OptimizeForNetworkShares);
             Assert.True(config.AutoDetectNetworkShares);
@@ -411,6 +416,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
             Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
+            Assert.Equal(ConfigSettings.DefaultDisassemblerTimeoutSeconds, config.DisassemblerTimeoutSeconds);
             Assert.True(config.EnableInlineDiff);
             Assert.Equal(0, config.InlineDiffContextLines);
             Assert.Equal(ConfigSettings.DefaultInlineDiffMaxDiffLines, config.InlineDiffMaxDiffLines);

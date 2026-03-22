@@ -120,6 +120,10 @@
   // ディスクキャッシュの最大サイズ（MiB）（デフォルト: 512）
   "ILCacheMaxDiskMegabytes": 512,
 
+  // Memory budget (MB) for the in-memory IL cache. 0 = unlimited (entry-count limit only) (default: 0)
+  // メモリ内 IL キャッシュのメモリ予算（MB）。0 = 無制限（エントリ数上限のみ）（デフォルト: 0）
+  "ILCacheMaxMemoryMegabytes": 0,
+
   // Number of files per SHA256 precompute batch (default: 2048)
   // SHA256 プリコンピュートのバッチあたりのファイル数（デフォルト: 2048）
   "ILPrecomputeBatchSize": 2048,
@@ -139,6 +143,10 @@
   // Minutes to blacklist a failing disassembler before retrying (default: 10)
   // 失敗した逆アセンブラを再試行までブラックリストに入れる分数（デフォルト: 10）
   "DisassemblerBlacklistTtlMinutes": 10,
+
+  // Timeout (seconds) for each disassembler process invocation. 0 = no timeout (default: 300)
+  // 各逆アセンブラプロセス実行のタイムアウト（秒）。0 = タイムアウトなし（デフォルト: 300）
+  "DisassemblerTimeoutSeconds": 300,
 
   // --- Inline Diff (HTML report) / インライン差分（HTML レポート） ---
 

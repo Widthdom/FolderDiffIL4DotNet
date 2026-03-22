@@ -1,11 +1,26 @@
+using System;
+using System.IO;
 using System.Linq;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
-    public sealed class AssemblyMethodAnalyzerTests
+    public sealed class AssemblyMethodAnalyzerTests : IDisposable
     {
+        private readonly string _tempDir;
+
+        public AssemblyMethodAnalyzerTests()
+        {
+            _tempDir = Path.Combine(Path.GetTempPath(), $"AsmAnalyzerTests_{Guid.NewGuid():N}");
+            Directory.CreateDirectory(_tempDir);
+        }
+
+        public void Dispose()
+        {
+            try { Directory.Delete(_tempDir, recursive: true); } catch { }
+        }
+
         [Fact]
         public void Analyze_SameAssembly_NoChanges()
         {
@@ -123,6 +138,82 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // (or "old → new" for Modified entries with access changes)
             Assert.True(memberEntries.All(m => !string.IsNullOrEmpty(m.Access)),
                 "All member entries should have a non-empty Access field");
+        }
+
+        [Fact]
+        public void Analyze_TruncatedPEFile_ReturnsNull()
+        {
+            // A file with a valid MZ header but truncated PE data should trigger the
+            // catch-all fallback and return null instead of throwing.
+            // 有効な MZ ヘッダーを持つが PE データが切り詰められたファイルは
+            // catch-all フォールバックで null を返すべき。
+            var truncatedPath = Path.Combine(_tempDir, "truncated.dll");
+            // MZ header (first two bytes) followed by garbage — enough to pass initial
+            // File.Open but fail during metadata parsing.
+            var bytes = new byte[64];
+            bytes[0] = 0x4D; // 'M'
+            bytes[1] = 0x5A; // 'Z'
+            File.WriteAllBytes(truncatedPath, bytes);
+
+            var result = AssemblyMethodAnalyzer.Analyze(truncatedPath, truncatedPath);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void Analyze_EmptyFile_ReturnsNull()
+        {
+            // A zero-byte file should trigger the catch-all and return null.
+            // 0 バイトファイルは catch-all でnull を返すべき。
+            var emptyPath = Path.Combine(_tempDir, "empty.dll");
+            File.WriteAllBytes(emptyPath, Array.Empty<byte>());
+
+            var result = AssemblyMethodAnalyzer.Analyze(emptyPath, emptyPath);
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void Analyze_CorruptPEWithValidHeader_ReturnsNull()
+        {
+            // A file with a plausible PE header but corrupted metadata tables should
+            // trigger the catch-all fallback path in AssemblyMethodAnalyzer.Analyze.
+            // もっともらしい PE ヘッダーを持つが破損したメタデータテーブルのファイルは
+            // AssemblyMethodAnalyzer.Analyze の catch-all フォールバックを発火させるべき。
+            var corruptPath = Path.Combine(_tempDir, "corrupt.dll");
+
+            // Build a minimal DOS header → PE signature → COFF header → optional header
+            // but with invalid metadata RVA so System.Reflection.Metadata will fail.
+            // Copy a real assembly then corrupt the metadata section.
+            var realAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var assemblyBytes = File.ReadAllBytes(realAssembly);
+
+            // Corrupt bytes in the middle of the assembly (metadata tables region)
+            // to trigger an exception during ReadAssemblySnapshot.
+            var random = new Random(42);
+            int corruptStart = Math.Min(256, assemblyBytes.Length / 2);
+            int corruptEnd = Math.Min(corruptStart + 512, assemblyBytes.Length);
+            for (int i = corruptStart; i < corruptEnd; i++)
+            {
+                assemblyBytes[i] = (byte)random.Next(256);
+            }
+            File.WriteAllBytes(corruptPath, assemblyBytes);
+
+            var result = AssemblyMethodAnalyzer.Analyze(corruptPath, corruptPath);
+            // Should return null (catch-all) rather than throwing
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public void Analyze_OneValidOneCorrupt_ReturnsNull()
+        {
+            // When one assembly is valid but the other is corrupt, the catch-all
+            // should still gracefully return null.
+            // 一方が有効で他方が破損している場合でも catch-all で null を返すべき。
+            var validPath = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var corruptPath = Path.Combine(_tempDir, "one-corrupt.dll");
+            File.WriteAllBytes(corruptPath, new byte[] { 0x4D, 0x5A, 0x00, 0x00 });
+
+            var result = AssemblyMethodAnalyzer.Analyze(validPath, corruptPath);
+            Assert.Null(result);
         }
     }
 }

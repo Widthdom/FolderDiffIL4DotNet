@@ -466,6 +466,11 @@ Override only the settings you want to change. For example:
       <td><code>512</code></td>
       <td>Disk cache size cap (MB). <code>&lt;=0</code> means unlimited.</td>
     </tr>
+    <tr id="config-en-ilcachemaxmemorymegabytes">
+      <td><code>ILCacheMaxMemoryMegabytes</code></td>
+      <td><code>0</code></td>
+      <td>In-memory IL cache budget (MB). <code>&lt;=0</code> means unlimited (entry-count limit only). Set this when large assemblies cause high memory usage.</td>
+    </tr>
     <tr id="config-en-ilprecomputebatchsize">
       <td><code>ILPrecomputeBatchSize</code></td>
       <td><code>2048</code></td>
@@ -485,6 +490,11 @@ Override only the settings you want to change. For example:
       <td><code>DisassemblerBlacklistTtlMinutes</code></td>
       <td><code>10</code></td>
       <td>Minutes before a blacklisted disassembler tool — one that has failed <code>DISASSEMBLE_FAIL_THRESHOLD</code> (3) times consecutively — is removed from the blacklist and retried on the next call.</td>
+    </tr>
+    <tr id="config-en-disassemblertimeoutseconds">
+      <td><code>DisassemblerTimeoutSeconds</code></td>
+      <td><code>300</code></td>
+      <td>Timeout (seconds) for each disassembler process invocation. <code>&lt;=0</code> means no timeout. Increase for very large assemblies or slow network shares.</td>
     </tr>
     <tr id="config-en-skipil">
       <td><code>SkipIL</code></td>
@@ -1063,6 +1073,11 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
       <td><code>512</code></td>
       <td>ディスクキャッシュ容量上限（MB）。<code>&lt;=0</code> で無制限。</td>
     </tr>
+    <tr id="config-ja-ilcachemaxmemorymegabytes">
+      <td><code>ILCacheMaxMemoryMegabytes</code></td>
+      <td><code>0</code></td>
+      <td>メモリ内 IL キャッシュのメモリ予算（MB）。<code>&lt;=0</code> で無制限（エントリ数上限のみ）。大きなアセンブリでメモリ使用量が高い場合に設定。</td>
+    </tr>
     <tr id="config-ja-ilprecomputebatchsize">
       <td><code>ILPrecomputeBatchSize</code></td>
       <td><code>2048</code></td>
@@ -1082,6 +1097,11 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
       <td><code>DisassemblerBlacklistTtlMinutes</code></td>
       <td><code>10</code></td>
       <td>連続失敗回数が <code>DISASSEMBLE_FAIL_THRESHOLD</code>（3 回）に達してブラックリスト入りした逆アセンブラツールが、ブラックリストから除外されて再試行されるまでの分数。</td>
+    </tr>
+    <tr id="config-ja-disassemblertimeoutseconds">
+      <td><code>DisassemblerTimeoutSeconds</code></td>
+      <td><code>300</code></td>
+      <td>各逆アセンブラプロセス実行のタイムアウト（秒）。<code>&lt;=0</code> でタイムアウトなし。非常に大きなアセンブリやネットワーク共有の遅延時に増加。</td>
     </tr>
     <tr id="config-ja-skipil">
       <td><code>SkipIL</code></td>

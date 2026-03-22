@@ -85,6 +85,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Size limit (MB) for the on-disk IL cache. / ディスク IL キャッシュのサイズ上限（MB）。</summary>
         int ILCacheMaxDiskMegabytes { get; }
 
+        /// <summary>Memory budget (MB) for the in-memory IL cache. 0 = unlimited. / メモリ内 IL キャッシュのメモリ予算（MB）。0 = 無制限。</summary>
+        int ILCacheMaxMemoryMegabytes { get; }
+
         /// <summary>Batch size for IL precomputation. / IL 事前計算のバッチサイズ。</summary>
         int ILPrecomputeBatchSize { get; }
 
@@ -96,6 +99,9 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>Blacklist TTL (minutes) for disassembler tools. / 逆アセンブラツールのブラックリスト有効期間（分）。</summary>
         int DisassemblerBlacklistTtlMinutes { get; }
+
+        /// <summary>Timeout (seconds) for each disassembler process. 0 = no timeout. / 逆アセンブラプロセスのタイムアウト（秒）。0 = 無制限。</summary>
+        int DisassemblerTimeoutSeconds { get; }
 
         /// <summary>Whether to skip IL comparison for .NET assemblies. / .NET アセンブリの IL 比較をスキップするかどうか。</summary>
         bool SkipIL { get; }

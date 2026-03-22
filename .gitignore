@@ -28,3 +28,6 @@ Thumbs.db
 _site/
 api/*.yml
 api/toc.yml
+
+# Node.js (Jest JS tests)
+node_modules/

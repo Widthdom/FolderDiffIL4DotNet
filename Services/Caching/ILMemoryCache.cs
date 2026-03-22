@@ -16,10 +16,12 @@ namespace FolderDiffIL4DotNet.Services.Caching
         private readonly ConcurrentDictionary<string, CacheEntry> _ilEntries = new(StringComparer.Ordinal);
         private readonly ConcurrentDictionary<string, string> _sha256HashCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly int _maxEntries;
+        private readonly long _maxMemoryBytes;
         private readonly TimeSpan? _timeToLive;
         private readonly object _lruLock = new();
         private long _evictedCount = 0;
         private long _expiredCount = 0;
+        private long _currentMemoryBytes = 0;
 
         /// <summary>
         /// Eviction statistics so far (Evicted: LRU, Expired: TTL).
@@ -27,10 +29,19 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// </summary>
         internal (long Evicted, long Expired) Stats => (_evictedCount, _expiredCount);
 
-        internal ILMemoryCache(int maxEntries, TimeSpan? timeToLive)
+        /// <summary>
+        /// Approximate memory used by cached IL text in bytes.
+        /// キャッシュされた IL テキストが使用しているおおよそのメモリ量（バイト）。
+        /// </summary>
+        internal long CurrentMemoryBytes => Interlocked.Read(ref _currentMemoryBytes);
+
+        internal ILMemoryCache(int maxEntries, TimeSpan? timeToLive, long maxMemoryMegabytes = 0)
         {
             _maxEntries = maxEntries <= 0 ? DefaultMaxEntries : maxEntries;
             _timeToLive = timeToLive;
+            // 0 or negative = unlimited (entry-count limit only)
+            // 0 以下 = 無制限（エントリ数上限のみ）
+            _maxMemoryBytes = maxMemoryMegabytes > 0 ? maxMemoryMegabytes * 1024L * 1024L : 0;
         }
 
         /// <summary>
@@ -64,7 +75,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             if (_timeToLive.HasValue && (DateTime.UtcNow - entry.CreatedUtc) > _timeToLive.Value)
             {
-                _ilEntries.TryRemove(cacheKey, out _);
+                if (_ilEntries.TryRemove(cacheKey, out var removed))
+                {
+                    Interlocked.Add(ref _currentMemoryBytes, -EstimateStringBytes(removed.ILText));
+                }
                 Interlocked.Increment(ref _expiredCount);
                 ilText = null;
                 return false;
@@ -83,44 +97,67 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             ArgumentNullException.ThrowIfNull(cacheKey);
 
+            long newEntryBytes = EstimateStringBytes(ilText);
             var now = DateTime.UtcNow;
-            if (_ilEntries.ContainsKey(cacheKey))
+            if (_ilEntries.TryGetValue(cacheKey, out var existing))
             {
+                long oldBytes = EstimateStringBytes(existing.ILText);
                 _ilEntries[cacheKey] = new CacheEntry(ilText, now, now);
+                Interlocked.Add(ref _currentMemoryBytes, newEntryBytes - oldBytes);
                 return null;
             }
 
-            var evictedKey = EnsureCapacityForInsert();
+            var evictedKey = EnsureCapacityForInsert(newEntryBytes);
             _ilEntries[cacheKey] = new CacheEntry(ilText, now, now);
+            Interlocked.Add(ref _currentMemoryBytes, newEntryBytes);
             return evictedKey;
         }
 
         /// <summary>
-        /// Ensures capacity for a new entry by evicting the least-recently-used entry if at capacity.
-        /// 新規挿入前にメモリキャッシュ上限を超えないようにし、必要であれば LRU エントリを削除します。
+        /// Ensures capacity for a new entry by evicting the least-recently-used entry if at entry-count or memory capacity.
+        /// 新規挿入前にエントリ数またはメモリ上限を超えないようにし、必要であれば LRU エントリを削除します。
         /// </summary>
-        private string? EnsureCapacityForInsert()
+        private string? EnsureCapacityForInsert(long newEntryBytes)
         {
-            if (_ilEntries.Count < _maxEntries)
+            bool needsEntryEviction = _ilEntries.Count >= _maxEntries;
+            bool needsMemoryEviction = _maxMemoryBytes > 0 &&
+                (Interlocked.Read(ref _currentMemoryBytes) + newEntryBytes) > _maxMemoryBytes;
+
+            if (!needsEntryEviction && !needsMemoryEviction)
             {
                 return null;
             }
 
             lock (_lruLock)
             {
-                if (_ilEntries.Count < _maxEntries)
+                // Re-check under lock / ロック下で再チェック
+                string? firstEvictedKey = null;
+
+                // Evict until both entry count and memory budget are satisfied
+                // エントリ数とメモリ予算の両方が満たされるまで削除
+                while (_ilEntries.Count > 0)
                 {
-                    return null;
+                    bool overCount = _ilEntries.Count >= _maxEntries;
+                    bool overMemory = _maxMemoryBytes > 0 &&
+                        (Interlocked.Read(ref _currentMemoryBytes) + newEntryBytes) > _maxMemoryBytes;
+
+                    if (!overCount && !overMemory)
+                    {
+                        break;
+                    }
+
+                    var oldestEntryKey = FindOldestEntryKey();
+                    if (oldestEntryKey == null || !_ilEntries.TryRemove(oldestEntryKey, out var removed))
+                    {
+                        break;
+                    }
+
+                    Interlocked.Add(ref _currentMemoryBytes, -EstimateStringBytes(removed.ILText));
+                    Interlocked.Increment(ref _evictedCount);
+                    firstEvictedKey ??= oldestEntryKey;
                 }
 
-                var oldestEntryKey = FindOldestEntryKey();
-                if (oldestEntryKey == null || !_ilEntries.TryRemove(oldestEntryKey, out _))
-                {
-                    return null;
-                }
-
-                Interlocked.Increment(ref _evictedCount);
-                return oldestEntryKey;
+                return firstEvictedKey;
             }
         }
 
@@ -143,6 +180,13 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             return oldestCacheKey;
         }
+
+        /// <summary>
+        /// Estimates the in-memory byte size of a .NET string (2 bytes per char + object overhead).
+        /// .NET 文字列のメモリ上のバイトサイズを推定します（1文字2バイト + オブジェクトオーバーヘッド）。
+        /// </summary>
+        private static long EstimateStringBytes(string? text)
+            => text == null ? 0 : (long)text.Length * 2 + 56;
 
         /// <summary>
         /// A single memory-cache entry holding IL text and access timestamps.

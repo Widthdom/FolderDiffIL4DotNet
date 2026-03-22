@@ -488,5 +488,88 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Equal(0, stats.Misses);
             Assert.Equal(0, stats.Stores);
         }
+
+        // ── Memory budget tests / メモリ予算テスト ──────────────────────────
+
+        [Fact]
+        public async Task MemoryBudget_EvictsOldestWhenExceeded()
+        {
+            // 1 MB budget; each IL string ~0.5 MB → 2nd insert should evict 1st
+            // 1 MB 予算; 各 IL 文字列 ~0.5 MB → 2件目挿入で1件目が追い出される
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null,
+                ilCacheMaxMemoryEntries: 100, ilCacheMaxMemoryMegabytes: 1);
+            var tool = "tool";
+
+            // ~500 KB string (250K chars × 2 bytes + overhead)
+            string largeIL1 = new string('A', 250_000);
+            string largeIL2 = new string('B', 250_000);
+            string largeIL3 = new string('C', 250_000);
+
+            var file1 = CreateTestFile("mem1.dll", "c1");
+            var file2 = CreateTestFile("mem2.dll", "c2");
+            var file3 = CreateTestFile("mem3.dll", "c3");
+
+            await cache.SetILAsync(file1, tool, largeIL1);
+            await cache.SetILAsync(file2, tool, largeIL2);
+            // Both fit under 1 MB
+            Assert.Equal(largeIL1, await cache.TryGetILAsync(file1, tool));
+            Assert.Equal(largeIL2, await cache.TryGetILAsync(file2, tool));
+
+            // 3rd should trigger memory eviction of the oldest (file1)
+            await cache.SetILAsync(file3, tool, largeIL3);
+            Assert.Null(await cache.TryGetILAsync(file1, tool));
+            Assert.Equal(largeIL3, await cache.TryGetILAsync(file3, tool));
+
+            var (evicted, _) = cache.Stats;
+            Assert.True(evicted >= 1, $"Expected at least 1 eviction, got {evicted}");
+        }
+
+        [Fact]
+        public async Task MemoryBudget_ZeroMeansUnlimited()
+        {
+            // 0 MB = unlimited; should not evict based on memory
+            // 0 MB = 無制限; メモリに基づく追い出しは行われない
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null,
+                ilCacheMaxMemoryEntries: 100, ilCacheMaxMemoryMegabytes: 0);
+            var tool = "tool";
+
+            string largeIL = new string('X', 500_000);
+            var file1 = CreateTestFile("unlim1.dll", "c1");
+            var file2 = CreateTestFile("unlim2.dll", "c2");
+            var file3 = CreateTestFile("unlim3.dll", "c3");
+
+            await cache.SetILAsync(file1, tool, largeIL);
+            await cache.SetILAsync(file2, tool, largeIL);
+            await cache.SetILAsync(file3, tool, largeIL);
+
+            // All should still be present
+            Assert.NotNull(await cache.TryGetILAsync(file1, tool));
+            Assert.NotNull(await cache.TryGetILAsync(file2, tool));
+            Assert.NotNull(await cache.TryGetILAsync(file3, tool));
+
+            Assert.Equal(0, cache.Stats.Evicted);
+        }
+
+        [Fact]
+        public async Task MemoryBudget_EntryCountAndMemoryBothEnforced()
+        {
+            // entry limit = 2, memory = 10 MB → entry count should still trigger eviction
+            // エントリ上限 = 2, メモリ = 10 MB → エントリ数上限で追い出される
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null,
+                ilCacheMaxMemoryEntries: 2, ilCacheMaxMemoryMegabytes: 10);
+            var tool = "tool";
+
+            var file1 = CreateTestFile("both1.dll", "c1");
+            var file2 = CreateTestFile("both2.dll", "c2");
+            var file3 = CreateTestFile("both3.dll", "c3");
+
+            await cache.SetILAsync(file1, tool, "small-il-1");
+            await cache.SetILAsync(file2, tool, "small-il-2");
+            await cache.SetILAsync(file3, tool, "small-il-3");
+
+            // file1 should be evicted by entry count limit
+            Assert.Null(await cache.TryGetILAsync(file1, tool));
+            Assert.NotNull(await cache.TryGetILAsync(file3, tool));
+        }
     }
 }

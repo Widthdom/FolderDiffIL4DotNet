@@ -53,10 +53,14 @@ namespace FolderDiffIL4DotNet.Models
         public const int DefaultILCacheMaxDiskFileCount = 1000;
         /// <summary>Default value for <see cref="ILCacheMaxDiskMegabytes"/>. / <see cref="ILCacheMaxDiskMegabytes"/> の既定値。</summary>
         public const int DefaultILCacheMaxDiskMegabytes = 512;
+        /// <summary>Default value for <see cref="ILCacheMaxMemoryMegabytes"/>. / <see cref="ILCacheMaxMemoryMegabytes"/> の既定値。</summary>
+        public const int DefaultILCacheMaxMemoryMegabytes = 0;
         /// <summary>Default value for <see cref="ILPrecomputeBatchSize"/>. / <see cref="ILPrecomputeBatchSize"/> の既定値。</summary>
         public const int DefaultILPrecomputeBatchSize = 2048;
         /// <summary>Default value for <see cref="DisassemblerBlacklistTtlMinutes"/>. / <see cref="DisassemblerBlacklistTtlMinutes"/> の既定値。</summary>
         public const int DefaultDisassemblerBlacklistTtlMinutes = 10;
+        /// <summary>Default value for <see cref="DisassemblerTimeoutSeconds"/>. / <see cref="DisassemblerTimeoutSeconds"/> の既定値。</summary>
+        public const int DefaultDisassemblerTimeoutSeconds = 300;
         /// <summary>Default value for <see cref="InlineDiffMaxEditDistance"/>. / <see cref="InlineDiffMaxEditDistance"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxEditDistance = 4000;
         /// <summary>Default value for <see cref="InlineDiffMaxDiffLines"/>. / <see cref="InlineDiffMaxDiffLines"/> の既定値。</summary>
@@ -112,10 +116,12 @@ namespace FolderDiffIL4DotNet.Models
             ILCacheStatsLogIntervalSeconds = builder.ILCacheStatsLogIntervalSeconds;
             ILCacheMaxDiskFileCount = builder.ILCacheMaxDiskFileCount;
             ILCacheMaxDiskMegabytes = builder.ILCacheMaxDiskMegabytes;
+            ILCacheMaxMemoryMegabytes = builder.ILCacheMaxMemoryMegabytes;
             ILPrecomputeBatchSize = builder.ILPrecomputeBatchSize;
             OptimizeForNetworkShares = builder.OptimizeForNetworkShares;
             AutoDetectNetworkShares = builder.AutoDetectNetworkShares;
             DisassemblerBlacklistTtlMinutes = builder.DisassemblerBlacklistTtlMinutes;
+            DisassemblerTimeoutSeconds = builder.DisassemblerTimeoutSeconds;
             SkipIL = builder.SkipIL;
             EnableInlineDiff = builder.EnableInlineDiff;
             InlineDiffContextLines = builder.InlineDiffContextLines;
@@ -265,6 +271,12 @@ namespace FolderDiffIL4DotNet.Models
         public int ILCacheMaxDiskMegabytes { get; }
 
         /// <summary>
+        /// Memory budget (MB) for the in-memory IL cache. 0 means unlimited (entry-count limit only).
+        /// メモリ内 IL キャッシュのメモリ予算（MB）。0 はエントリ数上限のみで無制限。
+        /// </summary>
+        public int ILCacheMaxMemoryMegabytes { get; }
+
+        /// <summary>
         /// Batch size for IL precomputation.
         /// IL 事前計算のバッチサイズ。
         /// </summary>
@@ -287,6 +299,12 @@ namespace FolderDiffIL4DotNet.Models
         /// 逆アセンブラツールのブラックリスト有効期間（分）。
         /// </summary>
         public int DisassemblerBlacklistTtlMinutes { get; }
+
+        /// <summary>
+        /// Timeout (seconds) for each disassembler process invocation. 0 means no timeout.
+        /// 各逆アセンブラプロセス実行のタイムアウト（秒）。0 はタイムアウトなし。
+        /// </summary>
+        public int DisassemblerTimeoutSeconds { get; }
 
         /// <summary>
         /// Whether to skip IL comparison for .NET assemblies.
