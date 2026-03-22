@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Services.Caching;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
