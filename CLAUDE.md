@@ -50,7 +50,7 @@ This applies to:
 - README.md, DEVELOPER_GUIDE.md, TESTING_GUIDE.md, TROUBLESHOOTING.md, CHANGELOG.md
 - XML doc comments (`/// <summary>` blocks)
 - Inline code comments (`// English / 日本語`)
-- HTML report UI text (`I18n("English", "日本語")`)
+- HTML report UI text (English only; `I18n` helper was removed)
 - CLAUDE.md itself
 
 ### Cross-Cutting Consistency Rule
@@ -187,7 +187,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 - README.md、DEVELOPER_GUIDE.md、TESTING_GUIDE.md、TROUBLESHOOTING.md、CHANGELOG.md
 - XML doc コメント（`/// <summary>` ブロック）
 - インラインコードコメント（`// English / 日本語`）
-- HTML レポート UI テキスト（`I18n("English", "日本語")`）
+- HTML レポート UI テキスト（英語のみ; `I18n` ヘルパーは削除済み）
 - CLAUDE.md 自体
 
 ### 横断的整合性ルール

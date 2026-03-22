@@ -25,23 +25,23 @@ namespace FolderDiffIL4DotNet.Services
             string computerName,
             IReadOnlyConfigSettings config)
         {
-            sb.AppendLine($"<h1>{I18n("Folder Diff Report", "フォルダ差分レポート")}</h1>");
+            sb.AppendLine($"<h1>{HtmlEncode("Folder Diff Report")}</h1>");
             sb.AppendLine("<ul class=\"meta\">");
-            sb.AppendLine($"  <li>{I18n("App Version", "アプリバージョン")}: FolderDiffIL4DotNet {HtmlEncode(appVersion)}</li>");
-            sb.AppendLine($"  <li>{I18n("Computer", "コンピュータ")}: {HtmlEncode(computerName)}</li>");
-            sb.AppendLine($"  <li>{I18n("Old", "旧")}: {HtmlEncode(oldFolderAbsolutePath)}</li>");
-            sb.AppendLine($"  <li>{I18n("New", "新")}: {HtmlEncode(newFolderAbsolutePath)}</li>");
-            sb.AppendLine($"  <li>{I18n("Ignored Extensions", "除外拡張子")}: {HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</li>");
-            sb.AppendLine($"  <li>{I18n("Text File Extensions", "テキストファイル拡張子")}: {HtmlEncode(string.Join(", ", config.TextFileExtensions))}</li>");
-            sb.AppendLine($"  <li>{I18n("IL Disassembler", "IL 逆アセンブラ")}: {HtmlEncode(BuildDisassemblerHeaderText())}</li>");
+            sb.AppendLine($"  <li>{HtmlEncode("App Version")}: FolderDiffIL4DotNet {HtmlEncode(appVersion)}</li>");
+            sb.AppendLine($"  <li>{HtmlEncode("Computer")}: {HtmlEncode(computerName)}</li>");
+            sb.AppendLine($"  <li>{HtmlEncode("Old")}: {HtmlEncode(oldFolderAbsolutePath)}</li>");
+            sb.AppendLine($"  <li>{HtmlEncode("New")}: {HtmlEncode(newFolderAbsolutePath)}</li>");
+            sb.AppendLine($"  <li>{HtmlEncode("Ignored Extensions")}: {HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</li>");
+            sb.AppendLine($"  <li>{HtmlEncode("Text File Extensions")}: {HtmlEncode(string.Join(", ", config.TextFileExtensions))}</li>");
+            sb.AppendLine($"  <li>{HtmlEncode("IL Disassembler")}: {HtmlEncode(BuildDisassemblerHeaderText())}</li>");
             AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
             if (!string.IsNullOrWhiteSpace(elapsedTimeString))
-                sb.AppendLine($"  <li>{I18n("Elapsed Time", "処理時間")}: {HtmlEncode(elapsedTimeString)}</li>");
+                sb.AppendLine($"  <li>{HtmlEncode("Elapsed Time")}: {HtmlEncode(elapsedTimeString)}</li>");
             if (config.ShouldOutputFileTimestamps)
-                sb.AppendLine($"  <li>{I18n("Timestamps (timezone)", "タイムスタンプ (タイムゾーン)")}: {HtmlEncode(DateTimeOffset.Now.ToString("zzz"))}</li>");
+                sb.AppendLine($"  <li>{HtmlEncode("Timestamps (timezone)")}: {HtmlEncode(DateTimeOffset.Now.ToString("zzz"))}</li>");
 
             // MVID note (same style as other meta items)
-            sb.AppendLine($"  <li>{I18n("Note", "注")}: {I18n("When diffing IL, lines starting with", "IL 差分比較時、")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {I18n("(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.", "（存在する場合）で始まる行は、リビルド時に変更されうる逆アセンブラ出力のモジュールバージョン ID メタデータを含むため無視されます。")}</li>");
+            sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("When diffing IL, lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.")}</li>");
 
             // IL contains-ignore note
             if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
@@ -49,13 +49,13 @@ namespace FolderDiffIL4DotNet.Services
                 var ilIgnoreStrings = GetNormalizedIlIgnoreStrings(config);
                 if (ilIgnoreStrings.Count == 0)
                 {
-                    sb.AppendLine($"  <li>{I18n("Note", "注")}: {I18n("IL line-ignore-by-contains is enabled, but no non-empty strings are configured.", "IL 行の含有文字列無視が有効ですが、空でない文字列が設定されていません。")}</li>");
+                    sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("IL line-ignore-by-contains is enabled, but no non-empty strings are configured.")}</li>");
                 }
                 else
                 {
-                    sb.AppendLine($"  <li>{I18n("Note", "注")}: {I18n("When diffing IL, lines containing any of the configured strings are ignored:", "IL 差分比較時、設定された文字列を含む行は無視されます:")}");
+                    sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("When diffing IL, lines containing any of the configured strings are ignored:")}");
                     sb.AppendLine("    <div class=\"il-ignore-scroll\"><table class=\"legend-table il-ignore-table\">");
-                    sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{I18n("Ignored String", "無視文字列")}</th></tr></thead>");
+                    sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Ignored String")}</th></tr></thead>");
                     sb.AppendLine("      <tbody>");
                     foreach (var s in ilIgnoreStrings)
                     {
@@ -68,30 +68,30 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             // Myers Diff Algorithm reference
-            sb.AppendLine($"  <li>{I18n("Note", "注")}: {I18n("Inline diffs for ILMismatch and TextMismatch are computed using the", "ILMismatch および TextMismatch のインライン差分は以下のアルゴリズムで計算されます:")} " +
+            sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("Inline diffs for ILMismatch and TextMismatch are computed using the")} " +
                 "<a href=\"http://www.xmailserver.org/diff2.pdf\">" +
                 "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>");
 
             // Legend — Diff Detail (as compact table)
-            sb.AppendLine($"  <li>{I18n("Legend (Diff Detail)", "凡例（差分判定）")}:");
+            sb.AppendLine($"  <li>{HtmlEncode("Legend (Diff Detail)")}:");
             sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{I18n("Label", "ラベル")}</th><th style=\"background:{TH_BG_DEFAULT}\">{I18n("Description", "説明")}</th></tr></thead>");
+            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
             sb.AppendLine("      <tbody>");
-            sb.AppendLine($"        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{I18n("SHA256 hash match / mismatch", "SHA256 ハッシュ 一致 / 不一致")}</td></tr>");
-            sb.AppendLine($"        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{I18n("IL(Intermediate Language) match / mismatch", "IL（中間言語）一致 / 不一致")}</td></tr>");
-            sb.AppendLine($"        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{I18n("Text match / mismatch", "テキスト 一致 / 不一致")}</td></tr>");
+            sb.AppendLine($"        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{HtmlEncode("SHA256 hash match / mismatch")}</td></tr>");
+            sb.AppendLine($"        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{HtmlEncode("IL(Intermediate Language) match / mismatch")}</td></tr>");
+            sb.AppendLine($"        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{HtmlEncode("Text match / mismatch")}</td></tr>");
             sb.AppendLine("      </tbody>");
             sb.AppendLine("    </table>");
             sb.AppendLine("  </li>");
 
             // Legend — Change Importance (as compact table)
-            sb.AppendLine($"  <li>{I18n("Legend (Change Importance)", "凡例（変更の重要度）")}:");
+            sb.AppendLine($"  <li>{HtmlEncode("Legend (Change Importance)")}:");
             sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{I18n("Label", "ラベル")}</th><th style=\"background:{TH_BG_DEFAULT}\">{I18n("Description", "説明")}</th></tr></thead>");
+            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
             sb.AppendLine("      <tbody>");
-            sb.AppendLine($"        <tr><td style=\"color:#d1242f;font-weight:bold\">High</td><td>{I18n("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change", "破壊的変更候補: public/protected API 削除、アクセス縮小、戻り値型・パラメータ・メンバー型変更")}</td></tr>");
-            sb.AppendLine($"        <tr><td style=\"color:#d97706;font-weight:bold\">Medium</td><td>{I18n("Notable change: public/protected member addition, modifier change, access widening, internal removal", "注目すべき変更: public/protected メンバー追加、修飾子変更、アクセス拡大、internal メンバー削除")}</td></tr>");
-            sb.AppendLine($"        <tr><td>Low</td><td>{I18n("Low-impact change: body-only modification, internal/private member addition", "低影響変更: 本体のみの変更、internal/private メンバー追加")}</td></tr>");
+            sb.AppendLine($"        <tr><td style=\"color:#d1242f;font-weight:bold\">High</td><td>{HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change")}</td></tr>");
+            sb.AppendLine($"        <tr><td style=\"color:#d97706;font-weight:bold\">Medium</td><td>{HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal")}</td></tr>");
+            sb.AppendLine($"        <tr><td>Low</td><td>{HtmlEncode("Low-impact change: body-only modification, internal/private member addition")}</td></tr>");
             sb.AppendLine("      </tbody>");
             sb.AppendLine("    </table>");
             sb.AppendLine("  </li>");
@@ -106,8 +106,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.IgnoredFilesRelativePathToLocation
                 .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ x ] {I18n("Ignored Files", "除外ファイル")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
+            sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
+            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
             AppendTableStart(sb, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm");
             sb.AppendLine("<tbody>");
@@ -141,8 +141,8 @@ namespace FolderDiffIL4DotNet.Services
             var items = _fileDiffResultLists.UnchangedFilesRelativePath
                 .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
                 .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ = ] {I18n("Unchanged Files", "変更なしファイル")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
+            sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
+            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
             AppendTableStart(sb, TH_BG_DEFAULT, "Diff Reason");
             sb.AppendLine("<tbody>");
@@ -169,8 +169,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.AddedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] {I18n("Added Files", "追加ファイル")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
+            sb.AppendLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] {HtmlEncode("Added Files")} ({items.Count})</h2>");
+            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
             AppendTableStart(sb, TH_BG_ADDED, "Diff Reason", hideClasses: "hide-col6 hide-disasm");
             sb.AppendLine("<tbody>");
@@ -189,8 +189,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.RemovedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] {I18n("Removed Files", "削除ファイル")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
+            sb.AppendLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] {HtmlEncode("Removed Files")} ({items.Count})</h2>");
+            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
             AppendTableStart(sb, TH_BG_REMOVED, "Diff Reason", hideClasses: "hide-col6 hide-disasm");
             sb.AppendLine("<tbody>");
@@ -217,8 +217,8 @@ namespace FolderDiffIL4DotNet.Services
                 .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetModifiedSortOrder(d) : 3)
                 .ThenBy(p => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(p)))
                 .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] {I18n("Modified Files", "変更ファイル")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{I18n("(none)", "(なし)")}</p>"); return; }
+            sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] {HtmlEncode("Modified Files")} ({items.Count})</h2>");
+            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
             AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
             sb.AppendLine("<tbody>");
@@ -354,9 +354,8 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             string detailsId = $"diff_{sectionPrefix}_{idx}";
-            string diffLabelEn = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "Show IL diff" : "Show diff";
-            string diffLabelJa = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "IL 差分を表示" : "差分を表示";
-            string summary = $"      <summary class=\"diff-summary\">#{recordNo} {I18n(diffLabelEn, diffLabelJa)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>";
+            string diffLabel = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "Show IL diff" : "Show diff";
+            string summary = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>";
             string diffViewHtml = BuildDiffViewHtml(diffLines);
 
             sb.AppendLine("<tr class=\"diff-row\">");
@@ -393,7 +392,7 @@ namespace FolderDiffIL4DotNet.Services
 
             if (summary.Entries.Count > 0)
             {
-                contentBuilder.AppendLine($"<p class=\"sc-caveat\">{I18n("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below.", "注: セマンティックサマリーは補助情報です。最終確認は必ず下の IL インライン差分で行ってください。")}</p>");
+                contentBuilder.AppendLine($"<p class=\"sc-caveat\">{HtmlEncode("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below.")}</p>");
             }
 
             if (summary.Entries.Count > 0)
@@ -416,14 +415,14 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("</colgroup>");
                 contentBuilder.AppendLine("<thead><tr>");
                 contentBuilder.AppendLine("  <th class=\"sc-col-cb\">&#x2713;</th>");
-                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-class-w\">{I18n("Class", "クラス")}</th>");
-                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">{I18n("BaseType", "基底型")}</th>");
-                contentBuilder.AppendLine($"  <th>{I18n("Status", "状態")}</th><th>{I18n("Importance", "重要度")}</th><th>{I18n("Kind", "種別")}</th><th>{I18n("Access", "アクセス")}</th><th>{I18n("Modifiers", "修飾子")}</th>");
-                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-type-w\">{I18n("Type", "型")}</th>");
-                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-name-w\">{I18n("Name", "名前")}</th>");
-                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-rettype-w\">{I18n("ReturnType", "戻り値型")}</th>");
-                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-params-w\">{I18n("Parameters", "パラメータ")}</th>");
-                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-body-w\">{I18n("Body", "本体")}</th>");
+                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-class-w\">{HtmlEncode("Class")}</th>");
+                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">{HtmlEncode("BaseType")}</th>");
+                contentBuilder.AppendLine($"  <th>{HtmlEncode("Status")}</th><th>{HtmlEncode("Importance")}</th><th>{HtmlEncode("Kind")}</th><th>{HtmlEncode("Access")}</th><th>{HtmlEncode("Modifiers")}</th>");
+                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-type-w\">{HtmlEncode("Type")}</th>");
+                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-name-w\">{HtmlEncode("Name")}</th>");
+                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-rettype-w\">{HtmlEncode("ReturnType")}</th>");
+                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-params-w\">{HtmlEncode("Parameters")}</th>");
+                contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-body-w\">{HtmlEncode("Body")}</th>");
                 contentBuilder.AppendLine("</tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 string prevType = "";
@@ -452,7 +451,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             else
             {
-                contentBuilder.AppendLine($"<p>{I18n("No structural changes detected. See IL diff for implementation-level differences.", "構造的な変更は検出されませんでした。実装レベルの差異については IL 差分を参照してください。")}</p>");
+                contentBuilder.AppendLine($"<p>{HtmlEncode("No structural changes detected. See IL diff for implementation-level differences.")}</p>");
             }
 
             contentBuilder.AppendLine("</div>");
@@ -461,7 +460,7 @@ namespace FolderDiffIL4DotNet.Services
             string highSuffix = summary.HighImportanceCount > 0
                 ? $" ({summary.HighImportanceCount} High)"
                 : "";
-            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {I18n("Show assembly semantic changes", "アセンブリ意味変更を表示")}{highSuffix}</summary>";
+            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show assembly semantic changes")}{highSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
 
             sb.AppendLine("<tr class=\"diff-row\">");
@@ -492,18 +491,18 @@ namespace FolderDiffIL4DotNet.Services
 
         private void AppendSummarySection(StringBuilder sb, IReadOnlyConfigSettings config)
         {
-            sb.AppendLine($"<h2 class=\"section-heading\">{I18n("Summary", "サマリー")}</h2>");
+            sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("Summary")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
             sb.AppendLine($"  <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Category</th><th style=\"background:{TH_BG_DEFAULT}\">Count</th></tr></thead>");
             sb.AppendLine("  <tbody>");
             var stats = _fileDiffResultLists.SummaryStatistics;
             if (config.ShouldIncludeIgnoredFiles)
-                sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Ignored", "除外")}</td><td class=\"stat-value\">{stats.IgnoredCount}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Unchanged", "変更なし")}</td><td class=\"stat-value\">{stats.UnchangedCount}</td></tr>");
-            sb.AppendLine($"    <tr style=\"background:{TH_BG_ADDED}\"><td class=\"stat-label\">{I18n("Added", "追加")}</td><td class=\"stat-value\">{stats.AddedCount}</td></tr>");
-            sb.AppendLine($"    <tr style=\"background:{TH_BG_REMOVED}\"><td class=\"stat-label\">{I18n("Removed", "削除")}</td><td class=\"stat-value\">{stats.RemovedCount}</td></tr>");
-            sb.AppendLine($"    <tr style=\"background:{TH_BG_MODIFIED}\"><td class=\"stat-label\">{I18n("Modified", "変更")}</td><td class=\"stat-value\">{stats.ModifiedCount}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">{I18n("Compared", "比較")}</td><td class=\"stat-value\">{_fileDiffResultLists.OldFilesAbsolutePath.Count} ({I18n("Old", "旧")}) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} ({I18n("New", "新")})</td></tr>");
+                sb.AppendLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Ignored")}</td><td class=\"stat-value\">{stats.IgnoredCount}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Unchanged")}</td><td class=\"stat-value\">{stats.UnchangedCount}</td></tr>");
+            sb.AppendLine($"    <tr style=\"background:{TH_BG_ADDED}\"><td class=\"stat-label\">{HtmlEncode("Added")}</td><td class=\"stat-value\">{stats.AddedCount}</td></tr>");
+            sb.AppendLine($"    <tr style=\"background:{TH_BG_REMOVED}\"><td class=\"stat-label\">{HtmlEncode("Removed")}</td><td class=\"stat-value\">{stats.RemovedCount}</td></tr>");
+            sb.AppendLine($"    <tr style=\"background:{TH_BG_MODIFIED}\"><td class=\"stat-label\">{HtmlEncode("Modified")}</td><td class=\"stat-value\">{stats.ModifiedCount}</td></tr>");
+            sb.AppendLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Compared")}</td><td class=\"stat-value\">{_fileDiffResultLists.OldFilesAbsolutePath.Count} ({HtmlEncode("Old")}) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} ({HtmlEncode("New")})</td></tr>");
             sb.AppendLine("  </tbody>");
             sb.AppendLine("</table>");
         }
@@ -511,7 +510,7 @@ namespace FolderDiffIL4DotNet.Services
         private static void AppendILCacheStatsSection(StringBuilder sb, ILCache ilCache)
         {
             var stats = ilCache.GetReportStats();
-            sb.AppendLine($"<h2 class=\"section-heading\">{I18n("IL Cache Stats", "IL キャッシュ統計")}</h2>");
+            sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("IL Cache Stats")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
             sb.AppendLine($"  <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Metric</th><th style=\"background:{TH_BG_DEFAULT}\">Value</th></tr></thead>");
             sb.AppendLine("  <tbody>");
@@ -537,14 +536,14 @@ namespace FolderDiffIL4DotNet.Services
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             if (!hasSha256 && !hasTs) return;
 
-            sb.AppendLine($"<h2 class=\"section-heading\"><span class=\"warn-icon\">&#x26A0;</span> {I18n("Warnings", "警告")}</h2>");
+            sb.AppendLine($"<h2 class=\"section-heading\"><span class=\"warn-icon\">&#x26A0;</span> {HtmlEncode("Warnings")}</h2>");
 
             // SHA256Mismatch warning + detail table (grouped together)
             // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
             if (hasSha256)
             {
                 sb.AppendLine("<ul class=\"warnings\">");
-                sb.AppendLine($"  <li>{I18n("One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.", "1つ以上のファイルが SHA256Mismatch として分類されました。SHA256 ハッシュ比較のみが可能だったため、手動レビューを推奨します。")}</li>");
+                sb.AppendLine($"  <li>{HtmlEncode("One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.")}</li>");
                 sb.AppendLine("</ul>");
 
                 var sha256Files = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
@@ -554,7 +553,7 @@ namespace FolderDiffIL4DotNet.Services
                     .ToList();
                 if (sha256Files.Count > 0)
                 {
-                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("SHA256Mismatch (Manual Review Recommended)", "SHA256Mismatch（手動レビュー推奨）")} ({sha256Files.Count})</h2>");
+                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch (Manual Review Recommended)")} ({sha256Files.Count})</h2>");
                     AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                     sb.AppendLine("<tbody>");
                     int idx = 0;
@@ -581,14 +580,14 @@ namespace FolderDiffIL4DotNet.Services
             if (hasTs)
             {
                 sb.AppendLine("<ul class=\"warnings\">");
-                sb.AppendLine($"  <li>{I18n("One or more modified files in new have older last-modified timestamps than the corresponding files in old.", "new 内の1つ以上の変更ファイルが、old 内の対応するファイルより古い更新日時を持っています。")}</li>");
+                sb.AppendLine($"  <li>{HtmlEncode("One or more modified files in new have older last-modified timestamps than the corresponding files in old.")}</li>");
                 sb.AppendLine("</ul>");
 
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(w => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(w.FileRelativePath)))
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
-                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {I18n("Modified Files", "変更ファイル")} &#x2014; {I18n("Timestamps Regressed", "タイムスタンプ逆行")} ({warnings.Count})</h2>");
+                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("Timestamps Regressed")} ({warnings.Count})</h2>");
                 AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                 sb.AppendLine("<tbody>");
                 int idx = 0;

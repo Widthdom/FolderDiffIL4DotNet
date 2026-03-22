@@ -34,12 +34,12 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<thead><tr style=\"background:{bg}\">");
             sb.AppendLine($"  <th class=\"col-no\">#</th>");
             sb.AppendLine($"  <th class=\"col-cb\">&#x2713;</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-reason-w\">{I18n("Justification", "判定根拠")}</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-notes-w\">{I18n("Notes", "備考")}</th>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">{I18n("File Path", "ファイルパス")}</th>");
-            sb.AppendLine($"  <th>{I18n("Timestamp", "タイムスタンプ")}</th>");
-            sb.AppendLine($"  <th class=\"col-diff-hd\">{I18n(col6Header, GetCol6HeaderJa(col6Header))}</th>");
-            sb.AppendLine($"  <th class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{I18n("Disassembler", "逆アセンブラ")}</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-reason-w\">{HtmlEncode("Justification")}</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-notes-w\">{HtmlEncode("Notes")}</th>");
+            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--col-path-w\">{HtmlEncode("File Path")}</th>");
+            sb.AppendLine($"  <th>{HtmlEncode("Timestamp")}</th>");
+            sb.AppendLine($"  <th class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
+            sb.AppendLine($"  <th class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{HtmlEncode("Disassembler")}</th>");
             sb.AppendLine("</tr></thead>");
         }
 
@@ -285,7 +285,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return;
             }
-            sb.AppendLine($"  <li>{I18n("Disassembler Availability", "逆アセンブラ利用可否")}:");
+            sb.AppendLine($"  <li>{HtmlEncode("Disassembler Availability")}:");
             sb.AppendLine("    <table class=\"legend-table\">");
             sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Tool</th><th style=\"background:{TH_BG_DEFAULT}\">Available</th><th style=\"background:{TH_BG_DEFAULT}\">Version</th></tr></thead>");
             sb.AppendLine("      <tbody>");
@@ -316,15 +316,5 @@ namespace FolderDiffIL4DotNet.Services
             return System.Net.WebUtility.HtmlEncode(text).Replace("`", "&#96;");
         }
 
-        internal static string I18n(string en, string ja)
-            => HtmlEncode(en);
-
-        private static string GetCol6HeaderJa(string col6Header)
-            => col6Header switch
-            {
-                "Location" => "場所",
-                "Diff Reason" => "差分理由",
-                _ => col6Header
-            };
     }
 }

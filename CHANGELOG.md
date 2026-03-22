@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Remove unused `I18n` helper from HTML report generation** — Removed the `I18n(string en, string ja)` method from `HtmlReportGenerateService.Helpers.cs` and the `GetCol6HeaderJa` helper that was only used by `I18n`. All ~80 `I18n("English", "日本語")` call sites across `HtmlReportGenerateService.cs`, `HtmlReportGenerateService.Helpers.cs`, and `HtmlReportGenerateService.Sections.cs` were replaced with direct `HtmlEncode("English")` calls. The Japanese language toggle feature was previously removed, making `I18n` a dead-code wrapper that always returned the English text. Removed the `I18n_ReturnsHtmlEncodedEnglishText` test from `HtmlReportGenerateServiceTests`. Updated `CLAUDE.md` bilingual rule to reflect the removal. No behavioral change in the generated HTML report output.
+
 ### [1.7.0] - 2026-03-22
 
 #### Added
@@ -566,6 +570,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **未使用の `I18n` ヘルパーを HTML レポート生成から削除** — `HtmlReportGenerateService.Helpers.cs` から `I18n(string en, string ja)` メソッドと、`I18n` 専用だった `GetCol6HeaderJa` ヘルパーを削除。`HtmlReportGenerateService.cs`、`HtmlReportGenerateService.Helpers.cs`、`HtmlReportGenerateService.Sections.cs` の約80箇所の `I18n("English", "日本語")` 呼び出しを `HtmlEncode("English")` に直接置換。日本語切り替え機能は以前に廃止済みで、`I18n` は常に英語テキストを返すデッドコードラッパーだった。`HtmlReportGenerateServiceTests` から `I18n_ReturnsHtmlEncodedEnglishText` テストを削除。`CLAUDE.md` のバイリンガルルールを更新。生成される HTML レポート出力に動作変更なし。
 
 ### [1.7.0] - 2026-03-22
 

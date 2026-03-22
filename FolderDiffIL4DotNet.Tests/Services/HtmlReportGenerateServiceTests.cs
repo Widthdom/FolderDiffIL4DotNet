@@ -1495,15 +1495,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }", html);
         }
 
-        // ── Req9: Language toggle / 言語切り替え ────────────────────────────────
-
-        [Fact]
-        public void I18n_ReturnsHtmlEncodedEnglishText()
-        {
-            string result = HtmlReportGenerateService.I18n("Hello", "こんにちは");
-            Assert.Equal("Hello", result);
-        }
-
         // ── Sort order: Unchanged files / Unchanged ファイルのソート順 ─────────
 
         /// <summary>
