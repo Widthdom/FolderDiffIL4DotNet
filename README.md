@@ -6,13 +6,48 @@ For .NET assemblies, it compares IL while ignoring build-specific information su
 Developer-focused details (architecture, CI, tests, implementation cautions):
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
+<a id="readme-en-quick-start"></a>
+## Quick Start (5 minutes)
+
+```bash
+# 1. Install .NET SDK 8.x (skip if already installed)
+#    Windows: winget install Microsoft.DotNet.SDK.8 --source winget
+#    macOS/Linux: curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+
+# 2. Install an IL disassembler
+dotnet tool install --global dotnet-ildasm
+
+# 3. Clone and build
+git clone <repository-url>
+cd FolderDiffIL4DotNet
+dotnet build
+
+# 4. Run a diff between two folders
+dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+
+# 5. View the reports
+#    Reports/my-comparison/diff_report.md   — Markdown report
+#    Reports/my-comparison/diff_report.html — Interactive HTML report (open in browser)
+#    Reports/my-comparison/audit_log.json   — Structured audit log
+```
+
+The tool compares all files recursively. For .NET assemblies (`.dll`, `.exe`), it performs IL-level comparison that ignores build-specific differences (MVID, timestamps), so functionally identical assemblies are reported as unchanged even if binary hashes differ.
+
+**Next steps:**
+- Customize behavior via [`config.json`](config.json) — see [Configuration](#readme-en-configuration)
+- Review the [Interactive HTML Report](#readme-en-html-report) features
+- For CI/CD integration, see [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
+
 <a id="readme-en-doc-map"></a>
 ## Documentation Map
 
 | Need | Document |
 | --- | --- |
+| Get started in 5 minutes | [README.md](README.md#readme-en-quick-start) |
 | Product overview, setup, usage, and configuration | [README.md](README.md#readme-en-usage) |
 | Assembly semantic change detection | [README.md](README.md#readme-en-assembly-semantic-changes) |
+| Configuration reference with annotated sample | [doc/config.sample.jsonc](doc/config.sample.jsonc) |
+| Troubleshooting common issues | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) |
 | Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-map) |
 | Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-en-run-tests) |
 | Generated API reference from XML documentation comments | [api/index.md](api/index.md) via [docfx.json](docfx.json) |
@@ -565,13 +600,48 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
+<a id="readme-ja-quick-start"></a>
+## クイックスタート（5 分）
+
+```bash
+# 1. .NET SDK 8.x をインストール（インストール済みならスキップ）
+#    Windows: winget install Microsoft.DotNet.SDK.8 --source winget
+#    macOS/Linux: curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+
+# 2. IL 逆アセンブラをインストール
+dotnet tool install --global dotnet-ildasm
+
+# 3. クローンしてビルド
+git clone <リポジトリURL>
+cd FolderDiffIL4DotNet
+dotnet build
+
+# 4. 2つのフォルダを比較
+dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+
+# 5. レポートを確認
+#    Reports/my-comparison/diff_report.md   — Markdown レポート
+#    Reports/my-comparison/diff_report.html — インタラクティブ HTML レポート（ブラウザで開く）
+#    Reports/my-comparison/audit_log.json   — 構造化監査ログ
+```
+
+ツールはすべてのファイルを再帰的に比較します。.NET アセンブリ（`.dll`、`.exe`）に対しては、ビルド固有の差異（MVID、タイムスタンプ）を無視した IL レベルの比較を行うため、機能的に同一のアセンブリはバイナリハッシュが異なっていても「変更なし」と報告されます。
+
+**次のステップ:**
+- [`config.json`](config.json) で動作をカスタマイズ — [設定](#readme-ja-configuration) を参照
+- [インタラクティブ HTML レポート](#readme-ja-html-report) の機能を確認
+- CI/CD 統合については [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) を参照
+
 <a id="readme-ja-doc-map"></a>
 ## ドキュメントの見取り図
 
 | 見たい内容 | ドキュメント |
 | --- | --- |
+| 5 分で始める | [README.md](README.md#readme-ja-quick-start) |
 | 製品概要、導入、使い方、設定 | [README.md](README.md#readme-ja-usage) |
 | アセンブリ セマンティック変更の検出 | [README.md](README.md#readme-ja-assembly-semantic-changes) |
+| コメント付き設定サンプル | [doc/config.sample.jsonc](doc/config.sample.jsonc) |
+| よくある問題のトラブルシューティング | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) |
 | 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) |
 | テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-ja-run-tests) |
 | XML ドキュメントコメントから生成する API リファレンス | [docfx.json](docfx.json) 経由 [api/index.md](api/index.md) |

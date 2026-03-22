@@ -39,6 +39,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **BenchmarkDotNet CI integration** — Added a `benchmark` job to [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) that runs the [`FolderDiffIL4DotNet.Benchmarks`](FolderDiffIL4DotNet.Benchmarks/) project with JSON and GitHub exporters and uploads `BenchmarkDotNet.Artifacts/` as a CI artifact. The job runs only on `workflow_dispatch` to avoid impacting regular CI pipeline duration.
 
+#### Documentation
+
+- **Quick Start guide** — Added a "Quick Start (5 minutes)" section to [README.md](README.md) (both English and Japanese) with step-by-step commands covering .NET SDK installation, IL disassembler setup, build, first diff run, and where to find the output reports. Added anchor links `readme-en-quick-start` / `readme-ja-quick-start` and entries in the Documentation Map tables.
+
+- **Annotated `config.json` sample** — Created [`doc/config.sample.jsonc`](doc/config.sample.jsonc) with all configuration settings, their defaults, bilingual (EN/JP) descriptions, and CLI/environment-variable override hints. This replaces the empty `config.json` as the primary configuration reference for new users.
+
+- **Troubleshooting guide** — Created [`doc/TROUBLESHOOTING.md`](doc/TROUBLESHOOTING.md) covering common issues: "ildasm not found", IL cache disk usage bloat, slow performance on network shares, configuration parse errors (exit code 3), path-length limit (exit code 2), disk-space preflight failures, assemblies showing SHA256Mismatch instead of ILMatch, and memory pressure with large IL files. Each issue includes bilingual (EN/JP) symptom, cause, and solution sections with copy-paste-ready commands.
+
 #### Changed
 
 - **Immutable ConfigSettings via Builder pattern** — `ConfigSettings` is now fully immutable: all properties are read-only and list properties return `IReadOnlyList<string>`. A new [`ConfigSettingsBuilder`](Models/ConfigSettingsBuilder.cs) class serves as the mutable intermediary for JSON deserialization, environment variable overrides, and CLI overrides. The config loading flow is now: `ConfigService.LoadConfigBuilderAsync()` deserializes `config.json` into `ConfigSettingsBuilder` → `ApplyEnvironmentVariableOverrides` applies `FOLDERDIFF_*` env vars to the builder → `ProgramRunner.ApplyCliOverrides` applies CLI flags to the builder → `ConfigSettingsBuilder.Validate()` checks value ranges → `ConfigSettingsBuilder.Build()` produces an immutable `ConfigSettings`. This fixes a latent bug where validation ran before CLI overrides, allowing invalid CLI values to bypass checks. The DI container now registers `ConfigSettings` only as `IReadOnlyConfigSettings`, preventing downstream services from casting to a mutable type. Updated all test files to construct config via `new ConfigSettingsBuilder { ... }.Build()`.
@@ -574,6 +582,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **IL 行分割・フィルタの 1 パス化** — `ILOutputService.DiffDotNetAssembliesAsync` の 4 回のリスト割り当てパイプライン（`ilText.Split('\n').ToList()` → `Where(filter).ToList()`）を、分割とフィルタを 1 回のイテレーションで行い `List<string>` を直接生成する `SplitAndFilterIlLines` メソッドに置き換えました。中間リスト割り当てを半減し、フィルタ前の中間リスト生成を完全に回避します。テスト `SplitAndFilterIlLines_CombinesSplitAndFilter_MatchesSplitThenWhereBehavior`、`SplitAndFilterIlLines_WithConfiguredIgnoreStrings_ExcludesMatchingLines`（[`ILOutputServiceTests`](FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs)）を追加。
 
 - **BenchmarkDotNet CI 統合** — [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) に `benchmark` ジョブを追加しました。[`FolderDiffIL4DotNet.Benchmarks`](FolderDiffIL4DotNet.Benchmarks/) プロジェクトを JSON および GitHub エクスポーター付きで実行し、`BenchmarkDotNet.Artifacts/` を CI アーティファクトとしてアップロードします。通常の CI パイプライン時間に影響を与えないよう `workflow_dispatch` のみで実行されます。
+
+#### ドキュメント
+
+- **クイックスタートガイド** — [README.md](README.md) に「クイックスタート（5 分）」セクションを追加（日英両方）。.NET SDK インストール、IL 逆アセンブラセットアップ、ビルド、初回差分実行、出力レポートの場所を順を追って説明。アンカーリンク `readme-en-quick-start` / `readme-ja-quick-start` とドキュメントの見取り図テーブルへのエントリを追加。
+
+- **コメント付き `config.json` サンプル** — すべての設定項目、デフォルト値、日英バイリンガルの説明、CLI/環境変数オーバーライドのヒントを含む [`doc/config.sample.jsonc`](doc/config.sample.jsonc) を作成。新規ユーザー向けの主要な設定リファレンスとして空の `config.json` を補完。
+
+- **トラブルシューティングガイド** — よくある問題を網羅する [`doc/TROUBLESHOOTING.md`](doc/TROUBLESHOOTING.md) を作成。「ildasm が見つからない」、IL キャッシュのディスク使用量の肥大化、ネットワーク共有上でのパフォーマンス低下、設定解析エラー（終了コード 3）、パス長制限（終了コード 2）、ディスク容量プリフライト失敗、SHA256Mismatch 表示のアセンブリ、大規模 IL ファイルでのメモリ圧迫をカバー。各問題に日英バイリンガルの症状・原因・解決策セクションとコピーペースト可能なコマンドを記載。
 
 #### 変更
 

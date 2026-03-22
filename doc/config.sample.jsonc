@@ -1,0 +1,174 @@
+// FolderDiffIL4DotNet — Annotated Configuration Sample
+// FolderDiffIL4DotNet — コメント付き設定サンプル
+//
+// Copy this file to config.json (remove comments — standard JSON does not allow comments).
+// このファイルを config.json にコピーして使用してください（コメントを削除してください。標準 JSON ではコメントは使用できません）。
+// All settings are optional. Omitted keys use the defaults shown below.
+// すべての設定は省略可能です。省略されたキーは以下に示すデフォルト値を使用します。
+//
+// Environment variable overrides: prefix with FOLDERDIFF_ (e.g. FOLDERDIFF_MAXPARALLELISM=4).
+// 環境変数オーバーライド: FOLDERDIFF_ プレフィックスを使用（例: FOLDERDIFF_MAXPARALLELISM=4）。
+// CLI overrides: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings.
+// CLI オーバーライド: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings。
+// Use --print-config to display the effective configuration after all overrides.
+// --print-config ですべてのオーバーライド適用後の有効設定を表示できます。
+{
+  // --- Report Content / レポート内容 ---
+
+  // Include unchanged files in the report (default: true)
+  // レポートに未変更ファイルを含める（デフォルト: true）
+  "ShouldIncludeUnchangedFiles": true,
+
+  // Include ignored files in the report (default: true)
+  // レポートに無視されたファイルを含める（デフォルト: true）
+  "ShouldIncludeIgnoredFiles": true,
+
+  // Include assembly semantic changes (method-level diff) in the report (default: true)
+  // レポートにアセンブリセマンティック変更（メソッドレベル差分）を含める（デフォルト: true）
+  "ShouldIncludeAssemblySemanticChangesInReport": true,
+
+  // Include IL cache hit/miss statistics in the report (default: false)
+  // レポートに IL キャッシュのヒット/ミス統計を含める（デフォルト: false）
+  "ShouldIncludeILCacheStatsInReport": false,
+
+  // Generate an interactive HTML report alongside the Markdown report (default: true)
+  // Markdown レポートに加えてインタラクティブ HTML レポートを生成する（デフォルト: true）
+  "ShouldGenerateHtmlReport": true,
+
+  // Generate a structured JSON audit log with SHA256 integrity hashes (default: true)
+  // SHA256 整合性ハッシュ付き構造化 JSON 監査ログを生成する（デフォルト: true）
+  "ShouldGenerateAuditLog": true,
+
+  // Output full IL disassembly text to Reports/<label>/IL/ (default: true)
+  // IL 逆アセンブルテキスト全文を Reports/<label>/IL/ に出力する（デフォルト: true）
+  "ShouldOutputILText": true,
+
+  // Show file timestamps (old → new) in the report (default: true)
+  // レポートにファイルタイムスタンプ（old → new）を表示する（デフォルト: true）
+  "ShouldOutputFileTimestamps": true,
+
+  // Warn when a "new" file has an older timestamp than the "old" file (default: true)
+  // 「new」ファイルのタイムスタンプが「old」ファイルより古い場合に警告する（デフォルト: true）
+  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": true,
+
+  // --- IL Comparison / IL 比較 ---
+
+  // Skip IL comparison entirely; only SHA256 + text comparison (default: false)
+  // IL 比較を完全にスキップし SHA256 + テキスト比較のみ行う（デフォルト: false）
+  // CLI override: --skip-il
+  "SkipIL": false,
+
+  // Ignore IL lines containing these strings during comparison (default: false)
+  // 比較時にこれらの文字列を含む IL 行を無視する（デフォルト: false）
+  "ShouldIgnoreILLinesContainingConfiguredStrings": false,
+
+  // Strings to ignore — only used when ShouldIgnoreILLinesContainingConfiguredStrings is true
+  // 無視する文字列 — ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ使用
+  "ILIgnoreLineContainingStrings": [],
+
+  // --- File Extensions / ファイル拡張子 ---
+
+  // Extensions to skip entirely (not compared, listed as Ignored) (defaults: .cache, .DS_Store, .db, .ilcache, .log, .pdb)
+  // 比較をスキップする拡張子（比較されず Ignored としてリスト）（デフォルト: .cache, .DS_Store, .db, .ilcache, .log, .pdb）
+  "IgnoredExtensions": [".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"],
+
+  // Extensions treated as text files for line-by-line comparison
+  // 行単位テキスト比較の対象とする拡張子
+  // (defaults: .asax, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .css, .csv, .html, .js, .json, .md, .ps1, .py, .sh, .sql, .ts, .tsx, .txt, .xml, .yaml, .yml, ... and many more)
+  // (デフォルト: .asax, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .css, .csv, .html, .js, .json, .md, .ps1, .py, .sh, .sql, .ts, .tsx, .txt, .xml, .yaml, .yml, ... 他多数)
+  "TextFileExtensions": [".config", ".cs", ".css", ".html", ".js", ".json", ".md", ".ps1", ".py", ".sh", ".sql", ".ts", ".tsx", ".txt", ".xml", ".yaml", ".yml"],
+
+  // --- Parallelism / 並列処理 ---
+
+  // Maximum threads for file comparison (0 = auto-detect based on CPU cores) (default: 0)
+  // ファイル比較の最大スレッド数（0 = CPU コア数に基づく自動検出）（デフォルト: 0）
+  // CLI override: --threads <N>
+  "MaxParallelism": 0,
+
+  // File size threshold (KiB) above which text diff uses parallel chunk comparison (default: 512)
+  // テキスト差分が並列チャンク比較を使用するファイルサイズ閾値（KiB）（デフォルト: 512）
+  "TextDiffParallelThresholdKilobytes": 512,
+
+  // Chunk size (KiB) for parallel text diff (default: 64)
+  // 並列テキスト差分のチャンクサイズ（KiB）（デフォルト: 64）
+  "TextDiffChunkSizeKilobytes": 64,
+
+  // Additional memory budget (MiB) for parallel text diff buffers (0 = unlimited) (default: 0)
+  // 並列テキスト差分バッファの追加メモリ予算（MiB、0 = 無制限）（デフォルト: 0）
+  "TextDiffParallelMemoryLimitMegabytes": 0,
+
+  // --- IL Cache / IL キャッシュ ---
+
+  // Enable in-memory + disk IL disassembly cache (default: true)
+  // メモリ + ディスク IL 逆アセンブルキャッシュを有効にする（デフォルト: true）
+  // CLI override: --no-il-cache
+  "EnableILCache": true,
+
+  // Maximum in-memory IL cache entries (default: 1000)
+  // メモリ内 IL キャッシュの最大エントリ数（デフォルト: 1000）
+  "ILCacheMaxMemoryEntries": 1000,
+
+  // Interval (seconds) for periodic IL cache statistics logging (default: 60)
+  // IL キャッシュ統計の定期ログ出力間隔（秒）（デフォルト: 60）
+  "ILCacheStatsLogIntervalSeconds": 60,
+
+  // Maximum disk cache files (default: 1000)
+  // ディスクキャッシュの最大ファイル数（デフォルト: 1000）
+  "ILCacheMaxDiskFileCount": 1000,
+
+  // Maximum disk cache size in MiB (default: 512)
+  // ディスクキャッシュの最大サイズ（MiB）（デフォルト: 512）
+  "ILCacheMaxDiskMegabytes": 512,
+
+  // Number of files per SHA256 precompute batch (default: 2048)
+  // SHA256 プリコンピュートのバッチあたりのファイル数（デフォルト: 2048）
+  "ILPrecomputeBatchSize": 2048,
+
+  // --- Network Shares / ネットワーク共有 ---
+
+  // Optimize for network-share folders: skip precompute, use sequential I/O (default: false)
+  // ネットワーク共有フォルダ向けに最適化: プリコンピュートスキップ、逐次 I/O 使用（デフォルト: false）
+  "OptimizeForNetworkShares": false,
+
+  // Auto-detect whether old/new folders are on network shares (default: true)
+  // old/new フォルダがネットワーク共有上にあるか自動検出する（デフォルト: true）
+  "AutoDetectNetworkShares": true,
+
+  // --- Disassembler / 逆アセンブラ ---
+
+  // Minutes to blacklist a failing disassembler before retrying (default: 10)
+  // 失敗した逆アセンブラを再試行までブラックリストに入れる分数（デフォルト: 10）
+  "DisassemblerBlacklistTtlMinutes": 10,
+
+  // --- Inline Diff (HTML report) / インライン差分（HTML レポート） ---
+
+  // Enable inline diff in HTML report (default: true)
+  // HTML レポートでインライン差分を有効にする（デフォルト: true）
+  "EnableInlineDiff": true,
+
+  // Context lines around each diff hunk (0 = show only changed lines) (default: 0)
+  // 各差分ハンクの前後に表示するコンテキスト行数（0 = 変更行のみ）（デフォルト: 0）
+  "InlineDiffContextLines": 0,
+
+  // Maximum edit distance for diff computation; skip diff for very different files (default: 4000)
+  // 差分計算の最大編集距離。非常に異なるファイルの差分計算をスキップ（デフォルト: 4000）
+  "InlineDiffMaxEditDistance": 4000,
+
+  // Maximum diff lines to process (default: 10000)
+  // 処理する最大差分行数（デフォルト: 10000）
+  "InlineDiffMaxDiffLines": 10000,
+
+  // Maximum output lines in the rendered diff (default: 10000)
+  // レンダリングされた差分の最大出力行数（デフォルト: 10000）
+  "InlineDiffMaxOutputLines": 10000,
+
+  // Render inline diffs lazily (on-demand when expanded) (default: true)
+  // インライン差分を遅延レンダリングする（展開時にオンデマンド）（デフォルト: true）
+  "InlineDiffLazyRender": true,
+
+  // --- Logging / ログ ---
+
+  // Number of log file generations to keep (default: 5)
+  // 保持するログファイル世代数（デフォルト: 5）
+  "MaxLogGenerations": 5
+}
