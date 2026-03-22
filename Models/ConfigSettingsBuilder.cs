@@ -104,6 +104,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.ILCacheMaxDiskMegabytes"/>
         public int ILCacheMaxDiskMegabytes { get; set; } = ConfigSettings.DefaultILCacheMaxDiskMegabytes;
 
+        /// <inheritdoc cref="ConfigSettings.ILCacheMaxMemoryMegabytes"/>
+        public int ILCacheMaxMemoryMegabytes { get; set; } = ConfigSettings.DefaultILCacheMaxMemoryMegabytes;
+
         /// <inheritdoc cref="ConfigSettings.ILPrecomputeBatchSize"/>
         public int ILPrecomputeBatchSize { get; set; } = ConfigSettings.DefaultILPrecomputeBatchSize;
 

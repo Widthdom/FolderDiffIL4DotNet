@@ -85,6 +85,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Size limit (MB) for the on-disk IL cache. / ディスク IL キャッシュのサイズ上限（MB）。</summary>
         int ILCacheMaxDiskMegabytes { get; }
 
+        /// <summary>Memory budget (MB) for the in-memory IL cache. 0 = unlimited. / メモリ内 IL キャッシュのメモリ予算（MB）。0 = 無制限。</summary>
+        int ILCacheMaxMemoryMegabytes { get; }
+
         /// <summary>Batch size for IL precomputation. / IL 事前計算のバッチサイズ。</summary>
         int ILPrecomputeBatchSize { get; }
 

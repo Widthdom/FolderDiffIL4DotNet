@@ -65,6 +65,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "ILCacheStatsLogIntervalSeconds": 30,
                   "ILCacheMaxDiskFileCount": 10,
                   "ILCacheMaxDiskMegabytes": 20,
+                  "ILCacheMaxMemoryMegabytes": 256,
                   "ILPrecomputeBatchSize": 512,
                   "OptimizeForNetworkShares": true,
                   "AutoDetectNetworkShares": false,
@@ -97,6 +98,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(30, config.ILCacheStatsLogIntervalSeconds);
             Assert.Equal(10, config.ILCacheMaxDiskFileCount);
             Assert.Equal(20, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(256, config.ILCacheMaxMemoryMegabytes);
             Assert.Equal(512, config.ILPrecomputeBatchSize);
             Assert.True(config.OptimizeForNetworkShares);
             Assert.False(config.AutoDetectNetworkShares);
@@ -404,6 +406,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);
             Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskFileCount, config.ILCacheMaxDiskFileCount);
             Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskMegabytes, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(ConfigSettings.DefaultILCacheMaxMemoryMegabytes, config.ILCacheMaxMemoryMegabytes);
             Assert.Equal(ConfigSettings.DefaultILPrecomputeBatchSize, config.ILPrecomputeBatchSize);
             Assert.False(config.OptimizeForNetworkShares);
             Assert.True(config.AutoDetectNetworkShares);

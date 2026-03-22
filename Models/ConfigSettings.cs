@@ -53,6 +53,8 @@ namespace FolderDiffIL4DotNet.Models
         public const int DefaultILCacheMaxDiskFileCount = 1000;
         /// <summary>Default value for <see cref="ILCacheMaxDiskMegabytes"/>. / <see cref="ILCacheMaxDiskMegabytes"/> の既定値。</summary>
         public const int DefaultILCacheMaxDiskMegabytes = 512;
+        /// <summary>Default value for <see cref="ILCacheMaxMemoryMegabytes"/>. / <see cref="ILCacheMaxMemoryMegabytes"/> の既定値。</summary>
+        public const int DefaultILCacheMaxMemoryMegabytes = 0;
         /// <summary>Default value for <see cref="ILPrecomputeBatchSize"/>. / <see cref="ILPrecomputeBatchSize"/> の既定値。</summary>
         public const int DefaultILPrecomputeBatchSize = 2048;
         /// <summary>Default value for <see cref="DisassemblerBlacklistTtlMinutes"/>. / <see cref="DisassemblerBlacklistTtlMinutes"/> の既定値。</summary>
@@ -112,6 +114,7 @@ namespace FolderDiffIL4DotNet.Models
             ILCacheStatsLogIntervalSeconds = builder.ILCacheStatsLogIntervalSeconds;
             ILCacheMaxDiskFileCount = builder.ILCacheMaxDiskFileCount;
             ILCacheMaxDiskMegabytes = builder.ILCacheMaxDiskMegabytes;
+            ILCacheMaxMemoryMegabytes = builder.ILCacheMaxMemoryMegabytes;
             ILPrecomputeBatchSize = builder.ILPrecomputeBatchSize;
             OptimizeForNetworkShares = builder.OptimizeForNetworkShares;
             AutoDetectNetworkShares = builder.AutoDetectNetworkShares;
@@ -263,6 +266,12 @@ namespace FolderDiffIL4DotNet.Models
         /// ディスク IL キャッシュのサイズ上限（MB）。
         /// </summary>
         public int ILCacheMaxDiskMegabytes { get; }
+
+        /// <summary>
+        /// Memory budget (MB) for the in-memory IL cache. 0 means unlimited (entry-count limit only).
+        /// メモリ内 IL キャッシュのメモリ予算（MB）。0 はエントリ数上限のみで無制限。
+        /// </summary>
+        public int ILCacheMaxMemoryMegabytes { get; }
 
         /// <summary>
         /// Batch size for IL precomputation.

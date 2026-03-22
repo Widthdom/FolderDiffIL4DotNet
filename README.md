@@ -466,6 +466,11 @@ Override only the settings you want to change. For example:
       <td><code>512</code></td>
       <td>Disk cache size cap (MB). <code>&lt;=0</code> means unlimited.</td>
     </tr>
+    <tr id="config-en-ilcachemaxmemorymegabytes">
+      <td><code>ILCacheMaxMemoryMegabytes</code></td>
+      <td><code>0</code></td>
+      <td>In-memory IL cache budget (MB). <code>&lt;=0</code> means unlimited (entry-count limit only). Set this when large assemblies cause high memory usage.</td>
+    </tr>
     <tr id="config-en-ilprecomputebatchsize">
       <td><code>ILPrecomputeBatchSize</code></td>
       <td><code>2048</code></td>
@@ -1062,6 +1067,11 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
       <td><code>ILCacheMaxDiskMegabytes</code></td>
       <td><code>512</code></td>
       <td>ディスクキャッシュ容量上限（MB）。<code>&lt;=0</code> で無制限。</td>
+    </tr>
+    <tr id="config-ja-ilcachemaxmemorymegabytes">
+      <td><code>ILCacheMaxMemoryMegabytes</code></td>
+      <td><code>0</code></td>
+      <td>メモリ内 IL キャッシュのメモリ予算（MB）。<code>&lt;=0</code> で無制限（エントリ数上限のみ）。大きなアセンブリでメモリ使用量が高い場合に設定。</td>
     </tr>
     <tr id="config-ja-ilprecomputebatchsize">
       <td><code>ILPrecomputeBatchSize</code></td>

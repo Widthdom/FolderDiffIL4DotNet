@@ -66,10 +66,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// <param name="statsLogIntervalSeconds">Interval in seconds between periodic cache statistics log output. / キャッシュ統計ログ出力の間隔（秒）。</param>
         /// <param name="ilCacheMaxDiskFileCount">Maximum number of files on disk (0 = unlimited). / ディスク上の最大ファイル数（0 = 無制限）。</param>
         /// <param name="ilCacheMaxDiskMegabytes">Maximum disk usage in MB (0 = unlimited). / ディスク使用量上限（MB、0 = 無制限）。</param>
-        public ILCache(string ilCacheDirectoryAbsolutePath, ILoggerService? logger = null, int ilCacheMaxMemoryEntries = ILMemoryCache.DefaultMaxEntries, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0)
+        /// <param name="ilCacheMaxMemoryMegabytes">Memory budget in MB for in-memory IL cache (0 = unlimited). / メモリ内 IL キャッシュのメモリ予算（MB、0 = 無制限）。</param>
+        public ILCache(string ilCacheDirectoryAbsolutePath, ILoggerService? logger = null, int ilCacheMaxMemoryEntries = ILMemoryCache.DefaultMaxEntries, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0, long ilCacheMaxMemoryMegabytes = 0)
         {
             _logger = logger ?? new LoggerService();
-            _memoryCache = new ILMemoryCache(ilCacheMaxMemoryEntries, timeToLive);
+            _memoryCache = new ILMemoryCache(ilCacheMaxMemoryEntries, timeToLive, ilCacheMaxMemoryMegabytes);
             _diskCache = new ILDiskCache(ilCacheDirectoryAbsolutePath, _logger, ilCacheMaxDiskFileCount, ilCacheMaxDiskMegabytes);
 
             if (statsLogIntervalSeconds <= 0)
