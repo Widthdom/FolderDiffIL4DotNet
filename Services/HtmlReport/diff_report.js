@@ -175,7 +175,7 @@
           + '\n.sha256:  ' + fileHash);
       }
     };
-    input.click();
+    setTimeout(function() { input.click(); }, 0);
   }
 
   function collapseAll() {
