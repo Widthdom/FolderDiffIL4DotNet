@@ -225,6 +225,19 @@ namespace FolderDiffIL4DotNet.Services
             };
 
         /// <summary>
+        /// Wraps a value in <c>&lt;code&gt;</c> tags. If the value contains " → ", each side is wrapped individually.
+        /// 値を &lt;code&gt; タグで囲みます。" → " を含む場合は両側を個別に囲みます。
+        /// </summary>
+        private static string CodeWrapArrow(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return "";
+            int idx = raw.IndexOf(" → ", StringComparison.Ordinal);
+            if (idx >= 0)
+                return $"<code>{HtmlEncode(raw[..idx])}</code> → <code>{HtmlEncode(raw[(idx + 3)..])}</code>";
+            return $"<code>{HtmlEncode(raw)}</code>";
+        }
+
+        /// <summary>
         /// Returns the display order for Unchanged files: SHA256Match → ILMatch → TextMatch.
         /// Unchanged ファイルの表示順序を返します: SHA256Match → ILMatch → TextMatch。
         /// </summary>

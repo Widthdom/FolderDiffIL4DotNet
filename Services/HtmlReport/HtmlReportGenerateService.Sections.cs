@@ -435,8 +435,8 @@ namespace FolderDiffIL4DotNet.Services
                     string baseTypeTd = !isCont ? HtmlEncode(e.BaseType) : "";
                     prevType = e.TypeName;
                     string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
-                    string accessTd = HtmlEncode(e.Access);
-                    string modifiersTd = HtmlEncode(e.Modifiers);
+                    string accessTd = CodeWrapArrow(e.Access);
+                    string modifiersTd = CodeWrapArrow(e.Modifiers);
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
                     string cbId = $"sc_{sectionPrefix}_{idx}_{scRowIdx}";
                     string changeMarker = ChangeToMarker(e.Change);
