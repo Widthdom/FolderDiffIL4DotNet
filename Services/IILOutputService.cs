@@ -14,6 +14,8 @@ namespace FolderDiffIL4DotNet.Services
         /// Pre-computes (pre-caches) IL disassembly results for the specified files.
         /// 指定ファイル群の IL 逆アセンブル結果を事前計算（プリキャッシュ）します。
         /// </summary>
+        /// <param name="filesAbsolutePaths">Absolute paths to files for pre-computation. / 事前計算対象ファイルの絶対パスのコレクション。</param>
+        /// <param name="maxParallel">Maximum degree of parallelism. / 最大並列度。</param>
         /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
         Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default);
 
@@ -31,6 +33,9 @@ namespace FolderDiffIL4DotNet.Services
         /// Compares .NET assembly IL diffs for the specified file between old/new folders.
         /// old/new フォルダ間で指定ファイルの .NET アセンブリ IL 差分を比較します。
         /// </summary>
+        /// <param name="fileRelativePath">Relative path to the assembly file. / アセンブリファイルの相対パス。</param>
+        /// <param name="oldFolderAbsolutePath">Absolute path to the old folder. / 旧フォルダの絶対パス。</param>
+        /// <param name="newFolderAbsolutePath">Absolute path to the new folder. / 新フォルダの絶対パス。</param>
         /// <param name="shouldOutputIlText">Whether to write IL text to files. / IL テキストをファイルに出力するかどうか。</param>
         /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
         /// <returns>A tuple containing an equality flag and the disassembler label used. / アセンブリが等価かどうかを示すフラグと、使用した逆アセンブラのラベルを含むタプル。</returns>

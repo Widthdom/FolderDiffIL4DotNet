@@ -54,8 +54,10 @@ namespace FolderDiffIL4DotNet.Services
         /// Reads bytes asynchronously from the specified file starting at the given offset.
         /// 指定ファイルの指定オフセットからバイト列を非同期で読み込みます。
         /// </summary>
+        /// <param name="fileAbsolutePath">Absolute path to the file to read. / 読み込むファイルの絶対パス。</param>
         /// <param name="offset">Byte offset to start reading from. / 読み込み開始位置（バイトオフセット）。</param>
         /// <param name="buffer">Buffer to store the read data. / 読み込んだデータを格納するバッファ。</param>
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
         /// <returns>The number of bytes actually read. / 実際に読み込んだバイト数。</returns>
         Task<int> ReadChunkAsync(string fileAbsolutePath, long offset, Memory<byte> buffer, CancellationToken cancellationToken);
     }

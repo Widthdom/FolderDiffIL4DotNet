@@ -81,6 +81,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="filesAbsolutePaths"/> is null. / <paramref name="filesAbsolutePaths"/> が null の場合にスローされます。</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> is 0 or negative. / maxParallel が 0 以下の場合にスローされます。</exception>
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
         /// <seealso cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/>
         /// <seealso cref="ILCache"/>
         public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
