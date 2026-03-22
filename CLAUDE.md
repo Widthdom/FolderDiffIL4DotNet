@@ -123,7 +123,9 @@ This is the single most important rule in this repository.
 - `doc/samples/diff_report.md` and `doc/samples/diff_report.html` are **manually maintained** reference samples
 - They must match the actual output of `ReportGenerateService` and `HtmlReportGenerateService`
 - When updating HTML report features (CSS, JS, data attributes, filter controls), update the sample HTML too
+- **Samples must contain realistic, comprehensive examples** — include a variety of file statuses (Added, Removed, Changed, Unchanged), multiple file types (.dll, .exe, .config, .xml, .json, etc.), IL-level comparison results, inline diffs, and sign-off entries. The goal is to help users visualize the tool's actual output before running it.
 - サンプルレポートは手動メンテナンス。レポート出力ロジックと常に一致させること。
+- **サンプルには現実的で包括的な例を含めること** — 多様なファイルステータス（Added, Removed, Changed, Unchanged）、複数のファイル種別（.dll, .exe, .config, .xml, .json 等）、IL レベル比較結果、インライン差分、承認エントリを盛り込み、ユーザーが実行前にツール出力をイメージできるようにする。
 
 ## CHANGELOG / 変更履歴
 
@@ -131,7 +133,9 @@ This is the single most important rule in this repository.
 - Categories: Added, Changed, Fixed, Documentation, Performance
 - Each entry should include: feature description, affected files, test class/method names, test count
 - Both English and Japanese sections must be updated together
+- **Every commit that changes behavior, fixes a bug, or adds a feature MUST have a corresponding CHANGELOG entry.** Do not defer CHANGELOG updates to a later commit — include them in the same commit as the change itself.
 - 各エントリには機能説明、影響ファイル、テストクラス/メソッド名、テスト件数を含めること
+- **動作変更・バグ修正・機能追加を行うすべてのコミットで CHANGELOG エントリを記載すること。** 後回しにせず、変更と同一コミットに含めること。
 
 ## CI / GitHub Actions
 
@@ -139,6 +143,11 @@ This is the single most important rule in this repository.
 - `CiAutomationConfigurationTests` asserts on workflow file existence — update tests when changing CI config
 - Versioning: Nerdbank.GitVersioning via `version.json`
 - CI ワークフロー変更時は `CiAutomationConfigurationTests` も更新すること
+
+## Git & Release Rules / Git・リリースルール
+
+- **Do NOT create git tags** without explicit user permission. Tags trigger the release workflow (`release.yml`) and must be created only when the user explicitly requests it.
+- **git tag はユーザーの明示的な許可なく作成しないこと。** タグはリリースワークフロー（`release.yml`）を起動するため、ユーザーが明確に指示した場合のみ作成する。
 
 ## Common Pitfalls / よくある落とし穴
 
