@@ -22,11 +22,13 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Asynchronously loads settings from config.json at the given path (or the application base directory),
-        /// deserialises them into a <see cref="ConfigSettings"/> object, and validates the result.
+        /// deserialises them into a <see cref="ConfigSettingsBuilder"/>, applies environment variable overrides,
+        /// and returns the mutable builder so that CLI overrides can be applied before calling <see cref="ConfigSettingsBuilder.Build"/>.
         /// config.json を指定パス（または既定のアプリケーションベースディレクトリ）から非同期で読み込み、
-        /// <see cref="ConfigSettings"/> にデシリアライズした後、設定値の整合性を検証します。
+        /// <see cref="ConfigSettingsBuilder"/> にデシリアライズし、環境変数オーバーライドを適用した後、
+        /// CLI オーバーライドの適用と <see cref="ConfigSettingsBuilder.Build"/> 呼び出しのためにミュータブルなビルダーを返します。
         /// </summary>
-        public async Task<ConfigSettings> LoadConfigAsync(string? configFilePath = null)
+        public async Task<ConfigSettingsBuilder> LoadConfigBuilderAsync(string? configFilePath = null)
         {
             try
             {
@@ -39,19 +41,12 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 string json = await File.ReadAllTextAsync(configFileAbsolutePath);
-                var config = JsonSerializer.Deserialize<ConfigSettings>(json)
+                var builder = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)
                     ?? throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED);
 
-                ApplyEnvironmentVariableOverrides(config);
+                ApplyEnvironmentVariableOverrides(builder);
 
-                var validationResult = config.Validate();
-                if (!validationResult.IsValid)
-                {
-                    var details = string.Join(Environment.NewLine, validationResult.Errors);
-                    throw new InvalidDataException($"{ERROR_CONFIG_VALIDATION_PREFIX}{Environment.NewLine}{details}");
-                }
-
-                return config;
+                return builder;
             }
             catch (JsonException ex)
             {
@@ -67,14 +62,14 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Reads environment variables prefixed with <c>FOLDERDIFF_</c> and overrides the corresponding
-        /// <see cref="ConfigSettings"/> properties. Applied after JSON defaults but before validation,
+        /// <see cref="ConfigSettingsBuilder"/> properties. Applied after JSON defaults but before validation,
         /// so environment-variable values are also subject to validation.
         /// Booleans accept <c>true</c>/<c>false</c>/<c>1</c>/<c>0</c> (case-insensitive).
-        /// <c>FOLDERDIFF_</c> プレフィックスを持つ環境変数を読み取り、対応する <see cref="ConfigSettings"/> プロパティを上書きします。
+        /// <c>FOLDERDIFF_</c> プレフィックスを持つ環境変数を読み取り、対応する <see cref="ConfigSettingsBuilder"/> プロパティを上書きします。
         /// JSON 既定値の後・バリデーションの前に適用されるため、環境変数の値もバリデーション対象です。
         /// bool 値は <c>true</c>/<c>false</c>/<c>1</c>/<c>0</c>（大文字小文字不問）を受け付けます。
         /// </summary>
-        internal static void ApplyEnvironmentVariableOverrides(ConfigSettings config)
+        internal static void ApplyEnvironmentVariableOverrides(ConfigSettingsBuilder config)
         {
             const string P = ENV_VAR_PREFIX;
 

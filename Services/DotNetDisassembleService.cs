@@ -75,6 +75,10 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public int IlCacheStores => Volatile.Read(ref _ilCacheStores);
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DotNetDisassembleService"/>.
+        /// <see cref="DotNetDisassembleService"/> の新しいインスタンスを初期化します。
+        /// </summary>
         public DotNetDisassembleService(IReadOnlyConfigSettings config, ILCache? ilCache, FileDiffResultLists fileDiffResultLists, ILoggerService logger, DotNetDisassemblerCache dotNetDisassemblerCache)
         {
             ArgumentNullException.ThrowIfNull(config);

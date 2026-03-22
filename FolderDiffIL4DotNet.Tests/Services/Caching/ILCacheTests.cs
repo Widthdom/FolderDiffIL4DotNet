@@ -395,7 +395,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
 
             // Make cache directory read-only so disk Remove fails with UnauthorizedAccessException
             // キャッシュディレクトリを読み取り専用にしてディスク Remove を失敗させる
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
             File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
             try
             {
                 // Adding file2 triggers LRU eviction of file1; disk Remove catches UnauthorizedAccessException silently
@@ -404,7 +406,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             }
             finally
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
             }
         }
 
@@ -437,7 +441,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
             if (cacheFiles.Length > 0)
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
                 try
                 {
                     var file2 = CreateTestFile("trim-ro-2.dll", "unique-ro-content-2");
@@ -447,9 +453,40 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
                 }
                 finally
                 {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                     File.SetUnixFileMode(_cacheDir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
                 }
             }
+        }
+        [Fact]
+        public async Task PreSeedFileHash_AvoidsSha256Recomputation()
+        {
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null);
+            var file = CreateTestFile("preseed.dll", "preseed content");
+            var tool = "dotnet-ildasm";
+            var knownHash = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+
+            // Pre-seed a hash, then store and retrieve IL
+            cache.PreSeedFileHash(file, knownHash);
+            await cache.SetILAsync(file, tool, "IL-text-preseed");
+            var result = await cache.TryGetILAsync(file, tool);
+
+            // The cache should still return the stored IL text via the pre-seeded hash key
+            Assert.Equal("IL-text-preseed", result);
+        }
+
+        [Fact]
+        public void GetReportStats_AfterHitsAndMisses_ReflectsCorrectCounts()
+        {
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null);
+            var file = CreateTestFile("stats.dll", "stats content");
+
+            // Initial stats should be zero
+            var stats = cache.GetReportStats();
+            Assert.Equal(0, stats.Hits);
+            Assert.Equal(0, stats.Misses);
+            Assert.Equal(0, stats.Stores);
         }
     }
 }

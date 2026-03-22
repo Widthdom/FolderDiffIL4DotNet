@@ -57,7 +57,9 @@ namespace FolderDiffIL4DotNet.Services
             string reasonId = $"reason_{sectionPrefix}_{idx}";
             string notesId  = $"notes_{sectionPrefix}_{idx}";
             int recordNo    = idx + 1;
-            sb.AppendLine("<tr>");
+            string ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            string impAttr = string.IsNullOrEmpty(importance) ? "" : $" data-importance=\"{HtmlEncode(importance)}\"";
+            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\" data-ext=\"{HtmlEncode(ext)}\"{impAttr}>");
             sb.AppendLine($"  <td class=\"col-no\">{recordNo}</td>");
             sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td>");
             sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\"></td>");
@@ -307,12 +309,11 @@ namespace FolderDiffIL4DotNet.Services
         internal static string HtmlEncode(string text)
         {
             if (string.IsNullOrEmpty(text)) return string.Empty;
-            return text
-                .Replace("&", "&amp;")
-                .Replace("<", "&lt;")
-                .Replace(">", "&gt;")
-                .Replace("\"", "&quot;")
-                .Replace("'", "&#39;");
+            // WebUtility.HtmlEncode does not encode backticks; encode them explicitly
+            // to prevent template-literal injection in embedded JavaScript contexts.
+            // WebUtility.HtmlEncode はバッククォートをエンコードしないため、
+            // 埋め込み JavaScript コンテキストでのテンプレートリテラル注入を防ぐために明示的にエンコードする。
+            return System.Net.WebUtility.HtmlEncode(text).Replace("`", "&#96;");
         }
 
         internal static string I18n(string en, string ja)

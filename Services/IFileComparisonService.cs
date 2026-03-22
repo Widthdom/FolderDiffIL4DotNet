@@ -18,6 +18,15 @@ namespace FolderDiffIL4DotNet.Services
         Task<bool> DiffFilesByHashAsync(string file1AbsolutePath, string file2AbsolutePath);
 
         /// <summary>
+        /// Compares two files by SHA256 hash and also returns the computed hex strings.
+        /// When files differ by size, hashes are null (no I/O performed).
+        /// 2 つのファイルの SHA256 ハッシュ値を比較し、計算した 16 進文字列も返します。
+        /// サイズが異なる場合、ハッシュは null です。
+        /// </summary>
+        Task<(bool AreEqual, string? Hash1Hex, string? Hash2Hex)> DiffFilesByHashWithHexAsync(
+            string file1AbsolutePath, string file2AbsolutePath);
+
+        /// <summary>
         /// Compares two text files line-by-line and returns whether they are equal.
         /// 2 つのテキストファイルを行単位で比較し、等価かどうかを返します。
         /// </summary>
@@ -45,8 +54,10 @@ namespace FolderDiffIL4DotNet.Services
         /// Reads bytes asynchronously from the specified file starting at the given offset.
         /// 指定ファイルの指定オフセットからバイト列を非同期で読み込みます。
         /// </summary>
+        /// <param name="fileAbsolutePath">Absolute path to the file to read. / 読み込むファイルの絶対パス。</param>
         /// <param name="offset">Byte offset to start reading from. / 読み込み開始位置（バイトオフセット）。</param>
         /// <param name="buffer">Buffer to store the read data. / 読み込んだデータを格納するバッファ。</param>
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
         /// <returns>The number of bytes actually read. / 実際に読み込んだバイト数。</returns>
         Task<int> ReadChunkAsync(string fileAbsolutePath, long offset, Memory<byte> buffer, CancellationToken cancellationToken);
     }

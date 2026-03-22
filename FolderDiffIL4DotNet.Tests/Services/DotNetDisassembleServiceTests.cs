@@ -485,12 +485,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         // ── Helpers / ヘルパー ──────────────────────────────────────────────────
 
-        private static ConfigSettings CreateConfig(bool enableIlCache) => new()
+        private static ConfigSettings CreateConfig(bool enableIlCache) => new ConfigSettingsBuilder()
         {
             EnableILCache = enableIlCache,
             IgnoredExtensions = new(),
             TextFileExtensions = new()
-        };
+        }.Build();
 
         private static void InstallFakeTool(string binDir, string toolName, Action<string> configureEnv)
         {
@@ -510,7 +510,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             if (!OperatingSystem.IsWindows())
             {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(destPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
             }
 
             // Copy managed DLL and runtime config alongside the AppHost so it can execute

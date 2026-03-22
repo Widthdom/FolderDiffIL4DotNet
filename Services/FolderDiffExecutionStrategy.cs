@@ -29,6 +29,10 @@ namespace FolderDiffIL4DotNet.Services
         private readonly string _newFolderAbsolutePath;
         private readonly bool _optimizeForNetworkShares;
         private readonly HashSet<string> _ignoredExtensions;
+        /// <summary>
+        /// Initializes a new instance of <see cref="FolderDiffExecutionStrategy"/>.
+        /// <see cref="FolderDiffExecutionStrategy"/> の新しいインスタンスを初期化します。
+        /// </summary>
         public FolderDiffExecutionStrategy(
             IReadOnlyConfigSettings config,
             DiffExecutionContext executionContext,

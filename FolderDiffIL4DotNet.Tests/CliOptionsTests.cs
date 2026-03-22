@@ -22,6 +22,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.NoIlCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
+            Assert.False(opts.PrintConfig);
             Assert.Null(opts.ParseError);
         }
 
@@ -47,6 +48,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.NoIlCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
+            Assert.False(opts.PrintConfig);
             Assert.Null(opts.ParseError);
         }
 
@@ -202,6 +204,19 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --print-config
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_PrintConfigFlag_SetsPrintConfig()
+        {
+            var opts = CliParser.Parse(new[] { "--print-config" });
+
+            Assert.True(opts.PrintConfig);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // Unknown / invalid flags
         // -----------------------------------------------------------------------
 
@@ -258,7 +273,8 @@ namespace FolderDiffIL4DotNet.Tests
                 "--threads", "4",
                 "--no-il-cache",
                 "--skip-il",
-                "--no-timestamp-warnings"
+                "--no-timestamp-warnings",
+                "--print-config"
             });
 
             Assert.False(opts.ShowHelp);
@@ -269,6 +285,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.NoIlCache);
             Assert.True(opts.SkipIL);
             Assert.True(opts.NoTimestampWarnings);
+            Assert.True(opts.PrintConfig);
             Assert.Null(opts.ParseError);
         }
     }

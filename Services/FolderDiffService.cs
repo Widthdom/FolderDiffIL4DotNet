@@ -57,6 +57,10 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IFileSystemService _fileSystem;
         private readonly IFolderDiffExecutionStrategy _executionStrategy;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="FolderDiffService"/> with default file-system and execution-strategy implementations.
+        /// 既定のファイルシステム実装と実行戦略で <see cref="FolderDiffService"/> を初期化します。
+        /// </summary>
         public FolderDiffService(
             IReadOnlyConfigSettings config,
             ProgressReportService progressReporter,
@@ -297,7 +301,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _fileDiffResultLists.AddAddedFileAbsolutePath(newFileAbsolutePath);
                 processedFileCount++;
-                _progressReporter.ReportProgress((double)processedFileCount * 100.0 / totalFilesRelativePathCount);
+                _progressReporter.ReportProgress(Math.Min((double)processedFileCount * 100.0 / totalFilesRelativePathCount, 100.0));
             }
         }
 

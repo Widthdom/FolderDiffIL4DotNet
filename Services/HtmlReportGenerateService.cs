@@ -30,6 +30,13 @@ namespace FolderDiffIL4DotNet.Services
         private const string TH_BG_MODIFIED = "#e3f2fd";
         private const string TH_BG_DEFAULT  = "#f0f0f2";
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="HtmlReportGenerateService"/>.
+        /// <see cref="HtmlReportGenerateService"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="fileDiffResultLists">Comparison results to render in the HTML report. / HTML レポートに描画する比較結果。</param>
+        /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
+        /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
         public HtmlReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IReadOnlyConfigSettings config)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
@@ -42,27 +49,21 @@ namespace FolderDiffIL4DotNet.Services
         // ── Public entry point ───────────────────────────────────────────────
 
         /// <summary>
-        /// Generates diff_report.html and writes it to <paramref name="reportsFolderAbsolutePath"/>.
-        /// No-op when <see cref="ConfigSettings.ShouldGenerateHtmlReport"/> is <see langword="false"/>.
-        /// diff_report.html を生成して <paramref name="reportsFolderAbsolutePath"/> へ書き込みます。
-        /// <see cref="ConfigSettings.ShouldGenerateHtmlReport"/> が <see langword="false"/> の場合は何もしません。
+        /// Generates diff_report.html using the specified <paramref name="context"/>.
+        /// No-op when <see cref="IReadOnlyConfigSettings.ShouldGenerateHtmlReport"/> is <see langword="false"/>.
+        /// 指定された <paramref name="context"/> を使って diff_report.html を生成します。
+        /// <see cref="IReadOnlyConfigSettings.ShouldGenerateHtmlReport"/> が <see langword="false"/> の場合は何もしません。
         /// </summary>
-        public void GenerateDiffReportHtml(
-            string oldFolderAbsolutePath,
-            string newFolderAbsolutePath,
-            string reportsFolderAbsolutePath,
-            string appVersion,
-            string elapsedTimeString,
-            string computerName,
-            IReadOnlyConfigSettings config,
-            ILCache? ilCache = null)
+        public void GenerateDiffReportHtml(ReportGenerationContext context)
         {
-            if (!config.ShouldGenerateHtmlReport) return;
+            ArgumentNullException.ThrowIfNull(context);
 
-            string htmlPath = Path.Combine(reportsFolderAbsolutePath, DIFF_REPORT_HTML_FILE_NAME);
+            if (!context.Config.ShouldGenerateHtmlReport) return;
+
+            string htmlPath = Path.Combine(context.ReportsFolderAbsolutePath, DIFF_REPORT_HTML_FILE_NAME);
             string html = BuildHtml(
-                oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath,
-                appVersion, elapsedTimeString, computerName, config, ilCache);
+                context.OldFolderAbsolutePath, context.NewFolderAbsolutePath, context.ReportsFolderAbsolutePath,
+                context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache);
             try
             {
                 File.WriteAllText(htmlPath, html, Encoding.UTF8);
@@ -105,6 +106,24 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
+            sb.AppendLine("<div class=\"filter-bar\">");
+            sb.AppendLine("  <label class=\"filter-label\">" + I18n("Importance", "重要度") + ":</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-high\" checked onchange=\"applyFilters()\"> <span style=\"color:#d1242f;font-weight:bold\">High</span></label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-medium\" checked onchange=\"applyFilters()\"> <span style=\"color:#d97706;font-weight:bold\">Medium</span></label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-low\" checked onchange=\"applyFilters()\"> Low</label>");
+            sb.AppendLine("  <span class=\"filter-sep\"></span>");
+            sb.AppendLine("  <label class=\"filter-label\">" + I18n("File Type", "ファイル種別") + ":</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-dll\" checked onchange=\"applyFilters()\"> DLL</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-exe\" checked onchange=\"applyFilters()\"> EXE</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-config\" checked onchange=\"applyFilters()\"> Config</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-resource\" checked onchange=\"applyFilters()\"> Resource</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-other\" checked onchange=\"applyFilters()\"> " + I18n("Other", "その他") + "</label>");
+            sb.AppendLine("  <span class=\"filter-sep\"></span>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + I18n("Unchecked only", "未チェックのみ") + "</label>");
+            sb.AppendLine("  <span class=\"filter-sep\"></span>");
+            sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + I18n("Search file path...", "ファイルパス検索...") + "\" class=\"filter-search\" oninput=\"applyFilters()\">");
+            sb.AppendLine("  <button class=\"btn btn-clear filter-reset-btn\" onclick=\"resetFilters()\">" + I18n("Reset filters", "フィルタリセット") + "</button>");
+            sb.AppendLine("</div>");
             sb.AppendLine("<!--/CTRL-->");
 
             sb.AppendLine("<main>");
@@ -142,6 +161,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<html lang=\"en\">");
             sb.AppendLine("<head>");
             sb.AppendLine("  <meta charset=\"UTF-8\">");
+            sb.AppendLine("  <meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'\">");
             sb.AppendLine("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
             sb.AppendLine("  <title>diff_report</title>");
             sb.AppendLine("  <style>");

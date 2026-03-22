@@ -80,7 +80,9 @@ namespace FolderDiffIL4DotNet.Benchmarks
 
         private static void TryDeleteDir(string path)
         {
+#pragma warning disable CA1031 // Best-effort cleanup; failure is acceptable / ベストエフォートのクリーンアップ；失敗は許容
             try { if (Directory.Exists(path)) Directory.Delete(path, true); } catch { }
+#pragma warning restore CA1031
         }
     }
 }

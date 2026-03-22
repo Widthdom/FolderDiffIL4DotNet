@@ -27,6 +27,10 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
         private readonly ILoggerService _logger;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ILOutputService"/>.
+        /// <see cref="ILOutputService"/> の新しいインスタンスを初期化します。
+        /// </summary>
         public ILOutputService(
             IReadOnlyConfigSettings config,
             DiffExecutionContext executionContext,
@@ -45,6 +49,12 @@ namespace FolderDiffIL4DotNet.Services
             _ilCache = ilCache;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
+        }
+
+        /// <inheritdoc />
+        public void PreSeedFileHash(string fileAbsolutePath, string sha256Hex)
+        {
+            _ilCache?.PreSeedFileHash(fileAbsolutePath, sha256Hex);
         }
 
         /// <summary>
@@ -71,6 +81,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="filesAbsolutePaths"/> is null. / <paramref name="filesAbsolutePaths"/> が null の場合にスローされます。</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="maxParallel"/> is 0 or negative. / maxParallel が 0 以下の場合にスローされます。</exception>
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
         /// <seealso cref="IDotNetDisassembleService.PrefetchIlCacheAsync"/>
         /// <seealso cref="ILCache"/>
         public async Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
@@ -124,13 +135,12 @@ namespace FolderDiffIL4DotNet.Services
                 await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
             var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
 
-            // Split into lines and exclude MVID lines and configured ignore-strings before comparison.
-            // 行単位に分割し、再ビルドで変わり得る MVID 行および設定で指定された文字列を含む行を除外して比較する。
+            // Split into lines and exclude MVID lines and configured ignore-strings in a single pass (avoids intermediate list allocations).
+            // 行単位に分割し、再ビルドで変わり得る MVID 行および設定で指定された文字列を含む行を除外する（中間リスト割り当てを回避するため 1 パスで実行）。
             var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(_config);
-            var il1Lines = ilText1.Split('\n').ToList();
-            var il2Lines = ilText2.Split('\n').ToList();
-            var il1LinesExcluded = il1Lines.Where(line => !ShouldExcludeIlLine(line, _config.ShouldIgnoreILLinesContainingConfiguredStrings, ilIgnoreContainingStrings)).ToList();
-            var il2LinesExcluded = il2Lines.Where(line => !ShouldExcludeIlLine(line, _config.ShouldIgnoreILLinesContainingConfiguredStrings, ilIgnoreContainingStrings)).ToList();
+            bool shouldIgnore = _config.ShouldIgnoreILLinesContainingConfiguredStrings;
+            var il1LinesExcluded = SplitAndFilterIlLines(ilText1, shouldIgnore, ilIgnoreContainingStrings);
+            var il2LinesExcluded = SplitAndFilterIlLines(ilText2, shouldIgnore, ilIgnoreContainingStrings);
             bool areILsEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
             try
             {
@@ -149,6 +159,39 @@ namespace FolderDiffIL4DotNet.Services
                 throw;
             }
             return (areILsEqual, disassemblerLabel);
+        }
+
+        /// <summary>
+        /// Splits IL text into lines and filters out excluded lines in a single pass,
+        /// avoiding intermediate list allocations from separate Split → Where → ToList chains.
+        /// IL テキストを行に分割し、除外行を 1 パスでフィルタリングすることで
+        /// Split → Where → ToList の中間リスト割り当てを回避します。
+        /// </summary>
+        private static List<string> SplitAndFilterIlLines(string ilText, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
+        {
+            var result = new List<string>();
+            int startIndex = 0;
+            int length = ilText.Length;
+            while (startIndex <= length)
+            {
+                int newlineIndex = ilText.IndexOf('\n', startIndex);
+                string line;
+                if (newlineIndex < 0)
+                {
+                    line = ilText.Substring(startIndex);
+                    startIndex = length + 1;
+                }
+                else
+                {
+                    line = ilText.Substring(startIndex, newlineIndex - startIndex);
+                    startIndex = newlineIndex + 1;
+                }
+                if (!ShouldExcludeIlLine(line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
+                {
+                    result.Add(line);
+                }
+            }
+            return result;
         }
 
         /// <summary>

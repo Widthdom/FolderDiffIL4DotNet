@@ -58,16 +58,23 @@ namespace FolderDiffIL4DotNet.Models
             int ModifiedCount,
             int UnchangedCount,
             int IgnoredCount);
+
+        /// <summary>Absolute paths of all files found in the old (baseline) folder. / 旧（ベースライン）フォルダ内の全ファイル絶対パス。</summary>
         public ConcurrentQueue<string> OldFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
+        /// <summary>Absolute paths of all files found in the new (comparison) folder. / 新（比較対象）フォルダ内の全ファイル絶対パス。</summary>
         public ConcurrentQueue<string> NewFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
+        /// <summary>Relative paths of files that are identical between old and new. / 旧新間で同一のファイルの相対パス。</summary>
         public ConcurrentQueue<string> UnchangedFilesRelativePath { get; } = new ConcurrentQueue<string>();
 
+        /// <summary>Absolute paths of files present only in the new folder. / 新フォルダにのみ存在するファイルの絶対パス。</summary>
         public ConcurrentQueue<string> AddedFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
+        /// <summary>Absolute paths of files present only in the old folder. / 旧フォルダにのみ存在するファイルの絶対パス。</summary>
         public ConcurrentQueue<string> RemovedFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
+        /// <summary>Relative paths of files that differ between old and new. / 旧新間で差異のあるファイルの相対パス。</summary>
         public ConcurrentQueue<string> ModifiedFilesRelativePath { get; } = new ConcurrentQueue<string>();
 
         /// <summary>
@@ -82,6 +89,10 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public ConcurrentDictionary<string, string> FileRelativePathToIlDisassemblerLabelDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
 
+        /// <summary>
+        /// Returns <see langword="true"/> when at least one file comparison resulted in a SHA256 mismatch.
+        /// 少なくとも 1 件のファイル比較で SHA256 不一致が発生した場合に <see langword="true"/> を返します。
+        /// </summary>
         public bool HasAnySha256Mismatch => FileRelativePathToDiffDetailDictionary.Values.Any(result => result == DiffDetailResult.SHA256Mismatch);
 
         /// <summary>
@@ -132,6 +143,10 @@ namespace FolderDiffIL4DotNet.Models
             set => Volatile.Write(ref _disassemblerAvailability, value);
         }
 
+        /// <summary>
+        /// Returns <see langword="true"/> when at least one modified file has a newer-side timestamp older than the older-side.
+        /// Modified ファイルのうち新側タイムスタンプが旧側より古いものが 1 件以上ある場合に <see langword="true"/> を返します。
+        /// </summary>
         public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
 
         /// <summary>
@@ -156,31 +171,43 @@ namespace FolderDiffIL4DotNet.Models
             UnchangedCount: UnchangedFilesRelativePath.Count,
             IgnoredCount: IgnoredFilesRelativePathToLocation.Count);
 
+        /// <summary>Replaces the old-file list with the specified paths. / 旧ファイルリストを指定パスで置換します。</summary>
+        /// <param name="oldFilesAbsolutePath">Absolute paths of old-side files. / 旧側ファイルの絶対パス群。</param>
         public void SetOldFilesAbsolutePath(IEnumerable<string> oldFilesAbsolutePath)
         {
             ReplaceQueueItems(OldFilesAbsolutePath, oldFilesAbsolutePath, nameof(oldFilesAbsolutePath));
         }
 
+        /// <summary>Replaces the new-file list with the specified paths. / 新ファイルリストを指定パスで置換します。</summary>
+        /// <param name="newFilesAbsolutePath">Absolute paths of new-side files. / 新側ファイルの絶対パス群。</param>
         public void SetNewFilesAbsolutePath(IEnumerable<string> newFilesAbsolutePath)
         {
             ReplaceQueueItems(NewFilesAbsolutePath, newFilesAbsolutePath, nameof(newFilesAbsolutePath));
         }
 
+        /// <summary>Records a file as unchanged. / ファイルを「変更なし」として記録します。</summary>
+        /// <param name="fileRelativePath">Relative path of the unchanged file. / 変更なしファイルの相対パス。</param>
         public void AddUnchangedFileRelativePath(string fileRelativePath)
         {
             EnqueuePath(UnchangedFilesRelativePath, fileRelativePath, nameof(fileRelativePath));
         }
 
+        /// <summary>Records a file as added (present only in the new folder). / ファイルを「追加」として記録します。</summary>
+        /// <param name="newFileAbsolutePath">Absolute path of the added file. / 追加ファイルの絶対パス。</param>
         public void AddAddedFileAbsolutePath(string newFileAbsolutePath)
         {
             EnqueuePath(AddedFilesAbsolutePath, newFileAbsolutePath, nameof(newFileAbsolutePath));
         }
 
+        /// <summary>Records a file as removed (present only in the old folder). / ファイルを「削除」として記録します。</summary>
+        /// <param name="oldFileAbsolutePath">Absolute path of the removed file. / 削除ファイルの絶対パス。</param>
         public void AddRemovedFileAbsolutePath(string oldFileAbsolutePath)
         {
             EnqueuePath(RemovedFilesAbsolutePath, oldFileAbsolutePath, nameof(oldFileAbsolutePath));
         }
 
+        /// <summary>Records a file as modified (differs between old and new). / ファイルを「変更あり」として記録します。</summary>
+        /// <param name="fileRelativePath">Relative path of the modified file. / 変更ありファイルの相対パス。</param>
         public void AddModifiedFileRelativePath(string fileRelativePath)
         {
             EnqueuePath(ModifiedFilesRelativePath, fileRelativePath, nameof(fileRelativePath));

@@ -55,21 +55,19 @@ jobs:
           dotnet tool install --global dotnet-ildasm
           DOTNET_ROLL_FORWARD=Major dotnet-ildasm --version
 
+      - name: Restore local tools
+        run: dotnet tool restore
+
       - name: Test with coverage
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         env:
           DOTNET_ROLL_FORWARD: Major
-        run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
-
-      - name: Install ReportGenerator
-        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
-        run: dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.*
+        run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
       - name: Generate coverage report
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         run: |
-          export PATH="$PATH:$HOME/.dotnet/tools"
-          reportgenerator \
+          dotnet tool run reportgenerator \
             -reports:"TestResults/**/coverage.cobertura.xml" \
             -targetdir:"CoverageReport" \
             -reporttypes:"MarkdownSummaryGithub;Cobertura;HtmlInline_AzurePipelines"
@@ -141,6 +139,91 @@ jobs:
         with:
           name: FolderDiffIL4DotNet
           path: publish/**
+
+  mutation-testing:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore FolderDiffIL4DotNet.sln
+
+      - name: Build
+        run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
+
+      - name: Restore local tools
+        run: dotnet tool restore
+
+      - name: Install real disassembler for E2E tests
+        run: |
+          dotnet tool install --global dotnet-ildasm
+          DOTNET_ROLL_FORWARD=Major dotnet-ildasm --version
+
+      - name: Run Stryker mutation testing
+        env:
+          DOTNET_ROLL_FORWARD: Major
+        run: dotnet tool run dotnet-stryker --config-file stryker-config.json --output StrykerOutput
+
+      - name: Upload mutation testing report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: StrykerReport
+          if-no-files-found: warn
+          path: StrykerOutput/**
+
+  benchmark:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj
+
+      - name: Run benchmarks
+        run: dotnet run --project FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj --configuration Release -- --exporters json github
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BenchmarkResults
+          if-no-files-found: warn
+          path: BenchmarkDotNet.Artifacts/**
 
   test-windows:
     runs-on: windows-latest

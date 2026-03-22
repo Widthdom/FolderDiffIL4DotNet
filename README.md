@@ -6,13 +6,48 @@ For .NET assemblies, it compares IL while ignoring build-specific information su
 Developer-focused details (architecture, CI, tests, implementation cautions):
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
+<a id="readme-en-quick-start"></a>
+## Quick Start (5 minutes)
+
+```bash
+# 1. Install .NET SDK 8.x (skip if already installed)
+#    Windows: winget install Microsoft.DotNet.SDK.8 --source winget
+#    macOS/Linux: curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+
+# 2. Install an IL disassembler
+dotnet tool install --global dotnet-ildasm
+
+# 3. Clone and build
+git clone <repository-url>
+cd FolderDiffIL4DotNet
+dotnet build
+
+# 4. Run a diff between two folders
+dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+
+# 5. View the reports
+#    Reports/my-comparison/diff_report.md   — Markdown report
+#    Reports/my-comparison/diff_report.html — Interactive HTML report (open in browser)
+#    Reports/my-comparison/audit_log.json   — Structured audit log
+```
+
+The tool compares all files recursively. For .NET assemblies (`.dll`, `.exe`), it performs IL-level comparison that ignores build-specific differences (MVID, timestamps), so functionally identical assemblies are reported as unchanged even if binary hashes differ.
+
+**Next steps:**
+- Customize behavior via [`config.json`](config.json) — see [Configuration](#readme-en-configuration)
+- Review the [Interactive HTML Report](#readme-en-html-report) features
+- For CI/CD integration, see [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
+
 <a id="readme-en-doc-map"></a>
 ## Documentation Map
 
 | Need | Document |
 | --- | --- |
+| Get started in 5 minutes | [README.md](README.md#readme-en-quick-start) |
 | Product overview, setup, usage, and configuration | [README.md](README.md#readme-en-usage) |
 | Assembly semantic change detection | [README.md](README.md#readme-en-assembly-semantic-changes) |
+| Configuration reference with annotated sample | [doc/config.sample.jsonc](doc/config.sample.jsonc) |
+| Troubleshooting common issues | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) |
 | Runtime architecture, execution flow, DI scopes, and implementation guardrails | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-en-map) |
 | Test strategy, local test commands, coverage, and isolation rules | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-en-run-tests) |
 | Generated API reference from XML documentation comments | [api/index.md](api/index.md) via [docfx.json](docfx.json) |
@@ -81,7 +116,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--version` | Show the application version and exit (code `0`). |
 | `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects `config.json` + all `FOLDERDIFF_*` env var overrides. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
 | `--no-pause` | Skip key-wait at process end. |
-| `--config <path>` | Load config from `<path>` instead of the default `<exe>/[`config.json`](config.json)`. |
+| `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
 | `--threads <N>` | Override [`MaxParallelism`](#config-en-maxparallelism) for this run (`0` = auto). |
 | `--no-il-cache` | Disable the IL cache for this run. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
@@ -96,7 +131,13 @@ dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # Use a custom config file
 dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pause
+
+# Inspect the effective configuration (config.json + env var overrides) without running a diff
+dotnet run -- --print-config
+dotnet run -- --config /etc/my-config.json --print-config
 ```
+
+> **Tip:** When a configuration error occurs (exit code `3`), a hint is printed to stderr suggesting `--print-config` for diagnosis.
 
 Main output:
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
@@ -125,7 +166,9 @@ See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample o
 
 Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** alongside [`diff_report.md`](doc/samples/diff_report.md) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json)).
 
-The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. Every file entry is displayed in a table with interactive columns for sign-off:
+The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. All user-supplied data (file paths, timestamps, version strings) is HTML-encoded via `System.Net.WebUtility.HtmlEncode` to prevent XSS. A `Content-Security-Policy` meta tag (`default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'`) further limits the impact of any injection by blocking external resource loading, form submissions, and plugin execution.
+
+Every file entry is displayed in a table with interactive columns for sign-off:
 
 | Column | Description |
 |---|---|
@@ -142,6 +185,17 @@ Not all columns appear in every table. Added and Removed tables show only ✓, J
 **Table sort order:** Unchanged Files rows are sorted by diff-detail result (`SHA256Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `SHA256Mismatch`), then by Change Importance (`High` → `Medium` → `Low`), then by File Path ascending. The SHA256Mismatch warning table in the Warnings section lists files alphabetically by path.
 
 Inline diff `<summary>` labels also include a one-based `#N` prefix such as `#3 Show diff` / `#3 Show IL diff`; this number matches the leftmost `#` column for the same row.
+
+A **filter bar** is displayed below the controls bar. Filters include:
+
+| Filter | Description |
+|---|---|
+| Importance | Checkboxes for `High`, `Medium`, `Low` — toggle to show/hide Modified files by change importance |
+| File Type | Checkboxes for `DLL`, `EXE`, `Config`, `Resource`, `Other` — filter by file extension category |
+| Unchecked only | When checked, hides rows whose checkbox (✓ column) is already ticked |
+| Search | Free-text input that matches against file paths (case-insensitive substring match) |
+
+Filters can be combined; the **Reset filters** button restores all checkboxes and clears the search box. Filter state is **not** saved to localStorage and is **not** included in the "Download as reviewed" output — the reviewed HTML always shows all rows with filtering disabled.
 
 See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live sample (open in a browser).
 
@@ -546,13 +600,48 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
+<a id="readme-ja-quick-start"></a>
+## クイックスタート（5 分）
+
+```bash
+# 1. .NET SDK 8.x をインストール（インストール済みならスキップ）
+#    Windows: winget install Microsoft.DotNet.SDK.8 --source winget
+#    macOS/Linux: curl -fsSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0
+
+# 2. IL 逆アセンブラをインストール
+dotnet tool install --global dotnet-ildasm
+
+# 3. クローンしてビルド
+git clone <リポジトリURL>
+cd FolderDiffIL4DotNet
+dotnet build
+
+# 4. 2つのフォルダを比較
+dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+
+# 5. レポートを確認
+#    Reports/my-comparison/diff_report.md   — Markdown レポート
+#    Reports/my-comparison/diff_report.html — インタラクティブ HTML レポート（ブラウザで開く）
+#    Reports/my-comparison/audit_log.json   — 構造化監査ログ
+```
+
+ツールはすべてのファイルを再帰的に比較します。.NET アセンブリ（`.dll`、`.exe`）に対しては、ビルド固有の差異（MVID、タイムスタンプ）を無視した IL レベルの比較を行うため、機能的に同一のアセンブリはバイナリハッシュが異なっていても「変更なし」と報告されます。
+
+**次のステップ:**
+- [`config.json`](config.json) で動作をカスタマイズ — [設定](#readme-ja-configuration) を参照
+- [インタラクティブ HTML レポート](#readme-ja-html-report) の機能を確認
+- CI/CD 統合については [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) を参照
+
 <a id="readme-ja-doc-map"></a>
 ## ドキュメントの見取り図
 
 | 見たい内容 | ドキュメント |
 | --- | --- |
+| 5 分で始める | [README.md](README.md#readme-ja-quick-start) |
 | 製品概要、導入、使い方、設定 | [README.md](README.md#readme-ja-usage) |
 | アセンブリ セマンティック変更の検出 | [README.md](README.md#readme-ja-assembly-semantic-changes) |
+| コメント付き設定サンプル | [doc/config.sample.jsonc](doc/config.sample.jsonc) |
+| よくある問題のトラブルシューティング | [doc/TROUBLESHOOTING.md](doc/TROUBLESHOOTING.md) |
 | 実行時アーキテクチャ、実行フロー、DI スコープ、実装上の注意点 | [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md#guide-ja-map) |
 | テスト戦略、ローカル実行コマンド、カバレッジ、分離ルール | [doc/TESTING_GUIDE.md](doc/TESTING_GUIDE.md#testing-ja-run-tests) |
 | XML ドキュメントコメントから生成する API リファレンス | [docfx.json](docfx.json) 経由 [api/index.md](api/index.md) |
@@ -625,7 +714,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
 | `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。`config.json` のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
-| `--config <path>` | デフォルトの `<exe>/[`config.json`](config.json)` の代わりに `<path>` から設定を読み込みます。 |
+| `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り [`MaxParallelism`](#config-ja-maxparallelism) を上書きします（`0` = 自動）。 |
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
@@ -640,7 +729,13 @@ dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # カスタム設定ファイルを指定
 dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pause
+
+# 有効な設定（config.json ＋環境変数オーバーライド）を差分実行なしで確認
+dotnet run -- --print-config
+dotnet run -- --config /etc/my-config.json --print-config
 ```
+
+> **ヒント:** 設定エラー（終了コード `3`）が発生した場合、診断用に `--print-config` を提案するヒントが stderr に出力されます。
 
 主な出力:
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
@@ -669,7 +764,9 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 
 実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
-HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
+HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ユーザー提供データ（ファイルパス、タイムスタンプ、バージョン文字列）はすべて `System.Net.WebUtility.HtmlEncode` で HTML エンコードし、XSS を防止します。さらに `Content-Security-Policy` メタタグ（`default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'`）により、外部リソース読み込み・フォーム送信・プラグイン実行を遮断し、万一のインジェクション時の影響範囲を限定します。
+
+全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 
 | 列 | 説明 |
 |---|---|
@@ -686,6 +783,17 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 **テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）の順、次に変更の重要度（`High` → `Medium` → `Low`）の順、次にファイルパスの昇順でソートされます。警告セクション内の SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソートされます。
 
 インライン差分の `<summary>` ラベルにも `#3 Show diff` / `#3 Show IL diff` のような 1 始まりの `#N` プレフィックスが付き、この番号は同じ行の左端 `#` 列と一致します。
+
+コントロールバーの下に**フィルターバー**が表示されます。フィルタの種類:
+
+| フィルタ | 説明 |
+|---|---|
+| 重要度 | `High`・`Medium`・`Low` のチェックボックス — Modified ファイルを変更の重要度で表示/非表示 |
+| ファイル種別 | `DLL`・`EXE`・`Config`・`Resource`・`Other` のチェックボックス — 拡張子カテゴリで絞り込み |
+| 未チェックのみ | チェックすると、✓ 列のチェックボックスが既にオンの行を非表示にする |
+| 検索 | ファイルパスに対するフリーテキスト入力（大文字小文字を区別しない部分一致） |
+
+フィルタは組み合わせ可能です。**フィルタリセット**ボタンですべてのチェックボックスを復元し検索ボックスをクリアします。フィルタ状態は localStorage には保存**されず**、「Download as reviewed」の出力にも含まれ**ません** — レビュー済み HTML ではフィルタリングが無効化され、常にすべての行が表示されます。
 
 ライブサンプルは [doc/samples/diff_report.html](doc/samples/diff_report.html) を参照してください（ブラウザで開いてください）。
 

@@ -134,11 +134,11 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void CreateIlCache_WhenStatsIntervalIsNonPositive_UsesDocumentedDefaults()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 EnableILCache = true,
                 ILCacheStatsLogIntervalSeconds = 0
-            };
+            }.Build();
 
             var cache = InvokeCreateIlCache(config, new TestLogger());
 
@@ -156,11 +156,11 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void CreateIlCache_WhenPathIsEmpty_DefaultsToLocalApplicationDataSubfolder()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 EnableILCache = true,
                 ILCacheDirectoryAbsolutePath = ""
-            };
+            }.Build();
 
             var cache = InvokeCreateIlCache(config, new TestLogger());
 
@@ -205,6 +205,67 @@ namespace FolderDiffIL4DotNet.Tests
             finally
             {
                 Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_HelpFlag_OutputContainsPrintConfigTipSection()
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                // The help text must include a "Tip:" section promoting --print-config
+                // ヘルプテキストには --print-config を紹介する「Tip:」セクションが含まれなければならない
+                Assert.Contains("Tip:", output, StringComparison.Ordinal);
+                Assert.Contains("--print-config", output, StringComparison.Ordinal);
+                Assert.Contains("effective configuration", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ConfigError_WritesPrintConfigHintToStderr()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-stderr-hint-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origErr = Console.Error;
+            using var errSw = new System.IO.StringWriter();
+            Console.SetError(errSw);
+
+            try
+            {
+                await WithMissingConfigFileAsync(async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
+
+                    Assert.Equal(3, exitCode);
+                    var stderrOutput = errSw.ToString();
+                    // On configuration error, stderr should include the --print-config tip
+                    // 設定エラー時、stderr に --print-config のヒントが含まれなければならない
+                    Assert.Contains("--print-config", stderrOutput, StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetError(origErr);
+                TryDeleteDirectory(tempRoot);
             }
         }
 
@@ -698,7 +759,9 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 // Remove write permission from the directory (read + execute only)
                 // ディレクトリから書き込み権限を削除（読み取り＋実行のみ）
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                 File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
 
                 // Pass a path whose parent is `dir` -- the check probes a file inside `dir`
                 // 親ディレクトリが `dir` のパスを渡す — チェックは `dir` 内のファイルを調べる
@@ -709,7 +772,9 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 try
                 {
+#pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
                     File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
                 }
                 catch (IOException) { }
                 catch (UnauthorizedAccessException) { }
@@ -975,7 +1040,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(ex);
         }
 
-        private static ILCache InvokeCreateIlCache(ConfigSettings config, ILoggerService logger)
+        private static ILCache InvokeCreateIlCache(IReadOnlyConfigSettings config, ILoggerService logger)
         {
             var method = typeof(RunScopeBuilder).GetMethod("CreateIlCache", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
@@ -1016,12 +1081,12 @@ namespace FolderDiffIL4DotNet.Tests
             {
             }
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
             {
                 Messages.Add(message);
             }
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
             {
                 Messages.Add(message);
             }

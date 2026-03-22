@@ -52,16 +52,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, "old-content");
             File.WriteAllText(newFileAbsolutePath, "new");
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
                 ShouldOutputILText = false,
                 EnableILCache = false,
                 OptimizeForNetworkShares = true
-            };
+            }.Build();
 
-            FileStream exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
+            FileStream? exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
             var logger = new TestLogger(entry =>
             {
                 if (entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal))
@@ -116,7 +116,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, new string('A', 2048));
             File.WriteAllText(newFileAbsolutePath, new string('B', 2048));
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
@@ -125,7 +125,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 1,
                 TextDiffChunkSizeKilobytes = 1
-            };
+            }.Build();
 
             var logger = new TestLogger();
             var resultLists = new FileDiffResultLists();
@@ -167,7 +167,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(oldFileAbsolutePath, new string('A', 2 * 1024 * 1024));
             File.WriteAllText(newFileAbsolutePath, new string('B', 2 * 1024 * 1024));
 
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 TextFileExtensions = new List<string> { ".txt" },
                 IgnoredExtensions = new List<string>(),
@@ -176,7 +176,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 OptimizeForNetworkShares = false,
                 TextDiffParallelThresholdKilobytes = 64,
                 TextDiffChunkSizeKilobytes = 32
-            };
+            }.Build();
 
             var logger = new TestLogger();
             var resultLists = new FileDiffResultLists();
@@ -217,7 +217,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 _onEntry = onEntry;
             }
 
-            public string LogFileAbsolutePath => null;
+            public string? LogFileAbsolutePath => null;
 
             public List<LogEntry> Entries { get; } = new();
 
@@ -225,10 +225,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public void CleanupOldLogFiles(int maxLogGenerations) { }
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
                 => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
             {
                 var entry = new LogEntry(logLevel, message, exception);
                 Entries.Add(entry);
@@ -236,6 +236,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception Exception);
+        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }

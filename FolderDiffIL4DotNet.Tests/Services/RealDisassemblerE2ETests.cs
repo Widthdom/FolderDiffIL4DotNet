@@ -69,7 +69,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var fileComparisonService = new FileComparisonService();
                 Assert.False(await fileComparisonService.DiffFilesByHashAsync(oldAssemblyPath, newAssemblyPath));
 
-                var config = new ConfigSettings
+                var config = new ConfigSettingsBuilder
                 {
                     TextFileExtensions = new List<string> { ".txt" },
                     IgnoredExtensions = new List<string>(),
@@ -78,7 +78,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     ShouldIgnoreILLinesContainingConfiguredStrings = false,
                     ILIgnoreLineContainingStrings = new List<string>(),
                     OptimizeForNetworkShares = false
-                };
+                }.Build();
 
                 var executionContext = new DiffExecutionContext(
                     oldDir,

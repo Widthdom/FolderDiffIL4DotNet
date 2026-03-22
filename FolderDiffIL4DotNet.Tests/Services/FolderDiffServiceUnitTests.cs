@@ -40,7 +40,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var executionContext = CreateExecutionContext(oldDir, newDir, reportDir);
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
@@ -87,7 +87,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -131,7 +131,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -173,7 +173,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 2),
                 progressReporter,
@@ -205,7 +205,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -246,7 +246,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -292,7 +292,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -336,7 +336,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -373,7 +373,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             };
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -441,7 +441,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var fileDiffService = new FakeFileDiffService(equalityByRelativePath);
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 4),
                 progressReporter,
@@ -486,7 +486,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1, ilPrecomputeBatchSize: 2),
                 progressReporter,
@@ -526,7 +526,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             // old dir == new dir: same absolute paths appear in both lists; precompute should deduplicate
             // old dir == new dir: 同じ絶対パスが両リストに出現し、precompute で重複排除される
             var service = new FolderDiffService(
@@ -566,7 +566,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             var service = new FolderDiffService(
                 CreateConfig(maxParallelism: 1),
                 progressReporter,
@@ -609,7 +609,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             // ilPrecomputeBatchSize = 0 falls back to default (DefaultILPrecomputeBatchSize), so all 6 paths go in one batch
             // ilPrecomputeBatchSize = 0 はデフォルト（DefaultILPrecomputeBatchSize）にフォールバックし、全 6 パスが 1 バッチに入る
             var service = new FolderDiffService(
@@ -644,7 +644,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
             var resultLists = new FileDiffResultLists();
             var logger = new TestLogger();
-            using var progressReporter = new ProgressReportService(new ConfigSettings());
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
             using var cts = new CancellationTokenSource();
             cts.Cancel();
             var service = new FolderDiffService(
@@ -659,7 +659,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteFolderDiffAsync(cts.Token));
         }
 
-        private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = ConfigSettings.DefaultILPrecomputeBatchSize) => new()
+        private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = ConfigSettings.DefaultILPrecomputeBatchSize) => new ConfigSettingsBuilder()
         {
             IgnoredExtensions = new List<string> { ".pdb" },
             TextFileExtensions = new List<string> { ".txt" },
@@ -675,7 +675,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             ILPrecomputeBatchSize = ilPrecomputeBatchSize,
             OptimizeForNetworkShares = false,
             AutoDetectNetworkShares = false
-        };
+        }.Build();
 
         private static DiffExecutionContext CreateExecutionContext(string oldDir, string newDir, string reportDir)
             => new(oldDir, newDir, reportDir, optimizeForNetworkShares: false, detectedNetworkOld: false, detectedNetworkNew: false);
@@ -778,7 +778,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private sealed class TestLogger : ILoggerService
         {
-            public string LogFileAbsolutePath => null;
+            public string? LogFileAbsolutePath => null;
 
             public List<LogEntry> Entries { get; } = new();
 
@@ -790,10 +790,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
             }
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
                 => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
 
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception exception = null)
+            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
                 => Entries.Add(new LogEntry(logLevel, message, exception));
         }
 
@@ -801,6 +801,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private sealed record FilesAreEqualCall(string FileRelativePath, int MaxParallel);
 
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception Exception);
+        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }

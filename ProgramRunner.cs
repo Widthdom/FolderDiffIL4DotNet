@@ -34,6 +34,7 @@ namespace FolderDiffIL4DotNet
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more modified files in 'new' have older last-modified timestamps than the corresponding files in 'old'. See diff_report.md for details.";
+        private const string TIP_PRINT_CONFIG = "Tip: Run with --print-config to display the effective configuration as JSON.";
         private const string HELP_TEXT =
             "Usage: " + Constants.APP_NAME + " <oldFolder> <newFolder> <reportLabel> [options]\n\n" +
             "Arguments:\n" +
@@ -43,7 +44,7 @@ namespace FolderDiffIL4DotNet
             "Options:\n" +
             "  --help, -h                  Show this help message and exit.\n" +
             "  --version                   Show the application version and exit.\n" +
-            "  --print-config              Print the effective configuration as JSON and exit.\n" +
+            "  --print-config              Print the effective configuration as indented JSON and exit.\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +
             "  --config <path>             Path to config.json (default: <exe>/config.json).\n" +
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
@@ -63,11 +64,21 @@ namespace FolderDiffIL4DotNet
             "  2  Invalid arguments or input paths.\n" +
             "  3  Configuration load or parse error.\n" +
             "  4  Diff execution or report generation failure.\n" +
-            "  1  Unexpected internal error.";
+            "  1  Unexpected internal error.\n\n" +
+            "Tip:\n" +
+            "  Use --print-config to display the effective configuration\n" +
+            "  (config.json + environment variable overrides) as JSON and exit.\n" +
+            "  This is useful for verifying which settings are active before a run.";
 
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ProgramRunner"/>.
+        /// <see cref="ProgramRunner"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
+        /// <param name="configService">Service for loading configuration files. / 設定ファイル読込サービス。</param>
         public ProgramRunner(ILoggerService logger, ConfigService configService)
         {
             ArgumentNullException.ThrowIfNull(logger);
@@ -120,29 +131,26 @@ namespace FolderDiffIL4DotNet
                 var appVersion = InitializeLoggerAndGetAppVersion();
                 var computerName = SystemInfo.GetComputerName();
 
-                var runArgumentsResult = TryValidateAndBuildRunArguments(args, opts);
-                if (!runArgumentsResult.IsSuccess)
-                {
-                    return runArgumentsResult.Failure!;
-                }
+                // Railway-oriented pipeline: each step short-circuits on failure.
+                // Railway 指向パイプライン: 各ステップは失敗時にショートサーキットします。
+                var argsResult = TryValidateAndBuildRunArguments(args, opts)
+                    .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath)
+                        .Bind(_ => StepResult<RunArguments>.FromValue(runArgs)));
 
-                var runArguments = runArgumentsResult.Value!;
-                var prepareReportsDirectoryResult = TryPrepareReportsDirectory(runArguments.ReportsFolderAbsolutePath);
-                if (!prepareReportsDirectoryResult.IsSuccess)
-                {
-                    return prepareReportsDirectoryResult.Failure!;
-                }
+                var pipelineResult = await argsResult
+                    .BindAsync(async runArgs =>
+                    {
+                        var builderResult = await TryLoadConfigBuilderAsync(opts.ConfigPath);
+                        return builderResult.Bind(builder =>
+                        {
+                            ApplyCliOverrides(builder, opts);
+                            return TryBuildConfig(builder);
+                        }).Bind(config => StepResult<(RunArguments RunArgs, ConfigSettings Config)>.FromValue((runArgs, config)));
+                    });
 
-                var configResult = await TryLoadConfigurationAsync(opts.ConfigPath);
-                if (!configResult.IsSuccess)
-                {
-                    return configResult.Failure!;
-                }
+                var completionStateResult = await pipelineResult
+                    .BindAsync(ctx => TryExecuteRunAsync(ctx.RunArgs, ctx.Config, appVersion, computerName));
 
-                var config = configResult.Value!;
-                ApplyCliOverrides(config, opts);
-
-                var completionStateResult = await TryExecuteRunAsync(runArguments, config, appVersion, computerName);
                 if (!completionStateResult.IsSuccess)
                 {
                     return completionStateResult.Failure!;
@@ -249,18 +257,41 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
-        /// Returns the configuration loading phase as a typed result.
-        /// 設定読込フェーズを型付き結果として返します。
+        /// Returns the configuration builder loading phase as a typed result.
+        /// 設定ビルダー読込フェーズを型付き結果として返します。
         /// </summary>
-        private async Task<StepResult<ConfigSettings>> TryLoadConfigurationAsync(string? configPath)
+        private async Task<StepResult<ConfigSettingsBuilder>> TryLoadConfigBuilderAsync(string? configPath)
         {
             try
             {
-                var config = await LoadConfigurationAsync(configPath);
-                return StepResult<ConfigSettings>.FromValue(config);
+                var builder = await LoadConfigBuilderAsync(configPath);
+                return StepResult<ConfigSettingsBuilder>.FromValue(builder);
             }
             catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                return StepResult<ConfigSettingsBuilder>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
+            }
+        }
+
+        /// <summary>
+        /// Validates and builds the immutable <see cref="ConfigSettings"/> from the builder.
+        /// ビルダーを検証し、イミュータブルな <see cref="ConfigSettings"/> を構築します。
+        /// </summary>
+        private StepResult<ConfigSettings> TryBuildConfig(ConfigSettingsBuilder builder)
+        {
+            try
+            {
+                var validationResult = builder.Validate();
+                if (!validationResult.IsValid)
+                {
+                    var details = string.Join(System.Environment.NewLine, validationResult.Errors);
+                    throw new InvalidDataException($"{ConfigService.ERROR_CONFIG_VALIDATION_PREFIX}{System.Environment.NewLine}{details}");
+                }
+
+                return StepResult<ConfigSettings>.FromValue(builder.Build());
+            }
+            catch (Exception ex) when (ex is InvalidDataException)
             {
                 return StepResult<ConfigSettings>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
             }
@@ -297,6 +328,12 @@ namespace FolderDiffIL4DotNet
         {
             _logger.LogMessage(AppLogLevel.Error, exception.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, exception);
             _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
+
+            if (exitCode == ProgramExitCode.ConfigurationError)
+            {
+                Console.Error.WriteLine(TIP_PRINT_CONFIG);
+            }
+
             return ProgramRunResult.Failure(exitCode);
         }
 
@@ -314,15 +351,15 @@ namespace FolderDiffIL4DotNet
             Directory.CreateDirectory(reportsFolderAbsolutePath);
         }
 
-        private async Task<ConfigSettings> LoadConfigurationAsync(string? configPath)
+        private async Task<ConfigSettingsBuilder> LoadConfigBuilderAsync(string? configPath)
         {
             _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
-            var config = await _configService.LoadConfigAsync(configPath);
+            var builder = await _configService.LoadConfigBuilderAsync(configPath);
             _logger.LogMessage(AppLogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
-            _logger.CleanupOldLogFiles(config.MaxLogGenerations);
+            _logger.CleanupOldLogFiles(builder.MaxLogGenerations);
             TimestampCache.Clear();
             _logger.LogMessage(AppLogLevel.Info, LOG_APP_STARTING, shouldOutputMessageToConsole: true);
-            return config;
+            return builder;
         }
 
         private async Task<RunCompletionState> ExecuteScopedRunAsync(
@@ -366,7 +403,7 @@ namespace FolderDiffIL4DotNet
             ConfigSettings config)
         {
             var ilCache = scopedProvider.GetService<ILCache>();
-            scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(
+            var reportContext = new ReportGenerationContext(
                 executionContext.OldFolderAbsolutePath,
                 executionContext.NewFolderAbsolutePath,
                 executionContext.ReportsFolderAbsolutePath,
@@ -375,23 +412,9 @@ namespace FolderDiffIL4DotNet
                 computerName,
                 config,
                 ilCache);
-            scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(
-                executionContext.OldFolderAbsolutePath,
-                executionContext.NewFolderAbsolutePath,
-                executionContext.ReportsFolderAbsolutePath,
-                appVersion,
-                elapsedTimeString,
-                computerName,
-                config,
-                ilCache);
-            scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(
-                executionContext.OldFolderAbsolutePath,
-                executionContext.NewFolderAbsolutePath,
-                executionContext.ReportsFolderAbsolutePath,
-                appVersion,
-                elapsedTimeString,
-                computerName,
-                config.ShouldGenerateAuditLog);
+            scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(reportContext);
+            scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(reportContext);
+            scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(reportContext);
         }
 
         private void PromptForExitKeyIfNeeded(CliOptions opts)
@@ -418,11 +441,6 @@ namespace FolderDiffIL4DotNet
                 || Console.IsOutputRedirected
                 || Console.IsErrorRedirected;
 
-        private static ILCache? CreateIlCache(ConfigSettings config, ILoggerService logger)
-        {
-            return RunScopeBuilder.CreateIlCache(config, logger);
-        }
-
         /// <summary>
         /// Formats elapsed time in a human-readable form (e.g. <c>0h 5m 30.1s</c>).
         /// Seconds are shown to one decimal place (tenths, truncated).
@@ -446,8 +464,8 @@ namespace FolderDiffIL4DotNet
         {
             try
             {
-                var config = await _configService.LoadConfigAsync(configPath);
-                Console.WriteLine(JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true }));
+                var builder = await _configService.LoadConfigBuilderAsync(configPath);
+                Console.WriteLine(JsonSerializer.Serialize(builder, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
             catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
@@ -459,29 +477,29 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
-        /// Overrides <see cref="ConfigSettings"/> values with CLI options, giving CLI flags priority over config.json.
-        /// CLI オプションの値で <see cref="ConfigSettings"/> を上書きします。config.json よりも CLI フラグを優先させます。
+        /// Overrides <see cref="ConfigSettingsBuilder"/> values with CLI options, giving CLI flags priority over config.json.
+        /// CLI オプションの値で <see cref="ConfigSettingsBuilder"/> を上書きします。config.json よりも CLI フラグを優先させます。
         /// </summary>
-        private static void ApplyCliOverrides(ConfigSettings config, CliOptions opts)
+        private static void ApplyCliOverrides(ConfigSettingsBuilder builder, CliOptions opts)
         {
             if (opts.ThreadsOverride.HasValue)
             {
-                config.MaxParallelism = opts.ThreadsOverride.Value;
+                builder.MaxParallelism = opts.ThreadsOverride.Value;
             }
 
             if (opts.NoIlCache)
             {
-                config.EnableILCache = false;
+                builder.EnableILCache = false;
             }
 
             if (opts.SkipIL)
             {
-                config.SkipIL = true;
+                builder.SkipIL = true;
             }
 
             if (opts.NoTimestampWarnings)
             {
-                config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
+                builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
             }
         }
     }

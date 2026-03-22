@@ -37,10 +37,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void GetNormalizedIlIgnoreContainingStrings_RemovesEmptyTrimAndDuplicates()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 ILIgnoreLineContainingStrings = new List<string> { "buildserver", " buildpath ", "", "buildserver", "   " }
-            };
+            }.Build();
 
             var result = InvokeGetNormalizedIlIgnoreContainingStrings(config);
 
@@ -103,13 +103,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task PrecomputeAsync_WhenOptimizeForNetworkShares_ExitsWithoutThrowing()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 OptimizeForNetworkShares = true,
                 EnableILCache = true,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
-            };
+            }.Build();
 
             var service = CreateILOutputService(config);
             await service.PrecomputeAsync(new[] { "/tmp/non-existent.dll" }, maxParallel: 0);
@@ -118,28 +118,76 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public async Task PrecomputeAsync_WithInvalidMaxParallel_ThrowsWhenNotNetworkOptimized()
         {
-            var config = new ConfigSettings
+            var config = new ConfigSettingsBuilder
             {
                 OptimizeForNetworkShares = false,
                 EnableILCache = false,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
-            };
+            }.Build();
 
             var service = CreateILOutputService(config);
             await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => service.PrecomputeAsync(Array.Empty<string>(), maxParallel: 0));
         }
 
         [Fact]
-        public async Task PrecomputeAsync_WithCacheDisabled_ReturnsWithoutThrowing()
+        public void SplitAndFilterIlLines_CombinesSplitAndFilter_MatchesSplitThenWhereBehavior()
         {
-            var config = new ConfigSettings
+            // Verify that the optimized single-pass method produces the same result as the
+            // original Split → Where → ToList chain.
+            var ilText = "// MVID: ABC\nclass Foo {\n}\n// MVID: DEF\n  return 0\n";
+            var ignoreStrings = new List<string>();
+
+            var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings });
+
+            // MVID lines should be excluded; non-MVID lines retained (including empty trailing line from final \n)
+            Assert.DoesNotContain(result, line => line.StartsWith("// MVID:", StringComparison.Ordinal));
+            Assert.Contains("class Foo {", result);
+            Assert.Contains("}", result);
+            Assert.Contains("  return 0", result);
+        }
+
+        [Fact]
+        public void SplitAndFilterIlLines_WithConfiguredIgnoreStrings_ExcludesMatchingLines()
+        {
+            var ilText = "line1\nline2 buildserver\nline3\n";
+            var ignoreStrings = new List<string> { "buildserver" };
+
+            var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings });
+
+            Assert.Equal(new[] { "line1", "line3", "" }, result);
+        }
+
+        [Fact]
+        public void PreSeedFileHash_WhenCacheIsNull_DoesNotThrow()
+        {
+            var config = new ConfigSettingsBuilder
             {
                 OptimizeForNetworkShares = false,
                 EnableILCache = false,
                 IgnoredExtensions = new(),
                 TextFileExtensions = new()
-            };
+            }.Build();
+            var service = CreateILOutputService(config);
+
+            // Should be a no-op (ILCache is null) and not throw
+            service.PreSeedFileHash("/some/path.dll", "a".PadRight(64, '0'));
+        }
+
+        [Fact]
+        public async Task PrecomputeAsync_WithCacheDisabled_ReturnsWithoutThrowing()
+        {
+            var config = new ConfigSettingsBuilder
+            {
+                OptimizeForNetworkShares = false,
+                EnableILCache = false,
+                IgnoredExtensions = new(),
+                TextFileExtensions = new()
+            }.Build();
             var service = CreateILOutputService(config);
             await service.PrecomputeAsync(new[] { "/tmp/non-existent.dll" }, maxParallel: 1);
         }
@@ -160,7 +208,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             return Assert.IsType<List<string>>(result);
         }
 
-        private static ILOutputService CreateILOutputService(ConfigSettings config, string ilOldFolder = null, string ilNewFolder = null)
+        private static ILOutputService CreateILOutputService(ConfigSettings config, string? ilOldFolder = null, string? ilNewFolder = null)
         {
             var logger = new LoggerService();
             var oldDir = ilOldFolder ?? Path.Combine(Path.GetTempPath(), "fd-iloutput-old-" + Guid.NewGuid().ToString("N"));

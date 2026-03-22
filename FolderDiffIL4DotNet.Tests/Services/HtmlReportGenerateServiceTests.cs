@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-html-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
-            _service = new HtmlReportGenerateService(_resultLists, _logger, new ConfigSettings());
+            _service = new HtmlReportGenerateService(_resultLists, _logger, new ConfigSettingsBuilder().Build());
         }
 
         public void Dispose()
@@ -43,9 +43,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("creates-file");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
 
             Assert.True(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
         }
@@ -54,12 +52,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void GenerateDiffReportHtml_ShouldGenerateHtmlReport_False_SkipsGeneration()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("skip-gen");
-            var config = CreateConfig();
-            config.ShouldGenerateHtmlReport = false;
+            var builder = CreateConfigBuilder();
+            builder.ShouldGenerateHtmlReport = false;
+            var config = builder.Build();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             Assert.False(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
         }
@@ -73,9 +73,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("src/App.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("type=\"checkbox\"", html);
@@ -93,9 +94,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.2)");
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("ILMismatch", html);
@@ -126,9 +128,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "d.txt"));
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("stat-label\">Unchanged</td>", html);
@@ -147,9 +150,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new-file.txt"));
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("#22863a", html);
@@ -164,9 +168,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "old-file.txt"));
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("#b31d28", html);
@@ -179,9 +184,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("sentinel");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("const __savedState__  = null;", html);
@@ -201,9 +207,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("sha256-reviewed");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Web Crypto API SHA256 computation
@@ -231,6 +238,71 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void HtmlEncode_EscapesBacktickAndNonAsciiCharacters()
+        {
+            // WebUtility.HtmlEncode handles characters beyond the original 5-char manual replacement
+            // WebUtility.HtmlEncode は従来の手動 5 文字置換を超えた文字もエスケープする
+            var encoded = HtmlReportGenerateService.HtmlEncode("path/with`backtick");
+            Assert.DoesNotContain("`", encoded);
+            Assert.Contains("&#96;", encoded);
+        }
+
+        [Fact]
+        public void HtmlEncode_PreservesNormalTextUnchanged()
+        {
+            // Normal ASCII text without special characters should pass through unchanged
+            // 特殊文字を含まない通常の ASCII テキストはそのまま返される
+            Assert.Equal("Hello World 123", HtmlReportGenerateService.HtmlEncode("Hello World 123"));
+        }
+
+        [Fact]
+        public void HtmlEncode_HandlesUnicodeCharacters()
+        {
+            // Japanese characters and other Unicode should be handled by WebUtility.HtmlEncode
+            // 日本語文字やその他の Unicode は WebUtility.HtmlEncode で適切に処理される
+            var input = "テスト<script>alert('xss')</script>";
+            var encoded = HtmlReportGenerateService.HtmlEncode(input);
+            Assert.DoesNotContain("<script>", encoded);
+            Assert.Contains("&lt;script&gt;", encoded);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ContainsContentSecurityPolicyMetaTag()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("csp-meta-tag");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // CSP meta tag must be present to mitigate XSS
+            // XSS 緩和のため CSP メタタグが存在しなければならない
+            Assert.Contains("Content-Security-Policy", html);
+            Assert.Contains("default-src 'none'", html);
+            Assert.Contains("style-src 'unsafe-inline'", html);
+            Assert.Contains("script-src 'unsafe-inline'", html);
+            Assert.Contains("img-src 'self'", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_CspMetaTagAppearsBetweenCharsetAndViewport()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("csp-order");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // CSP must appear after charset and before viewport for correct ordering
+            // CSP は charset の後、viewport の前に配置されなければならない
+            var charsetIdx = html.IndexOf("charset=\"UTF-8\"", StringComparison.Ordinal);
+            var cspIdx = html.IndexOf("Content-Security-Policy", StringComparison.Ordinal);
+            var viewportIdx = html.IndexOf("viewport", StringComparison.Ordinal);
+            Assert.True(charsetIdx < cspIdx, "CSP meta tag must appear after charset meta tag");
+            Assert.True(cspIdx < viewportIdx, "CSP meta tag must appear before viewport meta tag");
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_PathWithSpecialChars_IsHtmlEncoded()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("html-encode");
@@ -239,9 +311,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("src/<Module>.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Raw angle brackets must be HTML-escaped in file path cells
@@ -259,9 +332,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("section-heading\">", html);
@@ -287,9 +361,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("gamma.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -324,11 +399,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             _resultLists.RecordNewFileTimestampOlderThanOldWarning("payload.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
 
-            var config = CreateConfig();
-            config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder();
+            builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -355,11 +432,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("payload.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             _resultLists.RecordNewFileTimestampOlderThanOldWarning("payload.bin", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
 
-            var config = CreateConfig();
-            config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder();
+            builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -388,9 +467,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("myers-ref");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("Myers Diff Algorithm", html);
@@ -414,9 +494,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("app.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("<details", html);
@@ -439,9 +520,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("app.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: false);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.DoesNotContain("<details", html);
@@ -456,9 +538,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
             var config = CreateConfig(enableInlineDiff: true);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // ILMismatch without IL.txt files: IL text is unavailable, so no inline diff is rendered
@@ -484,9 +567,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("lib.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
             var config = CreateConfig(enableInlineDiff: true);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("<details", html);
@@ -510,12 +594,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddModifiedFileRelativePath("big.txt");
             _resultLists.RecordDiffDetail("big.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
-            var config = CreateConfig(enableInlineDiff: true);
-            config.InlineDiffMaxDiffLines = 1;  // 5 diff lines > 1 limit => skip / diff 出力 5 行 > 制限 1 → スキップ
+            var builder = CreateConfigBuilder(enableInlineDiff: true);
+            builder.InlineDiffMaxDiffLines = 1;  // 5 diff lines > 1 limit => skip / diff 出力 5 行 > 制限 1 → スキップ
+            var config = builder.Build();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("diff-skipped", html);
@@ -539,9 +625,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig(enableInlineDiff: true);
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("diff-skipped", html);
@@ -563,9 +650,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("ghost.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             // Report should be generated without crashing
             // クラッシュせずレポートが生成される
@@ -584,9 +672,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("f.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Summary should contain +N / -M counts
@@ -611,9 +700,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("b.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("<td class=\"col-no\">1</td>", html);
@@ -632,9 +722,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("col-align");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Justification / Timestamp / Diff Reason columns are center-aligned
@@ -665,13 +756,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void GenerateDiffReportHtml_WithILCacheStats_IncludesILCacheStatsSection()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("il-cache-stats");
-            var config = CreateConfig();
-            config.ShouldIncludeILCacheStatsInReport = true;
+            var builder = CreateConfigBuilder();
+            builder.ShouldIncludeILCacheStatsInReport = true;
+            var config = builder.Build();
             var ilCache = new ILCache(ilCacheDirectoryAbsolutePath: null);
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config, ilCache);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("IL Cache Stats", html);
@@ -686,12 +779,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(Path.Combine(oldDir, ignoredFile), "content");
             _resultLists.RecordIgnoredFile(ignoredFile, FileDiffResultLists.IgnoredFileLocation.Old);
 
-            var config = CreateConfig();
-            config.ShouldIncludeIgnoredFiles = true;
+            var builder = CreateConfigBuilder();
+            builder.ShouldIncludeIgnoredFiles = true;
+            var config = builder.Build();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("ignored.txt", html);
@@ -707,13 +802,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordIgnoredFile(ignoredFile,
                 FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New);
 
-            var config = CreateConfig();
-            config.ShouldIncludeIgnoredFiles = true;
-            config.ShouldOutputFileTimestamps = true;
+            var builder = CreateConfigBuilder();
+            builder.ShouldIncludeIgnoredFiles = true;
+            builder.ShouldOutputFileTimestamps = true;
+            var config = builder.Build();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("ts-ignored.txt", html);
@@ -728,12 +825,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(Path.Combine(newDir, file), "content");
             _resultLists.AddUnchangedFileRelativePath(file);
 
-            var config = CreateConfig();
-            config.ShouldOutputFileTimestamps = true;
+            var builder = CreateConfigBuilder();
+            builder.ShouldOutputFileTimestamps = true;
+            var config = builder.Build();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("same.txt", html);
@@ -747,13 +846,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             File.WriteAllText(Path.Combine(newDir, ignoredFile), "new-content");
             _resultLists.RecordIgnoredFile(ignoredFile, FileDiffResultLists.IgnoredFileLocation.New);
 
-            var config = CreateConfig();
-            config.ShouldIncludeIgnoredFiles = true;
-            config.ShouldOutputFileTimestamps = true;
+            var builder = CreateConfigBuilder();
+            builder.ShouldIncludeIgnoredFiles = true;
+            builder.ShouldOutputFileTimestamps = true;
+            var config = builder.Build();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("new-only-ignored.txt", html);
@@ -773,9 +874,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("app.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true, lazyRender: true);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -803,9 +905,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("f.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true, lazyRender: true);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -833,9 +936,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("app.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             var config = CreateConfig(enableInlineDiff: true, lazyRender: false);
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.DoesNotContain("data-diff-html=", html);
@@ -849,9 +953,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("lazy-render-js");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("setupLazyDiff", html);
@@ -880,11 +985,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddModifiedFileRelativePath("mod.dll");
             _resultLists.RecordDiffDetail("mod.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
 
-            var config = CreateConfig();
-            config.ShouldIncludeIgnoredFiles = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder();
+            builder.ShouldIncludeIgnoredFiles = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -940,11 +1047,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 },
             };
 
-            var config = CreateConfig(enableInlineDiff: true);
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder(enableInlineDiff: true);
+            builder.ShouldIncludeAssemblySemanticChangesInReport = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("Show assembly semantic changes", html);
@@ -968,11 +1077,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 },
             };
 
-            var config = CreateConfig(enableInlineDiff: true);
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder(enableInlineDiff: true);
+            builder.ShouldIncludeAssemblySemanticChangesInReport = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Caveat note should be present in the semantic changes section (EN text)
@@ -986,9 +1097,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var (oldDir, newDir, reportDir) = MakeDirs("semantic-caveat-css");
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // CSS rule for .sc-caveat should exist in the stylesheet
@@ -1012,11 +1124,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Entries = new List<MemberChangeEntry>(),
             };
 
-            var config = CreateConfig(enableInlineDiff: true);
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder(enableInlineDiff: true);
+            builder.ShouldIncludeAssemblySemanticChangesInReport = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // The "No structural changes" message should be present
@@ -1042,11 +1156,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 },
             };
 
-            var config = CreateConfig(enableInlineDiff: true);
-            config.ShouldIncludeAssemblySemanticChangesInReport = false;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder(enableInlineDiff: true);
+            builder.ShouldIncludeAssemblySemanticChangesInReport = false;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.DoesNotContain("Show assembly semantic changes", html);
@@ -1068,11 +1184,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 },
             };
 
-            var config = CreateConfig(enableInlineDiff: true, lazyRender: true);
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder(enableInlineDiff: true, lazyRender: true);
+            builder.ShouldIncludeAssemblySemanticChangesInReport = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Should contain a data-diff-html attribute for the semantic changes row
@@ -1095,9 +1213,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("sc-header-color");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Semantic changes table header must use lighter gray (#98989d), not the old dark gray (#6b6b6e)
@@ -1126,11 +1245,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 },
             };
 
-            var config = CreateConfig(enableInlineDiff: true, lazyRender: false);
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder(enableInlineDiff: true, lazyRender: false);
+            builder.ShouldIncludeAssemblySemanticChangesInReport = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Detail table must have checkbox header (✓) AND body checkboxes
@@ -1159,11 +1280,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 },
             };
 
-            var config = CreateConfig(enableInlineDiff: true, lazyRender: false);
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder(enableInlineDiff: true, lazyRender: false);
+            builder.ShouldIncludeAssemblySemanticChangesInReport = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Kind, Body, Access, and Modifiers all use <code> emphasis
@@ -1195,11 +1318,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 },
             };
 
-            var config = CreateConfig(enableInlineDiff: true, lazyRender: false);
-            config.ShouldIncludeAssemblySemanticChangesInReport = true;
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            var builder = CreateConfigBuilder(enableInlineDiff: true, lazyRender: false);
+            builder.ShouldIncludeAssemblySemanticChangesInReport = true;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Arrow notation wraps each side individually: <code>old</code> → <code>new</code>
@@ -1218,9 +1343,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("sc-th-css");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Both th.sc-col-cb and td.sc-col-cb CSS rules must exist
@@ -1239,9 +1365,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("sc-td-bg");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // td cells in the semantic-changes-table must have white background
@@ -1257,9 +1384,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("legend-table");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("legend-table", html);
@@ -1274,9 +1402,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("stat-border");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("border: 1px solid #ddd", html);
@@ -1297,9 +1426,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var config = CreateConfig(enableInlineDiff: true);
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("<code>InlineDiffMaxEditDistance</code>", html);
@@ -1314,9 +1444,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("diff-row-bg");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // diff-row background should be #edf0f4, not the old #f6f8fa
@@ -1335,9 +1466,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("src/app.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
 
             var config = CreateConfig();
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("btn-copy-path", html);
@@ -1353,9 +1485,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("hover-highlight");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null,
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains(":not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }", html);
@@ -1394,8 +1527,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddUnchangedFileRelativePath("aaa-text.txt");
             _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMatch);
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -1435,8 +1570,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.AddModifiedFileRelativePath("aaa-text.txt");
             _resultLists.RecordDiffDetail("aaa-text.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -1463,8 +1600,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void GenerateDiffReportHtml_WarningsTimestampRegressed_SortedByDiffDetailThenPath()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("warn-sort");
-            var config = CreateConfig(enableInlineDiff: false);
-            config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
+            var builder = CreateConfigBuilder(enableInlineDiff: false);
+            builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = true;
+            var config = builder.Build();
 
             _resultLists.AddModifiedFileRelativePath("zzz-sha256.bin");
             _resultLists.RecordDiffDetail("zzz-sha256.bin", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
@@ -1478,8 +1616,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("bbb-text.config", FileDiffResultLists.DiffDetailResult.TextMismatch);
             _resultLists.RecordNewFileTimestampOlderThanOldWarning("bbb-text.config", "2026-03-15 10:00:00", "2026-03-15 09:00:00");
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: null, computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -1529,6 +1669,194 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 HtmlReportGenerateService.LoadEmbeddedResource("NonExistent.Resource.Name"));
         }
 
+        // ── Filtering feature tests ─────────────────────────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_ContainsFilterBar()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-bar");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: filter bar HTML elements are present
+            // フィルターバーの HTML 要素が含まれていることを検証
+            Assert.Contains("class=\"filter-bar\"", html);
+            Assert.Contains("id=\"filter-imp-high\"", html);
+            Assert.Contains("id=\"filter-imp-medium\"", html);
+            Assert.Contains("id=\"filter-imp-low\"", html);
+            Assert.Contains("id=\"filter-ft-dll\"", html);
+            Assert.Contains("id=\"filter-ft-exe\"", html);
+            Assert.Contains("id=\"filter-ft-config\"", html);
+            Assert.Contains("id=\"filter-ft-resource\"", html);
+            Assert.Contains("id=\"filter-ft-other\"", html);
+            Assert.Contains("id=\"filter-unchecked\"", html);
+            Assert.Contains("id=\"filter-search\"", html);
+            Assert.Contains("applyFilters()", html);
+            Assert.Contains("resetFilters()", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_FilterBarIsInsideCtrlMarkers()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-ctrl");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: filter bar is between <!--CTRL--> and <!--/CTRL--> markers
+            // フィルターバーが <!--CTRL-->...<!--/CTRL--> マーカー内にあることを検証
+            int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
+            int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
+            int filterBar = html.IndexOf("class=\"filter-bar\"", StringComparison.Ordinal);
+            Assert.True(ctrlStart >= 0, "<!--CTRL--> marker not found");
+            Assert.True(ctrlEnd > ctrlStart, "<!--/CTRL--> marker not found or before <!--CTRL-->");
+            Assert.True(filterBar > ctrlStart && filterBar < ctrlEnd,
+                "filter-bar should be inside <!--CTRL-->...<!--/CTRL--> markers so it is stripped in reviewed mode");
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_FileRowsHaveDataSectionAttribute()
+        {
+            // Arrange: add some files to generate rows
+            // いくつかのファイルを追加して行を生成
+            var (oldDir, newDir, reportDir) = MakeDirs("data-section");
+            File.WriteAllText(Path.Combine(newDir, "new.dll"), "new-content");
+            var config = CreateConfig();
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new.dll"));
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: data-section attribute is present on rows
+            // data-section 属性が行に存在することを検証
+            Assert.Contains("data-section=\"add\"", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_FileRowsHaveDataExtAttribute()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("data-ext");
+            File.WriteAllText(Path.Combine(newDir, "new.dll"), "new-content");
+            var config = CreateConfig();
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new.dll"));
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: data-ext attribute with correct extension
+            // 正しい拡張子の data-ext 属性を検証
+            Assert.Contains("data-ext=\".dll\"", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ModifiedRowsWithImportance_HaveDataImportanceAttribute()
+        {
+            // Arrange: add a modified file with importance
+            // 重要度付きの変更ファイルを追加
+            var (oldDir, newDir, reportDir) = MakeDirs("data-imp");
+            string fileName = "lib.dll";
+            File.WriteAllBytes(Path.Combine(oldDir, fileName), new byte[] { 1, 2, 3 });
+            File.WriteAllBytes(Path.Combine(newDir, fileName), new byte[] { 4, 5, 6 });
+            var config = CreateConfig();
+            _resultLists.AddModifiedFileRelativePath(fileName);
+            _resultLists.RecordDiffDetail(fileName, FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+
+            // Set up importance via semantic changes
+            var summary = new AssemblySemanticChangesSummary
+            {
+                Entries = new[]
+                {
+                    new MemberChangeEntry("[ + ]", "TestClass", "System.Object", "public", "", "Method", "GetValue", "", "System.String", "", "", ChangeImportance.High)
+                }
+            };
+            _resultLists.FileRelativePathToAssemblySemanticChanges[fileName] = summary;
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: data-importance attribute present on the modified row
+            // 変更行に data-importance 属性が存在することを検証
+            Assert.Contains("data-importance=\"High\"", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_FilterBarCss_ContainsFilterHiddenRule()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-css");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: CSS rules for filter-hidden are present
+            // filter-hidden の CSS ルールが含まれていることを検証
+            Assert.Contains("tr.filter-hidden", html);
+            Assert.Contains("tr.diff-row.filter-hidden-parent", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_JsContainsApplyFiltersFunction()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-js");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: JS filtering functions are included
+            // JS フィルタリング関数が含まれていることを検証
+            Assert.Contains("function applyFilters()", html);
+            Assert.Contains("function resetFilters()", html);
+            Assert.Contains("function getFileTypeCategory(", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_JsCollectState_ExcludesFilterIds()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-exclude");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: __filterIds__ array exists in the JS to exclude filter inputs from collectState
+            // collectState からフィルタ入力を除外するための __filterIds__ 配列の存在を検証
+            Assert.Contains("__filterIds__", html);
+            Assert.Contains("filter-imp-high", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_DownloadReviewed_ClearsFilterHiddenClasses()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-download");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: downloadReviewed() contains filter-hidden clearing logic
+            // downloadReviewed() にフィルタ非表示クリアロジックが含まれていることを検証
+            Assert.Contains("tr.filter-hidden", html);
+            Assert.Contains("tr.filter-hidden-parent", html);
+            // The clearing should happen before outerHTML capture
+            // outerHTML キャプチャ前にクリアが行われるべき
+            int clearIdx = html.IndexOf("Clear all filter-hidden state", StringComparison.Ordinal);
+            int outerHtmlIdx = html.IndexOf("document.documentElement.outerHTML", StringComparison.Ordinal);
+            Assert.True(clearIdx >= 0, "Filter-hidden clearing comment not found in JS");
+            Assert.True(outerHtmlIdx > clearIdx,
+                "Filter-hidden clearing must occur before outerHTML capture");
+        }
+
         [Fact]
         public void GenerateDiffReportHtml_HeaderShowsDisassemblerAvailabilityTable()
         {
@@ -1543,9 +1871,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("disasm-avail");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -1567,9 +1893,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var (oldDir, newDir, reportDir) = MakeDirs("no-probe-html");
             var config = CreateConfig();
 
-            _service.GenerateDiffReportHtml(oldDir, newDir, reportDir,
-                appVersion: "1.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", config);
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
@@ -1578,7 +1902,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain("Disassembler Availability", html);
         }
 
-        private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => new()
+        private static ConfigSettingsBuilder CreateConfigBuilder(bool enableInlineDiff = true, bool lazyRender = false) => new()
         {
             IgnoredExtensions = new List<string>(),
             TextFileExtensions = new List<string>(),
@@ -1590,5 +1914,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             EnableInlineDiff = enableInlineDiff,
             InlineDiffLazyRender = lazyRender
         };
+
+        private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => CreateConfigBuilder(enableInlineDiff, lazyRender).Build();
+
+        private static ReportGenerationContext CreateReportContext(
+            string oldDir, string newDir, string reportDir,
+            ConfigSettings config, ILCache? ilCache = null)
+            => new(oldDir, newDir, reportDir,
+                appVersion: "1.0", elapsedTimeString: "0h 0m 1.0s",
+                computerName: "test-host", config, ilCache);
     }
 }

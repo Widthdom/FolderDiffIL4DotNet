@@ -15,7 +15,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void Dispose_StopsTimer_AndFurtherCallsAreIgnored()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
             service.SetLabel("test");
             service.ReportProgress(0.0);
 
@@ -33,14 +33,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [InlineData(100.01)]
         public void ReportProgress_OutOfRange_Throws(double invalidPercentage)
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
             Assert.Throws<ArgumentOutOfRangeException>(() => service.ReportProgress(invalidPercentage));
         }
 
         [Fact]
         public void ReportProgress_WhenProgressGoesBackward_IgnoresUpdate()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
 
             service.ReportProgress(10.0);
             service.ReportProgress(5.0);
@@ -52,7 +52,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void SetLabel_TrimsWhitespace_AndBlankResetsLabel()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
 
             service.SetLabel("  diffing  ");
             Assert.Equal("diffing", GetPrivateField<string>(service, "_labelPrefix"));
@@ -64,7 +64,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildRedirectedProgressLine_UsesLabelAndKeepAliveFormat()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
             service.SetLabel("Phase1");
 
             var result = InvokePrivate<string>(
@@ -79,7 +79,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_WithLabel_ContainsSpinnerAndPercentage()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
             service.SetLabel("Scan");
 
             var result = InvokePrivate<string>(
@@ -98,7 +98,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_WithoutLabelAndKeepAlive_AppendsSpinnerFrame()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
 
             var result = InvokePrivate<string>(
                 service,
@@ -114,7 +114,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_WithCustomSpinnerFrames_UsesFirstConfiguredFrame()
         {
-            var config = new ConfigSettings { SpinnerFrames = [">>", "<<", "=="] };
+            var config = new ConfigSettingsBuilder { SpinnerFrames = [">>", "<<", "=="] }.Build();
             var service = new ProgressReportService(config);
 
             var result = InvokePrivate<string>(
@@ -131,7 +131,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_NegativePercentage_ClampsFilledToZero()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
 
             // Pass a negative percentage (bypasses ReportProgress validation via reflection)
             var result = InvokePrivate<string>(
@@ -148,7 +148,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_OverHundredPercent_ClampsFilledToBarWidth()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
 
             var result = InvokePrivate<string>(
                 service,
@@ -164,7 +164,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_WithoutLabelAndNoKeepAlive_ReturnsSimpleLine()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
 
             var result = InvokePrivate<string>(
                 service,
@@ -180,7 +180,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void BuildProgressBarLine_CalledTwice_UsesCachedBarWidth()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
 
             var first = InvokePrivate<string>(service, "BuildProgressBarLine", "30.00", 30.0, false);
             var second = InvokePrivate<string>(service, "BuildProgressBarLine", "60.00", 60.0, false);
@@ -192,7 +192,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void ReportProgress_SamePercentageTwice_WithStalledConsoleWrite_EmitsKeepAlive()
         {
-            var service = new ProgressReportService(new ConfigSettings());
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
 
             // First call to set _lastFormattedPercentage
             service.ReportProgress(50.0);

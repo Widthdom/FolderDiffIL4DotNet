@@ -55,6 +55,17 @@ namespace FolderDiffIL4DotNet.Services.Caching
             return new ILCacheReportStats(hits, misses, stores, evicted, expired);
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="ILCache"/> with the specified storage and quota settings.
+        /// 指定のストレージおよびクォータ設定で <see cref="ILCache"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="ilCacheDirectoryAbsolutePath">Absolute path to the disk cache directory. / ディスクキャッシュディレクトリの絶対パス。</param>
+        /// <param name="logger">Logger for diagnostic output (defaults to a new <see cref="LoggerService"/>). / 診断出力用ロガー。</param>
+        /// <param name="ilCacheMaxMemoryEntries">Maximum number of entries held in memory. / メモリ内最大エントリ数。</param>
+        /// <param name="timeToLive">Optional TTL for memory entries. / メモリエントリの有効期間（省略可）。</param>
+        /// <param name="statsLogIntervalSeconds">Interval in seconds between periodic cache statistics log output. / キャッシュ統計ログ出力の間隔（秒）。</param>
+        /// <param name="ilCacheMaxDiskFileCount">Maximum number of files on disk (0 = unlimited). / ディスク上の最大ファイル数（0 = 無制限）。</param>
+        /// <param name="ilCacheMaxDiskMegabytes">Maximum disk usage in MB (0 = unlimited). / ディスク使用量上限（MB、0 = 無制限）。</param>
         public ILCache(string ilCacheDirectoryAbsolutePath, ILoggerService? logger = null, int ilCacheMaxMemoryEntries = ILMemoryCache.DefaultMaxEntries, TimeSpan? timeToLive = null, int statsLogIntervalSeconds = DEFAULT_STATS_LOG_INTERVAL_SECONDS, int ilCacheMaxDiskFileCount = 0, long ilCacheMaxDiskMegabytes = 0)
         {
             _logger = logger ?? new LoggerService();
@@ -68,6 +79,15 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             _statsLogInterval = TimeSpan.FromSeconds(statsLogIntervalSeconds);
         }
+
+        /// <summary>
+        /// Pre-seeds the SHA256 hash for a file so that <see cref="BuildILCacheKey"/> does not recompute it.
+        /// ファイルの SHA256 ハッシュを事前登録し、<see cref="BuildILCacheKey"/> での再計算を回避します。
+        /// </summary>
+        /// <param name="fileAbsolutePath">Absolute path to the file. / ファイルの絶対パス。</param>
+        /// <param name="sha256Hex">64-character lowercase hex SHA256 hash. / 64 桁小文字 16 進 SHA256 ハッシュ。</param>
+        public void PreSeedFileHash(string fileAbsolutePath, string sha256Hex)
+            => _memoryCache.PreSeedFileHash(fileAbsolutePath, sha256Hex);
 
         /// <summary>
         /// Pre-warms SHA256 hashes of the target files in parallel to amortize I/O latency for subsequent cache-key generation.
