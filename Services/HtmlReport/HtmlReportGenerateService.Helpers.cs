@@ -207,7 +207,7 @@ namespace FolderDiffIL4DotNet.Services
             => importance switch
             {
                 ChangeImportance.High => "color:#d1242f;font-weight:bold",
-                ChangeImportance.Medium => "color:#bf8700;font-weight:bold",
+                ChangeImportance.Medium => "color:#d97706;font-weight:bold",
                 _ => ""
             };
 

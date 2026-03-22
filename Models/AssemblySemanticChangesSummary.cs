@@ -55,11 +55,18 @@ namespace FolderDiffIL4DotNet.Models
         }
 
         /// <summary>
-        /// Returns entries sorted by Importance descending (High → Medium → Low), then by original order.
-        /// Importance 降順（High → Medium → Low）でソートされたエントリを返します。
+        /// Returns entries sorted by Change (Added → Removed → Modified),
+        /// then by Importance descending (High → Medium → Low), then by original order.
+        /// Change（Added → Removed → Modified）、次に Importance 降順（High → Medium → Low）でソートされたエントリを返します。
         /// </summary>
         public IReadOnlyList<MemberChangeEntry> EntriesByImportance =>
-            Entries.OrderByDescending(e => e.Importance).ToList();
+            Entries
+                .OrderBy(e => ChangeOrder(e.Change))
+                .ThenByDescending(e => e.Importance)
+                .ToList();
+
+        private static int ChangeOrder(string change)
+            => change switch { "Added" => 0, "Removed" => 1, "Modified" => 2, _ => 3 };
 
         private int CountByChange(string change)
         {

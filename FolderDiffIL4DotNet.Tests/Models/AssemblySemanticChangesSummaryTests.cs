@@ -105,7 +105,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         [Fact]
-        public void EntriesByImportance_SortsHighFirst()
+        public void EntriesByImportance_SortsByChangeThenImportance()
         {
             var summary = new AssemblySemanticChangesSummary
             {
@@ -114,12 +114,21 @@ namespace FolderDiffIL4DotNet.Tests.Models
                     new("Modified", "MyApp.Service", "", "public", "", "Method", "Low1", "", "void", "", "Changed", ChangeImportance.Low),
                     new("Removed", "MyApp.Service", "", "public", "", "Method", "High1", "", "void", "", "", ChangeImportance.High),
                     new("Added", "MyApp.Service", "", "public", "", "Method", "Med1", "", "void", "", "", ChangeImportance.Medium),
+                    new("Added", "MyApp.Service", "", "public", "", "Method", "High2", "", "void", "", "", ChangeImportance.High),
                 },
             };
             var sorted = summary.EntriesByImportance;
+            // Added first (sorted by importance desc within Added)
+            Assert.Equal("Added", sorted[0].Change);
             Assert.Equal(ChangeImportance.High, sorted[0].Importance);
+            Assert.Equal("Added", sorted[1].Change);
             Assert.Equal(ChangeImportance.Medium, sorted[1].Importance);
-            Assert.Equal(ChangeImportance.Low, sorted[2].Importance);
+            // Then Removed
+            Assert.Equal("Removed", sorted[2].Change);
+            Assert.Equal(ChangeImportance.High, sorted[2].Importance);
+            // Then Modified
+            Assert.Equal("Modified", sorted[3].Change);
+            Assert.Equal(ChangeImportance.Low, sorted[3].Importance);
         }
     }
 }
