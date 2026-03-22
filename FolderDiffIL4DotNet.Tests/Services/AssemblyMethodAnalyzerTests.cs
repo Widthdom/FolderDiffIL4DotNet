@@ -365,7 +365,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // No parameters / パラメータなし
             var noParamSig = new MethodSignature<string>(
-                SignatureHeader.Default,
+                default(SignatureHeader),
                 "System.Void",
                 0,
                 0,
@@ -374,7 +374,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // With parameters / パラメータあり
             var withParamsSig = new MethodSignature<string>(
-                SignatureHeader.Default,
+                default(SignatureHeader),
                 "System.Int32",
                 0,
                 2,

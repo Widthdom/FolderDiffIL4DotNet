@@ -566,7 +566,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var argsField = itemType.GetField("Item2");
                 Assert.NotNull(argsField);
                 var args = Assert.IsType<string[]>(argsField.GetValue(item));
-                if (args.Contains("-o"))
+                if (Array.IndexOf(args, "-o") >= 0)
                 {
                     hasOutputArg = true;
                 }

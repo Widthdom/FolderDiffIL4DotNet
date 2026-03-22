@@ -439,7 +439,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 HashResult = false,
                 DotNetDetectionResult = new DotNetExecutableDetectionResult(
-                    DotNetExecutableDetectionStatus.DetectionFailed,
+                    DotNetExecutableDetectionStatus.Failed,
                     new IOException("detection error"))
             };
             var ilOutputService = new FakeILOutputService();
