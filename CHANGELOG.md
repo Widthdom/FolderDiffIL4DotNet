@@ -47,6 +47,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Document Disassembler Availability edge cases in Developer Guide** — Added bilingual (EN/JP) documentation to [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) describing the Disassembler Availability table behavior for edge cases: all-text-files scenario, `SkipIL` mode, no tools available, and null/empty probe results.
 
+- **Simplify Verify integrity for `.sha256` files** — When verifying a `.sha256` file, the reviewed HTML no longer needs a second file picker because the HTML is "self" — it already has the final hash embedded. Added a `__finalSha256__` constant that is populated at download time via a second placeholder technique (`fff...f`). The `.sha256` verification path now compares the file content directly against `__finalSha256__` and shows a pass/fail result. Updated [`diff_report.js`](Services/HtmlReport/diff_report.js) and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 #### Fixed
 
 - **Legend table header border color mismatch** — Changed `legend-table th` border from `1px solid #ddd` to `1px solid #bbb` in both [`diff_report.css`](Services/HtmlReport/diff_report.css) and [`doc/samples/diff_report.html`](doc/samples/diff_report.html), matching the standard table header border color used by `[ x ] Ignored Files` and other file listing tables.
@@ -60,6 +62,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **"an SHA256" article typo** — Corrected "only an SHA256 hash comparison" to "only a SHA256 hash comparison" in [`doc/samples/diff_report.md`](doc/samples/diff_report.md) and [`doc/samples/diff_report.html`](doc/samples/diff_report.html) to match the constant in [`Constants.cs`](Common/Constants.cs).
 
 - **Strict IOException handling in preflight write-permission check** — `CheckReportsParentWritableOrThrow` previously caught `IOException` and silently returned, which could mask environment-specific permission problems (e.g. read-only filesystem mounts, network-share write failures, path-related I/O errors) that are not covered by the upstream disk-space check. The method now logs the cause-specific `IOException` details via `ILoggerService` and re-throws as a new `IOException` with a descriptive message, enabling fail-fast diagnostics. Both `ValidateRunDirectories` and `CheckReportsParentWritableOrThrow` now accept an `ILoggerService` parameter, consistent with the existing `ValidateReportLabel` pattern. Updated existing tests (`CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_ThrowsUnauthorizedAccessException`, `CheckReportsParentWritableOrThrow_NonexistentParent_DoesNotThrow`, `ValidateRunDirectories_*`) to pass the logger argument. Added new tests `CheckReportsParentWritableOrThrow_WritableDirectory_DoesNotThrow` and `CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_LogsAndThrowsIOException` in [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs).
+
+- **Shorthand type names in sample HTML** — Replaced C# alias type names (`string`, `int`, `void`) with fully qualified .NET names (`System.String`, `System.Int32`, `System.Void`) in all base64-encoded semantic changes blocks in [`doc/samples/diff_report.html`](doc/samples/diff_report.html). The `SimpleSignatureTypeProvider` always outputs fully qualified names, so the sample must match.
+
+- **Missing parameter name in sample HTML** — Fixed the Execute method entry in [`doc/samples/diff_report.html`](doc/samples/diff_report.html) base64 block where the Parameters column showed `System.String` without a parameter name. Corrected to `System.String command = null` to demonstrate both parameter naming and default value syntax.
+
+- **Undefined `scheduleSave()` function call** — Fixed `collapseAll()` in [`diff_report.js`](Services/HtmlReport/diff_report.js) which called `scheduleSave()` — a function that was never defined. Replaced with `autoSave()` which is the correct existing function. Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) to match.
+
+- **CI test assertion mismatch after `<code>` wrapping change** — Test `GenerateDiffReportHtml_AssemblySemanticChanges_KindBodyUseCodeEmphasis_AccessModifiersDoNot` was asserting that Access/Modifiers columns should NOT be wrapped in `<code>` tags, but the output logic now wraps them. Renamed test to `KindBodyAccessModifiersUseCodeEmphasis` and updated assertions to expect `<code>` wrapping. Added new test `AccessArrowWrapsEachSideInCode` verifying arrow-aware formatting in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
 
 #### Added
 
@@ -549,6 +559,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **開発者ガイドに Disassembler Availability エッジケースを文書化** — [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) に Disassembler Availability テーブルのエッジケース動作（全テキストファイル、`SkipIL` モード、ツール未検出、null/空のプローブ結果）についてバイリンガル（EN/JP）ドキュメントを追加。
 
+- **`.sha256` ファイルの Verify integrity を簡素化** — `.sha256` ファイルの検証時に、レビュー済み HTML 自体が最終ハッシュを埋め込んでいるため、2 つ目のファイル選択ダイアログが不要になりました。ダウンロード時に第 2 プレースホルダ方式（`fff...f`）で `__finalSha256__` 定数に最終ハッシュを埋め込みます。`.sha256` 検証パスではファイル内容を `__finalSha256__` と直接比較し、合格/不合格の結果を表示します。[`diff_report.js`](Services/HtmlReport/diff_report.js) および [`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
+
 #### 修正
 
 - **凡例テーブルヘッダの枠線色の不一致** — `legend-table th` の枠線を `1px solid #ddd` から `1px solid #bbb` に変更し、[`diff_report.css`](Services/HtmlReport/diff_report.css) と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) の両方で `[ x ] Ignored Files` 等のファイル一覧テーブルのヘッダ枠線色と一致させました。
@@ -562,6 +574,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **「an SHA256」冠詞の誤り** — [`doc/samples/diff_report.md`](doc/samples/diff_report.md) と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) の「only an SHA256 hash comparison」を [`Constants.cs`](Common/Constants.cs) の定数と一致するよう「only a SHA256 hash comparison」に修正。
 
 - **プリフライト書込権限チェックの IOException ハンドリング厳密化** — `CheckReportsParentWritableOrThrow` が `IOException` を catch して暗黙的に return していたため、読み取り専用ファイルシステムマウントやネットワーク共有の書込失敗など、ディスク容量チェックではカバーされない環境固有の権限問題を取りこぼす可能性がありました。IOException 発生時に `ILoggerService` 経由で原因別の詳細をログ出力し、説明的なメッセージ付きの新しい `IOException` として再スローすることで fail-fast 動作を実現しました。`ValidateRunDirectories` と `CheckReportsParentWritableOrThrow` の両メソッドに `ILoggerService` パラメータを追加し、既存の `ValidateReportLabel` パターンと一貫性を持たせました。既存テスト（`CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_ThrowsUnauthorizedAccessException`、`CheckReportsParentWritableOrThrow_NonexistentParent_DoesNotThrow`、`ValidateRunDirectories_*`）をロガー引数に対応するよう更新。新テスト `CheckReportsParentWritableOrThrow_WritableDirectory_DoesNotThrow` および `CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_LogsAndThrowsIOException` を [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs) に追加。
+
+- **サンプル HTML の短縮型名の修正** — [`doc/samples/diff_report.html`](doc/samples/diff_report.html) の全 base64 エンコードセマンティック変更ブロックで、C# エイリアス型名（`string`、`int`、`void`）を完全修飾 .NET 名（`System.String`、`System.Int32`、`System.Void`）に修正。`SimpleSignatureTypeProvider` は常に完全修飾名を出力するため、サンプルもそれと一致させる必要がありました。
+
+- **サンプル HTML のパラメータ名の欠落** — [`doc/samples/diff_report.html`](doc/samples/diff_report.html) の base64 ブロックで Execute メソッドの Parameters 列がパラメータ名なしの `System.String` を表示していた問題を修正。`System.String command = null` に修正し、パラメータ命名とデフォルト値構文の両方を示すようにしました。
+
+- **未定義の `scheduleSave()` 関数呼び出し** — [`diff_report.js`](Services/HtmlReport/diff_report.js) の `collapseAll()` が未定義の `scheduleSave()` を呼び出していた問題を修正。正しい既存関数 `autoSave()` に置換。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) も同様に更新。
+
+- **`<code>` ラッピング変更後の CI テストアサーション不整合** — テスト `GenerateDiffReportHtml_AssemblySemanticChanges_KindBodyUseCodeEmphasis_AccessModifiersDoNot` が Access/Modifiers 列を `<code>` タグで囲まないことを検証していたが、出力ロジックの変更でタグ付きになりアサーション失敗。テスト名を `KindBodyAccessModifiersUseCodeEmphasis` にリネームし、`<code>` ラッピングを期待するようアサーションを更新。矢印対応フォーマットを検証する新テスト `AccessArrowWrapsEachSideInCode` を [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) に追加。
 
 #### 追加
 
