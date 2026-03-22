@@ -201,6 +201,24 @@
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
+    .filter-bar {
+      position: sticky; top: 2.7rem;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      background: rgba(245,245,247,0.85);
+      padding: 0.35rem 2rem; margin: 0 -2rem;
+      display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; z-index: 99;
+      border-top: 1px solid #e0e0e0; font-size: 12px;
+    }
+    .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; }
+    .filter-chip { display: inline-flex; align-items: center; gap: 0.2em; white-space: nowrap; cursor: pointer; }
+    .filter-chip input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
+    .filter-sep { width: 1px; height: 1.2em; background: #ccc; margin: 0 0.2rem; }
+    .filter-search { padding: 0.25rem 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; font-family: inherit; width: 14em; outline: none; }
+    .filter-search:focus { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
+    .filter-reset-btn { font-size: 11px !important; padding: 0.25rem 0.7rem !important; }
+    tr.filter-hidden { display: none !important; }
+    tr.diff-row.filter-hidden-parent { display: none !important; }
   </style>
 </head>
 <body>
@@ -210,6 +228,24 @@
   <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
   <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
   <span id="save-status" class="save-status"></span>
+</div>
+<div class="filter-bar">
+  <label class="filter-label">Importance:</label>
+  <label class="filter-chip"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"> <span style="color:#d1242f;font-weight:bold">High</span></label>
+  <label class="filter-chip"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"> <span style="color:#d97706;font-weight:bold">Medium</span></label>
+  <label class="filter-chip"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"> Low</label>
+  <span class="filter-sep"></span>
+  <label class="filter-label">File Type:</label>
+  <label class="filter-chip"><input type="checkbox" id="filter-ft-dll" checked onchange="applyFilters()"> DLL</label>
+  <label class="filter-chip"><input type="checkbox" id="filter-ft-exe" checked onchange="applyFilters()"> EXE</label>
+  <label class="filter-chip"><input type="checkbox" id="filter-ft-config" checked onchange="applyFilters()"> Config</label>
+  <label class="filter-chip"><input type="checkbox" id="filter-ft-resource" checked onchange="applyFilters()"> Resource</label>
+  <label class="filter-chip"><input type="checkbox" id="filter-ft-other" checked onchange="applyFilters()"> Other</label>
+  <span class="filter-sep"></span>
+  <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
+  <span class="filter-sep"></span>
+  <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()">
+  <button class="btn btn-clear filter-reset-btn" onclick="resetFilters()">Reset filters</button>
 </div>
 <!--/CTRL-->
 <main>
@@ -293,7 +329,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr>
+<tr data-section="ign" data-ext=".log">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_ign_0"></td>
   <td class="col-reason"><input type="text" id="reason_ign_0"></td>
@@ -303,7 +339,7 @@
   <td class="col-diff"><code>old</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr>
+<tr data-section="ign" data-ext=".cache">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_ign_1"></td>
   <td class="col-reason"><input type="text" id="reason_ign_1"></td>
@@ -313,7 +349,7 @@
   <td class="col-diff"><code>new</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr>
+<tr data-section="ign" data-ext=".pdb">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_ign_2"></td>
   <td class="col-reason"><input type="text" id="reason_ign_2"></td>
@@ -349,7 +385,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr>
+<tr data-section="unch" data-ext=".bin">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_0"></td>
   <td class="col-reason"><input type="text" id="reason_unch_0"></td>
@@ -359,7 +395,7 @@
   <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr>
+<tr data-section="unch" data-ext=".dll">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_1"></td>
   <td class="col-reason"><input type="text" id="reason_unch_1"></td>
@@ -369,7 +405,7 @@
   <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr>
+<tr data-section="unch" data-ext=".dll">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_2"></td>
   <td class="col-reason"><input type="text" id="reason_unch_2"></td>
@@ -379,7 +415,7 @@
   <td class="col-diff"><code>ILMatch</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
-<tr>
+<tr data-section="unch" data-ext=".json">
   <td class="col-no">4</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_3"></td>
   <td class="col-reason"><input type="text" id="reason_unch_3"></td>
@@ -389,7 +425,7 @@
   <td class="col-diff"><code>TextMatch</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr>
+<tr data-section="unch" data-ext=".md">
   <td class="col-no">5</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_4"></td>
   <td class="col-reason"><input type="text" id="reason_unch_4"></td>
@@ -425,7 +461,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr>
+<tr data-section="add" data-ext=".md">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_add_0"></td>
   <td class="col-reason"><input type="text" id="reason_add_0"></td>
@@ -461,7 +497,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr>
+<tr data-section="rem" data-ext=".txt">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_rem_0"></td>
   <td class="col-reason"><input type="text" id="reason_rem_0"></td>
@@ -497,7 +533,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr>
+<tr data-section="mod" data-ext=".config">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
   <td class="col-reason"><input type="text" id="reason_mod_0"></td>
@@ -514,7 +550,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".ini">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
   <td class="col-reason"><input type="text" id="reason_mod_1"></td>
@@ -531,7 +567,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".edmx">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_2"></td>
   <td class="col-reason"><input type="text" id="reason_mod_2"></td>
@@ -544,7 +580,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#3 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 2001 vs 2001 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".xml">
   <td class="col-no">4</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_3"></td>
   <td class="col-reason"><input type="text" id="reason_mod_3"></td>
@@ -557,7 +593,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#4 Inline diff skipped: diff too large (12500 diff lines; limit is 10000). Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>10000</code>)</p></td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".resx">
   <td class="col-no">5</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_4"></td>
   <td class="col-reason"><input type="text" id="reason_mod_4"></td>
@@ -574,7 +610,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".config">
   <td class="col-no">6</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_5"></td>
   <td class="col-reason"><input type="text" id="reason_mod_5"></td>
@@ -591,7 +627,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".dll" data-importance="High">
   <td class="col-no">7</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_6"></td>
   <td class="col-reason"><input type="text" id="reason_mod_6"></td>
@@ -615,7 +651,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".dll" data-importance="High">
   <td class="col-no">8</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_7a"></td>
   <td class="col-reason"><input type="text" id="reason_mod_7a"></td>
@@ -639,7 +675,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".dll" data-importance="High">
   <td class="col-no">9</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_7"></td>
   <td class="col-reason"><input type="text" id="reason_mod_7"></td>
@@ -663,7 +699,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".dll" data-importance="Medium">
   <td class="col-no">9</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_8"></td>
   <td class="col-reason"><input type="text" id="reason_mod_8"></td>
@@ -676,7 +712,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#9 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 3200 vs 3200 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".dll" data-importance="Medium">
   <td class="col-no">10</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_9a"></td>
   <td class="col-reason"><input type="text" id="reason_mod_9a"></td>
@@ -700,7 +736,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".dll" data-importance="Medium">
   <td class="col-no">11</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_9"></td>
   <td class="col-reason"><input type="text" id="reason_mod_9"></td>
@@ -724,7 +760,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".dll" data-importance="Low">
   <td class="col-no">12</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_10"></td>
   <td class="col-reason"><input type="text" id="reason_mod_10"></td>
@@ -748,7 +784,7 @@
     </details>
   </td>
 </tr>
-<tr>
+<tr data-section="mod" data-ext=".bin">
   <td class="col-no">13</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_11"></td>
   <td class="col-reason"><input type="text" id="reason_mod_11"></td>
@@ -993,9 +1029,12 @@
     document.body.appendChild(vi);
   });
 
+  var __filterIds__ = ['filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
+
   function collectState() {
     var s = {};
     document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
+      if (__filterIds__.indexOf(el.id) >= 0) return;
       s[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
     });
     return s;
@@ -1019,6 +1058,9 @@
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
+    // 2. Clear all filter-hidden state so reviewed HTML shows all rows
+    document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
+    document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
     var html    = document.documentElement.outerHTML;
     // Restore open details in the live page
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
@@ -1281,6 +1323,87 @@
     document.querySelectorAll('th.th-resizable').forEach(function(th) {
       initColResizeSingle(th);
     });
+  }
+
+  // ── Filtering ──────────────────────────────────────────────────────────
+  var __configExts__  = ['.json','.xml','.config','.yaml','.yml','.ini','.toml','.env','.props','.targets','.csproj','.vbproj','.fsproj','.sln'];
+  var __resourceExts__ = ['.resx','.resources','.png','.jpg','.jpeg','.ico','.svg','.gif','.bmp','.wav','.mp3','.ttf','.woff','.woff2','.eot'];
+  function getFileTypeCategory(ext) {
+    if (!ext) return 'other';
+    ext = ext.toLowerCase();
+    if (ext === '.dll') return 'dll';
+    if (ext === '.exe') return 'exe';
+    if (__configExts__.indexOf(ext) >= 0) return 'config';
+    if (__resourceExts__.indexOf(ext) >= 0) return 'resource';
+    return 'other';
+  }
+  function applyFilters() {
+    var impHigh   = document.getElementById('filter-imp-high');
+    var impMedium = document.getElementById('filter-imp-medium');
+    var impLow    = document.getElementById('filter-imp-low');
+    var ftDll     = document.getElementById('filter-ft-dll');
+    var ftExe     = document.getElementById('filter-ft-exe');
+    var ftConfig  = document.getElementById('filter-ft-config');
+    var ftResource= document.getElementById('filter-ft-resource');
+    var ftOther   = document.getElementById('filter-ft-other');
+    var unchecked = document.getElementById('filter-unchecked');
+    var searchEl  = document.getElementById('filter-search');
+    if (!impHigh) return;
+    var impFilter = { High: impHigh.checked, Medium: impMedium.checked, Low: impLow.checked };
+    var ftFilter  = { dll: ftDll.checked, exe: ftExe.checked, config: ftConfig.checked, resource: ftResource.checked, other: ftOther.checked };
+    var onlyUnchecked = unchecked.checked;
+    var searchText = (searchEl.value || '').toLowerCase().trim();
+    var impActive = !(impFilter.High && impFilter.Medium && impFilter.Low);
+    var ftActive = !(ftFilter.dll && ftFilter.exe && ftFilter.config && ftFilter.resource && ftFilter.other);
+    document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
+      var show = true;
+      if (ftActive) {
+        var ext = tr.getAttribute('data-ext') || '';
+        var cat = getFileTypeCategory(ext);
+        if (!ftFilter[cat]) show = false;
+      }
+      if (show && impActive) {
+        var imp = tr.getAttribute('data-importance');
+        if (imp) {
+          if (!impFilter[imp]) show = false;
+        }
+      }
+      if (show && onlyUnchecked) {
+        var cb = tr.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) show = false;
+      }
+      if (show && searchText) {
+        var pathEl = tr.querySelector('.path-text');
+        var pathText = pathEl ? pathEl.textContent.toLowerCase() : '';
+        if (pathText.indexOf(searchText) < 0) show = false;
+      }
+      if (show) {
+        tr.classList.remove('filter-hidden');
+      } else {
+        tr.classList.add('filter-hidden');
+      }
+      var next = tr.nextElementSibling;
+      while (next && !next.hasAttribute('data-section')) {
+        if (show) {
+          next.classList.remove('filter-hidden-parent');
+        } else {
+          next.classList.add('filter-hidden-parent');
+        }
+        next = next.nextElementSibling;
+      }
+    });
+    autoSave();
+  }
+  function resetFilters() {
+    ['filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.checked = true;
+    });
+    var uc = document.getElementById('filter-unchecked');
+    if (uc) uc.checked = false;
+    var se = document.getElementById('filter-search');
+    if (se) se.value = '';
+    applyFilters();
   }
 
   function copyPath(btn) {

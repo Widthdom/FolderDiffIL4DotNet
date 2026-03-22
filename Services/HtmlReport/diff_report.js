@@ -48,9 +48,11 @@
     document.body.appendChild(vi);
   });
 
+  var __filterIds__ = ['filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
   function collectState() {
     var s = {};
     document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
+      if (__filterIds__.indexOf(el.id) >= 0) return;
       s[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
     });
     return s;
@@ -69,7 +71,10 @@
     // 1. Collapse all diff-detail elements so exported file starts with diffs closed
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
-    // 2. Capture current effective column widths to bake into reviewed HTML as defaults
+    // 2. Clear all filter-hidden state so reviewed HTML shows all rows
+    document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
+    document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
+    // 3. Capture current effective column widths to bake into reviewed HTML as defaults
     var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
@@ -336,6 +341,98 @@
     document.querySelectorAll('th.th-resizable').forEach(function(th) {
       initColResizeSingle(th);
     });
+  }
+
+  // ── Filtering ──────────────────────────────────────────────────────────
+  var __configExts__  = ['.json','.xml','.config','.yaml','.yml','.ini','.toml','.env','.props','.targets','.csproj','.vbproj','.fsproj','.sln'];
+  var __resourceExts__ = ['.resx','.resources','.png','.jpg','.jpeg','.ico','.svg','.gif','.bmp','.wav','.mp3','.ttf','.woff','.woff2','.eot'];
+  function getFileTypeCategory(ext) {
+    if (!ext) return 'other';
+    ext = ext.toLowerCase();
+    if (ext === '.dll') return 'dll';
+    if (ext === '.exe') return 'exe';
+    if (__configExts__.indexOf(ext) >= 0) return 'config';
+    if (__resourceExts__.indexOf(ext) >= 0) return 'resource';
+    return 'other';
+  }
+  function applyFilters() {
+    var impHigh   = document.getElementById('filter-imp-high');
+    var impMedium = document.getElementById('filter-imp-medium');
+    var impLow    = document.getElementById('filter-imp-low');
+    var ftDll     = document.getElementById('filter-ft-dll');
+    var ftExe     = document.getElementById('filter-ft-exe');
+    var ftConfig  = document.getElementById('filter-ft-config');
+    var ftResource= document.getElementById('filter-ft-resource');
+    var ftOther   = document.getElementById('filter-ft-other');
+    var unchecked = document.getElementById('filter-unchecked');
+    var searchEl  = document.getElementById('filter-search');
+    // If any element is missing (e.g. reviewed mode), skip
+    if (!impHigh) return;
+    var impFilter = { High: impHigh.checked, Medium: impMedium.checked, Low: impLow.checked };
+    var ftFilter  = { dll: ftDll.checked, exe: ftExe.checked, config: ftConfig.checked, resource: ftResource.checked, other: ftOther.checked };
+    var onlyUnchecked = unchecked.checked;
+    var searchText = (searchEl.value || '').toLowerCase().trim();
+    // All importance checked = no importance filtering
+    var impActive = !(impFilter.High && impFilter.Medium && impFilter.Low);
+    // All file types checked = no file type filtering
+    var ftActive = !(ftFilter.dll && ftFilter.exe && ftFilter.config && ftFilter.resource && ftFilter.other);
+    document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
+      var show = true;
+      // File type filter
+      if (ftActive) {
+        var ext = tr.getAttribute('data-ext') || '';
+        var cat = getFileTypeCategory(ext);
+        if (!ftFilter[cat]) show = false;
+      }
+      // Importance filter (only for Modified section rows with importance)
+      if (show && impActive) {
+        var imp = tr.getAttribute('data-importance');
+        if (imp) {
+          if (!impFilter[imp]) show = false;
+        }
+      }
+      // Unchecked only filter
+      if (show && onlyUnchecked) {
+        var section = tr.getAttribute('data-section');
+        var idx = Array.prototype.indexOf.call(tr.parentNode.children, tr);
+        // Find the checkbox in this row
+        var cb = tr.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) show = false;
+      }
+      // Search filter
+      if (show && searchText) {
+        var pathEl = tr.querySelector('.path-text');
+        var pathText = pathEl ? pathEl.textContent.toLowerCase() : '';
+        if (pathText.indexOf(searchText) < 0) show = false;
+      }
+      if (show) {
+        tr.classList.remove('filter-hidden');
+      } else {
+        tr.classList.add('filter-hidden');
+      }
+      // Hide associated diff-row/semantic-changes rows
+      var next = tr.nextElementSibling;
+      while (next && !next.hasAttribute('data-section')) {
+        if (show) {
+          next.classList.remove('filter-hidden-parent');
+        } else {
+          next.classList.add('filter-hidden-parent');
+        }
+        next = next.nextElementSibling;
+      }
+    });
+    autoSave();
+  }
+  function resetFilters() {
+    ['filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.checked = true;
+    });
+    var uc = document.getElementById('filter-unchecked');
+    if (uc) uc.checked = false;
+    var se = document.getElementById('filter-search');
+    if (se) se.value = '';
+    applyFilters();
   }
 
   function copyPath(btn) {

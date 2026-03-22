@@ -151,6 +151,17 @@ Not all columns appear in every table. Added and Removed tables show only ✓, J
 
 Inline diff `<summary>` labels also include a one-based `#N` prefix such as `#3 Show diff` / `#3 Show IL diff`; this number matches the leftmost `#` column for the same row.
 
+A **filter bar** is displayed below the controls bar. Filters include:
+
+| Filter | Description |
+|---|---|
+| Importance | Checkboxes for `High`, `Medium`, `Low` — toggle to show/hide Modified files by change importance |
+| File Type | Checkboxes for `DLL`, `EXE`, `Config`, `Resource`, `Other` — filter by file extension category |
+| Unchecked only | When checked, hides rows whose checkbox (✓ column) is already ticked |
+| Search | Free-text input that matches against file paths (case-insensitive substring match) |
+
+Filters can be combined; the **Reset filters** button restores all checkboxes and clears the search box. Filter state is **not** saved to localStorage and is **not** included in the "Download as reviewed" output — the reviewed HTML always shows all rows with filtering disabled.
+
 See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live sample (open in a browser).
 
 ### Review workflow
@@ -702,6 +713,17 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 **テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）の順、次に変更の重要度（`High` → `Medium` → `Low`）の順、次にファイルパスの昇順でソートされます。警告セクション内の SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソートされます。
 
 インライン差分の `<summary>` ラベルにも `#3 Show diff` / `#3 Show IL diff` のような 1 始まりの `#N` プレフィックスが付き、この番号は同じ行の左端 `#` 列と一致します。
+
+コントロールバーの下に**フィルターバー**が表示されます。フィルタの種類:
+
+| フィルタ | 説明 |
+|---|---|
+| 重要度 | `High`・`Medium`・`Low` のチェックボックス — Modified ファイルを変更の重要度で表示/非表示 |
+| ファイル種別 | `DLL`・`EXE`・`Config`・`Resource`・`Other` のチェックボックス — 拡張子カテゴリで絞り込み |
+| 未チェックのみ | チェックすると、✓ 列のチェックボックスが既にオンの行を非表示にする |
+| 検索 | ファイルパスに対するフリーテキスト入力（大文字小文字を区別しない部分一致） |
+
+フィルタは組み合わせ可能です。**フィルタリセット**ボタンですべてのチェックボックスを復元し検索ボックスをクリアします。フィルタ状態は localStorage には保存**されず**、「Download as reviewed」の出力にも含まれ**ません** — レビュー済み HTML ではフィルタリングが無効化され、常にすべての行が表示されます。
 
 ライブサンプルは [doc/samples/diff_report.html](doc/samples/diff_report.html) を参照してください（ブラウザで開いてください）。
 

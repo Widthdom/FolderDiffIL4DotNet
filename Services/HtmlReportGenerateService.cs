@@ -106,6 +106,24 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
+            sb.AppendLine("<div class=\"filter-bar\">");
+            sb.AppendLine("  <label class=\"filter-label\">" + I18n("Importance", "重要度") + ":</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-high\" checked onchange=\"applyFilters()\"> <span style=\"color:#d1242f;font-weight:bold\">High</span></label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-medium\" checked onchange=\"applyFilters()\"> <span style=\"color:#d97706;font-weight:bold\">Medium</span></label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-low\" checked onchange=\"applyFilters()\"> Low</label>");
+            sb.AppendLine("  <span class=\"filter-sep\"></span>");
+            sb.AppendLine("  <label class=\"filter-label\">" + I18n("File Type", "ファイル種別") + ":</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-dll\" checked onchange=\"applyFilters()\"> DLL</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-exe\" checked onchange=\"applyFilters()\"> EXE</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-config\" checked onchange=\"applyFilters()\"> Config</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-resource\" checked onchange=\"applyFilters()\"> Resource</label>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-other\" checked onchange=\"applyFilters()\"> " + I18n("Other", "その他") + "</label>");
+            sb.AppendLine("  <span class=\"filter-sep\"></span>");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + I18n("Unchecked only", "未チェックのみ") + "</label>");
+            sb.AppendLine("  <span class=\"filter-sep\"></span>");
+            sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + I18n("Search file path...", "ファイルパス検索...") + "\" class=\"filter-search\" oninput=\"applyFilters()\">");
+            sb.AppendLine("  <button class=\"btn btn-clear filter-reset-btn\" onclick=\"resetFilters()\">" + I18n("Reset filters", "フィルタリセット") + "</button>");
+            sb.AppendLine("</div>");
             sb.AppendLine("<!--/CTRL-->");
 
             sb.AppendLine("<main>");

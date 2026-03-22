@@ -137,6 +137,34 @@ The generated `diff_report.html` applies two layers of XSS mitigation:
 
 When modifying the HTML report output, ensure that any new dynamic data is passed through `HtmlEncode()` and that the CSP meta tag remains in [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) `AppendHtmlHead()`. The sample report at [`doc/samples/diff_report.html`](samples/diff_report.html) must also be kept in sync.
 
+## HTML Report Filtering
+
+The HTML report includes a client-side filter bar that allows users to narrow down file rows by multiple criteria. The implementation spans three layers:
+
+### Server-side (C#)
+
+- [`AppendFileRow()`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) emits `data-section`, `data-ext`, and (when applicable) `data-importance` attributes on each `<tr>`.
+- The filter bar HTML is generated inside the `<!--CTRL-->...<!--/CTRL-->` markers in [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs), so it is automatically stripped when the report is downloaded as reviewed.
+
+### CSS ([`diff_report.css`](../Services/HtmlReport/diff_report.css))
+
+- `.filter-bar` — sticky positioned bar below the controls bar.
+- `tr.filter-hidden` / `tr.diff-row.filter-hidden-parent` — hide rows with `display: none !important`.
+
+### JavaScript ([`diff_report.js`](../Services/HtmlReport/diff_report.js))
+
+- `getFileTypeCategory(ext)` — maps file extensions to categories (`dll`, `exe`, `config`, `resource`, `other`).
+- `applyFilters()` — reads all filter controls and applies `filter-hidden` / `filter-hidden-parent` CSS classes to rows.
+- `resetFilters()` — restores all checkboxes and clears the search box.
+- `__filterIds__` — array of filter input IDs excluded from `collectState()` / localStorage auto-save.
+- `downloadReviewed()` — clears all `filter-hidden` / `filter-hidden-parent` classes before capturing `outerHTML`, ensuring the reviewed HTML always shows all rows.
+
+### Design decisions
+
+1. Filter state is intentionally excluded from `collectState()` and localStorage. This means filters reset on page reload and are never saved to the reviewed HTML.
+2. The filter bar is inside `<!--CTRL-->...<!--/CTRL-->` markers, which are regex-replaced by `downloadReviewed()`. This ensures the reviewed HTML has no filter UI.
+3. Importance filtering only applies to rows that have a `data-importance` attribute (Modified section rows with semantic analysis results).
+
 ## Performance Benchmarks
 
 The [`FolderDiffIL4DotNet.Benchmarks`](../FolderDiffIL4DotNet.Benchmarks/) project uses [BenchmarkDotNet](https://www.nuget.org/packages/BenchmarkDotNet/) to measure performance:
@@ -850,6 +878,34 @@ TryValidateAndBuildRunArguments
 2. **Content-Security-Policy** — `<head>` 内の `<meta http-equiv="Content-Security-Policy">` タグが実行環境を制限: `default-src 'none'` ですべてをブロックし、`style-src 'unsafe-inline'` と `script-src 'unsafe-inline'` でレポート自身のインラインスタイル/スクリプトのみを許可、`img-src 'self'` で同一オリジン画像のみを許可。外部スクリプト・スタイルシート・フォント・フレーム・フォームターゲットの読み込みを防止。
 
 HTML レポート出力を変更する際は、新しい動的データを必ず `HtmlEncode()` で処理し、[`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) の `AppendHtmlHead()` に CSP メタタグが残っていることを確認してください。[`doc/samples/diff_report.html`](samples/diff_report.html) のサンプルレポートも同期を維持する必要があります。
+
+## HTML レポートフィルタリング
+
+HTML レポートには、複数の条件でファイル行を絞り込めるクライアントサイドフィルターバーが含まれています。実装は 3 層に分かれます:
+
+### サーバーサイド（C#）
+
+- [`AppendFileRow()`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) が各 `<tr>` に `data-section`、`data-ext`、（該当する場合）`data-importance` 属性を出力。
+- フィルターバー HTML は [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) の `<!--CTRL-->...<!--/CTRL-->` マーカー内に生成されるため、レビュー済みとしてダウンロードする際に自動的に除去されます。
+
+### CSS（[`diff_report.css`](../Services/HtmlReport/diff_report.css)）
+
+- `.filter-bar` — コントロールバーの下に固定配置されるバー。
+- `tr.filter-hidden` / `tr.diff-row.filter-hidden-parent` — `display: none !important` で行を非表示。
+
+### JavaScript（[`diff_report.js`](../Services/HtmlReport/diff_report.js)）
+
+- `getFileTypeCategory(ext)` — ファイル拡張子をカテゴリ（`dll`、`exe`、`config`、`resource`、`other`）にマッピング。
+- `applyFilters()` — すべてのフィルタコントロールを読み取り、行に `filter-hidden` / `filter-hidden-parent` CSS クラスを適用。
+- `resetFilters()` — すべてのチェックボックスを復元し、検索ボックスをクリア。
+- `__filterIds__` — `collectState()` / localStorage 自動保存から除外されるフィルタ入力 ID の配列。
+- `downloadReviewed()` — `outerHTML` キャプチャ前にすべての `filter-hidden` / `filter-hidden-parent` クラスを削除し、レビュー済み HTML で常にすべての行が表示されることを保証。
+
+### 設計判断
+
+1. フィルタ状態は意図的に `collectState()` と localStorage から除外されています。これにより、ページ再読み込みでフィルタがリセットされ、レビュー済み HTML にも保存されません。
+2. フィルターバーは `<!--CTRL-->...<!--/CTRL-->` マーカー内に配置されており、`downloadReviewed()` で正規表現置換されます。これにより、レビュー済み HTML にフィルタ UI が含まれないことが保証されます。
+3. 重要度フィルタリングは `data-importance` 属性を持つ行（セマンティック解析結果のある Modified セクション行）にのみ適用されます。
 
 ## パフォーマンスベンチマーク
 

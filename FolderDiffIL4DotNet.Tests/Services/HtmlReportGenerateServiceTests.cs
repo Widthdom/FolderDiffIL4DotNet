@@ -1650,6 +1650,195 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 HtmlReportGenerateService.LoadEmbeddedResource("NonExistent.Resource.Name"));
         }
 
+        // ── Filtering feature tests ─────────────────────────────────────────
+
+        [Fact]
+        public void GenerateDiffReportHtml_ContainsFilterBar()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-bar");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: filter bar HTML elements are present
+            // フィルターバーの HTML 要素が含まれていることを検証
+            Assert.Contains("class=\"filter-bar\"", html);
+            Assert.Contains("id=\"filter-imp-high\"", html);
+            Assert.Contains("id=\"filter-imp-medium\"", html);
+            Assert.Contains("id=\"filter-imp-low\"", html);
+            Assert.Contains("id=\"filter-ft-dll\"", html);
+            Assert.Contains("id=\"filter-ft-exe\"", html);
+            Assert.Contains("id=\"filter-ft-config\"", html);
+            Assert.Contains("id=\"filter-ft-resource\"", html);
+            Assert.Contains("id=\"filter-ft-other\"", html);
+            Assert.Contains("id=\"filter-unchecked\"", html);
+            Assert.Contains("id=\"filter-search\"", html);
+            Assert.Contains("applyFilters()", html);
+            Assert.Contains("resetFilters()", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_FilterBarIsInsideCtrlMarkers()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-ctrl");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: filter bar is between <!--CTRL--> and <!--/CTRL--> markers
+            // フィルターバーが <!--CTRL-->...<!--/CTRL--> マーカー内にあることを検証
+            int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
+            int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
+            int filterBar = html.IndexOf("class=\"filter-bar\"", StringComparison.Ordinal);
+            Assert.True(ctrlStart >= 0, "<!--CTRL--> marker not found");
+            Assert.True(ctrlEnd > ctrlStart, "<!--/CTRL--> marker not found or before <!--CTRL-->");
+            Assert.True(filterBar > ctrlStart && filterBar < ctrlEnd,
+                "filter-bar should be inside <!--CTRL-->...<!--/CTRL--> markers so it is stripped in reviewed mode");
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_FileRowsHaveDataSectionAttribute()
+        {
+            // Arrange: add some files to generate rows
+            // いくつかのファイルを追加して行を生成
+            var (oldDir, newDir, reportDir) = MakeDirs("data-section");
+            File.WriteAllText(Path.Combine(newDir, "new.dll"), "new-content");
+            var config = CreateConfig();
+            _resultLists.AddedFiles.Add(Path.Combine(newDir, "new.dll"));
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: data-section attribute is present on rows
+            // data-section 属性が行に存在することを検証
+            Assert.Contains("data-section=\"add\"", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_FileRowsHaveDataExtAttribute()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("data-ext");
+            File.WriteAllText(Path.Combine(newDir, "new.dll"), "new-content");
+            var config = CreateConfig();
+            _resultLists.AddedFiles.Add(Path.Combine(newDir, "new.dll"));
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: data-ext attribute with correct extension
+            // 正しい拡張子の data-ext 属性を検証
+            Assert.Contains("data-ext=\".dll\"", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ModifiedRowsWithImportance_HaveDataImportanceAttribute()
+        {
+            // Arrange: add a modified file with importance
+            // 重要度付きの変更ファイルを追加
+            var (oldDir, newDir, reportDir) = MakeDirs("data-imp");
+            string fileName = "lib.dll";
+            File.WriteAllBytes(Path.Combine(oldDir, fileName), new byte[] { 1, 2, 3 });
+            File.WriteAllBytes(Path.Combine(newDir, fileName), new byte[] { 4, 5, 6 });
+            var config = CreateConfig();
+            _resultLists.ModifiedFiles.Add(new FileDiffResultLists.ModifiedFileInfo(
+                fileName,
+                FileDiffResultLists.DiffDetailResult.SHA256Mismatch));
+
+            // Set up importance via semantic changes
+            var summary = new AssemblySemanticChangesSummary
+            {
+                Entries = new[]
+                {
+                    new MemberChangeEntry("[ + ]", "TestClass", "System.Object", "public", "", "Method", "GetValue", "", "System.String", "", "", ChangeImportance.High)
+                }
+            };
+            _resultLists.FileRelativePathToAssemblySemanticChanges[fileName] = summary;
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: data-importance attribute present on the modified row
+            // 変更行に data-importance 属性が存在することを検証
+            Assert.Contains("data-importance=\"High\"", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_FilterBarCss_ContainsFilterHiddenRule()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-css");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: CSS rules for filter-hidden are present
+            // filter-hidden の CSS ルールが含まれていることを検証
+            Assert.Contains("tr.filter-hidden", html);
+            Assert.Contains("tr.diff-row.filter-hidden-parent", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_JsContainsApplyFiltersFunction()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-js");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: JS filtering functions are included
+            // JS フィルタリング関数が含まれていることを検証
+            Assert.Contains("function applyFilters()", html);
+            Assert.Contains("function resetFilters()", html);
+            Assert.Contains("function getFileTypeCategory(", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_JsCollectState_ExcludesFilterIds()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-exclude");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: __filterIds__ array exists in the JS to exclude filter inputs from collectState
+            // collectState からフィルタ入力を除外するための __filterIds__ 配列の存在を検証
+            Assert.Contains("__filterIds__", html);
+            Assert.Contains("filter-imp-high", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_DownloadReviewed_ClearsFilterHiddenClasses()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-download");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: downloadReviewed() contains filter-hidden clearing logic
+            // downloadReviewed() にフィルタ非表示クリアロジックが含まれていることを検証
+            Assert.Contains("tr.filter-hidden", html);
+            Assert.Contains("tr.filter-hidden-parent", html);
+            // The clearing should happen before outerHTML capture
+            // outerHTML キャプチャ前にクリアが行われるべき
+            int clearIdx = html.IndexOf("Clear all filter-hidden state", StringComparison.Ordinal);
+            int outerHtmlIdx = html.IndexOf("document.documentElement.outerHTML", StringComparison.Ordinal);
+            Assert.True(clearIdx >= 0, "Filter-hidden clearing comment not found in JS");
+            Assert.True(outerHtmlIdx > clearIdx,
+                "Filter-hidden clearing must occur before outerHTML capture");
+        }
+
         [Fact]
         public void GenerateDiffReportHtml_HeaderShowsDisassemblerAvailabilityTable()
         {
