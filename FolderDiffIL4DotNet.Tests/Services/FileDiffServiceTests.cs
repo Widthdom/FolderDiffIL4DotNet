@@ -61,7 +61,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 OptimizeForNetworkShares = true
             }.Build();
 
-            FileStream exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
+            FileStream? exclusiveLockStream = new FileStream(oldFileAbsolutePath, FileMode.Open, FileAccess.Read, FileShare.None);
             var logger = new TestLogger(entry =>
             {
                 if (entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal))
