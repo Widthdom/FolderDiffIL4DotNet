@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.7.0] - 2026-03-22
+
 #### Added
 
 - **Interactive HTML report filtering** — Added a filter bar to the HTML report (`diff_report.html`) enabling users to narrow down file rows by multiple criteria: **Importance** (High / Medium / Low checkboxes), **File Type** (DLL / EXE / Config / Resource / Other), **Unchecked only** (show only rows whose checkbox is not ticked), and a **free-text search** box for file paths. All filter controls use bilingual labels (English / Japanese). The filter bar is placed inside the `<!--CTRL-->...<!--/CTRL-->` markers, so it is automatically stripped in reviewed (read-only) HTML. Filtering state is excluded from `collectState()` / localStorage auto-save via the `__filterIds__` array. `downloadReviewed()` clears all `filter-hidden` / `filter-hidden-parent` CSS classes from table rows before capturing `outerHTML`, ensuring the reviewed HTML always shows all rows regardless of active filters at the time of download. Implementation details: each `<tr>` emitted by `AppendFileRow()` now carries `data-section`, `data-ext`, and (when applicable) `data-importance` attributes for client-side filtering. CSS classes `tr.filter-hidden` and `tr.diff-row.filter-hidden-parent` hide rows with `display: none !important`. New JS functions: `getFileTypeCategory(ext)`, `applyFilters()`, `resetFilters()`. Updated [`diff_report.css`](Services/HtmlReport/diff_report.css), [`diff_report.js`](Services/HtmlReport/diff_report.js), [`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs), [`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added 10 tests in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs): `GenerateDiffReportHtml_ContainsFilterBar`, `GenerateDiffReportHtml_FilterBarIsInsideCtrlMarkers`, `GenerateDiffReportHtml_FileRowsHaveDataSectionAttribute`, `GenerateDiffReportHtml_FileRowsHaveDataExtAttribute`, `GenerateDiffReportHtml_ModifiedRowsWithImportance_HaveDataImportanceAttribute`, `GenerateDiffReportHtml_FilterBarCss_ContainsFilterHiddenRule`, `GenerateDiffReportHtml_JsContainsApplyFiltersFunction`, `GenerateDiffReportHtml_JsCollectState_ExcludesFilterIds`, `GenerateDiffReportHtml_DownloadReviewed_ClearsFilterHiddenClasses`.
@@ -565,6 +567,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.7.0] - 2026-03-22
+
 #### 追加
 
 - **HTML レポートのインタラクティブフィルタリング機能** — HTML レポート（`diff_report.html`）にフィルターバーを追加し、複数の条件でファイル行を絞り込めるようにしました。**重要度**（High / Medium / Low チェックボックス）、**ファイル種別**（DLL / EXE / Config / Resource / Other）、**未チェックのみ**（チェックボックスが未チェックの行のみ表示）、および**ファイルパス検索**（フリーテキスト入力）。すべてのフィルタコントロールは日英バイリンガルラベルを使用。フィルターバーは `<!--CTRL-->...<!--/CTRL-->` マーカー内に配置されるため、レビュー済み（読み取り専用）HTML では自動的に除去されます。フィルタリング状態は `__filterIds__` 配列により `collectState()` / localStorage 自動保存から除外。`downloadReviewed()` は `outerHTML` キャプチャ前にすべての `filter-hidden` / `filter-hidden-parent` CSS クラスをテーブル行から削除し、ダウンロード時のフィルタ状態に関係なくレビュー済み HTML ですべての行が表示されることを保証。実装詳細: `AppendFileRow()` が出力する各 `<tr>` に `data-section`、`data-ext`、（該当する場合）`data-importance` 属性を付与しクライアント側フィルタリングに使用。CSS クラス `tr.filter-hidden` と `tr.diff-row.filter-hidden-parent` で `display: none !important` により行を非表示。新規 JS 関数: `getFileTypeCategory(ext)`、`applyFilters()`、`resetFilters()`。[`diff_report.css`](Services/HtmlReport/diff_report.css)、[`diff_report.js`](Services/HtmlReport/diff_report.js)、[`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs)、[`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) にテスト 10 件を追加。
@@ -1112,7 +1116,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.4.0...v1.4.1
