@@ -744,6 +744,15 @@ On Windows, `DateTime.UtcNow` and `Thread.Sleep` interact with the OS timer reso
 
 The CI workflow runs `dotnet tool restore` using [`.config/dotnet-tools.json`](../.config/dotnet-tools.json). If a pinned version is removed from NuGet, CI fails at the restore step. Always verify that tool versions exist on NuGet before updating the manifest.
 
+### Thread safety in test fakes
+
+When a test fake (mock service) records method calls in a collection (e.g. `ReadChunkCalls.Add(...)`), use `ConcurrentBag<T>` or `ConcurrentQueue<T>` instead of `List<T>` if the fake is invoked from `Parallel.ForEachAsync` or other parallel contexts. A non-thread-safe `List.Add` under concurrency can throw exceptions that are silently caught by production error-handling code, causing the test to follow an unexpected fallback path and fail intermittently.
+
+### `coverlet.collector` and `coverlet.runsettings` compatibility
+
+- `coverlet.collector` 6.0.3+ has a [regression](https://github.com/coverlet-coverage/coverlet/issues/1726) where `<Exclude>` / `<Include>` filters in `coverlet.runsettings` cause the `coverage.cobertura.xml` file to not be generated. Use version 6.0.2 until a fix is released.
+- The `opencover` format does not support `<DeterministicReport>true</DeterministicReport>`. If deterministic reports are needed, use `cobertura` only.
+
 ## Debugging Tips
 
 - Start with `Logs/log_YYYYMMDD.log` for the exact failure point.
@@ -1526,6 +1535,15 @@ Windows では `DateTime.UtcNow` と `Thread.Sleep` は OS のタイマー解像
 ### ローカルツールのバージョン（`dotnet-stryker` 等）
 
 CI ワークフローは [`.config/dotnet-tools.json`](../.config/dotnet-tools.json) を使用して `dotnet tool restore` を実行します。固定されたバージョンが NuGet から削除された場合、CI はリストアステップで失敗します。マニフェストを更新する前に、ツールバージョンが NuGet に存在することを必ず確認してください。
+
+### テストフェイクのスレッドセーフティ
+
+テストフェイク（モックサービス）がメソッド呼び出しをコレクションに記録する場合（例: `ReadChunkCalls.Add(...)`）、そのフェイクが `Parallel.ForEachAsync` などの並列コンテキストから呼ばれるなら `List<T>` ではなく `ConcurrentBag<T>` や `ConcurrentQueue<T>` を使用すること。スレッドセーフでない `List.Add` を並列実行すると例外がプロダクションコードのエラーハンドリングに黙殺的に捕捉され、テストが意図しないフォールバックパスに入り断続的に失敗する原因となります。
+
+### `coverlet.collector` と `coverlet.runsettings` の互換性
+
+- `coverlet.collector` 6.0.3 以降に[リグレッション](https://github.com/coverlet-coverage/coverlet/issues/1726)があり、`coverlet.runsettings` の `<Exclude>` / `<Include>` フィルタ使用時に `coverage.cobertura.xml` が生成されません。修正リリースまでバージョン 6.0.2 を使用してください。
+- `opencover` フォーマットは `<DeterministicReport>true</DeterministicReport>` をサポートしません。決定論的レポートが必要な場合は `cobertura` のみを使用してください。
 
 ## デバッグのコツ
 

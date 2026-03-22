@@ -125,6 +125,7 @@ This is the single most important rule in this repository.
 ### Git & Release Rules
 
 - **Do NOT create git tags** without explicit user permission. Tags trigger the release workflow (`release.yml`) and must be created only when the user explicitly requests it.
+- **Commit messages must be written in English.** Keep them concise and descriptive.
 
 ### Communication
 
@@ -137,6 +138,7 @@ This is the single most important rule in this repository.
 3. **Partial class awareness**: When measuring class size, count ALL partial files together
 4. **Test count drift**: The test count in TESTING_GUIDE.md easily drifts — verify after adding tests
 5. **Filter state in HTML**: Filter IDs must be excluded from `collectState()` and cleared before `downloadReviewed()`
+6. **Thread safety in test fakes**: When a test fake records calls in a collection from `Parallel.ForEachAsync`, use `ConcurrentBag<T>` instead of `List<T>`. A race condition in `List.Add` can throw an exception caught by production error-handling code, causing tests to follow unexpected fallback paths.
 
 ---
 
@@ -260,6 +262,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 ### Git・リリースルール
 
 - **git tag はユーザーの明示的な許可なく作成しないこと。** タグはリリースワークフロー（`release.yml`）を起動するため、ユーザーが明確に指示した場合のみ作成する。
+- **コミットメッセージは英語で記述すること。** 簡潔かつ内容が分かるメッセージにする。
 
 ### コミュニケーション
 
@@ -272,3 +275,4 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 3. **partial class の認識**: クラスサイズ計測時は全 partial ファイルを合算すること
 4. **テスト件数のドリフト**: TESTING_GUIDE.md のテスト件数はずれやすい — テスト追加後に検証すること
 5. **HTML のフィルタ状態**: フィルタ ID は `collectState()` から除外し、`downloadReviewed()` 前にクリアすること
+6. **テストフェイクのスレッドセーフティ**: テストフェイクが `Parallel.ForEachAsync` からコレクションに呼び出しを記録する場合、`List<T>` ではなく `ConcurrentBag<T>` を使用すること。`List.Add` の競合状態がプロダクションコードのエラーハンドリングに捕捉され、テストが想定外のフォールバックパスを辿る原因になる。
