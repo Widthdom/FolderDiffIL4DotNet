@@ -50,7 +50,8 @@ namespace FolderDiffIL4DotNet.Services
             string path,
             string timestamp,
             string col6,
-            string disasm = "")
+            string disasm = "",
+            string importance = "")
         {
             string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
@@ -64,6 +65,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <td class=\"col-path\"><div class=\"path-wrap\"><span class=\"path-text\">{HtmlEncode(path)}</span><button class=\"btn-copy-path\" onclick=\"copyPath(this)\" title=\"Copy\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg></button></div></td>");
             sb.AppendLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
             string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
+            if (!string.IsNullOrEmpty(importance))
+                col6Cell += $" <code>{HtmlEncode(importance)}</code>";
             sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
             sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
@@ -161,18 +164,13 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Builds a display string combining DiffDetail and the file-level max importance (e.g. "ILMismatch High").
-        /// DiffDetail とファイルレベルの最大重要度を結合した表示文字列を生成します（例: "ILMismatch High"）。
+        /// Returns the file-level max importance label, or empty if unavailable.
+        /// ファイルレベルの最大重要度ラベルを返します（存在しない場合は空文字列）。
         /// </summary>
-        private string BuildDiffDetailDisplayWithImportance(
-            FileDiffResultLists.DiffDetailResult diffDetail,
-            string fileRelativePath)
+        private string GetImportanceLabel(string fileRelativePath)
         {
-            string baseDisplay = diffDetail.ToString();
             var importance = _fileDiffResultLists.GetMaxImportance(fileRelativePath);
-            if (importance == null)
-                return baseDisplay;
-            return $"{baseDisplay} {ImportanceToLabel(importance.Value)}";
+            return importance != null ? ImportanceToLabel(importance.Value) : "";
         }
 
         /// <summary>

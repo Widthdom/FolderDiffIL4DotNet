@@ -300,7 +300,7 @@ namespace FolderDiffIL4DotNet.Services
             var importance = fileDiffResultLists.GetMaxImportance(fileRelativePath);
             if (importance == null)
                 return $"`{diffDetail}`";
-            return $"`{diffDetail} {importance.Value}`";
+            return $"`{diffDetail}` `{importance.Value}`";
         }
 
         private static string BuildDisassemblerDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)

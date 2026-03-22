@@ -231,8 +231,9 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
-                string col6 = BuildDiffDetailDisplayWithImportance(diffDetail, path);
-                AppendFileRow(sb, "mod", idx, path, ts, col6, asm ?? "");
+                string col6 = BuildDiffDetailDisplay(diffDetail);
+                string imp = GetImportanceLabel(path);
+                AppendFileRow(sb, "mod", idx, path, ts, col6, asm ?? "", imp);
 
                 // Method-level changes row (above IL diff)
                 if (config.ShouldIncludeAssemblySemanticChangesInReport &&
@@ -614,8 +615,9 @@ namespace FolderDiffIL4DotNet.Services
                             string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(newFolderAbsolutePath, kv.Key));
                             ts = $"{oldTs}{TIMESTAMP_ARROW}{newTs}";
                         }
-                        string col6 = BuildDiffDetailDisplayWithImportance(kv.Value, kv.Key);
-                        AppendFileRow(sb, "sha256w", idx, kv.Key, ts, col6);
+                        string col6 = BuildDiffDetailDisplay(kv.Value);
+                        string imp = GetImportanceLabel(kv.Key);
+                        AppendFileRow(sb, "sha256w", idx, kv.Key, ts, col6, importance: imp);
                         idx++;
                     }
                     sb.AppendLine("</tbody></table></div>");
@@ -643,8 +645,9 @@ namespace FolderDiffIL4DotNet.Services
                     string ts = $"{HtmlEncode(w.OldTimestamp)}{TIMESTAMP_ARROW}{HtmlEncode(w.NewTimestamp)}";
                     _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var diffDetail);
                     _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(w.FileRelativePath, out var asm);
-                    string col6 = BuildDiffDetailDisplayWithImportance(diffDetail, w.FileRelativePath);
-                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6);
+                    string col6 = BuildDiffDetailDisplay(diffDetail);
+                    string imp = GetImportanceLabel(w.FileRelativePath);
+                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6, importance: imp);
 
                     if (config.EnableInlineDiff &&
                         (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||
