@@ -15,8 +15,7 @@
 | dotnet-ildasm | Yes | 0.12.2 |
 | ilspycmd | No | N/A |
 
-<details>
-<summary>Configuration Details</summary>
+### Configuration Details
 
 | Setting | Value |
 |---------|-------|
@@ -33,8 +32,6 @@
 | ".publickeytoken = ( " |
 | ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( " |
 | "// Code size " |
-
-</details>
 
 > Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
 

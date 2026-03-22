@@ -39,8 +39,7 @@ namespace FolderDiffIL4DotNet.Services
                 WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability);
 
                 // Configuration details / 設定詳細
-                writer.WriteLine("<details>");
-                writer.WriteLine("<summary>Configuration Details</summary>");
+                writer.WriteLine("### Configuration Details");
                 writer.WriteLine();
                 writer.WriteLine("| Setting | Value |");
                 writer.WriteLine("|---------|-------|");
@@ -71,7 +70,7 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine();
                     }
                 }
-                writer.WriteLine("</details>");
+                // (end of Configuration Details section)
                 writer.WriteLine();
 
                 // Notes / ノート

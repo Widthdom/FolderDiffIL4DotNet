@@ -48,10 +48,9 @@ namespace FolderDiffIL4DotNet.Services
             // Disassembler availability table / 逆アセンブラ可用性テーブル
             AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
 
-            // Configuration details (collapsible) / 設定詳細（折りたたみ可能）
-            sb.AppendLine("<details class=\"header-details\">");
-            sb.AppendLine($"  <summary>{HtmlEncode("Configuration Details")}</summary>");
-            sb.AppendLine("  <div class=\"header-details-content\">");
+            // Configuration details (always visible) / 設定詳細（常時表示）
+            sb.AppendLine("<div class=\"header-config\">");
+            sb.AppendLine($"  <div class=\"header-config-title\">{HtmlEncode("Configuration Details")}</div>");
             AppendHeaderDetailRow(sb, "Ignored Extensions", HtmlEncode(string.Join(", ", config.IgnoredExtensions)));
             AppendHeaderDetailRow(sb, "Text File Extensions", HtmlEncode(string.Join(", ", config.TextFileExtensions)));
             if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
@@ -79,8 +78,7 @@ namespace FolderDiffIL4DotNet.Services
                     sb.AppendLine("    </div>");
                 }
             }
-            sb.AppendLine("  </div>");
-            sb.AppendLine("</details>");
+            sb.AppendLine("</div>");
 
             // Notes / ノート
             sb.AppendLine("<div class=\"header-notes\">");
