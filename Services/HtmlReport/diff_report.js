@@ -4,6 +4,8 @@
   const __savedState__  = null;
   // NOTE: replaced with SHA256 hash by downloadReviewed(). Do not change whitespace.
   const __reviewedSha256__  = null;
+  // NOTE: replaced with final SHA256 hash by downloadReviewed(). Do not change whitespace.
+  const __finalSha256__     = null;
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -105,11 +107,16 @@
     var hashHex = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
     // Replace placeholder with actual hash (same length, so no byte offset change)
     html = html.replace(placeholder, hashHex);
-    // Compute final SHA256 for the companion .sha256 file (covers HTML with embedded hash)
+    // 4. Embed final SHA256 hash for .sha256 file verification (second placeholder approach)
+    var placeholder2 = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    html = html.replace("const __finalSha256__     = null;",
+      "const __finalSha256__     = '" + placeholder2 + "';");
     var finalEncoded = new TextEncoder().encode(html);
     var finalHashBuffer = await crypto.subtle.digest('SHA-256', finalEncoded);
     var finalHashArray = Array.from(new Uint8Array(finalHashBuffer));
     var finalHashHex = finalHashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    // Replace placeholder2 with actual final hash (same length, so no byte offset change)
+    html = html.replace(placeholder2, finalHashHex);
     // Download reviewed HTML
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a    = document.createElement('a');
@@ -143,40 +150,31 @@
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = '.html,.sha256';
-    input.multiple = true;
     input.style.display = 'none';
     document.body.appendChild(input);
     input.onchange = async function() {
-      var files = Array.from(input.files);
+      var file = input.files[0];
       document.body.removeChild(input);
-      if (files.length === 0) return;
-      var htmlFile = files.find(function(f) { return f.name.endsWith('.html'); });
-      var sha256File = files.find(function(f) { return f.name.endsWith('.sha256'); });
-      if (sha256File && htmlFile) {
-        // Both files selected: verify HTML against companion .sha256 hash
-        var sha256Text = await sha256File.text();
+      if (!file) return;
+      if (file.name.endsWith('.sha256')) {
+        // Verify companion .sha256 file against the embedded final hash
+        var sha256Text = await file.text();
         var match = sha256Text.match(/^([0-9a-f]{64})\b/i);
         if (!match) {
           alert('Invalid .sha256 file format.\nExpected: <hash>  <filename>');
           return;
         }
-        var expectedHash = match[1].toLowerCase();
-        var htmlBytes = new Uint8Array(await htmlFile.arrayBuffer());
-        var hashBuffer = await crypto.subtle.digest('SHA-256', htmlBytes);
-        var hashArray = Array.from(new Uint8Array(hashBuffer));
-        var actualHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-        if (actualHash === expectedHash) {
-          alert('Integrity verification passed.\nThe HTML file matches the .sha256 hash.');
+        var fileHash = match[1].toLowerCase();
+        if (fileHash === __finalSha256__) {
+          alert('Integrity verification passed.\nThe .sha256 file matches this report.');
         } else {
-          alert('Integrity verification FAILED.\nThe HTML file does not match the .sha256 hash.'
-            + '\n\n.sha256:  ' + expectedHash
-            + '\nActual:   ' + actualHash);
+          alert('Integrity verification FAILED.\nThe .sha256 file does not match this report.'
+            + '\n\nEmbedded: ' + __finalSha256__
+            + '\n.sha256:  ' + fileHash);
         }
-      } else if (sha256File) {
-        alert('Please select both the .sha256 file and the reviewed .html file together.');
-      } else if (htmlFile) {
-        // Single HTML file: verify using embedded hash (placeholder approach)
-        var text = await htmlFile.text();
+      } else {
+        // Verify reviewed HTML file using embedded hash (placeholder approach)
+        var text = await file.text();
         var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
         var hashable = text.replace("'" + __reviewedSha256__ + "'", "'" + placeholder + "'");
         var encoded = new TextEncoder().encode(hashable);
