@@ -10,8 +10,32 @@ It captures the coding standards, workflow rules, and review checklist for this 
 
 ## Project Overview / プロジェクト概要
 
+**What this tool does / このツールの用途:**
+
+FolderDiffIL4DotNet compares two folders (typically "old" and "new" builds of the same product) and produces a structured diff report. Its primary use case is **release validation** — confirming exactly what changed between two builds before shipping.
+
+FolderDiffIL4DotNet は2つのフォルダ（通常は同一製品の「旧」ビルドと「新」ビルド）を比較し、構造化された差分レポートを生成します。主な用途は**リリース検証** — 出荷前に2つのビルド間で何が変わったかを正確に確認することです。
+
+Key differentiator: for .NET assemblies (`.dll`, `.exe`), it compares at the **IL level** rather than binary level, filtering out build-specific noise (MVID, timestamps). This means functionally identical assemblies are reported as "unchanged" even when their binary hashes differ due to non-deterministic builds.
+
+最大の特徴：.NET アセンブリ（`.dll`、`.exe`）はバイナリレベルではなく **IL レベル**で比較し、ビルド固有のノイズ（MVID、タイムスタンプ）を除外します。これにより、非決定的ビルドでバイナリハッシュが異なっていても、機能的に同一のアセンブリは「変更なし」と判定されます。
+
+**Outputs / 出力物:**
+
+- `diff_report.md` — Markdown report for archiving and text-based review
+- `diff_report.html` — Interactive single-file HTML report with checkboxes, sign-off workflow, inline diffs, filtering, and tamper-proof integrity verification
+- `audit_log.json` — Structured audit log with SHA256 hashes for tamper detection
+
+The HTML report serves as a **sign-off record**: reviewers check each file, write justifications, then download a self-contained reviewed copy with embedded SHA256 integrity verification.
+
+HTML レポートは**承認記録**として機能します：レビュアーが各ファイルをチェックし、理由を記入した後、SHA256 整合性検証が埋め込まれた自己完結型のレビュー済みコピーをダウンロードします。
+
+**Technical stack / 技術スタック:**
+
 - .NET 8 console app (`global.json`: SDK 8.0.100, rollForward: latestMinor)
 - Solution: `FolderDiffIL4DotNet.sln` (main app + `.Core` library + `.Tests` + `.Benchmarks`)
+- IL disassembly via external tools (`dotnet-ildasm` preferred, `ilspycmd` fallback)
+- Assembly semantic analysis via `System.Reflection.Metadata`
 - All user-facing text, code comments, and documentation are **bilingual (English / Japanese)**
 
 ## Build & Test / ビルド・テスト
