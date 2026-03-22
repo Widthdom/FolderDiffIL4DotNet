@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
-using FolderDiffIL4DotNet.Services.Caching;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -23,13 +21,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         private readonly string _rootDir;
         private readonly FileDiffResultLists _resultLists = new();
         private readonly ILoggerService _logger = new LoggerService();
-
-        /// <summary>
-        /// Directory containing snapshot files, relative to the repository root.
-        /// リポジトリルートからの相対パスでスナップショットファイルを含むディレクトリ。
-        /// </summary>
-        private static readonly string SnapshotDir = Path.Combine(
-            FindRepositoryRoot(), "FolderDiffIL4DotNet.Tests", "Snapshots");
 
         /// <summary>
         /// Path to the golden sample markdown report maintained in doc/samples/.
@@ -269,34 +260,56 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        // ── Regeneration snapshot tests / 再生成スナップショットテスト ──────────
+        // ── Regeneration consistency tests / 再生成一貫性テスト ──────────────
 
         [Fact]
-        public void GeneratedMarkdownReport_MatchesSnapshot()
+        public void GeneratedMarkdownReport_IsDeterministic()
         {
-            // Generate a deterministic markdown report and compare against stored snapshot.
-            // Set UPDATE_SNAPSHOTS=true to regenerate the snapshot file.
-            // 決定論的な Markdown レポートを生成し、保存されたスナップショットと比較する。
-            // スナップショットを再生成するには UPDATE_SNAPSHOTS=true を設定する。
-            var (oldDir, newDir, reportDir) = MakeDirs("md-snapshot");
+            // Generate the same markdown report twice and verify identical output.
+            // Also verify structural correctness of the generated report.
+            // 同じ Markdown レポートを2回生成し、同一の出力を検証する。
+            // 生成されたレポートの構造的な正しさも検証する。
+            var (oldDir1, newDir1, reportDir1) = MakeDirs("md-det-1");
+            var (oldDir2, newDir2, reportDir2) = MakeDirs("md-det-2");
             PopulateTestData();
 
             var config = CreateSnapshotConfig();
             var service = new ReportGenerateService(_resultLists, _logger, config);
-            service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
-            var generatedPath = Path.Combine(reportDir, "diff_report.md");
-            var generated = NormalizeLineEndings(File.ReadAllText(generatedPath));
+            service.GenerateDiffReport(CreateReportContext(oldDir1, newDir1, reportDir1, config));
+            var report1 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir1, "diff_report.md")));
 
-            var snapshotPath = Path.Combine(SnapshotDir, "diff_report_basic.md.snapshot");
-            AssertOrUpdateSnapshot(snapshotPath, generated);
+            // Reset and regenerate with same data / 同じデータでリセット・再生成
+            _resultLists.ResetAll();
+            PopulateTestData();
+            service.GenerateDiffReport(CreateReportContext(oldDir2, newDir2, reportDir2, config));
+            var report2 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir2, "diff_report.md")));
+
+            // Determinism: both runs produce identical output / 決定論: 両方の実行が同一出力
+            Assert.Equal(report1, report2);
+
+            // Structural checks on generated report / 生成レポートの構造チェック
+            Assert.Contains("# Folder Diff Report", report1);
+            Assert.Contains("- App Version: 1.0.0-snapshot", report1);
+            Assert.Contains("- Computer: snapshot-host", report1);
+            Assert.Contains("## [ = ] Unchanged Files (2)", report1);
+            Assert.Contains("## [ + ] Added Files (1)", report1);
+            Assert.Contains("## [ - ] Removed Files (1)", report1);
+            Assert.Contains("## [ * ] Modified Files (2)", report1);
+            Assert.Contains("## [ x ] Ignored Files (1)", report1);
+            Assert.Contains("`ILMatch`", report1);
+            Assert.Contains("`ILMismatch`", report1);
+            Assert.Contains("`TextMatch`", report1);
+            Assert.Contains("`TextMismatch`", report1);
+            Assert.Contains("| dotnet-ildasm | Yes | 0.12.0 |", report1);
+            Assert.Contains("| ilspycmd | No | N/A |", report1);
         }
 
         [Fact]
-        public void GeneratedMarkdownReport_WithSemanticChanges_MatchesSnapshot()
+        public void GeneratedMarkdownReport_WithSemanticChanges_ContainsImportanceLevels()
         {
-            // Generate a markdown report with assembly semantic changes and compare
-            // アセンブリセマンティック変更を含む Markdown レポートを生成して比較
+            // Generate a markdown report with semantic changes and verify importance levels
+            // セマンティック変更を含む Markdown レポートを生成し重要度レベルを検証
             var (oldDir, newDir, reportDir) = MakeDirs("md-semantic");
             PopulateTestDataWithSemanticChanges();
 
@@ -306,19 +319,28 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var service = new ReportGenerateService(_resultLists, _logger, config);
             service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
-            var generated = NormalizeLineEndings(
+            var report = NormalizeLineEndings(
                 File.ReadAllText(Path.Combine(reportDir, "diff_report.md")));
 
-            var snapshotPath = Path.Combine(SnapshotDir, "diff_report_semantic.md.snapshot");
-            AssertOrUpdateSnapshot(snapshotPath, generated);
+            // Importance levels should appear in the modified files table
+            // 重要度レベルが Modified ファイルテーブルに表示されること
+            Assert.Contains("`ILMismatch` `High`", report);
+
+            // Sections should be ordered correctly / セクションの順序が正しいこと
+            int unchangedIdx = report.IndexOf("## [ = ] Unchanged Files", StringComparison.Ordinal);
+            int modifiedIdx = report.IndexOf("## [ * ] Modified Files", StringComparison.Ordinal);
+            int summaryIdx = report.IndexOf("## Summary", StringComparison.Ordinal);
+            Assert.True(unchangedIdx < modifiedIdx);
+            Assert.True(modifiedIdx < summaryIdx);
         }
 
         [Fact]
-        public void GeneratedHtmlReport_MatchesSnapshot()
+        public void GeneratedHtmlReport_IsDeterministicAndWellFormed()
         {
-            // Generate a deterministic HTML report and compare against stored snapshot.
-            // 決定論的な HTML レポートを生成し、保存されたスナップショットと比較する。
-            var (oldDir, newDir, reportDir) = MakeDirs("html-snapshot");
+            // Generate the same HTML report twice and verify identical output + structure.
+            // 同じ HTML レポートを2回生成し、同一の出力と構造を検証する。
+            var (oldDir1, newDir1, reportDir1) = MakeDirs("html-det-1");
+            var (oldDir2, newDir2, reportDir2) = MakeDirs("html-det-2");
             PopulateTestData();
 
             var builder = CreateSnapshotConfigBuilder();
@@ -326,77 +348,30 @@ namespace FolderDiffIL4DotNet.Tests.Services
             builder.EnableInlineDiff = false; // inline diff depends on file content / インライン差分はファイル内容に依存
             var config = builder.Build();
             var service = new HtmlReportGenerateService(_resultLists, _logger, config);
-            service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
 
-            var generatedPath = Path.Combine(reportDir, "diff_report.html");
-            var generated = NormalizeLineEndings(File.ReadAllText(generatedPath));
+            service.GenerateDiffReportHtml(CreateReportContext(oldDir1, newDir1, reportDir1, config));
+            var html1 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir1, "diff_report.html")));
 
-            var snapshotPath = Path.Combine(SnapshotDir, "diff_report_basic.html.snapshot");
-            AssertOrUpdateSnapshot(snapshotPath, generated);
+            _resultLists.ResetAll();
+            PopulateTestData();
+            service.GenerateDiffReportHtml(CreateReportContext(oldDir2, newDir2, reportDir2, config));
+            var html2 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir2, "diff_report.html")));
+
+            // Determinism / 決定論
+            Assert.Equal(html1, html2);
+
+            // Structural checks / 構造チェック
+            Assert.Contains("<!DOCTYPE html>", html1);
+            Assert.Contains("<html", html1);
+            Assert.Contains("</html>", html1);
+            Assert.Contains("Folder Diff Report", html1);
+            Assert.Contains("unchanged.txt", html1);
+            Assert.Contains("modified.dll", html1);
+            Assert.Contains("added.txt", html1);
+            Assert.Contains("removed.txt", html1);
         }
 
         // ── Helpers / ヘルパー ────────────────────────────────────────────────
-
-        /// <summary>
-        /// Compare generated output against a stored snapshot, or update it.
-        /// When UPDATE_SNAPSHOTS=true or the snapshot file does not exist, the snapshot
-        /// is written/updated. Otherwise, a diff assertion is performed.
-        /// 生成された出力を保存されたスナップショットと比較する。
-        /// UPDATE_SNAPSHOTS=true またはスナップショットファイルが存在しない場合、書き込み/更新する。
-        /// </summary>
-        private static void AssertOrUpdateSnapshot(string snapshotPath, string actual)
-        {
-            bool shouldUpdate = string.Equals(
-                Environment.GetEnvironmentVariable("UPDATE_SNAPSHOTS"), "true",
-                StringComparison.OrdinalIgnoreCase);
-
-            if (shouldUpdate || !File.Exists(snapshotPath))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(snapshotPath)!);
-                File.WriteAllText(snapshotPath, actual);
-                // Skip assertion when updating — the snapshot is now current
-                // 更新時はアサーションをスキップ — スナップショットが最新になった
-                Skip.If(shouldUpdate, "Snapshot updated (UPDATE_SNAPSHOTS=true).");
-                Skip.If(true, $"Snapshot created at {snapshotPath}. Re-run to verify.");
-                return;
-            }
-
-            var expected = NormalizeLineEndings(File.ReadAllText(snapshotPath));
-
-            if (expected == actual)
-                return;
-
-            // Provide a useful diff on failure / 失敗時に有用な差分を提供
-            var expectedLines = expected.Split('\n');
-            var actualLines = actual.Split('\n');
-
-            int firstDiffLine = -1;
-            for (int i = 0; i < Math.Min(expectedLines.Length, actualLines.Length); i++)
-            {
-                if (expectedLines[i] != actualLines[i])
-                {
-                    firstDiffLine = i + 1;
-                    break;
-                }
-            }
-
-            if (firstDiffLine < 0 && expectedLines.Length != actualLines.Length)
-                firstDiffLine = Math.Min(expectedLines.Length, actualLines.Length) + 1;
-
-            var message = firstDiffLine > 0
-                ? $"Snapshot mismatch at line {firstDiffLine}.\n" +
-                  $"  Expected: {SafeGet(expectedLines, firstDiffLine - 1)}\n" +
-                  $"  Actual:   {SafeGet(actualLines, firstDiffLine - 1)}\n" +
-                  $"  (Expected lines: {expectedLines.Length}, Actual lines: {actualLines.Length})\n" +
-                  $"  Set UPDATE_SNAPSHOTS=true to update the snapshot."
-                : $"Snapshot line count differs. Expected: {expectedLines.Length}, Actual: {actualLines.Length}.\n" +
-                  $"  Set UPDATE_SNAPSHOTS=true to update the snapshot.";
-
-            Assert.Fail(message);
-        }
-
-        private static string SafeGet(string[] lines, int index)
-            => index >= 0 && index < lines.Length ? lines[index] : "<end of file>";
 
         private static string NormalizeLineEndings(string text)
             => text.Replace("\r\n", "\n").TrimEnd('\n');

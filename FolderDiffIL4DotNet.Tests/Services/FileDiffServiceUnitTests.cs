@@ -362,13 +362,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public async Task FilesAreEqualAsync_WhenSemanticAnalysisThrows_LogsWarningAndDoesNotCrash()
+        public async Task FilesAreEqualAsync_WhenSemanticAnalysisFails_DoesNotCrashAndRecordsNoChanges()
         {
             // When ILMismatch triggers TryAnalyzeAssemblySemanticChanges and the analysis
-            // fails (e.g. non-existent or corrupt file), the CA1031 catch-all should log a
-            // warning and allow the diff to complete normally.
+            // fails (e.g. non-existent or corrupt file), AssemblyMethodAnalyzer.Analyze
+            // returns null via its internal catch-all. The outer TryAnalyzeAssemblySemanticChanges
+            // handles null gracefully and records no semantic changes.
             // ILMismatch 時に TryAnalyzeAssemblySemanticChanges が発火し解析が失敗（存在しない
-            // ファイル等）した場合、CA1031 catch-all が警告をログし、差分処理は正常に完了すべき。
+            // ファイル等）した場合、AssemblyMethodAnalyzer.Analyze が内部 catch-all で null を返す。
+            // 外側の TryAnalyzeAssemblySemanticChanges は null を安全に処理し、セマンティック変更を
+            // 記録しない。
             const string relativePath = "assembly.dll";
             var fileComparisonService = new FakeFileComparisonService
             {
@@ -385,21 +388,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
                 configure: config => config.ShouldIncludeAssemblySemanticChangesInReport = true);
 
-            // Should complete without throwing — the CA1031 catch-all in
-            // TryAnalyzeAssemblySemanticChanges handles the failure.
+            // Should complete without throwing — AssemblyMethodAnalyzer.Analyze catches
+            // internally and returns null for non-existent paths.
+            // AssemblyMethodAnalyzer.Analyze が内部で catch して null を返すため例外は発生しない。
             var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
 
             Assert.False(areEqual);
             Assert.Equal(FileDiffResultLists.DiffDetailResult.ILMismatch,
                 resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
 
-            // Semantic analysis failed on virtual paths — should log a warning
-            Assert.Contains(
-                logger.Entries,
-                entry => entry.LogLevel == AppLogLevel.Warning
-                    && entry.Message.Contains("Method-level analysis failed", StringComparison.Ordinal));
-
-            // No semantic changes should be recorded since analysis failed
+            // No semantic changes should be recorded since analysis returned null
+            // 解析が null を返したためセマンティック変更は記録されないこと
             Assert.False(resultLists.FileRelativePathToAssemblySemanticChanges.ContainsKey(relativePath));
         }
 
