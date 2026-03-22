@@ -96,7 +96,13 @@ dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # Use a custom config file
 dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pause
+
+# Inspect the effective configuration (config.json + env var overrides) without running a diff
+dotnet run -- --print-config
+dotnet run -- --config /etc/my-config.json --print-config
 ```
+
+> **Tip:** When a configuration error occurs (exit code `3`), a hint is printed to stderr suggesting `--print-config` for diagnosis.
 
 Main output:
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
@@ -125,7 +131,9 @@ See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample o
 
 Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** alongside [`diff_report.md`](doc/samples/diff_report.md) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json)).
 
-The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. Every file entry is displayed in a table with interactive columns for sign-off:
+The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. All user-supplied data (file paths, timestamps, version strings) is HTML-encoded via `System.Net.WebUtility.HtmlEncode` to prevent XSS. A `Content-Security-Policy` meta tag (`default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'`) further limits the impact of any injection by blocking external resource loading, form submissions, and plugin execution.
+
+Every file entry is displayed in a table with interactive columns for sign-off:
 
 | Column | Description |
 |---|---|
@@ -640,7 +648,13 @@ dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # カスタム設定ファイルを指定
 dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pause
+
+# 有効な設定（config.json ＋環境変数オーバーライド）を差分実行なしで確認
+dotnet run -- --print-config
+dotnet run -- --config /etc/my-config.json --print-config
 ```
+
+> **ヒント:** 設定エラー（終了コード `3`）が発生した場合、診断用に `--print-config` を提案するヒントが stderr に出力されます。
 
 主な出力:
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
@@ -669,7 +683,9 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 
 実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
-HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
+HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ユーザー提供データ（ファイルパス、タイムスタンプ、バージョン文字列）はすべて `System.Net.WebUtility.HtmlEncode` で HTML エンコードし、XSS を防止します。さらに `Content-Security-Policy` メタタグ（`default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'`）により、外部リソース読み込み・フォーム送信・プラグイン実行を遮断し、万一のインジェクション時の影響範囲を限定します。
+
+全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 
 | 列 | 説明 |
 |---|---|

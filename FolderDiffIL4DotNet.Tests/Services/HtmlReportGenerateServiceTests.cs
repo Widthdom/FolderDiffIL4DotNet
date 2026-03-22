@@ -237,6 +237,71 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void HtmlEncode_EscapesBacktickAndNonAsciiCharacters()
+        {
+            // WebUtility.HtmlEncode handles characters beyond the original 5-char manual replacement
+            // WebUtility.HtmlEncode は従来の手動 5 文字置換を超えた文字もエスケープする
+            var encoded = HtmlReportGenerateService.HtmlEncode("path/with`backtick");
+            Assert.DoesNotContain("`", encoded);
+            Assert.Contains("&#96;", encoded);
+        }
+
+        [Fact]
+        public void HtmlEncode_PreservesNormalTextUnchanged()
+        {
+            // Normal ASCII text without special characters should pass through unchanged
+            // 特殊文字を含まない通常の ASCII テキストはそのまま返される
+            Assert.Equal("Hello World 123", HtmlReportGenerateService.HtmlEncode("Hello World 123"));
+        }
+
+        [Fact]
+        public void HtmlEncode_HandlesUnicodeCharacters()
+        {
+            // Japanese characters and other Unicode should be handled by WebUtility.HtmlEncode
+            // 日本語文字やその他の Unicode は WebUtility.HtmlEncode で適切に処理される
+            var input = "テスト<script>alert('xss')</script>";
+            var encoded = HtmlReportGenerateService.HtmlEncode(input);
+            Assert.DoesNotContain("<script>", encoded);
+            Assert.Contains("&lt;script&gt;", encoded);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ContainsContentSecurityPolicyMetaTag()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("csp-meta-tag");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // CSP meta tag must be present to mitigate XSS
+            // XSS 緩和のため CSP メタタグが存在しなければならない
+            Assert.Contains("Content-Security-Policy", html);
+            Assert.Contains("default-src 'none'", html);
+            Assert.Contains("style-src 'unsafe-inline'", html);
+            Assert.Contains("script-src 'unsafe-inline'", html);
+            Assert.Contains("img-src 'self'", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_CspMetaTagAppearsBetweenCharsetAndViewport()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("csp-order");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            // CSP must appear after charset and before viewport for correct ordering
+            // CSP は charset の後、viewport の前に配置されなければならない
+            var charsetIdx = html.IndexOf("charset=\"UTF-8\"", StringComparison.Ordinal);
+            var cspIdx = html.IndexOf("Content-Security-Policy", StringComparison.Ordinal);
+            var viewportIdx = html.IndexOf("viewport", StringComparison.Ordinal);
+            Assert.True(charsetIdx < cspIdx, "CSP meta tag must appear after charset meta tag");
+            Assert.True(cspIdx < viewportIdx, "CSP meta tag must appear before viewport meta tag");
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_PathWithSpecialChars_IsHtmlEncoded()
         {
             var (oldDir, newDir, reportDir) = MakeDirs("html-encode");

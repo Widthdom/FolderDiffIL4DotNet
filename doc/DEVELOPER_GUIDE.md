@@ -109,6 +109,34 @@ Both [`FolderDiffIL4DotNet.csproj`](../FolderDiffIL4DotNet.csproj) and [`FolderD
 - **Guard before dereference** — when calling a `Try*` method that returns `T?`, check for `null` before using the result.
 - **Test project is excluded** — [`FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) does not enable `<Nullable>` because test doubles and mock setups would require excessive annotation for little safety benefit.
 
+## Railway-Oriented Execution Pipeline
+
+`ProgramRunner.RunWithResultAsync` uses a railway-oriented pipeline built on the [`StepResult<T>`](../Runner/ProgramRunner.Types.cs) type. Each execution phase returns a `StepResult`, and the pipeline chains them via `Bind` (synchronous) and `BindAsync` (asynchronous). On failure, subsequent steps are short-circuited automatically — no explicit `if (!IsSuccess) return Failure` checks are needed.
+
+```
+TryValidateAndBuildRunArguments
+  .Bind → TryPrepareReportsDirectory
+  .BindAsync → TryLoadConfigBuilderAsync
+    .Bind → ApplyCliOverrides + TryBuildConfig
+  .BindAsync → TryExecuteRunAsync
+```
+
+When adding a new execution phase, wrap the result in `StepResult<T>.FromValue(value)` on success or return `StepResult<T>.FromFailure(ProgramRunResult.Failure(exitCode))` on failure, then chain it with `.Bind()`/`.BindAsync()`.
+
+## XML Documentation Enforcement
+
+Both [`FolderDiffIL4DotNet.csproj`](../FolderDiffIL4DotNet.csproj) and [`FolderDiffIL4DotNet.Core.csproj`](../FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) enable `<GenerateDocumentationFile>true</GenerateDocumentationFile>` with `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`. The CS1591 (missing XML comment) and CS1573 (mismatched param tag) suppressions have been removed, so any new public type, method, property, or parameter without a `<summary>` / `<param>` / `<returns>` tag will fail the build. Bilingual XML doc comments (English first, then Japanese) are the project convention.
+
+## HTML Report Security
+
+The generated `diff_report.html` applies two layers of XSS mitigation:
+
+1. **HTML encoding** — All user-supplied data (file paths, timestamps, version strings, disassembler output) is encoded via `System.Net.WebUtility.HtmlEncode` in [`HtmlReportGenerateService.Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs). This covers backticks, non-ASCII characters, and all standard HTML special characters.
+
+2. **Content-Security-Policy** — A `<meta http-equiv="Content-Security-Policy">` tag in the `<head>` restricts the execution environment: `default-src 'none'` blocks everything by default; `style-src 'unsafe-inline'` and `script-src 'unsafe-inline'` allow only the report's own inline styles/scripts; `img-src 'self'` allows only same-origin images. This prevents loading of external scripts, stylesheets, fonts, frames, and form targets.
+
+When modifying the HTML report output, ensure that any new dynamic data is passed through `HtmlEncode()` and that the CSP meta tag remains in [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) `AppendHtmlHead()`. The sample report at [`doc/samples/diff_report.html`](samples/diff_report.html) must also be kept in sync.
+
 ## Performance Benchmarks
 
 The [`FolderDiffIL4DotNet.Benchmarks`](../FolderDiffIL4DotNet.Benchmarks/) project uses [BenchmarkDotNet](https://www.nuget.org/packages/BenchmarkDotNet/) to measure performance:
@@ -794,6 +822,34 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 - **`ArgumentNullException.ThrowIfNull()`** を使用 — public/internal API 境界で非 null 必須のパラメータに適用します。
 - **参照前にガード** — `T?` を返す `Try*` メソッドの呼び出し後は、結果を使用する前に `null` チェックしてください。
 - **テストプロジェクトは対象外** — [`FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) では `<Nullable>` を有効にしていません。テストダブルやモックセットアップに過度なアノテーションが必要になり、安全性の利点が小さいためです。
+
+## Railway 指向実行パイプライン
+
+`ProgramRunner.RunWithResultAsync` は [`StepResult<T>`](../Runner/ProgramRunner.Types.cs) 型を基盤とした Railway 指向パイプラインを使用しています。各実行フェーズは `StepResult` を返し、`Bind`（同期）と `BindAsync`（非同期）でチェーンされます。失敗時は後続のステップが自動的にショートサーキットされ、明示的な `if (!IsSuccess) return Failure` チェックは不要です。
+
+```
+TryValidateAndBuildRunArguments
+  .Bind → TryPrepareReportsDirectory
+  .BindAsync → TryLoadConfigBuilderAsync
+    .Bind → ApplyCliOverrides + TryBuildConfig
+  .BindAsync → TryExecuteRunAsync
+```
+
+新しい実行フェーズを追加する場合は、成功時に `StepResult<T>.FromValue(value)` でラップし、失敗時は `StepResult<T>.FromFailure(ProgramRunResult.Failure(exitCode))` を返してから `.Bind()`/`.BindAsync()` でチェーンしてください。
+
+## XML ドキュメント強制
+
+[`FolderDiffIL4DotNet.csproj`](../FolderDiffIL4DotNet.csproj) と [`FolderDiffIL4DotNet.Core.csproj`](../FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) の両方で `<GenerateDocumentationFile>true</GenerateDocumentationFile>` と `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>` を有効にしています。CS1591（XML コメント欠落）と CS1573（param タグ不一致）の抑制は削除されたため、`<summary>` / `<param>` / `<returns>` タグのない新しい public 型・メソッド・プロパティ・パラメータはビルド失敗となります。バイリンガル XML ドキュメントコメント（英語が先、次に日本語）がプロジェクトの規約です。
+
+## HTML レポートセキュリティ
+
+生成される `diff_report.html` は 2 層の XSS 緩和策を適用しています:
+
+1. **HTML エンコーディング** — すべてのユーザー提供データ（ファイルパス、タイムスタンプ、バージョン文字列、逆アセンブラ出力）は [`HtmlReportGenerateService.Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) の `System.Net.WebUtility.HtmlEncode` でエンコードされます。バッククォート、非 ASCII 文字、標準的な HTML 特殊文字すべてに対応。
+
+2. **Content-Security-Policy** — `<head>` 内の `<meta http-equiv="Content-Security-Policy">` タグが実行環境を制限: `default-src 'none'` ですべてをブロックし、`style-src 'unsafe-inline'` と `script-src 'unsafe-inline'` でレポート自身のインラインスタイル/スクリプトのみを許可、`img-src 'self'` で同一オリジン画像のみを許可。外部スクリプト・スタイルシート・フォント・フレーム・フォームターゲットの読み込みを防止。
+
+HTML レポート出力を変更する際は、新しい動的データを必ず `HtmlEncode()` で処理し、[`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) の `AppendHtmlHead()` に CSP メタタグが残っていることを確認してください。[`doc/samples/diff_report.html`](samples/diff_report.html) のサンプルレポートも同期を維持する必要があります。
 
 ## パフォーマンスベンチマーク
 

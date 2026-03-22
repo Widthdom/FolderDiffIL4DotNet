@@ -208,6 +208,67 @@ namespace FolderDiffIL4DotNet.Tests
             }
         }
 
+        [Fact]
+        public async Task RunAsync_HelpFlag_OutputContainsPrintConfigTipSection()
+        {
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                // The help text must include a "Tip:" section promoting --print-config
+                // ヘルプテキストには --print-config を紹介する「Tip:」セクションが含まれなければならない
+                Assert.Contains("Tip:", output, StringComparison.Ordinal);
+                Assert.Contains("--print-config", output, StringComparison.Ordinal);
+                Assert.Contains("effective configuration", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ConfigError_WritesPrintConfigHintToStderr()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-stderr-hint-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var logger = new TestLogger();
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origErr = Console.Error;
+            using var errSw = new System.IO.StringWriter();
+            Console.SetError(errSw);
+
+            try
+            {
+                await WithMissingConfigFileAsync(async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "report_" + Guid.NewGuid().ToString("N"), "--no-pause" });
+
+                    Assert.Equal(3, exitCode);
+                    var stderrOutput = errSw.ToString();
+                    // On configuration error, stderr should include the --print-config tip
+                    // 設定エラー時、stderr に --print-config のヒントが含まれなければならない
+                    Assert.Contains("--print-config", stderrOutput, StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetError(origErr);
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
         [Theory]
         [InlineData("-h")]
         [InlineData("--help")]
