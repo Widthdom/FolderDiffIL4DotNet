@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Coverlet run-settings for fine-grained code coverage configuration.
+     カバレッジ計測の詳細設定を行うための coverlet ランセッティングスファイル。 -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat Code Coverage">
+        <Configuration>
+          <!-- Output format: Cobertura XML for CI threshold enforcement + opencover for detailed analysis.
+               出力フォーマット: CI 閾値チェック用の Cobertura XML + 詳細分析用の opencover。 -->
+          <Format>cobertura,opencover</Format>
+
+          <!-- Exclude test projects and auto-generated code from coverage.
+               テストプロジェクトおよび自動生成コードをカバレッジ対象から除外。 -->
+          <Exclude>
+            [FolderDiffIL4DotNet.Tests]*,
+            [FolderDiffIL4DotNet.Benchmarks]*
+          </Exclude>
+
+          <!-- Include only the main application and core library assemblies.
+               メインアプリケーションとコアライブラリのみをカバレッジ対象に含める。 -->
+          <Include>
+            [FolderDiffIL4DotNet]*,
+            [FolderDiffIL4DotNet.Core]*
+          </Include>
+
+          <!-- Exclude auto-generated attributes and Program entry point from coverage.
+               自動生成属性と Program エントリポイントをカバレッジ対象から除外。 -->
+          <ExcludeByAttribute>
+            Obsolete,
+            GeneratedCodeAttribute,
+            CompilerGeneratedAttribute,
+            ExcludeFromCodeCoverageAttribute
+          </ExcludeByAttribute>
+
+          <!-- Exclude auto-generated source files from coverage.
+               自動生成ソースファイルをカバレッジ対象から除外。 -->
+          <ExcludeByFile>
+            **/*.g.cs,
+            **/*.designer.cs
+          </ExcludeByFile>
+
+          <!-- Enable branch coverage for accurate conditional path measurement.
+               条件分岐パスの正確な計測のためブランチカバレッジを有効化。 -->
+          <SingleHit>false</SingleHit>
+          <UseSourceLink>true</UseSourceLink>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+
+          <!-- Deterministic report output for reproducible CI builds.
+               再現可能な CI ビルドのための決定論的レポート出力。 -->
+          <DeterministicReport>true</DeterministicReport>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

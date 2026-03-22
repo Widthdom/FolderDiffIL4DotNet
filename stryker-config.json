@@ -1,0 +1,42 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-net/master/src/Stryker.Core/Stryker.Core/stryker-schema.json",
+  "stryker-config": {
+    "project-info": {
+      "name": "github.com/Widthdom/FolderDiffIL4DotNet",
+      "module": "FolderDiffIL4DotNet"
+    },
+    "test-projects": [
+      "FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj"
+    ],
+    "project": "FolderDiffIL4DotNet.csproj",
+    "target-framework": "net8.0",
+    "mutation-level": "Standard",
+    "thresholds": {
+      "high": 80,
+      "low": 60,
+      "break": 50
+    },
+    "reporters": [
+      "html",
+      "json",
+      "progress",
+      "cleartext"
+    ],
+    "concurrency": 4,
+    "language-version": "latest",
+    "mutate": [
+      "**/*.cs",
+      "!**/obj/**",
+      "!**/bin/**"
+    ],
+    "ignore-mutations": [
+      "string",
+      "linq"
+    ],
+    "ignore-methods": [
+      "Dispose",
+      "ToString",
+      "GetHashCode"
+    ]
+  }
+}

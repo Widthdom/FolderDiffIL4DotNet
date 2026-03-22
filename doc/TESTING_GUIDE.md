@@ -14,6 +14,9 @@ Related documents:
 - Framework: [`xUnit` `2.9.3`](https://www.nuget.org/packages/xunit/2.9.3) (`[Fact]` / `[Theory]` / [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact))
 - Runner: [`Microsoft.NET.Test.Sdk` `17.12.0`](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/17.12.0)
 - Coverage collector: [`coverlet.collector` `6.0.4`](https://www.nuget.org/packages/coverlet.collector/6.0.4) (`XPlat Code Coverage`)
+- Coverage configuration: [`coverlet.runsettings`](../coverlet.runsettings) (include/exclude filters, deterministic report, branch coverage, multi-format output)
+- Mutation testing: [`Stryker.NET`](https://stryker-mutator.io/docs/stryker-net/introduction/) via [`stryker-config.json`](../stryker-config.json) (Standard mutation level, 80/60/50 thresholds)
+- Local tool manifest: [`.config/dotnet-tools.json`](../.config/dotnet-tools.json) (`dotnet-reportgenerator-globaltool`, `dotnet-stryker`)
 - Dynamic skip support: [`Xunit.SkippableFact` `1.5.23`](https://www.nuget.org/packages/Xunit.SkippableFact/1.5.23) ([`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) + `Skip.If`)
 - Target framework: [`.NET 8` / `net8.0`](https://learn.microsoft.com/en-us/dotnet/standard/frameworks)
 
@@ -28,7 +31,8 @@ Current tree has `582` total tests in the latest full run (`dotnet test FolderDi
 | Core diff flow | [`FolderDiffExecutionStrategyTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs), [`FolderDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceTests.cs), [`FolderDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs), [`FileDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceTests.cs), [`FileDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs), [`FileDiffResultListsTests`](../FolderDiffIL4DotNet.Tests/Models/FileDiffResultListsTests.cs) | Discovery filtering, auto-parallelism policy, classification (`Unchanged/Added/Removed/Modified`), diff detail labels, timestamp-regression detection only for **modified** files (unchanged files with reversed timestamps produce no warning), reset behavior, case-insensitive extension handling, propagated text-diff fallback behavior, permission/I/O failure handling, expected-vs-unexpected exception logging/rethrow behavior, large-batch classification without real disk I/O, IL-precompute batching for large trees, memory-budget-based throttling of large-text chunk comparison, multi-megabyte real-file text comparison, symlink-backed file classification, per-file hash/IL/text error handling without real disk, symlink-loop [`IOException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.ioexception?view=net-8.0) during enumeration (logged and rethrown), [`FileNotFoundException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.filenotfoundexception?view=net-8.0) during per-file comparison classified as `Removed` with a warning (both sequential and parallel modes), `DiffSummaryStatistics`/`SummaryStatistics` snapshot correctness, completion message routed through `ILoggerService` instead of direct `Console.WriteLine`, `CancellationToken` propagation through diff pipeline (pre-cancelled token throws `OperationCanceledException`) |
 | IL/disassembler behavior | [`ILOutputServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs), [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs), [`DisassemblerBlacklistTests`](../FolderDiffIL4DotNet.Tests/Services/DisassemblerBlacklistTests.cs), [`DisassemblerHelperTests`](../FolderDiffIL4DotNet.Tests/Services/DisassemblerHelperTests.cs), [`DotNetDisassemblerCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/DotNetDisassemblerCacheTests.cs), [`DotNetDetectorTests`](../FolderDiffIL4DotNet.Tests/Core/Diagnostics/DotNetDetectorTests.cs), [`AssemblyMethodAnalyzerTests`](../FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs), [`AssemblySemanticChangesSummaryTests`](../FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs), [`ChangeImportanceClassifierTests`](../FolderDiffIL4DotNet.Tests/Services/ChangeImportanceClassifierTests.cs) | Same-disassembler pairing, fallback behavior, blacklist logic (including TTL-boundary expiry: entry removed and tool retried after the 10-minute blacklist window), independent per-tool blacklist state, null/whitespace safety for `RegisterFailure`/`ResetFailure` (explicit branch coverage for the null guard true-branch), reset of non-existent command, concurrent `RegisterFailure` with 32 threads, concurrent TTL-expiry race with no exceptions, detection and command handling, failure-vs-non-.NET detection semantics; `ResolveExecutablePath` branch coverage for relative paths containing directory separators (found and not found), whitespace-only `PATH` environment variable, `PATH` entries that are empty strings, and commands found via `PATH` search; Windows-only `EnumerateExecutableNames` tests verifying no duplicate `.exe`/`.cmd`/`.bat` extension variants when the command already carries those suffixes; `ProbeAllCandidates` availability probing returns non-empty list with unique tool names including both `dotnet-ildasm` and `ilspycmd`; assembly semantic analysis detects `Modified` entries for method access/modifier changes and property/field type/access/modifier changes; `ChangeImportanceClassifier` correctly classifies all importance levels (High for public/protected removal and access narrowing, Medium for public addition and internal removal, Low for body-only and private additions), `WithClassifiedImportance` preserves all fields; `AssemblySemanticChangesSummary` importance counts, max importance, and entries sorted by importance |
 | Real disassembler E2E | [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) | Builds the same small class library twice with `Deterministic=false`, confirms the rebuilt DLLs differ by SHA256, and verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) still classifies them as `ILMatch` after MVID filtering |
-| Caching | [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs) | memory/disk cache semantics, same-key updates at capacity, eviction coordination, keying behavior |
+| Caching | [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs), [`ILCacheConcurrencyTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/ILCacheConcurrencyTests.cs), [`ILCacheDiskFailureTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/ILCacheDiskFailureTests.cs) | memory/disk cache semantics, same-key updates at capacity, eviction coordination, keying behavior, concurrent Set/Get under memory and disk modes, LRU eviction under contention, TTL expiry races, disk I/O failure simulation (read-only directory, corrupted files, mid-operation directory deletion) |
+| Edge cases | [`DisassemblerBlacklistTtlRecoveryTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/DisassemblerBlacklistTtlRecoveryTests.cs), [`LargeFileComparisonTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/LargeFileComparisonTests.cs), [`SymlinkAndCircularDirectoryTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/SymlinkAndCircularDirectoryTests.cs), [`FolderDiffConcurrencyStressTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/FolderDiffConcurrencyStressTests.cs) | TTL recovery cycles and concurrent register/check for DisassemblerBlacklist, 4 MiB file chunk-parallel comparison, symlink loop/dangling handling, 500-file parallel classification determinism, simulated latency stress test |
 | Reporting/logging/progress | [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs), [`HtmlReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs), [`AuditLogGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs), [`LoggerServiceTests`](../FolderDiffIL4DotNet.Tests/Services/LoggerServiceTests.cs), [`ProgressReportServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ProgressReportServiceTests.cs) | report sections/summary formatting, report-only warning responsibility, HTML report file creation, interactive checkbox/input element presence, section colour coding, localStorage sentinel, `ShouldGenerateHtmlReport=false` skip, HTML encoding of special characters, inline diff summary `#N` numbering aligned with the leftmost table column, log output behavior, shared log-file/date formats, progress reporting lifecycle, Unicode filenames (Japanese/Umlaut/Chinese) in Modified and Unchanged sections, large-file-count (10,500) summary statistics correctness, `InlineDiffMaxDiffLines` suppression (diff computed first; skipped when diff output line count exceeds threshold), legend table format, stat-table column headers and visible borders, `InlineDiffMaxEditDistance` code tag, diff-row background color, clipboard copy button, row hover highlight, table sort order (Unchanged: `SHA256Match` → `ILMatch` → `TextMatch` then path; Modified/Warnings: `TextMismatch` → `ILMismatch` → `SHA256Mismatch` then path), SHA256Mismatch warning detail table (file listing, alphabetical sort, table ordering before Timestamps Regressed, interleaved layout with warning messages immediately followed by detail tables), semantic summary caveat note presence and CSS styling in HTML report, Assembly Semantic Changes section excluded from Markdown report, structured JSON audit log generation (`audit_log.json`) with metadata/summary/file-entries/SHA256 integrity hashes, `ShouldGenerateAuditLog=false` skip, tamper detection via different report content producing different hashes, empty result handling, constructor null checks, reviewed HTML SHA256 integrity verification code presence (Web Crypto API `crypto.subtle.digest`, companion `.sha256` file, `__reviewedSha256__`/`__finalSha256__` sentinels, pre-created file input with `accept='.sha256'`, and `verifyIntegrity` self-verification function), Access/Modifiers `<code>` wrapping with arrow-aware formatting (`CodeWrapArrow`), disassembler availability table in Markdown/HTML report header (shown when probe results exist, omitted when null), `disassemblerAvailability` array in audit log JSON |
 | Core utility layer | [`FileComparerTests`](../FolderDiffIL4DotNet.Tests/Core/IO/FileComparerTests.cs), [`FileSystemUtilityTests`](../FolderDiffIL4DotNet.Tests/Core/IO/FileSystemUtilityTests.cs), [`PathValidatorTests`](../FolderDiffIL4DotNet.Tests/Core/IO/PathValidatorTests.cs), [`ProcessHelperTests`](../FolderDiffIL4DotNet.Tests/Core/Diagnostics/ProcessHelperTests.cs), [`TextSanitizerTests`](../FolderDiffIL4DotNet.Tests/Core/Text/TextSanitizerTests.cs) | hashing/text compare, shared report-timestamp formatting, path/network detection (including `//`-prefixed forward-slash UNC and IP-based UNC paths), command tokenization, file-name/path sanitization, and the reusable helper contract now housed in `FolderDiffIL4DotNet.Core` |
 | Architecture boundary | [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs), [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) | utility types stay in the `FolderDiffIL4DotNet.Core` assembly, the main assembly no longer defines the legacy `FolderDiffIL4DotNet.Utils` namespace, and repository automation keeps coverage gates, release workflow, CodeQL, and Dependabot configured |
@@ -61,10 +65,10 @@ All tests:
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo
 ```
 
-With coverage (Cobertura XML):
+With coverage (Cobertura XML + opencover, using `.runsettings`):
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --collect:"XPlat Code Coverage" --results-directory ./TestResults
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo --settings coverlet.runsettings --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
 Run one class:
@@ -109,7 +113,14 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 CI-parity command (same as GitHub Actions test step):
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+```
+
+Run mutation testing (Stryker.NET):
+
+```bash
+dotnet tool restore
+dotnet tool run dotnet-stryker --config-file stryker-config.json
 ```
 
 <a id="testing-en-coverage"></a>
@@ -120,13 +131,18 @@ After running with coverage, results are created under `TestResults/**/coverage.
 Latest full coverage run measured `74.04%` line coverage (`2665/3599`) and `71.63%` branch coverage (`697/973`).
 CI fails if total coverage drops below `73%` line or `71%` branch.
 
-Optional local summary generation (same tool family as CI):
+Optional local summary generation (uses the local tool manifest):
 
 ```bash
-dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.*
-export PATH="$PATH:$HOME/.dotnet/tools"
-reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"MarkdownSummaryGithub;Cobertura;HtmlInline_AzurePipelines"
+dotnet tool restore
+dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"MarkdownSummaryGithub;Cobertura;HtmlInline_AzurePipelines"
 ```
+
+The [`coverlet.runsettings`](../coverlet.runsettings) file configures:
+- **Include/Exclude filters**: Only `[FolderDiffIL4DotNet]*` and `[FolderDiffIL4DotNet.Core]*` assemblies are measured; test and benchmark assemblies are excluded.
+- **Attribute exclusions**: `[ExcludeFromCodeCoverage]`, `[GeneratedCode]`, `[CompilerGenerated]`, and `[Obsolete]` attributed members are excluded.
+- **Output formats**: Both `cobertura` (for CI threshold enforcement) and `opencover` (for detailed IDE analysis) are generated.
+- **Deterministic report**: `DeterministicReport=true` ensures reproducible output across CI runs.
 
 <a id="testing-en-ci-notes"></a>
 ## CI Integration Notes
@@ -186,6 +202,9 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - フレームワーク: [`xUnit` `2.9.3`](https://www.nuget.org/packages/xunit/2.9.3)（`[Fact]` / `[Theory]` / [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact)）
 - ランナー: [`Microsoft.NET.Test.Sdk` `17.12.0`](https://www.nuget.org/packages/Microsoft.NET.Test.Sdk/17.12.0)
 - カバレッジ収集: [`coverlet.collector` `6.0.4`](https://www.nuget.org/packages/coverlet.collector/6.0.4)（`XPlat Code Coverage`）
+- カバレッジ設定: [`coverlet.runsettings`](../coverlet.runsettings)（include/exclude フィルタ、決定論的レポート、ブランチカバレッジ、マルチフォーマット出力）
+- ミューテーションテスト: [`Stryker.NET`](https://stryker-mutator.io/docs/stryker-net/introduction/)（[`stryker-config.json`](../stryker-config.json) による設定、Standard ミューテーションレベル、80/60/50 閾値）
+- ローカルツールマニフェスト: [`.config/dotnet-tools.json`](../.config/dotnet-tools.json)（`dotnet-reportgenerator-globaltool`、`dotnet-stryker`）
 - 動的スキップ: [`Xunit.SkippableFact` `1.5.23`](https://www.nuget.org/packages/Xunit.SkippableFact/1.5.23)（[`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) + `Skip.If`）
 - 対象フレームワーク: [`.NET 8` / `net8.0`](https://learn.microsoft.com/ja-jp/dotnet/standard/frameworks)
 
@@ -200,7 +219,8 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 | 差分処理本体 | [`FolderDiffExecutionStrategyTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs), [`FolderDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceTests.cs), [`FolderDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs), [`FileDiffServiceTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceTests.cs), [`FileDiffServiceUnitTests`](../FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs), [`FileDiffResultListsTests`](../FolderDiffIL4DotNet.Tests/Models/FileDiffResultListsTests.cs) | 列挙フィルタ、自動並列度ポリシー、`Unchanged/Added/Removed/Modified` の分類、判定理由、**Modified と判定されたファイルのみ**を対象とした更新日時逆転検出（Unchanged ファイルは更新日時が逆転しても警告対象外）、状態リセット、拡張子大小無視、伝播したテキスト比較例外からのフォールバック、権限エラー/出力先 I/O 失敗、想定例外と想定外例外のログ/再スロー境界、大量ファイルの扱い、大規模ツリー向け IL 事前計算バッチ化、大きいテキスト比較のメモリ予算ベース抑制、複数 MiB の実ファイル比較、シンボリックリンク経由の分類、ファイル単位のハッシュ/IL/テキスト分岐の異常系、列挙時のシンボリックリンクループ [`IOException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.ioexception?view=net-8.0)（ログ出力のうえ再スロー）、比較前ファイル削除時の [`FileNotFoundException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.filenotfoundexception?view=net-8.0) を `Removed` 分類＋警告（逐次・並列両対応）、`DiffSummaryStatistics`/`SummaryStatistics` のスナップショット正確性、完了メッセージが直接 `Console.WriteLine` ではなく `ILoggerService` 経由で出力されることの検証、差分パイプラインへの `CancellationToken` 伝播（キャンセル済みトークンで `OperationCanceledException` がスローされること） |
 | IL/逆アセンブラ | [`ILOutputServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs), [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs), [`DisassemblerBlacklistTests`](../FolderDiffIL4DotNet.Tests/Services/DisassemblerBlacklistTests.cs), [`DisassemblerHelperTests`](../FolderDiffIL4DotNet.Tests/Services/DisassemblerHelperTests.cs), [`DotNetDisassemblerCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/DotNetDisassemblerCacheTests.cs), [`DotNetDetectorTests`](../FolderDiffIL4DotNet.Tests/Core/Diagnostics/DotNetDetectorTests.cs), [`AssemblyMethodAnalyzerTests`](../FolderDiffIL4DotNet.Tests/Services/AssemblyMethodAnalyzerTests.cs), [`AssemblySemanticChangesSummaryTests`](../FolderDiffIL4DotNet.Tests/Models/AssemblySemanticChangesSummaryTests.cs), [`ChangeImportanceClassifierTests`](../FolderDiffIL4DotNet.Tests/Services/ChangeImportanceClassifierTests.cs) | 同一逆アセンブラ比較、フォールバック、ブラックリスト（TTL 境界: 10 分のブラックリスト期間経過後にエントリが削除され、ツールが再試行されることを含む）、ツール独立状態、`RegisterFailure`/`ResetFailure` の null/空白文字ガード（null ガードの true 分岐を明示的にカバー）、存在しないコマンドの reset、32 スレッドの並行 `RegisterFailure`、TTL 切れ境界での並行呼び出し（例外なし）、検出・コマンド処理、判定失敗と非 .NET の区別；`ResolveExecutablePath` のブランチ網羅（ディレクトリ区切り文字を含む相対パス（存在あり/なし）、空白のみの `PATH` 環境変数、空文字列の PATH エントリ、PATH 検索によるコマンド発見）；Windows 専用 `EnumerateExecutableNames` テスト（`.exe`/`.cmd`/`.bat` 拡張子を持つコマンドに重複拡張子が追加されないことを検証）；`ProbeAllCandidates` 利用可否プローブが `dotnet-ildasm` と `ilspycmd` の両方を含む一意ツール名の非空リストを返すこと；アセンブリセマンティック解析がメソッドのアクセス/修飾子変更およびプロパティ/フィールドの型/アクセス/修飾子変更を `Modified` エントリとして検出；`ChangeImportanceClassifier` が全重要度レベルを正しく分類（public/protected 削除やアクセス縮小は High、public 追加や internal 削除は Medium、ボディのみ変更や private 追加は Low）、`WithClassifiedImportance` が全フィールドを保持；`AssemblySemanticChangesSummary` の重要度カウント・最大重要度・重要度順ソート |
 | 実逆アセンブラ E2E | [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) | `Deterministic=false` の同一クラスライブラリを 2 回ビルドし、再ビルド DLL が SHA256 では不一致でも、[`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) では MVID 除外後に `ILMatch` になることを検証 |
-| キャッシュ | [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs) | メモリ/ディスクキャッシュの保持、同一キー再保存、退避時の連動削除、キー生成 |
+| キャッシュ | [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs)、[`ILCacheConcurrencyTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/ILCacheConcurrencyTests.cs)、[`ILCacheDiskFailureTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/ILCacheDiskFailureTests.cs) | メモリ/ディスクキャッシュの保持、同一キー再保存、退避時の連動削除、キー生成、メモリ/ディスクモードでの並列 Set/Get、競合下の LRU 退去、TTL 期限切れレース、ディスク I/O 障害シミュレーション（読み取り専用ディレクトリ、破損ファイル、操作中ディレクトリ削除） |
+| エッジケース | [`DisassemblerBlacklistTtlRecoveryTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/DisassemblerBlacklistTtlRecoveryTests.cs)、[`LargeFileComparisonTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/LargeFileComparisonTests.cs)、[`SymlinkAndCircularDirectoryTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/SymlinkAndCircularDirectoryTests.cs)、[`FolderDiffConcurrencyStressTests`](../FolderDiffIL4DotNet.Tests/Services/EdgeCases/FolderDiffConcurrencyStressTests.cs) | DisassemblerBlacklist の TTL 復旧サイクルと並列 register/check、4 MiB ファイルのチャンク並列比較、シンボリックリンクループ/ダングリング処理、500 ファイル並列分類の決定論性、レイテンシシミュレーション付きストレステスト |
 | レポート/ログ/進捗 | [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs)、[`HtmlReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs)、[`AuditLogGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs)、[`LoggerServiceTests`](../FolderDiffIL4DotNet.Tests/Services/LoggerServiceTests.cs)、[`ProgressReportServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ProgressReportServiceTests.cs) | レポート出力内容、ログ動作、共有ログ書式、進捗報告ライフサイクル、HTML レポートのファイル生成・チェックボックス/入力要素の存在・セクション色付け・localStorage センチネル・`ShouldGenerateHtmlReport=false` スキップ・特殊文字の HTML エンコード、インライン差分サマリーの `#N` 番号と左端 `#` 列の整合、Modified・Unchanged セクションでの Unicode ファイル名（日本語/ウムラウト/中国語）のラウンドトリップ、10,500 件の大件数サマリー統計の正確性、`InlineDiffMaxDiffLines` による抑制（差分を計算した後、差分出力行数が閾値を超えた場合にスキップ）、凡例テーブル形式、stat-table 列ヘッダと可視ボーダー、`InlineDiffMaxEditDistance` code タグ、diff-row 背景色、クリップボードコピーボタン、行ホバーハイライト、テーブルソート順（Unchanged: `SHA256Match` → `ILMatch` → `TextMatch` 後にパス昇順、Modified/Warnings: `TextMismatch` → `ILMismatch` → `SHA256Mismatch` 後にパス昇順）、SHA256Mismatch 警告詳細テーブル（ファイル一覧、アルファベット順ソート、Timestamps Regressed テーブルの前に表示、各警告メッセージの直下に詳細テーブルを配置するインターリーブレイアウト）、HTML・Markdown 両レポートにおけるセマンティックサマリー注意書きの存在と CSS スタイル、構造化 JSON 監査ログ生成（`audit_log.json`）―メタデータ/サマリー/ファイルエントリ/SHA256 インテグリティハッシュ、`ShouldGenerateAuditLog=false` スキップ、異なるレポート内容で異なるハッシュが生成される改竄検知、空結果処理、コンストラクタ null チェック、レビュー済み HTML の SHA256 整合性検証コード存在確認（Web Crypto API `crypto.subtle.digest`、コンパニオン `.sha256` ファイル、`__reviewedSha256__`/`__finalSha256__` センチネル、`accept='.sha256'` 付き事前作成ファイル入力、`verifyIntegrity` 自己検証関数）、Access・Modifiers 列の `<code>` ラッピングと矢印対応フォーマット（`CodeWrapArrow`）、Markdown/HTML レポートヘッダの逆アセンブラ利用可否テーブル（プローブ結果がある場合は表示、null の場合は非表示）、監査ログ JSON の `disassemblerAvailability` 配列 |
 | Core ユーティリティ層 | [`FileComparerTests`](../FolderDiffIL4DotNet.Tests/Core/IO/FileComparerTests.cs), [`FileSystemUtilityTests`](../FolderDiffIL4DotNet.Tests/Core/IO/FileSystemUtilityTests.cs), [`PathValidatorTests`](../FolderDiffIL4DotNet.Tests/Core/IO/PathValidatorTests.cs), [`ProcessHelperTests`](../FolderDiffIL4DotNet.Tests/Core/Diagnostics/ProcessHelperTests.cs), [`TextSanitizerTests`](../FolderDiffIL4DotNet.Tests/Core/Text/TextSanitizerTests.cs) | ハッシュ/テキスト比較、共有タイムスタンプ書式、パス/ネットワーク判定（`//` プレフィックスのスラッシュ形式 UNC および IP ベース UNC パスを含む）、コマンド分解、ファイル名/パス整形、`FolderDiffIL4DotNet.Core` に移した再利用 helper の契約確認 |
 | アーキテクチャ境界 | [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs), [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) | utility 型が `FolderDiffIL4DotNet.Core` アセンブリに残り、実行ファイル側へ旧 `FolderDiffIL4DotNet.Utils` 名前空間が戻らないことに加え、カバレッジゲート、リリースワークフロー、CodeQL、Dependabot の設定が維持されること |
@@ -233,10 +253,10 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false
 ```
 
-カバレッジ付き実行（Cobertura XML）:
+カバレッジ付き実行（Cobertura XML + opencover、`.runsettings` 使用）:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --collect:"XPlat Code Coverage" --results-directory ./TestResults
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo -p:UseAppHost=false --settings coverlet.runsettings --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
 クラス単位実行:
@@ -281,7 +301,14 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 CI 同等コマンド（GitHub Actions と同じ test ステップ）:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+```
+
+ミューテーションテスト実行（Stryker.NET）:
+
+```bash
+dotnet tool restore
+dotnet tool run dotnet-stryker --config-file stryker-config.json
 ```
 
 <a id="testing-ja-coverage"></a>
@@ -292,13 +319,18 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configu
 直近のフルカバレッジ実行では、行カバレッジ `74.04%`（`2665/3599`）、分岐カバレッジ `71.63%`（`697/973`）でした。
 CI では total の最小値として、行 `73%` / 分岐 `71%` を下回ると失敗します。
 
-ローカルで要約を作る場合（CI と同系統ツール）:
+ローカルで要約を作る場合（ローカルツールマニフェストを使用）:
 
 ```bash
-dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.*
-export PATH="$PATH:$HOME/.dotnet/tools"
-reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"MarkdownSummaryGithub;Cobertura;HtmlInline_AzurePipelines"
+dotnet tool restore
+dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"CoverageReport" -reporttypes:"MarkdownSummaryGithub;Cobertura;HtmlInline_AzurePipelines"
 ```
+
+[`coverlet.runsettings`](../coverlet.runsettings) の設定内容:
+- **Include/Exclude フィルタ**: `[FolderDiffIL4DotNet]*` と `[FolderDiffIL4DotNet.Core]*` アセンブリのみ計測対象。テストおよびベンチマークアセンブリは除外。
+- **属性除外**: `[ExcludeFromCodeCoverage]`、`[GeneratedCode]`、`[CompilerGenerated]`、`[Obsolete]` 属性付きメンバーを除外。
+- **出力フォーマット**: `cobertura`（CI 閾値チェック用）と `opencover`（IDE 詳細分析用）の両方を生成。
+- **決定論的レポート**: `DeterministicReport=true` で CI 実行間の再現性を確保。
 
 <a id="testing-ja-ci-notes"></a>
 ## CI 連携メモ
