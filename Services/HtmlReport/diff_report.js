@@ -143,51 +143,31 @@
   }
 
   function verifyIntegrity() {
-    if (__reviewedSha256__ === null) {
+    if (__finalSha256__ === null) {
       alert('This report has not been downloaded as reviewed yet.');
       return;
     }
     var input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.html,.sha256';
     input.style.display = 'none';
     document.body.appendChild(input);
     input.onchange = async function() {
       var file = input.files[0];
       document.body.removeChild(input);
       if (!file) return;
-      if (file.name.endsWith('.sha256')) {
-        // Verify companion .sha256 file against the embedded final hash
-        var sha256Text = await file.text();
-        var match = sha256Text.match(/^([0-9a-f]{64})\b/i);
-        if (!match) {
-          alert('Invalid .sha256 file format.\nExpected: <hash>  <filename>');
-          return;
-        }
-        var fileHash = match[1].toLowerCase();
-        if (fileHash === __finalSha256__) {
-          alert('Integrity verification passed.\nThe .sha256 file matches this report.');
-        } else {
-          alert('Integrity verification FAILED.\nThe .sha256 file does not match this report.'
-            + '\n\nEmbedded: ' + __finalSha256__
-            + '\n.sha256:  ' + fileHash);
-        }
+      var sha256Text = await file.text();
+      var match = sha256Text.match(/^([0-9a-f]{64})\b/i);
+      if (!match) {
+        alert('Invalid .sha256 file format.\nExpected: <hash>  <filename>');
+        return;
+      }
+      var fileHash = match[1].toLowerCase();
+      if (fileHash === __finalSha256__) {
+        alert('Integrity verification passed.\nThe .sha256 file matches this report.');
       } else {
-        // Verify reviewed HTML file using embedded hash (placeholder approach)
-        var text = await file.text();
-        var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
-        var hashable = text.replace("'" + __reviewedSha256__ + "'", "'" + placeholder + "'");
-        var encoded = new TextEncoder().encode(hashable);
-        var hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
-        var hashArray = Array.from(new Uint8Array(hashBuffer));
-        var actualHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-        if (actualHash === __reviewedSha256__) {
-          alert('Integrity verification passed.\nThe file has not been tampered with.');
-        } else {
-          alert('Integrity verification FAILED.\nThe file may have been tampered with.'
-            + '\n\nExpected: ' + __reviewedSha256__
-            + '\nActual:   ' + actualHash);
-        }
+        alert('Integrity verification FAILED.\nThe .sha256 file does not match this report.'
+          + '\n\nEmbedded: ' + __finalSha256__
+          + '\n.sha256:  ' + fileHash);
       }
     };
     input.click();
