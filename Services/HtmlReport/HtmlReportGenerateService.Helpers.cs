@@ -307,12 +307,7 @@ namespace FolderDiffIL4DotNet.Services
         internal static string HtmlEncode(string text)
         {
             if (string.IsNullOrEmpty(text)) return string.Empty;
-            return text
-                .Replace("&", "&amp;")
-                .Replace("<", "&lt;")
-                .Replace(">", "&gt;")
-                .Replace("\"", "&quot;")
-                .Replace("'", "&#39;");
+            return System.Net.WebUtility.HtmlEncode(text);
         }
 
         internal static string I18n(string en, string ja)
