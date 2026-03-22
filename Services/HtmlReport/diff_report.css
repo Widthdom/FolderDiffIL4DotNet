@@ -200,7 +200,7 @@
     col.sc-col-body-g { width: var(--sc-body-w); }
     col.sc-cnt-class-g { width: var(--sc-cnt-class-w); }
     col.sc-cnt-change-g { width: 7em; }
-    col.sc-cnt-high-g { width: 4em; }
+    col.sc-cnt-high-g { width: 5em; }
     col.sc-cnt-medium-g { width: 5em; }
-    col.sc-cnt-low-g { width: 4em; }
-    col.sc-cnt-total-g { width: 4em; }
+    col.sc-cnt-low-g { width: 5em; }
+    col.sc-cnt-total-g { width: 5em; }
