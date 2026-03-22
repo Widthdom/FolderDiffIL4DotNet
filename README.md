@@ -170,7 +170,7 @@ flowchart TD
     B --> C["3. Review in browser"]
     C --> D["4. Download as reviewed"]
     D --> E{"5. Verify reviewed HTML"}
-    E -- "A. In-browser" --> F["Open reviewed HTML\n→ Click Verify integrity\n→ Select file → Pass/Fail dialog"]
+    E -- "A. In-browser" --> F["Open reviewed HTML\n→ Click Verify integrity\n→ Select .sha256 file → Pass/Fail dialog"]
     E -- "B. Command line" --> G["Use companion .sha256 file\n(see OS-specific commands below)"]
 
     A -.- A1["→ diff_report.md\n→ diff_report.html\n→ audit_log.json\naudit_log.json records\nSHA256 of .md and .html"]
@@ -714,7 +714,7 @@ flowchart TD
     B --> C["3. ブラウザでレビュー"]
     C --> D["4. Download as reviewed"]
     D --> E{"5. レビュー済み HTML の検証"}
-    E -- "A. ブラウザ内" --> F["レビュー済み HTML を開く\n→ Verify integrity をクリック\n→ ファイルを選択 → 合格/不合格"]
+    E -- "A. ブラウザ内" --> F["レビュー済み HTML を開く\n→ Verify integrity をクリック\n→ .sha256 ファイルを選択 → 合格/不合格"]
     E -- "B. コマンドライン" --> G["コンパニオン .sha256 ファイルを使用\n（下記の OS 別コマンドを参照）"]
 
     A -.- A1["→ diff_report.md\n→ diff_report.html\n→ audit_log.json\naudit_log.json に\n.md と .html の SHA256 を記録"]

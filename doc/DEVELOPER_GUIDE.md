@@ -653,6 +653,35 @@ Before merging behavior changes, check:
 - If a test becomes order-dependent, suspect leaked run-scoped state first.
 - If the banner or any console output shows `?` characters on Windows, the process is using the OEM code page. [`Program.cs`](../Program.cs) sets [`Console.OutputEncoding`](https://learn.microsoft.com/en-us/DOTNET/api/system.console.outputencoding?view=net-8.0) = `Encoding.UTF8` at the very start of `Main()` — before any output — to override this. On Linux and macOS the console is already UTF-8, so the assignment is effectively a no-op on those platforms.
 
+## HTML Report: Integrity Verification Technical Notes
+
+### Dual-hash placeholder approach
+
+The "Download as reviewed" workflow embeds **two** SHA256 hashes inside the reviewed HTML file using a placeholder technique. This solves a circular dependency: the hash of the file cannot be known until the file is complete, but the hash must be embedded inside the file.
+
+| Constant | Placeholder | Purpose |
+| --- | --- | --- |
+| `__reviewedSha256__` | 64 zeros (`000...0`) | Intermediate hash — hash of the HTML with this field set to the placeholder. Used internally during the hashing process. |
+| `__finalSha256__` | 64 f's (`fff...f`) | Final hash — hash of the HTML with `__reviewedSha256__` already embedded and this field set to the placeholder. Matches the companion `.sha256` file exactly. |
+
+The two-step process in `downloadReviewed()`:
+1. Replace `__reviewedSha256__` placeholder with zeros → compute SHA256 → replace zeros with actual hash (first hash embedded).
+2. Replace `__finalSha256__` placeholder with f's → compute SHA256 → replace f's with actual hash (second hash embedded). This final hash is also written to the companion `.sha256` file.
+
+### Verify integrity: `.sha256`-only verification
+
+`verifyIntegrity()` only accepts `.sha256` files. The reviewed HTML is "self" — it already has its own final hash embedded in `__finalSha256__`, so no HTML file selection is needed. The function reads the `.sha256` file, extracts the hash, and compares it directly against the embedded `__finalSha256__` constant.
+
+### Browser quirk: `input.accept` on dynamically created elements
+
+Some browsers (notably macOS Safari) ignore the `accept` attribute on `<input type="file">` elements that are created dynamically and clicked immediately. The file picker opens with no filter, allowing all files to be selected.
+
+**Workaround**: Pre-create the hidden `<input type="file" accept=".sha256">` element during `DOMContentLoaded` initialization and reuse it in `verifyIntegrity()`. By the time the user clicks "Verify integrity", the input element has been in the DOM long enough for the browser to recognize and apply the `accept` filter. An `onchange` guard (`file.name.endsWith('.sha256')`) is also present as a fallback for browsers that still bypass the filter.
+
+### Type name format in semantic changes
+
+[`SimpleSignatureTypeProvider`](../Services/AssemblyMethodAnalyzer.cs) always outputs **fully qualified .NET type names** (e.g. `System.String`, `System.Int32`, `System.Void`), never C# aliases (`string`, `int`, `void`). The `MemberType`, `ReturnType`, and `Parameters` fields in [`MemberChangeEntry`](../Models/MemberChangeEntry.cs) follow this convention. Sample HTML base64 blocks must use fully qualified names to match.
+
 ---
 
 # 開発者ガイド
@@ -1306,3 +1335,32 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - バケット分類がおかしい場合は、レポート整形より前に [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) の投入順を追ってください。
 - テストが順序依存になったら、まず実行スコープ状態のリークを疑ってください。
 - Windows でバナーやコンソール出力が `?` になる場合は、プロセスが OEM コードページ（CP932/CP437 等）を使用しています。[`Program.cs`](../Program.cs) の `Main()` 先頭で [`Console.OutputEncoding`](https://learn.microsoft.com/ja-jp/DOTNET/api/system.console.outputencoding?view=net-8.0) = `Encoding.UTF8` を設定することで回避しています。Linux / macOS ではコンソールがすでに UTF-8 のため、この設定は実質ノーオペレーションです。
+
+## HTML レポート: 整合性検証の技術メモ
+
+### デュアルハッシュ・プレースホルダ方式
+
+「Download as reviewed」ワークフローでは、レビュー済み HTML ファイル内に **2 つ**の SHA256 ハッシュをプレースホルダ方式で埋め込みます。これはファイルのハッシュをファイル自体に埋め込むという循環依存を解決するためです。
+
+| 定数 | プレースホルダ | 用途 |
+| --- | --- | --- |
+| `__reviewedSha256__` | 64 個のゼロ（`000...0`） | 中間ハッシュ — このフィールドをプレースホルダに置き換えた状態の HTML のハッシュ。ハッシュ処理の内部で使用。 |
+| `__finalSha256__` | 64 個の f（`fff...f`） | 最終ハッシュ — `__reviewedSha256__` 埋め込み後、このフィールドをプレースホルダに置き換えた状態の HTML のハッシュ。コンパニオン `.sha256` ファイルと完全に一致。 |
+
+`downloadReviewed()` の 2 段階処理:
+1. `__reviewedSha256__` プレースホルダをゼロに置換 → SHA256 計算 → ゼロを実際のハッシュに置換（第 1 ハッシュ埋め込み）。
+2. `__finalSha256__` プレースホルダを f に置換 → SHA256 計算 → f を実際のハッシュに置換（第 2 ハッシュ埋め込み）。この最終ハッシュがコンパニオン `.sha256` ファイルにも書き出されます。
+
+### Verify integrity: `.sha256` 専用検証
+
+`verifyIntegrity()` は `.sha256` ファイルのみを受け付けます。レビュー済み HTML は「自分自身」であり、最終ハッシュが `__finalSha256__` に埋め込み済みのため、HTML ファイルの選択は不要です。関数は `.sha256` ファイルを読み取り、ハッシュを抽出して、埋め込み済みの `__finalSha256__` 定数と直接比較します。
+
+### ブラウザの注意点: 動的作成した input 要素の `accept` 属性
+
+一部のブラウザ（特に macOS Safari）は、動的に作成して即座にクリックした `<input type="file">` 要素の `accept` 属性を無視します。ファイルピッカーがフィルタなしで開き、全ファイルが選択可能になります。
+
+**回避策**: `DOMContentLoaded` の初期化時に隠し `<input type="file" accept=".sha256">` 要素を事前作成し、`verifyIntegrity()` ではそれを再利用します。ユーザーが「Verify integrity」をクリックする時点で、input 要素は十分な時間 DOM に存在しているため、ブラウザが `accept` フィルタを認識・適用できます。フィルタをバイパスするブラウザへのフォールバックとして、`onchange` ガード（`file.name.endsWith('.sha256')`）も設けています。
+
+### セマンティック変更の型名フォーマット
+
+[`SimpleSignatureTypeProvider`](../Services/AssemblyMethodAnalyzer.cs) は常に**完全修飾 .NET 型名**（例: `System.String`、`System.Int32`、`System.Void`）を出力し、C# エイリアス（`string`、`int`、`void`）は使用しません。[`MemberChangeEntry`](../Models/MemberChangeEntry.cs) の `MemberType`、`ReturnType`、`Parameters` フィールドはこの規約に従います。サンプル HTML の base64 ブロックも一致させる必要があります。
