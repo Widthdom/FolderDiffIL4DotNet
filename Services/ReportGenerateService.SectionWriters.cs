@@ -17,41 +17,66 @@ namespace FolderDiffIL4DotNet.Services
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_TITLE);
-                writer.WriteLine($"- App Version: FolderDiffIL4DotNet {ctx.AppVersion}");
-                writer.WriteLine($"- Computer: {ctx.ComputerName}");
-                writer.WriteLine($"- Old: {ctx.OldFolderAbsolutePath}");
-                writer.WriteLine($"- New: {ctx.NewFolderAbsolutePath}");
-                writer.WriteLine($"- Ignored Extensions: {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.IgnoredExtensions)}");
-                writer.WriteLine($"- Text File Extensions: {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.TextFileExtensions)}");
-                writer.WriteLine($"- IL Disassembler: {BuildDisassemblerHeaderText(ctx.FileDiffResultLists)}");
-                WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability);
+                writer.WriteLine();
+
+                // Key metadata table / キーメタデータテーブル
+                writer.WriteLine("| Property | Value |");
+                writer.WriteLine("|----------|-------|");
+                writer.WriteLine($"| App Version | FolderDiffIL4DotNet {ctx.AppVersion} |");
+                writer.WriteLine($"| Computer | {ctx.ComputerName} |");
+                writer.WriteLine($"| Old | {ctx.OldFolderAbsolutePath} |");
+                writer.WriteLine($"| New | {ctx.NewFolderAbsolutePath} |");
+                writer.WriteLine($"| IL Disassembler | {BuildDisassemblerHeaderText(ctx.FileDiffResultLists)} |");
                 if (!string.IsNullOrWhiteSpace(ctx.ElapsedTimeString))
                 {
-                    writer.WriteLine($"- Elapsed Time: {ctx.ElapsedTimeString}");
+                    writer.WriteLine($"| Elapsed Time | {ctx.ElapsedTimeString} |");
                 }
                 if (ctx.Config.ShouldOutputFileTimestamps)
                 {
-                    writer.WriteLine($"- Timestamps (timezone): {DateTimeOffset.Now:zzz}");
+                    writer.WriteLine($"| Timezone | {DateTimeOffset.Now:zzz} |");
                 }
-                writer.WriteLine("- " + NOTE_MVID_SKIP);
-                if (!ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings) return;
+                writer.WriteLine();
+                WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability);
 
-                var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
-                if (ilIgnoreStrings.Count == 0)
+                // Configuration details / 設定詳細
+                writer.WriteLine("<details>");
+                writer.WriteLine("<summary>Configuration Details</summary>");
+                writer.WriteLine();
+                writer.WriteLine("| Setting | Value |");
+                writer.WriteLine("|---------|-------|");
+                writer.WriteLine($"| Ignored Extensions | {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.IgnoredExtensions)} |");
+                writer.WriteLine($"| Text File Extensions | {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.TextFileExtensions)} |");
+                if (ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings)
                 {
-                    writer.WriteLine("- " + NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY);
-                }
-                else
-                {
-                    writer.WriteLine($"- Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored:");
-                    writer.WriteLine();
-                    writer.WriteLine("| Ignored String |");
-                    writer.WriteLine("|----------------|");
-                    foreach (var v in ilIgnoreStrings)
+                    var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
+                    if (ilIgnoreStrings.Count == 0)
                     {
-                        writer.WriteLine($"| \"{v}\" |");
+                        writer.WriteLine("| IL Line Ignore | Enabled, but no non-empty strings are configured. |");
                     }
                 }
+                writer.WriteLine();
+                if (ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings)
+                {
+                    var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
+                    if (ilIgnoreStrings.Count > 0)
+                    {
+                        writer.WriteLine($"**IL Ignored Strings** — When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored:");
+                        writer.WriteLine();
+                        writer.WriteLine("| Ignored String |");
+                        writer.WriteLine("|----------------|");
+                        foreach (var v in ilIgnoreStrings)
+                        {
+                            writer.WriteLine($"| \"{v}\" |");
+                        }
+                        writer.WriteLine();
+                    }
+                }
+                writer.WriteLine("</details>");
+                writer.WriteLine();
+
+                // Notes / ノート
+                writer.WriteLine($"> {NOTE_MVID_SKIP}");
+                writer.WriteLine();
             }
         }
 
@@ -67,6 +92,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.SHA256Match}` / `{FileDiffResultLists.DiffDetailResult.SHA256Mismatch}` | SHA256 hash match / mismatch |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}` | IL(Intermediate Language) match / mismatch |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}` | Text match / mismatch |");
+                writer.WriteLine();
                 writer.WriteLine(REPORT_IMPORTANCE_LEGEND_HEADER);
                 writer.WriteLine();
                 writer.WriteLine("| Label | Description |");

@@ -14,10 +14,81 @@
     h2.section-heading { font-size: 1.55rem; margin: 1.6rem 0 0.4rem; }
     code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
            font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
-    ul.meta { margin: 0.4rem 0 0.8rem 1.4rem; }
-    ul.meta li { margin-bottom: 3px; line-height: 1.65; }
-    ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
-    ul.meta ul li { margin-bottom: 1px; }
+    /* ── Report header (card grid layout) ─────────────────────────────── */
+    .report-header { margin: 0.2rem 0 1.2rem; }
+    .header-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(13em, 1fr));
+      gap: 0.6rem; margin-bottom: 0.8rem;
+    }
+    .header-card {
+      background: #f5f5f7; border-radius: 12px; padding: 0.7rem 1rem;
+    }
+    .header-card-label {
+      font-size: 11px; font-weight: 600; color: #86868b;
+      text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.2rem;
+    }
+    .header-card-value {
+      font-size: 13px; color: #1d1d1f; word-break: break-all; line-height: 1.4;
+    }
+    .header-paths { margin-bottom: 0.8rem; }
+    .header-path {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      padding: 0.35rem 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .header-path:last-child { border-bottom: none; }
+    .header-path-label {
+      font-size: 11px; font-weight: 700; color: #86868b;
+      text-transform: uppercase; letter-spacing: 0.03em;
+      min-width: 2.4em; flex-shrink: 0;
+    }
+    .header-path-value {
+      font-size: 13px; color: #1d1d1f;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      word-break: break-all; line-height: 1.4;
+    }
+    .header-details {
+      margin-bottom: 0.8rem; border-radius: 10px;
+      background: #fafafa; border: 1px solid #e8e8ed;
+    }
+    .header-details summary {
+      font-size: 13px; font-weight: 600; color: #1d1d1f;
+      padding: 0.55rem 1rem; cursor: pointer; user-select: none;
+      list-style: none;
+    }
+    .header-details summary::-webkit-details-marker { display: none; }
+    .header-details summary::before {
+      content: '▶'; font-size: 10px; margin-right: 0.5em;
+      display: inline-block; transition: transform 0.15s;
+    }
+    .header-details[open] summary::before { transform: rotate(90deg); }
+    .header-details-content { padding: 0 1rem 0.6rem; }
+    .header-detail-row {
+      padding: 0.3rem 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .header-detail-row:last-child { border-bottom: none; }
+    .header-detail-label {
+      font-size: 11px; font-weight: 600; color: #86868b;
+      text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.15rem;
+    }
+    .header-detail-value {
+      font-size: 12px; color: #1d1d1f; line-height: 1.5; word-break: break-all;
+    }
+    .header-notes { margin-bottom: 0.8rem; }
+    .header-note {
+      font-size: 12px; color: #6e6e73; line-height: 1.55;
+      padding: 0.35rem 0.8rem; margin-bottom: 0.3rem;
+      border-left: 2px solid #d2d2d7; background: #fafafa; border-radius: 0 6px 6px 0;
+    }
+    .header-note:last-child { margin-bottom: 0; }
+    .header-note a { color: #0066cc; text-decoration: none; }
+    .header-note a:hover { text-decoration: underline; }
+    .header-legends {
+      display: flex; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 0.4rem;
+    }
+    .header-legend-title {
+      font-size: 12px; font-weight: 600; color: #1d1d1f;
+      margin-bottom: 0.3rem;
+    }
     /* ── Legend table ────────────────────────────────────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table th { border: 1px solid #bbb; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
@@ -250,61 +321,77 @@
 <!--/CTRL-->
 <main>
 <h1>Folder Diff Report</h1>
-<ul class="meta">
-  <li>App Version: FolderDiffIL4DotNet 1.0.0</li>
-  <li>Computer: dev-machine</li>
-  <li>Old: /Users/UserA/workspace/old</li>
-  <li>New: /Users/UserA/workspace/new</li>
-  <li>Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb</li>
-  <li>Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml</li>
-  <li>IL Disassembler: dotnet-ildasm (version: 0.12.2)</li>
-  <li>Disassembler Availability:
-    <table class="legend-table">
-      <thead><tr><th style="background:#f0f0f2">Tool</th><th style="background:#f0f0f2">Available</th><th style="background:#f0f0f2">Version</th></tr></thead>
-      <tbody>
-        <tr><td>dotnet-ildasm</td><td style="text-align:center"><span style="color:#22863a">Yes</span></td><td>0.12.2</td></tr>
-        <tr><td>ilspycmd</td><td style="text-align:center"><span style="color:#b31d28">No</span></td><td>N/A</td></tr>
-      </tbody>
-    </table>
-  </li>
-  <li>Elapsed Time: 0h 0m 1.2s</li>
-  <li>Timestamps (timezone): +09:00</li>
-  <li>Note: When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</li>
-  <li>Note: When diffing IL, lines containing any of the configured strings are ignored:
-    <div class="il-ignore-scroll"><table class="legend-table il-ignore-table">
-      <thead><tr><th style="background:#f5f5f7">Ignored String</th></tr></thead>
-      <tbody>
-        <tr><td>&quot;buildserver1_&quot;</td></tr>
-        <tr><td>&quot;buildserver2_&quot;</td></tr>
-        <tr><td>&quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;</td></tr>
-        <tr><td>&quot;.publickeytoken = ( &quot;</td></tr>
-        <tr><td>&quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;</td></tr>
-        <tr><td>&quot;// Code size &quot;</td></tr>
-      </tbody>
-    </table></div>
-  </li>
-  <li>Note: Inline diffs for ILMismatch and TextMismatch are computed using the <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>
-  <li>Legend (Diff Detail):
-    <table class="legend-table">
-      <thead><tr><th style="background:#f0f0f2">Label</th><th style="background:#f0f0f2">Description</th></tr></thead>
-      <tbody>
-        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>SHA256 hash match / mismatch</td></tr>
-        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>
-        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>Text match / mismatch</td></tr>
-      </tbody>
-    </table>
-  </li>
-  <li>Legend (Change Importance):
-    <table class="legend-table">
-      <thead><tr><th style="background:#f0f0f2">Label</th><th style="background:#f0f0f2">Description</th></tr></thead>
-      <tbody>
-        <tr><td style="color:#d1242f;font-weight:bold">High</td><td>Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
-        <tr><td style="color:#d97706;font-weight:bold">Medium</td><td>Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
-        <tr><td>Low</td><td>Low-impact change: body-only modification, internal/private member addition</td></tr>
-      </tbody>
-    </table>
-  </li>
-</ul>
+<div class="report-header">
+<div class="header-grid">
+  <div class="header-card"><div class="header-card-label">App Version</div><div class="header-card-value">FolderDiffIL4DotNet 1.0.0</div></div>
+  <div class="header-card"><div class="header-card-label">Computer</div><div class="header-card-value">dev-machine</div></div>
+  <div class="header-card"><div class="header-card-label">IL Disassembler</div><div class="header-card-value">dotnet-ildasm (version: 0.12.2)</div></div>
+  <div class="header-card"><div class="header-card-label">Elapsed Time</div><div class="header-card-value">0h 0m 1.2s</div></div>
+  <div class="header-card"><div class="header-card-label">Timezone</div><div class="header-card-value">+09:00</div></div>
+</div>
+<div class="header-paths">
+  <div class="header-path"><span class="header-path-label">Old</span><span class="header-path-value">/Users/UserA/workspace/old</span></div>
+  <div class="header-path"><span class="header-path-label">New</span><span class="header-path-value">/Users/UserA/workspace/new</span></div>
+</div>
+<table class="legend-table">
+  <thead><tr><th style="background:#f0f0f2">Tool</th><th style="background:#f0f0f2">Available</th><th style="background:#f0f0f2">Version</th></tr></thead>
+  <tbody>
+    <tr><td>dotnet-ildasm</td><td style="text-align:center"><span style="color:#22863a">Yes</span></td><td>0.12.2</td></tr>
+    <tr><td>ilspycmd</td><td style="text-align:center"><span style="color:#b31d28">No</span></td><td>N/A</td></tr>
+  </tbody>
+</table>
+<details class="header-details">
+  <summary>Configuration Details</summary>
+  <div class="header-details-content">
+    <div class="header-detail-row"><div class="header-detail-label">Ignored Extensions</div><div class="header-detail-value">.cache, .DS_Store, .db, .ilcache, .log, .pdb</div></div>
+    <div class="header-detail-row"><div class="header-detail-label">Text File Extensions</div><div class="header-detail-value">.asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml</div></div>
+    <div class="header-detail-row">
+      <div class="header-detail-label">IL Ignored Strings</div>
+      <div class="header-detail-value">
+        <div class="il-ignore-scroll"><table class="legend-table il-ignore-table">
+          <thead><tr><th style="background:#f0f0f2">Ignored String</th></tr></thead>
+          <tbody>
+            <tr><td>&quot;buildserver1_&quot;</td></tr>
+            <tr><td>&quot;buildserver2_&quot;</td></tr>
+            <tr><td>&quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;</td></tr>
+            <tr><td>&quot;.publickeytoken = ( &quot;</td></tr>
+            <tr><td>&quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;</td></tr>
+            <tr><td>&quot;// Code size &quot;</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</details>
+<div class="header-notes">
+  <p class="header-note">When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</p>
+  <p class="header-note">Inline diffs for ILMismatch and TextMismatch are computed using the <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</p>
+</div>
+<div class="header-legends">
+<div>
+  <div class="header-legend-title">Legend &#x2014; Diff Detail</div>
+  <table class="legend-table">
+    <thead><tr><th style="background:#f0f0f2">Label</th><th style="background:#f0f0f2">Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>SHA256 hash match / mismatch</td></tr>
+      <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>
+      <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>Text match / mismatch</td></tr>
+    </tbody>
+  </table>
+</div>
+<div>
+  <div class="header-legend-title">Legend &#x2014; Change Importance</div>
+  <table class="legend-table">
+    <thead><tr><th style="background:#f0f0f2">Label</th><th style="background:#f0f0f2">Description</th></tr></thead>
+    <tbody>
+      <tr><td style="color:#d1242f;font-weight:bold">High</td><td>Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
+      <tr><td style="color:#d97706;font-weight:bold">Medium</td><td>Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
+      <tr><td>Low</td><td>Low-impact change: body-only modification, internal/private member addition</td></tr>
+    </tbody>
+  </table>
+</div>
+</div>
+</div>
 <h2>[ x ] Ignored Files (3)</h2>
 <div class="table-scroll">
 <table class="hide-disasm">

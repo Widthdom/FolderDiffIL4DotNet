@@ -169,12 +169,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // 差分詳細と変更重要度のレジェンドテーブルが存在すること
             var content = File.ReadAllText(GoldenSamplePath);
 
-            Assert.Contains("Legend (Diff Detail):", content);
+            Assert.Contains("Legend — Diff Detail", content);
             Assert.Contains("`SHA256Match`", content);
             Assert.Contains("`ILMatch`", content);
             Assert.Contains("`TextMatch`", content);
 
-            Assert.Contains("Legend (Change Importance):", content);
+            Assert.Contains("Legend — Change Importance", content);
             Assert.Contains("`High`", content);
             Assert.Contains("`Medium`", content);
             Assert.Contains("`Low`", content);
@@ -220,14 +220,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // レポートヘッダーに期待されるすべてのメタデータフィールドが含まれること
             var content = File.ReadAllText(GoldenSamplePath);
 
-            Assert.Contains("- App Version:", content);
-            Assert.Contains("- Computer:", content);
-            Assert.Contains("- Old:", content);
-            Assert.Contains("- New:", content);
-            Assert.Contains("- Ignored Extensions:", content);
-            Assert.Contains("- Text File Extensions:", content);
-            Assert.Contains("- IL Disassembler:", content);
-            Assert.Contains("- Elapsed Time:", content);
+            Assert.Contains("| App Version |", content);
+            Assert.Contains("| Computer |", content);
+            Assert.Contains("| Old |", content);
+            Assert.Contains("| New |", content);
+            Assert.Contains("Ignored Extensions", content);
+            Assert.Contains("Text File Extensions", content);
+            Assert.Contains("| IL Disassembler |", content);
+            Assert.Contains("| Elapsed Time |", content);
         }
 
         [Fact]
@@ -293,8 +293,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Structural checks on generated report / 生成レポートの構造チェック
             Assert.Contains("# Folder Diff Report", report1);
-            Assert.Contains("- App Version: FolderDiffIL4DotNet 1.0.0-snapshot", report1);
-            Assert.Contains("- Computer: snapshot-host", report1);
+            Assert.Contains("| App Version | FolderDiffIL4DotNet 1.0.0-snapshot |", report1);
+            Assert.Contains("| Computer | snapshot-host |", report1);
             Assert.Contains("## [ = ] Unchanged Files (2)", report1);
             Assert.Contains("## [ + ] Added Files (1)", report1);
             Assert.Contains("## [ - ] Removed Files (1)", report1);

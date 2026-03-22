@@ -57,7 +57,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("- IL Disassembler: dotnet-ildasm (version: dotnet ildasm 0.12.0)", reportText);
+            Assert.Contains("| IL Disassembler | dotnet-ildasm (version: dotnet ildasm 0.12.0) |", reportText);
             Assert.DoesNotContain(", ildasm", reportText);
             Assert.DoesNotContain(", ilspycmd", reportText);
         }
@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("- IL Disassembler: N/A", reportText);
+            Assert.Contains("| IL Disassembler | N/A |", reportText);
         }
 
         [Fact]
@@ -105,7 +105,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Assert: availability table structure and content
             // テーブルの構造と内容を検証
-            Assert.Contains("- Disassembler Availability:", reportText);
             Assert.Contains("| Tool | Available | Version |", reportText);
             Assert.Contains("| dotnet-ildasm | Yes | 0.12.2 |", reportText);
             Assert.Contains("| ilspycmd | No | N/A |", reportText);

@@ -1,21 +1,29 @@
 # Folder Diff Report
-- App Version: FolderDiffIL4DotNet 1.0.0
-- Computer: dev-machine
-- Old: /Users/UserA/workspace/old
-- New: /Users/UserA/workspace/new
-- Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
-- Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
-- IL Disassembler: dotnet-ildasm (version: 0.12.2)
-- Disassembler Availability:
+
+| Property | Value |
+|----------|-------|
+| App Version | FolderDiffIL4DotNet 1.0.0 |
+| Computer | dev-machine |
+| Old | /Users/UserA/workspace/old |
+| New | /Users/UserA/workspace/new |
+| IL Disassembler | dotnet-ildasm (version: 0.12.2) |
+| Elapsed Time | 0h 0m 1.2s |
+| Timezone | +09:00 |
 
 | Tool | Available | Version |
 |------|:---------:|---------|
 | dotnet-ildasm | Yes | 0.12.2 |
 | ilspycmd | No | N/A |
-- Elapsed Time: 0h 0m 1.2s
-- Timestamps (timezone): +09:00
-- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
-- Note: When diffing IL, lines containing any of the configured strings are ignored:
+
+<details>
+<summary>Configuration Details</summary>
+
+| Setting | Value |
+|---------|-------|
+| Ignored Extensions | .cache, .DS_Store, .db, .ilcache, .log, .pdb |
+| Text File Extensions | .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml |
+
+**IL Ignored Strings** — When diffing IL, lines containing any of the configured strings are ignored:
 
 | Ignored String |
 |----------------|
@@ -25,14 +33,20 @@
 | ".publickeytoken = ( " |
 | ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( " |
 | "// Code size " |
-- Legend (Diff Detail):
+
+</details>
+
+> Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
+
+### Legend — Diff Detail
 
 | Label | Description |
 |-------|-------------|
 | `SHA256Match` / `SHA256Mismatch` | SHA256 hash match / mismatch |
 | `ILMatch` / `ILMismatch` | IL(Intermediate Language) match / mismatch |
 | `TextMatch` / `TextMismatch` | Text match / mismatch |
-- Legend (Change Importance):
+
+### Legend — Change Importance
 
 | Label | Description |
 |-------|-------------|

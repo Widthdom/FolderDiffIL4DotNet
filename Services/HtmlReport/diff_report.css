@@ -6,10 +6,81 @@
     h2.section-heading { font-size: 1.55rem; margin: 1.6rem 0 0.4rem; }
     code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
            font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
-    ul.meta { margin: 0.4rem 0 0.8rem 1.4rem; }
-    ul.meta li { margin-bottom: 3px; line-height: 1.65; }
-    ul.meta ul { margin: 3px 0 3px 1.4rem; list-style: disc; }
-    ul.meta ul li { margin-bottom: 1px; }
+    /* ── Report header (card grid layout) ─────────────────────────────── */
+    .report-header { margin: 0.2rem 0 1.2rem; }
+    .header-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(13em, 1fr));
+      gap: 0.6rem; margin-bottom: 0.8rem;
+    }
+    .header-card {
+      background: #f5f5f7; border-radius: 12px; padding: 0.7rem 1rem;
+    }
+    .header-card-label {
+      font-size: 11px; font-weight: 600; color: #86868b;
+      text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.2rem;
+    }
+    .header-card-value {
+      font-size: 13px; color: #1d1d1f; word-break: break-all; line-height: 1.4;
+    }
+    .header-paths { margin-bottom: 0.8rem; }
+    .header-path {
+      display: flex; align-items: baseline; gap: 0.6rem;
+      padding: 0.35rem 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .header-path:last-child { border-bottom: none; }
+    .header-path-label {
+      font-size: 11px; font-weight: 700; color: #86868b;
+      text-transform: uppercase; letter-spacing: 0.03em;
+      min-width: 2.4em; flex-shrink: 0;
+    }
+    .header-path-value {
+      font-size: 13px; color: #1d1d1f;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      word-break: break-all; line-height: 1.4;
+    }
+    .header-details {
+      margin-bottom: 0.8rem; border-radius: 10px;
+      background: #fafafa; border: 1px solid #e8e8ed;
+    }
+    .header-details summary {
+      font-size: 13px; font-weight: 600; color: #1d1d1f;
+      padding: 0.55rem 1rem; cursor: pointer; user-select: none;
+      list-style: none;
+    }
+    .header-details summary::-webkit-details-marker { display: none; }
+    .header-details summary::before {
+      content: '▶'; font-size: 10px; margin-right: 0.5em;
+      display: inline-block; transition: transform 0.15s;
+    }
+    .header-details[open] summary::before { transform: rotate(90deg); }
+    .header-details-content { padding: 0 1rem 0.6rem; }
+    .header-detail-row {
+      padding: 0.3rem 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .header-detail-row:last-child { border-bottom: none; }
+    .header-detail-label {
+      font-size: 11px; font-weight: 600; color: #86868b;
+      text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.15rem;
+    }
+    .header-detail-value {
+      font-size: 12px; color: #1d1d1f; line-height: 1.5; word-break: break-all;
+    }
+    .header-notes { margin-bottom: 0.8rem; }
+    .header-note {
+      font-size: 12px; color: #6e6e73; line-height: 1.55;
+      padding: 0.35rem 0.8rem; margin-bottom: 0.3rem;
+      border-left: 2px solid #d2d2d7; background: #fafafa; border-radius: 0 6px 6px 0;
+    }
+    .header-note:last-child { margin-bottom: 0; }
+    .header-note a { color: #0066cc; text-decoration: none; }
+    .header-note a:hover { text-decoration: underline; }
+    .header-legends {
+      display: flex; gap: 1.2rem; flex-wrap: wrap; margin-bottom: 0.4rem;
+    }
+    .header-legend-title {
+      font-size: 12px; font-weight: 600; color: #1d1d1f;
+      margin-bottom: 0.3rem;
+    }
     /* ── Legend table ────────────────────────────────────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table th { border: 1px solid #bbb; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }

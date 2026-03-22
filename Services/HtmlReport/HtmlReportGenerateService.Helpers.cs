@@ -285,10 +285,9 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return;
             }
-            sb.AppendLine($"  <li>{HtmlEncode("Disassembler Availability")}:");
-            sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Tool</th><th style=\"background:{TH_BG_DEFAULT}\">Available</th><th style=\"background:{TH_BG_DEFAULT}\">Version</th></tr></thead>");
-            sb.AppendLine("      <tbody>");
+            sb.AppendLine("<table class=\"legend-table\">");
+            sb.AppendLine($"  <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Tool</th><th style=\"background:{TH_BG_DEFAULT}\">Available</th><th style=\"background:{TH_BG_DEFAULT}\">Version</th></tr></thead>");
+            sb.AppendLine("  <tbody>");
             foreach (var probe in probeResults)
             {
                 var available = probe.Available
@@ -297,11 +296,10 @@ namespace FolderDiffIL4DotNet.Services
                 var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
                     ? HtmlEncode(probe.Version)
                     : "N/A";
-                sb.AppendLine($"        <tr><td>{HtmlEncode(probe.ToolName)}</td><td style=\"text-align:center\">{available}</td><td>{version}</td></tr>");
+                sb.AppendLine($"    <tr><td>{HtmlEncode(probe.ToolName)}</td><td style=\"text-align:center\">{available}</td><td>{version}</td></tr>");
             }
-            sb.AppendLine("      </tbody>");
-            sb.AppendLine("    </table>");
-            sb.AppendLine("  </li>");
+            sb.AppendLine("  </tbody>");
+            sb.AppendLine("</table>");
         }
 
         // ── Utilities ────────────────────────────────────────────────────────

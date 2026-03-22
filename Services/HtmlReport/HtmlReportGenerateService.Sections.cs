@@ -26,76 +26,113 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyConfigSettings config)
         {
             sb.AppendLine($"<h1>{HtmlEncode("Folder Diff Report")}</h1>");
-            sb.AppendLine("<ul class=\"meta\">");
-            sb.AppendLine($"  <li>{HtmlEncode("App Version")}: FolderDiffIL4DotNet {HtmlEncode(appVersion)}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("Computer")}: {HtmlEncode(computerName)}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("Old")}: {HtmlEncode(oldFolderAbsolutePath)}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("New")}: {HtmlEncode(newFolderAbsolutePath)}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("Ignored Extensions")}: {HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("Text File Extensions")}: {HtmlEncode(string.Join(", ", config.TextFileExtensions))}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("IL Disassembler")}: {HtmlEncode(BuildDisassemblerHeaderText())}</li>");
-            AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
+            sb.AppendLine("<div class=\"report-header\">");
+
+            // Key metrics as card grid / キーメトリクスをカードグリッドで表示
+            sb.AppendLine("<div class=\"header-grid\">");
+            AppendHeaderCard(sb, "App Version", $"FolderDiffIL4DotNet {HtmlEncode(appVersion)}");
+            AppendHeaderCard(sb, "Computer", HtmlEncode(computerName));
+            AppendHeaderCard(sb, "IL Disassembler", HtmlEncode(BuildDisassemblerHeaderText()));
             if (!string.IsNullOrWhiteSpace(elapsedTimeString))
-                sb.AppendLine($"  <li>{HtmlEncode("Elapsed Time")}: {HtmlEncode(elapsedTimeString)}</li>");
+                AppendHeaderCard(sb, "Elapsed Time", HtmlEncode(elapsedTimeString));
             if (config.ShouldOutputFileTimestamps)
-                sb.AppendLine($"  <li>{HtmlEncode("Timestamps (timezone)")}: {HtmlEncode(DateTimeOffset.Now.ToString("zzz"))}</li>");
+                AppendHeaderCard(sb, "Timezone", HtmlEncode(DateTimeOffset.Now.ToString("zzz")));
+            sb.AppendLine("</div>");
 
-            // MVID note (same style as other meta items)
-            sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("When diffing IL, lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.")}</li>");
+            // Folder paths / フォルダパス
+            sb.AppendLine("<div class=\"header-paths\">");
+            sb.AppendLine($"  <div class=\"header-path\"><span class=\"header-path-label\">Old</span><span class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</span></div>");
+            sb.AppendLine($"  <div class=\"header-path\"><span class=\"header-path-label\">New</span><span class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</span></div>");
+            sb.AppendLine("</div>");
 
-            // IL contains-ignore note
+            // Disassembler availability table / 逆アセンブラ可用性テーブル
+            AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
+
+            // Configuration details (collapsible) / 設定詳細（折りたたみ可能）
+            sb.AppendLine("<details class=\"header-details\">");
+            sb.AppendLine($"  <summary>{HtmlEncode("Configuration Details")}</summary>");
+            sb.AppendLine("  <div class=\"header-details-content\">");
+            AppendHeaderDetailRow(sb, "Ignored Extensions", HtmlEncode(string.Join(", ", config.IgnoredExtensions)));
+            AppendHeaderDetailRow(sb, "Text File Extensions", HtmlEncode(string.Join(", ", config.TextFileExtensions)));
             if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
             {
                 var ilIgnoreStrings = GetNormalizedIlIgnoreStrings(config);
                 if (ilIgnoreStrings.Count == 0)
                 {
-                    sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("IL line-ignore-by-contains is enabled, but no non-empty strings are configured.")}</li>");
+                    AppendHeaderDetailRow(sb, "IL Line Ignore", HtmlEncode("Enabled, but no non-empty strings are configured."));
                 }
                 else
                 {
-                    sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("When diffing IL, lines containing any of the configured strings are ignored:")}");
-                    sb.AppendLine("    <div class=\"il-ignore-scroll\"><table class=\"legend-table il-ignore-table\">");
-                    sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Ignored String")}</th></tr></thead>");
-                    sb.AppendLine("      <tbody>");
+                    sb.AppendLine("    <div class=\"header-detail-row\">");
+                    sb.AppendLine($"      <div class=\"header-detail-label\">{HtmlEncode("IL Ignored Strings")}</div>");
+                    sb.AppendLine("      <div class=\"header-detail-value\">");
+                    sb.AppendLine("        <div class=\"il-ignore-scroll\"><table class=\"legend-table il-ignore-table\">");
+                    sb.AppendLine($"          <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Ignored String")}</th></tr></thead>");
+                    sb.AppendLine("          <tbody>");
                     foreach (var s in ilIgnoreStrings)
                     {
-                        sb.AppendLine($"        <tr><td>{HtmlEncode($"\"{s}\"")}</td></tr>");
+                        sb.AppendLine($"            <tr><td>{HtmlEncode($"\"{s}\"")}</td></tr>");
                     }
-                    sb.AppendLine("      </tbody>");
-                    sb.AppendLine("    </table></div>");
-                    sb.AppendLine("  </li>");
+                    sb.AppendLine("          </tbody>");
+                    sb.AppendLine("        </table></div>");
+                    sb.AppendLine("      </div>");
+                    sb.AppendLine("    </div>");
                 }
             }
+            sb.AppendLine("  </div>");
+            sb.AppendLine("</details>");
 
-            // Myers Diff Algorithm reference
-            sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("Inline diffs for ILMismatch and TextMismatch are computed using the")} " +
+            // Notes / ノート
+            sb.AppendLine("<div class=\"header-notes\">");
+            sb.AppendLine($"  <p class=\"header-note\">{HtmlEncode("When diffing IL, lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.")}</p>");
+            sb.AppendLine($"  <p class=\"header-note\">{HtmlEncode("Inline diffs for ILMismatch and TextMismatch are computed using the")} " +
                 "<a href=\"http://www.xmailserver.org/diff2.pdf\">" +
-                "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>");
+                "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</p>");
+            sb.AppendLine("</div>");
 
-            // Legend — Diff Detail (as compact table)
-            sb.AppendLine($"  <li>{HtmlEncode("Legend (Diff Detail)")}:");
-            sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
-            sb.AppendLine("      <tbody>");
-            sb.AppendLine($"        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{HtmlEncode("SHA256 hash match / mismatch")}</td></tr>");
-            sb.AppendLine($"        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{HtmlEncode("IL(Intermediate Language) match / mismatch")}</td></tr>");
-            sb.AppendLine($"        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{HtmlEncode("Text match / mismatch")}</td></tr>");
-            sb.AppendLine("      </tbody>");
-            sb.AppendLine("    </table>");
-            sb.AppendLine("  </li>");
+            // Legends side by side / 凡例を横並びで表示
+            sb.AppendLine("<div class=\"header-legends\">");
 
-            // Legend — Change Importance (as compact table)
-            sb.AppendLine($"  <li>{HtmlEncode("Legend (Change Importance)")}:");
-            sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
-            sb.AppendLine("      <tbody>");
-            sb.AppendLine($"        <tr><td style=\"color:#d1242f;font-weight:bold\">High</td><td>{HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change")}</td></tr>");
-            sb.AppendLine($"        <tr><td style=\"color:#d97706;font-weight:bold\">Medium</td><td>{HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal")}</td></tr>");
-            sb.AppendLine($"        <tr><td>Low</td><td>{HtmlEncode("Low-impact change: body-only modification, internal/private member addition")}</td></tr>");
-            sb.AppendLine("      </tbody>");
-            sb.AppendLine("    </table>");
-            sb.AppendLine("  </li>");
-            sb.AppendLine("</ul>");
+            // Legend — Diff Detail
+            sb.AppendLine("<div>");
+            sb.AppendLine($"  <div class=\"header-legend-title\">{HtmlEncode("Legend — Diff Detail")}</div>");
+            sb.AppendLine("  <table class=\"legend-table\">");
+            sb.AppendLine($"    <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
+            sb.AppendLine("    <tbody>");
+            sb.AppendLine($"      <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{HtmlEncode("SHA256 hash match / mismatch")}</td></tr>");
+            sb.AppendLine($"      <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{HtmlEncode("IL(Intermediate Language) match / mismatch")}</td></tr>");
+            sb.AppendLine($"      <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{HtmlEncode("Text match / mismatch")}</td></tr>");
+            sb.AppendLine("    </tbody>");
+            sb.AppendLine("  </table>");
+            sb.AppendLine("</div>");
+
+            // Legend — Change Importance
+            sb.AppendLine("<div>");
+            sb.AppendLine($"  <div class=\"header-legend-title\">{HtmlEncode("Legend — Change Importance")}</div>");
+            sb.AppendLine("  <table class=\"legend-table\">");
+            sb.AppendLine($"    <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
+            sb.AppendLine("    <tbody>");
+            sb.AppendLine($"      <tr><td style=\"color:#d1242f;font-weight:bold\">High</td><td>{HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change")}</td></tr>");
+            sb.AppendLine($"      <tr><td style=\"color:#d97706;font-weight:bold\">Medium</td><td>{HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal")}</td></tr>");
+            sb.AppendLine($"      <tr><td>Low</td><td>{HtmlEncode("Low-impact change: body-only modification, internal/private member addition")}</td></tr>");
+            sb.AppendLine("    </tbody>");
+            sb.AppendLine("  </table>");
+            sb.AppendLine("</div>");
+
+            sb.AppendLine("</div>"); // header-legends
+            sb.AppendLine("</div>"); // report-header
+        }
+
+        /// <summary>Appends a single header card element. / ヘッダーカード要素を1つ追加します。</summary>
+        private static void AppendHeaderCard(StringBuilder sb, string label, string value)
+        {
+            sb.AppendLine($"  <div class=\"header-card\"><div class=\"header-card-label\">{HtmlEncode(label)}</div><div class=\"header-card-value\">{value}</div></div>");
+        }
+
+        /// <summary>Appends a detail row inside the collapsible configuration section. / 折りたたみ設定セクション内に詳細行を追加します。</summary>
+        private static void AppendHeaderDetailRow(StringBuilder sb, string label, string value)
+        {
+            sb.AppendLine($"    <div class=\"header-detail-row\"><div class=\"header-detail-label\">{HtmlEncode(label)}</div><div class=\"header-detail-value\">{value}</div></div>");
         }
 
         private void AppendIgnoredSection(

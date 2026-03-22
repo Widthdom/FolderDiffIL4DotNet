@@ -1868,11 +1868,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Assert: table structure and content present in HTML
             // テーブルの構造と内容が HTML に含まれていることを検証
-            Assert.Contains("Disassembler Availability", html);
             Assert.Contains("dotnet-ildasm", html);
             Assert.Contains("ilspycmd", html);
-            Assert.Contains("color:#22863a", html); // green for Yes
-            Assert.Contains("color:#b31d28", html); // red for No
+            Assert.Contains("color:#22863a", html); // green for Yes / Yes 用の緑
+            Assert.Contains("color:#b31d28", html); // red for No / No 用の赤
             Assert.Contains("0.12.2", html);
         }
 
@@ -1889,8 +1888,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
             // Assert: no availability table when probe results are null
-            // プローブ結果が null の場合テーブルは出力されない
-            Assert.DoesNotContain("Disassembler Availability", html);
+            // プローブ結果が null の場合ツール名は出力されない
+            Assert.DoesNotContain("dotnet-ildasm", html);
+            Assert.DoesNotContain("ilspycmd", html);
         }
 
         private static ConfigSettingsBuilder CreateConfigBuilder(bool enableInlineDiff = true, bool lazyRender = false) => new()
