@@ -199,18 +199,15 @@ namespace FolderDiffIL4DotNet.Services
                 _ => 3 // null / no semantic changes
             };
 
-        private static readonly string TH_BG_IMPORTANCE_HIGH = "#ffcccc";
-        private static readonly string TH_BG_IMPORTANCE_MEDIUM = "#fff3cd";
-
         /// <summary>
-        /// Returns the background color for an importance level.
-        /// 重要度レベルの背景色を返します。
+        /// Returns the inline style for an importance level (text color + bold, no background).
+        /// 重要度レベルのインラインスタイル（文字色＋太字、背景なし）を返します。
         /// </summary>
-        private static string ImportanceToStatusBg(ChangeImportance importance)
+        private static string ImportanceToStyle(ChangeImportance importance)
             => importance switch
             {
-                ChangeImportance.High => TH_BG_IMPORTANCE_HIGH,
-                ChangeImportance.Medium => TH_BG_IMPORTANCE_MEDIUM,
+                ChangeImportance.High => "color:#d1242f;font-weight:bold",
+                ChangeImportance.Medium => "color:#bf8700;font-weight:bold",
                 _ => ""
             };
 

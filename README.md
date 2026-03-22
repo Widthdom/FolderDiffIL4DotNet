@@ -271,8 +271,6 @@ When an assembly is classified as `ILMismatch`, the tool performs an additional 
 
 Controlled by [`ShouldIncludeAssemblySemanticChangesInReport`](#config-en-shouldincludeassemblysemanticchangesinreport) (default: `true`).
 
-A summary count table (`Class | Status | High | Medium | Low | Total`) follows, grouping entries by class and status with per-importance counts. Consecutive rows with the same class name suppress the class column for readability.
-
 The Diff Reason column in the Modified Files table appends the file-level max importance after `ILMismatch` (e.g. `ILMismatch` `High`) when assembly semantic changes are available.
 
 > **Note:** The semantic summary is supplementary information. Always verify the final details in the inline IL diff.
@@ -815,8 +813,6 @@ flowchart TD
 | Importance | 自動付与される変更の重要度: `High`（破壊的変更候補）、`Medium`（注目すべき変更）、`Low`（低影響の変更）。分類ルールは[凡例](#readme-ja-legend)を参照 | `High` |
 
 [`ShouldIncludeAssemblySemanticChangesInReport`](#config-ja-shouldincludeassemblysemanticchangesinreport)（既定値: `true`）で制御します。
-
-テーブル下に集計テーブル（`Class | Status | High | Medium | Low | Total`）を表示し、クラスとステータスごとに重要度別のカウントをまとめます。同一クラスが連続する場合、Class 列は先頭行のみに表示されます。
 
 Modified Files テーブルの Diff Reason 列では、アセンブリ セマンティック変更が利用可能な場合に `ILMismatch` の後ろにファイルレベルの最大重要度を追記します（例: `ILMismatch` `High`）。
 

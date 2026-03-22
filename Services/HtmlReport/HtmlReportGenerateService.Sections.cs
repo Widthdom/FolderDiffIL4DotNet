@@ -442,8 +442,8 @@ namespace FolderDiffIL4DotNet.Services
                     string statusBg = ChangeToStatusBg(e.Change);
                     string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
                     string impMarker = ImportanceToMarker(e.Importance);
-                    string impBg = ImportanceToStatusBg(e.Importance);
-                    string impStyle = impBg.Length > 0 ? $" style=\"background:{impBg}\"" : "";
+                    string impStyleVal = ImportanceToStyle(e.Importance);
+                    string impStyle = impStyleVal.Length > 0 ? $" style=\"{impStyleVal}\"" : "";
                     contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                     scRowIdx++;
                 }
@@ -454,8 +454,6 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine($"<p>{I18n("No structural changes detected. See IL diff for implementation-level differences.", "構造的な変更は検出されませんでした。実装レベルの差異については IL 差分を参照してください。")}</p>");
             }
 
-            if (summary.Entries.Count > 0)
-                AppendSummaryCountTable(contentBuilder, summary);
             contentBuilder.AppendLine("</div>");
 
             string detailsId = $"semantic_{sectionPrefix}_{idx}";
@@ -484,58 +482,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  </td>");
             sb.AppendLine("</tr>");
         }
-
-        private static void AppendSummaryCountTable(StringBuilder sb, AssemblySemanticChangesSummary summary)
-        {
-            // Group by (TypeName, Change) and count per importance level.
-            // (TypeName, Change) でグループ化し、重要度ごとにカウント。
-            var counts = new Dictionary<(string TypeName, string Change), (int High, int Medium, int Low)>();
-            foreach (var e in summary.Entries)
-            {
-                var key = (e.TypeName, e.Change);
-                if (!counts.TryGetValue(key, out var c)) c = (0, 0, 0);
-                counts[key] = e.Importance switch
-                {
-                    ChangeImportance.High => (c.High + 1, c.Medium, c.Low),
-                    ChangeImportance.Medium => (c.High, c.Medium + 1, c.Low),
-                    _ => (c.High, c.Medium, c.Low + 1),
-                };
-            }
-
-            sb.AppendLine("<table class=\"semantic-changes-table sc-count\">");
-            sb.AppendLine("<colgroup>");
-            sb.AppendLine("  <col class=\"sc-cnt-class-g\">");
-            sb.AppendLine("  <col class=\"sc-cnt-change-g\">");
-            sb.AppendLine("  <col class=\"sc-cnt-high-g\">");
-            sb.AppendLine("  <col class=\"sc-cnt-medium-g\">");
-            sb.AppendLine("  <col class=\"sc-cnt-low-g\">");
-            sb.AppendLine("  <col class=\"sc-cnt-total-g\">");
-            sb.AppendLine("</colgroup>");
-            sb.AppendLine("<thead><tr>");
-            sb.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--sc-cnt-class-w\">{I18n("Class", "クラス")}</th>");
-            sb.AppendLine($"  <th>{I18n("Status", "状態")}</th><th>High</th><th>Medium</th><th>Low</th><th>Total</th>");
-            sb.AppendLine("</tr></thead>");
-            sb.AppendLine("<tbody>");
-            string prevType = "";
-            foreach (var ((typeName, change), (high, medium, low)) in counts.OrderBy(kv => kv.Key.TypeName, StringComparer.Ordinal).ThenBy(kv => ChangeOrder(kv.Key.Change)))
-            {
-                bool isCont = typeName == prevType;
-                string classTd = !isCont ? HtmlEncode(typeName) : "";
-                prevType = typeName;
-                string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
-                string cntStatusBg = ChangeToStatusBg(change);
-                string cntStatusStyle = cntStatusBg.Length > 0 ? $" style=\"background:{cntStatusBg}\"" : "";
-                int total = high + medium + low;
-                string highTd = high > 0 ? $"{high}" : "";
-                string mediumTd = medium > 0 ? $"{medium}" : "";
-                string lowTd = low > 0 ? $"{low}" : "";
-                sb.AppendLine($"{trOpen}<td>{classTd}</td><td{cntStatusStyle}>{ChangeToMarker(change)}</td><td>{highTd}</td><td>{mediumTd}</td><td>{lowTd}</td><td>{total}</td></tr>");
-            }
-            sb.AppendLine("</tbody></table>");
-        }
-
-        private static int ChangeOrder(string change)
-            => change switch { "Added" => 0, "Removed" => 1, "Modified" => 2, _ => 3 };
 
         private static string ChangeToMarker(string change)
             => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Modified" => "[ * ]", _ => change };

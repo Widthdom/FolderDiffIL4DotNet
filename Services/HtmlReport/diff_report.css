@@ -54,7 +54,7 @@
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
-            --sc-cnt-class-w: 22em; }
+}
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
     col.col-reason-g { width: var(--col-reason-w); }
@@ -176,12 +176,6 @@
     table.semantic-changes-table.sc-detail td:nth-child(4), table.semantic-changes-table.sc-detail td:nth-child(5),
     table.semantic-changes-table.sc-detail td:nth-child(6), table.semantic-changes-table.sc-detail td:nth-child(7),
     table.semantic-changes-table.sc-detail td:nth-child(8) { text-align: center; }
-    /* sc-count: Class(1) Change(2) High(3) Medium(4) Low(5) Total(6) — no checkbox column */
-    table.semantic-changes-table.sc-count { width: auto; table-layout: auto; }
-    table.semantic-changes-table.sc-count td:nth-child(2) { text-align: center; }
-    table.semantic-changes-table.sc-count td:nth-child(3), table.semantic-changes-table.sc-count td:nth-child(4),
-    table.semantic-changes-table.sc-count td:nth-child(5), table.semantic-changes-table.sc-count td:nth-child(6) { text-align: right; }
-    table.semantic-changes-table.sc-count tr.group-cont td:nth-child(1) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(2) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
     table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }
@@ -199,9 +193,3 @@
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
-    col.sc-cnt-class-g { width: var(--sc-cnt-class-w); }
-    col.sc-cnt-change-g { width: 7em; }
-    col.sc-cnt-high-g { width: 5em; }
-    col.sc-cnt-medium-g { width: 5em; }
-    col.sc-cnt-low-g { width: 5em; }
-    col.sc-cnt-total-g { width: 5em; }
