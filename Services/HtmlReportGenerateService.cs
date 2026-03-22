@@ -101,11 +101,13 @@ namespace FolderDiffIL4DotNet.Services
             // Controls bar (markers allow stripping in downloadReviewed)
             sb.AppendLine("<!--CTRL-->");
             sb.AppendLine("<div class=\"controls\">");
+            sb.AppendLine("<div class=\"ctrl-buttons\">");
             sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
-            sb.AppendLine("  <span class=\"ctrl-sep\"></span>");
+            sb.AppendLine("</div>");
+            sb.AppendLine("<div class=\"ctrl-filters\">");
             sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("Importance") + ":</label>");
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-high\" checked onchange=\"applyFilters()\"> <span style=\"color:#d1242f;font-weight:bold\">High</span></label>");
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-medium\" checked onchange=\"applyFilters()\"> <span style=\"color:#d97706;font-weight:bold\">Medium</span></label>");
@@ -122,6 +124,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <span class=\"filter-sep\"></span>");
             sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\">");
             sb.AppendLine("  <button class=\"btn btn-clear filter-reset-btn\" onclick=\"resetFilters()\">" + HtmlEncode("Reset filters") + "</button>");
+            sb.AppendLine("</div>");  // end .ctrl-filters
             sb.AppendLine("</div>");  // end .controls
             sb.AppendLine("<!--/CTRL-->");
 
