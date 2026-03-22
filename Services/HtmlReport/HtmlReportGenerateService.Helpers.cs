@@ -50,7 +50,8 @@ namespace FolderDiffIL4DotNet.Services
             string path,
             string timestamp,
             string col6,
-            string disasm = "")
+            string disasm = "",
+            string importance = "")
         {
             string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
@@ -64,6 +65,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <td class=\"col-path\"><div class=\"path-wrap\"><span class=\"path-text\">{HtmlEncode(path)}</span><button class=\"btn-copy-path\" onclick=\"copyPath(this)\" title=\"Copy\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg></button></div></td>");
             sb.AppendLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
             string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
+            if (!string.IsNullOrEmpty(importance))
+                col6Cell += $" <code>{HtmlEncode(importance)}</code>";
             sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
             sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
@@ -158,6 +161,80 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists.DiffDetailResult diffDetail)
         {
             return diffDetail.ToString();
+        }
+
+        /// <summary>
+        /// Returns the file-level max importance label, or empty if unavailable.
+        /// ファイルレベルの最大重要度ラベルを返します（存在しない場合は空文字列）。
+        /// </summary>
+        private string GetImportanceLabel(string fileRelativePath)
+        {
+            var importance = _fileDiffResultLists.GetMaxImportance(fileRelativePath);
+            return importance != null ? ImportanceToLabel(importance.Value) : "";
+        }
+
+        /// <summary>
+        /// Returns a short display label for a <see cref="ChangeImportance"/> value.
+        /// <see cref="ChangeImportance"/> 値の短い表示ラベルを返します。
+        /// </summary>
+        private static string ImportanceToLabel(ChangeImportance importance)
+            => importance switch
+            {
+                ChangeImportance.High => "High",
+                ChangeImportance.Medium => "Medium",
+                ChangeImportance.Low => "Low",
+                _ => ""
+            };
+
+        /// <summary>
+        /// Returns a sort ordinal for <see cref="ChangeImportance"/> (High=0 first).
+        /// <see cref="ChangeImportance"/> のソート序数を返します（High=0 が先頭）。
+        /// </summary>
+        private static int GetImportanceSortOrder(ChangeImportance? importance)
+            => importance switch
+            {
+                ChangeImportance.High => 0,
+                ChangeImportance.Medium => 1,
+                ChangeImportance.Low => 2,
+                _ => 3 // null / no semantic changes
+            };
+
+        /// <summary>
+        /// Returns the inline style for an importance level (text color + bold, no background).
+        /// 重要度レベルのインラインスタイル（文字色＋太字、背景なし）を返します。
+        /// </summary>
+        private static string ImportanceToStyle(ChangeImportance importance)
+            => importance switch
+            {
+                ChangeImportance.High => "color:#d1242f;font-weight:bold",
+                ChangeImportance.Medium => "color:#d97706;font-weight:bold",
+                _ => ""
+            };
+
+        /// <summary>
+        /// Returns the display marker for an importance level.
+        /// 重要度レベルの表示マーカーを返します。
+        /// </summary>
+        private static string ImportanceToMarker(ChangeImportance importance)
+            => importance switch
+            {
+                ChangeImportance.High => "High",
+                ChangeImportance.Medium => "Medium",
+                ChangeImportance.Low => "Low",
+                _ => ""
+            };
+
+        /// <summary>
+        /// Wraps a value in <c>&lt;code&gt;</c> tags. If the value contains " → ", each side is wrapped individually.
+        /// 値を &lt;code&gt; タグで囲みます。" → " を含む場合は両側を個別に囲みます。
+        /// </summary>
+        private static string CodeWrapArrow(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return "";
+            int idx = raw.IndexOf(" → ", StringComparison.Ordinal);
+            if (idx >= 0)
+                return $"<code>{HtmlEncode(raw[..idx])}</code> → <code>{HtmlEncode(raw[(idx + 3)..])}</code>";
+            return $"<code>{HtmlEncode(raw)}</code>";
         }
 
         /// <summary>

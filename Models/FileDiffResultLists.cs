@@ -135,6 +135,17 @@ namespace FolderDiffIL4DotNet.Models
         public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
 
         /// <summary>
+        /// Returns the maximum <see cref="ChangeImportance"/> for a file, or <see langword="null"/> if no semantic changes exist.
+        /// ファイルの最大 <see cref="ChangeImportance"/> を返します。セマンティック変更が存在しない場合は <see langword="null"/>。
+        /// </summary>
+        public ChangeImportance? GetMaxImportance(string fileRelativePath)
+        {
+            if (FileRelativePathToAssemblySemanticChanges.TryGetValue(fileRelativePath, out var summary) && summary.HasChanges)
+                return summary.MaxImportance;
+            return null;
+        }
+
+        /// <summary>
         /// Computed property returning aggregated file counts (Added/Removed/Modified/Unchanged/Ignored) for the summary section.
         /// サマリーセクション向けのファイル件数を一括で返す計算プロパティ。
         /// </summary>

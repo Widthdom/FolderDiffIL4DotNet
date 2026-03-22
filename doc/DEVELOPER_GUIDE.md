@@ -287,7 +287,9 @@ Why this matters:
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | Per-file decision tree | SHA256 -> IL -> text -> fallback |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL compare flow, line filtering, optional IL dump writing | Enforces same disassembler identity |
-| [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | Method-level change detection via `System.Reflection.Metadata` | Best-effort; returns `null` on failure. Detects type/method/property/field additions, removals, and modifications (access modifier changes, modifier changes, type changes, IL body changes) |
+| [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | Method-level change detection via `System.Reflection.Metadata` | Best-effort; returns `null` on failure. Detects type/method/property/field additions, removals, and modifications (access modifier changes, modifier changes, type changes, IL body changes). Each entry is auto-classified by [`ChangeImportanceClassifier`](../Services/ChangeImportanceClassifier.cs) |
+| [`Services/ChangeImportanceClassifier.cs`](../Services/ChangeImportanceClassifier.cs) | Rule-based importance classifier for `MemberChangeEntry` | Assigns `High` / `Medium` / `Low` [`ChangeImportance`](../Models/ChangeImportance.cs) based on change type, access modifiers, and arrow-notation field changes |
+| [`Models/ChangeImportance.cs`](../Models/ChangeImportance.cs) | Change importance enum | `Low=0`, `Medium=1`, `High=2`; used by `MemberChangeEntry.Importance` and report display |
 | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | Tool probing, disassembly execution, cache hit/store tracking, blacklist handling | Central tool boundary; delegates prefetch to [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) |
 | [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL-cache prefetch (pre-hit verification for all candidate command/arg patterns) | Extracted from [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs); owns its own hit counter |
 | [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | Shared static helpers: command identification, candidate enumeration, executable path resolution, availability probing | Used by both [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) and [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs); `ProbeAllCandidates()` returns [`DisassemblerProbeResult`](../Models/DisassemblerProbeResult.cs) list for report header; no instance state |
@@ -423,6 +425,19 @@ catch (Exception ex)
 - Disassembler labels used during IL comparison
 - Disassembler availability probe results (`DisassemblerAvailability`) for the report header
 
+**Disassembler Availability table — edge cases:**
+`DisassemblerHelper.ProbeAllCandidates()` is called **unconditionally** in [`ProgramRunner.ExecuteScopedRunAsync()`](../ProgramRunner.cs) before any file comparison begins, regardless of file types or the `SkipIL` setting. The probed results are stored in `FileDiffResultLists.DisassemblerAvailability` and used by both report generators.
+
+| Scenario | Probe runs? | Table shown? | Content |
+| --- | --- | --- | --- |
+| Normal run with .NET assemblies | Yes | Yes | Each tool shows Yes/No + version |
+| All files are text (no .dll/.exe) | Yes | Yes | Table still appears; IL comparison is simply not attempted for any file |
+| `SkipIL = true` | Yes | Yes | Table still appears; IL comparison is bypassed during diff |
+| No disassembler tools available | Yes | Yes | All tools show "No" (red) and "N/A" for version |
+| `DisassemblerAvailability` is null or empty | N/A | No | Guard check `if (probeResults == null \|\| probeResults.Count == 0) return;` suppresses output |
+
+In practice, `ProbeAllCandidates()` always returns a non-empty list because the candidate set is hard-coded. The null/empty guard exists for defensive safety and is covered by tests (`GenerateDiffReport_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull` / `GenerateDiffReportHtml_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull`).
+
 The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed record (`AddedCount`, `RemovedCount`, `ModifiedCount`, `UnchangedCount`, `IgnoredCount`) and the `SummaryStatistics` computed property provide a single consistent snapshot of the five bucket counts. [`ReportGenerateService`](../Services/ReportGenerateService.cs) reads `SummaryStatistics` once per report to write the summary section, so callers do not need to access each collection individually.
 
 [`ReportGenerateService`](../Services/ReportGenerateService.cs) depends on these assumptions:
@@ -430,7 +445,7 @@ The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed re
 - The detail-result [`Dictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.generic.dictionary-2?view=net-8.0) must not contain stale entries left over from a previous run.
 - IL tool labels are only present for IL-based comparisons.
 - Report generation reads execution results only and must not start new comparisons.
-- **Table sort order**: Unchanged Files rows are sorted by diff-detail result (`SHA256Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `SHA256Mismatch`), then by File Path ascending. The SHA256Mismatch warning table lists files alphabetically by path. This applies to both Markdown and HTML reports.
+- **Table sort order**: Unchanged Files rows are sorted by diff-detail result (`SHA256Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `SHA256Mismatch`), then by Change Importance (`High` → `Medium` → `Low`), then by File Path ascending. The SHA256Mismatch warning table lists files alphabetically by path. This applies to both Markdown and HTML reports.
 - **Per-section column visibility (Markdown vs HTML)**: In the Markdown report, unnecessary columns are removed outright (e.g. Added/Removed tables have 3 columns: Status, File Path, Timestamp; Ignored/SHA256Mismatch/Timestamps Regressed tables have 4 columns without Disassembler). In the HTML report, all tables retain all 8 columns in the DOM to keep cross-table column-width synchronization stable — [`syncTableWidths()`](../Services/HtmlReport/diff_report.js) calculates each table's total width from its `<colgroup>` `<col>` elements, and the resize-handle drag logic updates CSS custom properties shared across tables. Columns that should be visually hidden are marked via CSS classes on the `<table>` element (`hide-disasm`, `hide-col6`), which set `width: 0`, `visibility: hidden`, and `border-color: transparent` on the corresponding `<col>`, `<th>` (`.col-diff-hd` / `.col-disasm-hd`), and `<td>` (`.col-diff` / `.col-disasm`) elements. `syncTableWidths()` skips hidden columns when summing widths so that hidden-column tables are correctly narrower. This approach avoids the instability caused by different tables having different numbers of `<col>` elements, different `colspan` values for inline-diff rows, and conditional rendering logic in the helper methods.
 
 <a id="guide-en-config-runtime"></a>
@@ -637,6 +652,35 @@ Before merging behavior changes, check:
 - When a result bucket looks wrong, inspect [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) population order before touching report formatting.
 - If a test becomes order-dependent, suspect leaked run-scoped state first.
 - If the banner or any console output shows `?` characters on Windows, the process is using the OEM code page. [`Program.cs`](../Program.cs) sets [`Console.OutputEncoding`](https://learn.microsoft.com/en-us/DOTNET/api/system.console.outputencoding?view=net-8.0) = `Encoding.UTF8` at the very start of `Main()` — before any output — to override this. On Linux and macOS the console is already UTF-8, so the assignment is effectively a no-op on those platforms.
+
+## HTML Report: Integrity Verification Technical Notes
+
+### Dual-hash placeholder approach
+
+The "Download as reviewed" workflow embeds **two** SHA256 hashes inside the reviewed HTML file using a placeholder technique. This solves a circular dependency: the hash of the file cannot be known until the file is complete, but the hash must be embedded inside the file.
+
+| Constant | Placeholder | Purpose |
+| --- | --- | --- |
+| `__reviewedSha256__` | 64 zeros (`000...0`) | Intermediate hash — hash of the HTML with this field set to the placeholder. Used internally during the hashing process. |
+| `__finalSha256__` | 64 f's (`fff...f`) | Final hash — hash of the HTML with `__reviewedSha256__` already embedded and this field set to the placeholder. Matches the companion `.sha256` file exactly. |
+
+The two-step process in `downloadReviewed()`:
+1. Replace `__reviewedSha256__` placeholder with zeros → compute SHA256 → replace zeros with actual hash (first hash embedded).
+2. Replace `__finalSha256__` placeholder with f's → compute SHA256 → replace f's with actual hash (second hash embedded). This final hash is also written to the companion `.sha256` file.
+
+### Verify integrity: `.sha256`-only verification
+
+`verifyIntegrity()` only accepts `.sha256` files. The reviewed HTML is "self" — it already has its own final hash embedded in `__finalSha256__`, so no HTML file selection is needed. The function reads the `.sha256` file, extracts the hash, and compares it directly against the embedded `__finalSha256__` constant.
+
+### Browser quirk: `input.accept` on dynamically created elements
+
+Some browsers (notably macOS Safari) ignore the `accept` attribute on `<input type="file">` elements that are created dynamically and clicked immediately. The file picker opens with no filter, allowing all files to be selected.
+
+**Workaround**: Pre-create the hidden `<input type="file" accept=".sha256">` element during `DOMContentLoaded` initialization and reuse it in `verifyIntegrity()`. By the time the user clicks "Verify integrity", the input element has been in the DOM long enough for the browser to recognize and apply the `accept` filter. An `onchange` guard (`file.name.endsWith('.sha256')`) is also present as a fallback for browsers that still bypass the filter.
+
+### Type name format in semantic changes
+
+[`SimpleSignatureTypeProvider`](../Services/AssemblyMethodAnalyzer.cs) always outputs **fully qualified .NET type names** (e.g. `System.String`, `System.Int32`, `System.Void`), never C# aliases (`string`, `int`, `void`). The `MemberType`, `ReturnType`, and `Parameters` fields in [`MemberChangeEntry`](../Models/MemberChangeEntry.cs) follow this convention. Sample HTML base64 blocks must use fully qualified names to match.
 
 ---
 
@@ -928,7 +972,9 @@ sequenceDiagram
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | ファイル単位の判定木 | `SHA256 -> IL -> text -> fallback` |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL 比較、行除外、任意 IL 出力 | 同一逆アセンブラ制約を保証 |
-| [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | `System.Reflection.Metadata` によるメソッドレベル変更検出 | ベストエフォート；失敗時は `null` を返す。型・メソッド・プロパティ・フィールドの追加・削除・変更（アクセス修飾子変更、修飾子変更、型変更、IL ボディ変更）を検出 |
+| [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | `System.Reflection.Metadata` によるメソッドレベル変更検出 | ベストエフォート；失敗時は `null` を返す。型・メソッド・プロパティ・フィールドの追加・削除・変更（アクセス修飾子変更、修飾子変更、型変更、IL ボディ変更）を検出。各エントリは [`ChangeImportanceClassifier`](../Services/ChangeImportanceClassifier.cs) により自動分類 |
+| [`Services/ChangeImportanceClassifier.cs`](../Services/ChangeImportanceClassifier.cs) | `MemberChangeEntry` のルールベース重要度分類器 | 変更種別・アクセス修飾子・アロー表記フィールド変更に基づき `High` / `Medium` / `Low` の [`ChangeImportance`](../Models/ChangeImportance.cs) を付与 |
+| [`Models/ChangeImportance.cs`](../Models/ChangeImportance.cs) | 変更の重要度列挙型 | `Low=0`, `Medium=1`, `High=2`；`MemberChangeEntry.Importance` およびレポート表示に使用 |
 | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | ツール探索、逆アセンブル実行、キャッシュヒット/ストア追跡、ブラックリスト | 外部ツール境界；プリフェッチは [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) へ委譲 |
 | [`Services/ILCachePrefetcher.cs`](../Services/ILCachePrefetcher.cs) | IL キャッシュのプリフェッチ（全候補コマンド×引数パターンの事前ヒット確認） | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) から分離；独自のヒットカウンタを保持 |
 | [`Services/DisassemblerHelper.cs`](../Services/DisassemblerHelper.cs) | 共有静的ヘルパー：コマンド判定・候補列挙・実行ファイルパス解決・利用可否プローブ | [`DotNetDisassembleService`](../Services/DotNetDisassembleService.cs) と [`ILCachePrefetcher`](../Services/ILCachePrefetcher.cs) の両方が使用；`ProbeAllCandidates()` はレポートヘッダ用に [`DisassemblerProbeResult`](../Models/DisassemblerProbeResult.cs) リストを返す；インスタンス状態なし |
@@ -1062,6 +1108,19 @@ catch (Exception ex)
 - IL 比較で使用した逆アセンブラ表示ラベル
 - レポートヘッダ用の逆アセンブラ利用可否プローブ結果（`DisassemblerAvailability`）
 
+**Disassembler Availability テーブル — エッジケース:**
+`DisassemblerHelper.ProbeAllCandidates()` は [`ProgramRunner.ExecuteScopedRunAsync()`](../ProgramRunner.cs) にてファイル比較の開始前に**無条件で**呼ばれます。ファイル種別や `SkipIL` 設定には依存しません。プローブ結果は `FileDiffResultLists.DisassemblerAvailability` に格納され、両レポート生成で参照されます。
+
+| シナリオ | プローブ実行 | テーブル表示 | 内容 |
+| --- | --- | --- | --- |
+| .NET アセンブリを含む通常の実行 | はい | はい | 各ツールに Yes/No ＋ バージョンを表示 |
+| 全ファイルがテキスト（.dll/.exe なし） | はい | はい | テーブルは表示される。IL 比較はどのファイルにも実行されない |
+| `SkipIL = true` | はい | はい | テーブルは表示される。差分処理中の IL 比較はスキップされる |
+| 逆アセンブラツールが一切見つからない | はい | はい | 全ツールが "No"（赤）と "N/A" で表示される |
+| `DisassemblerAvailability` が null または空 | — | いいえ | ガードチェック `if (probeResults == null \|\| probeResults.Count == 0) return;` により出力を抑制 |
+
+実際には `ProbeAllCandidates()` は候補セットがハードコードされているため常に非空のリストを返します。null/空のガードは防御的安全策として存在し、テスト（`GenerateDiffReport_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull` / `GenerateDiffReportHtml_HeaderOmitsAvailabilityTable_WhenProbeResultsAreNull`）でカバーされています。
+
 ネストされた [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed レコード（`AddedCount`、`RemovedCount`、`ModifiedCount`、`UnchangedCount`、`IgnoredCount`）と `SummaryStatistics` 計算プロパティが、5 つのバケット数を一度に取得できる一貫したスナップショットを提供します。[`ReportGenerateService`](../Services/ReportGenerateService.cs) はレポートのサマリーセクションを書く際に `SummaryStatistics` を一度参照するため、各コレクションを個別に参照する必要はありません。
 
 [`ReportGenerateService`](../Services/ReportGenerateService.cs) が前提としている仕様:
@@ -1069,7 +1128,7 @@ catch (Exception ex)
 - 前回の実行に由来する不要なエントリが詳細結果の [`Dictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.generic.dictionary-2?view=net-8.0) に残っていないこと
 - IL のラベルは IL 比較時だけ存在すること
 - レポート生成は、実行結果の読み取りであり、新しい比較を開始しないこと
-- **テーブルのソート順**: Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）でソートし、次にファイルパス昇順。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）でソートし、次にファイルパス昇順。SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソート。Markdown および HTML レポートの両方に適用。
+- **テーブルのソート順**: Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）でソートし、次にファイルパス昇順。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）でソートし、次に変更の重要度（`High` → `Medium` → `Low`）でソートし、次にファイルパス昇順。SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソート。Markdown および HTML レポートの両方に適用。
 - **セクション別の列表示（Markdown vs HTML）**: Markdown レポートでは不要な列を直接削除する（例: Added/Removed テーブルは Status, File Path, Timestamp の 3 列。Ignored/SHA256Mismatch/Timestamps Regressed テーブルは Disassembler なしの 4 列）。HTML レポートでは、テーブル間の列幅同期の安定性を維持するため、すべてのテーブルが DOM 上に 8 列すべてを保持する。[`syncTableWidths()`](../Services/HtmlReport/diff_report.js) は各テーブルの `<colgroup>` 内 `<col>` 要素から合計幅を計算し、リサイズハンドルのドラッグ操作はテーブル間で共有される CSS カスタムプロパティを更新する。視覚的に非表示にする列は `<table>` 要素の CSS クラス（`hide-disasm`、`hide-col6`）で指定し、対応する `<col>`、`<th>`（`.col-diff-hd` / `.col-disasm-hd`）、`<td>`（`.col-diff` / `.col-disasm`）に `width: 0`、`visibility: hidden`、`border-color: transparent` を適用する。`syncTableWidths()` は非表示列の幅をスキップするため、非表示列を持つテーブルは正しく狭くなる。このアプローチにより、テーブル間で `<col>` 要素数が異なる問題、インライン差分行の `colspan` 値の不整合、ヘルパーメソッドの条件分岐ロジックに起因する不安定性を回避する。
 
 <a id="guide-ja-config-runtime"></a>
@@ -1276,3 +1335,32 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - バケット分類がおかしい場合は、レポート整形より前に [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) の投入順を追ってください。
 - テストが順序依存になったら、まず実行スコープ状態のリークを疑ってください。
 - Windows でバナーやコンソール出力が `?` になる場合は、プロセスが OEM コードページ（CP932/CP437 等）を使用しています。[`Program.cs`](../Program.cs) の `Main()` 先頭で [`Console.OutputEncoding`](https://learn.microsoft.com/ja-jp/DOTNET/api/system.console.outputencoding?view=net-8.0) = `Encoding.UTF8` を設定することで回避しています。Linux / macOS ではコンソールがすでに UTF-8 のため、この設定は実質ノーオペレーションです。
+
+## HTML レポート: 整合性検証の技術メモ
+
+### デュアルハッシュ・プレースホルダ方式
+
+「Download as reviewed」ワークフローでは、レビュー済み HTML ファイル内に **2 つ**の SHA256 ハッシュをプレースホルダ方式で埋め込みます。これはファイルのハッシュをファイル自体に埋め込むという循環依存を解決するためです。
+
+| 定数 | プレースホルダ | 用途 |
+| --- | --- | --- |
+| `__reviewedSha256__` | 64 個のゼロ（`000...0`） | 中間ハッシュ — このフィールドをプレースホルダに置き換えた状態の HTML のハッシュ。ハッシュ処理の内部で使用。 |
+| `__finalSha256__` | 64 個の f（`fff...f`） | 最終ハッシュ — `__reviewedSha256__` 埋め込み後、このフィールドをプレースホルダに置き換えた状態の HTML のハッシュ。コンパニオン `.sha256` ファイルと完全に一致。 |
+
+`downloadReviewed()` の 2 段階処理:
+1. `__reviewedSha256__` プレースホルダをゼロに置換 → SHA256 計算 → ゼロを実際のハッシュに置換（第 1 ハッシュ埋め込み）。
+2. `__finalSha256__` プレースホルダを f に置換 → SHA256 計算 → f を実際のハッシュに置換（第 2 ハッシュ埋め込み）。この最終ハッシュがコンパニオン `.sha256` ファイルにも書き出されます。
+
+### Verify integrity: `.sha256` 専用検証
+
+`verifyIntegrity()` は `.sha256` ファイルのみを受け付けます。レビュー済み HTML は「自分自身」であり、最終ハッシュが `__finalSha256__` に埋め込み済みのため、HTML ファイルの選択は不要です。関数は `.sha256` ファイルを読み取り、ハッシュを抽出して、埋め込み済みの `__finalSha256__` 定数と直接比較します。
+
+### ブラウザの注意点: 動的作成した input 要素の `accept` 属性
+
+一部のブラウザ（特に macOS Safari）は、動的に作成して即座にクリックした `<input type="file">` 要素の `accept` 属性を無視します。ファイルピッカーがフィルタなしで開き、全ファイルが選択可能になります。
+
+**回避策**: `DOMContentLoaded` の初期化時に隠し `<input type="file" accept=".sha256">` 要素を事前作成し、`verifyIntegrity()` ではそれを再利用します。ユーザーが「Verify integrity」をクリックする時点で、input 要素は十分な時間 DOM に存在しているため、ブラウザが `accept` フィルタを認識・適用できます。フィルタをバイパスするブラウザへのフォールバックとして、`onchange` ガード（`file.name.endsWith('.sha256')`）も設けています。
+
+### セマンティック変更の型名フォーマット
+
+[`SimpleSignatureTypeProvider`](../Services/AssemblyMethodAnalyzer.cs) は常に**完全修飾 .NET 型名**（例: `System.String`、`System.Int32`、`System.Void`）を出力し、C# エイリアス（`string`、`int`、`void`）は使用しません。[`MemberChangeEntry`](../Models/MemberChangeEntry.cs) の `MemberType`、`ReturnType`、`Parameters` フィールドはこの規約に従います。サンプル HTML の base64 ブロックも一致させる必要があります。

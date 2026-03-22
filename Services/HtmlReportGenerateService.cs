@@ -28,7 +28,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string TH_BG_ADDED    = "#e6ffed";
         private const string TH_BG_REMOVED  = "#ffeef0";
         private const string TH_BG_MODIFIED = "#e3f2fd";
-        private const string TH_BG_DEFAULT  = "#fafafa";
+        private const string TH_BG_DEFAULT  = "#f0f0f2";
 
         public HtmlReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IReadOnlyConfigSettings config)
         {
@@ -101,7 +101,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<!--CTRL-->");
             sb.AppendLine("<div class=\"controls\">");
             sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
-            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">&#x25B2; " + HtmlEncode("Fold all details") + "</button>");
+            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");

@@ -4,6 +4,8 @@
   const __savedState__  = null;
   // NOTE: replaced with SHA256 hash by downloadReviewed(). Do not change whitespace.
   const __reviewedSha256__  = null;
+  // NOTE: replaced with final SHA256 hash by downloadReviewed(). Do not change whitespace.
+  const __finalSha256__     = null;
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -35,6 +37,15 @@
     syncTableWidths();
     syncScTableWidths();
     setupLazyDiff();
+    // Pre-create hidden file input for Verify integrity so the accept
+    // filter is ready before the first click (some browsers ignore accept
+    // on dynamically created inputs that are clicked immediately)
+    var vi = document.createElement('input');
+    vi.type = 'file';
+    vi.accept = '.sha256';
+    vi.style.display = 'none';
+    vi.id = '__verifyInput__';
+    document.body.appendChild(vi);
   });
 
   function collectState() {
@@ -59,7 +70,7 @@
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
     // 2. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--sc-cnt-class-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
@@ -85,14 +96,13 @@
       + '; --sc-name-w: '     + curWidths['--sc-name-w']
       + '; --sc-rettype-w: '  + curWidths['--sc-rettype-w']
       + '; --sc-params-w: '   + curWidths['--sc-params-w']
-      + '; --sc-body-w: '     + curWidths['--sc-body-w']
-      + '; --sc-cnt-class-w: ' + curWidths['--sc-cnt-class-w'] + '; }');
+      + '; --sc-body-w: '     + curWidths['--sc-body-w'] + '; }');
     // Remove inline col-var overrides from <html> element (now baked into :root)
     html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
     // Replace controls bar with reviewed banner (includes Verify integrity button)
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
-      '<div class="reviewed-banner">&#x1F512; Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only'
-      + ' <button class="btn" onclick="verifyIntegrity()" style="margin-left:1em;font-size:12px">&#x1F50D; Verify integrity</button>'
+      '<div class="reviewed-banner">Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only'
+      + ' <button class="btn" onclick="verifyIntegrity()" style="margin-left:1em;font-size:12px">&#x2713; Verify integrity</button>'
       + '</div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
@@ -106,11 +116,16 @@
     var hashHex = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
     // Replace placeholder with actual hash (same length, so no byte offset change)
     html = html.replace(placeholder, hashHex);
-    // Compute final SHA256 for the companion .sha256 file (covers HTML with embedded hash)
+    // 4. Embed final SHA256 hash for .sha256 file verification (second placeholder approach)
+    var placeholder2 = 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+    html = html.replace("const __finalSha256__     = null;",
+      "const __finalSha256__     = '" + placeholder2 + "';");
     var finalEncoded = new TextEncoder().encode(html);
     var finalHashBuffer = await crypto.subtle.digest('SHA-256', finalEncoded);
     var finalHashArray = Array.from(new Uint8Array(finalHashBuffer));
     var finalHashHex = finalHashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+    // Replace placeholder2 with actual final hash (same length, so no byte offset change)
+    html = html.replace(placeholder2, finalHashHex);
     // Download reviewed HTML
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a    = document.createElement('a');
@@ -137,33 +152,32 @@
   }
 
   function verifyIntegrity() {
-    if (__reviewedSha256__ === null) {
+    if (__finalSha256__ === null) {
       alert('This report has not been downloaded as reviewed yet.');
       return;
     }
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.html';
-    input.style.display = 'none';
-    document.body.appendChild(input);
+    var input = document.getElementById('__verifyInput__');
+    input.value = '';
     input.onchange = async function() {
       var file = input.files[0];
-      document.body.removeChild(input);
       if (!file) return;
-      var text = await file.text();
-      // Replace embedded hash with placeholder to reconstruct the hashable content
-      var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
-      var hashable = text.replace("'" + __reviewedSha256__ + "'", "'" + placeholder + "'");
-      var encoded = new TextEncoder().encode(hashable);
-      var hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
-      var hashArray = Array.from(new Uint8Array(hashBuffer));
-      var actualHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
-      if (actualHash === __reviewedSha256__) {
-        alert('Integrity verification passed.\nThe file has not been tampered with.');
+      if (!file.name.endsWith('.sha256')) {
+        alert('Please select a .sha256 file.');
+        return;
+      }
+      var sha256Text = await file.text();
+      var match = sha256Text.match(/^([0-9a-f]{64})\b/i);
+      if (!match) {
+        alert('Invalid .sha256 file format.\nExpected: <hash>  <filename>');
+        return;
+      }
+      var fileHash = match[1].toLowerCase();
+      if (fileHash === __finalSha256__) {
+        alert('Integrity verification passed.\nThe .sha256 file matches this report.');
       } else {
-        alert('Integrity verification FAILED.\nThe file may have been tampered with.'
-          + '\n\nExpected: ' + __reviewedSha256__
-          + '\nActual:   ' + actualHash);
+        alert('Integrity verification FAILED.\nThe .sha256 file does not match this report.'
+          + '\n\nEmbedded: ' + __finalSha256__
+          + '\n.sha256:  ' + fileHash);
       }
     };
     input.click();
@@ -171,7 +185,7 @@
 
   function collapseAll() {
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
-    scheduleSave();
+    autoSave();
   }
 
   function clearAll() {
@@ -180,7 +194,7 @@
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--sc-cnt-class-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
@@ -279,13 +293,11 @@
     };
     var detW = 3.2 * scEmPx
             + px('--sc-class-w', 14) + px('--sc-basetype-w', 16)
-            + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx
+            + 7 * scEmPx + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx
             + px('--sc-type-w', 12) + px('--sc-name-w', 10)
             + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
             + px('--sc-body-w', 5);
     document.querySelectorAll('table.sc-detail').forEach(function(t) { t.style.width = detW + 'px'; });
-    var cntW = px('--sc-cnt-class-w', 22) + 7 * scEmPx + 4 * scEmPx;
-    document.querySelectorAll('table.sc-count').forEach(function(t) { t.style.width = cntW + 'px'; });
   }
 
   function initColResizeSingle(th) {

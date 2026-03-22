@@ -39,6 +39,11 @@ namespace FolderDiffIL4DotNet.Services
                 CompareProperties(oldSnapshot, newSnapshot, entries);
                 CompareFields(oldSnapshot, newSnapshot, entries);
 
+                // Classify importance for each entry.
+                // 各エントリの重要度を分類。
+                for (int i = 0; i < entries.Count; i++)
+                    entries[i] = ChangeImportanceClassifier.WithClassifiedImportance(entries[i]);
+
                 // Sort: by TypeName, then by Change order (Added → Removed → Modified)
                 entries.Sort((a, b) =>
                 {
