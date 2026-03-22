@@ -284,7 +284,7 @@
             + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
             + px('--sc-body-w', 5);
     document.querySelectorAll('table.sc-detail').forEach(function(t) { t.style.width = detW + 'px'; });
-    var cntW = px('--sc-cnt-class-w', 22) + 7 * scEmPx + 4 * scEmPx;
+    var cntW = px('--sc-cnt-class-w', 22) + 7 * scEmPx + 4 * 5 * scEmPx;
     document.querySelectorAll('table.sc-count').forEach(function(t) { t.style.width = cntW + 'px'; });
   }
 
