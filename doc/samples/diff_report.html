@@ -106,7 +106,7 @@
       display: flex; flex-direction: column; gap: 0.3rem; z-index: 100;
     }
     .ctrl-buttons { display: flex; gap: 0.8rem; align-items: center; }
-    .ctrl-filters { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
+    .ctrl-filter-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;
       backdrop-filter: blur(20px) saturate(180%);
@@ -295,24 +295,26 @@
   <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
   <span id="save-status" class="save-status"></span>
 </div>
-<div class="ctrl-filters">
+<div class="ctrl-filter-row">
   <label class="filter-label">Importance:</label>
   <label class="filter-chip"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"> <span style="color:#d1242f;font-weight:bold">High</span></label>
   <label class="filter-chip"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"> <span style="color:#d97706;font-weight:bold">Medium</span></label>
   <label class="filter-chip"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"> Low</label>
-  <span class="filter-sep"></span>
+</div>
+<div class="ctrl-filter-row">
   <label class="filter-label">File Type:</label>
   <label class="filter-chip"><input type="checkbox" id="filter-ft-dll" checked onchange="applyFilters()"> DLL</label>
   <label class="filter-chip"><input type="checkbox" id="filter-ft-exe" checked onchange="applyFilters()"> EXE</label>
   <label class="filter-chip"><input type="checkbox" id="filter-ft-config" checked onchange="applyFilters()"> Config</label>
   <label class="filter-chip"><input type="checkbox" id="filter-ft-resource" checked onchange="applyFilters()"> Resource</label>
   <label class="filter-chip"><input type="checkbox" id="filter-ft-other" checked onchange="applyFilters()"> Other</label>
-  <span class="filter-sep"></span>
+</div>
+<div class="ctrl-filter-row">
   <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
   <span class="filter-sep"></span>
   <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()">
   <button class="btn btn-clear filter-reset-btn" onclick="resetFilters()">Reset filters</button>
-</div>  <!-- end .ctrl-filters -->
+</div>
 </div>  <!-- end .controls -->
 <!--/CTRL-->
 <main>

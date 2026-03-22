@@ -98,7 +98,7 @@
       display: flex; flex-direction: column; gap: 0.3rem; z-index: 100;
     }
     .ctrl-buttons { display: flex; gap: 0.8rem; align-items: center; }
-    .ctrl-filters { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
+    .ctrl-filter-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;
       backdrop-filter: blur(20px) saturate(180%);
