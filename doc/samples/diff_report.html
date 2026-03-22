@@ -1093,12 +1093,17 @@
     }
     var input = document.createElement('input');
     input.type = 'file';
+    input.accept = '.sha256';
     input.style.display = 'none';
     document.body.appendChild(input);
     input.onchange = async function() {
       var file = input.files[0];
       document.body.removeChild(input);
       if (!file) return;
+      if (!file.name.endsWith('.sha256')) {
+        alert('Please select a .sha256 file.');
+        return;
+      }
       var sha256Text = await file.text();
       var match = sha256Text.match(/^([0-9a-f]{64})\b/i);
       if (!match) {
