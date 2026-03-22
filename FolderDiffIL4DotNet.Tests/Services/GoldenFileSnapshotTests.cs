@@ -270,20 +270,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Also verify structural correctness of the generated report.
             // 同じ Markdown レポートを2回生成し、同一の出力を検証する。
             // 生成されたレポートの構造的な正しさも検証する。
-            var (oldDir1, newDir1, reportDir1) = MakeDirs("md-det-1");
-            var (oldDir2, newDir2, reportDir2) = MakeDirs("md-det-2");
+            var (oldDir, newDir, reportDir1) = MakeDirs("md-det-1");
+            var reportDir2 = Path.Combine(_rootDir, "report-md-det-2");
+            Directory.CreateDirectory(reportDir2);
             PopulateTestData();
 
             var config = CreateSnapshotConfig();
             var service = new ReportGenerateService(_resultLists, _logger, config);
 
-            service.GenerateDiffReport(CreateReportContext(oldDir1, newDir1, reportDir1, config));
+            // Use same old/new dirs for both runs so paths in the report are identical
+            // 両方の実行で同じ old/new ディレクトリを使用し、レポート内のパスを同一にする
+            service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir1, config));
             var report1 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir1, "diff_report.md")));
 
-            // Reset and regenerate with same data / 同じデータでリセット・再生成
             _resultLists.ResetAll();
             PopulateTestData();
-            service.GenerateDiffReport(CreateReportContext(oldDir2, newDir2, reportDir2, config));
+            service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir2, config));
             var report2 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir2, "diff_report.md")));
 
             // Determinism: both runs produce identical output / 決定論: 両方の実行が同一出力
@@ -340,8 +342,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             // Generate the same HTML report twice and verify identical output + structure.
             // 同じ HTML レポートを2回生成し、同一の出力と構造を検証する。
-            var (oldDir1, newDir1, reportDir1) = MakeDirs("html-det-1");
-            var (oldDir2, newDir2, reportDir2) = MakeDirs("html-det-2");
+            var (oldDir, newDir, reportDir1) = MakeDirs("html-det-1");
+            var reportDir2 = Path.Combine(_rootDir, "report-html-det-2");
+            Directory.CreateDirectory(reportDir2);
             PopulateTestData();
 
             var builder = CreateSnapshotConfigBuilder();
@@ -350,12 +353,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var config = builder.Build();
             var service = new HtmlReportGenerateService(_resultLists, _logger, config);
 
-            service.GenerateDiffReportHtml(CreateReportContext(oldDir1, newDir1, reportDir1, config));
+            // Use same old/new dirs for both runs so paths in the report are identical
+            // 両方の実行で同じ old/new ディレクトリを使用し、レポート内のパスを同一にする
+            service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir1, config));
             var html1 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir1, "diff_report.html")));
 
             _resultLists.ResetAll();
             PopulateTestData();
-            service.GenerateDiffReportHtml(CreateReportContext(oldDir2, newDir2, reportDir2, config));
+            service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir2, config));
             var html2 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir2, "diff_report.html")));
 
             // Determinism / 決定論
