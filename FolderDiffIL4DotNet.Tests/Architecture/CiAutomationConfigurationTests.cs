@@ -19,8 +19,8 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         {
             var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
 
-            Assert.Contains("line_threshold = 73.0", workflow, StringComparison.Ordinal);
-            Assert.Contains("branch_threshold = 71.0", workflow, StringComparison.Ordinal);
+            Assert.Contains("line_threshold = 80.0", workflow, StringComparison.Ordinal);
+            Assert.Contains("branch_threshold = 75.0", workflow, StringComparison.Ordinal);
             Assert.Contains("Enforce coverage thresholds", workflow, StringComparison.Ordinal);
         }
 
