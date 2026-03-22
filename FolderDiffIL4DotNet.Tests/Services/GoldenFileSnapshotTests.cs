@@ -293,7 +293,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Structural checks on generated report / 生成レポートの構造チェック
             Assert.Contains("# Folder Diff Report", report1);
-            Assert.Contains("- App Version: 1.0.0-snapshot", report1);
+            Assert.Contains("- App Version: FolderDiffIL4DotNet 1.0.0-snapshot", report1);
             Assert.Contains("- Computer: snapshot-host", report1);
             Assert.Contains("## [ = ] Unchanged Files (2)", report1);
             Assert.Contains("## [ + ] Added Files (1)", report1);
@@ -342,9 +342,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             // Generate the same HTML report twice and verify identical output + structure.
             // 同じ HTML レポートを2回生成し、同一の出力と構造を検証する。
-            var (oldDir, newDir, reportDir1) = MakeDirs("html-det-1");
-            var reportDir2 = Path.Combine(_rootDir, "report-html-det-2");
-            Directory.CreateDirectory(reportDir2);
+            var (oldDir, newDir, reportDir) = MakeDirs("html-det");
             PopulateTestData();
 
             var builder = CreateSnapshotConfigBuilder();
@@ -353,15 +351,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var config = builder.Build();
             var service = new HtmlReportGenerateService(_resultLists, _logger, config);
 
-            // Use same old/new dirs for both runs so paths in the report are identical
-            // 両方の実行で同じ old/new ディレクトリを使用し、レポート内のパスを同一にする
-            service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir1, config));
-            var html1 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir1, "diff_report.html")));
+            // Use same dirs for both runs (report dir is used as storage key in HTML)
+            // 両方の実行で同じディレクトリを使用（レポートディレクトリは HTML の storage key に使われる）
+            service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html1 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir, "diff_report.html")));
 
             _resultLists.ResetAll();
             PopulateTestData();
-            service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir2, config));
-            var html2 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir2, "diff_report.html")));
+            // Overwrite the same file / 同じファイルを上書き
+            service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html2 = NormalizeLineEndings(File.ReadAllText(Path.Combine(reportDir, "diff_report.html")));
 
             // Determinism / 決定論
             Assert.Equal(html1, html2);
