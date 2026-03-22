@@ -232,6 +232,16 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
                 return HashException != null ? throw HashException : Task.FromResult(HashResult);
             }
 
+            public Task<(bool AreEqual, string? Hash1Hex, string? Hash2Hex)> DiffFilesByHashWithHexAsync(
+                string file1, string file2)
+            {
+                HashCalls.Add((file1, file2));
+                if (HashException != null) throw HashException;
+                string? hash1 = HashResult ? "a".PadRight(64, '0') : "a".PadRight(64, '0');
+                string? hash2 = HashResult ? "a".PadRight(64, '0') : "b".PadRight(64, '0');
+                return Task.FromResult((HashResult, hash1, hash2));
+            }
+
             public Task<bool> DiffTextFilesAsync(string file1, string file2)
             {
                 TextDiffCalls.Add((file1, file2));
@@ -269,6 +279,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
         {
             public Task PrecomputeAsync(System.Collections.Generic.IEnumerable<string> filesAbsolutePaths, int maxParallel, System.Threading.CancellationToken ct = default)
                 => Task.CompletedTask;
+            public void PreSeedFileHash(string fileAbsolutePath, string sha256Hex) { }
             public Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolder, string newFolder, bool shouldOutput, System.Threading.CancellationToken ct = default)
                 => Task.FromResult((false, (string?)null));
         }

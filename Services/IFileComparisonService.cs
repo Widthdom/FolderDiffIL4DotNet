@@ -18,6 +18,15 @@ namespace FolderDiffIL4DotNet.Services
         Task<bool> DiffFilesByHashAsync(string file1AbsolutePath, string file2AbsolutePath);
 
         /// <summary>
+        /// Compares two files by SHA256 hash and also returns the computed hex strings.
+        /// When files differ by size, hashes are null (no I/O performed).
+        /// 2 つのファイルの SHA256 ハッシュ値を比較し、計算した 16 進文字列も返します。
+        /// サイズが異なる場合、ハッシュは null です。
+        /// </summary>
+        Task<(bool AreEqual, string? Hash1Hex, string? Hash2Hex)> DiffFilesByHashWithHexAsync(
+            string file1AbsolutePath, string file2AbsolutePath);
+
+        /// <summary>
         /// Compares two text files line-by-line and returns whether they are equal.
         /// 2 つのテキストファイルを行単位で比較し、等価かどうかを返します。
         /// </summary>

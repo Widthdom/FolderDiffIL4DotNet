@@ -41,6 +41,16 @@ namespace FolderDiffIL4DotNet.Services.Caching
             _sha256HashCache.GetOrAdd(fileAbsolutePath, static path => FileComparer.ComputeFileSha256Hex(path));
 
         /// <summary>
+        /// Pre-seeds the SHA256 hash for a file path, avoiding redundant recomputation.
+        /// ファイルパスの SHA256 ハッシュを事前登録し、冗長な再計算を回避します。
+        /// </summary>
+        internal void PreSeedFileHash(string fileAbsolutePath, string sha256Hex)
+        {
+            if (!string.IsNullOrEmpty(fileAbsolutePath) && !string.IsNullOrEmpty(sha256Hex))
+                _sha256HashCache.TryAdd(fileAbsolutePath, sha256Hex);
+        }
+
+        /// <summary>
         /// Tries to retrieve IL text for the given key; expired entries are purged on access.
         /// 指定キーの IL テキスト取得を試みます。期限切れエントリは参照時にパージされます。
         /// </summary>

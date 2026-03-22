@@ -42,6 +42,45 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task FilesAreEqualAsync_WhenHashMatches_SeedsILCacheWithBothHashes()
+        {
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = true
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            await service.FilesAreEqualAsync("sample.txt", maxParallel: 4);
+
+            // Both file hashes should have been seeded into the IL cache
+            Assert.Equal(2, ilOutputService.PreSeedCalls.Count);
+            Assert.Equal("/virtual/old/sample.txt", ilOutputService.PreSeedCalls[0].Path);
+            Assert.Equal("/virtual/new/sample.txt", ilOutputService.PreSeedCalls[1].Path);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenHashDiffers_SeedsILCacheWithBothHashes()
+        {
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            await service.FilesAreEqualAsync("binary.dat", maxParallel: 1);
+
+            // Even when hashes differ, both computed hashes should be seeded
+            Assert.Equal(2, ilOutputService.PreSeedCalls.Count);
+        }
+
+        [Fact]
         public async Task FilesAreEqualAsync_WhenHashDiffThrowsUnauthorizedAccessException_LogsErrorAndRethrows()
         {
             var fileComparisonService = new FakeFileComparisonService
@@ -422,6 +461,19 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 return Task.FromResult(HashResult);
             }
 
+            public Task<(bool AreEqual, string? Hash1Hex, string? Hash2Hex)> DiffFilesByHashWithHexAsync(
+                string file1AbsolutePath, string file2AbsolutePath)
+            {
+                HashCalls.Add((file1AbsolutePath, file2AbsolutePath));
+                if (HashException != null)
+                {
+                    throw HashException;
+                }
+                string? hash1 = HashResult ? "a".PadRight(64, '0') : "a".PadRight(64, '0');
+                string? hash2 = HashResult ? "a".PadRight(64, '0') : "b".PadRight(64, '0');
+                return Task.FromResult((HashResult, hash1, hash2));
+            }
+
             public Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
             {
                 TextDiffCalls.Add((file1AbsolutePath, file2AbsolutePath));
@@ -489,10 +541,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public int PrecomputeCallCount { get; private set; }
 
+            public List<(string Path, string Hash)> PreSeedCalls { get; } = new();
+
             public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
             {
                 PrecomputeCallCount++;
                 return Task.CompletedTask;
+            }
+
+            public void PreSeedFileHash(string fileAbsolutePath, string sha256Hex)
+            {
+                PreSeedCalls.Add((fileAbsolutePath, sha256Hex));
             }
 
             public Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)

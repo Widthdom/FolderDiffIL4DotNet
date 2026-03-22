@@ -21,6 +21,19 @@ namespace FolderDiffIL4DotNet.Core.IO
         /// </summary>
         public static async Task<bool> DiffFilesByHashAsync(string file1AbsolutePath, string file2AbsolutePath)
         {
+            var result = await DiffFilesByHashWithHexAsync(file1AbsolutePath, file2AbsolutePath);
+            return result.AreEqual;
+        }
+
+        /// <summary>
+        /// Compares two files by SHA256 hash and also returns the computed hex strings.
+        /// When files differ by size, hashes are null (no I/O performed).
+        /// 2 つのファイルの SHA256 ハッシュ値を比較し、計算した 16 進文字列も返します。
+        /// サイズが異なる場合、ハッシュは null です（I/O を行わない）。
+        /// </summary>
+        public static async Task<(bool AreEqual, string? Hash1Hex, string? Hash2Hex)> DiffFilesByHashWithHexAsync(
+            string file1AbsolutePath, string file2AbsolutePath)
+        {
             try
             {
                 // Short-circuit on size mismatch to minimize I/O
@@ -29,7 +42,7 @@ namespace FolderDiffIL4DotNet.Core.IO
                 var file2Info = new FileInfo(file2AbsolutePath);
                 if (file1Info.Length != file2Info.Length)
                 {
-                    return false;
+                    return (false, null, null);
                 }
 
                 using var sha256 = SHA256.Create();
@@ -39,7 +52,9 @@ namespace FolderDiffIL4DotNet.Core.IO
                 using var file2stream = new FileStream(file2AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: FILE_STREAM_SEQUENTIAL_BUFFER_SIZE, options: FileOptions.SequentialScan);
                 var hash1 = await sha256.ComputeHashAsync(file1stream);
                 var hash2 = await sha256.ComputeHashAsync(file2stream);
-                return hash1.SequenceEqual(hash2);
+                string hex1 = BitConverter.ToString(hash1).Replace("-", string.Empty).ToLowerInvariant();
+                string hex2 = BitConverter.ToString(hash2).Replace("-", string.Empty).ToLowerInvariant();
+                return (hash1.SequenceEqual(hash2), hex1, hex2);
             }
             catch (FileNotFoundException ex)
             {

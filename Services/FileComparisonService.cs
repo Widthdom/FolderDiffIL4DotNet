@@ -18,6 +18,11 @@ namespace FolderDiffIL4DotNet.Services
             => FileComparer.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath);
 
         /// <inheritdoc />
+        public Task<(bool AreEqual, string? Hash1Hex, string? Hash2Hex)> DiffFilesByHashWithHexAsync(
+            string file1AbsolutePath, string file2AbsolutePath)
+            => FileComparer.DiffFilesByHashWithHexAsync(file1AbsolutePath, file2AbsolutePath);
+
+        /// <inheritdoc />
         public Task<bool> DiffTextFilesAsync(string file1AbsolutePath, string file2AbsolutePath)
             => FileComparer.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
 

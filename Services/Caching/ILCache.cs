@@ -81,6 +81,15 @@ namespace FolderDiffIL4DotNet.Services.Caching
         }
 
         /// <summary>
+        /// Pre-seeds the SHA256 hash for a file so that <see cref="BuildILCacheKey"/> does not recompute it.
+        /// ファイルの SHA256 ハッシュを事前登録し、<see cref="BuildILCacheKey"/> での再計算を回避します。
+        /// </summary>
+        /// <param name="fileAbsolutePath">Absolute path to the file. / ファイルの絶対パス。</param>
+        /// <param name="sha256Hex">64-character lowercase hex SHA256 hash. / 64 桁小文字 16 進 SHA256 ハッシュ。</param>
+        public void PreSeedFileHash(string fileAbsolutePath, string sha256Hex)
+            => _memoryCache.PreSeedFileHash(fileAbsolutePath, sha256Hex);
+
+        /// <summary>
         /// Pre-warms SHA256 hashes of the target files in parallel to amortize I/O latency for subsequent cache-key generation.
         /// 対象ファイル群の SHA256 を並列プリウォームし、後続キャッシュキー生成の I/O レイテンシを平準化します。
         /// </summary>

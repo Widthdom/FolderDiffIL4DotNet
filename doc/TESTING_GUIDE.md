@@ -110,6 +110,8 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks
 dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *TextDiffer*
 ```
 
+The `benchmark` CI job (workflow_dispatch only) runs all benchmarks with JSON and GitHub exporters and uploads `BenchmarkDotNet.Artifacts/` as a CI artifact.
+
 CI-parity command (same as GitHub Actions test step):
 
 ```bash
@@ -297,6 +299,8 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks
 # 特定のベンチマーククラスだけを実行
 dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *TextDiffer*
 ```
+
+`benchmark` CI ジョブ（workflow_dispatch のみ）はすべてのベンチマークを JSON および GitHub エクスポーター付きで実行し、`BenchmarkDotNet.Artifacts/` を CI アーティファクトとしてアップロードします。
 
 CI 同等コマンド（GitHub Actions と同じ test ステップ）:
 

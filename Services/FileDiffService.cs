@@ -98,8 +98,19 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 // 1) SHA256: exit early when file size and content are identical.
+                //    Also capture computed hex hashes to seed the IL cache, avoiding redundant SHA256 recomputation.
                 // 1) SHA256: ファイルサイズや内容が完全一致する場合はここで終了。
-                if (await _fileComparisonService.DiffFilesByHashAsync(file1AbsolutePath, file2AbsolutePath))
+                //    計算済みハッシュ値を IL キャッシュに事前登録し、SHA256 の二重計算を回避する。
+                var (areHashEqual, hash1Hex, hash2Hex) = await _fileComparisonService.DiffFilesByHashWithHexAsync(file1AbsolutePath, file2AbsolutePath);
+                if (hash1Hex != null)
+                {
+                    _ilOutputService.PreSeedFileHash(file1AbsolutePath, hash1Hex);
+                }
+                if (hash2Hex != null)
+                {
+                    _ilOutputService.PreSeedFileHash(file2AbsolutePath, hash2Hex);
+                }
+                if (areHashEqual)
                 {
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Match);
                     return true;

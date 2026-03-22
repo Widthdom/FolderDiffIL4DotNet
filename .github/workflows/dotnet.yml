@@ -189,6 +189,42 @@ jobs:
           if-no-files-found: warn
           path: StrykerOutput/**
 
+  benchmark:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj
+
+      - name: Run benchmarks
+        run: dotnet run --project FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj --configuration Release -- --exporters json github
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BenchmarkResults
+          if-no-files-found: warn
+          path: BenchmarkDotNet.Artifacts/**
+
   test-windows:
     runs-on: windows-latest
     steps:

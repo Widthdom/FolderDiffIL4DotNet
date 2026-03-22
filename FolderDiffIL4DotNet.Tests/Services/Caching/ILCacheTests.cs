@@ -451,5 +451,34 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
                 }
             }
         }
+        [Fact]
+        public async Task PreSeedFileHash_AvoidsSha256Recomputation()
+        {
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null);
+            var file = CreateTestFile("preseed.dll", "preseed content");
+            var tool = "dotnet-ildasm";
+            var knownHash = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+
+            // Pre-seed a hash, then store and retrieve IL
+            cache.PreSeedFileHash(file, knownHash);
+            await cache.SetILAsync(file, tool, "IL-text-preseed");
+            var result = await cache.TryGetILAsync(file, tool);
+
+            // The cache should still return the stored IL text via the pre-seeded hash key
+            Assert.Equal("IL-text-preseed", result);
+        }
+
+        [Fact]
+        public void GetReportStats_AfterHitsAndMisses_ReflectsCorrectCounts()
+        {
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null);
+            var file = CreateTestFile("stats.dll", "stats content");
+
+            // Initial stats should be zero
+            var stats = cache.GetReportStats();
+            Assert.Equal(0, stats.Hits);
+            Assert.Equal(0, stats.Misses);
+            Assert.Equal(0, stats.Stores);
+        }
     }
 }

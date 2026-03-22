@@ -178,6 +178,16 @@ Benchmark classes:
 - [`TextDifferBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/TextDifferBenchmarks.cs): Myers diff on small (100 lines), medium (10K), and large (1M) IL-like files.
 - [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): file enumeration (100 / 1K / 10K files) and SHA256 hash comparison.
 
+**CI integration:** The `benchmark` job in [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) runs all benchmarks on `workflow_dispatch` and uploads `BenchmarkDotNet.Artifacts/` as a CI artifact with JSON and GitHub exporters.
+
+### SHA256 Hash Pre-Seeding
+
+When IL cache is enabled, `FileDiffService` seeds computed SHA256 hashes into `ILMemoryCache` via `PreSeedFileHash` after the initial hash comparison. This avoids recomputing SHA256 during IL cache key construction (`BuildILCacheKey`), which would otherwise re-read the file.
+
+### IL Line Split-and-Filter Optimization
+
+`ILOutputService.SplitAndFilterIlLines` combines the `Split('\n')` and `Where(filter)` steps into a single pass, producing one `List<string>` directly instead of creating four intermediate lists.
+
 ## Source Style Notes
 
 Keep internal formatting choices simple and local:
@@ -919,6 +929,16 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 ベンチマーククラス:
 - [`TextDifferBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/TextDifferBenchmarks.cs): 小規模（100 行）・中規模（10K 行）・大規模（1M 行）の IL 風テキスト差分。
 - [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): ファイル列挙（100 / 1K / 10K ファイル）と SHA256 ハッシュ比較。
+
+**CI 統合:** [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) の `benchmark` ジョブは `workflow_dispatch` 時にすべてのベンチマークを実行し、JSON および GitHub エクスポーター付きの `BenchmarkDotNet.Artifacts/` を CI アーティファクトとしてアップロードします。
+
+### SHA256 ハッシュのプリシード
+
+IL キャッシュが有効な場合、`FileDiffService` は初回ハッシュ比較後に計算済み SHA256 ハッシュを `PreSeedFileHash` 経由で `ILMemoryCache` にシード登録します。これにより、IL キャッシュキー生成（`BuildILCacheKey`）時にファイルを再読み込みして SHA256 を再計算することを回避します。
+
+### IL 行分割・フィルタの最適化
+
+`ILOutputService.SplitAndFilterIlLines` は `Split('\n')` と `Where(filter)` の処理を 1 パスに統合し、4 つの中間リストの代わりに 1 つの `List<string>` を直接生成します。
 
 ## ソースコードのスタイル方針
 
