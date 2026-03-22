@@ -102,8 +102,9 @@
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       background: rgba(255,255,255,0.1);
-      padding: 0.65rem 2rem; margin: 0 -2rem;
-      display: flex; gap: 0.8rem; align-items: center; z-index: 100;
+      padding: 0.45rem 2rem; margin: 0 -2rem;
+      display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; z-index: 100;
+      font-size: 12px;
     }
     .reviewed-banner {
       position: sticky; top: 0;
@@ -201,7 +202,7 @@
     .btn-copy-path:hover { background: #e8e8ed; color: #333; }
     .btn-copy-path svg { pointer-events: none; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
-    table.stat-table { width: auto; margin-bottom: 1rem; margin-left: 1.2em; border-collapse: collapse; }
+    table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; }
     table.stat-table th { border: 1px solid #bbb; padding: 3px 14px; font-size: 13px; text-align: left; white-space: nowrap; }
     table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }
     table.stat-table td.stat-label { color: #444; white-space: nowrap; }
@@ -272,15 +273,8 @@
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
-    .filter-bar {
-      position: sticky; top: 2.7rem;
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      background: rgba(245,245,247,0.85);
-      padding: 0.35rem 2rem; margin: 0 -2rem;
-      display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; z-index: 99;
-      border-top: 1px solid #e0e0e0; font-size: 12px;
-    }
+    /* ── Filter controls (inline within controls bar) ───────────────────── */
+    .ctrl-sep { width: 1px; height: 1.6em; background: #ccc; margin: 0 0.15rem; }
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; }
     .filter-chip { display: inline-flex; align-items: center; gap: 0.2em; white-space: nowrap; cursor: pointer; }
     .filter-chip input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
@@ -299,8 +293,7 @@
   <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
   <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
   <span id="save-status" class="save-status"></span>
-</div>
-<div class="filter-bar">
+  <span class="ctrl-sep"></span>
   <label class="filter-label">Importance:</label>
   <label class="filter-chip"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"> <span style="color:#d1242f;font-weight:bold">High</span></label>
   <label class="filter-chip"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"> <span style="color:#d97706;font-weight:bold">Medium</span></label>
@@ -317,7 +310,7 @@
   <span class="filter-sep"></span>
   <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()">
   <button class="btn btn-clear filter-reset-btn" onclick="resetFilters()">Reset filters</button>
-</div>
+</div>  <!-- end .controls -->
 <!--/CTRL-->
 <main>
 <h1>Folder Diff Report</h1>

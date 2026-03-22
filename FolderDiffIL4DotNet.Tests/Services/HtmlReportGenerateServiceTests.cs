@@ -1672,9 +1672,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: filter bar HTML elements are present
-            // フィルターバーの HTML 要素が含まれていることを検証
-            Assert.Contains("class=\"filter-bar\"", html);
+            // Assert: filter controls are present inside controls bar
+            // フィルターコントロールがコントロールバー内に含まれていることを検証
+            Assert.Contains("class=\"controls\"", html);
             Assert.Contains("id=\"filter-imp-high\"", html);
             Assert.Contains("id=\"filter-imp-medium\"", html);
             Assert.Contains("id=\"filter-imp-low\"", html);
@@ -1699,15 +1699,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: filter bar is between <!--CTRL--> and <!--/CTRL--> markers
-            // フィルターバーが <!--CTRL-->...<!--/CTRL--> マーカー内にあることを検証
+            // Assert: filter controls are between <!--CTRL--> and <!--/CTRL--> markers
+            // フィルターコントロールが <!--CTRL-->...<!--/CTRL--> マーカー内にあることを検証
             int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
             int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
-            int filterBar = html.IndexOf("class=\"filter-bar\"", StringComparison.Ordinal);
+            int filterSearch = html.IndexOf("id=\"filter-search\"", StringComparison.Ordinal);
             Assert.True(ctrlStart >= 0, "<!--CTRL--> marker not found");
             Assert.True(ctrlEnd > ctrlStart, "<!--/CTRL--> marker not found or before <!--CTRL-->");
-            Assert.True(filterBar > ctrlStart && filterBar < ctrlEnd,
-                "filter-bar should be inside <!--CTRL-->...<!--/CTRL--> markers so it is stripped in reviewed mode");
+            Assert.True(filterSearch > ctrlStart && filterSearch < ctrlEnd,
+                "filter controls should be inside <!--CTRL-->...<!--/CTRL--> markers so they are stripped in reviewed mode");
         }
 
         [Fact]
