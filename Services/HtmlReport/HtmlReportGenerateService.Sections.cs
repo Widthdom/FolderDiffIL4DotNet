@@ -526,8 +526,8 @@ namespace FolderDiffIL4DotNet.Services
                 string cntStatusBg = ChangeToStatusBg(change);
                 string cntStatusStyle = cntStatusBg.Length > 0 ? $" style=\"background:{cntStatusBg}\"" : "";
                 int total = high + medium + low;
-                string highTd = high > 0 ? $"<span style=\"color:#c00;font-weight:bold\">{high}</span>" : "";
-                string mediumTd = medium > 0 ? $"<span style=\"color:#856404\">{medium}</span>" : "";
+                string highTd = high > 0 ? $"{high}" : "";
+                string mediumTd = medium > 0 ? $"{medium}" : "";
                 string lowTd = low > 0 ? $"{low}" : "";
                 sb.AppendLine($"{trOpen}<td>{classTd}</td><td{cntStatusStyle}>{ChangeToMarker(change)}</td><td>{highTd}</td><td>{mediumTd}</td><td>{lowTd}</td><td>{total}</td></tr>");
             }
