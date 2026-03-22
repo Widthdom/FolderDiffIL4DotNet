@@ -150,23 +150,40 @@
       document.body.removeChild(input);
       if (!file) return;
       if (file.name.endsWith('.sha256')) {
-        // Verify using companion .sha256 file: compare its hash with the embedded hash
+        // .sha256 file contains the final hash of the reviewed HTML.
+        // Ask the user to also select the reviewed HTML file to verify against it.
         var sha256Text = await file.text();
         var match = sha256Text.match(/^([0-9a-f]{64})\b/i);
         if (!match) {
           alert('Invalid .sha256 file format.\nExpected: <hash>  <filename>');
           return;
         }
-        var fileHash = match[1].toLowerCase();
-        if (fileHash === __reviewedSha256__) {
-          alert('Integrity verification passed.\nThe .sha256 file matches the embedded hash.');
-        } else {
-          alert('Integrity verification FAILED.\nThe .sha256 file does not match the embedded hash.'
-            + '\n\nEmbedded: ' + __reviewedSha256__
-            + '\n.sha256:  ' + fileHash);
-        }
+        var expectedHash = match[1].toLowerCase();
+        alert('Now select the reviewed HTML file to verify against the .sha256 hash.');
+        var input2 = document.createElement('input');
+        input2.type = 'file';
+        input2.accept = '.html';
+        input2.style.display = 'none';
+        document.body.appendChild(input2);
+        input2.onchange = async function() {
+          var htmlFile = input2.files[0];
+          document.body.removeChild(input2);
+          if (!htmlFile) return;
+          var htmlBytes = new Uint8Array(await htmlFile.arrayBuffer());
+          var hashBuffer = await crypto.subtle.digest('SHA-256', htmlBytes);
+          var hashArray = Array.from(new Uint8Array(hashBuffer));
+          var actualHash = hashArray.map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+          if (actualHash === expectedHash) {
+            alert('Integrity verification passed.\nThe HTML file matches the .sha256 hash.');
+          } else {
+            alert('Integrity verification FAILED.\nThe HTML file does not match the .sha256 hash.'
+              + '\n\n.sha256:  ' + expectedHash
+              + '\nActual:   ' + actualHash);
+          }
+        };
+        input2.click();
       } else {
-        // Verify using the reviewed HTML file: re-hash and compare
+        // Verify using the reviewed HTML file: re-hash and compare with embedded hash
         var text = await file.text();
         // Replace embedded hash with placeholder to reconstruct the hashable content
         var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
