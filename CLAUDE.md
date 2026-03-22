@@ -40,7 +40,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 ```
 
 - CI coverage thresholds: line >= 73%, branch >= 71%
-- Always run tests locally before pushing. If `dotnet` is unavailable, state this explicitly.
+- **Before committing**, always run tests with the Release configuration to match CI: `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo`. Release builds enable `TreatWarningsAsErrors` and full code analysis rules (e.g. CA1031), which are not enforced in Debug builds. If `dotnet` is unavailable, state this explicitly.
 
 ### Bilingual Rule
 
@@ -177,7 +177,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 ```
 
 - CI カバレッジ閾値: 行 >= 73%、ブランチ >= 71%
-- テストをローカル実行してからプッシュすること。`dotnet` が利用不可なら明記すること。
+- **コミット前に**必ず Release 構成でテストを実行し CI と同一条件を確認すること: `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo`。Release ビルドでは `TreatWarningsAsErrors` と完全なコード解析ルール（CA1031 等）が有効になるため、Debug ビルドでは検出できない問題を事前に捕捉できる。`dotnet` が利用不可なら明記すること。
 
 ### 英日併記ルール
 
