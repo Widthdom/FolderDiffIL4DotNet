@@ -119,6 +119,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.DisassemblerBlacklistTtlMinutes"/>
         public int DisassemblerBlacklistTtlMinutes { get; set; } = ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes;
 
+        /// <inheritdoc cref="ConfigSettings.DisassemblerTimeoutSeconds"/>
+        public int DisassemblerTimeoutSeconds { get; set; } = ConfigSettings.DefaultDisassemblerTimeoutSeconds;
+
         /// <inheritdoc cref="ConfigSettings.SkipIL"/>
         public bool SkipIL { get; set; }
 

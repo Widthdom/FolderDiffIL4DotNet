@@ -100,6 +100,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Blacklist TTL (minutes) for disassembler tools. / 逆アセンブラツールのブラックリスト有効期間（分）。</summary>
         int DisassemblerBlacklistTtlMinutes { get; }
 
+        /// <summary>Timeout (seconds) for each disassembler process. 0 = no timeout. / 逆アセンブラプロセスのタイムアウト（秒）。0 = 無制限。</summary>
+        int DisassemblerTimeoutSeconds { get; }
+
         /// <summary>Whether to skip IL comparison for .NET assemblies. / .NET アセンブリの IL 比較をスキップするかどうか。</summary>
         bool SkipIL { get; }
 

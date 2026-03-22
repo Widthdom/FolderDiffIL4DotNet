@@ -72,7 +72,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
                   "SkipIL": true,
                   "ShouldIncludeILCacheStatsInReport": true,
                   "SpinnerFrames": [">", ">>", ">>>"],
-                  "DisassemblerBlacklistTtlMinutes": 25
+                  "DisassemblerBlacklistTtlMinutes": 25,
+                  "DisassemblerTimeoutSeconds": 600
                 }
                 """;
 
@@ -106,6 +107,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.True(config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { ">", ">>", ">>>" }, config.SpinnerFrames);
             Assert.Equal(25, config.DisassemblerBlacklistTtlMinutes);
+            Assert.Equal(600, config.DisassemblerTimeoutSeconds);
         }
 
         [Fact]
@@ -414,6 +416,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.False(config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
             Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
+            Assert.Equal(ConfigSettings.DefaultDisassemblerTimeoutSeconds, config.DisassemblerTimeoutSeconds);
             Assert.True(config.EnableInlineDiff);
             Assert.Equal(0, config.InlineDiffContextLines);
             Assert.Equal(ConfigSettings.DefaultInlineDiffMaxDiffLines, config.InlineDiffMaxDiffLines);

@@ -491,6 +491,11 @@ Override only the settings you want to change. For example:
       <td><code>10</code></td>
       <td>Minutes before a blacklisted disassembler tool — one that has failed <code>DISASSEMBLE_FAIL_THRESHOLD</code> (3) times consecutively — is removed from the blacklist and retried on the next call.</td>
     </tr>
+    <tr id="config-en-disassemblertimeoutseconds">
+      <td><code>DisassemblerTimeoutSeconds</code></td>
+      <td><code>300</code></td>
+      <td>Timeout (seconds) for each disassembler process invocation. <code>&lt;=0</code> means no timeout. Increase for very large assemblies or slow network shares.</td>
+    </tr>
     <tr id="config-en-skipil">
       <td><code>SkipIL</code></td>
       <td><code>false</code></td>
@@ -1092,6 +1097,11 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
       <td><code>DisassemblerBlacklistTtlMinutes</code></td>
       <td><code>10</code></td>
       <td>連続失敗回数が <code>DISASSEMBLE_FAIL_THRESHOLD</code>（3 回）に達してブラックリスト入りした逆アセンブラツールが、ブラックリストから除外されて再試行されるまでの分数。</td>
+    </tr>
+    <tr id="config-ja-disassemblertimeoutseconds">
+      <td><code>DisassemblerTimeoutSeconds</code></td>
+      <td><code>300</code></td>
+      <td>各逆アセンブラプロセス実行のタイムアウト（秒）。<code>&lt;=0</code> でタイムアウトなし。非常に大きなアセンブリやネットワーク共有の遅延時に増加。</td>
     </tr>
     <tr id="config-ja-skipil">
       <td><code>SkipIL</code></td>

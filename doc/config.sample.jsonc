@@ -144,6 +144,10 @@
   // 失敗した逆アセンブラを再試行までブラックリストに入れる分数（デフォルト: 10）
   "DisassemblerBlacklistTtlMinutes": 10,
 
+  // Timeout (seconds) for each disassembler process invocation. 0 = no timeout (default: 300)
+  // 各逆アセンブラプロセス実行のタイムアウト（秒）。0 = タイムアウトなし（デフォルト: 300）
+  "DisassemblerTimeoutSeconds": 300,
+
   // --- Inline Diff (HTML report) / インライン差分（HTML レポート） ---
 
   // Enable inline diff in HTML report (default: true)

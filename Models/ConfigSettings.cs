@@ -59,6 +59,8 @@ namespace FolderDiffIL4DotNet.Models
         public const int DefaultILPrecomputeBatchSize = 2048;
         /// <summary>Default value for <see cref="DisassemblerBlacklistTtlMinutes"/>. / <see cref="DisassemblerBlacklistTtlMinutes"/> の既定値。</summary>
         public const int DefaultDisassemblerBlacklistTtlMinutes = 10;
+        /// <summary>Default value for <see cref="DisassemblerTimeoutSeconds"/>. / <see cref="DisassemblerTimeoutSeconds"/> の既定値。</summary>
+        public const int DefaultDisassemblerTimeoutSeconds = 300;
         /// <summary>Default value for <see cref="InlineDiffMaxEditDistance"/>. / <see cref="InlineDiffMaxEditDistance"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxEditDistance = 4000;
         /// <summary>Default value for <see cref="InlineDiffMaxDiffLines"/>. / <see cref="InlineDiffMaxDiffLines"/> の既定値。</summary>
@@ -119,6 +121,7 @@ namespace FolderDiffIL4DotNet.Models
             OptimizeForNetworkShares = builder.OptimizeForNetworkShares;
             AutoDetectNetworkShares = builder.AutoDetectNetworkShares;
             DisassemblerBlacklistTtlMinutes = builder.DisassemblerBlacklistTtlMinutes;
+            DisassemblerTimeoutSeconds = builder.DisassemblerTimeoutSeconds;
             SkipIL = builder.SkipIL;
             EnableInlineDiff = builder.EnableInlineDiff;
             InlineDiffContextLines = builder.InlineDiffContextLines;
@@ -296,6 +299,12 @@ namespace FolderDiffIL4DotNet.Models
         /// 逆アセンブラツールのブラックリスト有効期間（分）。
         /// </summary>
         public int DisassemblerBlacklistTtlMinutes { get; }
+
+        /// <summary>
+        /// Timeout (seconds) for each disassembler process invocation. 0 means no timeout.
+        /// 各逆アセンブラプロセス実行のタイムアウト（秒）。0 はタイムアウトなし。
+        /// </summary>
+        public int DisassemblerTimeoutSeconds { get; }
 
         /// <summary>
         /// Whether to skip IL comparison for .NET assemblies.
