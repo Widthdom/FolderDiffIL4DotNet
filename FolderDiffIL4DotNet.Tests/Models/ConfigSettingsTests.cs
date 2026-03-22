@@ -391,37 +391,186 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
             Assert.Equal(ExpectedDefaultTextFileExtensions, config.TextFileExtensions);
             Assert.Equal(ConfigSettings.DefaultMaxLogGenerations, config.MaxLogGenerations);
-            Assert.True(config.ShouldIncludeUnchangedFiles);
-            Assert.True(config.ShouldIncludeIgnoredFiles);
-            Assert.True(config.ShouldOutputILText);
-            Assert.False(config.ShouldIgnoreILLinesContainingConfiguredStrings);
+            Assert.Equal(ConfigSettings.DefaultShouldIncludeUnchangedFiles, config.ShouldIncludeUnchangedFiles);
+            Assert.Equal(ConfigSettings.DefaultShouldIncludeIgnoredFiles, config.ShouldIncludeIgnoredFiles);
+            Assert.Equal(ConfigSettings.DefaultShouldOutputILText, config.ShouldOutputILText);
+            Assert.Equal(ConfigSettings.DefaultShouldIgnoreILLinesContainingConfiguredStrings, config.ShouldIgnoreILLinesContainingConfiguredStrings);
             Assert.NotNull(config.ILIgnoreLineContainingStrings);
             Assert.Empty(config.ILIgnoreLineContainingStrings);
-            Assert.True(config.ShouldOutputFileTimestamps);
-            Assert.True(config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
-            Assert.Equal(0, config.MaxParallelism);
+            Assert.Equal(ConfigSettings.DefaultShouldOutputFileTimestamps, config.ShouldOutputFileTimestamps);
+            Assert.Equal(ConfigSettings.DefaultShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp, config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+            Assert.Equal(ConfigSettings.DefaultMaxParallelism, config.MaxParallelism);
             Assert.Equal(ConfigSettings.DefaultTextDiffParallelThresholdKilobytes, config.TextDiffParallelThresholdKilobytes);
             Assert.Equal(ConfigSettings.DefaultTextDiffChunkSizeKilobytes, config.TextDiffChunkSizeKilobytes);
-            Assert.Equal(0, config.TextDiffParallelMemoryLimitMegabytes);
-            Assert.True(config.EnableILCache);
+            Assert.Equal(ConfigSettings.DefaultTextDiffParallelMemoryLimitMegabytes, config.TextDiffParallelMemoryLimitMegabytes);
+            Assert.Equal(ConfigSettings.DefaultEnableILCache, config.EnableILCache);
             Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
             Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);
             Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskFileCount, config.ILCacheMaxDiskFileCount);
             Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskMegabytes, config.ILCacheMaxDiskMegabytes);
             Assert.Equal(ConfigSettings.DefaultILCacheMaxMemoryMegabytes, config.ILCacheMaxMemoryMegabytes);
             Assert.Equal(ConfigSettings.DefaultILPrecomputeBatchSize, config.ILPrecomputeBatchSize);
-            Assert.False(config.OptimizeForNetworkShares);
-            Assert.True(config.AutoDetectNetworkShares);
-            Assert.False(config.SkipIL);
-            Assert.False(config.ShouldIncludeILCacheStatsInReport);
+            Assert.Equal(ConfigSettings.DefaultOptimizeForNetworkShares, config.OptimizeForNetworkShares);
+            Assert.Equal(ConfigSettings.DefaultAutoDetectNetworkShares, config.AutoDetectNetworkShares);
+            Assert.Equal(ConfigSettings.DefaultSkipIL, config.SkipIL);
+            Assert.Equal(ConfigSettings.DefaultShouldIncludeILCacheStatsInReport, config.ShouldIncludeILCacheStatsInReport);
             Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
             Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
             Assert.Equal(ConfigSettings.DefaultDisassemblerTimeoutSeconds, config.DisassemblerTimeoutSeconds);
-            Assert.True(config.EnableInlineDiff);
-            Assert.Equal(0, config.InlineDiffContextLines);
+            Assert.Equal(ConfigSettings.DefaultEnableInlineDiff, config.EnableInlineDiff);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffContextLines, config.InlineDiffContextLines);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffMaxEditDistance, config.InlineDiffMaxEditDistance);
             Assert.Equal(ConfigSettings.DefaultInlineDiffMaxDiffLines, config.InlineDiffMaxDiffLines);
             Assert.Equal(ConfigSettings.DefaultInlineDiffMaxOutputLines, config.InlineDiffMaxOutputLines);
-            Assert.True(config.ShouldGenerateAuditLog);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffLazyRender, config.InlineDiffLazyRender);
+            Assert.Equal(ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport, config.ShouldIncludeAssemblySemanticChangesInReport);
+            Assert.Equal(ConfigSettings.DefaultShouldGenerateHtmlReport, config.ShouldGenerateHtmlReport);
+            Assert.Equal(ConfigSettings.DefaultShouldGenerateAuditLog, config.ShouldGenerateAuditLog);
+        }
+
+        /// <summary>
+        /// Verifies that values in config.sample.jsonc match the code-defined defaults in ConfigSettings,
+        /// preventing the sample from drifting out of sync with the actual defaults.
+        /// config.sample.jsonc の値が ConfigSettings のコード定義デフォルトと一致することを検証し、
+        /// サンプルと実際のデフォルト値の乖離を防止する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ConfigSampleJsonc_ValuesMatchCodeDefinedDefaults()
+        {
+            // Locate config.sample.jsonc relative to the test assembly / テストアセンブリからの相対パスで config.sample.jsonc を探索
+            var repoRoot = FindRepoRoot();
+            var samplePath = System.IO.Path.Combine(repoRoot, "doc", "config.sample.jsonc");
+            Assert.True(System.IO.File.Exists(samplePath), $"config.sample.jsonc not found at {samplePath}");
+
+            // Strip JSONC comments to produce valid JSON / JSONC コメントを除去して有効な JSON に変換
+            var jsonc = System.IO.File.ReadAllText(samplePath);
+            var json = StripJsoncComments(jsonc);
+            var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            // Boolean settings / 真偽値設定
+            AssertJsonBool(root, "ShouldIncludeUnchangedFiles", ConfigSettings.DefaultShouldIncludeUnchangedFiles);
+            AssertJsonBool(root, "ShouldIncludeIgnoredFiles", ConfigSettings.DefaultShouldIncludeIgnoredFiles);
+            AssertJsonBool(root, "ShouldIncludeAssemblySemanticChangesInReport", ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport);
+            AssertJsonBool(root, "ShouldIncludeILCacheStatsInReport", ConfigSettings.DefaultShouldIncludeILCacheStatsInReport);
+            AssertJsonBool(root, "ShouldGenerateHtmlReport", ConfigSettings.DefaultShouldGenerateHtmlReport);
+            AssertJsonBool(root, "ShouldGenerateAuditLog", ConfigSettings.DefaultShouldGenerateAuditLog);
+            AssertJsonBool(root, "ShouldOutputILText", ConfigSettings.DefaultShouldOutputILText);
+            AssertJsonBool(root, "ShouldOutputFileTimestamps", ConfigSettings.DefaultShouldOutputFileTimestamps);
+            AssertJsonBool(root, "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp", ConfigSettings.DefaultShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+            AssertJsonBool(root, "SkipIL", ConfigSettings.DefaultSkipIL);
+            AssertJsonBool(root, "ShouldIgnoreILLinesContainingConfiguredStrings", ConfigSettings.DefaultShouldIgnoreILLinesContainingConfiguredStrings);
+            AssertJsonBool(root, "EnableILCache", ConfigSettings.DefaultEnableILCache);
+            AssertJsonBool(root, "OptimizeForNetworkShares", ConfigSettings.DefaultOptimizeForNetworkShares);
+            AssertJsonBool(root, "AutoDetectNetworkShares", ConfigSettings.DefaultAutoDetectNetworkShares);
+            AssertJsonBool(root, "EnableInlineDiff", ConfigSettings.DefaultEnableInlineDiff);
+            AssertJsonBool(root, "InlineDiffLazyRender", ConfigSettings.DefaultInlineDiffLazyRender);
+
+            // Numeric settings / 数値設定
+            AssertJsonInt(root, "MaxParallelism", ConfigSettings.DefaultMaxParallelism);
+            AssertJsonInt(root, "TextDiffParallelThresholdKilobytes", ConfigSettings.DefaultTextDiffParallelThresholdKilobytes);
+            AssertJsonInt(root, "TextDiffChunkSizeKilobytes", ConfigSettings.DefaultTextDiffChunkSizeKilobytes);
+            AssertJsonInt(root, "TextDiffParallelMemoryLimitMegabytes", ConfigSettings.DefaultTextDiffParallelMemoryLimitMegabytes);
+            AssertJsonInt(root, "ILCacheStatsLogIntervalSeconds", ConfigSettings.DefaultILCacheStatsLogIntervalSeconds);
+            AssertJsonInt(root, "ILCacheMaxDiskFileCount", ConfigSettings.DefaultILCacheMaxDiskFileCount);
+            AssertJsonInt(root, "ILCacheMaxDiskMegabytes", ConfigSettings.DefaultILCacheMaxDiskMegabytes);
+            AssertJsonInt(root, "ILCacheMaxMemoryMegabytes", ConfigSettings.DefaultILCacheMaxMemoryMegabytes);
+            AssertJsonInt(root, "ILPrecomputeBatchSize", ConfigSettings.DefaultILPrecomputeBatchSize);
+            AssertJsonInt(root, "DisassemblerBlacklistTtlMinutes", ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes);
+            AssertJsonInt(root, "DisassemblerTimeoutSeconds", ConfigSettings.DefaultDisassemblerTimeoutSeconds);
+            AssertJsonInt(root, "InlineDiffContextLines", ConfigSettings.DefaultInlineDiffContextLines);
+            AssertJsonInt(root, "InlineDiffMaxEditDistance", ConfigSettings.DefaultInlineDiffMaxEditDistance);
+            AssertJsonInt(root, "InlineDiffMaxDiffLines", ConfigSettings.DefaultInlineDiffMaxDiffLines);
+            AssertJsonInt(root, "InlineDiffMaxOutputLines", ConfigSettings.DefaultInlineDiffMaxOutputLines);
+            AssertJsonInt(root, "MaxLogGenerations", ConfigSettings.DefaultMaxLogGenerations);
+
+            // List defaults: IgnoredExtensions / リストデフォルト: IgnoredExtensions
+            if (root.TryGetProperty("IgnoredExtensions", out var ignoredEl))
+            {
+                var actual = new System.Collections.Generic.List<string>();
+                foreach (var item in ignoredEl.EnumerateArray())
+                {
+                    actual.Add(item.GetString()!);
+                }
+                Assert.Equal(ConfigSettings.DefaultIgnoredExtensionsValues, actual);
+            }
+        }
+
+        private static void AssertJsonBool(JsonElement root, string propertyName, bool expected)
+        {
+            Assert.True(root.TryGetProperty(propertyName, out var el),
+                $"config.sample.jsonc is missing property '{propertyName}'");
+            Assert.Equal(expected, el.GetBoolean());
+        }
+
+        private static void AssertJsonInt(JsonElement root, string propertyName, int expected)
+        {
+            Assert.True(root.TryGetProperty(propertyName, out var el),
+                $"config.sample.jsonc is missing property '{propertyName}'");
+            Assert.Equal(expected, el.GetInt32());
+        }
+
+        private static string FindRepoRoot()
+        {
+            // Walk up from the test assembly output directory to find the repo root (contains .git)
+            // テストアセンブリ出力ディレクトリから上へ辿り、リポジトリルート（.git を含む）を探す
+            var dir = AppContext.BaseDirectory;
+            while (dir != null)
+            {
+                if (System.IO.Directory.Exists(System.IO.Path.Combine(dir, ".git")))
+                {
+                    return dir;
+                }
+                dir = System.IO.Path.GetDirectoryName(dir);
+            }
+            // Fallback: assume standard layout / フォールバック: 標準レイアウトを仮定
+            return System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        }
+
+        private static string StripJsoncComments(string jsonc)
+        {
+            // Remove single-line comments (// ...) while preserving strings / 文字列を保持しつつ行コメントを除去
+            var sb = new System.Text.StringBuilder(jsonc.Length);
+            bool inString = false;
+            for (int i = 0; i < jsonc.Length; i++)
+            {
+                var c = jsonc[i];
+                if (inString)
+                {
+                    sb.Append(c);
+                    if (c == '\\' && i + 1 < jsonc.Length)
+                    {
+                        sb.Append(jsonc[++i]);
+                    }
+                    else if (c == '"')
+                    {
+                        inString = false;
+                    }
+                }
+                else if (c == '"')
+                {
+                    inString = true;
+                    sb.Append(c);
+                }
+                else if (c == '/' && i + 1 < jsonc.Length && jsonc[i + 1] == '/')
+                {
+                    // Skip to end of line / 行末までスキップ
+                    while (i < jsonc.Length && jsonc[i] != '\n')
+                    {
+                        i++;
+                    }
+                    if (i < jsonc.Length)
+                    {
+                        sb.Append('\n');
+                    }
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            return sb.ToString();
         }
 
         /// <summary>
