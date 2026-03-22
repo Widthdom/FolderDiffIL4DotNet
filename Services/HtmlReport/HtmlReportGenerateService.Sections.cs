@@ -55,6 +55,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     sb.AppendLine($"  <li>{I18n("Note", "注")}: {I18n("When diffing IL, lines containing any of the configured strings are ignored:", "IL 差分比較時、設定された文字列を含む行は無視されます:")}");
                     sb.AppendLine("    <div class=\"il-ignore-scroll\"><table class=\"legend-table il-ignore-table\">");
+                    sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{I18n("Ignored String", "無視文字列")}</th></tr></thead>");
                     sb.AppendLine("      <tbody>");
                     foreach (var s in ilIgnoreStrings)
                     {
