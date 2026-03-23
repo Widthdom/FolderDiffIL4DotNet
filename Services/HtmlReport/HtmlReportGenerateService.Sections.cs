@@ -123,17 +123,18 @@ namespace FolderDiffIL4DotNet.Services
                 return;
             }
 
-            // Build table HTML into a separate buffer for Base64 encoding / テーブルHTMLを別バッファに構築しBase64エンコード
-            var tableSb = new StringBuilder();
-            AppendTableStart(tableSb, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm");
-            tableSb.AppendLine("<tbody>");
+            sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
+            sb.AppendLine("<details class=\"lazy-section\">");
+            sb.AppendLine("<summary></summary>");
+            AppendTableStart(sb, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm");
+            sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var entry in items)
             {
                 bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
                 bool hasNew = (entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0;
 
-                // 3-2: absolute path for single-side, relative for both-sides
+                // 3-2: absolute path for single-side, relative for both-sides / 片方のみの場合は絶対パス、両方の場合は相対パス
                 string displayPath = (hasOld && hasNew)
                     ? entry.Key
                     : hasOld ? Path.Combine(oldFolderAbsolutePath, entry.Key)
@@ -142,15 +143,10 @@ namespace FolderDiffIL4DotNet.Services
                 string ts = BuildIgnoredTimestamp(entry.Key, hasOld, hasNew,
                     oldFolderAbsolutePath, newFolderAbsolutePath, config.ShouldOutputFileTimestamps);
                 string location = (hasOld && hasNew) ? "old/new" : hasOld ? "old" : "new";
-                AppendFileRow(tableSb, "ign", idx, displayPath, ts, location);
+                AppendFileRow(sb, "ign", idx, displayPath, ts, location);
                 idx++;
             }
-            tableSb.AppendLine("</tbody></table></div>");
-
-            string b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(tableSb.ToString()));
-            sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
-            sb.AppendLine($"<details class=\"lazy-section\" data-lazy-section=\"{b64}\">");
-            sb.AppendLine("<summary></summary>");
+            sb.AppendLine("</tbody></table></div>");
             sb.AppendLine("</details>");
         }
 
@@ -170,10 +166,11 @@ namespace FolderDiffIL4DotNet.Services
                 return;
             }
 
-            // Build table HTML into a separate buffer for Base64 encoding / テーブルHTMLを別バッファに構築しBase64エンコード
-            var tableSb = new StringBuilder();
-            AppendTableStart(tableSb, TH_BG_DEFAULT, "Diff Reason");
-            tableSb.AppendLine("<tbody>");
+            sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
+            sb.AppendLine("<details class=\"lazy-section\">");
+            sb.AppendLine("<summary></summary>");
+            AppendTableStart(sb, TH_BG_DEFAULT, "Diff Reason");
+            sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
             {
@@ -187,15 +184,10 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 string col6 = BuildDiffDetailDisplay(diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
-                AppendFileRow(tableSb, "unch", idx, path, ts, col6, asm ?? "");
+                AppendFileRow(sb, "unch", idx, path, ts, col6, asm ?? "");
                 idx++;
             }
-            tableSb.AppendLine("</tbody></table></div>");
-
-            string b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(tableSb.ToString()));
-            sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
-            sb.AppendLine($"<details class=\"lazy-section\" data-lazy-section=\"{b64}\">");
-            sb.AppendLine("<summary></summary>");
+            sb.AppendLine("</tbody></table></div>");
             sb.AppendLine("</details>");
         }
 
