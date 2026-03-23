@@ -155,7 +155,6 @@ The HTML report includes a client-side filter bar that allows users to narrow do
 
 ### JavaScript ([`diff_report.js`](../Services/HtmlReport/diff_report.js))
 
-- `getFileTypeCategory(ext)` — maps file extensions to categories (`dll`, `exe`, `config`, `resource`, `other`).
 - `applyFilters()` — reads all filter controls and applies `filter-hidden` / `filter-hidden-parent` CSS classes to rows.
 - `resetFilters()` — restores all checkboxes and clears the search box.
 - `__filterIds__` — array of filter input IDs excluded from `collectState()` / localStorage auto-save.
@@ -951,7 +950,6 @@ HTML レポートには、複数の条件でファイル行を絞り込めるク
 
 ### JavaScript（[`diff_report.js`](../Services/HtmlReport/diff_report.js)）
 
-- `getFileTypeCategory(ext)` — ファイル拡張子をカテゴリ（`dll`、`exe`、`config`、`resource`、`other`）にマッピング。
 - `applyFilters()` — すべてのフィルタコントロールを読み取り、行に `filter-hidden` / `filter-hidden-parent` CSS クラスを適用。
 - `resetFilters()` — すべてのチェックボックスを復元し、検索ボックスをクリア。
 - `__filterIds__` — `collectState()` / localStorage 自動保存から除外されるフィルタ入力 ID の配列。

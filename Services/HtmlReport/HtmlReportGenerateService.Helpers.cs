@@ -57,12 +57,11 @@ namespace FolderDiffIL4DotNet.Services
             string reasonId = $"reason_{sectionPrefix}_{idx}";
             string notesId  = $"notes_{sectionPrefix}_{idx}";
             int recordNo    = idx + 1;
-            string ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
             string impAttr = string.IsNullOrEmpty(importance) ? "" : $" data-importance=\"{HtmlEncode(importance)}\"";
             // Normalize diff detail to category for filtering / フィルタリング用に diff detail をカテゴリに正規化
             string diffCat = NormalizeDiffCategory(col6);
             string diffAttr = string.IsNullOrEmpty(diffCat) ? "" : $" data-diff=\"{diffCat}\"";
-            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\" data-ext=\"{HtmlEncode(ext)}\"{impAttr}{diffAttr}>");
+            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\"{impAttr}{diffAttr}>");
             sb.AppendLine($"  <td class=\"col-no\">{recordNo}</td>");
             sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td>");
             sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\"></td>");

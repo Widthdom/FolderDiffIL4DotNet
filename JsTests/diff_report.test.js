@@ -106,7 +106,6 @@ describe('collectState', () => {
     loadScript({
       bodyHtml: `
         <input type="checkbox" id="filter-imp-high" checked>
-        <input type="checkbox" id="filter-ft-dll" checked>
         <input type="text" id="filter-search" value="test">
         <input type="checkbox" id="chk-real" checked>
       `,
@@ -115,7 +114,6 @@ describe('collectState', () => {
 
     const state = window.collectState();
     expect(state).not.toHaveProperty('filter-imp-high');
-    expect(state).not.toHaveProperty('filter-ft-dll');
     expect(state).not.toHaveProperty('filter-search');
     expect(state['chk-real']).toBe(true);
   });
@@ -162,38 +160,6 @@ describe('autoSave', () => {
   });
 });
 
-// ─── getFileTypeCategory ─────────────────────────────────────────────────────
-describe('getFileTypeCategory', () => {
-  beforeEach(() => loadScript());
-
-  const cases = [
-    ['.dll', 'dll'],
-    ['.DLL', 'dll'],
-    ['.exe', 'exe'],
-    ['.EXE', 'exe'],
-    ['.json', 'config'],
-    ['.xml', 'config'],
-    ['.config', 'config'],
-    ['.yaml', 'config'],
-    ['.yml', 'config'],
-    ['.csproj', 'config'],
-    ['.sln', 'config'],
-    ['.resx', 'resource'],
-    ['.png', 'resource'],
-    ['.ico', 'resource'],
-    ['.ttf', 'resource'],
-    ['.txt', 'other'],
-    ['.cs', 'other'],
-    ['', 'other'],
-    [null, 'other'],
-    [undefined, 'other'],
-  ];
-
-  test.each(cases)('getFileTypeCategory(%s) returns %s', (ext, expected) => {
-    expect(window.getFileTypeCategory(ext)).toBe(expected);
-  });
-});
-
 // ─── applyFilters ────────────────────────────────────────────────────────────
 describe('applyFilters', () => {
   function loadFilterEnv(rows) {
@@ -201,18 +167,13 @@ describe('applyFilters', () => {
       <input type="checkbox" id="filter-imp-high" checked>
       <input type="checkbox" id="filter-imp-medium" checked>
       <input type="checkbox" id="filter-imp-low" checked>
-      <input type="checkbox" id="filter-ft-dll" checked>
-      <input type="checkbox" id="filter-ft-exe" checked>
-      <input type="checkbox" id="filter-ft-config" checked>
-      <input type="checkbox" id="filter-ft-resource" checked>
-      <input type="checkbox" id="filter-ft-other" checked>
       <input type="checkbox" id="filter-unchecked">
       <input type="text" id="filter-search" value="">
       <span id="save-status"></span>
     `;
 
     const tableRows = rows.map(r =>
-      `<tr data-section="${r.section}" data-ext="${r.ext}" ${r.importance ? 'data-importance="' + r.importance + '"' : ''}>
+      `<tr data-section="${r.section}" ${r.importance ? 'data-importance="' + r.importance + '"' : ''} ${r.diff ? 'data-diff="' + r.diff + '"' : ''}>
         <td><input type="checkbox" id="chk-${r.id}" ${r.checked ? 'checked' : ''}></td>
         <td><span class="path-text">${r.path}</span></td>
       </tr>`
@@ -224,26 +185,10 @@ describe('applyFilters', () => {
     fireDOMContentLoaded();
   }
 
-  test('hides rows by file type when filter unchecked', () => {
-    loadFilterEnv([
-      { id: '1', section: 'modified', ext: '.dll', path: 'lib/a.dll' },
-      { id: '2', section: 'modified', ext: '.exe', path: 'bin/b.exe' },
-      { id: '3', section: 'modified', ext: '.json', path: 'cfg/c.json' },
-    ]);
-
-    document.getElementById('filter-ft-dll').checked = false;
-    window.applyFilters();
-
-    const rows = document.querySelectorAll('tr[data-section]');
-    expect(rows[0].classList.contains('filter-hidden')).toBe(true);
-    expect(rows[1].classList.contains('filter-hidden')).toBe(false);
-    expect(rows[2].classList.contains('filter-hidden')).toBe(false);
-  });
-
   test('hides rows by importance when filter unchecked', () => {
     loadFilterEnv([
-      { id: '1', section: 'modified', ext: '.dll', importance: 'High', path: 'a.dll' },
-      { id: '2', section: 'modified', ext: '.dll', importance: 'Low', path: 'b.dll' },
+      { id: '1', section: 'modified', importance: 'High', path: 'a.dll' },
+      { id: '2', section: 'modified', importance: 'Low', path: 'b.dll' },
     ]);
 
     document.getElementById('filter-imp-low').checked = false;
@@ -256,7 +201,7 @@ describe('applyFilters', () => {
 
   test('importance filter does not hide rows without data-importance', () => {
     loadFilterEnv([
-      { id: '1', section: 'unchanged', ext: '.dll', path: 'unchanged.dll' },
+      { id: '1', section: 'unchanged', path: 'unchanged.dll' },
     ]);
 
     // Uncheck all importance filters
@@ -272,8 +217,8 @@ describe('applyFilters', () => {
 
   test('filters by search text against path (case-insensitive)', () => {
     loadFilterEnv([
-      { id: '1', section: 'modified', ext: '.dll', path: 'src/MyApp.dll' },
-      { id: '2', section: 'modified', ext: '.dll', path: 'src/Other.dll' },
+      { id: '1', section: 'modified', path: 'src/MyApp.dll' },
+      { id: '2', section: 'modified', path: 'src/Other.dll' },
     ]);
 
     document.getElementById('filter-search').value = 'myapp';
@@ -286,8 +231,8 @@ describe('applyFilters', () => {
 
   test('unchecked-only filter shows only unchecked rows', () => {
     loadFilterEnv([
-      { id: '1', section: 'modified', ext: '.dll', path: 'a.dll', checked: true },
-      { id: '2', section: 'modified', ext: '.dll', path: 'b.dll', checked: false },
+      { id: '1', section: 'modified', path: 'a.dll', checked: true },
+      { id: '2', section: 'modified', path: 'b.dll', checked: false },
     ]);
 
     document.getElementById('filter-unchecked').checked = true;
@@ -304,16 +249,11 @@ describe('applyFilters', () => {
         <input type="checkbox" id="filter-imp-high" checked>
         <input type="checkbox" id="filter-imp-medium" checked>
         <input type="checkbox" id="filter-imp-low" checked>
-        <input type="checkbox" id="filter-ft-dll" checked>
-        <input type="checkbox" id="filter-ft-exe" checked>
-        <input type="checkbox" id="filter-ft-config" checked>
-        <input type="checkbox" id="filter-ft-resource" checked>
-        <input type="checkbox" id="filter-ft-other">
         <input type="checkbox" id="filter-unchecked">
         <input type="text" id="filter-search">
         <span id="save-status"></span>
         <table><tbody>
-          <tr data-section="modified" data-ext=".txt"><td><span class="path-text">readme.txt</span></td></tr>
+          <tr data-section="modified"><td><span class="path-text">readme.txt</span></td></tr>
           <tr class="diff-row"><td>diff content here</td></tr>
         </tbody></table>
       `,
@@ -328,9 +268,9 @@ describe('applyFilters', () => {
 
   test('when all filters checked, no rows are hidden', () => {
     loadFilterEnv([
-      { id: '1', section: 'modified', ext: '.dll', importance: 'High', path: 'a.dll' },
-      { id: '2', section: 'modified', ext: '.exe', importance: 'Low', path: 'b.exe' },
-      { id: '3', section: 'unchanged', ext: '.json', path: 'c.json' },
+      { id: '1', section: 'modified', importance: 'High', path: 'a.dll' },
+      { id: '2', section: 'modified', importance: 'Low', path: 'b.exe' },
+      { id: '3', section: 'unchanged', path: 'c.json' },
     ]);
 
     window.applyFilters();
@@ -348,11 +288,6 @@ describe('resetFilters', () => {
         <input type="checkbox" id="filter-imp-high">
         <input type="checkbox" id="filter-imp-medium" checked>
         <input type="checkbox" id="filter-imp-low" checked>
-        <input type="checkbox" id="filter-ft-dll">
-        <input type="checkbox" id="filter-ft-exe" checked>
-        <input type="checkbox" id="filter-ft-config" checked>
-        <input type="checkbox" id="filter-ft-resource" checked>
-        <input type="checkbox" id="filter-ft-other" checked>
         <input type="checkbox" id="filter-unchecked" checked>
         <input type="text" id="filter-search" value="some query">
         <span id="save-status"></span>
@@ -363,7 +298,6 @@ describe('resetFilters', () => {
     window.resetFilters();
 
     expect(document.getElementById('filter-imp-high').checked).toBe(true);
-    expect(document.getElementById('filter-ft-dll').checked).toBe(true);
     expect(document.getElementById('filter-unchecked').checked).toBe(false);
     expect(document.getElementById('filter-search').value).toBe('');
   });

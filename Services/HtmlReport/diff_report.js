@@ -48,7 +48,7 @@
     document.body.appendChild(vi);
   });
 
-  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
+  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-unchecked','filter-search'];
   function collectState() {
     var s = {};
     document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
@@ -349,20 +349,9 @@
   }
 
   // ── Filtering ──────────────────────────────────────────────────────────
-  var __configExts__  = ['.json','.xml','.config','.yaml','.yml','.ini','.toml','.env','.props','.targets','.csproj','.vbproj','.fsproj','.sln'];
-  var __resourceExts__ = ['.resx','.resources','.png','.jpg','.jpeg','.ico','.svg','.gif','.bmp','.wav','.mp3','.ttf','.woff','.woff2','.eot'];
-  function getFileTypeCategory(ext) {
-    if (!ext) return 'other';
-    ext = ext.toLowerCase();
-    if (ext === '.dll') return 'dll';
-    if (ext === '.exe') return 'exe';
-    if (__configExts__.indexOf(ext) >= 0) return 'config';
-    if (__resourceExts__.indexOf(ext) >= 0) return 'resource';
-    return 'other';
-  }
   function applyFilters() {
     var impHigh    = document.getElementById('filter-imp-high');
-    // If any element is missing (e.g. reviewed mode), skip
+    // If any element is missing (e.g. reviewed mode), skip / 要素がない場合（レビュー済みモード等）スキップ
     if (!impHigh) return;
 
     // Diff detail filter (6 individual values) / Diff Detail フィルター（6個別値）
@@ -375,16 +364,13 @@
       TextMismatch:   document.getElementById('filter-diff-textmismatch').checked
     };
     var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked };
-    var ftDll      = document.getElementById('filter-ft-dll');
-    var ftFilter   = { dll: ftDll.checked, exe: document.getElementById('filter-ft-exe').checked, config: document.getElementById('filter-ft-config').checked, resource: document.getElementById('filter-ft-resource').checked, other: document.getElementById('filter-ft-other').checked };
     var onlyUnchecked = document.getElementById('filter-unchecked').checked;
     var searchEl   = document.getElementById('filter-search');
     var searchText = (searchEl.value || '').toLowerCase().trim();
 
-    // All checked = no filtering for that category
+    // All checked = no filtering for that category / 全チェック時はフィルタリングなし
     var diffActive = !(diffFilter.SHA256Match && diffFilter.SHA256Mismatch && diffFilter.ILMatch && diffFilter.ILMismatch && diffFilter.TextMatch && diffFilter.TextMismatch);
     var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low);
-    var ftActive   = !(ftFilter.dll && ftFilter.exe && ftFilter.config && ftFilter.resource && ftFilter.other);
 
     document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
       var show = true;
@@ -394,12 +380,6 @@
         if (diff) {
           if (!diffFilter[diff]) show = false;
         }
-      }
-      // File type filter
-      if (show && ftActive) {
-        var ext = tr.getAttribute('data-ext') || '';
-        var cat = getFileTypeCategory(ext);
-        if (!ftFilter[cat]) show = false;
       }
       // Importance filter (only for rows with importance)
       if (show && impActive) {

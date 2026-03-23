@@ -1678,11 +1678,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("id=\"filter-imp-high\"", html);
             Assert.Contains("id=\"filter-imp-medium\"", html);
             Assert.Contains("id=\"filter-imp-low\"", html);
-            Assert.Contains("id=\"filter-ft-dll\"", html);
-            Assert.Contains("id=\"filter-ft-exe\"", html);
-            Assert.Contains("id=\"filter-ft-config\"", html);
-            Assert.Contains("id=\"filter-ft-resource\"", html);
-            Assert.Contains("id=\"filter-ft-other\"", html);
             Assert.Contains("id=\"filter-unchecked\"", html);
             Assert.Contains("id=\"filter-search\"", html);
             Assert.Contains("applyFilters()", html);
@@ -1726,23 +1721,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Assert: data-section attribute is present on rows
             // data-section 属性が行に存在することを検証
             Assert.Contains("data-section=\"add\"", html);
-        }
-
-        [Fact]
-        public void GenerateDiffReportHtml_FileRowsHaveDataExtAttribute()
-        {
-            // Arrange / テスト準備
-            var (oldDir, newDir, reportDir) = MakeDirs("data-ext");
-            File.WriteAllText(Path.Combine(newDir, "new.dll"), "new-content");
-            var config = CreateConfig();
-            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new.dll"));
-
-            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
-            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-
-            // Assert: data-ext attribute with correct extension
-            // 正しい拡張子の data-ext 属性を検証
-            Assert.Contains("data-ext=\".dll\"", html);
         }
 
         [Fact]

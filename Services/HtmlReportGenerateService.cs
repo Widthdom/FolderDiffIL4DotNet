@@ -140,16 +140,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</div>");
             sb.AppendLine("</div>"); // end .filter-tables
 
-            // File Type filter row / File Type フィルター行
-            sb.AppendLine("<div class=\"ctrl-filter-row\">");
-            sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("File Type") + ":</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-dll\" checked onchange=\"applyFilters()\"> DLL</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-exe\" checked onchange=\"applyFilters()\"> EXE</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-config\" checked onchange=\"applyFilters()\"> Config</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-resource\" checked onchange=\"applyFilters()\"> Resource</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-other\" checked onchange=\"applyFilters()\"> " + HtmlEncode("Other") + "</label>");
-            sb.AppendLine("</div>");
-
             // Search + Unchecked only row / 検索 + 未チェックのみ行
             sb.AppendLine("<div class=\"ctrl-filter-row\">");
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");

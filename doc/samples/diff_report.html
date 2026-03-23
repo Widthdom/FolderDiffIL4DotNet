@@ -321,14 +321,6 @@
 </div>
 </div>
 <div class="ctrl-filter-row">
-  <label class="filter-label">File Type:</label>
-  <label class="filter-chip"><input type="checkbox" id="filter-ft-dll" checked onchange="applyFilters()"> DLL</label>
-  <label class="filter-chip"><input type="checkbox" id="filter-ft-exe" checked onchange="applyFilters()"> EXE</label>
-  <label class="filter-chip"><input type="checkbox" id="filter-ft-config" checked onchange="applyFilters()"> Config</label>
-  <label class="filter-chip"><input type="checkbox" id="filter-ft-resource" checked onchange="applyFilters()"> Resource</label>
-  <label class="filter-chip"><input type="checkbox" id="filter-ft-other" checked onchange="applyFilters()"> Other</label>
-</div>
-<div class="ctrl-filter-row">
   <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
   <span class="filter-sep"></span>
   <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()">
@@ -407,7 +399,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="ign" data-ext=".log">
+<tr data-section="ign">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_ign_0"></td>
   <td class="col-reason"><input type="text" id="reason_ign_0"></td>
@@ -417,7 +409,7 @@
   <td class="col-diff"><code>old</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr data-section="ign" data-ext=".cache">
+<tr data-section="ign">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_ign_1"></td>
   <td class="col-reason"><input type="text" id="reason_ign_1"></td>
@@ -427,7 +419,7 @@
   <td class="col-diff"><code>new</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr data-section="ign" data-ext=".pdb">
+<tr data-section="ign">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_ign_2"></td>
   <td class="col-reason"><input type="text" id="reason_ign_2"></td>
@@ -463,7 +455,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="unch" data-ext=".bin" data-diff="SHA256Match">
+<tr data-section="unch" data-diff="SHA256Match">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_0"></td>
   <td class="col-reason"><input type="text" id="reason_unch_0"></td>
@@ -473,7 +465,7 @@
   <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr data-section="unch" data-ext=".dll" data-diff="SHA256Match">
+<tr data-section="unch" data-diff="SHA256Match">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_1"></td>
   <td class="col-reason"><input type="text" id="reason_unch_1"></td>
@@ -483,7 +475,7 @@
   <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr data-section="unch" data-ext=".dll" data-diff="ILMatch">
+<tr data-section="unch" data-diff="ILMatch">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_2"></td>
   <td class="col-reason"><input type="text" id="reason_unch_2"></td>
@@ -493,7 +485,7 @@
   <td class="col-diff"><code>ILMatch</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
-<tr data-section="unch" data-ext=".json" data-diff="TextMatch">
+<tr data-section="unch" data-diff="TextMatch">
   <td class="col-no">4</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_3"></td>
   <td class="col-reason"><input type="text" id="reason_unch_3"></td>
@@ -503,7 +495,7 @@
   <td class="col-diff"><code>TextMatch</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr data-section="unch" data-ext=".md" data-diff="TextMatch">
+<tr data-section="unch" data-diff="TextMatch">
   <td class="col-no">5</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_4"></td>
   <td class="col-reason"><input type="text" id="reason_unch_4"></td>
@@ -539,7 +531,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="add" data-ext=".md">
+<tr data-section="add">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_add_0"></td>
   <td class="col-reason"><input type="text" id="reason_add_0"></td>
@@ -575,7 +567,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="rem" data-ext=".txt">
+<tr data-section="rem">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_rem_0"></td>
   <td class="col-reason"><input type="text" id="reason_rem_0"></td>
@@ -611,7 +603,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="mod" data-ext=".config" data-diff="TextMismatch">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
   <td class="col-reason"><input type="text" id="reason_mod_0"></td>
@@ -628,7 +620,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".ini" data-diff="TextMismatch">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
   <td class="col-reason"><input type="text" id="reason_mod_1"></td>
@@ -645,7 +637,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".edmx" data-diff="TextMismatch">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_2"></td>
   <td class="col-reason"><input type="text" id="reason_mod_2"></td>
@@ -658,7 +650,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#3 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 2001 vs 2001 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
 </tr>
-<tr data-section="mod" data-ext=".xml" data-diff="TextMismatch">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">4</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_3"></td>
   <td class="col-reason"><input type="text" id="reason_mod_3"></td>
@@ -671,7 +663,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#4 Inline diff skipped: diff too large (12500 diff lines; limit is 10000). Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>10000</code>)</p></td>
 </tr>
-<tr data-section="mod" data-ext=".resx" data-diff="TextMismatch">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">5</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_4"></td>
   <td class="col-reason"><input type="text" id="reason_mod_4"></td>
@@ -688,7 +680,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".config" data-diff="TextMismatch">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">6</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_5"></td>
   <td class="col-reason"><input type="text" id="reason_mod_5"></td>
@@ -705,7 +697,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-diff="ILMismatch" data-importance="High">
+<tr data-section="mod" data-diff="ILMismatch" data-importance="High">
   <td class="col-no">7</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_6"></td>
   <td class="col-reason"><input type="text" id="reason_mod_6"></td>
@@ -729,7 +721,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-diff="ILMismatch" data-importance="High">
+<tr data-section="mod" data-diff="ILMismatch" data-importance="High">
   <td class="col-no">8</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_7a"></td>
   <td class="col-reason"><input type="text" id="reason_mod_7a"></td>
@@ -753,7 +745,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-diff="ILMismatch" data-importance="High">
+<tr data-section="mod" data-diff="ILMismatch" data-importance="High">
   <td class="col-no">9</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_7"></td>
   <td class="col-reason"><input type="text" id="reason_mod_7"></td>
@@ -777,7 +769,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-diff="ILMismatch" data-importance="Medium">
+<tr data-section="mod" data-diff="ILMismatch" data-importance="Medium">
   <td class="col-no">9</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_8"></td>
   <td class="col-reason"><input type="text" id="reason_mod_8"></td>
@@ -790,7 +782,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#9 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 3200 vs 3200 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-diff="ILMismatch" data-importance="Medium">
+<tr data-section="mod" data-diff="ILMismatch" data-importance="Medium">
   <td class="col-no">10</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_9a"></td>
   <td class="col-reason"><input type="text" id="reason_mod_9a"></td>
@@ -814,7 +806,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-diff="ILMismatch" data-importance="Medium">
+<tr data-section="mod" data-diff="ILMismatch" data-importance="Medium">
   <td class="col-no">11</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_9"></td>
   <td class="col-reason"><input type="text" id="reason_mod_9"></td>
@@ -838,7 +830,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-diff="ILMismatch" data-importance="Low">
+<tr data-section="mod" data-diff="ILMismatch" data-importance="Low">
   <td class="col-no">12</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_10"></td>
   <td class="col-reason"><input type="text" id="reason_mod_10"></td>
@@ -862,7 +854,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".bin" data-diff="SHA256Mismatch">
+<tr data-section="mod" data-diff="SHA256Mismatch">
   <td class="col-no">13</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_11"></td>
   <td class="col-reason"><input type="text" id="reason_mod_11"></td>
@@ -1107,7 +1099,7 @@
     document.body.appendChild(vi);
   });
 
-  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
+  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-unchecked','filter-search'];
 
   function collectState() {
     var s = {};
@@ -1409,17 +1401,6 @@
   }
 
   // ── Filtering ──────────────────────────────────────────────────────────
-  var __configExts__  = ['.json','.xml','.config','.yaml','.yml','.ini','.toml','.env','.props','.targets','.csproj','.vbproj','.fsproj','.sln'];
-  var __resourceExts__ = ['.resx','.resources','.png','.jpg','.jpeg','.ico','.svg','.gif','.bmp','.wav','.mp3','.ttf','.woff','.woff2','.eot'];
-  function getFileTypeCategory(ext) {
-    if (!ext) return 'other';
-    ext = ext.toLowerCase();
-    if (ext === '.dll') return 'dll';
-    if (ext === '.exe') return 'exe';
-    if (__configExts__.indexOf(ext) >= 0) return 'config';
-    if (__resourceExts__.indexOf(ext) >= 0) return 'resource';
-    return 'other';
-  }
   function applyFilters() {
     var impHigh    = document.getElementById('filter-imp-high');
     // If any element is missing (e.g. reviewed mode), skip
@@ -1435,8 +1416,6 @@
       TextMismatch:   document.getElementById('filter-diff-textmismatch').checked
     };
     var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked };
-    var ftDll      = document.getElementById('filter-ft-dll');
-    var ftFilter   = { dll: ftDll.checked, exe: document.getElementById('filter-ft-exe').checked, config: document.getElementById('filter-ft-config').checked, resource: document.getElementById('filter-ft-resource').checked, other: document.getElementById('filter-ft-other').checked };
     var onlyUnchecked = document.getElementById('filter-unchecked').checked;
     var searchEl   = document.getElementById('filter-search');
     var searchText = (searchEl.value || '').toLowerCase().trim();
@@ -1444,7 +1423,6 @@
     // All checked = no filtering for that category
     var diffActive = !(diffFilter.SHA256Match && diffFilter.SHA256Mismatch && diffFilter.ILMatch && diffFilter.ILMismatch && diffFilter.TextMatch && diffFilter.TextMismatch);
     var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low);
-    var ftActive   = !(ftFilter.dll && ftFilter.exe && ftFilter.config && ftFilter.resource && ftFilter.other);
 
     document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
       var show = true;
@@ -1454,12 +1432,6 @@
         if (diff) {
           if (!diffFilter[diff]) show = false;
         }
-      }
-      // File type filter
-      if (show && ftActive) {
-        var ext = tr.getAttribute('data-ext') || '';
-        var cat = getFileTypeCategory(ext);
-        if (!ftFilter[cat]) show = false;
       }
       // Importance filter (only for rows with importance)
       if (show && impActive) {
