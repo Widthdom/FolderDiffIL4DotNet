@@ -87,7 +87,7 @@
     .filter-zone-spacer { flex: 1; }
     .filter-tables { display: flex; flex-wrap: wrap; gap: 1.5rem; }
     .filter-table-wrap { flex: 0 0 auto; }
-    table.filter-table { border-collapse: collapse; font-size: 12px; }
+    table.filter-table { border-collapse: collapse; font-size: 12px; width: auto; table-layout: auto; }
     table.filter-table th {
       padding: 0.3rem 0.5rem; background: #f5f5f7; color: #6e6e73;
       font-weight: 600; font-size: 11px; text-align: left;
@@ -152,7 +152,7 @@
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
-    table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
+    table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.filter-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
          border: 1px solid #bbb; color: #000; }
     th.th-resizable { position: relative; }
