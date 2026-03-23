@@ -565,7 +565,7 @@ namespace FolderDiffIL4DotNet.Services
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             if (!hasSha256 && !hasTs) return;
 
-            sb.AppendLine($"<h2 class=\"section-heading\"><span class=\"warn-icon\">&#x26A0;</span> {HtmlEncode("Warnings")}</h2>");
+            sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("Warnings")}</h2>");
 
             // SHA256Mismatch warning + detail table (grouped together)
             // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
