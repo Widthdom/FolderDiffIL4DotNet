@@ -450,7 +450,8 @@ namespace FolderDiffIL4DotNet.Services
                     string classTd = !isCont ? HtmlEncode(e.TypeName) : "";
                     string baseTypeTd = !isCont ? HtmlEncode(e.BaseType) : "";
                     prevType = e.TypeName;
-                    string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
+                    string scImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
+                    string trOpen = isCont ? $"<tr class=\"group-cont\"{scImpAttr}>" : $"<tr{scImpAttr}>";
                     string accessTd = CodeWrapArrow(e.Access);
                     string modifiersTd = CodeWrapArrow(e.Modifiers);
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";

@@ -48,7 +48,7 @@
     document.body.appendChild(vi);
   });
 
-  var __filterIds__ = ['filter-diff-sha256','filter-diff-il','filter-diff-text','filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
+  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
   function collectState() {
     var s = {};
     document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
@@ -195,7 +195,11 @@
 
   function clearAll() {
     if (!confirm('Clear all checkboxes and text inputs?')) return;
-    document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked=false; });
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
+      // Filter checkboxes → checked (no filter); other checkboxes → unchecked
+      // フィルターチェックボックス → checked（フィルターなし）、その他 → unchecked
+      cb.checked = (__filterIds__.indexOf(cb.id) >= 0 && cb.id !== 'filter-unchecked');
+    });
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
@@ -203,6 +207,7 @@
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
+    applyFilters();
     localStorage.removeItem(__storageKey__);
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
@@ -356,33 +361,34 @@
     return 'other';
   }
   function applyFilters() {
-    var diffSha256 = document.getElementById('filter-diff-sha256');
-    var diffIl     = document.getElementById('filter-diff-il');
-    var diffText   = document.getElementById('filter-diff-text');
     var impHigh    = document.getElementById('filter-imp-high');
-    var impMedium  = document.getElementById('filter-imp-medium');
-    var impLow     = document.getElementById('filter-imp-low');
-    var ftDll      = document.getElementById('filter-ft-dll');
-    var ftExe      = document.getElementById('filter-ft-exe');
-    var ftConfig   = document.getElementById('filter-ft-config');
-    var ftResource = document.getElementById('filter-ft-resource');
-    var ftOther    = document.getElementById('filter-ft-other');
-    var unchecked  = document.getElementById('filter-unchecked');
-    var searchEl   = document.getElementById('filter-search');
     // If any element is missing (e.g. reviewed mode), skip
     if (!impHigh) return;
-    var diffFilter = { sha256: diffSha256.checked, il: diffIl.checked, text: diffText.checked };
-    var impFilter  = { High: impHigh.checked, Medium: impMedium.checked, Low: impLow.checked };
-    var ftFilter   = { dll: ftDll.checked, exe: ftExe.checked, config: ftConfig.checked, resource: ftResource.checked, other: ftOther.checked };
-    var onlyUnchecked = unchecked.checked;
+
+    // Diff detail filter (6 individual values) / Diff Detail フィルター（6個別値）
+    var diffFilter = {
+      SHA256Match:    document.getElementById('filter-diff-sha256match').checked,
+      SHA256Mismatch: document.getElementById('filter-diff-sha256mismatch').checked,
+      ILMatch:        document.getElementById('filter-diff-ilmatch').checked,
+      ILMismatch:     document.getElementById('filter-diff-ilmismatch').checked,
+      TextMatch:      document.getElementById('filter-diff-textmatch').checked,
+      TextMismatch:   document.getElementById('filter-diff-textmismatch').checked
+    };
+    var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked };
+    var ftDll      = document.getElementById('filter-ft-dll');
+    var ftFilter   = { dll: ftDll.checked, exe: document.getElementById('filter-ft-exe').checked, config: document.getElementById('filter-ft-config').checked, resource: document.getElementById('filter-ft-resource').checked, other: document.getElementById('filter-ft-other').checked };
+    var onlyUnchecked = document.getElementById('filter-unchecked').checked;
+    var searchEl   = document.getElementById('filter-search');
     var searchText = (searchEl.value || '').toLowerCase().trim();
+
     // All checked = no filtering for that category
-    var diffActive = !(diffFilter.sha256 && diffFilter.il && diffFilter.text);
+    var diffActive = !(diffFilter.SHA256Match && diffFilter.SHA256Mismatch && diffFilter.ILMatch && diffFilter.ILMismatch && diffFilter.TextMatch && diffFilter.TextMismatch);
     var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low);
     var ftActive   = !(ftFilter.dll && ftFilter.exe && ftFilter.config && ftFilter.resource && ftFilter.other);
+
     document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
       var show = true;
-      // Diff detail filter
+      // Diff detail filter (exact value match)
       if (diffActive) {
         var diff = tr.getAttribute('data-diff');
         if (diff) {
@@ -418,7 +424,7 @@
       } else {
         tr.classList.add('filter-hidden');
       }
-      // Hide associated diff-row/semantic-changes rows
+      // Hide associated diff-row/semantic-changes rows (but keep details elements visible)
       var next = tr.nextElementSibling;
       while (next && !next.hasAttribute('data-section')) {
         if (show) {
@@ -429,10 +435,28 @@
         next = next.nextElementSibling;
       }
     });
+
+    // Filter semantic change rows by importance inside detail tables / detail テーブル内の semantic change 行を importance でフィルター
+    if (impActive) {
+      document.querySelectorAll('.semantic-changes-table tr[data-sc-importance]').forEach(function(tr) {
+        var imp = tr.getAttribute('data-sc-importance');
+        if (imp && !impFilter[imp]) {
+          tr.classList.add('filter-hidden');
+        } else {
+          tr.classList.remove('filter-hidden');
+        }
+      });
+    } else {
+      document.querySelectorAll('.semantic-changes-table tr.filter-hidden').forEach(function(tr) {
+        tr.classList.remove('filter-hidden');
+      });
+    }
+
     autoSave();
   }
   function resetFilters() {
-    ['filter-diff-sha256','filter-diff-il','filter-diff-text','filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other'].forEach(function(id) {
+    __filterIds__.forEach(function(id) {
+      if (id === 'filter-unchecked' || id === 'filter-search') return;
       var el = document.getElementById(id);
       if (el) el.checked = true;
     });

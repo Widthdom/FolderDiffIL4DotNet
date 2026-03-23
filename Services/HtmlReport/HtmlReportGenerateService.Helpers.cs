@@ -230,16 +230,18 @@ namespace FolderDiffIL4DotNet.Services
             };
 
         /// <summary>
-        /// Normalizes a diff detail string (e.g. "SHA256Match", "ILMismatch") to a filter category.
-        /// diff detail 文字列をフィルタカテゴリに正規化します。
+        /// Returns the diff detail value for use as a data-diff attribute (e.g. "SHA256Match", "ILMismatch").
+        /// data-diff 属性に使用する diff detail 値を返します。
         /// </summary>
         private static string NormalizeDiffCategory(string col6)
         {
             if (string.IsNullOrEmpty(col6)) return "";
-            if (col6.StartsWith("SHA256", StringComparison.Ordinal)) return "sha256";
-            if (col6.StartsWith("IL", StringComparison.Ordinal)) return "il";
-            if (col6.StartsWith("Text", StringComparison.Ordinal)) return "text";
-            return "";
+            // Return the exact value if it's a known diff detail / 既知の diff detail ならそのまま返す
+            return col6 switch
+            {
+                "SHA256Match" or "SHA256Mismatch" or "ILMatch" or "ILMismatch" or "TextMatch" or "TextMismatch" => col6,
+                _ => ""
+            };
         }
 
         /// <summary>
@@ -316,6 +318,12 @@ namespace FolderDiffIL4DotNet.Services
             }
             sb.AppendLine("  </tbody>");
             sb.AppendLine("</table>");
+        }
+
+        /// <summary>Appends a filter table row with checkbox, label, and description. / チェックボックス、ラベル、説明を含むフィルターテーブル行を追加します。</summary>
+        private static void AppendFilterTableRow(StringBuilder sb, string id, string labelHtml, string description)
+        {
+            sb.AppendLine($"<tr><td class=\"ft-cb\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\">{labelHtml}</td><td class=\"ft-desc\">{description}</td></tr>");
         }
 
         // ── Utilities ────────────────────────────────────────────────────────

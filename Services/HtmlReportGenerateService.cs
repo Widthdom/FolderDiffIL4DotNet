@@ -111,21 +111,33 @@ namespace FolderDiffIL4DotNet.Services
             // Filter zone (rounded border) / フィルターゾーン（角丸ボーダー）
             sb.AppendLine("<div class=\"filter-zone\">");
 
-            // Diff Detail filter row / Diff Detail フィルター行
-            sb.AppendLine("<div class=\"ctrl-filter-row\">");
-            sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("Diff Detail") + ":</label>");
-            sb.AppendLine("  <label class=\"filter-chip\" title=\"SHA256 hash match / mismatch\"><input type=\"checkbox\" id=\"filter-diff-sha256\" checked onchange=\"applyFilters()\"> SHA256</label>");
-            sb.AppendLine("  <label class=\"filter-chip\" title=\"IL (Intermediate Language) match / mismatch\"><input type=\"checkbox\" id=\"filter-diff-il\" checked onchange=\"applyFilters()\"> IL</label>");
-            sb.AppendLine("  <label class=\"filter-chip\" title=\"Text match / mismatch\"><input type=\"checkbox\" id=\"filter-diff-text\" checked onchange=\"applyFilters()\"> Text</label>");
+            // Diff Detail + Importance filter tables side by side / Diff Detail + Importance フィルターテーブルを横並びで
+            sb.AppendLine("<div class=\"filter-tables\">");
+
+            // Diff Detail filter table / Diff Detail フィルターテーブル
+            sb.AppendLine("<div>");
+            sb.AppendLine("<div class=\"filter-table-title\">" + HtmlEncode("Diff Detail") + "</div>");
+            sb.AppendLine("<table class=\"filter-table\"><tbody>");
+            AppendFilterTableRow(sb, "filter-diff-sha256match", "<code>SHA256Match</code>", HtmlEncode("SHA256 hash match"));
+            AppendFilterTableRow(sb, "filter-diff-sha256mismatch", "<code>SHA256Mismatch</code>", HtmlEncode("SHA256 hash mismatch"));
+            AppendFilterTableRow(sb, "filter-diff-ilmatch", "<code>ILMatch</code>", HtmlEncode("IL (Intermediate Language) match"));
+            AppendFilterTableRow(sb, "filter-diff-ilmismatch", "<code>ILMismatch</code>", HtmlEncode("IL (Intermediate Language) mismatch"));
+            AppendFilterTableRow(sb, "filter-diff-textmatch", "<code>TextMatch</code>", HtmlEncode("Text match"));
+            AppendFilterTableRow(sb, "filter-diff-textmismatch", "<code>TextMismatch</code>", HtmlEncode("Text mismatch"));
+            sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
 
-            // Importance filter row / Importance フィルター行
-            sb.AppendLine("<div class=\"ctrl-filter-row\">");
-            sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("Importance") + ":</label>");
-            sb.AppendLine("  <label class=\"filter-chip\" title=\"Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change\"><input type=\"checkbox\" id=\"filter-imp-high\" checked onchange=\"applyFilters()\"> <span style=\"color:#d1242f;font-weight:bold\">High</span></label>");
-            sb.AppendLine("  <label class=\"filter-chip\" title=\"Notable change: public/protected member addition, modifier change, access widening, internal removal\"><input type=\"checkbox\" id=\"filter-imp-medium\" checked onchange=\"applyFilters()\"> <span style=\"color:#d97706;font-weight:bold\">Medium</span></label>");
-            sb.AppendLine("  <label class=\"filter-chip\" title=\"Low-impact change: body-only modification, internal/private member addition\"><input type=\"checkbox\" id=\"filter-imp-low\" checked onchange=\"applyFilters()\"> Low</label>");
+            // Importance filter table / Importance フィルターテーブル
+            sb.AppendLine("<div>");
+            sb.AppendLine("<div class=\"filter-table-title\">" + HtmlEncode("Change Importance") + "</div>");
+            sb.AppendLine("<table class=\"filter-table\"><tbody>");
+            AppendFilterTableRow(sb, "filter-imp-high", "<span style=\"color:#d1242f;font-weight:bold\">High</span>", HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"));
+            AppendFilterTableRow(sb, "filter-imp-medium", "<span style=\"color:#d97706;font-weight:bold\">Medium</span>", HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal"));
+            AppendFilterTableRow(sb, "filter-imp-low", "Low", HtmlEncode("Low-impact change: body-only modification, internal/private member addition"));
+            sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
+
+            sb.AppendLine("</div>"); // end .filter-tables
 
             // File Type filter row / File Type フィルター行
             sb.AppendLine("<div class=\"ctrl-filter-row\">");
