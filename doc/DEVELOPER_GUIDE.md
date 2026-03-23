@@ -141,30 +141,36 @@ When modifying the HTML report output, ensure that any new dynamic data is passe
 
 ## HTML Report Filtering
 
-The HTML report includes a client-side filter bar that allows users to narrow down file rows by multiple criteria. The implementation spans three layers:
+The HTML report includes a client-side filter zone that allows users to narrow down file rows by multiple criteria. The filter zone is preserved in reviewed HTML so reviewers can also filter.
 
 ### Server-side (C#)
 
-- [`AppendFileRow()`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) emits `data-section`, `data-ext`, and (when applicable) `data-importance` attributes on each `<tr>`.
-- The filter bar HTML is generated inside the `<!--CTRL-->...<!--/CTRL-->` markers in [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs), so it is automatically stripped when the report is downloaded as reviewed.
+- [`AppendFileRow()`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) emits `data-section`, `data-diff`, and (when applicable) `data-importance` attributes on each `<tr>`.
+- The **button row** (Download as reviewed, Fold all details, Reset filters, Clear all) is inside `<!--CTRL-->...<!--/CTRL-->` markers in [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) and is replaced with a reviewed banner by `downloadReviewed()`.
+- The **filter zone** (Diff Detail, Change Importance, Unchecked only, Search) is **outside** the CTRL markers so it persists in reviewed HTML.
 
 ### CSS ([`diff_report.css`](../Services/HtmlReport/diff_report.css))
 
-- `.filter-bar` — sticky positioned bar below the controls bar.
 - `tr.filter-hidden` / `tr.diff-row.filter-hidden-parent` — hide rows with `display: none !important`.
+- `.filter-table-dbl` — Change Importance table class; its `tbody td` height is set to `calc(var(--ft-row-h) * 2)` for row alignment with Diff Detail.
+- `.filter-search-wrap` — wrapper for the search input with visible border and clear button.
 
 ### JavaScript ([`diff_report.js`](../Services/HtmlReport/diff_report.js))
 
 - `applyFilters()` — reads all filter controls and applies `filter-hidden` / `filter-hidden-parent` CSS classes to rows.
 - `resetFilters()` — restores all checkboxes and clears the search box.
 - `__filterIds__` — array of filter input IDs excluded from `collectState()` / localStorage auto-save.
-- `downloadReviewed()` — clears all `filter-hidden` / `filter-hidden-parent` classes before capturing `outerHTML`, ensuring the reviewed HTML always shows all rows.
+- `syncFilterRowHeight()` — measures a Diff Detail row height and sets `--ft-row-h` CSS variable so Change Importance rows are exactly 2× height.
+- `wrapInputWithClear(inp)` — wraps the search input with a clear button (⊗) that dispatches both `input` and `change` events.
+- `downloadReviewed()` — clears all `filter-hidden` / `filter-hidden-parent` classes and inline table widths before capturing `outerHTML`, then restores live page state via `syncTableWidths()`.
 
-### Design decisions
+### Design decisions / 設計判断
 
-1. Filter state is intentionally excluded from `collectState()` and localStorage. This means filters reset on page reload and are never saved to the reviewed HTML.
-2. The filter bar is inside `<!--CTRL-->...<!--/CTRL-->` markers, which are regex-replaced by `downloadReviewed()`. This ensures the reviewed HTML has no filter UI.
-3. Importance filtering only applies to rows that have a `data-importance` attribute (Modified section rows with semantic analysis results).
+1. Filter state is intentionally excluded from `collectState()` and localStorage. This means filters reset on page reload and are never saved to the reviewed HTML state. / フィルタ状態は `collectState()` と localStorage から意図的に除外。ページリロード時にリセットされ、reviewed HTML の状態には保存されない。
+2. The filter zone is **outside** `<!--CTRL-->...<!--/CTRL-->` markers so that reviewed HTML retains full filter functionality. Filter checkboxes and the search input are excluded from the reviewed-mode read-only enforcement (`__filterIds__` check). / フィルターゾーンは `<!--CTRL-->` マーカーの**外**に配置し、reviewed HTML でもフィルタ機能を完全に維持。フィルタチェックボックスと検索入力は reviewed モードの読み取り専用化から除外（`__filterIds__` チェック）。
+3. Importance filtering only applies to rows that have a `data-importance` attribute. Rows without importance (e.g. "No structural changes detected") pass through the filter. / importance フィルタは `data-importance` 属性を持つ行にのみ適用。importance なしの行（例: "No structural changes detected"）はフィルタを通過。
+4. The `btn-input-clear` CSS class is used for the search input clear button. Do **not** use `btn-clear` — that class is already used for toolbar buttons (Fold all details, Reset filters, Clear all) and caused a collision that hid the toolbar buttons entirely. / 検索入力のクリアボタンには `btn-input-clear` CSS クラスを使用。`btn-clear` は**使わないこと** — このクラスはツールバーボタン（Fold all details、Reset filters、Clear all）で既に使用されており、衝突するとツールバーボタンが完全に非表示になる。
+5. `downloadReviewed()` must clear inline `style="width:..."` from tables before `outerHTML` capture. Otherwise, stale pixel widths from `syncTableWidths()` are baked into the reviewed HTML and cause column width mismatch on reviewed load. / `downloadReviewed()` は `outerHTML` キャプチャ前にテーブルの inline `style="width:..."` をクリアすること。そうしないと `syncTableWidths()` が設定した古いピクセル幅が reviewed HTML に焼き込まれ、reviewed ロード時に列幅の不一致が発生する。
 
 ## Performance Benchmarks
 
@@ -936,30 +942,32 @@ HTML レポート出力を変更する際は、新しい動的データを必ず
 
 ## HTML レポートフィルタリング
 
-HTML レポートには、複数の条件でファイル行を絞り込めるクライアントサイドフィルターバーが含まれています。実装は 3 層に分かれます:
+HTML レポートには、複数の条件でファイル行を絞り込めるクライアントサイドフィルターゾーンが含まれています。フィルターゾーンは reviewed HTML にも引き継がれ、レビュアーもフィルタ可能です。
 
 ### サーバーサイド（C#）
 
-- [`AppendFileRow()`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) が各 `<tr>` に `data-section`、`data-ext`、（該当する場合）`data-importance` 属性を出力。
-- フィルターバー HTML は [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) の `<!--CTRL-->...<!--/CTRL-->` マーカー内に生成されるため、レビュー済みとしてダウンロードする際に自動的に除去されます。
+- [`AppendFileRow()`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) が各 `<tr>` に `data-section`、`data-diff`、（該当する場合）`data-importance` 属性を出力。
+- **ボタン行**（Download as reviewed、Fold all details、Reset filters、Clear all）は [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) の `<!--CTRL-->...<!--/CTRL-->` マーカー内にあり、`downloadReviewed()` で reviewed バナーに置換される。
+- **フィルターゾーン**（Diff Detail、Change Importance、Unchecked only、Search）は CTRL マーカーの**外**に配置され reviewed HTML にも残る。
 
 ### CSS（[`diff_report.css`](../Services/HtmlReport/diff_report.css)）
 
-- `.filter-bar` — コントロールバーの下に固定配置されるバー。
 - `tr.filter-hidden` / `tr.diff-row.filter-hidden-parent` — `display: none !important` で行を非表示。
+- `.filter-table-dbl` — Change Importance テーブルクラス。`tbody td` の高さを `calc(var(--ft-row-h) * 2)` で Diff Detail と行揃え。
+- `.filter-search-wrap` — 検索入力のラッパー。ボーダーとクリアボタンを含む。
 
 ### JavaScript（[`diff_report.js`](../Services/HtmlReport/diff_report.js)）
 
 - `applyFilters()` — すべてのフィルタコントロールを読み取り、行に `filter-hidden` / `filter-hidden-parent` CSS クラスを適用。
 - `resetFilters()` — すべてのチェックボックスを復元し、検索ボックスをクリア。
 - `__filterIds__` — `collectState()` / localStorage 自動保存から除外されるフィルタ入力 ID の配列。
-- `downloadReviewed()` — `outerHTML` キャプチャ前にすべての `filter-hidden` / `filter-hidden-parent` クラスを削除し、レビュー済み HTML で常にすべての行が表示されることを保証。
+- `syncFilterRowHeight()` — Diff Detail 行の高さを測定し `--ft-row-h` CSS 変数を設定。Change Importance 行が正確に 2 倍の高さになる。
+- `wrapInputWithClear(inp)` — 検索入力をクリアボタン（⊗）付きラッパーで囲む。`input` と `change` の両イベントを発火。
+- `downloadReviewed()` — `filter-hidden` / `filter-hidden-parent` クラスとテーブルの inline width をクリアしてから `outerHTML` をキャプチャし、その後 `syncTableWidths()` でライブページの状態を復元。
 
 ### 設計判断
 
-1. フィルタ状態は意図的に `collectState()` と localStorage から除外されています。これにより、ページ再読み込みでフィルタがリセットされ、レビュー済み HTML にも保存されません。
-2. フィルターバーは `<!--CTRL-->...<!--/CTRL-->` マーカー内に配置されており、`downloadReviewed()` で正規表現置換されます。これにより、レビュー済み HTML にフィルタ UI が含まれないことが保証されます。
-3. 重要度フィルタリングは `data-importance` 属性を持つ行（セマンティック解析結果のある Modified セクション行）にのみ適用されます。
+英語セクションの「Design decisions / 設計判断」を参照。
 
 ## パフォーマンスベンチマーク
 

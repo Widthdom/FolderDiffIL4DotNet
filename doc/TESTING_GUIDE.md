@@ -23,7 +23,7 @@ Related documents:
 <a id="testing-en-scope-map"></a>
 ## Current Test Scope Map
 
-Current tree has `677` test methods (`640` `[Fact]`/`[SkippableFact]` + `37` `[Theory]` with `126` `[InlineData]` cases) in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`): `1` skipped (E2E test requiring a real disassembler binary).
+Current tree has `676` test methods (`639` `[Fact]`/`[SkippableFact]` + `37` `[Theory]` with `126` `[InlineData]` cases) in the latest full run (`dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj -p:UseAppHost=false --nologo`): `1` skipped (E2E test requiring a real disassembler binary).
 
 | Area | Main test classes | What is validated |
 | --- | --- | --- |
