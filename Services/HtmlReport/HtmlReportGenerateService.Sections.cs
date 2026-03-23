@@ -61,8 +61,12 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 else
                 {
-                    var joined = string.Join(", ", ilIgnoreStrings.Select(s => $"\"{s}\""));
-                    sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">{HtmlEncode(joined)}</div></div>");
+                    sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">");
+                    foreach (var s in ilIgnoreStrings)
+                    {
+                        sb.AppendLine($"<div>{HtmlEncode($"\"{s}\"")}</div>");
+                    }
+                    sb.AppendLine("</div></div>");
                 }
             }
 
