@@ -138,7 +138,7 @@ namespace FolderDiffIL4DotNet.Services
 
             // Change Importance filter table / Change Importance フィルターテーブル
             sb.AppendLine("<div class=\"filter-table-wrap\">");
-            sb.AppendLine("<table class=\"filter-table filter-table-wide\">");
+            sb.AppendLine("<table class=\"filter-table\">");
             sb.AppendLine("<thead><tr><th colspan=\"3\">Change Importance</th></tr></thead>");
             sb.AppendLine("<tbody>");
             AppendFilterTableRow(sb, "filter-imp-high", "<span style=\"color:#d1242f;font-weight:bold\">High</span>", HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"));
