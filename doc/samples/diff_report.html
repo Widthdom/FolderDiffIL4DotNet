@@ -297,6 +297,11 @@
   <span id="save-status" class="save-status"></span>
 </div>
 <div class="filter-zone">
+<div class="ctrl-filter-row">
+  <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
+  <span class="filter-sep"></span>
+  <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()">
+</div>
 <div class="filter-tables">
 <div class="filter-table-wrap">
 <table class="filter-table">
@@ -319,11 +324,6 @@
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"></td><td class="ft-label">Low</td><td class="ft-desc">Low-impact change: body-only modification, internal/private member addition</td></tr>
 </tbody></table>
 </div>
-</div>
-<div class="ctrl-filter-row">
-  <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
-  <span class="filter-sep"></span>
-  <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()">
 </div>
 </div>
 </div>  <!-- end .controls -->

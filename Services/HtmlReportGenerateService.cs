@@ -109,8 +109,15 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
 
-            // Filter zone (rounded border) / フィルターゾーン（角丸ボーダー）
+            // Filter zone / フィルターゾーン
             sb.AppendLine("<div class=\"filter-zone\">");
+
+            // Search + Unchecked only row / 検索 + 未チェックのみ行
+            sb.AppendLine("<div class=\"ctrl-filter-row\">");
+            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
+            sb.AppendLine("  <span class=\"filter-sep\"></span>");
+            sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\">");
+            sb.AppendLine("</div>");
 
             // Filter tables row / フィルターテーブル行
             sb.AppendLine("<div class=\"filter-tables\">");
@@ -140,13 +147,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
             sb.AppendLine("</div>"); // end .filter-tables
-
-            // Search + Unchecked only row / 検索 + 未チェックのみ行
-            sb.AppendLine("<div class=\"ctrl-filter-row\">");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
-            sb.AppendLine("  <span class=\"filter-sep\"></span>");
-            sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\">");
-            sb.AppendLine("</div>");
 
             sb.AppendLine("</div>");  // end .filter-zone
             sb.AppendLine("</div>");  // end .controls
