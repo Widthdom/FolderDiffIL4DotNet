@@ -135,6 +135,7 @@
     .filter-search:focus { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
     tr.filter-hidden { display: none !important; }
     tr.diff-row.filter-hidden-parent { display: none !important; }
+    .lazy-section summary { cursor: pointer; font-size: 13px; color: #6e6e73; padding: 0.2rem 0; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;

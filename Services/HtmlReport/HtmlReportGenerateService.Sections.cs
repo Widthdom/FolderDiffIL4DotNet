@@ -142,8 +142,9 @@ namespace FolderDiffIL4DotNet.Services
             tableSb.AppendLine("</tbody></table></div>");
 
             string b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(tableSb.ToString()));
-            sb.AppendLine($"<details data-lazy-section=\"{b64}\">");
-            sb.AppendLine($"<summary><h2 style=\"display:inline\">[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2></summary>");
+            sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
+            sb.AppendLine($"<details class=\"lazy-section\" data-lazy-section=\"{b64}\">");
+            sb.AppendLine("<summary></summary>");
             sb.AppendLine("</details>");
         }
 
@@ -186,8 +187,9 @@ namespace FolderDiffIL4DotNet.Services
             tableSb.AppendLine("</tbody></table></div>");
 
             string b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(tableSb.ToString()));
-            sb.AppendLine($"<details data-lazy-section=\"{b64}\">");
-            sb.AppendLine($"<summary><h2 style=\"display:inline\">[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2></summary>");
+            sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
+            sb.AppendLine($"<details class=\"lazy-section\" data-lazy-section=\"{b64}\">");
+            sb.AppendLine("<summary></summary>");
             sb.AppendLine("</details>");
         }
 

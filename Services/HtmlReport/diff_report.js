@@ -278,6 +278,11 @@
         d.removeEventListener('toggle', onToggle);
         try {
           d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+          // Init column resize handles and sync widths / 列リサイズハンドル初期化と幅同期
+          d.querySelectorAll('th.th-resizable').forEach(function(th) {
+            if (th.querySelector('.col-resize-handle')) return;
+            initColResizeSingle(th);
+          });
           syncTableWidths();
           // Wire up save events on new inputs / 新規inputにsaveイベントを接続
           if (__savedState__ === null) {
