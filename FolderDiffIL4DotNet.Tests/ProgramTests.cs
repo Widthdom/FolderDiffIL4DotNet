@@ -258,10 +258,7 @@ namespace FolderDiffIL4DotNet.Tests
 
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
                 Assert.Contains("## Warnings", reportText);
-                Assert.Contains($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}", reportText);
-                Assert.True(
-                    reportText.IndexOf("## Warnings", StringComparison.Ordinal) <
-                    reportText.IndexOf(Constants.WARNING_SHA256_MISMATCH, StringComparison.Ordinal));
+                Assert.Contains("SHA256Mismatch: hash-only comparison, review recommended", reportText);
             }
             finally
             {

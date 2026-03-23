@@ -158,8 +158,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warningsContent = content.Substring(warningsIdx);
 
             Assert.Contains("SHA256Mismatch", warningsContent);
-            Assert.Contains("Manual Review Recommended", warningsContent);
-            Assert.Contains("Timestamps Regressed", warningsContent);
+            Assert.Contains("SHA256Mismatch: hash-only comparison, review recommended", warningsContent);
+            Assert.Contains("new file timestamps older than old", warningsContent);
         }
 
         [Fact]

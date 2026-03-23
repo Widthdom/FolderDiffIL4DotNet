@@ -369,10 +369,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
             // Table heading should exist with count
-            Assert.Contains("SHA256Mismatch (Manual Review Recommended) (2)</h2>", html);
+            Assert.Contains("SHA256Mismatch: hash-only comparison, review recommended (2)</h2>", html);
 
             // Extract the SHA256Mismatch table section
-            int sha256TableStart = html.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            int sha256TableStart = html.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
             Assert.True(sha256TableStart >= 0, "SHA256Mismatch detail table heading should exist");
             string sha256Section = html.Substring(sha256TableStart);
 
@@ -387,7 +387,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that SHA256Mismatch detail table appears before Timestamps Regressed table when both warnings exist.
+        /// Verifies that SHA256Mismatch detail table appears before new file timestamps older than old table when both warnings exist.
         /// 両方の警告が存在する場合、SHA256Mismatch 詳細テーブルがタイムスタンプ逆行テーブルの前に表示されることを確認する。
         /// </summary>
         [Fact]
@@ -409,11 +409,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            int sha256TableIdx = html.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
-            int tsTableIdx = html.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            int sha256TableIdx = html.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int tsTableIdx = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
-            Assert.True(tsTableIdx >= 0, "Timestamps Regressed table should exist");
-            Assert.True(sha256TableIdx < tsTableIdx, "SHA256Mismatch table should appear before Timestamps Regressed table");
+            Assert.True(tsTableIdx >= 0, "new file timestamps older than old table should exist");
+            Assert.True(sha256TableIdx < tsTableIdx, "SHA256Mismatch table should appear before new file timestamps older than old table");
         }
 
         /// <summary>
@@ -442,23 +442,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            int sha256WarningIdx = html.IndexOf("SHA256Mismatch. Manual review is recommended", StringComparison.Ordinal);
-            int sha256TableIdx = html.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
-            int tsWarningIdx = html.IndexOf("modified files in new have older last-modified timestamps", StringComparison.Ordinal);
-            int tsTableIdx = html.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            int sha256TableIdx = html.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int tsTableIdx = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
 
-            Assert.True(sha256WarningIdx >= 0, "SHA256Mismatch warning message should exist");
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
-            Assert.True(tsWarningIdx >= 0, "Timestamp regression warning message should exist");
-            Assert.True(tsTableIdx >= 0, "Timestamps Regressed detail table should exist");
+            Assert.True(tsTableIdx >= 0, "new file timestamps older than old detail table should exist");
 
-            // SHA256 warning → SHA256 table → Timestamp warning → Timestamp table
-            Assert.True(sha256WarningIdx < sha256TableIdx,
-                "SHA256Mismatch detail table should appear after SHA256Mismatch warning message");
-            Assert.True(sha256TableIdx < tsWarningIdx,
-                "SHA256Mismatch detail table should appear before Timestamp regression warning message");
-            Assert.True(tsWarningIdx < tsTableIdx,
-                "Timestamps Regressed detail table should appear after Timestamp regression warning message");
+            // SHA256 table should appear before Timestamp table / SHA256テーブルはタイムスタンプテーブルの前に表示
+            Assert.True(sha256TableIdx < tsTableIdx,
+                "SHA256Mismatch table should appear before timestamp regression table");
         }
 
         // ── Inline diff / インラインdiff ──────────────────────────────────────
@@ -1597,9 +1589,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Only look at the Warnings section (after "Timestamps Regressed")
-            int warningsSectionStart = html.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
-            Assert.True(warningsSectionStart >= 0, "Timestamps Regressed section should exist");
+            // Only look at the Warnings section (after "new file timestamps older than old")
+            int warningsSectionStart = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
+            Assert.True(warningsSectionStart >= 0, "new file timestamps older than old section should exist");
             string warningsSection = html.Substring(warningsSectionStart);
 
             int text_bbb = warningsSection.IndexOf("bbb-text.config", StringComparison.Ordinal);

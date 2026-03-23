@@ -298,16 +298,13 @@ namespace FolderDiffIL4DotNet.Services
                 // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
                 if (ctx.HasSha256Mismatch)
                 {
-                    writer.WriteLine($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}");
-
                     var sha256Files = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary
                         .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                         .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                         .ToList();
                     if (sha256Files.Count > 0)
                     {
-                        writer.WriteLine();
-                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch (Manual Review Recommended) ({sha256Files.Count})");
+                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch: hash-only comparison, review recommended ({sha256Files.Count})");
                         writer.WriteLine();
                         writer.WriteLine("| Status | File Path | Timestamp | Legend |");
                         writer.WriteLine("|:------:|-----------|:---------:|:------:|");
@@ -330,14 +327,12 @@ namespace FolderDiffIL4DotNet.Services
                 if (ctx.HasTimestampRegressionWarning)
                 {
                     writer.WriteLine();
-                    writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
-                    writer.WriteLine();
                     var tsWarnings = ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                         .OrderBy(entry => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(entry.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                         .ThenBy(entry => GetImportanceSortOrder(ctx.FileDiffResultLists.GetMaxImportance(entry.FileRelativePath)))
                         .ThenBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase)
                         .ToList();
-                    writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — Timestamps Regressed ({tsWarnings.Count})");
+                    writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — new file timestamps older than old ({tsWarnings.Count})");
                     writer.WriteLine();
                     writer.WriteLine("| Status | File Path | Timestamp | Legend |");
                     writer.WriteLine("|:------:|-----------|:---------:|:------:|");

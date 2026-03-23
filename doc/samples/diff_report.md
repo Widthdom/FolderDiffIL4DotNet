@@ -11,7 +11,7 @@
 
 | Tool | Available | Version |
 |------|:---------:|---------|
-| dotnet-ildasm | Yes | 0.12.2 — **In Use** |
+| dotnet-ildasm | Yes | 0.12.2 — In Use |
 | ilspycmd | No | N/A |
 
 ### Configuration Details
@@ -122,17 +122,13 @@
 | Expired | 0 |
 
 ## Warnings
-- **WARNING:** One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only a SHA256 hash comparison was possible.
-
-### [ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended) (1)
+### [ ! ] Modified Files — SHA256Mismatch: hash-only comparison, review recommended (1)
 
 | Status | File Path | Timestamp | Legend |
 |:------:|-----------|:---------:|:------:|
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` |
 
-- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.
-
-### [ ! ] Modified Files — Timestamps Regressed (5)
+### [ ! ] Modified Files — new file timestamps older than old (5)
 
 | Status | File Path | Timestamp | Legend |
 |:------:|-----------|:---------:|:------:|

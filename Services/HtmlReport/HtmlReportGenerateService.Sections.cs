@@ -563,10 +563,6 @@ namespace FolderDiffIL4DotNet.Services
             // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
             if (hasSha256)
             {
-                sb.AppendLine("<ul class=\"warnings\">");
-                sb.AppendLine($"  <li>{HtmlEncode("One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.")}</li>");
-                sb.AppendLine("</ul>");
-
                 var sha256Files = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                     .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                     .OrderBy(kv => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(kv.Key)))
@@ -574,7 +570,7 @@ namespace FolderDiffIL4DotNet.Services
                     .ToList();
                 if (sha256Files.Count > 0)
                 {
-                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch (Manual Review Recommended)")} ({sha256Files.Count})</h2>");
+                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: hash-only comparison, review recommended")} ({sha256Files.Count})</h2>");
                     AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                     sb.AppendLine("<tbody>");
                     int idx = 0;
@@ -600,15 +596,11 @@ namespace FolderDiffIL4DotNet.Services
             // タイムスタンプ逆行 警告 + 詳細テーブル（まとめて配置）
             if (hasTs)
             {
-                sb.AppendLine("<ul class=\"warnings\">");
-                sb.AppendLine($"  <li>{HtmlEncode("One or more modified files in new have older last-modified timestamps than the corresponding files in old.")}</li>");
-                sb.AppendLine("</ul>");
-
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(w => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(w.FileRelativePath)))
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
-                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("Timestamps Regressed")} ({warnings.Count})</h2>");
+                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("new file timestamps older than old")} ({warnings.Count})</h2>");
                 AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                 sb.AppendLine("<tbody>");
                 int idx = 0;

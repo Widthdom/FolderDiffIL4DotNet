@@ -317,7 +317,7 @@ namespace FolderDiffIL4DotNet.Services
                         ? "<span style=\"color:#22863a\">Available</span>"
                         : $"<span style=\"color:#22863a\">Available ({HtmlEncode(probe.Version)})</span>")
                     : "<span style=\"color:#b31d28\">Not Available</span>";
-                var inUseLabel = isInUse ? " — <strong>In Use</strong>" : "";
+                var inUseLabel = isInUse ? " — In Use" : "";
                 sb.AppendLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}{inUseLabel}</div>");
             }
             sb.AppendLine("  </div>");
