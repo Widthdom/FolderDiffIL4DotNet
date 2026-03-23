@@ -59,7 +59,10 @@ namespace FolderDiffIL4DotNet.Services
             int recordNo    = idx + 1;
             string ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
             string impAttr = string.IsNullOrEmpty(importance) ? "" : $" data-importance=\"{HtmlEncode(importance)}\"";
-            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\" data-ext=\"{HtmlEncode(ext)}\"{impAttr}>");
+            // Normalize diff detail to category for filtering / フィルタリング用に diff detail をカテゴリに正規化
+            string diffCat = NormalizeDiffCategory(col6);
+            string diffAttr = string.IsNullOrEmpty(diffCat) ? "" : $" data-diff=\"{diffCat}\"";
+            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\" data-ext=\"{HtmlEncode(ext)}\"{impAttr}{diffAttr}>");
             sb.AppendLine($"  <td class=\"col-no\">{recordNo}</td>");
             sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td>");
             sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\"></td>");
@@ -225,6 +228,19 @@ namespace FolderDiffIL4DotNet.Services
                 ChangeImportance.Low => "Low",
                 _ => ""
             };
+
+        /// <summary>
+        /// Normalizes a diff detail string (e.g. "SHA256Match", "ILMismatch") to a filter category.
+        /// diff detail 文字列をフィルタカテゴリに正規化します。
+        /// </summary>
+        private static string NormalizeDiffCategory(string col6)
+        {
+            if (string.IsNullOrEmpty(col6)) return "";
+            if (col6.StartsWith("SHA256", StringComparison.Ordinal)) return "sha256";
+            if (col6.StartsWith("IL", StringComparison.Ordinal)) return "il";
+            if (col6.StartsWith("Text", StringComparison.Ordinal)) return "text";
+            return "";
+        }
 
         /// <summary>
         /// Wraps a value in <c>&lt;code&gt;</c> tags. If the value contains " → ", each side is wrapped individually.

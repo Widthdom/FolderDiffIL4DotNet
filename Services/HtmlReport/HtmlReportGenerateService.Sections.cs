@@ -99,37 +99,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</div>");
 
             sb.AppendLine("</div>"); // end header-config
-
-            // Legends side by side / 凡例を横並びで表示
-            sb.AppendLine("<div class=\"header-legends\">");
-
-            // Legend — Diff Detail
-            sb.AppendLine("<div>");
-            sb.AppendLine($"  <div class=\"header-legend-title\">{HtmlEncode("Legend — Diff Detail")}</div>");
-            sb.AppendLine("  <table class=\"legend-table\">");
-            sb.AppendLine($"    <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
-            sb.AppendLine("    <tbody>");
-            sb.AppendLine($"      <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{HtmlEncode("SHA256 hash match / mismatch")}</td></tr>");
-            sb.AppendLine($"      <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{HtmlEncode("IL(Intermediate Language) match / mismatch")}</td></tr>");
-            sb.AppendLine($"      <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{HtmlEncode("Text match / mismatch")}</td></tr>");
-            sb.AppendLine("    </tbody>");
-            sb.AppendLine("  </table>");
-            sb.AppendLine("</div>");
-
-            // Legend — Change Importance
-            sb.AppendLine("<div>");
-            sb.AppendLine($"  <div class=\"header-legend-title\">{HtmlEncode("Legend — Change Importance")}</div>");
-            sb.AppendLine("  <table class=\"legend-table\">");
-            sb.AppendLine($"    <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
-            sb.AppendLine("    <tbody>");
-            sb.AppendLine($"      <tr><td style=\"color:#d1242f;font-weight:bold\">High</td><td>{HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change")}</td></tr>");
-            sb.AppendLine($"      <tr><td style=\"color:#d97706;font-weight:bold\">Medium</td><td>{HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal")}</td></tr>");
-            sb.AppendLine($"      <tr><td>Low</td><td>{HtmlEncode("Low-impact change: body-only modification, internal/private member addition")}</td></tr>");
-            sb.AppendLine("    </tbody>");
-            sb.AppendLine("  </table>");
-            sb.AppendLine("</div>");
-
-            sb.AppendLine("</div>"); // header-legends
             sb.AppendLine("</div>"); // report-header
         }
 

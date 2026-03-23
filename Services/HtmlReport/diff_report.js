@@ -48,7 +48,7 @@
     document.body.appendChild(vi);
   });
 
-  var __filterIds__ = ['filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
+  var __filterIds__ = ['filter-diff-sha256','filter-diff-il','filter-diff-text','filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
   function collectState() {
     var s = {};
     document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
@@ -356,35 +356,46 @@
     return 'other';
   }
   function applyFilters() {
-    var impHigh   = document.getElementById('filter-imp-high');
-    var impMedium = document.getElementById('filter-imp-medium');
-    var impLow    = document.getElementById('filter-imp-low');
-    var ftDll     = document.getElementById('filter-ft-dll');
-    var ftExe     = document.getElementById('filter-ft-exe');
-    var ftConfig  = document.getElementById('filter-ft-config');
-    var ftResource= document.getElementById('filter-ft-resource');
-    var ftOther   = document.getElementById('filter-ft-other');
-    var unchecked = document.getElementById('filter-unchecked');
-    var searchEl  = document.getElementById('filter-search');
+    var diffSha256 = document.getElementById('filter-diff-sha256');
+    var diffIl     = document.getElementById('filter-diff-il');
+    var diffText   = document.getElementById('filter-diff-text');
+    var impHigh    = document.getElementById('filter-imp-high');
+    var impMedium  = document.getElementById('filter-imp-medium');
+    var impLow     = document.getElementById('filter-imp-low');
+    var ftDll      = document.getElementById('filter-ft-dll');
+    var ftExe      = document.getElementById('filter-ft-exe');
+    var ftConfig   = document.getElementById('filter-ft-config');
+    var ftResource = document.getElementById('filter-ft-resource');
+    var ftOther    = document.getElementById('filter-ft-other');
+    var unchecked  = document.getElementById('filter-unchecked');
+    var searchEl   = document.getElementById('filter-search');
     // If any element is missing (e.g. reviewed mode), skip
     if (!impHigh) return;
-    var impFilter = { High: impHigh.checked, Medium: impMedium.checked, Low: impLow.checked };
-    var ftFilter  = { dll: ftDll.checked, exe: ftExe.checked, config: ftConfig.checked, resource: ftResource.checked, other: ftOther.checked };
+    var diffFilter = { sha256: diffSha256.checked, il: diffIl.checked, text: diffText.checked };
+    var impFilter  = { High: impHigh.checked, Medium: impMedium.checked, Low: impLow.checked };
+    var ftFilter   = { dll: ftDll.checked, exe: ftExe.checked, config: ftConfig.checked, resource: ftResource.checked, other: ftOther.checked };
     var onlyUnchecked = unchecked.checked;
     var searchText = (searchEl.value || '').toLowerCase().trim();
-    // All importance checked = no importance filtering
-    var impActive = !(impFilter.High && impFilter.Medium && impFilter.Low);
-    // All file types checked = no file type filtering
-    var ftActive = !(ftFilter.dll && ftFilter.exe && ftFilter.config && ftFilter.resource && ftFilter.other);
+    // All checked = no filtering for that category
+    var diffActive = !(diffFilter.sha256 && diffFilter.il && diffFilter.text);
+    var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low);
+    var ftActive   = !(ftFilter.dll && ftFilter.exe && ftFilter.config && ftFilter.resource && ftFilter.other);
     document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
       var show = true;
+      // Diff detail filter
+      if (diffActive) {
+        var diff = tr.getAttribute('data-diff');
+        if (diff) {
+          if (!diffFilter[diff]) show = false;
+        }
+      }
       // File type filter
-      if (ftActive) {
+      if (show && ftActive) {
         var ext = tr.getAttribute('data-ext') || '';
         var cat = getFileTypeCategory(ext);
         if (!ftFilter[cat]) show = false;
       }
-      // Importance filter (only for Modified section rows with importance)
+      // Importance filter (only for rows with importance)
       if (show && impActive) {
         var imp = tr.getAttribute('data-importance');
         if (imp) {
@@ -393,9 +404,6 @@
       }
       // Unchecked only filter
       if (show && onlyUnchecked) {
-        var section = tr.getAttribute('data-section');
-        var idx = Array.prototype.indexOf.call(tr.parentNode.children, tr);
-        // Find the checkbox in this row
         var cb = tr.querySelector('input[type="checkbox"]');
         if (cb && cb.checked) show = false;
       }
@@ -424,7 +432,7 @@
     autoSave();
   }
   function resetFilters() {
-    ['filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other'].forEach(function(id) {
+    ['filter-diff-sha256','filter-diff-il','filter-diff-text','filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.checked = true;
     });

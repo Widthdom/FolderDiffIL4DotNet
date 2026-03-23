@@ -83,14 +83,7 @@
     .header-note:last-child { margin-bottom: 0; }
     .header-note a { color: #0066cc; text-decoration: none; }
     .header-note a:hover { text-decoration: underline; }
-    .header-legends {
-      display: flex; gap: 1.8rem; flex-wrap: wrap; margin-bottom: 0.8rem;
-    }
-    .header-legend-title {
-      font-size: 12px; font-weight: 600; color: #1d1d1f;
-      margin-bottom: 0.5rem;
-    }
-    /* ── Legend table ────────────────────────────────────────────────────── */
+    /* ── Legend table (used inside header-config) ─────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table th { border: 1px solid #bbb; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
     table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; white-space: nowrap; }
@@ -107,6 +100,11 @@
       display: flex; flex-direction: column; gap: 0.55rem; z-index: 100;
     }
     .ctrl-buttons { display: flex; gap: 1rem; align-items: center; }
+    .filter-zone {
+      border: 1px solid #d2d2d7; border-radius: 12px;
+      padding: 0.7rem 1rem; display: flex; flex-direction: column; gap: 0.45rem;
+    }
+    .filter-zone-spacer { flex: 1; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;
@@ -296,11 +294,18 @@
   <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
   <span id="save-status" class="save-status"></span>
 </div>
+<div class="filter-zone">
+<div class="ctrl-filter-row">
+  <label class="filter-label">Diff Detail:</label>
+  <label class="filter-chip" title="SHA256 hash match / mismatch"><input type="checkbox" id="filter-diff-sha256" checked onchange="applyFilters()"> SHA256</label>
+  <label class="filter-chip" title="IL (Intermediate Language) match / mismatch"><input type="checkbox" id="filter-diff-il" checked onchange="applyFilters()"> IL</label>
+  <label class="filter-chip" title="Text match / mismatch"><input type="checkbox" id="filter-diff-text" checked onchange="applyFilters()"> Text</label>
+</div>
 <div class="ctrl-filter-row">
   <label class="filter-label">Importance:</label>
-  <label class="filter-chip"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"> <span style="color:#d1242f;font-weight:bold">High</span></label>
-  <label class="filter-chip"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"> <span style="color:#d97706;font-weight:bold">Medium</span></label>
-  <label class="filter-chip"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"> Low</label>
+  <label class="filter-chip" title="Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"> <span style="color:#d1242f;font-weight:bold">High</span></label>
+  <label class="filter-chip" title="Notable change: public/protected member addition, modifier change, access widening, internal removal"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"> <span style="color:#d97706;font-weight:bold">Medium</span></label>
+  <label class="filter-chip" title="Low-impact change: body-only modification, internal/private member addition"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"> Low</label>
 </div>
 <div class="ctrl-filter-row">
   <label class="filter-label">File Type:</label>
@@ -314,7 +319,9 @@
   <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
   <span class="filter-sep"></span>
   <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()">
+  <span class="filter-zone-spacer"></span>
   <button class="btn btn-clear filter-reset-btn" onclick="resetFilters()">Reset filters</button>
+</div>
 </div>
 </div>  <!-- end .controls -->
 <!--/CTRL-->
@@ -368,30 +375,6 @@
 <div class="header-notes">
   <p class="header-note">When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</p>
   <p class="header-note">Inline diffs for ILMismatch and TextMismatch are computed using the <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</p>
-</div>
-</div>
-<div class="header-legends">
-<div>
-  <div class="header-legend-title">Legend &#x2014; Diff Detail</div>
-  <table class="legend-table">
-    <thead><tr><th style="background:#f0f0f2">Label</th><th style="background:#f0f0f2">Description</th></tr></thead>
-    <tbody>
-      <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>SHA256 hash match / mismatch</td></tr>
-      <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>IL(Intermediate Language) match / mismatch</td></tr>
-      <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>Text match / mismatch</td></tr>
-    </tbody>
-  </table>
-</div>
-<div>
-  <div class="header-legend-title">Legend &#x2014; Change Importance</div>
-  <table class="legend-table">
-    <thead><tr><th style="background:#f0f0f2">Label</th><th style="background:#f0f0f2">Description</th></tr></thead>
-    <tbody>
-      <tr><td style="color:#d1242f;font-weight:bold">High</td><td>Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
-      <tr><td style="color:#d97706;font-weight:bold">Medium</td><td>Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
-      <tr><td>Low</td><td>Low-impact change: body-only modification, internal/private member addition</td></tr>
-    </tbody>
-  </table>
 </div>
 </div>
 </div>
@@ -475,7 +458,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="unch" data-ext=".bin">
+<tr data-section="unch" data-ext=".bin" data-diff="sha256">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_0"></td>
   <td class="col-reason"><input type="text" id="reason_unch_0"></td>
@@ -485,7 +468,7 @@
   <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr data-section="unch" data-ext=".dll">
+<tr data-section="unch" data-ext=".dll" data-diff="sha256">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_1"></td>
   <td class="col-reason"><input type="text" id="reason_unch_1"></td>
@@ -495,7 +478,7 @@
   <td class="col-diff"><code>SHA256Match</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr data-section="unch" data-ext=".dll">
+<tr data-section="unch" data-ext=".dll" data-diff="il">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_2"></td>
   <td class="col-reason"><input type="text" id="reason_unch_2"></td>
@@ -505,7 +488,7 @@
   <td class="col-diff"><code>ILMatch</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
-<tr data-section="unch" data-ext=".json">
+<tr data-section="unch" data-ext=".json" data-diff="text">
   <td class="col-no">4</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_3"></td>
   <td class="col-reason"><input type="text" id="reason_unch_3"></td>
@@ -515,7 +498,7 @@
   <td class="col-diff"><code>TextMatch</code></td>
   <td class="col-disasm"></td>
 </tr>
-<tr data-section="unch" data-ext=".md">
+<tr data-section="unch" data-ext=".md" data-diff="text">
   <td class="col-no">5</td>
   <td class="col-cb"><input type="checkbox" id="cb_unch_4"></td>
   <td class="col-reason"><input type="text" id="reason_unch_4"></td>
@@ -623,7 +606,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="mod" data-ext=".config">
+<tr data-section="mod" data-ext=".config" data-diff="text">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
   <td class="col-reason"><input type="text" id="reason_mod_0"></td>
@@ -640,7 +623,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".ini">
+<tr data-section="mod" data-ext=".ini" data-diff="text">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
   <td class="col-reason"><input type="text" id="reason_mod_1"></td>
@@ -657,7 +640,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".edmx">
+<tr data-section="mod" data-ext=".edmx" data-diff="text">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_2"></td>
   <td class="col-reason"><input type="text" id="reason_mod_2"></td>
@@ -670,7 +653,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#3 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 2001 vs 2001 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
 </tr>
-<tr data-section="mod" data-ext=".xml">
+<tr data-section="mod" data-ext=".xml" data-diff="text">
   <td class="col-no">4</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_3"></td>
   <td class="col-reason"><input type="text" id="reason_mod_3"></td>
@@ -683,7 +666,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#4 Inline diff skipped: diff too large (12500 diff lines; limit is 10000). Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>10000</code>)</p></td>
 </tr>
-<tr data-section="mod" data-ext=".resx">
+<tr data-section="mod" data-ext=".resx" data-diff="text">
   <td class="col-no">5</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_4"></td>
   <td class="col-reason"><input type="text" id="reason_mod_4"></td>
@@ -700,7 +683,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".config">
+<tr data-section="mod" data-ext=".config" data-diff="text">
   <td class="col-no">6</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_5"></td>
   <td class="col-reason"><input type="text" id="reason_mod_5"></td>
@@ -717,7 +700,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-importance="High">
+<tr data-section="mod" data-ext=".dll" data-diff="il" data-importance="High">
   <td class="col-no">7</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_6"></td>
   <td class="col-reason"><input type="text" id="reason_mod_6"></td>
@@ -741,7 +724,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-importance="High">
+<tr data-section="mod" data-ext=".dll" data-diff="il" data-importance="High">
   <td class="col-no">8</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_7a"></td>
   <td class="col-reason"><input type="text" id="reason_mod_7a"></td>
@@ -765,7 +748,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-importance="High">
+<tr data-section="mod" data-ext=".dll" data-diff="il" data-importance="High">
   <td class="col-no">9</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_7"></td>
   <td class="col-reason"><input type="text" id="reason_mod_7"></td>
@@ -789,7 +772,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-importance="Medium">
+<tr data-section="mod" data-ext=".dll" data-diff="il" data-importance="Medium">
   <td class="col-no">9</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_8"></td>
   <td class="col-reason"><input type="text" id="reason_mod_8"></td>
@@ -802,7 +785,7 @@
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#9 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 3200 vs 3200 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-importance="Medium">
+<tr data-section="mod" data-ext=".dll" data-diff="il" data-importance="Medium">
   <td class="col-no">10</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_9a"></td>
   <td class="col-reason"><input type="text" id="reason_mod_9a"></td>
@@ -826,7 +809,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-importance="Medium">
+<tr data-section="mod" data-ext=".dll" data-diff="il" data-importance="Medium">
   <td class="col-no">11</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_9"></td>
   <td class="col-reason"><input type="text" id="reason_mod_9"></td>
@@ -850,7 +833,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".dll" data-importance="Low">
+<tr data-section="mod" data-ext=".dll" data-diff="il" data-importance="Low">
   <td class="col-no">12</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_10"></td>
   <td class="col-reason"><input type="text" id="reason_mod_10"></td>
@@ -874,7 +857,7 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-ext=".bin">
+<tr data-section="mod" data-ext=".bin" data-diff="sha256">
   <td class="col-no">13</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_11"></td>
   <td class="col-reason"><input type="text" id="reason_mod_11"></td>

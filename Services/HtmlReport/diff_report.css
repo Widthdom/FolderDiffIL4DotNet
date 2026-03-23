@@ -75,14 +75,7 @@
     .header-note:last-child { margin-bottom: 0; }
     .header-note a { color: #0066cc; text-decoration: none; }
     .header-note a:hover { text-decoration: underline; }
-    .header-legends {
-      display: flex; gap: 1.8rem; flex-wrap: wrap; margin-bottom: 0.8rem;
-    }
-    .header-legend-title {
-      font-size: 12px; font-weight: 600; color: #1d1d1f;
-      margin-bottom: 0.5rem;
-    }
-    /* ── Legend table ────────────────────────────────────────────────────── */
+    /* ── Legend table (used inside header-config) ─────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table th { border: 1px solid #bbb; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
     table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; white-space: nowrap; }
@@ -99,6 +92,11 @@
       display: flex; flex-direction: column; gap: 0.55rem; z-index: 100;
     }
     .ctrl-buttons { display: flex; gap: 1rem; align-items: center; }
+    .filter-zone {
+      border: 1px solid #d2d2d7; border-radius: 12px;
+      padding: 0.7rem 1rem; display: flex; flex-direction: column; gap: 0.45rem;
+    }
+    .filter-zone-spacer { flex: 1; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;

@@ -107,12 +107,27 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
+
+            // Filter zone (rounded border) / フィルターゾーン（角丸ボーダー）
+            sb.AppendLine("<div class=\"filter-zone\">");
+
+            // Diff Detail filter row / Diff Detail フィルター行
+            sb.AppendLine("<div class=\"ctrl-filter-row\">");
+            sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("Diff Detail") + ":</label>");
+            sb.AppendLine("  <label class=\"filter-chip\" title=\"SHA256 hash match / mismatch\"><input type=\"checkbox\" id=\"filter-diff-sha256\" checked onchange=\"applyFilters()\"> SHA256</label>");
+            sb.AppendLine("  <label class=\"filter-chip\" title=\"IL (Intermediate Language) match / mismatch\"><input type=\"checkbox\" id=\"filter-diff-il\" checked onchange=\"applyFilters()\"> IL</label>");
+            sb.AppendLine("  <label class=\"filter-chip\" title=\"Text match / mismatch\"><input type=\"checkbox\" id=\"filter-diff-text\" checked onchange=\"applyFilters()\"> Text</label>");
+            sb.AppendLine("</div>");
+
+            // Importance filter row / Importance フィルター行
             sb.AppendLine("<div class=\"ctrl-filter-row\">");
             sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("Importance") + ":</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-high\" checked onchange=\"applyFilters()\"> <span style=\"color:#d1242f;font-weight:bold\">High</span></label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-medium\" checked onchange=\"applyFilters()\"> <span style=\"color:#d97706;font-weight:bold\">Medium</span></label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-low\" checked onchange=\"applyFilters()\"> Low</label>");
+            sb.AppendLine("  <label class=\"filter-chip\" title=\"Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change\"><input type=\"checkbox\" id=\"filter-imp-high\" checked onchange=\"applyFilters()\"> <span style=\"color:#d1242f;font-weight:bold\">High</span></label>");
+            sb.AppendLine("  <label class=\"filter-chip\" title=\"Notable change: public/protected member addition, modifier change, access widening, internal removal\"><input type=\"checkbox\" id=\"filter-imp-medium\" checked onchange=\"applyFilters()\"> <span style=\"color:#d97706;font-weight:bold\">Medium</span></label>");
+            sb.AppendLine("  <label class=\"filter-chip\" title=\"Low-impact change: body-only modification, internal/private member addition\"><input type=\"checkbox\" id=\"filter-imp-low\" checked onchange=\"applyFilters()\"> Low</label>");
             sb.AppendLine("</div>");
+
+            // File Type filter row / File Type フィルター行
             sb.AppendLine("<div class=\"ctrl-filter-row\">");
             sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("File Type") + ":</label>");
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-dll\" checked onchange=\"applyFilters()\"> DLL</label>");
@@ -121,12 +136,17 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-resource\" checked onchange=\"applyFilters()\"> Resource</label>");
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-other\" checked onchange=\"applyFilters()\"> " + HtmlEncode("Other") + "</label>");
             sb.AppendLine("</div>");
+
+            // Search + Unchecked only row / 検索 + 未チェックのみ行
             sb.AppendLine("<div class=\"ctrl-filter-row\">");
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
             sb.AppendLine("  <span class=\"filter-sep\"></span>");
             sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\">");
+            sb.AppendLine("  <span class=\"filter-zone-spacer\"></span>");
             sb.AppendLine("  <button class=\"btn btn-clear filter-reset-btn\" onclick=\"resetFilters()\">" + HtmlEncode("Reset filters") + "</button>");
             sb.AppendLine("</div>");
+
+            sb.AppendLine("</div>");  // end .filter-zone
             sb.AppendLine("</div>");  // end .controls
             sb.AppendLine("<!--/CTRL-->");
 
