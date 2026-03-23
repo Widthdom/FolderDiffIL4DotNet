@@ -139,6 +139,7 @@ This is the single most important rule in this repository.
 4. **Test count drift**: The test count in TESTING_GUIDE.md easily drifts — verify after adding tests
 5. **Filter state in HTML**: Filter IDs must be excluded from `collectState()` and cleared before `downloadReviewed()`
 6. **Thread safety in test fakes**: When a test fake records calls in a collection from `Parallel.ForEachAsync`, use `ConcurrentBag<T>` instead of `List<T>`. A race condition in `List.Add` can throw an exception caught by production error-handling code, causing tests to follow unexpected fallback paths.
+7. **Bilingual separation in docs**: Never mix English and Japanese on the same line with `" / "` separators. Each bilingual document has a distinct English section (first half) and Japanese section (second half) — keep them strictly separated.
 
 ---
 
@@ -276,3 +277,4 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 4. **テスト件数のドリフト**: TESTING_GUIDE.md のテスト件数はずれやすい — テスト追加後に検証すること
 5. **HTML のフィルタ状態**: フィルタ ID は `collectState()` から除外し、`downloadReviewed()` 前にクリアすること
 6. **テストフェイクのスレッドセーフティ**: テストフェイクが `Parallel.ForEachAsync` からコレクションに呼び出しを記録する場合、`List<T>` ではなく `ConcurrentBag<T>` を使用すること。`List.Add` の競合状態がプロダクションコードのエラーハンドリングに捕捉され、テストが想定外のフォールバックパスを辿る原因になる。
+7. **ドキュメントの英日分離**: 同一行に `" / "` 区切りで英語と日本語を混在させないこと。各バイリンガルドキュメントは前半が英語セクション、後半が日本語セクションと明確に分かれており、この構造を厳守すること。
