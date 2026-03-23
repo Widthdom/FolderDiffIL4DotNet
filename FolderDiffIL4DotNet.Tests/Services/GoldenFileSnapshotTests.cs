@@ -123,8 +123,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // 逆アセンブラ可用性テーブルの構造を検証
             var content = File.ReadAllText(GoldenSamplePath);
 
-            Assert.Contains("| Tool | Available | Version |", content);
-            Assert.Contains("|------|:---------:|---------|", content);
+            Assert.Contains("| Tool | Available | Version | In Use |", content);
+            Assert.Contains("|------|:---------:|---------|:------:|", content);
 
             // At least one tool row should exist / 少なくとも1つのツール行があること
             Assert.Matches(@"\| [\w-]+ \| (Yes|No) \|", content);
@@ -226,7 +226,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("| New |", content);
             Assert.Contains("Ignored Extensions", content);
             Assert.Contains("Text File Extensions", content);
-            Assert.Contains("| Tool | Available | Version |", content);
+            Assert.Contains("| Tool | Available | Version | In Use |", content);
             Assert.Contains("| Elapsed Time |", content);
         }
 
@@ -305,7 +305,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("`TextMatch`", report1);
             Assert.Contains("`TextMismatch`", report1);
             Assert.Contains("| dotnet-ildasm | Yes | 0.12.0 |", report1);
-            Assert.Contains("| ilspycmd | No | N/A |", report1);
+            Assert.Contains("| ilspycmd | No | N/A |  |", report1);
         }
 
         [Fact]

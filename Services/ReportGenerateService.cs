@@ -373,8 +373,10 @@ namespace FolderDiffIL4DotNet.Services
             {
                 return;
             }
-            writer.WriteLine("| Tool | Available | Version |");
-            writer.WriteLine("|------|:---------:|---------|");
+            writer.WriteLine("### Disassembler Availability");
+            writer.WriteLine();
+            writer.WriteLine("| Tool | Available | Version | In Use |");
+            writer.WriteLine("|------|:---------:|---------|:------:|");
             foreach (var probe in probeResults)
             {
                 // Check if this tool is the one actually used / このツールが実際に使用されたかチェック
@@ -384,8 +386,8 @@ namespace FolderDiffIL4DotNet.Services
                 var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
                     ? probe.Version
                     : REPORT_DISASSEMBLER_NOT_USED;
-                var inUseLabel = isInUse ? " — In Use" : "";
-                writer.WriteLine($"| {probe.ToolName} | {available} | {version}{inUseLabel} |");
+                var inUseCol = isInUse ? "Yes" : "";
+                writer.WriteLine($"| {probe.ToolName} | {available} | {version} | {inUseCol} |");
             }
         }
     }

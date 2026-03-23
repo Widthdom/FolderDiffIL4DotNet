@@ -9,10 +9,12 @@
 | Timezone | +09:00 |
 | Elapsed Time | 0h 0m 1.2s |
 
-| Tool | Available | Version |
-|------|:---------:|---------|
-| dotnet-ildasm | Yes | 0.12.2 — In Use |
-| ilspycmd | No | N/A |
+### Disassembler Availability
+
+| Tool | Available | Version | In Use |
+|------|:---------:|---------|:------:|
+| dotnet-ildasm | Yes | 0.12.2 | Yes |
+| ilspycmd | No | N/A |  |
 
 ### Configuration Details
 

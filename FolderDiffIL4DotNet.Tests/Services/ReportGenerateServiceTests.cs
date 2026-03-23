@@ -105,9 +105,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Assert: availability table structure and content
             // テーブルの構造と内容を検証
-            Assert.Contains("| Tool | Available | Version |", reportText);
+            Assert.Contains("| Tool | Available | Version | In Use |", reportText);
             Assert.Contains("| dotnet-ildasm | Yes | 0.12.2 |", reportText);
-            Assert.Contains("| ilspycmd | No | N/A |", reportText);
+            Assert.Contains("| ilspycmd | No | N/A |  |", reportText);
         }
 
         [Fact]
