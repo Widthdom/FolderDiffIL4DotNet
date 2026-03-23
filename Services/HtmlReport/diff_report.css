@@ -65,6 +65,7 @@
     table.filter-table td.ft-cb input[type="checkbox"] { cursor: pointer; }
     table.filter-table td.ft-label { white-space: nowrap; }
     table.filter-table td.ft-desc { color: #86868b; font-size: 11px; font-weight: normal; max-width: 440px; }
+    table.filter-table-dbl tbody td { height: calc(var(--ft-row-h) * 2); vertical-align: middle; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;

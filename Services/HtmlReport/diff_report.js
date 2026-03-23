@@ -36,6 +36,7 @@
     initColResize();
     syncTableWidths();
     syncScTableWidths();
+    syncFilterRowHeight();
     setupLazyDiff();
     setupLazySection();
     // Pre-create hidden file input for Verify integrity so the accept
@@ -401,6 +402,14 @@
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
+  }
+
+  // Measure a Diff Detail body row and set --ft-row-h so filter-table-dbl rows are exactly 2× / Diff Detail 行高さを計測し --ft-row-h を設定
+  function syncFilterRowHeight() {
+    var base = document.querySelector('table.filter-table:not(.filter-table-dbl) tbody tr');
+    if (!base) return;
+    var h = base.getBoundingClientRect().height;
+    if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
   }
 
   function initColResize() {

@@ -73,6 +73,7 @@
     table.filter-table td.ft-cb input[type="checkbox"] { cursor: pointer; }
     table.filter-table td.ft-label { white-space: nowrap; }
     table.filter-table td.ft-desc { color: #86868b; font-size: 11px; font-weight: normal; max-width: 440px; }
+    table.filter-table-dbl tbody td { height: calc(var(--ft-row-h) * 2); vertical-align: middle; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;
@@ -283,7 +284,7 @@
 </tbody></table>
 </div>
 <div class="filter-table-wrap">
-<table class="filter-table">
+<table class="filter-table filter-table-dbl">
 <thead><tr><th colspan="3">Change Importance</th></tr></thead>
 <tbody>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label"><span style="color:#d1242f;font-weight:bold">High</span></td><td class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
@@ -1037,6 +1038,7 @@
     initColResize();
     syncTableWidths();
     syncScTableWidths();
+    syncFilterRowHeight();
     setupLazyDiff();
     setupLazySection();
     // Pre-create hidden file input for Verify integrity so the accept
@@ -1358,6 +1360,13 @@
             + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
             + px('--sc-body-w', 5);
     document.querySelectorAll('table.sc-detail').forEach(function(t) { t.style.width = detW + 'px'; });
+  }
+
+  function syncFilterRowHeight() {
+    var base = document.querySelector('table.filter-table:not(.filter-table-dbl) tbody tr');
+    if (!base) return;
+    var h = base.getBoundingClientRect().height;
+    if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
   }
 
   function initColResizeSingle(th) {
