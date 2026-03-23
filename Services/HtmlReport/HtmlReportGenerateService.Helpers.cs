@@ -295,30 +295,29 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Appends the Disassembler Availability table to the HTML report header.
-        /// HTML レポートヘッダに逆アセンブラ利用可否テーブルを追加します。
+        /// Appends the Disassembler Availability section as a standalone rounded block.
+        /// 逆アセンブラ利用可否を独立した角丸セクションとして追加します。
         /// </summary>
-        private static void AppendDisassemblerAvailabilityTable(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults)
+        private static void AppendDisassemblerAvailabilitySection(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults)
         {
             if (probeResults == null || probeResults.Count == 0)
             {
                 return;
             }
-            sb.AppendLine("<table class=\"legend-table\">");
-            sb.AppendLine($"  <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Tool</th><th style=\"background:{TH_BG_DEFAULT}\">Available</th><th style=\"background:{TH_BG_DEFAULT}\">Version</th></tr></thead>");
-            sb.AppendLine("  <tbody>");
+            sb.AppendLine("<div class=\"header-path\">");
+            sb.AppendLine($"  <div class=\"header-path-label\">{HtmlEncode("Disassembler Availability")}</div>");
+            sb.AppendLine("  <div class=\"header-path-value\">");
             foreach (var probe in probeResults)
             {
-                var available = probe.Available
-                    ? "<span style=\"color:#22863a\">Yes</span>"
-                    : "<span style=\"color:#b31d28\">No</span>";
-                var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
-                    ? HtmlEncode(probe.Version)
-                    : "N/A";
-                sb.AppendLine($"    <tr><td>{HtmlEncode(probe.ToolName)}</td><td style=\"text-align:center\">{available}</td><td>{version}</td></tr>");
+                var status = probe.Available
+                    ? (string.IsNullOrWhiteSpace(probe.Version)
+                        ? "<span style=\"color:#22863a\">Available</span>"
+                        : $"<span style=\"color:#22863a\">Available ({HtmlEncode(probe.Version)})</span>")
+                    : "<span style=\"color:#b31d28\">Not Available</span>";
+                sb.AppendLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}</div>");
             }
-            sb.AppendLine("  </tbody>");
-            sb.AppendLine("</table>");
+            sb.AppendLine("  </div>");
+            sb.AppendLine("</div>");
         }
 
         /// <summary>Appends a filter table row with checkbox, label, and description. / チェックボックス、ラベル、説明を含むフィルターテーブル行を追加します。</summary>

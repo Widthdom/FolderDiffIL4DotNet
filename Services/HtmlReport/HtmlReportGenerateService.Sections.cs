@@ -43,15 +43,19 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
             sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">New Folder</div><div class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</div></div>");
 
-            // Configuration details (always visible) / 設定詳細（常時表示）
+            // Disassembler availability (standalone rounded section) / 逆アセンブラ可用性（独立した角丸セクション）
+            AppendDisassemblerAvailabilitySection(sb, _fileDiffResultLists.DisassemblerAvailability);
+
+            // Ignored Extensions (standalone rounded section) / 無視する拡張子（独立した角丸セクション）
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Ignored Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</div></div>");
+
+            // Text File Extensions (standalone rounded section) / テキストファイル拡張子（独立した角丸セクション）
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Text File Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.TextFileExtensions))}</div></div>");
+
+            // Configuration details (IL-related settings and notes) / 設定詳細（IL関連設定とノート）
             sb.AppendLine("<div class=\"header-config\">");
             sb.AppendLine($"  <div class=\"header-config-title\">{HtmlEncode("Configuration Details")}</div>");
 
-            // Disassembler availability (inside config section) / 逆アセンブラ可用性（設定セクション内）
-            AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
-
-            AppendHeaderDetailRow(sb, "Ignored Extensions", HtmlEncode(string.Join(", ", config.IgnoredExtensions)));
-            AppendHeaderDetailRow(sb, "Text File Extensions", HtmlEncode(string.Join(", ", config.TextFileExtensions)));
             if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
             {
                 var ilIgnoreStrings = GetNormalizedIlIgnoreStrings(config);
