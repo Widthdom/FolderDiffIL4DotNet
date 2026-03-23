@@ -298,7 +298,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Appends the Disassembler Availability section as a standalone rounded block.
         /// 逆アセンブラ利用可否を独立した角丸セクションとして追加します。
         /// </summary>
-        private static void AppendDisassemblerAvailabilitySection(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults)
+        private static void AppendDisassemblerAvailabilitySection(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
         {
             if (probeResults == null || probeResults.Count == 0)
             {
@@ -309,12 +309,16 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <div class=\"header-path-value\">");
             foreach (var probe in probeResults)
             {
+                // Check if this tool is the one actually used / このツールが実際に使用されたかチェック
+                bool isInUse = !string.IsNullOrWhiteSpace(inUseHeaderText)
+                    && inUseHeaderText.IndexOf(probe.ToolName, StringComparison.OrdinalIgnoreCase) >= 0;
                 var status = probe.Available
                     ? (string.IsNullOrWhiteSpace(probe.Version)
                         ? "<span style=\"color:#22863a\">Available</span>"
                         : $"<span style=\"color:#22863a\">Available ({HtmlEncode(probe.Version)})</span>")
                     : "<span style=\"color:#b31d28\">Not Available</span>";
-                sb.AppendLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}</div>");
+                var inUseLabel = isInUse ? " — <strong>In Use</strong>" : "";
+                sb.AppendLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}{inUseLabel}</div>");
             }
             sb.AppendLine("  </div>");
             sb.AppendLine("</div>");

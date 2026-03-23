@@ -6,13 +6,12 @@
 | Computer | dev-machine |
 | Old | /Users/UserA/workspace/old |
 | New | /Users/UserA/workspace/new |
-| IL Disassembler | dotnet-ildasm (version: 0.12.2) |
-| Elapsed Time | 0h 0m 1.2s |
 | Timezone | +09:00 |
+| Elapsed Time | 0h 0m 1.2s |
 
 | Tool | Available | Version |
 |------|:---------:|---------|
-| dotnet-ildasm | Yes | 0.12.2 |
+| dotnet-ildasm | Yes | 0.12.2 — **In Use** |
 | ilspycmd | No | N/A |
 
 ### Configuration Details

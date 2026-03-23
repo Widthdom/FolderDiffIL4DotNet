@@ -42,11 +42,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
             sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">New Folder</div><div class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</div></div>");
 
-            // IL Disassembler (standalone rounded section) / IL 逆アセンブラ（独立した角丸セクション）
-            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">IL Disassembler</div><div class=\"header-path-value\">{HtmlEncode(BuildDisassemblerHeaderText())}</div></div>");
-
-            // Disassembler availability (standalone rounded section) / 逆アセンブラ可用性（独立した角丸セクション）
-            AppendDisassemblerAvailabilitySection(sb, _fileDiffResultLists.DisassemblerAvailability);
+            // Disassembler availability with in-use marker / 逆アセンブラ可用性（使用中マーカー付き）
+            AppendDisassemblerAvailabilitySection(sb, _fileDiffResultLists.DisassemblerAvailability, BuildDisassemblerHeaderText());
 
             // Ignored Extensions (standalone rounded section) / 無視する拡張子（独立した角丸セクション）
             sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Ignored Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</div></div>");

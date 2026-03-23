@@ -368,7 +368,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Writes the Disassembler Availability table to the Markdown report header.
         /// Markdown レポートヘッダに逆アセンブラ利用可否テーブルを書き込みます。
         /// </summary>
-        private static void WriteDisassemblerAvailabilityTable(StreamWriter writer, IReadOnlyList<DisassemblerProbeResult>? probeResults)
+        private static void WriteDisassemblerAvailabilityTable(StreamWriter writer, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
         {
             if (probeResults == null || probeResults.Count == 0)
             {
@@ -378,11 +378,15 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("|------|:---------:|---------|");
             foreach (var probe in probeResults)
             {
+                // Check if this tool is the one actually used / このツールが実際に使用されたかチェック
+                bool isInUse = !string.IsNullOrWhiteSpace(inUseHeaderText)
+                    && inUseHeaderText.IndexOf(probe.ToolName, StringComparison.OrdinalIgnoreCase) >= 0;
                 var available = probe.Available ? "Yes" : "No";
                 var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
                     ? probe.Version
                     : REPORT_DISASSEMBLER_NOT_USED;
-                writer.WriteLine($"| {probe.ToolName} | {available} | {version} |");
+                var inUseLabel = isInUse ? " — **In Use**" : "";
+                writer.WriteLine($"| {probe.ToolName} | {available} | {version}{inUseLabel} |");
             }
         }
     }

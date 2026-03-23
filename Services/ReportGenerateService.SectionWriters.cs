@@ -26,17 +26,17 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"| Computer | {ctx.ComputerName} |");
                 writer.WriteLine($"| Old | {ctx.OldFolderAbsolutePath} |");
                 writer.WriteLine($"| New | {ctx.NewFolderAbsolutePath} |");
-                writer.WriteLine($"| IL Disassembler | {BuildDisassemblerHeaderText(ctx.FileDiffResultLists)} |");
-                if (!string.IsNullOrWhiteSpace(ctx.ElapsedTimeString))
-                {
-                    writer.WriteLine($"| Elapsed Time | {ctx.ElapsedTimeString} |");
-                }
                 if (ctx.Config.ShouldOutputFileTimestamps)
                 {
                     writer.WriteLine($"| Timezone | {DateTimeOffset.Now:zzz} |");
                 }
+                if (!string.IsNullOrWhiteSpace(ctx.ElapsedTimeString))
+                {
+                    writer.WriteLine($"| Elapsed Time | {ctx.ElapsedTimeString} |");
+                }
                 writer.WriteLine();
-                WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability);
+                var inUseText = BuildDisassemblerHeaderText(ctx.FileDiffResultLists);
+                WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability, inUseText);
 
                 // Configuration details / 設定詳細
                 writer.WriteLine("### Configuration Details");

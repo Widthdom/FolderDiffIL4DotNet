@@ -57,7 +57,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("| IL Disassembler | dotnet-ildasm (version: dotnet ildasm 0.12.0) |", reportText);
+            Assert.DoesNotContain("| IL Disassembler |", reportText);
             Assert.DoesNotContain(", ildasm", reportText);
             Assert.DoesNotContain(", ilspycmd", reportText);
         }
@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("| IL Disassembler | N/A |", reportText);
+            Assert.DoesNotContain("| IL Disassembler |", reportText);
         }
 
         [Fact]

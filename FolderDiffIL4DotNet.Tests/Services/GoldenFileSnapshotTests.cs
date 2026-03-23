@@ -226,7 +226,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("| New |", content);
             Assert.Contains("Ignored Extensions", content);
             Assert.Contains("Text File Extensions", content);
-            Assert.Contains("| IL Disassembler |", content);
+            Assert.Contains("| Tool | Available | Version |", content);
             Assert.Contains("| Elapsed Time |", content);
         }
 
