@@ -305,7 +305,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("`TextMatch`", report1);
             Assert.Contains("`TextMismatch`", report1);
             Assert.Contains("| dotnet-ildasm | Yes | 0.12.0 |", report1);
-            Assert.Contains("| ilspycmd | No | N/A |  |", report1);
+            Assert.Contains("| ilspycmd | No | N/A | No |", report1);
         }
 
         [Fact]

@@ -386,7 +386,7 @@ namespace FolderDiffIL4DotNet.Services
                 var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
                     ? probe.Version
                     : REPORT_DISASSEMBLER_NOT_USED;
-                var inUseCol = isInUse ? "Yes" : "";
+                var inUseCol = isInUse ? "Yes" : "No";
                 writer.WriteLine($"| {probe.ToolName} | {available} | {version} | {inUseCol} |");
             }
         }

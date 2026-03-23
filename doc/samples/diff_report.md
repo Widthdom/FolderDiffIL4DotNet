@@ -14,7 +14,7 @@
 | Tool | Available | Version | In Use |
 |------|:---------:|---------|:------:|
 | dotnet-ildasm | Yes | 0.12.2 | Yes |
-| ilspycmd | No | N/A |  |
+| ilspycmd | No | N/A | No |
 
 ### Configuration Details
 
