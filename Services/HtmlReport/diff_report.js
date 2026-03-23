@@ -84,14 +84,18 @@
     // 2. Clear all filter-hidden state so reviewed HTML shows all rows
     document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
+    // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
+    // テーブルの inline width をクリアし reviewed ロード時に再計算させる
+    document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
     var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
     var html    = document.documentElement.outerHTML;
-    // Restore open details in the live page
+    // Restore live page state / ライブページの状態を復元
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
+    syncTableWidths();
     // Embed state
     html = html.replace('const __savedState__  = null;',
       'const __savedState__  = ' + JSON.stringify(state) + ';');

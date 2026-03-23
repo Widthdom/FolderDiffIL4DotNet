@@ -1109,9 +1109,12 @@
     // 2. Clear all filter-hidden state so reviewed HTML shows all rows
     document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
+    // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
+    document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     var html    = document.documentElement.outerHTML;
-    // Restore open details in the live page
+    // Restore live page state
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
+    syncTableWidths();
     // Embed state
     html = html.replace('const __savedState__  = null;',
       'const __savedState__  = ' + JSON.stringify(state) + ';');
