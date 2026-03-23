@@ -111,6 +111,9 @@ namespace FolderDiffIL4DotNet.Services
             // Filter zone (rounded border) / フィルターゾーン（角丸ボーダー）
             sb.AppendLine("<div class=\"filter-zone\">");
 
+            // Filter tables row / フィルターテーブル行
+            sb.AppendLine("<div class=\"filter-tables\">");
+
             // Diff Detail filter table / Diff Detail フィルターテーブル
             sb.AppendLine("<div class=\"filter-table-wrap\">");
             sb.AppendLine("<table class=\"filter-table\">");
@@ -135,6 +138,7 @@ namespace FolderDiffIL4DotNet.Services
             AppendFilterTableRow(sb, "filter-imp-low", "Low", HtmlEncode("Low-impact change: body-only modification, internal/private member addition"));
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
+            sb.AppendLine("</div>"); // end .filter-tables
 
             // File Type filter row / File Type フィルター行
             sb.AppendLine("<div class=\"ctrl-filter-row\">");
