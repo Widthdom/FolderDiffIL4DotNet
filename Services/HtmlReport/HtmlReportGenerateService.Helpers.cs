@@ -323,7 +323,7 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Appends a filter table row with checkbox, label, and description. / チェックボックス、ラベル、説明を含むフィルターテーブル行を追加します。</summary>
         private static void AppendFilterGroupRow(StringBuilder sb, string id, string labelHtml, string description)
         {
-            sb.AppendLine($"<label title=\"{description}\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\">{labelHtml}</label>");
+            sb.AppendLine($"<label><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\">{labelHtml}<span class=\"ft-desc\">{description}</span></label>");
         }
 
         // ── Utilities ────────────────────────────────────────────────────────
