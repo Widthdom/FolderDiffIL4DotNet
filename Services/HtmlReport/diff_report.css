@@ -98,11 +98,9 @@
     }
     .filter-zone-spacer { flex: 1; }
     .filter-tables { display: flex; gap: 1.5rem; flex-wrap: nowrap; align-items: flex-start; }
-    .filter-table-title {
-      font-size: 12px; font-weight: 600; color: #1d1d1f; margin-bottom: 0.3rem;
-    }
     table.filter-table { border-collapse: collapse; font-size: 12px; }
-    table.filter-table td { padding: 0.2rem 0.5rem; border: 1px solid #e8e8ed; vertical-align: top; }
+    table.filter-table th { padding: 0.25rem 0.5rem; border: 1px solid #d2d2d7; background: #f5f5f7; color: #6e6e73; font-weight: 600; font-size: 11px; text-align: left; }
+    table.filter-table td { padding: 0.2rem 0.5rem; border: 1px solid #e8e8ed; vertical-align: top; background: #fff; }
     table.filter-table td.ft-cb { text-align: center; width: 2em; vertical-align: middle; }
     table.filter-table td.ft-cb input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
     table.filter-table td.ft-label { white-space: nowrap; }
