@@ -127,8 +127,8 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<table class=\"filter-table\">");
             sb.AppendLine("<thead><tr><th colspan=\"3\">Diff Detail</th></tr></thead>");
             sb.AppendLine("<tbody>");
-            AppendFilterTableRow(sb, "filter-diff-sha256match", "<code>SHA256Match</code>", HtmlEncode("SHA256 hash match"));
-            AppendFilterTableRow(sb, "filter-diff-sha256mismatch", "<code>SHA256Mismatch</code>", HtmlEncode("SHA256 hash mismatch"));
+            AppendFilterTableRow(sb, "filter-diff-sha256match", "<code>SHA256Match</code>", HtmlEncode("Byte-for-byte match (SHA256)"));
+            AppendFilterTableRow(sb, "filter-diff-sha256mismatch", "<code>SHA256Mismatch</code>", HtmlEncode("Byte-for-byte mismatch (SHA256)"));
             AppendFilterTableRow(sb, "filter-diff-ilmatch", "<code>ILMatch</code>", HtmlEncode("IL (Intermediate Language) match"));
             AppendFilterTableRow(sb, "filter-diff-ilmismatch", "<code>ILMismatch</code>", HtmlEncode("IL (Intermediate Language) mismatch"));
             AppendFilterTableRow(sb, "filter-diff-textmatch", "<code>TextMatch</code>", HtmlEncode("Text-based match"));

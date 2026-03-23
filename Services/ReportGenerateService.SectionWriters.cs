@@ -88,7 +88,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine();
                 writer.WriteLine("| Label | Description |");
                 writer.WriteLine("|-------|-------------|");
-                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.SHA256Match}` / `{FileDiffResultLists.DiffDetailResult.SHA256Mismatch}` | SHA256 hash match / mismatch |");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.SHA256Match}` / `{FileDiffResultLists.DiffDetailResult.SHA256Mismatch}` | Byte-for-byte match / mismatch (SHA256) |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}` | IL(Intermediate Language) match / mismatch |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}` | Text-based match / mismatch |");
                 writer.WriteLine();

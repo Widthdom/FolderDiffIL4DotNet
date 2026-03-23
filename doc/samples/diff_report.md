@@ -38,7 +38,7 @@
 
 | Label | Description |
 |-------|-------------|
-| `SHA256Match` / `SHA256Mismatch` | SHA256 hash match / mismatch |
+| `SHA256Match` / `SHA256Mismatch` | Byte-for-byte match / mismatch (SHA256) |
 | `ILMatch` / `ILMismatch` | IL(Intermediate Language) match / mismatch |
 | `TextMatch` / `TextMismatch` | Text-based match / mismatch |
 
