@@ -51,41 +51,23 @@ namespace FolderDiffIL4DotNet.Services
             // Text File Extensions (standalone rounded section) / テキストファイル拡張子（独立した角丸セクション）
             sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Text File Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.TextFileExtensions))}</div></div>");
 
-            // Configuration details (IL-related settings and notes) / 設定詳細（IL関連設定とノート）
-            sb.AppendLine("<div class=\"header-config\">");
-            sb.AppendLine($"  <div class=\"header-config-title\">{HtmlEncode("Configuration Details")}</div>");
-
+            // IL Ignored Strings (standalone rounded section, comma-separated) / IL 無視文字列（独立した角丸セクション、カンマ区切り）
             if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
             {
                 var ilIgnoreStrings = GetNormalizedIlIgnoreStrings(config);
                 if (ilIgnoreStrings.Count == 0)
                 {
-                    AppendHeaderDetailRow(sb, "IL Line Ignore", HtmlEncode("Enabled, but no non-empty strings are configured."));
+                    sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">{HtmlEncode("Enabled, but no non-empty strings are configured.")}</div></div>");
                 }
                 else
                 {
-                    sb.AppendLine("    <div class=\"header-detail-row\">");
-                    sb.AppendLine($"      <div class=\"header-detail-label\">{HtmlEncode("IL Ignored Strings")}</div>");
-                    sb.AppendLine("      <div class=\"header-detail-value\">");
-                    sb.AppendLine("        <div class=\"il-ignore-scroll\"><table class=\"legend-table il-ignore-table\">");
-                    sb.AppendLine($"          <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Ignored String")}</th></tr></thead>");
-                    sb.AppendLine("          <tbody>");
-                    foreach (var s in ilIgnoreStrings)
-                    {
-                        sb.AppendLine($"            <tr><td>{HtmlEncode($"\"{s}\"")}</td></tr>");
-                    }
-                    sb.AppendLine("          </tbody>");
-                    sb.AppendLine("        </table></div>");
-                    sb.AppendLine("      </div>");
-                    sb.AppendLine("    </div>");
+                    var joined = string.Join(", ", ilIgnoreStrings.Select(s => $"\"{s}\""));
+                    sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">{HtmlEncode(joined)}</div></div>");
                 }
             }
-            // Notes (inside config section) / ノート（設定セクション内）
-            sb.AppendLine("<div class=\"header-notes\">");
-            sb.AppendLine($"  <p class=\"header-note\">{HtmlEncode("When diffing IL, lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.")}</p>");
-            sb.AppendLine("</div>");
 
-            sb.AppendLine("</div>"); // end header-config
+            // MVID note (standalone rounded section) / MVID ノート（独立した角丸セクション）
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Diff Note")}</div><div class=\"header-path-value\">{HtmlEncode("Lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("are auto-ignored (Module Version ID metadata).")}</div></div>");
             sb.AppendLine("</div>"); // report-header
         }
 
@@ -94,12 +76,6 @@ namespace FolderDiffIL4DotNet.Services
         {
             var cls = cssClass != null ? $"header-card {cssClass}" : "header-card";
             sb.AppendLine($"  <div class=\"{cls}\"><div class=\"header-card-label\">{HtmlEncode(label)}</div><div class=\"header-card-value\">{value}</div></div>");
-        }
-
-        /// <summary>Appends a detail row inside the configuration section. / 設定セクション内に詳細行を追加します。</summary>
-        private static void AppendHeaderDetailRow(StringBuilder sb, string label, string value)
-        {
-            sb.AppendLine($"    <div class=\"header-detail-row\"><div class=\"header-detail-label\">{HtmlEncode(label)}</div><div class=\"header-detail-value\">{value}</div></div>");
         }
 
         private void AppendIgnoredSection(

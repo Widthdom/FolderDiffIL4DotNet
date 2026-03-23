@@ -32,44 +32,10 @@
       font-size: 13px; color: #1d1d1f;
       word-break: break-all; line-height: 1.5;
     }
-    .header-config {
-      margin-bottom: 1.6rem; border-radius: 12px;
-      background: #fafafa; border: 1px solid #e8e8ed;
-      padding: 1.1rem 1.3rem;
-    }
-    .header-config-title {
-      font-size: 14px; font-weight: 600; color: #1d1d1f;
-      margin-bottom: 0.8rem;
-    }
-    .header-config .legend-table { margin-bottom: 0.8rem; }
-    .header-config .legend-table td { background: #fff; }
-    .header-detail-row {
-      padding: 0.55rem 0; border-bottom: 1px solid #f0f0f0;
-    }
-    .header-detail-row:last-child { border-bottom: none; }
-    .header-detail-label {
-      font-size: 11px; font-weight: 600; color: #86868b;
-      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem;
-    }
-    .header-detail-value {
-      font-size: 12px; color: #1d1d1f; line-height: 1.6; word-break: break-all;
-    }
-    .header-notes { margin-top: 0.8rem; margin-bottom: 0; }
-    .header-note {
-      font-size: 12px; color: #6e6e73; line-height: 1.65;
-      padding: 0.55rem 1rem; margin-bottom: 0.5rem;
-      border-left: 2px solid #d2d2d7; background: #fafafa; border-radius: 0 6px 6px 0;
-    }
-    .header-note:last-child { margin-bottom: 0; }
-    .header-note a { color: #0066cc; text-decoration: none; }
-    .header-note a:hover { text-decoration: underline; }
-    /* ── Legend table (used inside header-config) ─────────────────────── */
+    /* ── Legend table ─────────────────────────────────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table th { border: 1px solid #bbb; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
     table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; white-space: nowrap; }
-    .il-ignore-scroll { overflow-x: auto; max-width: 80em; }
-    table.il-ignore-table { max-width: none; }
-    table.il-ignore-table td { white-space: nowrap; font-size: 12px; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;

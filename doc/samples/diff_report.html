@@ -40,44 +40,10 @@
       font-size: 13px; color: #1d1d1f;
       word-break: break-all; line-height: 1.5;
     }
-    .header-config {
-      margin-bottom: 1.6rem; border-radius: 12px;
-      background: #fafafa; border: 1px solid #e8e8ed;
-      padding: 1.1rem 1.3rem;
-    }
-    .header-config-title {
-      font-size: 14px; font-weight: 600; color: #1d1d1f;
-      margin-bottom: 0.8rem;
-    }
-    .header-config .legend-table { margin-bottom: 0.8rem; }
-    .header-config .legend-table td { background: #fff; }
-    .header-detail-row {
-      padding: 0.55rem 0; border-bottom: 1px solid #f0f0f0;
-    }
-    .header-detail-row:last-child { border-bottom: none; }
-    .header-detail-label {
-      font-size: 11px; font-weight: 600; color: #86868b;
-      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem;
-    }
-    .header-detail-value {
-      font-size: 12px; color: #1d1d1f; line-height: 1.6; word-break: break-all;
-    }
-    .header-notes { margin-top: 0.8rem; margin-bottom: 0; }
-    .header-note {
-      font-size: 12px; color: #6e6e73; line-height: 1.65;
-      padding: 0.55rem 1rem; margin-bottom: 0.5rem;
-      border-left: 2px solid #d2d2d7; background: #fafafa; border-radius: 0 6px 6px 0;
-    }
-    .header-note:last-child { margin-bottom: 0; }
-    .header-note a { color: #0066cc; text-decoration: none; }
-    .header-note a:hover { text-decoration: underline; }
-    /* ── Legend table (used inside header-config) ─────────────────────── */
+    /* ── Legend table ─────────────────────────────────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
     table.legend-table th { border: 1px solid #bbb; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
     table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; white-space: nowrap; }
-    .il-ignore-scroll { overflow-x: auto; max-width: 80em; }
-    table.il-ignore-table { max-width: none; }
-    table.il-ignore-table td { white-space: nowrap; font-size: 12px; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;
@@ -350,26 +316,8 @@
 </div>
 <div class="header-path"><div class="header-path-label">Ignored Extensions</div><div class="header-path-value">.cache, .DS_Store, .db, .ilcache, .log, .pdb</div></div>
 <div class="header-path"><div class="header-path-label">Text File Extensions</div><div class="header-path-value">.asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml</div></div>
-  <div class="header-detail-row">
-    <div class="header-detail-label">IL Ignored Strings</div>
-    <div class="header-detail-value">
-      <div class="il-ignore-scroll"><table class="legend-table il-ignore-table">
-        <thead><tr><th style="background:#f0f0f2">Ignored String</th></tr></thead>
-        <tbody>
-          <tr><td>&quot;buildserver1_&quot;</td></tr>
-          <tr><td>&quot;buildserver2_&quot;</td></tr>
-          <tr><td>&quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;</td></tr>
-          <tr><td>&quot;.publickeytoken = ( &quot;</td></tr>
-          <tr><td>&quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;</td></tr>
-          <tr><td>&quot;// Code size &quot;</td></tr>
-        </tbody>
-      </table></div>
-    </div>
-  </div>
-<div class="header-notes">
-  <p class="header-note">When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</p>
-</div>
-</div>
+<div class="header-path"><div class="header-path-label">IL Ignored Strings</div><div class="header-path-value">&quot;buildserver1_&quot;, &quot;buildserver2_&quot;, &quot;// Method begins at Relative Virtual Address (RVA) 0x&quot;, &quot;.publickeytoken = ( &quot;, &quot;.custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( &quot;, &quot;// Code size &quot;</div></div>
+<div class="header-path"><div class="header-path-label">IL Diff Note</div><div class="header-path-value">Lines starting with <code>// MVID:</code> are auto-ignored (Module Version ID metadata).</div></div>
 </div>
 <h2>[ x ] Ignored Files (3)</h2>
 <details class="lazy-section">
