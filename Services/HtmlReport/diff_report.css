@@ -49,6 +49,7 @@
       margin-bottom: 0.8rem;
     }
     .header-config .legend-table { margin-bottom: 0.8rem; }
+    .header-config .legend-table td { background: #fff; }
     .header-detail-row {
       padding: 0.55rem 0; border-bottom: 1px solid #f0f0f0;
     }
