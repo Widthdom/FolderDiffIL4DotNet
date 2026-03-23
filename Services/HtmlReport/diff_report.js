@@ -23,9 +23,13 @@
       });
     }
     if (__savedState__ !== null) {
-      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
+      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
+        if (__filterIds__.indexOf(cb.id) >= 0) return; // keep filter controls interactive / フィルタコントロールは操作可能に
+        cb.style.pointerEvents='none'; cb.style.cursor='default';
+      });
       document.querySelectorAll('input[type="text"]').forEach(function(inp){
-        inp.readOnly=true; inp.style.cursor='default'; inp.style.userSelect='text';
+        if (inp.id === 'filter-search') return; // keep search interactive / 検索は操作可能に
+        inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text';
       });
     } else {
       document.querySelectorAll('input, textarea').forEach(function(el) {
@@ -110,10 +114,13 @@
       + '; --sc-body-w: '     + curWidths['--sc-body-w'] + '; }');
     // Remove inline col-var overrides from <html> element (now baked into :root)
     html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
-    // Replace controls bar with reviewed banner (includes Verify integrity button)
+    // Replace button row with reviewed banner (filter zone is preserved outside CTRL markers)
+    // ボタン行を reviewed バナーに置換（フィルターゾーンは CTRL マーカー外なので維持）
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
       '<div class="reviewed-banner">Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only'
-      + ' <button class="btn" onclick="verifyIntegrity()" style="margin-left:1em;font-size:12px">&#x2713; Verify integrity</button>'
+      + ' <button class="btn btn-clear" onclick="collapseAll()" style="margin-left:1em;font-size:12px">Fold all details</button>'
+      + ' <button class="btn btn-clear" onclick="resetFilters()" style="margin-left:0.5em;font-size:12px">Reset filters</button>'
+      + ' <button class="btn" onclick="verifyIntegrity()" style="margin-left:0.5em;font-size:12px">&#x2713; Verify integrity</button>'
       + '</div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
@@ -304,7 +311,7 @@
           }
           if (__savedState__ !== null) {
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
-            d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='default'; inp.style.userSelect='text'; });
+            d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
           }
         } catch(e) {}
       });

@@ -98,9 +98,10 @@ namespace FolderDiffIL4DotNet.Services
             AppendHtmlHead(sb);
             sb.AppendLine("<body>");
 
-            // Controls bar (markers allow stripping in downloadReviewed)
-            sb.AppendLine("<!--CTRL-->");
+            // Controls bar — button row is stripped in downloadReviewed, filter zone is kept
+            // コントロールバー — ボタン行は downloadReviewed で除去、フィルターゾーンは維持
             sb.AppendLine("<div class=\"controls\">");
+            sb.AppendLine("<!--CTRL-->");
             sb.AppendLine("<div class=\"ctrl-buttons\">");
             sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
@@ -108,8 +109,10 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
+            sb.AppendLine("<!--/CTRL-->");
 
-            // Filter zone / フィルターゾーン
+            // Filter zone (kept in reviewed HTML for read-only filtering)
+            // フィルターゾーン（reviewed HTML にも残し読み取り専用フィルタリングに使用）
             sb.AppendLine("<div class=\"filter-zone\">");
 
             // Search + Unchecked only row / 検索 + 未チェックのみ行
@@ -150,7 +153,6 @@ namespace FolderDiffIL4DotNet.Services
 
             sb.AppendLine("</div>");  // end .filter-zone
             sb.AppendLine("</div>");  // end .controls
-            sb.AppendLine("<!--/CTRL-->");
 
             sb.AppendLine("<main>");
             AppendHeaderSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath,
