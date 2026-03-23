@@ -37,6 +37,7 @@
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();
+    initClearButtons();
     setupLazyDiff();
     setupLazySection();
     // Pre-create hidden file input for Verify integrity so the accept
@@ -285,6 +286,8 @@
             initColResizeSingle(th);
           });
           syncTableWidths();
+          // Init clear buttons on new text inputs / 新規テキスト入力にクリアボタンを付与
+          d.querySelectorAll('td input[type="text"]').forEach(wrapInputWithClear);
           // Wire up save events on new inputs / 新規inputにsaveイベントを接続
           if (__savedState__ === null) {
             d.querySelectorAll('input, textarea').forEach(function(el) {
@@ -410,6 +413,35 @@
     if (!base) return;
     var h = base.getBoundingClientRect().height;
     if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
+  }
+
+  // Wrap td text inputs with clear button / td テキスト入力にクリアボタンを付与
+  function wrapInputWithClear(inp) {
+    if (inp.parentElement.classList.contains('input-wrap')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'input-wrap';
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-clear';
+    btn.tabIndex = -1;
+    btn.title = 'Clear';
+    btn.innerHTML = '<svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="1" x2="7" y2="7"/><line x1="7" y1="1" x2="1" y2="7"/></svg>';
+    wrap.appendChild(btn);
+    function sync() { wrap.classList.toggle('has-text', inp.value.length > 0); }
+    inp.addEventListener('input', sync);
+    btn.addEventListener('click', function() {
+      inp.value = '';
+      sync();
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+      inp.focus();
+    });
+    sync();
+  }
+
+  function initClearButtons() {
+    document.querySelectorAll('td input[type="text"]').forEach(wrapInputWithClear);
   }
 
   function initColResize() {
