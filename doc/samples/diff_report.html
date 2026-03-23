@@ -18,15 +18,16 @@
     .report-header { margin: 0.6rem 0 2.2rem; }
     .header-columns {
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: 0.8rem; margin-bottom: 1.6rem;
+      gap: 0.8rem; margin-bottom: 1.6rem; align-items: stretch;
     }
     @media (max-width: 768px) { .header-columns { grid-template-columns: 1fr; } }
     .header-column { display: flex; flex-direction: column; gap: 0.8rem; }
+    .header-column .header-path { flex: 1; }
     .header-grid-left {
       display: grid; grid-template-columns: 2fr 1fr; gap: 0.8rem;
     }
     .header-grid-right {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(8em, 1fr)); gap: 0.8rem;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem;
     }
     .header-card {
       background: #f5f5f7; border-radius: 12px; padding: 1rem 1.2rem;
@@ -323,7 +324,7 @@
 <div class="header-columns">
 <div class="header-column">
 <div class="header-grid-left">
-  <div class="header-card header-card-wide"><div class="header-card-label">App Version</div><div class="header-card-value">FolderDiffIL4DotNet 1.0.0+g98587820469656dc0794524de1e1bf03ae3f2b8a</div></div>
+  <div class="header-card header-card-wide"><div class="header-card-label">App Version</div><div class="header-card-value">FolderDiffIL4DotNet 1.0.0.0+98587820469656dc0794524de1e1bf03ae3f2b8a</div></div>
   <div class="header-card"><div class="header-card-label">Computer</div><div class="header-card-value">dev-machine</div></div>
 </div>
   <div class="header-path"><div class="header-path-label">Old Folder</div><div class="header-path-value">/Users/UserA/workspace/old</div></div>
