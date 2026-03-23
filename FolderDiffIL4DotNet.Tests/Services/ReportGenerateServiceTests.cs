@@ -244,7 +244,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("IL line-ignore-by-contains is enabled, but no non-empty strings are configured.", reportText);
+            Assert.Contains("Enabled, but no non-empty strings are configured.", reportText);
         }
 
         [Fact]
@@ -368,7 +368,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportText = File.ReadAllText(reportPath);
 
             // Table heading should exist with count
-            Assert.Contains("SHA256Mismatch: binary diff only (2)", reportText);
+            Assert.Contains("SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable (2)", reportText);
 
             // Extract the SHA256Mismatch table section
             int sha256TableStart = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
@@ -831,6 +831,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             _resultLists.DisassemblerToolVersions["ildasm (version: 1.0.0)"] = 0;
             _resultLists.DisassemblerToolVersions["ilspycmd (version: 7.0.0)"] = 0;
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("ildasm", true, "1.0.0", "/usr/bin/ildasm"),
+                new("ilspycmd", true, "7.0.0", "/usr/bin/ilspycmd"),
+            };
 
             var config = CreateConfig();
             _service.GenerateDiffReport(new ReportGenerationContext(
@@ -839,8 +844,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 config, ilCache: null));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
-            Assert.Contains("ildasm (version: 1.0.0)", reportText);
-            Assert.Contains("ilspycmd (version: 7.0.0)", reportText);
+            Assert.Contains("### Disassembler Availability", reportText);
+            Assert.Contains("| ildasm | Yes | 1.0.0 |", reportText);
+            Assert.Contains("| ilspycmd | Yes | 7.0.0 |", reportText);
         }
 
         // IgnoredFileLocation.None exercises the !hasOld && !hasNew path in BuildIgnoredFileTimestampInfo

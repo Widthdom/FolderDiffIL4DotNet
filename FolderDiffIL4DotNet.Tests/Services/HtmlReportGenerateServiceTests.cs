@@ -369,7 +369,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
             // Table heading should exist with count
-            Assert.Contains("SHA256Mismatch: binary diff only (2)</h2>", html);
+            Assert.Contains("SHA256Mismatch: binary diff only \u2014 not a .NET assembly or disassembler unavailable (2)</h2>", html);
 
             // Extract the SHA256Mismatch table section
             int sha256TableStart = html.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
@@ -1365,8 +1365,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("legend-table", html);
-            Assert.Contains("<table class=\"legend-table\">", html);
+            Assert.Contains("filter-table", html);
+            Assert.Contains("<table class=\"filter-table\">", html);
         }
 
         // ── Req2: stat-table borders / 統計テーブルボーダー ────────────────────
@@ -1669,15 +1669,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: filter controls are between <!--CTRL--> and <!--/CTRL--> markers
-            // フィルターコントロールが <!--CTRL-->...<!--/CTRL--> マーカー内にあることを検証
+            // Assert: filter zone is OUTSIDE <!--CTRL-->...<!--/CTRL--> markers (only button row is inside)
+            // フィルターゾーンは <!--CTRL-->...<!--/CTRL--> マーカーの外にある（ボタン行のみ内部）ことを検証
             int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
             int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
             int filterSearch = html.IndexOf("id=\"filter-search\"", StringComparison.Ordinal);
             Assert.True(ctrlStart >= 0, "<!--CTRL--> marker not found");
             Assert.True(ctrlEnd > ctrlStart, "<!--/CTRL--> marker not found or before <!--CTRL-->");
-            Assert.True(filterSearch > ctrlStart && filterSearch < ctrlEnd,
-                "filter controls should be inside <!--CTRL-->...<!--/CTRL--> markers so they are stripped in reviewed mode");
+            Assert.True(filterSearch > ctrlEnd,
+                "filter zone should be OUTSIDE <!--CTRL-->...<!--/CTRL--> markers so it is kept in reviewed mode");
         }
 
         [Fact]
@@ -1759,7 +1759,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // JS フィルタリング関数が含まれていることを検証
             Assert.Contains("function applyFilters()", html);
             Assert.Contains("function resetFilters()", html);
-            Assert.Contains("function getFileTypeCategory(", html);
+            Assert.Contains("function copyPath(", html);
         }
 
         [Fact]
