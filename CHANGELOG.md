@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.8.0] - 2026-03-24
+
 #### Added
 
 - **Disassembler process timeout (`DisassemblerTimeoutSeconds`)** — Added a new configuration option `DisassemblerTimeoutSeconds` (default: `300` = 5 minutes) that kills disassembler processes that exceed the timeout. Previously, a hanging disassembler could block the entire diff run indefinitely. When the timeout is exceeded, the process is killed and the failure is reported, triggering the blacklist mechanism. The timeout uses `CancellationToken` with `Process.WaitForExitAsync()` and calls `Process.Kill(entireProcessTree: true)` on timeout. Updated [`DotNetDisassembleService.VersionLabel.cs`](Services/DotNetDisassembleService.VersionLabel.cs) `RunProcessAsync` with timeout parameter. Wired through [`ConfigSettings`](Models/ConfigSettings.cs), [`ConfigSettingsBuilder`](Models/ConfigSettingsBuilder.cs), [`IReadOnlyConfigSettings`](Models/IReadOnlyConfigSettings.cs). Updated [`README.md`](README.md) config tables (EN+JA), [`doc/config.sample.jsonc`](doc/config.sample.jsonc). Updated [`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs) with property serialization and default assertions.
@@ -599,6 +601,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.8.0] - 2026-03-24
+
 #### Added
 
 - **逆アセンブラプロセスのタイムアウト (`DisassemblerTimeoutSeconds`)** — 新しい設定項目 `DisassemblerTimeoutSeconds`（デフォルト: `300` = 5分）を追加。タイムアウトを超過した逆アセンブラプロセスを強制終了する。従来はハングした逆アセンブラが差分実行全体を無期限にブロックする可能性があった。タイムアウト超過時はプロセスを kill し、失敗としてブラックリスト機構を起動する。[`DotNetDisassembleService.VersionLabel.cs`](Services/DotNetDisassembleService.VersionLabel.cs) の `RunProcessAsync` にタイムアウトパラメータを追加。[`ConfigSettings.cs`](Models/ConfigSettings.cs)、[`ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs)、[`IReadOnlyConfigSettings.cs`](Models/IReadOnlyConfigSettings.cs) を更新。[`README.md`](README.md) 設定表（EN+JA）、[`doc/config.sample.jsonc`](doc/config.sample.jsonc) を更新。[`ConfigSettingsTests`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs) にアサーション追加。
@@ -1180,7 +1184,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.4.1...v1.5.0
