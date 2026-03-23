@@ -32,16 +32,18 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<div class=\"header-cards\">");
             AppendHeaderCard(sb, "App Version", $"FolderDiffIL4DotNet {HtmlEncode(appVersion)}");
             AppendHeaderCard(sb, "Computer", HtmlEncode(computerName));
-            AppendHeaderCard(sb, "IL Disassembler", HtmlEncode(BuildDisassemblerHeaderText()));
-            if (!string.IsNullOrWhiteSpace(elapsedTimeString))
-                AppendHeaderCard(sb, "Elapsed Time", HtmlEncode(elapsedTimeString));
             if (config.ShouldOutputFileTimestamps)
                 AppendHeaderCard(sb, "Timezone", HtmlEncode(DateTimeOffset.Now.ToString("zzz")));
+            if (!string.IsNullOrWhiteSpace(elapsedTimeString))
+                AppendHeaderCard(sb, "Elapsed Time", HtmlEncode(elapsedTimeString));
             sb.AppendLine("</div>");
 
             // Folder paths (always full width, fixed order) / フォルダパス（常に全幅、順序固定）
             sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
             sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">New Folder</div><div class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</div></div>");
+
+            // IL Disassembler (standalone rounded section) / IL 逆アセンブラ（独立した角丸セクション）
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">IL Disassembler</div><div class=\"header-path-value\">{HtmlEncode(BuildDisassemblerHeaderText())}</div></div>");
 
             // Disassembler availability (standalone rounded section) / 逆アセンブラ可用性（独立した角丸セクション）
             AppendDisassemblerAvailabilitySection(sb, _fileDiffResultLists.DisassemblerAvailability);
