@@ -37,6 +37,7 @@
     syncTableWidths();
     syncScTableWidths();
     setupLazyDiff();
+    setupLazySection();
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept
     // on dynamically created inputs that are clicked immediately)
@@ -65,6 +66,9 @@
   }
 
   async function downloadReviewed() {
+    // 0. Force-decode all lazy sections so their inputs are captured in state
+    // 全lazyセクションを強制デコードし、inputが状態に含まれるようにする
+    forceDecodeLazySections();
     var state   = collectState();
     var slug    = 'diff_report_' + __reportDate__;
     var root    = document.documentElement;
@@ -259,6 +263,58 @@
           }
         } catch(e) {}
       });
+    });
+  }
+
+  // Lazy-render: section tables (Ignored/Unchanged) stored Base64-encoded in data-lazy-section.
+  // On first open, decode and insert into DOM. / 遅延レンダリング: セクションテーブルをBase64で格納し初回展開時にデコード挿入。
+  function setupLazySection() {
+    document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
+      d.addEventListener('toggle', function onToggle() {
+        if (!d.open) return;
+        var b64 = d.getAttribute('data-lazy-section');
+        if (!b64) return;
+        d.removeAttribute('data-lazy-section');
+        d.removeEventListener('toggle', onToggle);
+        try {
+          d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+          syncTableWidths();
+          // Wire up save events on new inputs / 新規inputにsaveイベントを接続
+          if (__savedState__ === null) {
+            d.querySelectorAll('input, textarea').forEach(function(el) {
+              el.addEventListener('change', autoSave);
+              el.addEventListener('input',  autoSave);
+            });
+          }
+          // Restore state for new inputs / 新規inputの状態を復元
+          var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');
+          if (toRestore) {
+            d.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
+              if (toRestore[el.id] === undefined) return;
+              if (el.type === 'checkbox') el.checked = Boolean(toRestore[el.id]);
+              else el.value = String(toRestore[el.id] || '');
+            });
+          }
+          if (__savedState__ !== null) {
+            d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
+            d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='default'; inp.style.userSelect='text'; });
+          }
+        } catch(e) {}
+      });
+    });
+  }
+
+  // Force-decode all lazy sections (used before downloadReviewed captures HTML)
+  // 全lazyセクションを強制デコード（downloadReviewed前にHTML取得用）
+  function forceDecodeLazySections() {
+    document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
+      var b64 = d.getAttribute('data-lazy-section');
+      if (!b64) return;
+      d.removeAttribute('data-lazy-section');
+      try {
+        d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+        syncTableWidths();
+      } catch(e) {}
     });
   }
 

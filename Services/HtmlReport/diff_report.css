@@ -76,15 +76,15 @@
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       background: rgba(255,255,255,0.1);
-      padding: 0.7rem 2rem; margin: 0 -2rem;
+      margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%);
+      padding: 0.7rem max(2rem, calc(50vw - 50%));
       display: flex; flex-direction: column; gap: 0.55rem; z-index: 100;
     }
     .ctrl-buttons { display: flex; gap: 1rem; align-items: center; }
     .filter-zone {
-      border: 1px solid #d2d2d7; border-radius: 12px;
+      border: 1px solid #d2d2d7;
       padding: 0.7rem 1rem; display: flex; flex-direction: column; gap: 0.55rem;
     }
-    .filter-zone-spacer { flex: 1; }
     .filter-tables { display: flex; flex-wrap: wrap; gap: 1.5rem; }
     .filter-table-wrap { flex: 0 0 auto; }
     table.filter-table { border-collapse: collapse; font-size: 12px; width: auto; table-layout: auto; }
@@ -131,10 +131,9 @@
     .filter-sep { width: 1px; height: 1.2em; background: #ccc; margin: 0 0.35rem; }
     .filter-search {
       padding: 0.25rem 0.6rem; border: 1px solid #ccc; border-radius: 6px;
-      font-size: 12px; font-family: inherit; width: 14em; outline: none;
+      font-size: 12px; font-family: inherit; flex: 1; min-width: 10em; outline: none;
     }
     .filter-search:focus { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
-    .filter-reset-btn { font-size: 11px !important; padding: 0.25rem 0.7rem !important; }
     tr.filter-hidden { display: none !important; }
     tr.diff-row.filter-hidden-parent { display: none !important; }
     /* ── Column width CSS variables ──────────────────────────────────────── */

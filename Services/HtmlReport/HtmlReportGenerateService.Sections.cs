@@ -110,11 +110,17 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.IgnoredFilesRelativePathToLocation
                 .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
+            if (items.Count == 0)
+            {
+                sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} (0)</h2>");
+                sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>");
+                return;
+            }
 
-            AppendTableStart(sb, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm");
-            sb.AppendLine("<tbody>");
+            // Build table HTML into a separate buffer for Base64 encoding / テーブルHTMLを別バッファに構築しBase64エンコード
+            var tableSb = new StringBuilder();
+            AppendTableStart(tableSb, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm");
+            tableSb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var entry in items)
             {
@@ -130,10 +136,15 @@ namespace FolderDiffIL4DotNet.Services
                 string ts = BuildIgnoredTimestamp(entry.Key, hasOld, hasNew,
                     oldFolderAbsolutePath, newFolderAbsolutePath, config.ShouldOutputFileTimestamps);
                 string location = (hasOld && hasNew) ? "old/new" : hasOld ? "old" : "new";
-                AppendFileRow(sb, "ign", idx, displayPath, ts, location);
+                AppendFileRow(tableSb, "ign", idx, displayPath, ts, location);
                 idx++;
             }
-            sb.AppendLine("</tbody></table></div>");
+            tableSb.AppendLine("</tbody></table></div>");
+
+            string b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(tableSb.ToString()));
+            sb.AppendLine($"<details data-lazy-section=\"{b64}\">");
+            sb.AppendLine($"<summary><h2 style=\"display:inline\">[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2></summary>");
+            sb.AppendLine("</details>");
         }
 
         private void AppendUnchangedSection(
@@ -145,11 +156,17 @@ namespace FolderDiffIL4DotNet.Services
             var items = _fileDiffResultLists.UnchangedFilesRelativePath
                 .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
                 .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
+            if (items.Count == 0)
+            {
+                sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} (0)</h2>");
+                sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>");
+                return;
+            }
 
-            AppendTableStart(sb, TH_BG_DEFAULT, "Diff Reason");
-            sb.AppendLine("<tbody>");
+            // Build table HTML into a separate buffer for Base64 encoding / テーブルHTMLを別バッファに構築しBase64エンコード
+            var tableSb = new StringBuilder();
+            AppendTableStart(tableSb, TH_BG_DEFAULT, "Diff Reason");
+            tableSb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
             {
@@ -163,10 +180,15 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 string col6 = BuildDiffDetailDisplay(diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
-                AppendFileRow(sb, "unch", idx, path, ts, col6, asm ?? "");
+                AppendFileRow(tableSb, "unch", idx, path, ts, col6, asm ?? "");
                 idx++;
             }
-            sb.AppendLine("</tbody></table></div>");
+            tableSb.AppendLine("</tbody></table></div>");
+
+            string b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(tableSb.ToString()));
+            sb.AppendLine($"<details data-lazy-section=\"{b64}\">");
+            sb.AppendLine($"<summary><h2 style=\"display:inline\">[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2></summary>");
+            sb.AppendLine("</details>");
         }
 
         private void AppendAddedSection(StringBuilder sb, IReadOnlyConfigSettings config)

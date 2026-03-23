@@ -104,6 +104,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<div class=\"ctrl-buttons\">");
             sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
+            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
@@ -145,8 +146,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
             sb.AppendLine("  <span class=\"filter-sep\"></span>");
             sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\">");
-            sb.AppendLine("  <span class=\"filter-zone-spacer\"></span>");
-            sb.AppendLine("  <button class=\"btn btn-clear filter-reset-btn\" onclick=\"resetFilters()\">" + HtmlEncode("Reset filters") + "</button>");
             sb.AppendLine("</div>");
 
             sb.AppendLine("</div>");  // end .filter-zone
