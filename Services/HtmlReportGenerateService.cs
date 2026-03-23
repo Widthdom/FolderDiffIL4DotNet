@@ -144,6 +144,7 @@ namespace FolderDiffIL4DotNet.Services
             AppendFilterTableRow(sb, "filter-imp-high", "<span style=\"color:#d1242f;font-weight:bold\">High</span>", HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"));
             AppendFilterTableRow(sb, "filter-imp-medium", "<span style=\"color:#d97706;font-weight:bold\">Medium</span>", HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal"));
             AppendFilterTableRow(sb, "filter-imp-low", "Low", HtmlEncode("Low-impact change: body-only modification, internal/private member addition"));
+            AppendFilterTableRow(sb, "filter-imp-none", "Unknown", HtmlEncode("No semantic analysis available (non-.NET file, or analysis skipped)"));
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
             sb.AppendLine("</div>"); // end .filter-tables

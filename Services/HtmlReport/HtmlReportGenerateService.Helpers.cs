@@ -57,7 +57,11 @@ namespace FolderDiffIL4DotNet.Services
             string reasonId = $"reason_{sectionPrefix}_{idx}";
             string notesId  = $"notes_{sectionPrefix}_{idx}";
             int recordNo    = idx + 1;
-            string impAttr = string.IsNullOrEmpty(importance) ? "" : $" data-importance=\"{HtmlEncode(importance)}\"";
+            // For modified rows without semantic analysis, use "None" importance / セマンティック分析なしの変更行には "None" 重要度を使用
+            string effectiveImp = importance;
+            if (string.IsNullOrEmpty(effectiveImp) && sectionPrefix == "mod")
+                effectiveImp = "None";
+            string impAttr = string.IsNullOrEmpty(effectiveImp) ? "" : $" data-importance=\"{HtmlEncode(effectiveImp)}\"";
             // Normalize diff detail to category for filtering / フィルタリング用に diff detail をカテゴリに正規化
             string diffCat = NormalizeDiffCategory(col6);
             string diffAttr = string.IsNullOrEmpty(diffCat) ? "" : $" data-diff=\"{diffCat}\"";
@@ -71,6 +75,8 @@ namespace FolderDiffIL4DotNet.Services
             string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
             if (!string.IsNullOrEmpty(importance))
                 col6Cell += $" <code>{HtmlEncode(importance)}</code>";
+            else if (sectionPrefix == "mod")
+                col6Cell += " <code>Unknown</code>";
             sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
             sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
