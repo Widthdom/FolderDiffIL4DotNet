@@ -122,7 +122,7 @@
     col.col-reason-g { width: var(--col-reason-w); }
     col.col-notes-g  { width: var(--col-notes-w); }
     col.col-path-g   { width: var(--col-path-w); }
-    col.col-ts-g     { width: 22em; }
+    col.col-ts-g     { width: 28em; }
     col.col-diff-g   { width: var(--col-diff-w); }
     col.col-disasm-g { width: var(--col-disasm-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */

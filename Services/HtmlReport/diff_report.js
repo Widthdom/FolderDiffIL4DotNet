@@ -349,7 +349,7 @@
       'col-reason-g': px('--col-reason-w', 10),
       'col-notes-g': px('--col-notes-w', 10),
       'col-path-g': px('--col-path-w', 22),
-      'col-ts-g': 22 * emPx,
+      'col-ts-g': 28 * emPx,
       'col-diff-g': px('--col-diff-w', 9),
       'col-disasm-g': px('--col-disasm-w', 28)
     };
