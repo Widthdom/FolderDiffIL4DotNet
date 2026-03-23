@@ -435,6 +435,7 @@
     btn.addEventListener('click', function() {
       inp.value = '';
       sync();
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
       inp.dispatchEvent(new Event('change', { bubbles: true }));
       inp.focus();
     });
