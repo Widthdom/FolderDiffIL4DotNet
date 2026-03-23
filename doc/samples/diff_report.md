@@ -2,7 +2,7 @@
 
 | Property | Value |
 |----------|-------|
-| App Version | FolderDiffIL4DotNet 1.0.0 |
+| App Version | FolderDiffIL4DotNet 1.0.0+g98587820469656dc0794524de1e1bf03ae3f2b8a |
 | Computer | dev-machine |
 | Old | /Users/UserA/workspace/old |
 | New | /Users/UserA/workspace/new |

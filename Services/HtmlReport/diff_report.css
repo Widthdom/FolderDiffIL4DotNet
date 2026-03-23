@@ -8,9 +8,17 @@
            font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
     /* ── Report header (card grid layout) ─────────────────────────────── */
     .report-header { margin: 0.6rem 0 2.2rem; }
-    .header-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(14em, 1fr));
+    .header-columns {
+      display: grid; grid-template-columns: 1fr 1fr;
       gap: 0.8rem; margin-bottom: 1.6rem;
+    }
+    @media (max-width: 768px) { .header-columns { grid-template-columns: 1fr; } }
+    .header-column { display: flex; flex-direction: column; gap: 0.8rem; }
+    .header-grid-left {
+      display: grid; grid-template-columns: 2fr 1fr; gap: 0.8rem;
+    }
+    .header-grid-right {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(8em, 1fr)); gap: 0.8rem;
     }
     .header-card {
       background: #f5f5f7; border-radius: 12px; padding: 1rem 1.2rem;
@@ -21,10 +29,6 @@
     }
     .header-card-value {
       font-size: 13px; color: #1d1d1f; word-break: break-all; line-height: 1.5;
-    }
-    .header-paths {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(20em, 1fr));
-      gap: 0.8rem; margin-bottom: 1.6rem;
     }
     .header-path {
       background: #f5f5f7; border-radius: 12px; padding: 1rem 1.2rem;

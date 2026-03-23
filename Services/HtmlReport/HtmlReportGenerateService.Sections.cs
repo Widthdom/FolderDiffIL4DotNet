@@ -28,22 +28,33 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h1>{HtmlEncode("Folder Diff Report")}</h1>");
             sb.AppendLine("<div class=\"report-header\">");
 
-            // Key metrics as card grid / キーメトリクスをカードグリッドで表示
-            sb.AppendLine("<div class=\"header-grid\">");
-            AppendHeaderCard(sb, "App Version", $"FolderDiffIL4DotNet {HtmlEncode(appVersion)}");
+            // Two-column layout: cards + folder paths / 2カラムレイアウト: カード + フォルダパス
+            sb.AppendLine("<div class=\"header-columns\">");
+
+            // Left column: App Version (wide) + Computer → Old Folder
+            // 左カラム: App Version（幅広）+ Computer → Old Folder
+            sb.AppendLine("<div class=\"header-column\">");
+            sb.AppendLine("<div class=\"header-grid-left\">");
+            AppendHeaderCard(sb, "App Version", $"FolderDiffIL4DotNet {HtmlEncode(appVersion)}", cssClass: "header-card-wide");
             AppendHeaderCard(sb, "Computer", HtmlEncode(computerName));
+            sb.AppendLine("</div>");
+            sb.AppendLine($"  <div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
+            sb.AppendLine("</div>");
+
+            // Right column: IL Disassembler + Elapsed Time + Timezone → New Folder
+            // 右カラム: IL Disassembler + Elapsed Time + Timezone → New Folder
+            sb.AppendLine("<div class=\"header-column\">");
+            sb.AppendLine("<div class=\"header-grid-right\">");
             AppendHeaderCard(sb, "IL Disassembler", HtmlEncode(BuildDisassemblerHeaderText()));
             if (!string.IsNullOrWhiteSpace(elapsedTimeString))
                 AppendHeaderCard(sb, "Elapsed Time", HtmlEncode(elapsedTimeString));
             if (config.ShouldOutputFileTimestamps)
                 AppendHeaderCard(sb, "Timezone", HtmlEncode(DateTimeOffset.Now.ToString("zzz")));
             sb.AppendLine("</div>");
-
-            // Folder paths (card style) / フォルダパス（カードスタイル）
-            sb.AppendLine("<div class=\"header-paths\">");
-            sb.AppendLine($"  <div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
             sb.AppendLine($"  <div class=\"header-path\"><div class=\"header-path-label\">New Folder</div><div class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</div></div>");
             sb.AppendLine("</div>");
+
+            sb.AppendLine("</div>"); // end header-columns
 
             // Configuration details (always visible) / 設定詳細（常時表示）
             sb.AppendLine("<div class=\"header-config\">");
@@ -123,9 +134,10 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>Appends a single header card element. / ヘッダーカード要素を1つ追加します。</summary>
-        private static void AppendHeaderCard(StringBuilder sb, string label, string value)
+        private static void AppendHeaderCard(StringBuilder sb, string label, string value, string? cssClass = null)
         {
-            sb.AppendLine($"  <div class=\"header-card\"><div class=\"header-card-label\">{HtmlEncode(label)}</div><div class=\"header-card-value\">{value}</div></div>");
+            var cls = cssClass != null ? $"header-card {cssClass}" : "header-card";
+            sb.AppendLine($"  <div class=\"{cls}\"><div class=\"header-card-label\">{HtmlEncode(label)}</div><div class=\"header-card-value\">{value}</div></div>");
         }
 
         /// <summary>Appends a detail row inside the configuration section. / 設定セクション内に詳細行を追加します。</summary>
