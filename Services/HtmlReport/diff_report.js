@@ -417,9 +417,10 @@
 
   // Wrap td text inputs with clear button / td テキスト入力にクリアボタンを付与
   function wrapInputWithClear(inp) {
-    if (inp.parentElement.classList.contains('input-wrap')) return;
+    if (inp.parentElement.classList.contains('input-wrap') || inp.parentElement.classList.contains('filter-search-wrap')) return;
+    var isSearch = inp.classList.contains('filter-search');
     var wrap = document.createElement('div');
-    wrap.className = 'input-wrap';
+    wrap.className = isSearch ? 'filter-search-wrap' : 'input-wrap';
     inp.parentNode.insertBefore(wrap, inp);
     wrap.appendChild(inp);
     var btn = document.createElement('button');

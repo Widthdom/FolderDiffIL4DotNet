@@ -166,7 +166,8 @@
       cursor: pointer; line-height: 1; color: #aaa;
     }
     .btn-input-clear svg { display: block; margin: auto; }
-    .input-wrap.has-text .btn-input-clear { display: flex; align-items: center; justify-content: center; }
+    .input-wrap.has-text .btn-input-clear,
+    .filter-search-wrap.has-text .btn-input-clear { display: flex; align-items: center; justify-content: center; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
     /* ── Per-row copy path button ────────────────────────────────────────── */
     .btn-copy-path {
@@ -256,8 +257,18 @@
     .filter-chip { display: inline-flex; align-items: center; gap: 0.3em; white-space: nowrap; cursor: pointer; min-width: 5.5em; }
     .filter-chip input[type="checkbox"] { cursor: pointer; }
     .filter-sep { width: 1px; height: 1.2em; background: #ccc; margin: 0 0.35rem; }
-    .filter-search { padding: 0.25rem 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; font-family: inherit; flex: 1; min-width: 10em; outline: none; background: transparent; }
-    .filter-search:focus { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
+    .filter-search-wrap {
+      position: relative; display: flex; align-items: center;
+      border: 1px solid #ccc; border-radius: 6px; flex: 1; min-width: 40em;
+      background: transparent;
+    }
+    .filter-search-wrap:focus-within { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
+    .filter-search-wrap .btn-input-clear { right: 6px; }
+    .filter-search {
+      width: 100%; padding: 0.25rem 1.4rem 0.25rem 0.6rem; border: none; border-radius: 6px;
+      font-size: 12px; font-family: inherit; outline: none;
+      background: transparent;
+    }
     tr.filter-hidden { display: none !important; }
     tr.diff-row.filter-hidden-parent { display: none !important; }
     .lazy-section summary { cursor: pointer; font-size: 13px; color: #6e6e73; padding: 0.2rem 0; }
@@ -1380,9 +1391,10 @@
   }
 
   function wrapInputWithClear(inp) {
-    if (inp.parentElement.classList.contains('input-wrap')) return;
+    if (inp.parentElement.classList.contains('input-wrap') || inp.parentElement.classList.contains('filter-search-wrap')) return;
+    var isSearch = inp.classList.contains('filter-search');
     var wrap = document.createElement('div');
-    wrap.className = 'input-wrap';
+    wrap.className = isSearch ? 'filter-search-wrap' : 'input-wrap';
     inp.parentNode.insertBefore(wrap, inp);
     wrap.appendChild(inp);
     var btn = document.createElement('button');
