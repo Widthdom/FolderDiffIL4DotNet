@@ -23,14 +23,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string MODE_LOCAL_OPTIMIZED = "Local-optimized";
         private const string MODE_SERVER_NAS_OPTIMIZED = "Server/NAS-optimized";
 
-        /// <summary>
-        /// Keep-alive output interval in seconds. Set to 5s so that CI environments
-        /// and SSH sessions with 10-30s no-output timeouts receive a heartbeat well within the limit.
-        /// キープアライブの出力間隔（秒）。CI 環境や SSH セッションは無出力が 10～30 秒続くと
-        /// タイムアウトすることが多いため、5 秒間隔とすることで安全マージンを確保しています。
-        /// </summary>
-        private const int KEEP_ALIVE_INTERVAL_SECONDS = 5;
-
         private const int DEFAULT_IL_PRECOMPUTE_BATCH_SIZE = 2048;
 
         /// <summary>
@@ -163,6 +155,11 @@ namespace FolderDiffIL4DotNet.Services
                 LogDiscoveryAndParallelStats(totalFilesRelativePathCount, maxParallel);
 
                 await PrecomputeIlCachesAsync(maxParallel, cancellationToken);
+
+                // Reset progress and restore the diff-phase label so the bar restarts at 0%.
+                // 進捗をリセットし差分フェーズのラベルに戻すことで、バーが 0% から再スタートする。
+                _progressReporter.ResetProgress();
+                _progressReporter.SetLabel(SPINNER_LABEL_FOLDER_DIFF);
                 _progressReporter.ReportProgress(0.0);
 
                 CreateIlOutputDirectoriesIfNeeded();

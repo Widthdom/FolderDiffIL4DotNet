@@ -190,6 +190,39 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void ResetProgress_AllowsProgressToRestartFromZero()
+        {
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+
+            service.ReportProgress(50.0);
+            Assert.Equal(50.0, GetPrivateField<double>(service, "_lastPercentage"));
+
+            service.ResetProgress();
+
+            // After reset, _lastPercentage should allow 0.0 to be accepted again
+            // リセット後は _lastPercentage が戻り、0.0 が再び受け入れられる
+            Assert.Equal(double.NegativeInfinity, GetPrivateField<double>(service, "_lastPercentage"));
+            Assert.Null(GetPrivateField<string>(service, "_lastFormattedPercentage"));
+
+            // Verify that a lower value is now accepted
+            // より小さい値が受け入れられることを確認
+            service.ReportProgress(10.0);
+            Assert.Equal(10.0, GetPrivateField<double>(service, "_lastPercentage"));
+        }
+
+        [Fact]
+        public void ResetProgress_AfterDispose_IsIgnored()
+        {
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            service.ReportProgress(50.0);
+            service.Dispose();
+
+            // Should not throw after dispose
+            // Dispose 後に例外を投げないこと
+            service.ResetProgress();
+        }
+
+        [Fact]
         public void ReportProgress_SamePercentageTwice_WithStalledConsoleWrite_EmitsKeepAlive()
         {
             var service = new ProgressReportService(new ConfigSettingsBuilder().Build());

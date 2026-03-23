@@ -94,6 +94,25 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Resets progress tracking state so that progress can restart from 0%.
+        /// Use this when transitioning between distinct phases (e.g. precompute → diff classification).
+        /// 進捗追跡状態をリセットし、0% から再スタートできるようにします。
+        /// フェーズ間の遷移時（例: プリコンピュート → 差分分類）に使用します。
+        /// </summary>
+        public void ResetProgress()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+            lock (_lock)
+            {
+                _lastPercentage = double.NegativeInfinity;
+                _lastFormattedPercentage = null;
+            }
+        }
+
+        /// <summary>
         /// Updates the label prefix displayed alongside the progress percentage.
         /// プログレス表示に添えるラベルプレフィックスを更新します。
         /// </summary>
