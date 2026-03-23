@@ -49,7 +49,6 @@
     }
     .header-path-value {
       font-size: 13px; color: #1d1d1f;
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
       word-break: break-all; line-height: 1.5;
     }
     .header-config {
@@ -106,12 +105,10 @@
     }
     .filter-zone-spacer { flex: 1; }
     .filter-tables { display: flex; gap: 1.5rem; flex-wrap: nowrap; align-items: flex-start; }
-    table.filter-table { border-collapse: collapse; font-size: 12px; }
-    table.filter-table th { padding: 0.25rem 0.5rem; border: 1px solid #d2d2d7; background: #f5f5f7; color: #6e6e73; font-weight: 600; font-size: 11px; text-align: left; }
-    table.filter-table td { padding: 0.2rem 0.5rem; border: 1px solid #e8e8ed; vertical-align: top; background: #fff; }
-    table.filter-table td.ft-cb { text-align: center; width: 2em; vertical-align: middle; }
-    table.filter-table td.ft-cb input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
-    table.filter-table td.ft-label { white-space: nowrap; }
+    .filter-group { font-size: 12px; }
+    .filter-group-title { padding: 0.25rem 0; color: #6e6e73; font-weight: 600; font-size: 11px; border-bottom: 1px solid #d2d2d7; margin-bottom: 0.25rem; }
+    .filter-group label { display: flex; align-items: center; gap: 0.4em; padding: 0.15rem 0; cursor: pointer; white-space: nowrap; }
+    .filter-group label input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; flex-shrink: 0; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;
@@ -303,26 +300,20 @@
 </div>
 <div class="filter-zone">
 <div class="filter-tables">
-<div>
-<table class="filter-table">
-<thead><tr><th colspan="2">Diff Detail</th></tr></thead>
-<tbody>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-sha256match" checked onchange="applyFilters()"></td><td class="ft-label" title="SHA256 hash match"><code>SHA256Match</code></td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-sha256mismatch" checked onchange="applyFilters()"></td><td class="ft-label" title="SHA256 hash mismatch"><code>SHA256Mismatch</code></td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-ilmatch" checked onchange="applyFilters()"></td><td class="ft-label" title="IL (Intermediate Language) match"><code>ILMatch</code></td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-ilmismatch" checked onchange="applyFilters()"></td><td class="ft-label" title="IL (Intermediate Language) mismatch"><code>ILMismatch</code></td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmatch" checked onchange="applyFilters()"></td><td class="ft-label" title="Text match"><code>TextMatch</code></td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmismatch" checked onchange="applyFilters()"></td><td class="ft-label" title="Text mismatch"><code>TextMismatch</code></td></tr>
-</tbody></table>
+<div class="filter-group">
+<div class="filter-group-title">Diff Detail</div>
+<label title="SHA256 hash match"><input type="checkbox" id="filter-diff-sha256match" checked onchange="applyFilters()"><code>SHA256Match</code></label>
+<label title="SHA256 hash mismatch"><input type="checkbox" id="filter-diff-sha256mismatch" checked onchange="applyFilters()"><code>SHA256Mismatch</code></label>
+<label title="IL (Intermediate Language) match"><input type="checkbox" id="filter-diff-ilmatch" checked onchange="applyFilters()"><code>ILMatch</code></label>
+<label title="IL (Intermediate Language) mismatch"><input type="checkbox" id="filter-diff-ilmismatch" checked onchange="applyFilters()"><code>ILMismatch</code></label>
+<label title="Text match"><input type="checkbox" id="filter-diff-textmatch" checked onchange="applyFilters()"><code>TextMatch</code></label>
+<label title="Text mismatch"><input type="checkbox" id="filter-diff-textmismatch" checked onchange="applyFilters()"><code>TextMismatch</code></label>
 </div>
-<div>
-<table class="filter-table">
-<thead><tr><th colspan="2">Change Importance</th></tr></thead>
-<tbody>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label" title="Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"><span style="color:#d1242f;font-weight:bold">High</span></td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"></td><td class="ft-label" title="Notable change: public/protected member addition, modifier change, access widening, internal removal"><span style="color:#d97706;font-weight:bold">Medium</span></td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"></td><td class="ft-label" title="Low-impact change: body-only modification, internal/private member addition">Low</td></tr>
-</tbody></table>
+<div class="filter-group">
+<div class="filter-group-title">Change Importance</div>
+<label title="Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"><span style="color:#d1242f;font-weight:bold">High</span></label>
+<label title="Notable change: public/protected member addition, modifier change, access widening, internal removal"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"><span style="color:#d97706;font-weight:bold">Medium</span></label>
+<label title="Low-impact change: body-only modification, internal/private member addition"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()">Low</label>
 </div>
 </div>
 <div class="ctrl-filter-row">

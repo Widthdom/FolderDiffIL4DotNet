@@ -41,7 +41,6 @@
     }
     .header-path-value {
       font-size: 13px; color: #1d1d1f;
-      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
       word-break: break-all; line-height: 1.5;
     }
     .header-config {
@@ -98,12 +97,10 @@
     }
     .filter-zone-spacer { flex: 1; }
     .filter-tables { display: flex; gap: 1.5rem; flex-wrap: nowrap; align-items: flex-start; }
-    table.filter-table { border-collapse: collapse; font-size: 12px; }
-    table.filter-table th { padding: 0.25rem 0.5rem; border: 1px solid #d2d2d7; background: #f5f5f7; color: #6e6e73; font-weight: 600; font-size: 11px; text-align: left; }
-    table.filter-table td { padding: 0.2rem 0.5rem; border: 1px solid #e8e8ed; vertical-align: top; background: #fff; }
-    table.filter-table td.ft-cb { text-align: center; width: 2em; vertical-align: middle; }
-    table.filter-table td.ft-cb input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
-    table.filter-table td.ft-label { white-space: nowrap; }
+    .filter-group { font-size: 12px; }
+    .filter-group-title { padding: 0.25rem 0; color: #6e6e73; font-weight: 600; font-size: 11px; border-bottom: 1px solid #d2d2d7; margin-bottom: 0.25rem; }
+    .filter-group label { display: flex; align-items: center; gap: 0.4em; padding: 0.15rem 0; cursor: pointer; white-space: nowrap; }
+    .filter-group label input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; flex-shrink: 0; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;
