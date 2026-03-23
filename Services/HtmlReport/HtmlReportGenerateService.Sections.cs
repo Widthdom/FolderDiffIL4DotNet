@@ -570,7 +570,7 @@ namespace FolderDiffIL4DotNet.Services
                     .ToList();
                 if (sha256Files.Count > 0)
                 {
-                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: hash-only comparison, review recommended")} ({sha256Files.Count})</h2>");
+                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable")} ({sha256Files.Count})</h2>");
                     AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                     sb.AppendLine("<tbody>");
                     int idx = 0;

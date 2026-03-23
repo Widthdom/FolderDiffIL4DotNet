@@ -369,10 +369,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
             // Table heading should exist with count
-            Assert.Contains("SHA256Mismatch: hash-only comparison, review recommended (2)</h2>", html);
+            Assert.Contains("SHA256Mismatch: binary diff only (2)</h2>", html);
 
             // Extract the SHA256Mismatch table section
-            int sha256TableStart = html.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int sha256TableStart = html.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             Assert.True(sha256TableStart >= 0, "SHA256Mismatch detail table heading should exist");
             string sha256Section = html.Substring(sha256TableStart);
 
@@ -409,7 +409,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            int sha256TableIdx = html.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int sha256TableIdx = html.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             int tsTableIdx = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
             Assert.True(tsTableIdx >= 0, "new file timestamps older than old table should exist");
@@ -442,7 +442,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            int sha256TableIdx = html.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int sha256TableIdx = html.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             int tsTableIdx = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
 
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");

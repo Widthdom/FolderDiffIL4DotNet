@@ -321,7 +321,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
             Assert.Contains("## Warnings", reportText);
-            Assert.Contains("SHA256Mismatch: hash-only comparison, review recommended", reportText);
+            Assert.Contains("SHA256Mismatch: binary diff only", reportText);
             Assert.True(
                 reportText.IndexOf("## Summary", StringComparison.Ordinal) <
                 reportText.IndexOf("## Warnings", StringComparison.Ordinal));
@@ -368,10 +368,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportText = File.ReadAllText(reportPath);
 
             // Table heading should exist with count
-            Assert.Contains("SHA256Mismatch: hash-only comparison, review recommended (2)", reportText);
+            Assert.Contains("SHA256Mismatch: binary diff only (2)", reportText);
 
             // Extract the SHA256Mismatch table section
-            int sha256TableStart = reportText.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int sha256TableStart = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             Assert.True(sha256TableStart >= 0, "SHA256Mismatch detail table heading should exist");
             string sha256Section = reportText.Substring(sha256TableStart);
 
@@ -415,7 +415,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
 
-            int sha256TableIdx = reportText.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int sha256TableIdx = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             int tsTableIdx = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
             Assert.True(tsTableIdx >= 0, "new file timestamps older than old table should exist");
@@ -449,7 +449,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
 
-            int sha256TableIdx = reportText.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int sha256TableIdx = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             int tsTableIdx = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
 
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
@@ -510,7 +510,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
             Assert.Contains("## Warnings", reportText);
-            Assert.Contains("SHA256Mismatch: hash-only comparison, review recommended", reportText);
+            Assert.Contains("SHA256Mismatch: binary diff only", reportText);
             Assert.Contains("new file timestamps older than old", reportText);
             Assert.Contains("| Status | File Path | Timestamp | Legend |", reportText);
             Assert.Contains("|:------:|-----------|:---------:|:------:|", reportText);
@@ -978,7 +978,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
             // SHA256Mismatch warning table: 4 columns (no Disassembler)
-            int sha256Start = reportText.IndexOf("SHA256Mismatch: hash-only comparison, review recommended", StringComparison.Ordinal);
+            int sha256Start = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             Assert.True(sha256Start >= 0);
             int tsRegressedStart = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             string sha256Section = reportText.Substring(sha256Start, tsRegressedStart - sha256Start);

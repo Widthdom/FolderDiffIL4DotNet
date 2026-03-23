@@ -122,7 +122,7 @@
 | Expired | 0 |
 
 ## Warnings
-### [ ! ] Modified Files — SHA256Mismatch: hash-only comparison, review recommended (1)
+### [ ! ] Modified Files — SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable (1)
 
 | Status | File Path | Timestamp | Legend |
 |:------:|-----------|:---------:|:------:|
