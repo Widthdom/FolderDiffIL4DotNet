@@ -86,9 +86,6 @@ namespace FolderDiffIL4DotNet.Services
             // Notes (inside config section) / ノート（設定セクション内）
             sb.AppendLine("<div class=\"header-notes\">");
             sb.AppendLine($"  <p class=\"header-note\">{HtmlEncode("When diffing IL, lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.")}</p>");
-            sb.AppendLine($"  <p class=\"header-note\">{HtmlEncode("Inline diffs for ILMismatch and TextMismatch are computed using the")} " +
-                "<a href=\"http://www.xmailserver.org/diff2.pdf\">" +
-                "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</p>");
             sb.AppendLine("</div>");
 
             sb.AppendLine("</div>"); // end header-config
