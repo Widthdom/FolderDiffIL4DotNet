@@ -222,8 +222,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Contains("| App Version |", content);
             Assert.Contains("| Computer |", content);
-            Assert.Contains("| Old |", content);
-            Assert.Contains("| New |", content);
+            Assert.Contains("| Old Folder |", content);
+            Assert.Contains("| New Folder |", content);
             Assert.Contains("Ignored Extensions", content);
             Assert.Contains("Text File Extensions", content);
             Assert.Contains("| Tool | Available | Version | In Use |", content);

@@ -24,8 +24,6 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine("|----------|-------|");
                 writer.WriteLine($"| App Version | FolderDiffIL4DotNet {ctx.AppVersion} |");
                 writer.WriteLine($"| Computer | {ctx.ComputerName} |");
-                writer.WriteLine($"| Old | {ctx.OldFolderAbsolutePath} |");
-                writer.WriteLine($"| New | {ctx.NewFolderAbsolutePath} |");
                 if (ctx.Config.ShouldOutputFileTimestamps)
                 {
                     writer.WriteLine($"| Timezone | {DateTimeOffset.Now:zzz} |");
@@ -34,6 +32,8 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     writer.WriteLine($"| Elapsed Time | {ctx.ElapsedTimeString} |");
                 }
+                writer.WriteLine($"| Old Folder | {ctx.OldFolderAbsolutePath} |");
+                writer.WriteLine($"| New Folder | {ctx.NewFolderAbsolutePath} |");
                 writer.WriteLine();
                 var inUseText = BuildDisassemblerHeaderText(ctx.FileDiffResultLists);
                 WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability, inUseText);
