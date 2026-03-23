@@ -277,7 +277,7 @@
     /* ── Filter controls (second row within controls bar) ────────────────── */
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; min-width: 7em; }
     .filter-chip { display: inline-flex; align-items: center; gap: 0.3em; white-space: nowrap; cursor: pointer; min-width: 5.5em; }
-    .filter-chip input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
+    .filter-chip input[type="checkbox"] { cursor: pointer; }
     .filter-sep { width: 1px; height: 1.2em; background: #ccc; margin: 0 0.35rem; }
     .filter-search { padding: 0.25rem 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; font-family: inherit; flex: 1; min-width: 10em; outline: none; background: transparent; }
     .filter-search:focus { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
@@ -322,7 +322,6 @@
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label"><span style="color:#d1242f;font-weight:bold">High</span></td><td class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"></td><td class="ft-label"><span style="color:#d97706;font-weight:bold">Medium</span></td><td class="ft-desc">Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"></td><td class="ft-label">Low</td><td class="ft-desc">Low-impact change: body-only modification, internal/private member addition</td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-none" checked onchange="applyFilters()"></td><td class="ft-label">Unknown</td><td class="ft-desc">No semantic analysis available (non-.NET file, or analysis skipped)</td></tr>
 </tbody></table>
 </div>
 </div>
@@ -478,14 +477,14 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="mod" data-diff="TextMismatch" data-importance="None">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
   <td class="col-reason"><input type="text" id="reason_mod_0"></td>
   <td class="col-notes"><input type="text" id="notes_mod_0"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/app.config</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:56:00 &#x2192; 2026-03-15 09:01:00</td>
-  <td class="col-diff"><code>TextMismatch</code> <code>Unknown</code></td>
+  <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
@@ -495,14 +494,14 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-diff="TextMismatch" data-importance="None">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">2</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
   <td class="col-reason"><input type="text" id="reason_mod_1"></td>
   <td class="col-notes"><input type="text" id="notes_mod_1"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/settings.ini</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:08:00 &#x2192; 2026-03-15 09:01:00</td>
-  <td class="col-diff"><code>TextMismatch</code> <code>Unknown</code></td>
+  <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
@@ -512,40 +511,40 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-diff="TextMismatch" data-importance="None">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">3</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_2"></td>
   <td class="col-reason"><input type="text" id="reason_mod_2"></td>
   <td class="col-notes"><input type="text" id="notes_mod_2"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/DataModel.edmx</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:55:00 &#x2192; 2026-03-15 09:04:00</td>
-  <td class="col-diff"><code>TextMismatch</code> <code>Unknown</code></td>
+  <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#3 Inline diff skipped: edit distance too large (&gt;4000 insertions/deletions in 2001 vs 2001 lines). Increase <code>InlineDiffMaxEditDistance</code> in config to raise the limit. (current value: <code>4000</code>)</p></td>
 </tr>
-<tr data-section="mod" data-diff="TextMismatch" data-importance="None">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">4</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_3"></td>
   <td class="col-reason"><input type="text" id="reason_mod_3"></td>
   <td class="col-notes"><input type="text" id="notes_mod_3"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/LargeConfig.xml</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:54:00 &#x2192; 2026-03-15 09:05:00</td>
-  <td class="col-diff"><code>TextMismatch</code> <code>Unknown</code></td>
+  <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
   <td colspan="8"><p class="diff-skipped">#4 Inline diff skipped: diff too large (12500 diff lines; limit is 10000). Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>10000</code>)</p></td>
 </tr>
-<tr data-section="mod" data-diff="TextMismatch" data-importance="None">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">5</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_4"></td>
   <td class="col-reason"><input type="text" id="reason_mod_4"></td>
   <td class="col-notes"><input type="text" id="notes_mod_4"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Strings.resx</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00</td>
-  <td class="col-diff"><code>TextMismatch</code> <code>Unknown</code></td>
+  <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
@@ -555,14 +554,14 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-diff="TextMismatch" data-importance="None">
+<tr data-section="mod" data-diff="TextMismatch">
   <td class="col-no">6</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_5"></td>
   <td class="col-reason"><input type="text" id="reason_mod_5"></td>
   <td class="col-notes"><input type="text" id="notes_mod_5"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Web.config</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
-  <td class="col-diff"><code>TextMismatch</code> <code>Unknown</code></td>
+  <td class="col-diff"><code>TextMismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
@@ -729,14 +728,14 @@
     </details>
   </td>
 </tr>
-<tr data-section="mod" data-diff="SHA256Mismatch" data-importance="None">
+<tr data-section="mod" data-diff="SHA256Mismatch">
   <td class="col-no">13</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_11"></td>
   <td class="col-reason"><input type="text" id="reason_mod_11"></td>
   <td class="col-notes"><input type="text" id="notes_mod_11"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
-  <td class="col-diff"><code>SHA256Mismatch</code> <code>Unknown</code></td>
+  <td class="col-diff"><code>SHA256Mismatch</code></td>
   <td class="col-disasm"></td>
 </tr>
 </tbody></table>
@@ -975,7 +974,7 @@
     document.body.appendChild(vi);
   });
 
-  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-imp-none','filter-unchecked','filter-search'];
+  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-unchecked','filter-search'];
 
   function collectState() {
     var s = {};
@@ -1338,14 +1337,14 @@
       TextMatch:      document.getElementById('filter-diff-textmatch').checked,
       TextMismatch:   document.getElementById('filter-diff-textmismatch').checked
     };
-    var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked, None: document.getElementById('filter-imp-none').checked };
+    var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked };
     var onlyUnchecked = document.getElementById('filter-unchecked').checked;
     var searchEl   = document.getElementById('filter-search');
     var searchText = (searchEl.value || '').toLowerCase().trim();
 
     // All checked = no filtering for that category
     var diffActive = !(diffFilter.SHA256Match && diffFilter.SHA256Mismatch && diffFilter.ILMatch && diffFilter.ILMismatch && diffFilter.TextMatch && diffFilter.TextMismatch);
-    var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low && impFilter.None);
+    var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low);
 
     document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
       var show = true;
@@ -1356,10 +1355,12 @@
           if (!diffFilter[diff]) show = false;
         }
       }
-      // Importance filter / 重要度フィルター
+      // Importance filter (only for rows with importance) / 重要度フィルター（importance属性ありの行のみ）
       if (show && impActive) {
-        var imp = tr.getAttribute('data-importance') || 'None';
-        if (!impFilter[imp]) show = false;
+        var imp = tr.getAttribute('data-importance');
+        if (imp) {
+          if (!impFilter[imp]) show = false;
+        }
       }
       // Unchecked only filter
       if (show && onlyUnchecked) {

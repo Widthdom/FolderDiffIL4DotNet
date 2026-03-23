@@ -49,7 +49,7 @@
     document.body.appendChild(vi);
   });
 
-  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-imp-none','filter-unchecked','filter-search'];
+  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-unchecked','filter-search'];
   function collectState() {
     var s = {};
     document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
@@ -424,14 +424,14 @@
       TextMatch:      document.getElementById('filter-diff-textmatch').checked,
       TextMismatch:   document.getElementById('filter-diff-textmismatch').checked
     };
-    var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked, None: document.getElementById('filter-imp-none').checked };
+    var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked };
     var onlyUnchecked = document.getElementById('filter-unchecked').checked;
     var searchEl   = document.getElementById('filter-search');
     var searchText = (searchEl.value || '').toLowerCase().trim();
 
     // All checked = no filtering for that category / 全チェック時はフィルタリングなし
     var diffActive = !(diffFilter.SHA256Match && diffFilter.SHA256Mismatch && diffFilter.ILMatch && diffFilter.ILMismatch && diffFilter.TextMatch && diffFilter.TextMismatch);
-    var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low && impFilter.None);
+    var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low);
 
     document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
       var show = true;
@@ -442,10 +442,12 @@
           if (!diffFilter[diff]) show = false;
         }
       }
-      // Importance filter / 重要度フィルター
+      // Importance filter (only for rows with importance) / 重要度フィルター（importance属性ありの行のみ）
       if (show && impActive) {
-        var imp = tr.getAttribute('data-importance') || 'None';
-        if (!impFilter[imp]) show = false;
+        var imp = tr.getAttribute('data-importance');
+        if (imp) {
+          if (!impFilter[imp]) show = false;
+        }
       }
       // Unchecked only filter
       if (show && onlyUnchecked) {
