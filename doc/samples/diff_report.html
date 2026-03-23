@@ -9,78 +9,79 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
            font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
-    h1 { font-size: 2.0rem; padding: 1rem 0 0.4rem; }
+    h1 { font-size: 2.0rem; padding: 1.2rem 0 0.6rem; }
     h2 { font-size: 1rem; margin: 1.4rem 0 0.35rem; }
     h2.section-heading { font-size: 1.55rem; margin: 1.6rem 0 0.4rem; }
     code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
            font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
     /* ── Report header (card grid layout) ─────────────────────────────── */
-    .report-header { margin: 0.5rem 0 1.8rem; }
+    .report-header { margin: 0.6rem 0 2.2rem; }
     .header-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(13em, 1fr));
-      gap: 0.7rem; margin-bottom: 1.2rem;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(14em, 1fr));
+      gap: 0.8rem; margin-bottom: 1.6rem;
     }
     .header-card {
-      background: #f5f5f7; border-radius: 12px; padding: 0.8rem 1.1rem;
+      background: #f5f5f7; border-radius: 12px; padding: 1rem 1.2rem;
     }
     .header-card-label {
       font-size: 11px; font-weight: 600; color: #86868b;
-      text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.25rem;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;
     }
     .header-card-value {
-      font-size: 13px; color: #1d1d1f; word-break: break-all; line-height: 1.45;
+      font-size: 13px; color: #1d1d1f; word-break: break-all; line-height: 1.5;
     }
-    .header-paths { margin-bottom: 1.2rem; }
+    .header-paths { margin-bottom: 1.6rem; }
     .header-path {
-      display: flex; align-items: baseline; gap: 0.6rem;
-      padding: 0.45rem 0; border-bottom: 1px solid #f0f0f0;
+      display: flex; align-items: baseline; gap: 0.8rem;
+      padding: 0.55rem 0; border-bottom: 1px solid #f0f0f0;
     }
     .header-path:last-child { border-bottom: none; }
     .header-path-label {
       font-size: 11px; font-weight: 700; color: #86868b;
-      text-transform: uppercase; letter-spacing: 0.03em;
-      min-width: 2.4em; flex-shrink: 0;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      min-width: 2.6em; flex-shrink: 0;
     }
     .header-path-value {
       font-size: 13px; color: #1d1d1f;
       font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-      word-break: break-all; line-height: 1.45;
+      word-break: break-all; line-height: 1.5;
     }
     .header-config {
-      margin-bottom: 1.2rem; border-radius: 10px;
+      margin-bottom: 1.6rem; border-radius: 12px;
       background: #fafafa; border: 1px solid #e8e8ed;
-      padding: 0.8rem 1.1rem;
+      padding: 1.1rem 1.3rem;
     }
     .header-config-title {
-      font-size: 13px; font-weight: 600; color: #1d1d1f;
-      margin-bottom: 0.5rem;
+      font-size: 14px; font-weight: 600; color: #1d1d1f;
+      margin-bottom: 0.8rem;
     }
+    .header-config .legend-table { margin-bottom: 0.8rem; }
     .header-detail-row {
-      padding: 0.4rem 0; border-bottom: 1px solid #f0f0f0;
+      padding: 0.55rem 0; border-bottom: 1px solid #f0f0f0;
     }
     .header-detail-row:last-child { border-bottom: none; }
     .header-detail-label {
       font-size: 11px; font-weight: 600; color: #86868b;
-      text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.2rem;
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.25rem;
     }
     .header-detail-value {
-      font-size: 12px; color: #1d1d1f; line-height: 1.55; word-break: break-all;
+      font-size: 12px; color: #1d1d1f; line-height: 1.6; word-break: break-all;
     }
-    .header-notes { margin-bottom: 1.2rem; }
+    .header-notes { margin-bottom: 1.6rem; }
     .header-note {
-      font-size: 12px; color: #6e6e73; line-height: 1.6;
-      padding: 0.45rem 0.9rem; margin-bottom: 0.4rem;
+      font-size: 12px; color: #6e6e73; line-height: 1.65;
+      padding: 0.55rem 1rem; margin-bottom: 0.5rem;
       border-left: 2px solid #d2d2d7; background: #fafafa; border-radius: 0 6px 6px 0;
     }
     .header-note:last-child { margin-bottom: 0; }
     .header-note a { color: #0066cc; text-decoration: none; }
     .header-note a:hover { text-decoration: underline; }
     .header-legends {
-      display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.6rem;
+      display: flex; gap: 1.8rem; flex-wrap: wrap; margin-bottom: 0.8rem;
     }
     .header-legend-title {
       font-size: 12px; font-weight: 600; color: #1d1d1f;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.5rem;
     }
     /* ── Legend table ────────────────────────────────────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
@@ -95,11 +96,11 @@
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
       background: rgba(255,255,255,0.1);
-      padding: 0.45rem 2rem; margin: 0 -2rem;
-      display: flex; flex-direction: column; gap: 0.3rem; z-index: 100;
+      padding: 0.7rem 2rem; margin: 0 -2rem;
+      display: flex; flex-direction: column; gap: 0.55rem; z-index: 100;
     }
-    .ctrl-buttons { display: flex; gap: 0.8rem; align-items: center; }
-    .ctrl-filter-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
+    .ctrl-buttons { display: flex; gap: 1rem; align-items: center; }
+    .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;
       backdrop-filter: blur(20px) saturate(180%);
@@ -269,9 +270,9 @@
     col.sc-col-body-g { width: var(--sc-body-w); }
     /* ── Filter controls (second row within controls bar) ────────────────── */
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; }
-    .filter-chip { display: inline-flex; align-items: center; gap: 0.2em; white-space: nowrap; cursor: pointer; }
+    .filter-chip { display: inline-flex; align-items: center; gap: 0.3em; white-space: nowrap; cursor: pointer; }
     .filter-chip input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
-    .filter-sep { width: 1px; height: 1.2em; background: #ccc; margin: 0 0.2rem; }
+    .filter-sep { width: 1px; height: 1.2em; background: #ccc; margin: 0 0.35rem; }
     .filter-search { padding: 0.25rem 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 12px; font-family: inherit; width: 14em; outline: none; }
     .filter-search:focus { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
     .filter-reset-btn { font-size: 11px !important; padding: 0.25rem 0.7rem !important; }
@@ -324,6 +325,8 @@
   <div class="header-path"><span class="header-path-label">Old</span><span class="header-path-value">/Users/UserA/workspace/old</span></div>
   <div class="header-path"><span class="header-path-label">New</span><span class="header-path-value">/Users/UserA/workspace/new</span></div>
 </div>
+<div class="header-config">
+  <div class="header-config-title">Configuration Details</div>
 <table class="legend-table">
   <thead><tr><th style="background:#f0f0f2">Tool</th><th style="background:#f0f0f2">Available</th><th style="background:#f0f0f2">Version</th></tr></thead>
   <tbody>
@@ -331,8 +334,6 @@
     <tr><td>ilspycmd</td><td style="text-align:center"><span style="color:#b31d28">No</span></td><td>N/A</td></tr>
   </tbody>
 </table>
-<div class="header-config">
-  <div class="header-config-title">Configuration Details</div>
   <div class="header-detail-row"><div class="header-detail-label">Ignored Extensions</div><div class="header-detail-value">.cache, .DS_Store, .db, .ilcache, .log, .pdb</div></div>
   <div class="header-detail-row"><div class="header-detail-label">Text File Extensions</div><div class="header-detail-value">.asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml</div></div>
   <div class="header-detail-row">

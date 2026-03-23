@@ -45,12 +45,13 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <div class=\"header-path\"><span class=\"header-path-label\">New</span><span class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</span></div>");
             sb.AppendLine("</div>");
 
-            // Disassembler availability table / 逆アセンブラ可用性テーブル
-            AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
-
             // Configuration details (always visible) / 設定詳細（常時表示）
             sb.AppendLine("<div class=\"header-config\">");
             sb.AppendLine($"  <div class=\"header-config-title\">{HtmlEncode("Configuration Details")}</div>");
+
+            // Disassembler availability (inside config section) / 逆アセンブラ可用性（設定セクション内）
+            AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
+
             AppendHeaderDetailRow(sb, "Ignored Extensions", HtmlEncode(string.Join(", ", config.IgnoredExtensions)));
             AppendHeaderDetailRow(sb, "Text File Extensions", HtmlEncode(string.Join(", ", config.TextFileExtensions)));
             if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
@@ -127,7 +128,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <div class=\"header-card\"><div class=\"header-card-label\">{HtmlEncode(label)}</div><div class=\"header-card-value\">{value}</div></div>");
         }
 
-        /// <summary>Appends a detail row inside the collapsible configuration section. / 折りたたみ設定セクション内に詳細行を追加します。</summary>
+        /// <summary>Appends a detail row inside the configuration section. / 設定セクション内に詳細行を追加します。</summary>
         private static void AppendHeaderDetailRow(StringBuilder sb, string label, string value)
         {
             sb.AppendLine($"    <div class=\"header-detail-row\"><div class=\"header-detail-label\">{HtmlEncode(label)}</div><div class=\"header-detail-value\">{value}</div></div>");
