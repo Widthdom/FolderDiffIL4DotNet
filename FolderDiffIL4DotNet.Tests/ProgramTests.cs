@@ -171,8 +171,8 @@ namespace FolderDiffIL4DotNet.Tests
                 });
 
                 var consoleText = writer.ToString();
-                Assert.Contains("older last-modified timestamps", consoleText);
-                Assert.Contains("See diff_report.md for details.", consoleText);
+                Assert.Contains("older timestamps", consoleText);
+                Assert.Contains("See diff_report for details.", consoleText);
                 Assert.DoesNotContain("sample.txt", consoleText);
 
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));

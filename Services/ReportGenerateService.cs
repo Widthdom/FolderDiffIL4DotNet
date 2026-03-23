@@ -70,7 +70,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_TIMESTAMP_ARROW = " → ";
         private const string REPORT_SECTION_SUMMARY = REPORT_SECTION_PREFIX + "Summary";
         private const string REPORT_SECTION_IL_CACHE_STATS = REPORT_SECTION_PREFIX + "IL Cache Stats";
-        private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.";
         private const string REPORT_SECTION_WARNINGS = REPORT_SECTION_PREFIX + "Warnings";
         private const string LOG_REPORT_GENERATION_COMPLETED = "Report generation completed.";
 
