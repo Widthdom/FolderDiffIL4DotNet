@@ -36,7 +36,7 @@ namespace FolderDiffIL4DotNet.Common
         public const string ERROR_MAX_PARALLEL = "The maximum degree of parallelism must be 1 or greater.";
 
         /// <summary>Warning message when SHA256-only comparison finds mismatches. / SHA256 のみの比較で不一致が見つかった場合の警告メッセージ。</summary>
-        public const string WARNING_SHA256_MISMATCH = "One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only a SHA256 hash comparison was possible.";
+        public const string WARNING_SHA256_MISMATCH = "One or more files were classified as SHA256Mismatch (binary diff only — not a .NET assembly or disassembler unavailable).";
 
         /// <summary>
         /// Timestamp format for reports and file listings (local time with milliseconds and UTC offset).

@@ -23,9 +23,13 @@
       });
     }
     if (__savedState__ !== null) {
-      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
+      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
+        if (__filterIds__.indexOf(cb.id) >= 0) return; // keep filter controls interactive / フィルタコントロールは操作可能に
+        cb.style.pointerEvents='none'; cb.style.cursor='default';
+      });
       document.querySelectorAll('input[type="text"]').forEach(function(inp){
-        inp.readOnly=true; inp.style.cursor='default'; inp.style.userSelect='text';
+        if (inp.id === 'filter-search') return; // keep search interactive / 検索は操作可能に
+        inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text';
       });
     } else {
       document.querySelectorAll('input, textarea').forEach(function(el) {
@@ -36,7 +40,10 @@
     initColResize();
     syncTableWidths();
     syncScTableWidths();
+    syncFilterRowHeight();
+    initClearButtons();
     setupLazyDiff();
+    setupLazySection();
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept
     // on dynamically created inputs that are clicked immediately)
@@ -48,7 +55,7 @@
     document.body.appendChild(vi);
   });
 
-  var __filterIds__ = ['filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other','filter-unchecked','filter-search'];
+  var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-unchecked','filter-search'];
   function collectState() {
     var s = {};
     document.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
@@ -65,6 +72,9 @@
   }
 
   async function downloadReviewed() {
+    // 0. Force-decode all lazy sections so their inputs are captured in state
+    // 全lazyセクションを強制デコードし、inputが状態に含まれるようにする
+    forceDecodeLazySections();
     var state   = collectState();
     var slug    = 'diff_report_' + __reportDate__;
     var root    = document.documentElement;
@@ -74,14 +84,18 @@
     // 2. Clear all filter-hidden state so reviewed HTML shows all rows
     document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
+    // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
+    // テーブルの inline width をクリアし reviewed ロード時に再計算させる
+    document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
     var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
     var html    = document.documentElement.outerHTML;
-    // Restore open details in the live page
+    // Restore live page state / ライブページの状態を復元
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
+    syncTableWidths();
     // Embed state
     html = html.replace('const __savedState__  = null;',
       'const __savedState__  = ' + JSON.stringify(state) + ';');
@@ -104,10 +118,13 @@
       + '; --sc-body-w: '     + curWidths['--sc-body-w'] + '; }');
     // Remove inline col-var overrides from <html> element (now baked into :root)
     html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
-    // Replace controls bar with reviewed banner (includes Verify integrity button)
+    // Replace button row with reviewed banner (filter zone is preserved outside CTRL markers)
+    // ボタン行を reviewed バナーに置換（フィルターゾーンは CTRL マーカー外なので維持）
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
-      '<div class="reviewed-banner">Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only'
-      + ' <button class="btn" onclick="verifyIntegrity()" style="margin-left:1em;font-size:12px">&#x2713; Verify integrity</button>'
+      '<div class="reviewed-banner"><span>Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</span>'
+      + ' <button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
+      + ' <button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
+      + ' <button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
       + '</div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
@@ -195,7 +212,11 @@
 
   function clearAll() {
     if (!confirm('Clear all checkboxes and text inputs?')) return;
-    document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.checked=false; });
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
+      // Filter checkboxes → checked (no filter); other checkboxes → unchecked
+      // フィルターチェックボックス → checked（フィルターなし）、その他 → unchecked
+      cb.checked = (__filterIds__.indexOf(cb.id) >= 0 && cb.id !== 'filter-unchecked');
+    });
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
@@ -203,6 +224,7 @@
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
+    applyFilters();
     localStorage.removeItem(__storageKey__);
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
@@ -257,6 +279,63 @@
     });
   }
 
+  // Lazy-render: section tables (Ignored/Unchanged) stored Base64-encoded in data-lazy-section.
+  // On first open, decode and insert into DOM. / 遅延レンダリング: セクションテーブルをBase64で格納し初回展開時にデコード挿入。
+  function setupLazySection() {
+    document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
+      d.addEventListener('toggle', function onToggle() {
+        if (!d.open) return;
+        var b64 = d.getAttribute('data-lazy-section');
+        if (!b64) return;
+        d.removeAttribute('data-lazy-section');
+        d.removeEventListener('toggle', onToggle);
+        try {
+          d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+          // Init column resize handles and sync widths / 列リサイズハンドル初期化と幅同期
+          d.querySelectorAll('th.th-resizable').forEach(function(th) {
+            if (th.querySelector('.col-resize-handle')) return;
+            initColResizeSingle(th);
+          });
+          syncTableWidths();
+          // Wire up save events on new inputs / 新規inputにsaveイベントを接続
+          if (__savedState__ === null) {
+            d.querySelectorAll('input, textarea').forEach(function(el) {
+              el.addEventListener('change', autoSave);
+              el.addEventListener('input',  autoSave);
+            });
+          }
+          // Restore state for new inputs / 新規inputの状態を復元
+          var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');
+          if (toRestore) {
+            d.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
+              if (toRestore[el.id] === undefined) return;
+              if (el.type === 'checkbox') el.checked = Boolean(toRestore[el.id]);
+              else el.value = String(toRestore[el.id] || '');
+            });
+          }
+          if (__savedState__ !== null) {
+            d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
+            d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
+          }
+        } catch(e) {}
+      });
+    });
+  }
+
+  // Force-decode all lazy sections (used before downloadReviewed captures HTML)
+  // 全lazyセクションを強制デコード（downloadReviewed前にHTML取得用）
+  function forceDecodeLazySections() {
+    document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
+      var b64 = d.getAttribute('data-lazy-section');
+      if (!b64) return;
+      d.removeAttribute('data-lazy-section');
+      try {
+        d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+        syncTableWidths();
+      } catch(e) {}
+    });
+  }
+
   function syncTableWidths() {
     var root = document.documentElement;
     var emPx = parseFloat(getComputedStyle(root).fontSize) || 16;
@@ -270,7 +349,7 @@
       'col-reason-g': px('--col-reason-w', 10),
       'col-notes-g': px('--col-notes-w', 10),
       'col-path-g': px('--col-path-w', 22),
-      'col-ts-g': 16 * emPx,
+      'col-ts-g': 28 * emPx,
       'col-diff-g': px('--col-diff-w', 9),
       'col-disasm-g': px('--col-disasm-w', 28)
     };
@@ -337,6 +416,45 @@
     });
   }
 
+  // Measure a Diff Detail body row and set --ft-row-h so filter-table-dbl rows are exactly 2× / Diff Detail 行高さを計測し --ft-row-h を設定
+  function syncFilterRowHeight() {
+    var base = document.querySelector('table.filter-table:not(.filter-table-dbl) tbody tr');
+    if (!base) return;
+    var h = base.getBoundingClientRect().height;
+    if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
+  }
+
+  // Wrap td text inputs with clear button / td テキスト入力にクリアボタンを付与
+  function wrapInputWithClear(inp) {
+    if (inp.parentElement.classList.contains('input-wrap') || inp.parentElement.classList.contains('filter-search-wrap')) return;
+    var isSearch = inp.classList.contains('filter-search');
+    var wrap = document.createElement('div');
+    wrap.className = isSearch ? 'filter-search-wrap' : 'input-wrap';
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-input-clear';
+    btn.tabIndex = -1;
+    btn.title = 'Clear';
+    btn.innerHTML = '<svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="1" x2="7" y2="7"/><line x1="7" y1="1" x2="1" y2="7"/></svg>';
+    wrap.appendChild(btn);
+    function sync() { wrap.classList.toggle('has-text', inp.value.length > 0); }
+    inp.addEventListener('input', sync);
+    btn.addEventListener('click', function() {
+      inp.value = '';
+      sync();
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+      inp.focus();
+    });
+    sync();
+  }
+
+  function initClearButtons() {
+    document.querySelectorAll('input#filter-search').forEach(wrapInputWithClear);
+  }
+
   function initColResize() {
     document.querySelectorAll('th.th-resizable').forEach(function(th) {
       initColResizeSingle(th);
@@ -344,47 +462,39 @@
   }
 
   // ── Filtering ──────────────────────────────────────────────────────────
-  var __configExts__  = ['.json','.xml','.config','.yaml','.yml','.ini','.toml','.env','.props','.targets','.csproj','.vbproj','.fsproj','.sln'];
-  var __resourceExts__ = ['.resx','.resources','.png','.jpg','.jpeg','.ico','.svg','.gif','.bmp','.wav','.mp3','.ttf','.woff','.woff2','.eot'];
-  function getFileTypeCategory(ext) {
-    if (!ext) return 'other';
-    ext = ext.toLowerCase();
-    if (ext === '.dll') return 'dll';
-    if (ext === '.exe') return 'exe';
-    if (__configExts__.indexOf(ext) >= 0) return 'config';
-    if (__resourceExts__.indexOf(ext) >= 0) return 'resource';
-    return 'other';
-  }
   function applyFilters() {
-    var impHigh   = document.getElementById('filter-imp-high');
-    var impMedium = document.getElementById('filter-imp-medium');
-    var impLow    = document.getElementById('filter-imp-low');
-    var ftDll     = document.getElementById('filter-ft-dll');
-    var ftExe     = document.getElementById('filter-ft-exe');
-    var ftConfig  = document.getElementById('filter-ft-config');
-    var ftResource= document.getElementById('filter-ft-resource');
-    var ftOther   = document.getElementById('filter-ft-other');
-    var unchecked = document.getElementById('filter-unchecked');
-    var searchEl  = document.getElementById('filter-search');
-    // If any element is missing (e.g. reviewed mode), skip
+    var impHigh    = document.getElementById('filter-imp-high');
+    // If any element is missing (e.g. reviewed mode), skip / 要素がない場合（レビュー済みモード等）スキップ
     if (!impHigh) return;
-    var impFilter = { High: impHigh.checked, Medium: impMedium.checked, Low: impLow.checked };
-    var ftFilter  = { dll: ftDll.checked, exe: ftExe.checked, config: ftConfig.checked, resource: ftResource.checked, other: ftOther.checked };
-    var onlyUnchecked = unchecked.checked;
+
+    // Diff detail filter (6 individual values) / Diff Detail フィルター（6個別値）
+    var diffFilter = {
+      SHA256Match:    document.getElementById('filter-diff-sha256match').checked,
+      SHA256Mismatch: document.getElementById('filter-diff-sha256mismatch').checked,
+      ILMatch:        document.getElementById('filter-diff-ilmatch').checked,
+      ILMismatch:     document.getElementById('filter-diff-ilmismatch').checked,
+      TextMatch:      document.getElementById('filter-diff-textmatch').checked,
+      TextMismatch:   document.getElementById('filter-diff-textmismatch').checked
+    };
+    var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked };
+    var onlyUnchecked = document.getElementById('filter-unchecked').checked;
+    var searchEl   = document.getElementById('filter-search');
     var searchText = (searchEl.value || '').toLowerCase().trim();
-    // All importance checked = no importance filtering
-    var impActive = !(impFilter.High && impFilter.Medium && impFilter.Low);
-    // All file types checked = no file type filtering
-    var ftActive = !(ftFilter.dll && ftFilter.exe && ftFilter.config && ftFilter.resource && ftFilter.other);
+
+    // All checked = no filtering for that category / 全チェック時はフィルタリングなし
+    var diffActive = !(diffFilter.SHA256Match && diffFilter.SHA256Mismatch && diffFilter.ILMatch && diffFilter.ILMismatch && diffFilter.TextMatch && diffFilter.TextMismatch);
+    var impActive  = !(impFilter.High && impFilter.Medium && impFilter.Low);
+
     document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
       var show = true;
-      // File type filter
-      if (ftActive) {
-        var ext = tr.getAttribute('data-ext') || '';
-        var cat = getFileTypeCategory(ext);
-        if (!ftFilter[cat]) show = false;
+      // Diff detail filter (exact value match)
+      if (diffActive) {
+        var diff = tr.getAttribute('data-diff');
+        if (diff) {
+          if (!diffFilter[diff]) show = false;
+        }
       }
-      // Importance filter (only for Modified section rows with importance)
+      // Importance filter (only for rows with importance) / 重要度フィルター（importance属性ありの行のみ）
       if (show && impActive) {
         var imp = tr.getAttribute('data-importance');
         if (imp) {
@@ -393,9 +503,6 @@
       }
       // Unchecked only filter
       if (show && onlyUnchecked) {
-        var section = tr.getAttribute('data-section');
-        var idx = Array.prototype.indexOf.call(tr.parentNode.children, tr);
-        // Find the checkbox in this row
         var cb = tr.querySelector('input[type="checkbox"]');
         if (cb && cb.checked) show = false;
       }
@@ -410,7 +517,7 @@
       } else {
         tr.classList.add('filter-hidden');
       }
-      // Hide associated diff-row/semantic-changes rows
+      // Hide associated diff-row/semantic-changes rows (but keep details elements visible)
       var next = tr.nextElementSibling;
       while (next && !next.hasAttribute('data-section')) {
         if (show) {
@@ -421,10 +528,28 @@
         next = next.nextElementSibling;
       }
     });
+
+    // Filter semantic change rows by importance inside detail tables / detail テーブル内の semantic change 行を importance でフィルター
+    if (impActive) {
+      document.querySelectorAll('.semantic-changes-table tr[data-sc-importance]').forEach(function(tr) {
+        var imp = tr.getAttribute('data-sc-importance');
+        if (imp && !impFilter[imp]) {
+          tr.classList.add('filter-hidden');
+        } else {
+          tr.classList.remove('filter-hidden');
+        }
+      });
+    } else {
+      document.querySelectorAll('.semantic-changes-table tr.filter-hidden').forEach(function(tr) {
+        tr.classList.remove('filter-hidden');
+      });
+    }
+
     autoSave();
   }
   function resetFilters() {
-    ['filter-imp-high','filter-imp-medium','filter-imp-low','filter-ft-dll','filter-ft-exe','filter-ft-config','filter-ft-resource','filter-ft-other'].forEach(function(id) {
+    __filterIds__.forEach(function(id) {
+      if (id === 'filter-unchecked' || id === 'filter-search') return;
       var el = document.getElementById(id);
       if (el) el.checked = true;
     });

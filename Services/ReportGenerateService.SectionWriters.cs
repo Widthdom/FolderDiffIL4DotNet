@@ -17,41 +17,65 @@ namespace FolderDiffIL4DotNet.Services
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_TITLE);
-                writer.WriteLine($"- App Version: FolderDiffIL4DotNet {ctx.AppVersion}");
-                writer.WriteLine($"- Computer: {ctx.ComputerName}");
-                writer.WriteLine($"- Old: {ctx.OldFolderAbsolutePath}");
-                writer.WriteLine($"- New: {ctx.NewFolderAbsolutePath}");
-                writer.WriteLine($"- Ignored Extensions: {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.IgnoredExtensions)}");
-                writer.WriteLine($"- Text File Extensions: {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.TextFileExtensions)}");
-                writer.WriteLine($"- IL Disassembler: {BuildDisassemblerHeaderText(ctx.FileDiffResultLists)}");
-                WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability);
-                if (!string.IsNullOrWhiteSpace(ctx.ElapsedTimeString))
-                {
-                    writer.WriteLine($"- Elapsed Time: {ctx.ElapsedTimeString}");
-                }
+                writer.WriteLine();
+
+                // Key metadata table / キーメタデータテーブル
+                writer.WriteLine("| Property | Value |");
+                writer.WriteLine("|----------|-------|");
+                writer.WriteLine($"| App Version | FolderDiffIL4DotNet {ctx.AppVersion} |");
+                writer.WriteLine($"| Computer | {ctx.ComputerName} |");
                 if (ctx.Config.ShouldOutputFileTimestamps)
                 {
-                    writer.WriteLine($"- Timestamps (timezone): {DateTimeOffset.Now:zzz}");
+                    writer.WriteLine($"| Timezone | {DateTimeOffset.Now:zzz} |");
                 }
-                writer.WriteLine("- " + NOTE_MVID_SKIP);
-                if (!ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings) return;
+                if (!string.IsNullOrWhiteSpace(ctx.ElapsedTimeString))
+                {
+                    writer.WriteLine($"| Elapsed Time | {ctx.ElapsedTimeString} |");
+                }
+                writer.WriteLine($"| Old Folder | {ctx.OldFolderAbsolutePath} |");
+                writer.WriteLine($"| New Folder | {ctx.NewFolderAbsolutePath} |");
+                writer.WriteLine();
+                var inUseText = BuildDisassemblerHeaderText(ctx.FileDiffResultLists);
+                WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability, inUseText);
 
-                var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
-                if (ilIgnoreStrings.Count == 0)
+                // Configuration details / 設定詳細
+                writer.WriteLine("### Configuration Details");
+                writer.WriteLine();
+                writer.WriteLine("| Setting | Value |");
+                writer.WriteLine("|---------|-------|");
+                writer.WriteLine($"| Ignored Extensions | {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.IgnoredExtensions)} |");
+                writer.WriteLine($"| Text File Extensions | {string.Join(REPORT_LIST_SEPARATOR, ctx.Config.TextFileExtensions)} |");
+                if (ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings)
                 {
-                    writer.WriteLine("- " + NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY);
-                }
-                else
-                {
-                    writer.WriteLine($"- Note: When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored:");
-                    writer.WriteLine();
-                    writer.WriteLine("| Ignored String |");
-                    writer.WriteLine("|----------------|");
-                    foreach (var v in ilIgnoreStrings)
+                    var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
+                    if (ilIgnoreStrings.Count == 0)
                     {
-                        writer.WriteLine($"| \"{v}\" |");
+                        writer.WriteLine("| IL Line Ignore | Enabled, but no non-empty strings are configured. |");
                     }
                 }
+                writer.WriteLine();
+                if (ctx.Config.ShouldIgnoreILLinesContainingConfiguredStrings)
+                {
+                    var ilIgnoreStrings = GetNormalizedIlIgnoreContainingStrings(ctx.Config);
+                    if (ilIgnoreStrings.Count > 0)
+                    {
+                        writer.WriteLine($"**IL Ignored Strings** — When diffing {Constants.LABEL_IL}, lines containing any of the configured strings are ignored:");
+                        writer.WriteLine();
+                        writer.WriteLine("| Ignored String |");
+                        writer.WriteLine("|----------------|");
+                        foreach (var v in ilIgnoreStrings)
+                        {
+                            writer.WriteLine($"| \"{v}\" |");
+                        }
+                        writer.WriteLine();
+                    }
+                }
+                // (end of Configuration Details section)
+                writer.WriteLine();
+
+                // Notes / ノート
+                writer.WriteLine($"> {NOTE_MVID_SKIP}");
+                writer.WriteLine();
             }
         }
 
@@ -64,9 +88,10 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine();
                 writer.WriteLine("| Label | Description |");
                 writer.WriteLine("|-------|-------------|");
-                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.SHA256Match}` / `{FileDiffResultLists.DiffDetailResult.SHA256Mismatch}` | SHA256 hash match / mismatch |");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.SHA256Match}` / `{FileDiffResultLists.DiffDetailResult.SHA256Mismatch}` | Byte-for-byte match / mismatch (SHA256) |");
                 writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.ILMatch}` / `{FileDiffResultLists.DiffDetailResult.ILMismatch}` | IL(Intermediate Language) match / mismatch |");
-                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}` | Text match / mismatch |");
+                writer.WriteLine($"| `{FileDiffResultLists.DiffDetailResult.TextMatch}` / `{FileDiffResultLists.DiffDetailResult.TextMismatch}` | Text-based match / mismatch |");
+                writer.WriteLine();
                 writer.WriteLine(REPORT_IMPORTANCE_LEGEND_HEADER);
                 writer.WriteLine();
                 writer.WriteLine("| Label | Description |");
@@ -273,16 +298,13 @@ namespace FolderDiffIL4DotNet.Services
                 // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
                 if (ctx.HasSha256Mismatch)
                 {
-                    writer.WriteLine($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}");
-
                     var sha256Files = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary
                         .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                         .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
                         .ToList();
                     if (sha256Files.Count > 0)
                     {
-                        writer.WriteLine();
-                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch (Manual Review Recommended) ({sha256Files.Count})");
+                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable ({sha256Files.Count})");
                         writer.WriteLine();
                         writer.WriteLine("| Status | File Path | Timestamp | Legend |");
                         writer.WriteLine("|:------:|-----------|:---------:|:------:|");
@@ -305,14 +327,12 @@ namespace FolderDiffIL4DotNet.Services
                 if (ctx.HasTimestampRegressionWarning)
                 {
                     writer.WriteLine();
-                    writer.WriteLine($"- **WARNING:** {WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD}");
-                    writer.WriteLine();
                     var tsWarnings = ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                         .OrderBy(entry => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(entry.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                         .ThenBy(entry => GetImportanceSortOrder(ctx.FileDiffResultLists.GetMaxImportance(entry.FileRelativePath)))
                         .ThenBy(entry => entry.FileRelativePath, StringComparer.OrdinalIgnoreCase)
                         .ToList();
-                    writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — Timestamps Regressed ({tsWarnings.Count})");
+                    writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — new file timestamps older than old ({tsWarnings.Count})");
                     writer.WriteLine();
                     writer.WriteLine("| Status | File Path | Timestamp | Legend |");
                     writer.WriteLine("|:------:|-----------|:---------:|:------:|");

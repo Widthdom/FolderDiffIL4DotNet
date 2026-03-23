@@ -171,8 +171,8 @@ namespace FolderDiffIL4DotNet.Tests
                 });
 
                 var consoleText = writer.ToString();
-                Assert.Contains("older last-modified timestamps", consoleText);
-                Assert.Contains("See diff_report.md for details.", consoleText);
+                Assert.Contains("older timestamps", consoleText);
+                Assert.Contains("See diff_report for details.", consoleText);
                 Assert.DoesNotContain("sample.txt", consoleText);
 
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
@@ -258,10 +258,7 @@ namespace FolderDiffIL4DotNet.Tests
 
                 var reportText = await File.ReadAllTextAsync(Path.Combine(reportDir, "diff_report.md"));
                 Assert.Contains("## Warnings", reportText);
-                Assert.Contains($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}", reportText);
-                Assert.True(
-                    reportText.IndexOf("## Warnings", StringComparison.Ordinal) <
-                    reportText.IndexOf(Constants.WARNING_SHA256_MISMATCH, StringComparison.Ordinal));
+                Assert.Contains("SHA256Mismatch: binary diff only", reportText);
             }
             finally
             {

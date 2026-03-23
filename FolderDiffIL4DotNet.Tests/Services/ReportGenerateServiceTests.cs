@@ -57,7 +57,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("- IL Disassembler: dotnet-ildasm (version: dotnet ildasm 0.12.0)", reportText);
+            Assert.DoesNotContain("| IL Disassembler |", reportText);
             Assert.DoesNotContain(", ildasm", reportText);
             Assert.DoesNotContain(", ilspycmd", reportText);
         }
@@ -77,7 +77,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("- IL Disassembler: N/A", reportText);
+            Assert.DoesNotContain("| IL Disassembler |", reportText);
         }
 
         [Fact]
@@ -105,10 +105,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Assert: availability table structure and content
             // テーブルの構造と内容を検証
-            Assert.Contains("- Disassembler Availability:", reportText);
-            Assert.Contains("| Tool | Available | Version |", reportText);
+            Assert.Contains("| Tool | Available | Version | In Use |", reportText);
             Assert.Contains("| dotnet-ildasm | Yes | 0.12.2 |", reportText);
-            Assert.Contains("| ilspycmd | No | N/A |", reportText);
+            Assert.Contains("| ilspycmd | No | N/A | No |", reportText);
         }
 
         [Fact]
@@ -245,7 +244,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
-            Assert.Contains("IL line-ignore-by-contains is enabled, but no non-empty strings are configured.", reportText);
+            Assert.Contains("Enabled, but no non-empty strings are configured.", reportText);
         }
 
         [Fact]
@@ -322,13 +321,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
             Assert.Contains("## Warnings", reportText);
-            Assert.Contains($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}", reportText);
+            Assert.Contains("SHA256Mismatch: binary diff only", reportText);
             Assert.True(
                 reportText.IndexOf("## Summary", StringComparison.Ordinal) <
                 reportText.IndexOf("## Warnings", StringComparison.Ordinal));
-            Assert.True(
-                reportText.IndexOf("## Warnings", StringComparison.Ordinal) <
-                reportText.IndexOf(Constants.WARNING_SHA256_MISMATCH, StringComparison.Ordinal));
         }
 
         /// <summary>
@@ -372,10 +368,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportText = File.ReadAllText(reportPath);
 
             // Table heading should exist with count
-            Assert.Contains("SHA256Mismatch (Manual Review Recommended) (2)", reportText);
+            Assert.Contains("SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable (2)", reportText);
 
             // Extract the SHA256Mismatch table section
-            int sha256TableStart = reportText.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            int sha256TableStart = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             Assert.True(sha256TableStart >= 0, "SHA256Mismatch detail table heading should exist");
             string sha256Section = reportText.Substring(sha256TableStart);
 
@@ -390,13 +386,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // TextMismatch file should NOT appear in SHA256Mismatch table
             string sha256TableEnd = sha256Section;
-            int tsTableIdx = sha256TableEnd.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            int tsTableIdx = sha256TableEnd.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             if (tsTableIdx > 0) sha256TableEnd = sha256TableEnd.Substring(0, tsTableIdx);
             Assert.DoesNotContain("gamma.txt", sha256TableEnd);
         }
 
         /// <summary>
-        /// Verifies that SHA256Mismatch detail table appears before Timestamps Regressed table in Markdown when both warnings exist.
+        /// Verifies that SHA256Mismatch detail table appears before new file timestamps older than old table in Markdown when both warnings exist.
         /// 両方の警告が存在する場合、Markdown で SHA256Mismatch 詳細テーブルがタイムスタンプ逆行テーブルの前に表示されることを確認する。
         /// </summary>
         [Fact]
@@ -419,11 +415,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
 
-            int sha256TableIdx = reportText.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
-            int tsTableIdx = reportText.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            int sha256TableIdx = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
+            int tsTableIdx = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
-            Assert.True(tsTableIdx >= 0, "Timestamps Regressed table should exist");
-            Assert.True(sha256TableIdx < tsTableIdx, "SHA256Mismatch table should appear before Timestamps Regressed table");
+            Assert.True(tsTableIdx >= 0, "new file timestamps older than old table should exist");
+            Assert.True(sha256TableIdx < tsTableIdx, "SHA256Mismatch table should appear before new file timestamps older than old table");
         }
 
         /// <summary>
@@ -453,23 +449,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
 
-            int sha256WarningIdx = reportText.IndexOf(Constants.WARNING_SHA256_MISMATCH, StringComparison.Ordinal);
-            int sha256TableIdx = reportText.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
-            int tsWarningIdx = reportText.IndexOf("**modified** files in `new` have older last-modified timestamps", StringComparison.Ordinal);
-            int tsTableIdx = reportText.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            int sha256TableIdx = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
+            int tsTableIdx = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
 
-            Assert.True(sha256WarningIdx >= 0, "SHA256Mismatch warning message should exist");
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
-            Assert.True(tsWarningIdx >= 0, "Timestamp regression warning message should exist");
-            Assert.True(tsTableIdx >= 0, "Timestamps Regressed detail table should exist");
+            Assert.True(tsTableIdx >= 0, "new file timestamps older than old detail table should exist");
 
-            // SHA256 warning → SHA256 table → Timestamp warning → Timestamp table
-            Assert.True(sha256WarningIdx < sha256TableIdx,
-                "SHA256Mismatch detail table should appear after SHA256Mismatch warning message");
-            Assert.True(sha256TableIdx < tsWarningIdx,
-                "SHA256Mismatch detail table should appear before Timestamp regression warning message");
-            Assert.True(tsWarningIdx < tsTableIdx,
-                "Timestamps Regressed detail table should appear after Timestamp regression warning message");
+            // SHA256 table should appear before Timestamp table / SHA256テーブルはタイムスタンプテーブルの前に表示
+            Assert.True(sha256TableIdx < tsTableIdx,
+                "SHA256Mismatch table should appear before timestamp regression table");
         }
 
         [Fact]
@@ -522,15 +510,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportPath = Path.Combine(reportDir, "diff_report.md");
             var reportText = File.ReadAllText(reportPath);
             Assert.Contains("## Warnings", reportText);
-            Assert.Contains($"- **WARNING:** {Constants.WARNING_SHA256_MISMATCH}", reportText);
-            Assert.Contains("- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.", reportText);
+            Assert.Contains("SHA256Mismatch: binary diff only", reportText);
+            Assert.Contains("new file timestamps older than old", reportText);
             Assert.Contains("| Status | File Path | Timestamp | Legend |", reportText);
             Assert.Contains("|:------:|-----------|:---------:|:------:|", reportText);
             Assert.Contains("| nested", reportText);
             Assert.Contains("2026-03-14 10:00:00 → 2026-03-14 09:00:00", reportText);
-            Assert.True(
-                reportText.IndexOf(Constants.WARNING_SHA256_MISMATCH, StringComparison.Ordinal) <
-                reportText.IndexOf("**modified** files in `new` have older last-modified timestamps", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -846,6 +831,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             _resultLists.DisassemblerToolVersions["ildasm (version: 1.0.0)"] = 0;
             _resultLists.DisassemblerToolVersions["ilspycmd (version: 7.0.0)"] = 0;
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("ildasm", true, "1.0.0", "/usr/bin/ildasm"),
+                new("ilspycmd", true, "7.0.0", "/usr/bin/ilspycmd"),
+            };
 
             var config = CreateConfig();
             _service.GenerateDiffReport(new ReportGenerationContext(
@@ -854,8 +844,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 config, ilCache: null));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
-            Assert.Contains("ildasm (version: 1.0.0)", reportText);
-            Assert.Contains("ilspycmd (version: 7.0.0)", reportText);
+            Assert.Contains("### Disassembler Availability", reportText);
+            Assert.Contains("| ildasm | Yes | 1.0.0 |", reportText);
+            Assert.Contains("| ilspycmd | Yes | 7.0.0 |", reportText);
         }
 
         // IgnoredFileLocation.None exercises the !hasOld && !hasNew path in BuildIgnoredFileTimestampInfo
@@ -993,14 +984,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
             // SHA256Mismatch warning table: 4 columns (no Disassembler)
-            int sha256Start = reportText.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            int sha256Start = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             Assert.True(sha256Start >= 0);
-            int tsRegressedStart = reportText.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            int tsRegressedStart = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             string sha256Section = reportText.Substring(sha256Start, tsRegressedStart - sha256Start);
             Assert.Contains("| Status | File Path | Timestamp | Legend |", sha256Section);
             Assert.DoesNotContain("Disassembler", sha256Section);
 
-            // Timestamps Regressed warning table: 4 columns (no Disassembler)
+            // new file timestamps older than old warning table: 4 columns (no Disassembler)
             string tsSection = reportText.Substring(tsRegressedStart);
             Assert.Contains("| Status | File Path | Timestamp | Legend |", tsSection);
             Assert.DoesNotContain("Disassembler", tsSection);
@@ -1190,19 +1181,19 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // In the Timestamps Regressed table, expected order: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), SHA256Mismatch (zzz-sha256.bin)
+            // In the new file timestamps older than old table, expected order: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), SHA256Mismatch (zzz-sha256.bin)
             // タイムスタンプ逆行テーブルの期待される順序: TextMismatch (bbb-text.config), ILMismatch (aaa-il.dll), SHA256Mismatch (zzz-sha256.bin)
-            // Only look at the Timestamps Regressed section (after "Timestamps Regressed")
-            int tsRegressedStart = reportText.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
-            Assert.True(tsRegressedStart >= 0, "Timestamps Regressed section should exist");
+            // Only look at the new file timestamps older than old section (after "new file timestamps older than old")
+            int tsRegressedStart = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
+            Assert.True(tsRegressedStart >= 0, "new file timestamps older than old section should exist");
             string tsRegressedSection = reportText.Substring(tsRegressedStart);
 
             int text_bbb = tsRegressedSection.IndexOf("bbb-text.config", StringComparison.Ordinal);
             int il_aaa = tsRegressedSection.IndexOf("aaa-il.dll", StringComparison.Ordinal);
             int sha256_zzz = tsRegressedSection.IndexOf("zzz-sha256.bin", StringComparison.Ordinal);
 
-            Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch in Timestamps Regressed table");
-            Assert.True(il_aaa < sha256_zzz, "ILMismatch should appear before SHA256Mismatch in Timestamps Regressed table");
+            Assert.True(text_bbb < il_aaa, "TextMismatch should appear before ILMismatch in new file timestamps older than old table");
+            Assert.True(il_aaa < sha256_zzz, "ILMismatch should appear before SHA256Mismatch in new file timestamps older than old table");
         }
 
         private static ReportGenerationContext CreateReportContext(

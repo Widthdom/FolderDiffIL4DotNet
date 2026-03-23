@@ -1,21 +1,29 @@
 # Folder Diff Report
-- App Version: FolderDiffIL4DotNet 1.0.0
-- Computer: dev-machine
-- Old: /Users/UserA/workspace/old
-- New: /Users/UserA/workspace/new
-- Ignored Extensions: .cache, .DS_Store, .db, .ilcache, .log, .pdb
-- Text File Extensions: .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml
-- IL Disassembler: dotnet-ildasm (version: 0.12.2)
-- Disassembler Availability:
 
-| Tool | Available | Version |
-|------|:---------:|---------|
-| dotnet-ildasm | Yes | 0.12.2 |
-| ilspycmd | No | N/A |
-- Elapsed Time: 0h 0m 1.2s
-- Timestamps (timezone): +09:00
-- Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
-- Note: When diffing IL, lines containing any of the configured strings are ignored:
+| Property | Value |
+|----------|-------|
+| App Version | FolderDiffIL4DotNet 1.0.0.0+98587820469656dc0794524de1e1bf03ae3f2b8a |
+| Computer | dev-machine |
+| Timezone | +09:00 |
+| Elapsed Time | 0h 0m 1.2s |
+| Old Folder | /Users/UserA/workspace/old |
+| New Folder | /Users/UserA/workspace/new |
+
+### Disassembler Availability
+
+| Tool | Available | Version | In Use |
+|------|:---------:|---------|:------:|
+| dotnet-ildasm | Yes | 0.12.2 | Yes |
+| ilspycmd | No | N/A | No |
+
+### Configuration Details
+
+| Setting | Value |
+|---------|-------|
+| Ignored Extensions | .cache, .DS_Store, .db, .ilcache, .log, .pdb |
+| Text File Extensions | .asax, .ascx, .asmx, .aspx, .bat, .c, .cmd, .config, .cpp, .cs, .cshtml, .csproj, .csx, .css, .csv, .editorconfig, .env, .fs, .fsi, .fsproj, .fsx, .gitattributes, .gitignore, .gitmodules, .go, .gql, .graphql, .h, .hpp, .htm, .html, .http, .ini, .js, .json, .jsx, .less, .manifest, .md, .mod, .nlog, .nuspec, .plist, .props, .ps1, .psd1, .psm1, .py, .razor, .resx, .rst, .sass, .scss, .sh, .sln, .sql, .sqlproj, .sum, .svg, .targets, .toml, .ts, .tsv, .tsx, .txt, .vb, .vbproj, .vue, .xaml, .xml, .yaml, .yml |
+
+**IL Ignored Strings** — When diffing IL, lines containing any of the configured strings are ignored:
 
 | Ignored String |
 |----------------|
@@ -25,14 +33,18 @@
 | ".publickeytoken = ( " |
 | ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( " |
 | "// Code size " |
-- Legend (Diff Detail):
+
+> Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
+
+### Legend — Diff Detail
 
 | Label | Description |
 |-------|-------------|
-| `SHA256Match` / `SHA256Mismatch` | SHA256 hash match / mismatch |
+| `SHA256Match` / `SHA256Mismatch` | Byte-for-byte match / mismatch (SHA256) |
 | `ILMatch` / `ILMismatch` | IL(Intermediate Language) match / mismatch |
-| `TextMatch` / `TextMismatch` | Text match / mismatch |
-- Legend (Change Importance):
+| `TextMatch` / `TextMismatch` | Text-based match / mismatch |
+
+### Legend — Change Importance
 
 | Label | Description |
 |-------|-------------|
@@ -112,17 +124,13 @@
 | Expired | 0 |
 
 ## Warnings
-- **WARNING:** One or more files were classified as `SHA256Mismatch`. Manual review is recommended because only a SHA256 hash comparison was possible.
-
-### [ ! ] Modified Files — SHA256Mismatch (Manual Review Recommended) (1)
+### [ ! ] Modified Files — SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable (1)
 
 | Status | File Path | Timestamp | Legend |
 |:------:|-----------|:---------:|:------:|
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` |
 
-- **WARNING:** One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.
-
-### [ ! ] Modified Files — Timestamps Regressed (5)
+### [ ! ] Modified Files — new file timestamps older than old (5)
 
 | Status | File Path | Timestamp | Legend |
 |:------:|-----------|:---------:|:------:|

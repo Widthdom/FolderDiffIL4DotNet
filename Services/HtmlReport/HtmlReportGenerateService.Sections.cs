@@ -26,76 +26,60 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyConfigSettings config)
         {
             sb.AppendLine($"<h1>{HtmlEncode("Folder Diff Report")}</h1>");
-            sb.AppendLine("<ul class=\"meta\">");
-            sb.AppendLine($"  <li>{HtmlEncode("App Version")}: FolderDiffIL4DotNet {HtmlEncode(appVersion)}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("Computer")}: {HtmlEncode(computerName)}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("Old")}: {HtmlEncode(oldFolderAbsolutePath)}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("New")}: {HtmlEncode(newFolderAbsolutePath)}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("Ignored Extensions")}: {HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("Text File Extensions")}: {HtmlEncode(string.Join(", ", config.TextFileExtensions))}</li>");
-            sb.AppendLine($"  <li>{HtmlEncode("IL Disassembler")}: {HtmlEncode(BuildDisassemblerHeaderText())}</li>");
-            AppendDisassemblerAvailabilityTable(sb, _fileDiffResultLists.DisassemblerAvailability);
-            if (!string.IsNullOrWhiteSpace(elapsedTimeString))
-                sb.AppendLine($"  <li>{HtmlEncode("Elapsed Time")}: {HtmlEncode(elapsedTimeString)}</li>");
+            sb.AppendLine("<div class=\"report-header\">");
+
+            // Metadata cards row / メタデータカード行
+            sb.AppendLine("<div class=\"header-cards\">");
+            AppendHeaderCard(sb, "App Version", $"FolderDiffIL4DotNet {HtmlEncode(appVersion)}");
+            AppendHeaderCard(sb, "Computer", HtmlEncode(computerName));
             if (config.ShouldOutputFileTimestamps)
-                sb.AppendLine($"  <li>{HtmlEncode("Timestamps (timezone)")}: {HtmlEncode(DateTimeOffset.Now.ToString("zzz"))}</li>");
+                AppendHeaderCard(sb, "Timezone", HtmlEncode(DateTimeOffset.Now.ToString("zzz")));
+            if (!string.IsNullOrWhiteSpace(elapsedTimeString))
+                AppendHeaderCard(sb, "Elapsed Time", HtmlEncode(elapsedTimeString));
+            sb.AppendLine("</div>");
 
-            // MVID note (same style as other meta items)
-            sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("When diffing IL, lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.")}</li>");
+            // Folder paths (always full width, fixed order) / フォルダパス（常に全幅、順序固定）
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">New Folder</div><div class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</div></div>");
 
-            // IL contains-ignore note
+            // Disassembler availability with in-use marker / 逆アセンブラ可用性（使用中マーカー付き）
+            AppendDisassemblerAvailabilitySection(sb, _fileDiffResultLists.DisassemblerAvailability, BuildDisassemblerHeaderText());
+
+            // Ignored Extensions (standalone rounded section) / 無視する拡張子（独立した角丸セクション）
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Ignored Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</div></div>");
+
+            // Text File Extensions (standalone rounded section) / テキストファイル拡張子（独立した角丸セクション）
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Text File Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.TextFileExtensions))}</div></div>");
+
+            // IL Ignored Strings (standalone rounded section, comma-separated) / IL 無視文字列（独立した角丸セクション、カンマ区切り）
             if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
             {
                 var ilIgnoreStrings = GetNormalizedIlIgnoreStrings(config);
                 if (ilIgnoreStrings.Count == 0)
                 {
-                    sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("IL line-ignore-by-contains is enabled, but no non-empty strings are configured.")}</li>");
+                    sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">{HtmlEncode("Enabled, but no non-empty strings are configured.")}</div></div>");
                 }
                 else
                 {
-                    sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("When diffing IL, lines containing any of the configured strings are ignored:")}");
-                    sb.AppendLine("    <div class=\"il-ignore-scroll\"><table class=\"legend-table il-ignore-table\">");
-                    sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Ignored String")}</th></tr></thead>");
-                    sb.AppendLine("      <tbody>");
+                    sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">");
                     foreach (var s in ilIgnoreStrings)
                     {
-                        sb.AppendLine($"        <tr><td>{HtmlEncode($"\"{s}\"")}</td></tr>");
+                        sb.AppendLine($"<div>{HtmlEncode($"\"{s}\"")}</div>");
                     }
-                    sb.AppendLine("      </tbody>");
-                    sb.AppendLine("    </table></div>");
-                    sb.AppendLine("  </li>");
+                    sb.AppendLine("</div></div>");
                 }
             }
 
-            // Myers Diff Algorithm reference
-            sb.AppendLine($"  <li>{HtmlEncode("Note")}: {HtmlEncode("Inline diffs for ILMismatch and TextMismatch are computed using the")} " +
-                "<a href=\"http://www.xmailserver.org/diff2.pdf\">" +
-                "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</li>");
+            // MVID note (standalone rounded section) / MVID ノート（独立した角丸セクション）
+            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Diff Note")}</div><div class=\"header-path-value\">{HtmlEncode("Lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("are auto-ignored (Module Version ID metadata).")}</div></div>");
+            sb.AppendLine("</div>"); // report-header
+        }
 
-            // Legend — Diff Detail (as compact table)
-            sb.AppendLine($"  <li>{HtmlEncode("Legend (Diff Detail)")}:");
-            sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
-            sb.AppendLine("      <tbody>");
-            sb.AppendLine($"        <tr><td><code>SHA256Match</code> / <code>SHA256Mismatch</code></td><td>{HtmlEncode("SHA256 hash match / mismatch")}</td></tr>");
-            sb.AppendLine($"        <tr><td><code>ILMatch</code> / <code>ILMismatch</code></td><td>{HtmlEncode("IL(Intermediate Language) match / mismatch")}</td></tr>");
-            sb.AppendLine($"        <tr><td><code>TextMatch</code> / <code>TextMismatch</code></td><td>{HtmlEncode("Text match / mismatch")}</td></tr>");
-            sb.AppendLine("      </tbody>");
-            sb.AppendLine("    </table>");
-            sb.AppendLine("  </li>");
-
-            // Legend — Change Importance (as compact table)
-            sb.AppendLine($"  <li>{HtmlEncode("Legend (Change Importance)")}:");
-            sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Label")}</th><th style=\"background:{TH_BG_DEFAULT}\">{HtmlEncode("Description")}</th></tr></thead>");
-            sb.AppendLine("      <tbody>");
-            sb.AppendLine($"        <tr><td style=\"color:#d1242f;font-weight:bold\">High</td><td>{HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change")}</td></tr>");
-            sb.AppendLine($"        <tr><td style=\"color:#d97706;font-weight:bold\">Medium</td><td>{HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal")}</td></tr>");
-            sb.AppendLine($"        <tr><td>Low</td><td>{HtmlEncode("Low-impact change: body-only modification, internal/private member addition")}</td></tr>");
-            sb.AppendLine("      </tbody>");
-            sb.AppendLine("    </table>");
-            sb.AppendLine("  </li>");
-            sb.AppendLine("</ul>");
+        /// <summary>Appends a single header card element. / ヘッダーカード要素を1つ追加します。</summary>
+        private static void AppendHeaderCard(StringBuilder sb, string label, string value, string? cssClass = null)
+        {
+            var cls = cssClass != null ? $"header-card {cssClass}" : "header-card";
+            sb.AppendLine($"  <div class=\"{cls}\"><div class=\"header-card-label\">{HtmlEncode(label)}</div><div class=\"header-card-value\">{value}</div></div>");
         }
 
         private void AppendIgnoredSection(
@@ -106,9 +90,16 @@ namespace FolderDiffIL4DotNet.Services
         {
             var items = _fileDiffResultLists.IgnoredFilesRelativePathToLocation
                 .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
+            if (items.Count == 0)
+            {
+                sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} (0)</h2>");
+                sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>");
+                return;
+            }
 
+            sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
+            sb.AppendLine("<details class=\"lazy-section\">");
+            sb.AppendLine("<summary></summary>");
             AppendTableStart(sb, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm");
             sb.AppendLine("<tbody>");
             int idx = 0;
@@ -117,7 +108,7 @@ namespace FolderDiffIL4DotNet.Services
                 bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
                 bool hasNew = (entry.Value & FileDiffResultLists.IgnoredFileLocation.New) != 0;
 
-                // 3-2: absolute path for single-side, relative for both-sides
+                // 3-2: absolute path for single-side, relative for both-sides / 片方のみの場合は絶対パス、両方の場合は相対パス
                 string displayPath = (hasOld && hasNew)
                     ? entry.Key
                     : hasOld ? Path.Combine(oldFolderAbsolutePath, entry.Key)
@@ -130,6 +121,7 @@ namespace FolderDiffIL4DotNet.Services
                 idx++;
             }
             sb.AppendLine("</tbody></table></div>");
+            sb.AppendLine("</details>");
         }
 
         private void AppendUnchangedSection(
@@ -141,9 +133,16 @@ namespace FolderDiffIL4DotNet.Services
             var items = _fileDiffResultLists.UnchangedFilesRelativePath
                 .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
                 .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
+            if (items.Count == 0)
+            {
+                sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} (0)</h2>");
+                sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>");
+                return;
+            }
 
+            sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
+            sb.AppendLine("<details class=\"lazy-section\">");
+            sb.AppendLine("<summary></summary>");
             AppendTableStart(sb, TH_BG_DEFAULT, "Diff Reason");
             sb.AppendLine("<tbody>");
             int idx = 0;
@@ -163,6 +162,7 @@ namespace FolderDiffIL4DotNet.Services
                 idx++;
             }
             sb.AppendLine("</tbody></table></div>");
+            sb.AppendLine("</details>");
         }
 
         private void AppendAddedSection(StringBuilder sb, IReadOnlyConfigSettings config)
@@ -433,7 +433,8 @@ namespace FolderDiffIL4DotNet.Services
                     string classTd = !isCont ? HtmlEncode(e.TypeName) : "";
                     string baseTypeTd = !isCont ? HtmlEncode(e.BaseType) : "";
                     prevType = e.TypeName;
-                    string trOpen = isCont ? "<tr class=\"group-cont\">" : "<tr>";
+                    string scImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
+                    string trOpen = isCont ? $"<tr class=\"group-cont\"{scImpAttr}>" : $"<tr{scImpAttr}>";
                     string accessTd = CodeWrapArrow(e.Access);
                     string modifiersTd = CodeWrapArrow(e.Modifiers);
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
@@ -536,16 +537,12 @@ namespace FolderDiffIL4DotNet.Services
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             if (!hasSha256 && !hasTs) return;
 
-            sb.AppendLine($"<h2 class=\"section-heading\"><span class=\"warn-icon\">&#x26A0;</span> {HtmlEncode("Warnings")}</h2>");
+            sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("Warnings")}</h2>");
 
             // SHA256Mismatch warning + detail table (grouped together)
             // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
             if (hasSha256)
             {
-                sb.AppendLine("<ul class=\"warnings\">");
-                sb.AppendLine($"  <li>{HtmlEncode("One or more files were classified as SHA256Mismatch. Manual review is recommended because only an SHA256 hash comparison was possible.")}</li>");
-                sb.AppendLine("</ul>");
-
                 var sha256Files = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                     .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                     .OrderBy(kv => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(kv.Key)))
@@ -553,7 +550,7 @@ namespace FolderDiffIL4DotNet.Services
                     .ToList();
                 if (sha256Files.Count > 0)
                 {
-                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch (Manual Review Recommended)")} ({sha256Files.Count})</h2>");
+                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable")} ({sha256Files.Count})</h2>");
                     AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                     sb.AppendLine("<tbody>");
                     int idx = 0;
@@ -579,15 +576,11 @@ namespace FolderDiffIL4DotNet.Services
             // タイムスタンプ逆行 警告 + 詳細テーブル（まとめて配置）
             if (hasTs)
             {
-                sb.AppendLine("<ul class=\"warnings\">");
-                sb.AppendLine($"  <li>{HtmlEncode("One or more modified files in new have older last-modified timestamps than the corresponding files in old.")}</li>");
-                sb.AppendLine("</ul>");
-
                 var warnings = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                     .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(w => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(w.FileRelativePath)))
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
-                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("Timestamps Regressed")} ({warnings.Count})</h2>");
+                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("new file timestamps older than old")} ({warnings.Count})</h2>");
                 AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-disasm");
                 sb.AppendLine("<tbody>");
                 int idx = 0;

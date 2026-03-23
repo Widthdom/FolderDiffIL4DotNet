@@ -98,33 +98,61 @@ namespace FolderDiffIL4DotNet.Services
             AppendHtmlHead(sb);
             sb.AppendLine("<body>");
 
-            // Controls bar (markers allow stripping in downloadReviewed)
-            sb.AppendLine("<!--CTRL-->");
+            // Controls bar — button row is stripped in downloadReviewed, filter zone is kept
+            // コントロールバー — ボタン行は downloadReviewed で除去、フィルターゾーンは維持
             sb.AppendLine("<div class=\"controls\">");
+            sb.AppendLine("<!--CTRL-->");
+            sb.AppendLine("<div class=\"ctrl-buttons\">");
             sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
+            sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
-            sb.AppendLine("<div class=\"filter-bar\">");
-            sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("Importance") + ":</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-high\" checked onchange=\"applyFilters()\"> <span style=\"color:#d1242f;font-weight:bold\">High</span></label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-medium\" checked onchange=\"applyFilters()\"> <span style=\"color:#d97706;font-weight:bold\">Medium</span></label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-imp-low\" checked onchange=\"applyFilters()\"> Low</label>");
-            sb.AppendLine("  <span class=\"filter-sep\"></span>");
-            sb.AppendLine("  <label class=\"filter-label\">" + HtmlEncode("File Type") + ":</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-dll\" checked onchange=\"applyFilters()\"> DLL</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-exe\" checked onchange=\"applyFilters()\"> EXE</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-config\" checked onchange=\"applyFilters()\"> Config</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-resource\" checked onchange=\"applyFilters()\"> Resource</label>");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-ft-other\" checked onchange=\"applyFilters()\"> " + HtmlEncode("Other") + "</label>");
-            sb.AppendLine("  <span class=\"filter-sep\"></span>");
+            sb.AppendLine("<!--/CTRL-->");
+
+            // Filter zone (kept in reviewed HTML for read-only filtering)
+            // フィルターゾーン（reviewed HTML にも残し読み取り専用フィルタリングに使用）
+            sb.AppendLine("<div class=\"filter-zone\">");
+
+            // Search + Unchecked only row / 検索 + 未チェックのみ行
+            sb.AppendLine("<div class=\"ctrl-filter-row\">");
             sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
             sb.AppendLine("  <span class=\"filter-sep\"></span>");
             sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\">");
-            sb.AppendLine("  <button class=\"btn btn-clear filter-reset-btn\" onclick=\"resetFilters()\">" + HtmlEncode("Reset filters") + "</button>");
             sb.AppendLine("</div>");
-            sb.AppendLine("<!--/CTRL-->");
+
+            // Filter tables row / フィルターテーブル行
+            sb.AppendLine("<div class=\"filter-tables\">");
+
+            // Diff Detail filter table / Diff Detail フィルターテーブル
+            sb.AppendLine("<div class=\"filter-table-wrap\">");
+            sb.AppendLine("<table class=\"filter-table\">");
+            sb.AppendLine("<thead><tr><th colspan=\"3\">Diff Detail</th></tr></thead>");
+            sb.AppendLine("<tbody>");
+            AppendFilterTableRow(sb, "filter-diff-sha256match", "<code>SHA256Match</code>", HtmlEncode("Byte-for-byte match (SHA256)"));
+            AppendFilterTableRow(sb, "filter-diff-sha256mismatch", "<code>SHA256Mismatch</code>", HtmlEncode("Byte-for-byte mismatch (SHA256)"));
+            AppendFilterTableRow(sb, "filter-diff-ilmatch", "<code>ILMatch</code>", HtmlEncode("IL (Intermediate Language) match"));
+            AppendFilterTableRow(sb, "filter-diff-ilmismatch", "<code>ILMismatch</code>", HtmlEncode("IL (Intermediate Language) mismatch"));
+            AppendFilterTableRow(sb, "filter-diff-textmatch", "<code>TextMatch</code>", HtmlEncode("Text-based match"));
+            AppendFilterTableRow(sb, "filter-diff-textmismatch", "<code>TextMismatch</code>", HtmlEncode("Text-based mismatch"));
+            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</div>");
+
+            // Change Importance filter table / Change Importance フィルターテーブル
+            sb.AppendLine("<div class=\"filter-table-wrap\">");
+            sb.AppendLine("<table class=\"filter-table filter-table-dbl\">");
+            sb.AppendLine("<thead><tr><th colspan=\"3\">Change Importance</th></tr></thead>");
+            sb.AppendLine("<tbody>");
+            AppendFilterTableRow(sb, "filter-imp-high", "<span style=\"color:#d1242f;font-weight:bold\">High</span>", HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"));
+            AppendFilterTableRow(sb, "filter-imp-medium", "<span style=\"color:#d97706;font-weight:bold\">Medium</span>", HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal"));
+            AppendFilterTableRow(sb, "filter-imp-low", "Low", HtmlEncode("Low-impact change: body-only modification, internal/private member addition"));
+            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</div>");
+            sb.AppendLine("</div>"); // end .filter-tables
+
+            sb.AppendLine("</div>");  // end .filter-zone
+            sb.AppendLine("</div>");  // end .controls
 
             sb.AppendLine("<main>");
             AppendHeaderSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath,

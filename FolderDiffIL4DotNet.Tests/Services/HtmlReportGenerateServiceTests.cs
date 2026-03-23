@@ -369,10 +369,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
             // Table heading should exist with count
-            Assert.Contains("SHA256Mismatch (Manual Review Recommended) (2)</h2>", html);
+            Assert.Contains("SHA256Mismatch: binary diff only \u2014 not a .NET assembly or disassembler unavailable (2)</h2>", html);
 
             // Extract the SHA256Mismatch table section
-            int sha256TableStart = html.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
+            int sha256TableStart = html.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             Assert.True(sha256TableStart >= 0, "SHA256Mismatch detail table heading should exist");
             string sha256Section = html.Substring(sha256TableStart);
 
@@ -387,7 +387,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that SHA256Mismatch detail table appears before Timestamps Regressed table when both warnings exist.
+        /// Verifies that SHA256Mismatch detail table appears before new file timestamps older than old table when both warnings exist.
         /// 両方の警告が存在する場合、SHA256Mismatch 詳細テーブルがタイムスタンプ逆行テーブルの前に表示されることを確認する。
         /// </summary>
         [Fact]
@@ -409,11 +409,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            int sha256TableIdx = html.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
-            int tsTableIdx = html.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            int sha256TableIdx = html.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
+            int tsTableIdx = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
-            Assert.True(tsTableIdx >= 0, "Timestamps Regressed table should exist");
-            Assert.True(sha256TableIdx < tsTableIdx, "SHA256Mismatch table should appear before Timestamps Regressed table");
+            Assert.True(tsTableIdx >= 0, "new file timestamps older than old table should exist");
+            Assert.True(sha256TableIdx < tsTableIdx, "SHA256Mismatch table should appear before new file timestamps older than old table");
         }
 
         /// <summary>
@@ -442,40 +442,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            int sha256WarningIdx = html.IndexOf("SHA256Mismatch. Manual review is recommended", StringComparison.Ordinal);
-            int sha256TableIdx = html.IndexOf("SHA256Mismatch (Manual Review Recommended)", StringComparison.Ordinal);
-            int tsWarningIdx = html.IndexOf("modified files in new have older last-modified timestamps", StringComparison.Ordinal);
-            int tsTableIdx = html.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
+            int sha256TableIdx = html.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
+            int tsTableIdx = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
 
-            Assert.True(sha256WarningIdx >= 0, "SHA256Mismatch warning message should exist");
             Assert.True(sha256TableIdx >= 0, "SHA256Mismatch detail table should exist");
-            Assert.True(tsWarningIdx >= 0, "Timestamp regression warning message should exist");
-            Assert.True(tsTableIdx >= 0, "Timestamps Regressed detail table should exist");
+            Assert.True(tsTableIdx >= 0, "new file timestamps older than old detail table should exist");
 
-            // SHA256 warning → SHA256 table → Timestamp warning → Timestamp table
-            Assert.True(sha256WarningIdx < sha256TableIdx,
-                "SHA256Mismatch detail table should appear after SHA256Mismatch warning message");
-            Assert.True(sha256TableIdx < tsWarningIdx,
-                "SHA256Mismatch detail table should appear before Timestamp regression warning message");
-            Assert.True(tsWarningIdx < tsTableIdx,
-                "Timestamps Regressed detail table should appear after Timestamp regression warning message");
-        }
-
-        [Fact]
-        public void GenerateDiffReportHtml_Header_ContainsMyersDiffAlgorithmReference()
-        {
-            var (oldDir, newDir, reportDir) = MakeDirs("myers-ref");
-            var config = CreateConfig();
-
-            _service.GenerateDiffReportHtml(
-                new ReportGenerationContext(oldDir, newDir, reportDir,
-                    appVersion: "1.0", elapsedTimeString: null,
-                    computerName: "test-host", config, ilCache: null));
-
-            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("Myers Diff Algorithm", html);
-            Assert.Contains("http://www.xmailserver.org/diff2.pdf", html);
-            Assert.Contains("Algorithmica", html);
+            // SHA256 table should appear before Timestamp table / SHA256テーブルはタイムスタンプテーブルの前に表示
+            Assert.True(sha256TableIdx < tsTableIdx,
+                "SHA256Mismatch table should appear before timestamp regression table");
         }
 
         // ── Inline diff / インラインdiff ──────────────────────────────────────
@@ -1390,8 +1365,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("legend-table", html);
-            Assert.Contains("<table class=\"legend-table\">", html);
+            Assert.Contains("filter-table", html);
+            Assert.Contains("<table class=\"filter-table\">", html);
         }
 
         // ── Req2: stat-table borders / 統計テーブルボーダー ────────────────────
@@ -1614,9 +1589,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Only look at the Warnings section (after "Timestamps Regressed")
-            int warningsSectionStart = html.IndexOf("Timestamps Regressed", StringComparison.Ordinal);
-            Assert.True(warningsSectionStart >= 0, "Timestamps Regressed section should exist");
+            // Only look at the Warnings section (after "new file timestamps older than old")
+            int warningsSectionStart = html.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
+            Assert.True(warningsSectionStart >= 0, "new file timestamps older than old section should exist");
             string warningsSection = html.Substring(warningsSectionStart);
 
             int text_bbb = warningsSection.IndexOf("bbb-text.config", StringComparison.Ordinal);
@@ -1672,17 +1647,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: filter bar HTML elements are present
-            // フィルターバーの HTML 要素が含まれていることを検証
-            Assert.Contains("class=\"filter-bar\"", html);
+            // Assert: filter controls are present inside controls bar
+            // フィルターコントロールがコントロールバー内に含まれていることを検証
+            Assert.Contains("class=\"controls\"", html);
             Assert.Contains("id=\"filter-imp-high\"", html);
             Assert.Contains("id=\"filter-imp-medium\"", html);
             Assert.Contains("id=\"filter-imp-low\"", html);
-            Assert.Contains("id=\"filter-ft-dll\"", html);
-            Assert.Contains("id=\"filter-ft-exe\"", html);
-            Assert.Contains("id=\"filter-ft-config\"", html);
-            Assert.Contains("id=\"filter-ft-resource\"", html);
-            Assert.Contains("id=\"filter-ft-other\"", html);
             Assert.Contains("id=\"filter-unchecked\"", html);
             Assert.Contains("id=\"filter-search\"", html);
             Assert.Contains("applyFilters()", html);
@@ -1699,15 +1669,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: filter bar is between <!--CTRL--> and <!--/CTRL--> markers
-            // フィルターバーが <!--CTRL-->...<!--/CTRL--> マーカー内にあることを検証
+            // Assert: filter zone is OUTSIDE <!--CTRL-->...<!--/CTRL--> markers (only button row is inside)
+            // フィルターゾーンは <!--CTRL-->...<!--/CTRL--> マーカーの外にある（ボタン行のみ内部）ことを検証
             int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
             int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
-            int filterBar = html.IndexOf("class=\"filter-bar\"", StringComparison.Ordinal);
+            int filterSearch = html.IndexOf("id=\"filter-search\"", StringComparison.Ordinal);
             Assert.True(ctrlStart >= 0, "<!--CTRL--> marker not found");
             Assert.True(ctrlEnd > ctrlStart, "<!--/CTRL--> marker not found or before <!--CTRL-->");
-            Assert.True(filterBar > ctrlStart && filterBar < ctrlEnd,
-                "filter-bar should be inside <!--CTRL-->...<!--/CTRL--> markers so it is stripped in reviewed mode");
+            Assert.True(filterSearch > ctrlEnd,
+                "filter zone should be OUTSIDE <!--CTRL-->...<!--/CTRL--> markers so it is kept in reviewed mode");
         }
 
         [Fact]
@@ -1726,23 +1696,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Assert: data-section attribute is present on rows
             // data-section 属性が行に存在することを検証
             Assert.Contains("data-section=\"add\"", html);
-        }
-
-        [Fact]
-        public void GenerateDiffReportHtml_FileRowsHaveDataExtAttribute()
-        {
-            // Arrange / テスト準備
-            var (oldDir, newDir, reportDir) = MakeDirs("data-ext");
-            File.WriteAllText(Path.Combine(newDir, "new.dll"), "new-content");
-            var config = CreateConfig();
-            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new.dll"));
-
-            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
-            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-
-            // Assert: data-ext attribute with correct extension
-            // 正しい拡張子の data-ext 属性を検証
-            Assert.Contains("data-ext=\".dll\"", html);
         }
 
         [Fact]
@@ -1806,7 +1759,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // JS フィルタリング関数が含まれていることを検証
             Assert.Contains("function applyFilters()", html);
             Assert.Contains("function resetFilters()", html);
-            Assert.Contains("function getFileTypeCategory(", html);
+            Assert.Contains("function copyPath(", html);
         }
 
         [Fact]
@@ -1868,11 +1821,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Assert: table structure and content present in HTML
             // テーブルの構造と内容が HTML に含まれていることを検証
-            Assert.Contains("Disassembler Availability", html);
             Assert.Contains("dotnet-ildasm", html);
             Assert.Contains("ilspycmd", html);
-            Assert.Contains("color:#22863a", html); // green for Yes
-            Assert.Contains("color:#b31d28", html); // red for No
+            Assert.Contains("color:#22863a", html); // green for Yes / Yes 用の緑
+            Assert.Contains("color:#b31d28", html); // red for No / No 用の赤
             Assert.Contains("0.12.2", html);
         }
 
@@ -1889,8 +1841,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
             // Assert: no availability table when probe results are null
-            // プローブ結果が null の場合テーブルは出力されない
-            Assert.DoesNotContain("Disassembler Availability", html);
+            // プローブ結果が null の場合ツール名は出力されない
+            Assert.DoesNotContain("dotnet-ildasm", html);
+            Assert.DoesNotContain("ilspycmd", html);
         }
 
         private static ConfigSettingsBuilder CreateConfigBuilder(bool enableInlineDiff = true, bool lazyRender = false) => new()

@@ -123,8 +123,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // 逆アセンブラ可用性テーブルの構造を検証
             var content = File.ReadAllText(GoldenSamplePath);
 
-            Assert.Contains("| Tool | Available | Version |", content);
-            Assert.Contains("|------|:---------:|---------|", content);
+            Assert.Contains("| Tool | Available | Version | In Use |", content);
+            Assert.Contains("|------|:---------:|---------|:------:|", content);
 
             // At least one tool row should exist / 少なくとも1つのツール行があること
             Assert.Matches(@"\| [\w-]+ \| (Yes|No) \|", content);
@@ -158,8 +158,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warningsContent = content.Substring(warningsIdx);
 
             Assert.Contains("SHA256Mismatch", warningsContent);
-            Assert.Contains("Manual Review Recommended", warningsContent);
-            Assert.Contains("Timestamps Regressed", warningsContent);
+            Assert.Contains("SHA256Mismatch: binary diff only", warningsContent);
+            Assert.Contains("new file timestamps older than old", warningsContent);
         }
 
         [Fact]
@@ -169,12 +169,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // 差分詳細と変更重要度のレジェンドテーブルが存在すること
             var content = File.ReadAllText(GoldenSamplePath);
 
-            Assert.Contains("Legend (Diff Detail):", content);
+            Assert.Contains("Legend — Diff Detail", content);
             Assert.Contains("`SHA256Match`", content);
             Assert.Contains("`ILMatch`", content);
             Assert.Contains("`TextMatch`", content);
 
-            Assert.Contains("Legend (Change Importance):", content);
+            Assert.Contains("Legend — Change Importance", content);
             Assert.Contains("`High`", content);
             Assert.Contains("`Medium`", content);
             Assert.Contains("`Low`", content);
@@ -220,14 +220,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // レポートヘッダーに期待されるすべてのメタデータフィールドが含まれること
             var content = File.ReadAllText(GoldenSamplePath);
 
-            Assert.Contains("- App Version:", content);
-            Assert.Contains("- Computer:", content);
-            Assert.Contains("- Old:", content);
-            Assert.Contains("- New:", content);
-            Assert.Contains("- Ignored Extensions:", content);
-            Assert.Contains("- Text File Extensions:", content);
-            Assert.Contains("- IL Disassembler:", content);
-            Assert.Contains("- Elapsed Time:", content);
+            Assert.Contains("| App Version |", content);
+            Assert.Contains("| Computer |", content);
+            Assert.Contains("| Old Folder |", content);
+            Assert.Contains("| New Folder |", content);
+            Assert.Contains("Ignored Extensions", content);
+            Assert.Contains("Text File Extensions", content);
+            Assert.Contains("| Tool | Available | Version | In Use |", content);
+            Assert.Contains("| Elapsed Time |", content);
         }
 
         [Fact]
@@ -293,8 +293,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Structural checks on generated report / 生成レポートの構造チェック
             Assert.Contains("# Folder Diff Report", report1);
-            Assert.Contains("- App Version: FolderDiffIL4DotNet 1.0.0-snapshot", report1);
-            Assert.Contains("- Computer: snapshot-host", report1);
+            Assert.Contains("| App Version | FolderDiffIL4DotNet 1.0.0-snapshot |", report1);
+            Assert.Contains("| Computer | snapshot-host |", report1);
             Assert.Contains("## [ = ] Unchanged Files (2)", report1);
             Assert.Contains("## [ + ] Added Files (1)", report1);
             Assert.Contains("## [ - ] Removed Files (1)", report1);
@@ -305,7 +305,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("`TextMatch`", report1);
             Assert.Contains("`TextMismatch`", report1);
             Assert.Contains("| dotnet-ildasm | Yes | 0.12.0 |", report1);
-            Assert.Contains("| ilspycmd | No | N/A |", report1);
+            Assert.Contains("| ilspycmd | No | N/A | No |", report1);
         }
 
         [Fact]

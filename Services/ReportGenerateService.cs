@@ -44,8 +44,8 @@ namespace FolderDiffIL4DotNet.Services
         private const string NOTE_MVID_SKIP = $"Note: When diffing {Constants.LABEL_IL}, lines starting with \"{Constants.IL_MVID_LINE_PREFIX}\" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.";
 
         private const string NOTE_IL_CONTAINS_SKIP_ENABLED_BUT_EMPTY = "Note: IL line-ignore-by-contains is enabled, but no non-empty strings are configured.";
-        private const string REPORT_LEGEND_HEADER = "- Legend (Diff Detail):";
-        private const string REPORT_IMPORTANCE_LEGEND_HEADER = "- Legend (Change Importance):";
+        private const string REPORT_LEGEND_HEADER = "### Legend — Diff Detail";
+        private const string REPORT_IMPORTANCE_LEGEND_HEADER = "### Legend — Change Importance";
         private const string REPORT_MARKER_IGNORED = "[ x ]";
         private const string REPORT_LABEL_IGNORED = "Ignored";
         private const string REPORT_MARKER_UNCHANGED = "[ = ]";
@@ -70,7 +70,6 @@ namespace FolderDiffIL4DotNet.Services
         private const string REPORT_TIMESTAMP_ARROW = " → ";
         private const string REPORT_SECTION_SUMMARY = REPORT_SECTION_PREFIX + "Summary";
         private const string REPORT_SECTION_IL_CACHE_STATS = REPORT_SECTION_PREFIX + "IL Cache Stats";
-        private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more **modified** files in `new` have older last-modified timestamps than the corresponding files in `old`.";
         private const string REPORT_SECTION_WARNINGS = REPORT_SECTION_PREFIX + "Warnings";
         private const string LOG_REPORT_GENERATION_COMPLETED = "Report generation completed.";
 
@@ -368,23 +367,27 @@ namespace FolderDiffIL4DotNet.Services
         /// Writes the Disassembler Availability table to the Markdown report header.
         /// Markdown レポートヘッダに逆アセンブラ利用可否テーブルを書き込みます。
         /// </summary>
-        private static void WriteDisassemblerAvailabilityTable(StreamWriter writer, IReadOnlyList<DisassemblerProbeResult>? probeResults)
+        private static void WriteDisassemblerAvailabilityTable(StreamWriter writer, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
         {
             if (probeResults == null || probeResults.Count == 0)
             {
                 return;
             }
-            writer.WriteLine("- Disassembler Availability:");
+            writer.WriteLine("### Disassembler Availability");
             writer.WriteLine();
-            writer.WriteLine("| Tool | Available | Version |");
-            writer.WriteLine("|------|:---------:|---------|");
+            writer.WriteLine("| Tool | Available | Version | In Use |");
+            writer.WriteLine("|------|:---------:|---------|:------:|");
             foreach (var probe in probeResults)
             {
+                // Check if this tool is the one actually used / このツールが実際に使用されたかチェック
+                bool isInUse = !string.IsNullOrWhiteSpace(inUseHeaderText)
+                    && inUseHeaderText.IndexOf(probe.ToolName, StringComparison.OrdinalIgnoreCase) >= 0;
                 var available = probe.Available ? "Yes" : "No";
                 var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
                     ? probe.Version
                     : REPORT_DISASSEMBLER_NOT_USED;
-                writer.WriteLine($"| {probe.ToolName} | {available} | {version} |");
+                var inUseCol = isInUse ? "Yes" : "No";
+                writer.WriteLine($"| {probe.ToolName} | {available} | {version} | {inUseCol} |");
             }
         }
     }

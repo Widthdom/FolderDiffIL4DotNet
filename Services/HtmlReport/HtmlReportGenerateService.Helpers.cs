@@ -57,9 +57,11 @@ namespace FolderDiffIL4DotNet.Services
             string reasonId = $"reason_{sectionPrefix}_{idx}";
             string notesId  = $"notes_{sectionPrefix}_{idx}";
             int recordNo    = idx + 1;
-            string ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
             string impAttr = string.IsNullOrEmpty(importance) ? "" : $" data-importance=\"{HtmlEncode(importance)}\"";
-            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\" data-ext=\"{HtmlEncode(ext)}\"{impAttr}>");
+            // Normalize diff detail to category for filtering / フィルタリング用に diff detail をカテゴリに正規化
+            string diffCat = NormalizeDiffCategory(col6);
+            string diffAttr = string.IsNullOrEmpty(diffCat) ? "" : $" data-diff=\"{diffCat}\"";
+            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\"{impAttr}{diffAttr}>");
             sb.AppendLine($"  <td class=\"col-no\">{recordNo}</td>");
             sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td>");
             sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\"></td>");
@@ -69,6 +71,8 @@ namespace FolderDiffIL4DotNet.Services
             string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
             if (!string.IsNullOrEmpty(importance))
                 col6Cell += $" <code>{HtmlEncode(importance)}</code>";
+            else if (sectionPrefix == "mod" && diffCat == "ILMismatch")
+                col6Cell += " <code>Unknown</code>";
             sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
             sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
@@ -227,6 +231,21 @@ namespace FolderDiffIL4DotNet.Services
             };
 
         /// <summary>
+        /// Returns the diff detail value for use as a data-diff attribute (e.g. "SHA256Match", "ILMismatch").
+        /// data-diff 属性に使用する diff detail 値を返します。
+        /// </summary>
+        private static string NormalizeDiffCategory(string col6)
+        {
+            if (string.IsNullOrEmpty(col6)) return "";
+            // Return the exact value if it's a known diff detail / 既知の diff detail ならそのまま返す
+            return col6 switch
+            {
+                "SHA256Match" or "SHA256Mismatch" or "ILMatch" or "ILMismatch" or "TextMatch" or "TextMismatch" => col6,
+                _ => ""
+            };
+        }
+
+        /// <summary>
         /// Wraps a value in <c>&lt;code&gt;</c> tags. If the value contains " → ", each side is wrapped individually.
         /// 値を &lt;code&gt; タグで囲みます。" → " を含む場合は両側を個別に囲みます。
         /// </summary>
@@ -276,32 +295,39 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Appends the Disassembler Availability table to the HTML report header.
-        /// HTML レポートヘッダに逆アセンブラ利用可否テーブルを追加します。
+        /// Appends the Disassembler Availability section as a standalone rounded block.
+        /// 逆アセンブラ利用可否を独立した角丸セクションとして追加します。
         /// </summary>
-        private static void AppendDisassemblerAvailabilityTable(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults)
+        private static void AppendDisassemblerAvailabilitySection(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
         {
             if (probeResults == null || probeResults.Count == 0)
             {
                 return;
             }
-            sb.AppendLine($"  <li>{HtmlEncode("Disassembler Availability")}:");
-            sb.AppendLine("    <table class=\"legend-table\">");
-            sb.AppendLine($"      <thead><tr><th style=\"background:{TH_BG_DEFAULT}\">Tool</th><th style=\"background:{TH_BG_DEFAULT}\">Available</th><th style=\"background:{TH_BG_DEFAULT}\">Version</th></tr></thead>");
-            sb.AppendLine("      <tbody>");
+            sb.AppendLine("<div class=\"header-path\">");
+            sb.AppendLine($"  <div class=\"header-path-label\">{HtmlEncode("Disassembler Availability")}</div>");
+            sb.AppendLine("  <div class=\"header-path-value\">");
             foreach (var probe in probeResults)
             {
-                var available = probe.Available
-                    ? "<span style=\"color:#22863a\">Yes</span>"
-                    : "<span style=\"color:#b31d28\">No</span>";
-                var version = probe.Available && !string.IsNullOrWhiteSpace(probe.Version)
-                    ? HtmlEncode(probe.Version)
-                    : "N/A";
-                sb.AppendLine($"        <tr><td>{HtmlEncode(probe.ToolName)}</td><td style=\"text-align:center\">{available}</td><td>{version}</td></tr>");
+                // Check if this tool is the one actually used / このツールが実際に使用されたかチェック
+                bool isInUse = !string.IsNullOrWhiteSpace(inUseHeaderText)
+                    && inUseHeaderText.IndexOf(probe.ToolName, StringComparison.OrdinalIgnoreCase) >= 0;
+                var status = probe.Available
+                    ? (string.IsNullOrWhiteSpace(probe.Version)
+                        ? "<span style=\"color:#22863a\">Available</span>"
+                        : $"<span style=\"color:#22863a\">Available ({HtmlEncode(probe.Version)})</span>")
+                    : "<span style=\"color:#b31d28\">Not Available</span>";
+                var inUseLabel = isInUse ? " — In Use" : "";
+                sb.AppendLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}{inUseLabel}</div>");
             }
-            sb.AppendLine("      </tbody>");
-            sb.AppendLine("    </table>");
-            sb.AppendLine("  </li>");
+            sb.AppendLine("  </div>");
+            sb.AppendLine("</div>");
+        }
+
+        /// <summary>Appends a filter table row with checkbox, label, and description. / チェックボックス、ラベル、説明を含むフィルターテーブル行を追加します。</summary>
+        private static void AppendFilterTableRow(StringBuilder sb, string id, string labelHtml, string description)
+        {
+            sb.AppendLine($"<tr><td class=\"ft-cb\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\">{labelHtml}</td><td class=\"ft-desc\">{description}</td></tr>");
         }
 
         // ── Utilities ────────────────────────────────────────────────────────
