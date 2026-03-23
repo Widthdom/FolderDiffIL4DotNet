@@ -104,7 +104,6 @@
     table.filter-table td.ft-cb { text-align: center; width: 2em; vertical-align: middle; }
     table.filter-table td.ft-cb input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
     table.filter-table td.ft-label { white-space: nowrap; }
-    table.filter-table td.ft-desc { display: none; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;

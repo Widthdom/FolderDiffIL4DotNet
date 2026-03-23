@@ -117,7 +117,7 @@ namespace FolderDiffIL4DotNet.Services
             // Diff Detail filter table / Diff Detail フィルターテーブル
             sb.AppendLine("<div>");
             sb.AppendLine("<table class=\"filter-table\">");
-            sb.AppendLine("<thead><tr><th colspan=\"3\">Diff Detail</th></tr></thead>");
+            sb.AppendLine("<thead><tr><th colspan=\"2\">Diff Detail</th></tr></thead>");
             sb.AppendLine("<tbody>");
             AppendFilterTableRow(sb, "filter-diff-sha256match", "<code>SHA256Match</code>", HtmlEncode("SHA256 hash match"));
             AppendFilterTableRow(sb, "filter-diff-sha256mismatch", "<code>SHA256Mismatch</code>", HtmlEncode("SHA256 hash mismatch"));
@@ -131,7 +131,7 @@ namespace FolderDiffIL4DotNet.Services
             // Importance filter table / Importance フィルターテーブル
             sb.AppendLine("<div>");
             sb.AppendLine("<table class=\"filter-table\">");
-            sb.AppendLine("<thead><tr><th colspan=\"3\">Change Importance</th></tr></thead>");
+            sb.AppendLine("<thead><tr><th colspan=\"2\">Change Importance</th></tr></thead>");
             sb.AppendLine("<tbody>");
             AppendFilterTableRow(sb, "filter-imp-high", "<span style=\"color:#d1242f;font-weight:bold\">High</span>", HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"));
             AppendFilterTableRow(sb, "filter-imp-medium", "<span style=\"color:#d97706;font-weight:bold\">Medium</span>", HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal"));
