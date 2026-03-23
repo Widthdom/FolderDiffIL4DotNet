@@ -164,13 +164,13 @@ The HTML report includes a client-side filter zone that allows users to narrow d
 - `wrapInputWithClear(inp)` — wraps the search input with a clear button (⊗) that dispatches both `input` and `change` events.
 - `downloadReviewed()` — clears all `filter-hidden` / `filter-hidden-parent` classes and inline table widths before capturing `outerHTML`, then restores live page state via `syncTableWidths()`.
 
-### Design decisions / 設計判断
+### Design decisions
 
-1. Filter state is intentionally excluded from `collectState()` and localStorage. This means filters reset on page reload and are never saved to the reviewed HTML state. / フィルタ状態は `collectState()` と localStorage から意図的に除外。ページリロード時にリセットされ、reviewed HTML の状態には保存されない。
-2. The filter zone is **outside** `<!--CTRL-->...<!--/CTRL-->` markers so that reviewed HTML retains full filter functionality. Filter checkboxes and the search input are excluded from the reviewed-mode read-only enforcement (`__filterIds__` check). / フィルターゾーンは `<!--CTRL-->` マーカーの**外**に配置し、reviewed HTML でもフィルタ機能を完全に維持。フィルタチェックボックスと検索入力は reviewed モードの読み取り専用化から除外（`__filterIds__` チェック）。
-3. Importance filtering only applies to rows that have a `data-importance` attribute. Rows without importance (e.g. "No structural changes detected") pass through the filter. / importance フィルタは `data-importance` 属性を持つ行にのみ適用。importance なしの行（例: "No structural changes detected"）はフィルタを通過。
-4. The `btn-input-clear` CSS class is used for the search input clear button. Do **not** use `btn-clear` — that class is already used for toolbar buttons (Fold all details, Reset filters, Clear all) and caused a collision that hid the toolbar buttons entirely. / 検索入力のクリアボタンには `btn-input-clear` CSS クラスを使用。`btn-clear` は**使わないこと** — このクラスはツールバーボタン（Fold all details、Reset filters、Clear all）で既に使用されており、衝突するとツールバーボタンが完全に非表示になる。
-5. `downloadReviewed()` must clear inline `style="width:..."` from tables before `outerHTML` capture. Otherwise, stale pixel widths from `syncTableWidths()` are baked into the reviewed HTML and cause column width mismatch on reviewed load. / `downloadReviewed()` は `outerHTML` キャプチャ前にテーブルの inline `style="width:..."` をクリアすること。そうしないと `syncTableWidths()` が設定した古いピクセル幅が reviewed HTML に焼き込まれ、reviewed ロード時に列幅の不一致が発生する。
+1. Filter state is intentionally excluded from `collectState()` and localStorage. This means filters reset on page reload and are never saved to the reviewed HTML state.
+2. The filter zone is **outside** `<!--CTRL-->...<!--/CTRL-->` markers so that reviewed HTML retains full filter functionality. Filter checkboxes and the search input are excluded from the reviewed-mode read-only enforcement (`__filterIds__` check).
+3. Importance filtering only applies to rows that have a `data-importance` attribute. Rows without importance (e.g. "No structural changes detected") pass through the filter.
+4. The `btn-input-clear` CSS class is used for the search input clear button. Do **not** use `btn-clear` — that class is already used for toolbar buttons (Fold all details, Reset filters, Clear all) and caused a collision that hid the toolbar buttons entirely.
+5. `downloadReviewed()` must clear inline `style="width:..."` from tables before `outerHTML` capture. Otherwise, stale pixel widths from `syncTableWidths()` are baked into the reviewed HTML and cause column width mismatch on reviewed load.
 
 ## Performance Benchmarks
 
@@ -967,7 +967,11 @@ HTML レポートには、複数の条件でファイル行を絞り込めるク
 
 ### 設計判断
 
-英語セクションの「Design decisions / 設計判断」を参照。
+1. フィルタ状態は `collectState()` と localStorage から意図的に除外。ページリロード時にリセットされ、reviewed HTML の状態には保存されない。
+2. フィルターゾーンは `<!--CTRL-->` マーカーの**外**に配置し、reviewed HTML でもフィルタ機能を完全に維持。フィルタチェックボックスと検索入力は reviewed モードの読み取り専用化から除外（`__filterIds__` チェック）。
+3. importance フィルタは `data-importance` 属性を持つ行にのみ適用。importance なしの行（例: "No structural changes detected"）はフィルタを通過。
+4. 検索入力のクリアボタンには `btn-input-clear` CSS クラスを使用。`btn-clear` は**使わないこと** — このクラスはツールバーボタン（Fold all details、Reset filters、Clear all）で既に使用されており、衝突するとツールバーボタンが完全に非表示になる。
+5. `downloadReviewed()` は `outerHTML` キャプチャ前にテーブルの inline `style="width:..."` をクリアすること。そうしないと `syncTableWidths()` が設定した古いピクセル幅が reviewed HTML に焼き込まれ、reviewed ロード時に列幅の不一致が発生する。
 
 ## パフォーマンスベンチマーク
 
