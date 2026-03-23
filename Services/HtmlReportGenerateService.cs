@@ -92,7 +92,7 @@ namespace FolderDiffIL4DotNet.Services
                 reportsFolderAbsolutePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "diff";
             string storageKey = "folderdiff-" + label
                 .Replace("'", "-").Replace("\"", "-").Replace("\\", "-").Replace("`", "-");
-            string reportDate = DateTime.Now.ToString("yyyyMMdd");
+            string reportDate = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
             var sb = new StringBuilder(capacity: 131072);
             AppendHtmlHead(sb);
