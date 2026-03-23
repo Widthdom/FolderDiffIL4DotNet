@@ -424,7 +424,7 @@
     wrap.appendChild(inp);
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn-clear';
+    btn.className = 'btn-input-clear';
     btn.tabIndex = -1;
     btn.title = 'Clear';
     btn.innerHTML = '<svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="1" x2="7" y2="7"/><line x1="7" y1="1" x2="1" y2="7"/></svg>';
@@ -441,7 +441,7 @@
   }
 
   function initClearButtons() {
-    document.querySelectorAll('td input[type="text"]').forEach(wrapInputWithClear);
+    document.querySelectorAll('td input[type="text"], input#filter-search').forEach(wrapInputWithClear);
   }
 
   function initColResize() {
