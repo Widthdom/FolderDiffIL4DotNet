@@ -163,22 +163,20 @@
     }
     /* ── Row hover highlight ─────────────────────────────────────────────── */
     :not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }
-    .input-wrap { position: relative; display: flex; align-items: center; }
-    .input-wrap input[type="text"] {
-      width: 100%; border: 0; padding: 2px 20px 2px 4px; font-size: 12px;
+    td input[type="text"] {
+      width: 100%; border: 0; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; box-shadow: none;
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
       font-family: inherit; }
-    .input-wrap input[type="text"]:focus {
+    td input[type="text"]:focus {
       background: #fffff8; outline: 1px solid #aaa; }
     .btn-input-clear {
-      position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
       display: none; border: 1.2px solid #aaa; background: transparent;
       border-radius: 50%; width: 14px; height: 14px; padding: 0;
       cursor: pointer; line-height: 1; color: #aaa;
     }
     .btn-input-clear svg { display: block; margin: auto; }
-    .input-wrap.has-text .btn-input-clear,
     .filter-search-wrap.has-text .btn-input-clear { display: flex; align-items: center; justify-content: center; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
     /* ── Per-row copy path button ────────────────────────────────────────── */

@@ -286,8 +286,6 @@
             initColResizeSingle(th);
           });
           syncTableWidths();
-          // Init clear buttons on new text inputs / 新規テキスト入力にクリアボタンを付与
-          d.querySelectorAll('td input[type="text"]').forEach(wrapInputWithClear);
           // Wire up save events on new inputs / 新規inputにsaveイベントを接続
           if (__savedState__ === null) {
             d.querySelectorAll('input, textarea').forEach(function(el) {
@@ -443,7 +441,7 @@
   }
 
   function initClearButtons() {
-    document.querySelectorAll('td input[type="text"], input#filter-search').forEach(wrapInputWithClear);
+    document.querySelectorAll('input#filter-search').forEach(wrapInputWithClear);
   }
 
   function initColResize() {
