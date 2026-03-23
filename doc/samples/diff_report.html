@@ -30,16 +30,17 @@
     .header-card-value {
       font-size: 13px; color: #1d1d1f; word-break: break-all; line-height: 1.5;
     }
-    .header-paths { margin-bottom: 1.6rem; }
-    .header-path {
-      display: flex; align-items: baseline; gap: 0.8rem;
-      padding: 0.55rem 0; border-bottom: 1px solid #f0f0f0;
+    .header-paths {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(20em, 1fr));
+      gap: 0.8rem; margin-bottom: 1.6rem;
     }
-    .header-path:last-child { border-bottom: none; }
+    .header-path {
+      background: #f5f5f7; border-radius: 12px; padding: 1rem 1.2rem;
+    }
     .header-path-label {
       font-size: 11px; font-weight: 700; color: #86868b;
       text-transform: uppercase; letter-spacing: 0.04em;
-      min-width: 2.6em; flex-shrink: 0;
+      margin-bottom: 0.35rem;
     }
     .header-path-value {
       font-size: 13px; color: #1d1d1f;
@@ -67,7 +68,7 @@
     .header-detail-value {
       font-size: 12px; color: #1d1d1f; line-height: 1.6; word-break: break-all;
     }
-    .header-notes { margin-bottom: 1.6rem; }
+    .header-notes { margin-top: 0.8rem; margin-bottom: 0; }
     .header-note {
       font-size: 12px; color: #6e6e73; line-height: 1.65;
       padding: 0.55rem 1rem; margin-bottom: 0.5rem;
@@ -322,8 +323,8 @@
   <div class="header-card"><div class="header-card-label">Timezone</div><div class="header-card-value">+09:00</div></div>
 </div>
 <div class="header-paths">
-  <div class="header-path"><span class="header-path-label">Old</span><span class="header-path-value">/Users/UserA/workspace/old</span></div>
-  <div class="header-path"><span class="header-path-label">New</span><span class="header-path-value">/Users/UserA/workspace/new</span></div>
+  <div class="header-path"><div class="header-path-label">Old Folder</div><div class="header-path-value">/Users/UserA/workspace/old</div></div>
+  <div class="header-path"><div class="header-path-label">New Folder</div><div class="header-path-value">/Users/UserA/workspace/new</div></div>
 </div>
 <div class="header-config">
   <div class="header-config-title">Configuration Details</div>
@@ -352,10 +353,10 @@
       </table></div>
     </div>
   </div>
-</div>
 <div class="header-notes">
   <p class="header-note">When diffing IL, lines starting with <code>// MVID:</code> (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.</p>
   <p class="header-note">Inline diffs for ILMismatch and TextMismatch are computed using the <a href="http://www.xmailserver.org/diff2.pdf">Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</p>
+</div>
 </div>
 <div class="header-legends">
 <div>

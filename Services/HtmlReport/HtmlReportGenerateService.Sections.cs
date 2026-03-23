@@ -39,10 +39,10 @@ namespace FolderDiffIL4DotNet.Services
                 AppendHeaderCard(sb, "Timezone", HtmlEncode(DateTimeOffset.Now.ToString("zzz")));
             sb.AppendLine("</div>");
 
-            // Folder paths / フォルダパス
+            // Folder paths (card style) / フォルダパス（カードスタイル）
             sb.AppendLine("<div class=\"header-paths\">");
-            sb.AppendLine($"  <div class=\"header-path\"><span class=\"header-path-label\">Old</span><span class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</span></div>");
-            sb.AppendLine($"  <div class=\"header-path\"><span class=\"header-path-label\">New</span><span class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</span></div>");
+            sb.AppendLine($"  <div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
+            sb.AppendLine($"  <div class=\"header-path\"><div class=\"header-path-label\">New Folder</div><div class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</div></div>");
             sb.AppendLine("</div>");
 
             // Configuration details (always visible) / 設定詳細（常時表示）
@@ -79,15 +79,15 @@ namespace FolderDiffIL4DotNet.Services
                     sb.AppendLine("    </div>");
                 }
             }
-            sb.AppendLine("</div>");
-
-            // Notes / ノート
+            // Notes (inside config section) / ノート（設定セクション内）
             sb.AppendLine("<div class=\"header-notes\">");
             sb.AppendLine($"  <p class=\"header-note\">{HtmlEncode("When diffing IL, lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("(if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.")}</p>");
             sb.AppendLine($"  <p class=\"header-note\">{HtmlEncode("Inline diffs for ILMismatch and TextMismatch are computed using the")} " +
                 "<a href=\"http://www.xmailserver.org/diff2.pdf\">" +
                 "Myers Diff Algorithm (E.&nbsp;W.&nbsp;Myers, &ldquo;An O(ND) Difference Algorithm and Its Variations,&rdquo; <i>Algorithmica</i> <b>1</b>(2), 1986)</a>.</p>");
             sb.AppendLine("</div>");
+
+            sb.AppendLine("</div>"); // end header-config
 
             // Legends side by side / 凡例を横並びで表示
             sb.AppendLine("<div class=\"header-legends\">");
