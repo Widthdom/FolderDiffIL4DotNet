@@ -93,7 +93,8 @@
       padding: 0.7rem 1rem; display: flex; flex-direction: column; gap: 0.55rem;
     }
     .filter-zone-spacer { flex: 1; }
-    .filter-tables { display: flex; gap: 1.5rem; flex-wrap: nowrap; align-items: flex-start; }
+    .filter-tables { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: flex-start; }
+    .filter-table-wrap { flex-shrink: 0; }
     table.filter-table { border-collapse: collapse; font-size: 12px; }
     table.filter-table th {
       padding: 0.3rem 0.5rem; background: #f5f5f7; color: #6e6e73;
@@ -296,6 +297,7 @@
 </div>
 <div class="filter-zone">
 <div class="filter-tables">
+<div class="filter-table-wrap">
 <table class="filter-table">
 <thead><tr><th colspan="3">Diff Detail</th></tr></thead>
 <tbody>
@@ -306,6 +308,8 @@
 <tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmatch" checked onchange="applyFilters()"></td><td class="ft-label"><code>TextMatch</code></td><td class="ft-desc">Text match</td></tr>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmismatch" checked onchange="applyFilters()"></td><td class="ft-label"><code>TextMismatch</code></td><td class="ft-desc">Text mismatch</td></tr>
 </tbody></table>
+</div>
+<div class="filter-table-wrap">
 <table class="filter-table">
 <thead><tr><th colspan="3">Change Importance</th></tr></thead>
 <tbody>
@@ -313,6 +317,7 @@
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"></td><td class="ft-label"><span style="color:#d97706;font-weight:bold">Medium</span></td><td class="ft-desc">Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"></td><td class="ft-label">Low</td><td class="ft-desc">Low-impact change: body-only modification, internal/private member addition</td></tr>
 </tbody></table>
+</div>
 </div>
 <div class="ctrl-filter-row">
   <label class="filter-label">File Type:</label>

@@ -115,6 +115,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<div class=\"filter-tables\">");
 
             // Diff Detail filter table / Diff Detail フィルターテーブル
+            sb.AppendLine("<div class=\"filter-table-wrap\">");
             sb.AppendLine("<table class=\"filter-table\">");
             sb.AppendLine("<thead><tr><th colspan=\"3\">Diff Detail</th></tr></thead>");
             sb.AppendLine("<tbody>");
@@ -125,8 +126,10 @@ namespace FolderDiffIL4DotNet.Services
             AppendFilterTableRow(sb, "filter-diff-textmatch", "<code>TextMatch</code>", HtmlEncode("Text match"));
             AppendFilterTableRow(sb, "filter-diff-textmismatch", "<code>TextMismatch</code>", HtmlEncode("Text mismatch"));
             sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</div>");
 
             // Change Importance filter table / Change Importance フィルターテーブル
+            sb.AppendLine("<div class=\"filter-table-wrap\">");
             sb.AppendLine("<table class=\"filter-table\">");
             sb.AppendLine("<thead><tr><th colspan=\"3\">Change Importance</th></tr></thead>");
             sb.AppendLine("<tbody>");
@@ -134,6 +137,7 @@ namespace FolderDiffIL4DotNet.Services
             AppendFilterTableRow(sb, "filter-imp-medium", "<span style=\"color:#d97706;font-weight:bold\">Medium</span>", HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal"));
             AppendFilterTableRow(sb, "filter-imp-low", "Low", HtmlEncode("Low-impact change: body-only modification, internal/private member addition"));
             sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</div>");
 
             sb.AppendLine("</div>"); // end .filter-tables
 
