@@ -40,7 +40,7 @@
 |-------|-------------|
 | `SHA256Match` / `SHA256Mismatch` | SHA256 hash match / mismatch |
 | `ILMatch` / `ILMismatch` | IL(Intermediate Language) match / mismatch |
-| `TextMatch` / `TextMismatch` | Text match / mismatch |
+| `TextMatch` / `TextMismatch` | Text-based match / mismatch |
 
 ### Legend — Change Importance
 
