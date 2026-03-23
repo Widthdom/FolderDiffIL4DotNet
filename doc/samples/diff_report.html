@@ -94,11 +94,17 @@
     }
     .filter-zone-spacer { flex: 1; }
     .filter-tables { display: flex; gap: 1.5rem; flex-wrap: nowrap; align-items: flex-start; }
-    .filter-group { font-size: 12px; }
-    .filter-group-title { padding: 0.25rem 0; color: #6e6e73; font-weight: 600; font-size: 11px; border-bottom: 1px solid #d2d2d7; margin-bottom: 0.25rem; }
-    .filter-group label { display: flex; align-items: baseline; gap: 0.4em; padding: 0.15rem 0; cursor: pointer; white-space: nowrap; }
-    .filter-group label input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; flex-shrink: 0; }
-    .ft-desc { color: #86868b; font-size: 11px; margin-left: 0.3em; font-weight: normal; }
+    table.filter-table { border-collapse: collapse; font-size: 12px; }
+    table.filter-table th {
+      padding: 0.3rem 0.5rem; background: #f5f5f7; color: #6e6e73;
+      font-weight: 600; font-size: 11px; text-align: left;
+      border-bottom: 1px solid #d2d2d7;
+    }
+    table.filter-table td { padding: 0.2rem 0.5rem; vertical-align: middle; background: #fff; }
+    table.filter-table td.ft-cb { text-align: center; width: 1.8em; }
+    table.filter-table td.ft-cb input[type="checkbox"] { width: 0.9em; height: 0.9em; cursor: pointer; }
+    table.filter-table td.ft-label { white-space: nowrap; }
+    table.filter-table td.ft-desc { color: #86868b; font-size: 11px; font-weight: normal; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
       position: sticky; top: 0;
@@ -290,21 +296,23 @@
 </div>
 <div class="filter-zone">
 <div class="filter-tables">
-<div class="filter-group">
-<div class="filter-group-title">Diff Detail</div>
-<label><input type="checkbox" id="filter-diff-sha256match" checked onchange="applyFilters()"><code>SHA256Match</code><span class="ft-desc">SHA256 hash match</span></label>
-<label><input type="checkbox" id="filter-diff-sha256mismatch" checked onchange="applyFilters()"><code>SHA256Mismatch</code><span class="ft-desc">SHA256 hash mismatch</span></label>
-<label><input type="checkbox" id="filter-diff-ilmatch" checked onchange="applyFilters()"><code>ILMatch</code><span class="ft-desc">IL (Intermediate Language) match</span></label>
-<label><input type="checkbox" id="filter-diff-ilmismatch" checked onchange="applyFilters()"><code>ILMismatch</code><span class="ft-desc">IL (Intermediate Language) mismatch</span></label>
-<label><input type="checkbox" id="filter-diff-textmatch" checked onchange="applyFilters()"><code>TextMatch</code><span class="ft-desc">Text match</span></label>
-<label><input type="checkbox" id="filter-diff-textmismatch" checked onchange="applyFilters()"><code>TextMismatch</code><span class="ft-desc">Text mismatch</span></label>
-</div>
-<div class="filter-group">
-<div class="filter-group-title">Change Importance</div>
-<label><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"><span style="color:#d1242f;font-weight:bold">High</span><span class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</span></label>
-<label><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"><span style="color:#d97706;font-weight:bold">Medium</span><span class="ft-desc">Notable change: public/protected member addition, modifier change, access widening, internal removal</span></label>
-<label><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()">Low<span class="ft-desc">Low-impact change: body-only modification, internal/private member addition</span></label>
-</div>
+<table class="filter-table">
+<thead><tr><th colspan="3">Diff Detail</th></tr></thead>
+<tbody>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-sha256match" checked onchange="applyFilters()"></td><td class="ft-label"><code>SHA256Match</code></td><td class="ft-desc">SHA256 hash match</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-sha256mismatch" checked onchange="applyFilters()"></td><td class="ft-label"><code>SHA256Mismatch</code></td><td class="ft-desc">SHA256 hash mismatch</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-ilmatch" checked onchange="applyFilters()"></td><td class="ft-label"><code>ILMatch</code></td><td class="ft-desc">IL (Intermediate Language) match</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-ilmismatch" checked onchange="applyFilters()"></td><td class="ft-label"><code>ILMismatch</code></td><td class="ft-desc">IL (Intermediate Language) mismatch</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmatch" checked onchange="applyFilters()"></td><td class="ft-label"><code>TextMatch</code></td><td class="ft-desc">Text match</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmismatch" checked onchange="applyFilters()"></td><td class="ft-label"><code>TextMismatch</code></td><td class="ft-desc">Text mismatch</td></tr>
+</tbody></table>
+<table class="filter-table">
+<thead><tr><th colspan="3">Change Importance</th></tr></thead>
+<tbody>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label"><span style="color:#d1242f;font-weight:bold">High</span></td><td class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"></td><td class="ft-label"><span style="color:#d97706;font-weight:bold">Medium</span></td><td class="ft-desc">Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"></td><td class="ft-label">Low</td><td class="ft-desc">Low-impact change: body-only modification, internal/private member addition</td></tr>
+</tbody></table>
 </div>
 <div class="ctrl-filter-row">
   <label class="filter-label">File Type:</label>
