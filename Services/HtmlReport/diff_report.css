@@ -265,6 +265,7 @@
     /* ── Dependency changes ──────────────────────────────────────────── */
     .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
     /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) */
+    table.semantic-changes-table.dc-detail { table-layout: auto; }
     col.dc-col-package-g { width: 24em; }
     col.dc-col-ver-g { width: 12em; }
     table.semantic-changes-table.dc-detail td:nth-child(3),
