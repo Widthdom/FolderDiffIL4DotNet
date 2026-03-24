@@ -936,6 +936,440 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(fileComparisonService.HashCalls);
         }
 
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenParallelChunkFilesHaveDifferentSizes_ReturnsFalse()
+        {
+            // DiffTextFilesParallelAsync returns false immediately when file sizes differ.
+            // ファイルサイズが異なる場合、DiffTextFilesParallelAsync は即座に false を返すべき。
+            const string relativePath = "size-diff.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldPath, new string('A', 2048));
+            fileComparisonService.SetFileContent(newPath, new string('A', 1024));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 4);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            // No chunk reads needed since size mismatch short-circuits
+            // サイズ不一致で短絡するためチャンク読み取り不要
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenParallelChunkFilesHaveDifferentContent_ReturnsFalse()
+        {
+            // DiffTextFilesParallelAsync detects byte-level differences across chunks.
+            // DiffTextFilesParallelAsync はチャンク間のバイトレベル差異を検出すべき。
+            const string relativePath = "content-diff.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldPath, new string('A', 2048));
+            fileComparisonService.SetFileContent(newPath, new string('B', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 2);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            // At least one chunk read should have occurred before detecting the difference
+            // 差異検出前に少なくとも1回のチャンク読み取りが発生すべき
+            Assert.NotEmpty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenParallelChunkFileDoesNotExist_ReturnsFalse()
+        {
+            // DiffTextFilesParallelAsync returns false when either file does not exist.
+            // いずれかのファイルが存在しない場合、DiffTextFilesParallelAsync は false を返すべき。
+            const string relativePath = "missing-one.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            // Only set content for old file, not new
+            // 旧ファイルのみコンテンツを設定し、新ファイルは未設定
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            fileComparisonService.SetFileContent(oldPath, new string('C', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 2);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenNegativeMemoryLimit_TreatsAsUnlimited()
+        {
+            // A negative TextDiffParallelMemoryLimitMegabytes should be treated as unlimited
+            // (same as 0), so parallel chunk comparison should proceed without reduction.
+            // 負の TextDiffParallelMemoryLimitMegabytes は制限なし（0 と同様）として扱われ、
+            // 並列チャンク比較が減少なしで実行されるべき。
+            const string relativePath = "neg-limit.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+            };
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldPath, new string('N', 2048));
+            fileComparisonService.SetFileContent(newPath, new string('N', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                    config.TextDiffParallelMemoryLimitMegabytes = -5;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 4);
+
+            Assert.True(areEqual);
+            // Parallel chunk comparison should be used (negative limit treated as unlimited)
+            // 並列チャンク比較が使用されるべき（負の制限は無制限として扱われる）
+            Assert.NotEmpty(fileComparisonService.ReadChunkCalls);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            Assert.DoesNotContain(logger.Entries,
+                entry => entry.Message.Contains("Text diff memory budget applied", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenILMatchReturnsTrue_ReturnsTrue()
+        {
+            // Verify the return value path: when IL comparison returns equal, the method
+            // must return true (not fall through to text comparison).
+            // IL 比較が一致を返した場合、メソッドは true を返し（テキスト比較にフォールスルーしない）。
+            const string relativePath = "il-match-return.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffResult = (AreEqual: true, DisassemblerLabel: "dotnet-ildasm v1.0")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.True(areEqual);
+            // Must not fall through to text or binary comparison
+            // テキストやバイナリ比較にフォールスルーしてはいけない
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenILMismatchReturnsFalse_ReturnsFalse()
+        {
+            // Verify the return value path: when IL comparison returns not-equal, the method
+            // must return false (not fall through to text comparison).
+            // IL 比較が不一致を返した場合、メソッドは false を返し（テキスト比較にフォールスルーしない）。
+            const string relativePath = "il-mismatch-return.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffResult = (AreEqual: false, DisassemblerLabel: "test-tool")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.ShouldIncludeAssemblySemanticChangesInReport = false);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenDotNetDetectionFailure_LogsWarningWithException()
+        {
+            // Verify the warning log includes the exception from the detection failure.
+            // 検出失敗からの例外が警告ログに含まれることを検証。
+            const string relativePath = "detect-ex.dll";
+            var detectionException = new IOException("bad PE header");
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(
+                    DotNetExecutableDetectionStatus.Failed,
+                    detectionException)
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            // Warning should contain the detection exception
+            // 警告には検出例外が含まれるべき
+            var warningEntry = Assert.Single(logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Failed to detect", StringComparison.Ordinal));
+            Assert.Same(detectionException, warningEntry.Exception);
+            // IL diff should not be attempted / IL 差分は試行されないべき
+            Assert.Empty(ilOutputService.DiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenHashEqual_ReturnsTrueWithoutCheckingDotNetOrText()
+        {
+            // Verify SHA256 match short-circuits all subsequent checks (DotNet detection, text diff).
+            // SHA256 一致で後続のすべてのチェック（DotNet 検出、テキスト差分）が短絡されることを検証。
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = true,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable),
+                TextDiffResult = false
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffResult = (AreEqual: false, DisassemblerLabel: "should-not-reach")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var areEqual = await service.FilesAreEqualAsync("shortcircuit.dll", maxParallel: 4);
+
+            Assert.True(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Match,
+                resultLists.FileRelativePathToDiffDetailDictionary["shortcircuit.dll"]);
+            // None of the downstream checks should be called
+            // 後段のチェックはいずれも呼ばれないべき
+            Assert.Empty(fileComparisonService.DotNetDetectionCalls);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            Assert.Empty(ilOutputService.DiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenTextExtensionMatchesCaseInsensitively_PerformsTextComparison()
+        {
+            // Verify that text extension matching is case-insensitive (.TXT matches .txt).
+            // テキスト拡張子の照合が大文字小文字を区別しないことを検証（.TXT が .txt に一致）。
+            const string relativePath = "file.TXT";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                optimizeForNetworkShares: true);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.True(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            Assert.Single(fileComparisonService.TextDiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenRequestedMaxParallelIsZero_UsesSequentialTextDiff()
+        {
+            // DetermineEffectiveTextDiffParallelism with requestedMaxParallel == 0 returns 0,
+            // which triggers the "effectiveMaxParallel == 1" fallback (actually returns 0 which
+            // is <= 1), using sequential text diff.
+            // requestedMaxParallel == 0 の場合、DetermineEffectiveTextDiffParallelism は 0 を返し、
+            // 逐次テキスト比較にフォールバックする。
+            const string relativePath = "zero-parallel.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldPath, new string('Z', 2048));
+            fileComparisonService.SetFileContent(newPath, new string('Z', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                });
+
+            // maxParallel=0 triggers requestedMaxParallel <= 1 early return path
+            // maxParallel=0 は requestedMaxParallel <= 1 の早期リターンパスをトリガーする
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 0);
+
+            Assert.True(areEqual);
+            Assert.Single(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenConfiguredThresholdIsNegative_UsesDefaultThreshold()
+        {
+            // GetEffectiveBytesFromConfiguredKilobytes returns default when configuredKilobytes <= 0.
+            // configuredKilobytes <= 0 の場合、GetEffectiveBytesFromConfiguredKilobytes は既定値を返す。
+            const string relativePath = "neg-threshold.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            // Small file below default threshold (512 KB)
+            // デフォルト閾値（512 KB）未満の小さいファイル
+            fileComparisonService.SetFileContent(oldPath, new string('T', 100));
+            fileComparisonService.SetFileContent(newPath, new string('T', 100));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = -1;
+                    config.TextDiffChunkSizeKilobytes = -1;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 4);
+
+            Assert.True(areEqual);
+            // File is small, so sequential text diff should be used with default threshold
+            // ファイルが小さいため、デフォルト閾値で逐次テキスト比較が使用されるべき
+            Assert.Single(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task PrecomputeAsync_WhenSkipILIsTrue_ReturnsCompletedTask()
+        {
+            // When SkipIL is true, PrecomputeAsync should return immediately (Task.CompletedTask).
+            // SkipIL が true の場合、PrecomputeAsync は即座に戻るべき（Task.CompletedTask）。
+            var ilOutputService = new FakeILOutputService();
+            var fileComparisonService = new FakeFileComparisonService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.SkipIL = true);
+
+            var task = service.PrecomputeAsync(new[] { "/virtual/old/a.dll", "/virtual/old/b.dll" }, maxParallel: 4);
+
+            // Task should be completed synchronously / タスクは同期的に完了しているべき
+            Assert.True(task.IsCompleted);
+            await task;
+            Assert.Equal(0, ilOutputService.PrecomputeCallCount);
+        }
+
+        [Fact]
+        public async Task PrecomputeAsync_WhenSkipILIsFalse_PassesFilesAndMaxParallel()
+        {
+            // When SkipIL is false, PrecomputeAsync delegates to ILOutputService.PrecomputeAsync.
+            // SkipIL が false の場合、PrecomputeAsync は ILOutputService.PrecomputeAsync に委譲する。
+            var ilOutputService = new FakeILOutputService();
+            var fileComparisonService = new FakeFileComparisonService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.SkipIL = false);
+
+            var files = new[] { "/virtual/old/x.dll", "/virtual/old/y.dll", "/virtual/old/z.dll" };
+            await service.PrecomputeAsync(files, maxParallel: 3);
+
+            Assert.True(ilOutputService.PrecomputeCallCount > 0);
+        }
+
         private static FileDiffService CreateService(
             FakeFileComparisonService fileComparisonService,
             FakeILOutputService ilOutputService,
