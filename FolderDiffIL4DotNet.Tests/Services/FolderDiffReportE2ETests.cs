@@ -92,10 +92,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var mdPath = Path.Combine(reportDir, "diff_report.md");
             Assert.True(File.Exists(mdPath), "diff_report.md should be created");
             var mdContent = File.ReadAllText(mdPath);
-            Assert.Contains("[+] Added Files", mdContent);
-            Assert.Contains("[-] Removed Files", mdContent);
-            Assert.Contains("[*] Modified Files", mdContent);
-            Assert.Contains("[=] Unchanged Files", mdContent);
+            Assert.Contains("[ + ] Added Files", mdContent);
+            Assert.Contains("[ - ] Removed Files", mdContent);
+            Assert.Contains("[ * ] Modified Files", mdContent);
+            Assert.Contains("[ = ] Unchanged Files", mdContent);
             Assert.Contains("added.txt", mdContent);
             Assert.Contains("removed.txt", mdContent);
             Assert.Contains("modified.txt", mdContent);
