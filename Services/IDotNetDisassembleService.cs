@@ -24,6 +24,21 @@ namespace FolderDiffIL4DotNet.Services
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Disassembles an old/new .NET assembly pair using the same disassembler and returns IL as lines
+        /// (avoids large single-string allocation for memory-efficient streaming comparison).
+        /// old/new の .NET アセンブリペアを同一の逆アセンブラで逆アセンブルし、IL を行リストとして返します
+        /// （メモリ効率の良いストリーミング比較のため、巨大な単一文字列の割り当てを回避します）。
+        /// </summary>
+        /// <param name="oldDotNetAssemblyFileAbsolutePath">Absolute path to the old assembly. / 旧アセンブリの絶対パス。</param>
+        /// <param name="newDotNetAssemblyFileAbsolutePath">Absolute path to the new assembly. / 新アセンブリの絶対パス。</param>
+        /// <param name="cancellationToken">Token to observe for cancellation. / キャンセルを監視するトークン。</param>
+        /// <returns>A tuple containing IL lines and disassembly command strings for both old and new. / old/new それぞれの IL 行リストおよび逆アセンブルコマンド文字列を含むタプル。</returns>
+        Task<(IReadOnlyList<string> oldIlLines, string oldCommandString, IReadOnlyList<string> newIlLines, string newCommandString)> DisassemblePairAsLinesWithSameDisassemblerAsync(
+            string oldDotNetAssemblyFileAbsolutePath,
+            string newDotNetAssemblyFileAbsolutePath,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Pre-fetches the IL cache for the specified assemblies asynchronously.
         /// 指定アセンブリ群の IL キャッシュを非同期で事前取得します。
         /// </summary>

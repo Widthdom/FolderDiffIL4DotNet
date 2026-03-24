@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
@@ -206,6 +207,194 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(method);
             var result = method.Invoke(null, new object[] { config });
             return Assert.IsType<List<string>>(result);
+        }
+
+        // --- StreamingFilteredSequenceEqual tests / StreamingFilteredSequenceEqual テスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_IdenticalLines_ReturnsTrue()
+        {
+            var lines1 = new List<string> { "class Foo {", "}", "  return 0" };
+            var lines2 = new List<string> { "class Foo {", "}", "  return 0" };
+
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_DifferentLines_ReturnsFalse()
+        {
+            var lines1 = new List<string> { "class Foo {", "  return 0" };
+            var lines2 = new List<string> { "class Foo {", "  return 1" };
+
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+
+            Assert.False(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_SkipsExcludedMvidLines()
+        {
+            var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
+            var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
+
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_SkipsConfiguredIgnoreStrings()
+        {
+            var lines1 = new List<string> { "class Foo {", "line with buildserver", "}" };
+            var lines2 = new List<string> { "class Foo {", "different buildserver line", "}" };
+            var ignoreStrings = new List<string> { "buildserver" };
+
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, true, ignoreStrings);
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_DifferentLengthsAfterFilter_ReturnsFalse()
+        {
+            var lines1 = new List<string> { "class Foo {", "}" };
+            var lines2 = new List<string> { "class Foo {", "}", "extra line" };
+
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+
+            Assert.False(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_BothEmpty_ReturnsTrue()
+        {
+            var result = ILOutputService.StreamingFilteredSequenceEqual(
+                new List<string>(), new List<string>(), false, new List<string>());
+
+            Assert.True(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_AllLinesExcluded_ReturnsTrue()
+        {
+            var lines1 = new List<string> { "// MVID: A", "// MVID: B" };
+            var lines2 = new List<string> { "// MVID: X" };
+
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+
+            Assert.True(result);
+        }
+
+        // --- FilterIlLines tests / FilterIlLines テスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FilterIlLines_RemovesMvidAndConfiguredStrings()
+        {
+            var lines = new List<string> { "// MVID: ABC", "class Foo {", "buildpath stuff", "}" };
+            var ignoreStrings = new List<string> { "buildpath" };
+
+            var result = ILOutputService.FilterIlLines(lines, true, ignoreStrings);
+
+            Assert.Equal(new[] { "class Foo {", "}" }, result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FilterIlLines_NoExclusions_ReturnsAllLines()
+        {
+            var lines = new List<string> { "class Foo {", "  return 0", "}" };
+
+            var result = ILOutputService.FilterIlLines(lines, false, new List<string>());
+
+            Assert.Equal(lines, result);
+        }
+
+        // --- SplitToLines tests / SplitToLines テスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SplitToLines_BasicNewlines_ReturnsExpectedLines()
+        {
+            var text = "line1\nline2\nline3";
+
+            var result = DotNetDisassembleService.SplitToLines(text);
+
+            Assert.Equal(new[] { "line1", "line2", "line3" }, result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SplitToLines_CarriageReturnNewlines_ReturnsExpectedLines()
+        {
+            var text = "line1\r\nline2\r\nline3";
+
+            var result = DotNetDisassembleService.SplitToLines(text);
+
+            Assert.Equal(new[] { "line1", "line2", "line3" }, result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SplitToLines_EmptyString_ReturnsEmptyList()
+        {
+            Assert.Empty(DotNetDisassembleService.SplitToLines(string.Empty));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SplitToLines_NullString_ReturnsEmptyList()
+        {
+            Assert.Empty(DotNetDisassembleService.SplitToLines(null!));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SplitToLines_TrailingNewline_DoesNotAppendEmptyLine()
+        {
+            // StringReader.ReadLine returns null after the last newline, not an empty string.
+            // StringReader.ReadLine は最後の改行の後に null を返し、空文字列は返さない。
+            var text = "line1\nline2\n";
+
+            var result = DotNetDisassembleService.SplitToLines(text);
+
+            Assert.Equal(new[] { "line1", "line2" }, result);
+        }
+
+        // --- StreamingFilteredSequenceEqual matches SplitAndFilterIlLines + SequenceEqual / ストリーミング比較が従来手法と一致 ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_MatchesSplitAndFilterBehavior()
+        {
+            // Verify the streaming comparison produces the same result as the legacy
+            // SplitAndFilterIlLines + SequenceEqual approach.
+            // ストリーミング比較が従来の SplitAndFilterIlLines + SequenceEqual と同一結果を返すことを検証。
+            var ilText1 = "// MVID: ABC\nclass Foo {\n}\n// MVID: DEF\n  return 0\n";
+            var ilText2 = "// MVID: XYZ\nclass Foo {\n}\n// MVID: GHI\n  return 0\n";
+
+            var splitAndFilter = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(splitAndFilter);
+
+            var ignoreStrings = new List<string>();
+            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings })!;
+            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings })!;
+            bool legacyResult = legacy1.SequenceEqual(legacy2);
+
+            var lines1 = DotNetDisassembleService.SplitToLines(ilText1);
+            var lines2 = DotNetDisassembleService.SplitToLines(ilText2);
+            bool streamingResult = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, ignoreStrings);
+
+            Assert.Equal(legacyResult, streamingResult);
         }
 
         private static ILOutputService CreateILOutputService(ConfigSettings config, string? ilOldFolder = null, string? ilNewFolder = null)
