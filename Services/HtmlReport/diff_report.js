@@ -6,6 +6,10 @@
   const __reviewedSha256__  = null;
   // NOTE: replaced with final SHA256 hash by downloadReviewed(). Do not change whitespace.
   const __finalSha256__     = null;
+  // Total number of reviewable files (injected at generation time). Do not change whitespace.
+  // レビュー対象ファイルの総数（生成時に注入）。空白を変更しないこと。
+  const __totalFiles__      = {{TOTAL_FILES}};
+  const __totalFilesDetail__ = '{{TOTAL_FILES_DETAIL}}';
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -47,6 +51,7 @@
     initClearButtons();
     setupLazyDiff();
     setupLazySection();
+    updateProgress();
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept
     // on dynamically created inputs that are clicked immediately)
@@ -77,6 +82,37 @@
     }
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Auto-saved at ' + formatTs(new Date());
+    updateProgress();
+  }
+
+  // Update the review progress bar / レビュー進捗バーを更新
+  function updateProgress() {
+    if (__totalFiles__ <= 0) return;
+    // Merge saved state with current DOM to include lazy-loaded sections
+    // 遅延ロードセクションも含めるため、保存済み状態と現在のDOMをマージ
+    var saved = JSON.parse(localStorage.getItem(__storageKey__) || '{}');
+    if (__savedState__) saved = __savedState__;
+    document.querySelectorAll('input[type="checkbox"][id^="cb_"]').forEach(function(cb) {
+      saved[cb.id] = cb.checked;
+    });
+    var checked = 0;
+    Object.keys(saved).forEach(function(k) {
+      if (k.indexOf('cb_') !== 0 || !saved[k]) return;
+      // Exclude Unchanged/Ignored from progress count / Unchanged/Ignoredは進捗カウントから除外
+      if (k.indexOf('cb_unch_') === 0 || k.indexOf('cb_ign_') === 0) return;
+      checked++;
+    });
+    var pct = Math.min(100, checked / __totalFiles__ * 100);
+    var bar = document.getElementById('progress-bar-fill');
+    var txt = document.getElementById('progress-text');
+    if (bar) {
+      bar.style.width = pct + '%';
+      if (checked >= __totalFiles__) bar.classList.add('complete');
+      else bar.classList.remove('complete');
+    }
+    if (txt) txt.textContent = checked + ' / ' + __totalFiles__ + ' reviewed';
+    var det = document.getElementById('progress-detail');
+    if (det && __totalFilesDetail__) det.textContent = '(' + __totalFilesDetail__ + ')';
   }
 
   async function downloadReviewed() {
@@ -130,10 +166,10 @@
     // Replace button row with reviewed banner (filter zone is preserved outside CTRL markers)
     // ボタン行を reviewed バナーに置換（フィルターゾーンは CTRL マーカー外なので維持）
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
-      '<div class="reviewed-banner"><span>Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</span>'
+      '<div class="reviewed-banner" role="banner"><span>Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</span>'
       + ' <button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
       + ' <button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
-      + ' <button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
+      + ' <button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
       + '</div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
@@ -284,6 +320,7 @@
           if (__savedState__ !== null) {
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
           }
+          updateProgress();
         } catch(e) {}
       });
     });
@@ -328,6 +365,7 @@
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
             d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
           }
+          updateProgress();
         } catch(e) {}
       });
     });
@@ -448,7 +486,8 @@
     btn.className = 'btn-input-clear';
     btn.tabIndex = -1;
     btn.title = 'Clear';
-    btn.innerHTML = '<svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="1" x2="7" y2="7"/><line x1="7" y1="1" x2="1" y2="7"/></svg>';
+    btn.setAttribute('aria-label', 'Clear');
+    btn.innerHTML = '<svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="1" x2="7" y2="7"/><line x1="7" y1="1" x2="1" y2="7"/></svg>';
     wrap.appendChild(btn);
     function sync() { wrap.classList.toggle('has-text', inp.value.length > 0); }
     inp.addEventListener('input', sync);
@@ -588,3 +627,18 @@
       }, 1200);
     });
   }
+
+  // ── Keyboard navigation (WCAG 2.1 AA) ────────────────────────────────
+  // Escape closes the nearest open detail element when focus is inside it.
+  // Escapeキーでフォーカス中のdetail要素を閉じる。
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var details = document.activeElement ? document.activeElement.closest('details[open]') : null;
+      if (details) {
+        details.removeAttribute('open');
+        var summary = details.querySelector('summary');
+        if (summary) summary.focus();
+        e.preventDefault();
+      }
+    }
+  });
