@@ -917,7 +917,7 @@
       + '<td class="bd">' + esc(notes) + '</td>'
       + '<td class="bd">' + esc(status) + '</td>'
       + '<td class="bd">' + esc(path) + '</td>'
-      + '<td class="bd">' + esc(ts) + '</td>'
+      + '<td class="bd" style="mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
       + '<td class="bd">' + esc(diff) + '</td>'
       + '<td class="bd">' + esc(disasm) + '</td>'
       + '</tr>';
