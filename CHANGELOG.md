@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **Expand disassembler troubleshooting guide with step-by-step instructions** — Replaced the brief "ildasm not found" section in [`TROUBLESHOOTING.md`](doc/TROUBLESHOOTING.md) with a comprehensive 5-step guide covering: (1) prerequisite verification (.NET SDK), (2) installation of `dotnet-ildasm` and `ilspycmd` with both options explained, (3) OS-specific PATH configuration (macOS/Linux bash/zsh, Windows PowerShell, Windows Command Prompt), (4) installation verification commands with fallback checks, (5) report-level detection confirmation with probe priority table. Added detailed explanation of the fallback mechanism (priority order, 3-failure blacklist threshold, 10-minute TTL auto-recovery). Added common installation issues table with 6 entries (NuGet feed errors, PATH misconfiguration, SkipIL override, per-file failures, ilspycmd hangs, permission errors). Both English and Japanese sections updated. Affected files: [`doc/TROUBLESHOOTING.md`](doc/TROUBLESHOOTING.md), [`CHANGELOG.md`](CHANGELOG.md).
+
 ### [1.8.1] - 2026-03-24
 
 #### Performance
@@ -615,6 +619,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Documentation
+
+- **逆アセンブラのトラブルシューティングガイドをステップバイステップ手順で拡充** — [`TROUBLESHOOTING.md`](doc/TROUBLESHOOTING.md) の簡素な「ildasm が見つからない」セクションを、包括的な 5 ステップガイドに置き換え。カバー内容: (1) 前提条件の確認（.NET SDK）、(2) `dotnet-ildasm` と `ilspycmd` の両方のインストール手順、(3) OS 別 PATH 設定（macOS/Linux bash/zsh、Windows PowerShell、Windows コマンドプロンプト）、(4) インストール確認コマンドとフォールバックチェック、(5) レポートレベルの検出確認とプローブ優先度テーブル。フォールバック機構の詳細説明（優先順位、3 回連続失敗のブラックリスト閾値、10 分 TTL 自動復旧）を追加。よくあるインストール問題テーブル 6 項目（NuGet フィードエラー、PATH 未設定、SkipIL オーバーライド、ファイル単位の失敗、ilspycmd ハング、パーミッションエラー）を追加。英語・日本語の両セクションを更新。影響ファイル: [`doc/TROUBLESHOOTING.md`](doc/TROUBLESHOOTING.md)、[`CHANGELOG.md`](CHANGELOG.md)。
 
 ### [1.8.1] - 2026-03-24
 
