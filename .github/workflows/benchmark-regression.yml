@@ -1,0 +1,98 @@
+name: Performance Regression Test
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  benchmark-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj
+
+      - name: Run benchmarks
+        run: dotnet run --project FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj --configuration Release -- --exporters json --filter '*'
+
+      - name: Combine benchmark results
+        run: |
+          python3 - <<'PY'
+          import json, glob, sys
+
+          combined = []
+          for path in sorted(glob.glob("BenchmarkDotNet.Artifacts/results/*-report-full-compressed.json")):
+              with open(path) as f:
+                  data = json.load(f)
+              if "Benchmarks" in data:
+                  combined.extend(data["Benchmarks"])
+
+          if not combined:
+              print("No benchmark results found.", file=sys.stderr)
+              sys.exit(1)
+
+          with open("BenchmarkDotNet.Artifacts/results/combined-report.json", "w") as f:
+              json.dump({"Benchmarks": combined}, f, indent=2)
+
+          print(f"Combined {len(combined)} benchmark(s).")
+          PY
+
+      - name: Check if baseline branch exists
+        id: check-baseline
+        run: |
+          if git ls-remote --exit-code origin gh-benchmarks >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Baseline branch gh-benchmarks does not exist yet. Will be created on first push to main."
+          fi
+
+      - name: Detect performance regression
+        if: steps.check-baseline.outputs.exists == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: 'FolderDiffIL4DotNet Performance'
+          tool: 'benchmarkdotnet'
+          output-file-path: BenchmarkDotNet.Artifacts/results/combined-report.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          alert-threshold: '150%'
+          comment-on-alert: true
+          fail-on-alert: ${{ steps.check-baseline.outputs.exists == 'true' }}
+          summary-always: true
+          gh-pages-branch: gh-benchmarks
+          benchmark-data-dir-path: dev/bench
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BenchmarkResults
+          if-no-files-found: warn
+          path: BenchmarkDotNet.Artifacts/**

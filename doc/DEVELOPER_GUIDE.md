@@ -188,6 +188,8 @@ Benchmark classes:
 
 **CI integration:** The `benchmark` job in [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) runs all benchmarks on `workflow_dispatch` and uploads `BenchmarkDotNet.Artifacts/` as a CI artifact with JSON and GitHub exporters.
 
+**Regression detection:** The [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) workflow runs automatically on every PR to `main` and on `push` to `main`. It combines JSON results from all benchmark classes into a single report and uses [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) to compare against the stored baseline in the `gh-benchmarks` branch. If any benchmark degrades by more than 50% (alert threshold `150%`), the job fails and a PR comment is posted. On push to `main`, the results are stored as the new baseline.
+
 ### SHA256 Hash Pre-Seeding
 
 When IL cache is enabled, `FileDiffService` seeds computed SHA256 hashes into `ILMemoryCache` via `PreSeedFileHash` after the initial hash comparison. This avoids recomputing SHA256 during IL cache key construction (`BuildILCacheKey`), which would otherwise re-read the file.
@@ -637,6 +639,7 @@ Workflow/config files:
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
 - [.github/workflows/release.yml](../.github/workflows/release.yml)
 - [.github/workflows/codeql.yml](../.github/workflows/codeql.yml)
+- [.github/workflows/benchmark-regression.yml](../.github/workflows/benchmark-regression.yml)
 - [.github/dependabot.yml](../.github/dependabot.yml)
 
 Current CI behavior (`build` job — Ubuntu):
@@ -668,6 +671,13 @@ Security automation:
 - The Analyze step uses `continue-on-error: true` to tolerate the SARIF upload rejection that occurs when the repository's GitHub Default Setup code scanning is also active for the `actions` language
 - [`.github/dependabot.yml`](../.github/dependabot.yml) opens weekly update PRs for both `nuget` dependencies and GitHub Actions
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) protects the expected CI/release/security file presence and key settings from accidental removal
+
+Performance regression detection:
+- [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) runs BenchmarkDotNet on every `pull_request` and `push` to `main`, plus `workflow_dispatch`
+- Combines JSON results from all benchmark classes into a single report and compares against the stored baseline in the `gh-benchmarks` branch using [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark)
+- Alert threshold is `150%` (50% degradation causes failure); PR comments are posted on regression
+- On push to `main`, results are auto-pushed to `gh-benchmarks` as the new baseline
+- Benchmark artifacts are always uploaded as `BenchmarkResults`
 
 Versioning:
 - [`version.json`](../version.json) uses [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning)
@@ -990,6 +1000,8 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 - [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): ファイル列挙（100 / 1K / 10K ファイル）と SHA256 ハッシュ比較。
 
 **CI 統合:** [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) の `benchmark` ジョブは `workflow_dispatch` 時にすべてのベンチマークを実行し、JSON および GitHub エクスポーター付きの `BenchmarkDotNet.Artifacts/` を CI アーティファクトとしてアップロードします。
+
+**リグレッション検知:** [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) ワークフローは `main` への PR および `push` のたびに自動実行されます。全ベンチマーククラスの JSON 結果を単一レポートに統合し、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して `gh-benchmarks` ブランチに保存されたベースラインと比較します。いずれかのベンチマークが 50% 以上劣化した場合（閾値 `150%`）、ジョブが失敗し PR コメントが投稿されます。`main` への push 時には結果が新しいベースラインとして保存されます。
 
 ### SHA256 ハッシュのプリシード
 
@@ -1437,6 +1449,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
 - [.github/workflows/release.yml](../.github/workflows/release.yml)
 - [.github/workflows/codeql.yml](../.github/workflows/codeql.yml)
+- [.github/workflows/benchmark-regression.yml](../.github/workflows/benchmark-regression.yml)
 - [.github/dependabot.yml](../.github/dependabot.yml)
 
 現在の CI 挙動（`build` ジョブ — Ubuntu）:
@@ -1468,6 +1481,13 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - Analyze ステップは `continue-on-error: true` を設定し、リポジトリの GitHub Default Setup コードスキャンが有効なとき `actions` 言語の SARIF アップロードが拒否されてもジョブが失敗しないようにします
 - [`.github/dependabot.yml`](../.github/dependabot.yml) は `nuget` 依存関係と GitHub Actions の更新 PR を週次で作成します
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) で CI / リリース / セキュリティ設定ファイルの存在と主要設定の剥がれを検知します
+
+パフォーマンスリグレッション検知:
+- [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) は `main` 向け `pull_request` と `push`、および `workflow_dispatch` で BenchmarkDotNet を実行します
+- 全ベンチマーククラスの JSON 結果を単一レポートに統合し、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して `gh-benchmarks` ブランチに保存されたベースラインと比較します
+- 閾値は `150%`（50% の劣化でジョブ失敗）。リグレッション時に PR コメントを投稿します
+- `main` への push 時には結果が `gh-benchmarks` に新しいベースラインとして自動 push されます
+- ベンチマーク成果物は常に `BenchmarkResults` としてアップロードされます
 
 バージョニング:
 - [`version.json`](../version.json) で [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) を利用
