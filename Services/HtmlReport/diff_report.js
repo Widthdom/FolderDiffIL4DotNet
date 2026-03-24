@@ -698,18 +698,22 @@
     var sectionColors = {
       'ign': '#f0f0f2', 'unch': '#f0f0f2',
       'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd',
-      'sha256w': '#fff3cd', 'tsw': '#fff3cd'
+      'sha256w': '#e3f2fd', 'tsw': '#e3f2fd'
     };
+    // Column header row color (blue for all sections) / 列ヘッダー行の色（全セクション青）
+    var COL_HEADER_COLOR = '#e3f2fd';
 
     // Collect header info from report / レポートからヘッダー情報を収集
+    // Header spans columns #(1) + Reviewed(2) for label, Justification(3) for value
+    // ヘッダーは #(1)+Reviewed(2) をラベル、Justification(3) を値に使用
     var headerCards = document.querySelectorAll('.header-card');
     var headerHtml = '';
     headerCards.forEach(function(card) {
       var label = card.querySelector('.header-card-label');
       var value = card.querySelector('.header-card-value');
       if (label && value) {
-        headerHtml += '<tr><td style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td colspan="7">' + esc(value.textContent.trim()) + '</td></tr>';
+        headerHtml += '<tr><td colspan="2" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="6">' + esc(value.textContent.trim()) + '</td></tr>';
       }
     });
     var headerPaths = document.querySelectorAll('.header-path');
@@ -717,14 +721,13 @@
       var label = hp.querySelector('.header-path-label');
       var value = hp.querySelector('.header-path-value');
       if (label && value) {
-        headerHtml += '<tr><td style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td colspan="7">' + esc(value.textContent.trim()) + '</td></tr>';
+        headerHtml += '<tr><td colspan="2" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="6">' + esc(value.textContent.trim()) + '</td></tr>';
       }
     });
 
     // Build section tables / セクションテーブルを構築
     var sectionsHtml = '';
-    var currentSection = '';
     // Determine which sections exist by scanning all data-section rows / data-section行をスキャンして存在するセクションを判定
     var allRows = document.querySelectorAll('tbody > tr[data-section]');
     var seenSections = [];
@@ -732,16 +735,20 @@
       var sec = tr.getAttribute('data-section');
       if (seenSections.indexOf(sec) < 0) seenSections.push(sec);
     });
+    // Separate warning sections (placed after Summary) / 警告セクションを分離（Summary の後に配置）
+    var warningSections = ['sha256w', 'tsw'];
+    var mainSections = seenSections.filter(function(s) { return warningSections.indexOf(s) < 0; });
+    var warnSections = seenSections.filter(function(s) { return warningSections.indexOf(s) >= 0; });
 
-    seenSections.forEach(function(sec) {
+    mainSections.forEach(function(sec) {
       var color = sectionColors[sec] || '#f0f0f2';
       var name = sectionNames[sec] || sec;
       // Count rows in this section / このセクションの行数を取得
       var sectionRows = document.querySelectorAll('tbody > tr[data-section="' + sec + '"]');
       sectionsHtml += '<tr><td colspan="8" style="background:' + color + ';font-weight:bold;font-size:14px;padding:8px">'
         + esc(name) + ' (' + sectionRows.length + ')</td></tr>';
-      // Header row / ヘッダー行
-      sectionsHtml += '<tr style="background:' + color + ';font-weight:bold">'
+      // Header row (always blue) / ヘッダー行（常に青）
+      sectionsHtml += '<tr style="background:' + COL_HEADER_COLOR + ';font-weight:bold">'
         + '<td>#</td><td>Reviewed</td><td>Justification</td><td>Notes</td>'
         + '<td>File Path</td><td>Timestamp</td><td>Diff Detail</td><td>Disassembler</td></tr>';
       sectionRows.forEach(function(tr) {
@@ -759,18 +766,36 @@
       statTable.querySelectorAll('tr').forEach(function(tr) {
         var cells = tr.querySelectorAll('th, td');
         if (cells.length >= 2) {
-          summaryHtml += '<tr><td style="font-weight:bold">' + esc(cells[0].textContent.trim()) + '</td>'
-            + '<td colspan="7">' + esc(cells[1].textContent.trim()) + '</td></tr>';
+          summaryHtml += '<tr><td colspan="2" style="font-weight:bold">' + esc(cells[0].textContent.trim()) + '</td>'
+            + '<td colspan="6">' + esc(cells[1].textContent.trim()) + '</td></tr>';
         }
       });
+      summaryHtml += '<tr><td colspan="8"></td></tr>';
     }
+
+    // Build warning sections (placed after Summary) / 警告セクション（Summary の後に配置）
+    var warningsHtml = '';
+    warnSections.forEach(function(sec) {
+      var color = sectionColors[sec] || '#f0f0f2';
+      var name = sectionNames[sec] || sec;
+      var sectionRows = document.querySelectorAll('tbody > tr[data-section="' + sec + '"]');
+      warningsHtml += '<tr><td colspan="8" style="background:' + color + ';font-weight:bold;font-size:14px;padding:8px">'
+        + esc(name) + ' (' + sectionRows.length + ')</td></tr>';
+      warningsHtml += '<tr style="background:' + COL_HEADER_COLOR + ';font-weight:bold">'
+        + '<td>#</td><td>Reviewed</td><td>Justification</td><td>Notes</td>'
+        + '<td>File Path</td><td>Timestamp</td><td>Diff Detail</td><td>Disassembler</td></tr>';
+      sectionRows.forEach(function(tr) {
+        warningsHtml += buildExcelRow(tr);
+      });
+      warningsHtml += '<tr><td colspan="8"></td></tr>';
+    });
 
     var slug = 'diff_report_' + __reportDate__;
     var excelFileName = slug + '_reviewed_Excel-compatible.html';
     var out = '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
       + '<head><meta charset="UTF-8">\n'
       + '<style>\n'
-      + 'table { border-collapse: collapse; font-family: Consolas, monospace; font-size: 11px; }\n'
+      + 'table { border-collapse: collapse; font-family: "Meiryo UI", sans-serif; font-size: 11px; }\n'
       + 'td, th { border: 1px solid #ccc; padding: 4px 8px; white-space: nowrap; vertical-align: top; }\n'
       + 'td.wrap { white-space: normal; }\n'
       + '</style>\n'
@@ -781,6 +806,7 @@
       + '<tr><td colspan="8"></td></tr>\n'
       + sectionsHtml
       + summaryHtml
+      + warningsHtml
       + '</table>\n'
       + '</body></html>';
 
