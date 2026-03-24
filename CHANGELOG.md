@@ -712,7 +712,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **終了コードの構造化文書化** — [`README.md`](README.md) の終了コードを箇条書きから、コード・意味・主な発生条件を含む詳細テーブル（EN+JA）に置き換え。
 
-#### 変更
+#### Changed
 
 - **大規模 partial class ファイルの分割（~500 行/ファイルガイドライン準拠）** — `HtmlReportGenerateService.Sections.cs`（724 行）を `Sections.cs`（392 行）+ 新規 `DetailRows.cs`（362 行）に分割。`DetailRows.cs` には `AppendInlineDiffRow`・`AppendAssemblySemanticChangesRow`・`AppendDependencyChangesRow` およびそのヘルパーを配置。`AppendInlineDiffRow`（127 行）は `ReadInlineDiffSourceLines` ヘルパーの抽出により 100 行以下に縮小。`AssemblyMethodAnalyzer.MetadataHelpers.cs`（799 行）を `MetadataHelpers.cs`（364 行）+ 新規 `AccessHelpers.cs`（279 行）+ 新規 `SignatureProvider.cs`（194 行）に分割。`CLAUDE.md` のファイル数を更新: `HtmlReportGenerateService` 5→6 ファイル、`AssemblyMethodAnalyzer` 3→5 ファイル。`DEVELOPER_GUIDE.md` の partial class テーブル（EN+JA）を更新。
 
@@ -720,7 +720,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **CI パイプラインのトリガーに `pre-main-integration` ブランチを追加** — 3 つの GitHub Actions ワークフロー（`dotnet.yml`、`benchmark-regression.yml`、`codeql.yml`）を更新し、`main` に加えて `pre-main-integration` ブランチへの `push` および `pull_request` イベントでもトリガーされるようにした。これにより `pre-main-integration` が `main` へのマージ前の最終防衛線として機能し、当該ブランチへの PR・push 時にフル CI スイート（ビルド、テスト、カバレッジ、ベンチマーク回帰、CodeQL）が実行される。影響ファイル: [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml)、[`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml)、[`.github/workflows/codeql.yml`](.github/workflows/codeql.yml)。
 
-#### 修正
+#### Fixed
 
 - **初回 main プッシュ時の benchmark CI 失敗を修正（`gh-benchmarks` ブランチ不在）** — `benchmark-action/github-action-benchmark@v1` が `fatal: invalid reference: gh-benchmarks` で失敗していた。ブランチが一度も作成されていない状態でアクションが `git switch gh-benchmarks` を実行しようとしたため。[`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) にベンチマークアクション実行前に空の orphan `gh-benchmarks` ブランチを作成・push するステップを追加（main への初回 push 時、ブランチが存在しない場合のみ実行）。
 
