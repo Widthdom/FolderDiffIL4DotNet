@@ -508,18 +508,18 @@ namespace FolderDiffIL4DotNet.Services
             {
                 contentBuilder.AppendLine("<table class=\"semantic-changes-table dc-detail\">");
                 contentBuilder.AppendLine("<colgroup>");
-                contentBuilder.AppendLine("  <col class=\"dc-col-cb-g\">");
-                contentBuilder.AppendLine("  <col class=\"dc-col-status-g\">");
-                contentBuilder.AppendLine("  <col class=\"dc-col-importance-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-cb-g\">");
                 contentBuilder.AppendLine("  <col class=\"dc-col-package-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-change-g\">");
+                contentBuilder.AppendLine("  <col class=\"sc-col-importance-g\">");
                 contentBuilder.AppendLine("  <col class=\"dc-col-ver-g\">");
                 contentBuilder.AppendLine("  <col class=\"dc-col-ver-g\">");
                 contentBuilder.AppendLine("</colgroup>");
                 contentBuilder.AppendLine("<thead><tr>");
-                contentBuilder.AppendLine($"  <th>&#x2713;</th>");
+                contentBuilder.AppendLine($"  <th class=\"sc-col-cb\">&#x2713;</th>");
+                contentBuilder.AppendLine($"  <th>{HtmlEncode("Package")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Status")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Importance")}</th>");
-                contentBuilder.AppendLine($"  <th>{HtmlEncode("Package")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Old Version")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("New Version")}</th>");
                 contentBuilder.AppendLine("</tr></thead>");
@@ -537,7 +537,7 @@ namespace FolderDiffIL4DotNet.Services
                     string cbId = $"dc_{sectionPrefix}_{idx}_{dcRowIdx}";
                     string oldVer = e.OldVersion.Length > 0 ? HtmlEncode(e.OldVersion) : "&#x2014;";
                     string newVer = e.NewVersion.Length > 0 ? HtmlEncode(e.NewVersion) : "&#x2014;";
-                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td><input type=\"checkbox\" id=\"{cbId}\"></td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td>{HtmlEncode(e.PackageName)}</td><td>{oldVer}</td><td>{newVer}</td></tr>");
+                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td></tr>");
                     dcRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");

@@ -246,14 +246,14 @@ namespace FolderDiffIL4DotNet.Services
                             writer.WriteLine();
                             writer.WriteLine($"#### Dependency Changes: {fileRelativePath}");
                             writer.WriteLine();
-                            writer.WriteLine("| Status | Importance | Package | Old Version | New Version |");
-                            writer.WriteLine("|:------:|:----------:|---------|:-----------:|:-----------:|");
+                            writer.WriteLine("| Package | Status | Importance | Old Version | New Version |");
+                            writer.WriteLine("|---------|:------:|:----------:|:-----------:|:-----------:|");
                             foreach (var e in depSummary.EntriesByImportance)
                             {
                                 string marker = e.Change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ * ]", _ => e.Change };
                                 string oldVer = e.OldVersion.Length > 0 ? e.OldVersion : "—";
                                 string newVer = e.NewVersion.Length > 0 ? e.NewVersion : "—";
-                                writer.WriteLine($"| `{marker}` | `{e.Importance}` | {e.PackageName} | {oldVer} | {newVer} |");
+                                writer.WriteLine($"| {e.PackageName} | `{marker}` | `{e.Importance}` | {oldVer} | {newVer} |");
                             }
                         }
                     }

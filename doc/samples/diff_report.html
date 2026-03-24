@@ -253,15 +253,11 @@
     col.sc-col-body-g { width: var(--sc-body-w); }
     /* ── Dependency changes ──────────────────────────────────────────── */
     .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
-    /* dc-detail (dependency changes): checkbox(1) Status(2) Importance(3) Package(4) OldVer(5) NewVer(6) */
-    col.dc-col-cb-g { width: 3.2em; }
-    col.dc-col-status-g { width: 7em; }
-    col.dc-col-importance-g { width: 7em; }
+    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) */
     col.dc-col-package-g { width: 24em; }
     col.dc-col-ver-g { width: 12em; }
-    table.semantic-changes-table.dc-detail td:nth-child(1),
-    table.semantic-changes-table.dc-detail td:nth-child(2),
-    table.semantic-changes-table.dc-detail td:nth-child(3) { text-align: center; }
+    table.semantic-changes-table.dc-detail td:nth-child(3),
+    table.semantic-changes-table.dc-detail td:nth-child(4) { text-align: center; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; min-width: 7em; }
     .filter-chip { display: inline-flex; align-items: center; gap: 0.3em; white-space: nowrap; cursor: pointer; min-width: 5.5em; }
@@ -607,27 +603,27 @@
 <div class="dependency-changes">
 <table class="semantic-changes-table dc-detail">
 <colgroup>
-  <col class="dc-col-cb-g">
-  <col class="dc-col-status-g">
-  <col class="dc-col-importance-g">
+  <col class="sc-col-cb-g">
   <col class="dc-col-package-g">
+  <col class="sc-col-change-g">
+  <col class="sc-col-importance-g">
   <col class="dc-col-ver-g">
   <col class="dc-col-ver-g">
 </colgroup>
 <thead><tr>
-  <th>&#x2713;</th>
+  <th class="sc-col-cb">&#x2713;</th>
+  <th>Package</th>
   <th>Status</th>
   <th>Importance</th>
-  <th>Package</th>
   <th>Old Version</th>
   <th>New Version</th>
 </tr></thead>
 <tbody>
-<tr data-sc-importance="High"><td><input type="checkbox" id="dc_mod_0_0"></td><td style="background:#ffeef0">[ - ]</td><td style="font-weight:700;color:#b31d28">High</td><td>System.Text.Json</td><td>7.0.0</td><td>&#x2014;</td></tr>
-<tr data-sc-importance="High"><td><input type="checkbox" id="dc_mod_0_1"></td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:700;color:#b31d28">High</td><td>Serilog</td><td>3.0.0</td><td>4.1.0</td></tr>
-<tr data-sc-importance="Medium"><td><input type="checkbox" id="dc_mod_0_2"></td><td style="background:#e6ffed">[ + ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>Newtonsoft.Json</td><td>&#x2014;</td><td>13.0.3</td></tr>
-<tr data-sc-importance="Medium"><td><input type="checkbox" id="dc_mod_0_3"></td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>Microsoft.Extensions.Logging</td><td>8.0.0</td><td>9.0.0</td></tr>
-<tr data-sc-importance="Low"><td><input type="checkbox" id="dc_mod_0_4"></td><td style="background:#e3f2fd">[ * ]</td><td>Low</td><td>Microsoft.Extensions.DependencyInjection</td><td>9.0.0</td><td>9.0.8</td></tr>
+<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_0"></td><td>System.Text.Json</td><td style="background:#ffeef0">[ - ]</td><td style="font-weight:700;color:#b31d28">High</td><td>7.0.0</td><td>&#x2014;</td></tr>
+<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_1"></td><td>Serilog</td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:700;color:#b31d28">High</td><td>3.0.0</td><td>4.1.0</td></tr>
+<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_2"></td><td>Newtonsoft.Json</td><td style="background:#e6ffed">[ + ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>&#x2014;</td><td>13.0.3</td></tr>
+<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_3"></td><td>Microsoft.Extensions.Logging</td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>8.0.0</td><td>9.0.0</td></tr>
+<tr data-sc-importance="Low"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_4"></td><td>Microsoft.Extensions.DependencyInjection</td><td style="background:#e3f2fd">[ * ]</td><td>Low</td><td>9.0.0</td><td>9.0.8</td></tr>
 </tbody></table>
 </div>
     </details>
