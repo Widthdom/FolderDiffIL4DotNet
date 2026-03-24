@@ -816,16 +816,18 @@
     var statTable = document.querySelector('.stat-table');
     if (statTable) {
       summaryHtml += bannerRow('Summary', '#000', 'font-weight:bold;font-size:14px;padding:8px');
-      // Column header row for summary / サマリーの列ヘッダー行
-      summaryHtml += '<tr><td style="font-weight:bold">Category</td>'
-        + '<td style="font-weight:bold">Count</td>';
+      // Column header row for summary (same bg as Ignored Files header) / サマリーの列ヘッダー行（Ignored Files ヘッダーと同じ背景色）
+      summaryHtml += '<tr><td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
+        + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>';
       for (var si = 2; si < COLS; si++) summaryHtml += '<td></td>';
       summaryHtml += '</tr>';
       statTable.querySelectorAll('tr').forEach(function(tr) {
-        var cells = tr.querySelectorAll('th, td');
+        // Skip header rows containing th elements / th要素を含むヘッダー行をスキップ
+        if (tr.querySelector('th')) return;
+        var cells = tr.querySelectorAll('td');
         if (cells.length >= 2) {
-          summaryHtml += '<tr><td style="font-weight:bold">' + esc(cells[0].textContent.trim()) + '</td>'
-            + '<td>' + esc(cells[1].textContent.trim()) + '</td>';
+          summaryHtml += '<tr><td class="bd">' + esc(cells[0].textContent.trim()) + '</td>'
+            + '<td class="bd">' + esc(cells[1].textContent.trim()) + '</td>';
           for (var i = 2; i < COLS; i++) summaryHtml += '<td></td>';
           summaryHtml += '</tr>';
         }
