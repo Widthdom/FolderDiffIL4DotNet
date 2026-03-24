@@ -625,6 +625,22 @@ describe('updateProgress', () => {
     expect(document.getElementById('progress-text').textContent).toBe('3 / 3 reviewed');
   });
 
+  it('ignores corrupted localStorage when computing progress', () => {
+    loadScript({
+      totalFiles: 2,
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+      `,
+    });
+    localStorage.setItem('test-key', '{broken json');
+
+    expect(() => fireDOMContentLoaded()).not.toThrow();
+    expect(document.getElementById('progress-text').textContent).toBe('1 / 2 reviewed');
+  });
+
   it('shows detail breakdown when totalFilesDetail is provided', () => {
     loadScript({
       totalFiles: 3,

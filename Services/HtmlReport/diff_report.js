@@ -16,10 +16,19 @@
       +' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
   }
 
+  function readSavedStateFromStorage(fallbackJson) {
+    try {
+      var parsed = JSON.parse(localStorage.getItem(__storageKey__) || fallbackJson);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch(e) {
+      return null;
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     var toRestore = __savedState__;
     if (!toRestore) {
-      try { toRestore = JSON.parse(localStorage.getItem(__storageKey__) || 'null'); } catch(e) { toRestore = null; }
+      toRestore = readSavedStateFromStorage('null');
     }
     if (toRestore) {
       Object.entries(toRestore).forEach(function(entry) {
@@ -90,8 +99,7 @@
     if (__totalFiles__ <= 0) return;
     // Merge saved state with current DOM to include lazy-loaded sections
     // 遅延ロードセクションも含めるため、保存済み状態と現在のDOMをマージ
-    var saved = JSON.parse(localStorage.getItem(__storageKey__) || '{}');
-    if (__savedState__) saved = __savedState__;
+    var saved = __savedState__ || readSavedStateFromStorage('{}') || {};
     document.querySelectorAll('input[type="checkbox"][id^="cb_"]').forEach(function(cb) {
       saved[cb.id] = cb.checked;
     });
@@ -307,8 +315,7 @@
             });
           }
           // Restore state for new inputs
-          var toRestore = __savedState__;
-          if (!toRestore) { try { toRestore = JSON.parse(localStorage.getItem(__storageKey__) || 'null'); } catch(e) { toRestore = null; } }
+          var toRestore = __savedState__ || readSavedStateFromStorage('null');
           if (toRestore) {
             d.querySelectorAll('input[id]').forEach(function(el) {
               if (el.id in toRestore) {
@@ -352,8 +359,7 @@
             });
           }
           // Restore state for new inputs / 新規inputの状態を復元
-          var toRestore = __savedState__;
-          if (!toRestore) { try { toRestore = JSON.parse(localStorage.getItem(__storageKey__) || 'null'); } catch(e) { toRestore = null; } }
+          var toRestore = __savedState__ || readSavedStateFromStorage('null');
           if (toRestore) {
             d.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
               if (toRestore[el.id] === undefined) return;

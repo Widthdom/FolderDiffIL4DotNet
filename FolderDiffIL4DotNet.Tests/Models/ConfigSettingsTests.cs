@@ -453,6 +453,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             AssertJsonBool(root, "ShouldIncludeUnchangedFiles", ConfigSettings.DefaultShouldIncludeUnchangedFiles);
             AssertJsonBool(root, "ShouldIncludeIgnoredFiles", ConfigSettings.DefaultShouldIncludeIgnoredFiles);
             AssertJsonBool(root, "ShouldIncludeAssemblySemanticChangesInReport", ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport);
+            AssertJsonBool(root, "ShouldIncludeDependencyChangesInReport", ConfigSettings.DefaultShouldIncludeDependencyChangesInReport);
             AssertJsonBool(root, "ShouldIncludeILCacheStatsInReport", ConfigSettings.DefaultShouldIncludeILCacheStatsInReport);
             AssertJsonBool(root, "ShouldGenerateHtmlReport", ConfigSettings.DefaultShouldGenerateHtmlReport);
             AssertJsonBool(root, "ShouldGenerateAuditLog", ConfigSettings.DefaultShouldGenerateAuditLog);
@@ -495,6 +496,9 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 }
                 Assert.Equal(ConfigSettings.DefaultIgnoredExtensionsValues, actual);
             }
+
+            Assert.False(root.TryGetProperty("ILCacheMaxMemoryEntries", out _),
+                "config.sample.jsonc still contains removed property 'ILCacheMaxMemoryEntries'");
         }
 
         private static void AssertJsonBool(JsonElement root, string propertyName, bool expected)

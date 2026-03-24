@@ -108,10 +108,6 @@
   // CLI override: --no-il-cache
   "EnableILCache": true,
 
-  // Maximum in-memory IL cache entries (default: 1000)
-  // メモリ内 IL キャッシュの最大エントリ数（デフォルト: 1000）
-  "ILCacheMaxMemoryEntries": 1000,
-
   // Interval (seconds) for periodic IL cache statistics logging (default: 60)
   // IL キャッシュ統計の定期ログ出力間隔（秒）（デフォルト: 60）
   "ILCacheStatsLogIntervalSeconds": 60,
