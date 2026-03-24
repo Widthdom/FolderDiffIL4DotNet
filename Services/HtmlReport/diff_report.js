@@ -681,6 +681,158 @@
     });
   }
 
+  // ── Excel export ────────────────────────────────────────────────────
+  // Generates an Excel-compatible HTML table file from the current report data.
+  // 現在のレポートデータから Excel 互換 HTML テーブルファイルを生成します。
+  function downloadExcel() {
+    // Force-decode all lazy sections to capture all data / 全lazyセクションを強制デコードしデータを取得
+    forceDecodeLazySections();
+
+    var sectionNames = {
+      'ign': 'Ignored Files', 'unch': 'Unchanged Files',
+      'add': 'Added Files', 'rem': 'Removed Files', 'mod': 'Modified Files',
+      'sha256w': 'Warnings — SHA256Mismatch', 'tsw': 'Warnings — Timestamp'
+    };
+    var sectionColors = {
+      'ign': '#f0f0f2', 'unch': '#f0f0f2',
+      'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd',
+      'sha256w': '#fff3cd', 'tsw': '#fff3cd'
+    };
+
+    // Collect header info from report / レポートからヘッダー情報を収集
+    var headerCards = document.querySelectorAll('.header-card');
+    var headerHtml = '';
+    headerCards.forEach(function(card) {
+      var label = card.querySelector('.header-card-label');
+      var value = card.querySelector('.header-card-value');
+      if (label && value) {
+        headerHtml += '<tr><td style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="7">' + esc(value.textContent.trim()) + '</td></tr>';
+      }
+    });
+    var headerPaths = document.querySelectorAll('.header-path');
+    headerPaths.forEach(function(hp) {
+      var label = hp.querySelector('.header-path-label');
+      var value = hp.querySelector('.header-path-value');
+      if (label && value) {
+        headerHtml += '<tr><td style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="7">' + esc(value.textContent.trim()) + '</td></tr>';
+      }
+    });
+
+    // Build section tables / セクションテーブルを構築
+    var sectionsHtml = '';
+    var currentSection = '';
+    // Determine which sections exist by scanning all data-section rows / data-section行をスキャンして存在するセクションを判定
+    var allRows = document.querySelectorAll('tbody > tr[data-section]');
+    var seenSections = [];
+    allRows.forEach(function(tr) {
+      var sec = tr.getAttribute('data-section');
+      if (seenSections.indexOf(sec) < 0) seenSections.push(sec);
+    });
+
+    seenSections.forEach(function(sec) {
+      var color = sectionColors[sec] || '#f0f0f2';
+      var name = sectionNames[sec] || sec;
+      // Count rows in this section / このセクションの行数を取得
+      var sectionRows = document.querySelectorAll('tbody > tr[data-section="' + sec + '"]');
+      sectionsHtml += '<tr><td colspan="8" style="background:' + color + ';font-weight:bold;font-size:14px;padding:8px">'
+        + esc(name) + ' (' + sectionRows.length + ')</td></tr>';
+      // Header row / ヘッダー行
+      sectionsHtml += '<tr style="background:' + color + ';font-weight:bold">'
+        + '<td>#</td><td>Reviewed</td><td>Justification</td><td>Notes</td>'
+        + '<td>File Path</td><td>Timestamp</td><td>Diff Detail</td><td>Disassembler</td></tr>';
+      sectionRows.forEach(function(tr) {
+        sectionsHtml += buildExcelRow(tr);
+      });
+      // Empty row between sections / セクション間の空行
+      sectionsHtml += '<tr><td colspan="8"></td></tr>';
+    });
+
+    // Build summary section / サマリーセクションを構築
+    var summaryHtml = '';
+    var statTable = document.querySelector('.stat-table');
+    if (statTable) {
+      summaryHtml += '<tr><td colspan="8" style="background:#f0f0f2;font-weight:bold;font-size:14px;padding:8px">Summary</td></tr>';
+      statTable.querySelectorAll('tr').forEach(function(tr) {
+        var cells = tr.querySelectorAll('th, td');
+        if (cells.length >= 2) {
+          summaryHtml += '<tr><td style="font-weight:bold">' + esc(cells[0].textContent.trim()) + '</td>'
+            + '<td colspan="7">' + esc(cells[1].textContent.trim()) + '</td></tr>';
+        }
+      });
+    }
+
+    var slug = 'diff_report_' + __reportDate__;
+    var excelFileName = slug + '_table.html';
+    var out = '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
+      + '<head><meta charset="UTF-8">\n'
+      + '<style>\n'
+      + 'table { border-collapse: collapse; font-family: Consolas, monospace; font-size: 11px; }\n'
+      + 'td, th { border: 1px solid #ccc; padding: 4px 8px; white-space: nowrap; vertical-align: top; }\n'
+      + 'td.wrap { white-space: normal; }\n'
+      + '</style>\n'
+      + '</head><body>\n'
+      + '<table>\n'
+      + '<tr><td colspan="8" style="font-size:16px;font-weight:bold;padding:8px">Folder Diff Report</td></tr>\n'
+      + headerHtml
+      + '<tr><td colspan="8"></td></tr>\n'
+      + sectionsHtml
+      + summaryHtml
+      + '</table>\n'
+      + '</body></html>';
+
+    var blob = new Blob([out], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = excelFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function buildExcelRow(tr) {
+    var cells = tr.querySelectorAll('td');
+    if (cells.length < 8) return '';
+    // #
+    var no = cells[0].textContent.trim();
+    // Checkbox state / チェックボックス状態
+    var cb = cells[1].querySelector('input[type="checkbox"]');
+    var checked = cb && cb.checked ? '\u2713' : '';
+    // Justification (text input value) / 理由（テキスト入力値）
+    var reasonInp = cells[2].querySelector('input');
+    var reason = reasonInp ? reasonInp.value : '';
+    // Notes (text input value) / メモ（テキスト入力値）
+    var notesInp = cells[3].querySelector('input');
+    var notes = notesInp ? notesInp.value : '';
+    // File Path / ファイルパス
+    var pathSpan = cells[4].querySelector('.path-text');
+    var path = pathSpan ? pathSpan.textContent.trim() : cells[4].textContent.trim();
+    // Timestamp / タイムスタンプ
+    var ts = cells[5].textContent.trim();
+    // Diff Detail
+    var diff = cells[6].textContent.trim();
+    // Disassembler
+    var disasm = cells[7].textContent.trim();
+
+    return '<tr>'
+      + '<td>' + esc(no) + '</td>'
+      + '<td>' + esc(checked) + '</td>'
+      + '<td class="wrap">' + esc(reason) + '</td>'
+      + '<td class="wrap">' + esc(notes) + '</td>'
+      + '<td>' + esc(path) + '</td>'
+      + '<td>' + esc(ts) + '</td>'
+      + '<td>' + esc(diff) + '</td>'
+      + '<td>' + esc(disasm) + '</td>'
+      + '</tr>';
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   // ── Keyboard navigation (WCAG 2.1 AA) ────────────────────────────────
   // Escape closes the nearest open detail element when focus is inside it.
   // Escapeキーでフォーカス中のdetail要素を閉じる。
