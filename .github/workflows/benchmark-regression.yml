@@ -63,7 +63,18 @@ jobs:
           print(f"Combined {len(combined)} benchmark(s).")
           PY
 
+      - name: Check if baseline branch exists
+        id: check-baseline
+        run: |
+          if git ls-remote --exit-code origin gh-benchmarks >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "Baseline branch gh-benchmarks does not exist yet. Will be created on first push to main."
+          fi
+
       - name: Detect performance regression
+        if: steps.check-baseline.outputs.exists == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         uses: benchmark-action/github-action-benchmark@v1
         with:
           name: 'FolderDiffIL4DotNet Performance'
@@ -73,7 +84,7 @@ jobs:
           auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           alert-threshold: '150%'
           comment-on-alert: true
-          fail-on-alert: true
+          fail-on-alert: ${{ steps.check-baseline.outputs.exists == 'true' }}
           summary-always: true
           gh-pages-branch: gh-benchmarks
           benchmark-data-dir-path: dev/bench
