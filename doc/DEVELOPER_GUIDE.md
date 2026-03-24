@@ -87,7 +87,7 @@ Large service classes are split into partial class files to keep each file focus
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/ReportGenerateService.SectionWriters.cs`](../Services/ReportGenerateService.SectionWriters.cs) |
 | `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs) (type/method/property/field comparison), [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs) (snapshot construction, access/modifier extraction, signature type provider) |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs) (sequential/chunk-parallel text comparison, memory-budget-aware parallelism) |
-| `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs) (version/label management, tool fingerprinting, process execution, usage recording) |
+| `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs) (version/label management, tool fingerprinting, process execution, usage recording), [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs) (line-based streaming disassembly, avoids LOH string allocations) |
 
 ## Nullable Reference Types
 
@@ -889,7 +889,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/ReportGenerateService.SectionWriters.cs`](../Services/ReportGenerateService.SectionWriters.cs) |
 | `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs)（型/メソッド/プロパティ/フィールド比較）, [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs)（スナップショット構築、アクセス修飾子/修飾子抽出、シグネチャ型プロバイダ） |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs)（逐次/チャンク並列テキスト比較、メモリ予算考慮の並列度制御） |
-| `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs)（バージョン/ラベル管理、ツールフィンガープリント、プロセス実行、使用記録） |
+| `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs)（バージョン/ラベル管理、ツールフィンガープリント、プロセス実行、使用記録）, [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs)（行単位ストリーミング逆アセンブル、LOH 文字列割り当て回避） |
 
 ## Nullable 参照型
 
