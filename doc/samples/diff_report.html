@@ -190,9 +190,6 @@
     td.col-notes  { overflow: hidden; }
     td.col-status { width: 3.6em; text-align: center; white-space: nowrap;
                     font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; font-weight: bold; }
-    td.col-status-add { background: #e6ffed; }
-    td.col-status-rem { background: #ffeef0; }
-    td.col-status-mod { background: #e3f2fd; }
     td.col-path { white-space: nowrap; overflow: hidden; }
     td.col-path .path-wrap { display: flex; align-items: center; }
     td.col-path .path-text { overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
@@ -476,7 +473,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_ign_0" aria-label="Reviewed #1"></td>
   <td class="col-reason"><input type="text" id="reason_ign_0" aria-label="Justification #1"></td>
   <td class="col-notes"><input type="text" id="notes_ign_0" aria-label="Notes #1"></td>
-  <td class="col-status"></td>
+  <td class="col-status">[ x ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">/Users/UserA/workspace/old/logs/debug.log</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:50:00</td>
   <td class="col-diff"><code>old</code></td>
@@ -487,7 +484,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_ign_1" aria-label="Reviewed #2"></td>
   <td class="col-reason"><input type="text" id="reason_ign_1" aria-label="Justification #2"></td>
   <td class="col-notes"><input type="text" id="notes_ign_1" aria-label="Notes #2"></td>
-  <td class="col-status"></td>
+  <td class="col-status">[ x ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">/Users/UserA/workspace/new/obj/build.cache</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:05:00</td>
   <td class="col-diff"><code>new</code></td>
@@ -498,7 +495,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_ign_2" aria-label="Reviewed #3"></td>
   <td class="col-reason"><input type="text" id="reason_ign_2" aria-label="Justification #3"></td>
   <td class="col-notes"><input type="text" id="notes_ign_2" aria-label="Notes #3"></td>
-  <td class="col-status"></td>
+  <td class="col-status">[ x ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">bin/App.pdb</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00</td>
   <td class="col-diff"><code>old/new</code></td>
@@ -540,7 +537,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_0" aria-label="Reviewed #1"></td>
   <td class="col-reason"><input type="text" id="reason_unch_0" aria-label="Justification #1"></td>
   <td class="col-notes"><input type="text" id="notes_unch_0" aria-label="Notes #1"></td>
-  <td class="col-status"></td>
+  <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">data/schema.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:30:00 &#x2192; 2026-03-15 09:00:00</td>
   <td class="col-diff"><code>SHA256Match</code></td>
@@ -551,7 +548,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_1" aria-label="Reviewed #2"></td>
   <td class="col-reason"><input type="text" id="reason_unch_1" aria-label="Justification #2"></td>
   <td class="col-notes"><input type="text" id="notes_unch_1" aria-label="Notes #2"></td>
-  <td class="col-status"></td>
+  <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">vendor/lib.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:00:00</td>
   <td class="col-diff"><code>SHA256Match</code></td>
@@ -562,7 +559,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_2" aria-label="Reviewed #3"></td>
   <td class="col-reason"><input type="text" id="reason_unch_2" aria-label="Justification #3"></td>
   <td class="col-notes"><input type="text" id="notes_unch_2" aria-label="Notes #3"></td>
-  <td class="col-status"></td>
+  <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">util/Helper.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMatch</code></td>
@@ -573,7 +570,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_3" aria-label="Reviewed #4"></td>
   <td class="col-reason"><input type="text" id="reason_unch_3" aria-label="Justification #4"></td>
   <td class="col-notes"><input type="text" id="notes_unch_3" aria-label="Notes #4"></td>
-  <td class="col-status"></td>
+  <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">appsettings.json</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:00:00</td>
   <td class="col-diff"><code>TextMatch</code></td>
@@ -584,7 +581,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_unch_4" aria-label="Reviewed #5"></td>
   <td class="col-reason"><input type="text" id="reason_unch_4" aria-label="Justification #5"></td>
   <td class="col-notes"><input type="text" id="notes_unch_4" aria-label="Notes #5"></td>
-  <td class="col-status"></td>
+  <td class="col-status">[ = ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">docs/notes.md</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:00:00 &#x2192; 2026-03-15 09:00:00</td>
   <td class="col-diff"><code>TextMatch</code></td>
@@ -624,7 +621,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_add_0" aria-label="Reviewed #1"></td>
   <td class="col-reason"><input type="text" id="reason_add_0" aria-label="Justification #1"></td>
   <td class="col-notes"><input type="text" id="notes_add_0" aria-label="Notes #1"></td>
-  <td class="col-status col-status-add">[ + ]</td>
+  <td class="col-status">[ + ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">/Users/UserA/workspace/new/docs/guide.md</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:01:00</td>
   <td class="col-diff"></td>
@@ -663,7 +660,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_rem_0" aria-label="Reviewed #1"></td>
   <td class="col-reason"><input type="text" id="reason_rem_0" aria-label="Justification #1"></td>
   <td class="col-notes"><input type="text" id="notes_rem_0" aria-label="Notes #1"></td>
-  <td class="col-status col-status-rem">[ - ]</td>
+  <td class="col-status">[ - ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">/Users/UserA/workspace/old/legacy/old-tool.txt</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:55:00</td>
   <td class="col-diff"></td>
@@ -702,7 +699,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_0" aria-label="Reviewed #1"></td>
   <td class="col-reason"><input type="text" id="reason_mod_0" aria-label="Justification #1"></td>
   <td class="col-notes"><input type="text" id="notes_mod_0" aria-label="Notes #1"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">bin/MyApp.deps.json</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>TextMismatch</code> <code class="imp-high">High</code></td>
@@ -746,7 +743,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_1" aria-label="Reviewed #2"></td>
   <td class="col-reason"><input type="text" id="reason_mod_1" aria-label="Justification #2"></td>
   <td class="col-notes"><input type="text" id="notes_mod_1" aria-label="Notes #2"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/app.config</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:56:00 &#x2192; 2026-03-15 09:01:00</td>
   <td class="col-diff"><code>TextMismatch</code></td>
@@ -764,7 +761,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_2" aria-label="Reviewed #3"></td>
   <td class="col-reason"><input type="text" id="reason_mod_2" aria-label="Justification #3"></td>
   <td class="col-notes"><input type="text" id="notes_mod_2" aria-label="Notes #3"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/settings.ini</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:08:00 &#x2192; 2026-03-15 09:01:00</td>
   <td class="col-diff"><code>TextMismatch</code></td>
@@ -782,7 +779,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_3" aria-label="Reviewed #4"></td>
   <td class="col-reason"><input type="text" id="reason_mod_3" aria-label="Justification #4"></td>
   <td class="col-notes"><input type="text" id="notes_mod_3" aria-label="Notes #4"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/DataModel.edmx</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:55:00 &#x2192; 2026-03-15 09:04:00</td>
   <td class="col-diff"><code>TextMismatch</code></td>
@@ -796,7 +793,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_4" aria-label="Reviewed #5"></td>
   <td class="col-reason"><input type="text" id="reason_mod_4" aria-label="Justification #5"></td>
   <td class="col-notes"><input type="text" id="notes_mod_4" aria-label="Notes #5"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/LargeConfig.xml</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:54:00 &#x2192; 2026-03-15 09:05:00</td>
   <td class="col-diff"><code>TextMismatch</code></td>
@@ -810,7 +807,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_5" aria-label="Reviewed #6"></td>
   <td class="col-reason"><input type="text" id="reason_mod_5" aria-label="Justification #6"></td>
   <td class="col-notes"><input type="text" id="notes_mod_5" aria-label="Notes #6"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Strings.resx</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:57:00 &#x2192; 2026-03-15 09:03:00</td>
   <td class="col-diff"><code>TextMismatch</code></td>
@@ -828,7 +825,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_6" aria-label="Reviewed #7"></td>
   <td class="col-reason"><input type="text" id="reason_mod_6" aria-label="Justification #7"></td>
   <td class="col-notes"><input type="text" id="notes_mod_6" aria-label="Notes #7"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Web.config</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>TextMismatch</code></td>
@@ -846,7 +843,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_7" aria-label="Reviewed #8"></td>
   <td class="col-reason"><input type="text" id="reason_mod_7" aria-label="Justification #8"></td>
   <td class="col-notes"><input type="text" id="notes_mod_7" aria-label="Notes #8"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Core.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:12:00 &#x2192; 2026-03-15 09:03:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
@@ -871,7 +868,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_8a" aria-label="Reviewed #9"></td>
   <td class="col-reason"><input type="text" id="reason_mod_8a" aria-label="Justification #9"></td>
   <td class="col-notes"><input type="text" id="notes_mod_8a" aria-label="Notes #9"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/ApiClient.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:55:00 &#x2192; 2026-03-15 09:04:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
@@ -896,7 +893,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_8" aria-label="Reviewed #10"></td>
   <td class="col-reason"><input type="text" id="reason_mod_8" aria-label="Justification #10"></td>
   <td class="col-notes"><input type="text" id="notes_mod_8" aria-label="Notes #10"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/App.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
@@ -921,7 +918,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_9" aria-label="Reviewed #11"></td>
   <td class="col-reason"><input type="text" id="reason_mod_9" aria-label="Justification #11"></td>
   <td class="col-notes"><input type="text" id="notes_mod_9" aria-label="Notes #11"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
@@ -935,7 +932,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_10a" aria-label="Reviewed #12"></td>
   <td class="col-reason"><input type="text" id="reason_mod_10a" aria-label="Justification #12"></td>
   <td class="col-notes"><input type="text" id="notes_mod_10a" aria-label="Notes #12"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Logging.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:52:00 &#x2192; 2026-03-15 09:03:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
@@ -960,7 +957,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_10" aria-label="Reviewed #13"></td>
   <td class="col-reason"><input type="text" id="reason_mod_10" aria-label="Justification #13"></td>
   <td class="col-notes"><input type="text" id="notes_mod_10" aria-label="Notes #13"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Service.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
@@ -985,7 +982,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_11" aria-label="Reviewed #14"></td>
   <td class="col-reason"><input type="text" id="reason_mod_11" aria-label="Justification #14"></td>
   <td class="col-notes"><input type="text" id="notes_mod_11" aria-label="Notes #14"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">util/Legacy.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:50:00 &#x2192; 2026-03-15 09:01:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Low</code></td>
@@ -1010,7 +1007,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_mod_12" aria-label="Reviewed #15"></td>
   <td class="col-reason"><input type="text" id="reason_mod_12" aria-label="Justification #15"></td>
   <td class="col-notes"><input type="text" id="notes_mod_12" aria-label="Notes #15"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
   <td class="col-diff"><code>SHA256Mismatch</code></td>
@@ -1074,7 +1071,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_sha256w_0" aria-label="Reviewed #1"></td>
   <td class="col-reason"><input type="text" id="reason_sha256w_0" aria-label="Justification #1"></td>
   <td class="col-notes"><input type="text" id="notes_sha256w_0" aria-label="Notes #1"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
   <td class="col-diff"><code>SHA256Mismatch</code></td>
@@ -1113,7 +1110,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_tsw_0" aria-label="Reviewed #1"></td>
   <td class="col-reason"><input type="text" id="reason_tsw_0" aria-label="Justification #1"></td>
   <td class="col-notes"><input type="text" id="notes_tsw_0" aria-label="Notes #1"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/settings.ini</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:08:00 &#x2192; 2026-03-15 09:01:00</td>
   <td class="col-diff"><code>TextMismatch</code></td>
@@ -1131,7 +1128,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_tsw_1" aria-label="Reviewed #2"></td>
   <td class="col-reason"><input type="text" id="reason_tsw_1" aria-label="Justification #2"></td>
   <td class="col-notes"><input type="text" id="notes_tsw_1" aria-label="Notes #2"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Core.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:12:00 &#x2192; 2026-03-15 09:03:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
@@ -1156,7 +1153,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_tsw_2" aria-label="Reviewed #4"></td>
   <td class="col-reason"><input type="text" id="reason_tsw_2" aria-label="Justification #4"></td>
   <td class="col-notes"><input type="text" id="notes_tsw_2" aria-label="Notes #4"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
@@ -1170,7 +1167,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_tsw_3" aria-label="Reviewed #5"></td>
   <td class="col-reason"><input type="text" id="reason_tsw_3" aria-label="Justification #5"></td>
   <td class="col-notes"><input type="text" id="notes_tsw_3" aria-label="Notes #5"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/Service.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:05:00 &#x2192; 2026-03-15 09:00:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
@@ -1195,7 +1192,7 @@
   <td class="col-cb"><input type="checkbox" id="cb_tsw_4" aria-label="Reviewed #6"></td>
   <td class="col-reason"><input type="text" id="reason_tsw_4" aria-label="Justification #6"></td>
   <td class="col-notes"><input type="text" id="notes_tsw_4" aria-label="Notes #6"></td>
-  <td class="col-status col-status-mod">[ * ]</td>
+  <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">payload.bin</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:59:00 &#x2192; 2026-03-15 08:54:00</td>
   <td class="col-diff"><code>SHA256Mismatch</code></td>
