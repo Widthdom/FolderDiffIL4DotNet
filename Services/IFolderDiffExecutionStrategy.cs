@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using FolderDiffIL4DotNet.Models;
 
@@ -29,8 +30,10 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Estimates the number of .NET assembly candidates across old/new folders.
+        /// An optional progress callback receives the current percentage (0–100) after each file is inspected.
         /// old/new 全体から .NET アセンブリ候補数を概算します。
+        /// オプションの進捗コールバックにはファイルごとの検査後にパーセンテージ（0–100）が渡されます。
         /// </summary>
-        int CountDotNetAssemblyCandidates(IEnumerable<string> oldFilesAbsolutePath, IEnumerable<string> newFilesAbsolutePath);
+        int CountDotNetAssemblyCandidates(IEnumerable<string> oldFilesAbsolutePath, IEnumerable<string> newFilesAbsolutePath, Action<double>? progressCallback = null);
     }
 }

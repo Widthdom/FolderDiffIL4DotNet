@@ -104,10 +104,24 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <inheritdoc />
-        public int CountDotNetAssemblyCandidates(IEnumerable<string> oldFilesAbsolutePath, IEnumerable<string> newFilesAbsolutePath)
-            => oldFilesAbsolutePath
+        public int CountDotNetAssemblyCandidates(IEnumerable<string> oldFilesAbsolutePath, IEnumerable<string> newFilesAbsolutePath, Action<double>? progressCallback = null)
+        {
+            var distinctFiles = oldFilesAbsolutePath
                 .Concat(newFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Count(DotNetDetector.IsDotNetExecutable);
+                .ToList();
+
+            int total = distinctFiles.Count;
+            int dotNetCount = 0;
+            for (int i = 0; i < total; i++)
+            {
+                if (DotNetDetector.IsDotNetExecutable(distinctFiles[i]))
+                {
+                    dotNetCount++;
+                }
+                progressCallback?.Invoke(total > 0 ? Math.Min((double)(i + 1) * 100.0 / total, 100.0) : 100.0);
+            }
+            return dotNetCount;
+        }
     }
 }

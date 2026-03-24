@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Performance
+
+- **Add "Scanning assemblies" progress phase to eliminate discovery-to-precompute dark period** — Previously, after "Discovery complete" was logged, `CountDotNetAssemblyCandidates()` read PE/CLR headers for every unique file with no progress reporting, causing the progress bar to stall at 0% for an extended period before "Precomputing IL caches" began. Introduced a dedicated "Scanning assemblies" progress phase that reports per-file progress during .NET assembly candidate detection. Split `LogDiscoveryAndParallelStats()` into `LogDiscoveryStats()` (fast, log-only) and `ScanAssemblyCandidatesAndLog()` (I/O-heavy, with progress). Added `Action<double>? progressCallback` parameter to `IFolderDiffExecutionStrategy.CountDotNetAssemblyCandidates()` and its implementation in `FolderDiffExecutionStrategy`. The progress flow is now: (1) "Scanning assemblies" 0%→100%, (2) "Precomputing IL caches" 0%→100%, (3) "Diffing folders" 0%→100%. Affected files: [`IFolderDiffExecutionStrategy.cs`](Services/IFolderDiffExecutionStrategy.cs), [`FolderDiffExecutionStrategy.cs`](Services/FolderDiffExecutionStrategy.cs), [`FolderDiffService.cs`](Services/FolderDiffService.cs).
+
 #### Fixed
 
 - **`applyFilters()` null safety for missing filter DOM elements** — Previously, `applyFilters()` in `diff_report.js` directly accessed `.checked` on `getElementById('filter-diff-*')` results without null checks, causing a TypeError when those DOM elements are absent (e.g. in reviewed mode or minimal DOM environments). Added a local `chk(id)` helper that returns `el.checked` when the element exists and defaults to `true` (all-pass) when missing. Applied the same null-safe pattern to `filter-unchecked` (defaults to `false`) and `filter-search` (defaults to empty string). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) with the same fix. Affected files: [`diff_report.js`](Services/HtmlReport/diff_report.js), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
@@ -606,6 +610,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Performance
+
+- **「Scanning assemblies」進捗フェーズを追加し、ディスカバリ→プリコンピュート間の暗黒期間を解消** — 従来「Discovery complete」ログ出力後、`CountDotNetAssemblyCandidates()` が全ユニークファイルの PE/CLR ヘッダーをプログレス表示なしで読み取っていたため、「Precomputing IL caches」開始まで進捗バーが 0% のまま長時間停滞していた。.NET アセンブリ候補検出中にファイル単位の進捗を報告する専用フェーズ「Scanning assemblies」を導入。`LogDiscoveryAndParallelStats()` を `LogDiscoveryStats()`（高速・ログのみ）と `ScanAssemblyCandidatesAndLog()`（I/O 負荷あり・進捗付き）に分割。`IFolderDiffExecutionStrategy.CountDotNetAssemblyCandidates()` およびその実装 `FolderDiffExecutionStrategy` に `Action<double>? progressCallback` パラメータを追加。進捗フローは (1)「Scanning assemblies」0%→100%、(2)「Precomputing IL caches」0%→100%、(3)「Diffing folders」0%→100% となった。影響ファイル: [`IFolderDiffExecutionStrategy.cs`](Services/IFolderDiffExecutionStrategy.cs)、[`FolderDiffExecutionStrategy.cs`](Services/FolderDiffExecutionStrategy.cs)、[`FolderDiffService.cs`](Services/FolderDiffService.cs)。
 
 #### Fixed
 

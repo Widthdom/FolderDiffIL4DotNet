@@ -17,6 +17,7 @@ namespace FolderDiffIL4DotNet.Services
     public sealed partial class FolderDiffService : IFolderDiffService
     {
         private const string SPINNER_LABEL_FOLDER_DIFF = "Diffing folders";
+        private const string SPINNER_LABEL_SCANNING_ASSEMBLIES = "Scanning assemblies";
         private const string LOG_NETWORK_OPTIMIZED_SKIP_IL = $"Network-optimized mode: skip {Constants.LABEL_IL} precompute to reduce network I/O.";
         private const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
         private const string LOG_FILE_DELETED_DURING_COMPARISON = "File '{0}' was deleted from the new folder after enumeration; classifying as Removed.";
@@ -152,7 +153,8 @@ namespace FolderDiffIL4DotNet.Services
                 _progressReporter.ReportProgress(0.0);
 
                 var maxParallel = _executionStrategy.DetermineMaxParallel();
-                LogDiscoveryAndParallelStats(totalFilesRelativePathCount, maxParallel);
+                LogDiscoveryStats(totalFilesRelativePathCount, maxParallel);
+                ScanAssemblyCandidatesAndLog();
 
                 await PrecomputeIlCachesAsync(maxParallel, cancellationToken);
 
@@ -250,10 +252,10 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Logs parallelism level, file counts, and .NET assembly candidate counts.
-        /// 並列度・ファイル件数・.NET アセンブリ候補数をログに出力します。
+        /// Logs parallelism level and file counts after discovery. Does not perform I/O-heavy work.
+        /// ディスカバリ後の並列度・ファイル件数をログ出力します。I/O の重い処理は行いません。
         /// </summary>
-        private void LogDiscoveryAndParallelStats(int totalFilesRelativePathCount, int maxParallel)
+        private void LogDiscoveryStats(int totalFilesRelativePathCount, int maxParallel)
         {
             _logger.LogMessage(
                 AppLogLevel.Info,
@@ -265,11 +267,34 @@ namespace FolderDiffIL4DotNet.Services
             int newCount = _fileDiffResultLists.NewFilesAbsolutePath.Count;
             _logger.LogMessage(AppLogLevel.Info, $"Discovery complete: old={oldCount}, new={newCount}, union(relative)={totalFilesRelativePathCount}", shouldOutputMessageToConsole: true);
 
-            // Also log approximate .NET assembly candidate count.
-            // .NET アセンブリ候補数も概算表示
+            if (totalFilesRelativePathCount >= LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD)
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Info,
+                    $"Large file set detected (union(relative)={totalFilesRelativePathCount}). IL precompute will run in batches to limit peak memory usage.",
+                    shouldOutputMessageToConsole: true);
+            }
+        }
+
+        /// <summary>
+        /// Scans files for .NET assembly candidates with per-file progress reporting under a dedicated label,
+        /// then logs the precompute-target summary. This eliminates the "dark period" between discovery and IL precompute.
+        /// ファイルを .NET アセンブリ候補としてスキャンし、専用ラベル下でファイル単位の進捗を報告した後、
+        /// プリコンピュート対象のサマリをログ出力します。ディスカバリと IL プリコンピュートの間の「暗黒期間」を解消します。
+        /// </summary>
+        private void ScanAssemblyCandidatesAndLog()
+        {
+            _progressReporter.ResetProgress();
+            _progressReporter.SetLabel(SPINNER_LABEL_SCANNING_ASSEMBLIES);
+            _progressReporter.ReportProgress(0.0);
+
             int dotNetAssemblyCandidates = _executionStrategy.CountDotNetAssemblyCandidates(
                 _fileDiffResultLists.OldFilesAbsolutePath,
-                _fileDiffResultLists.NewFilesAbsolutePath);
+                _fileDiffResultLists.NewFilesAbsolutePath,
+                percentage => _progressReporter.ReportProgress(percentage));
+
+            _progressReporter.ReportProgress(100.0);
+
             int totalFilesForLog = _fileDiffResultLists.OldFilesAbsolutePath
                 .Concat(_fileDiffResultLists.NewFilesAbsolutePath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -278,14 +303,6 @@ namespace FolderDiffIL4DotNet.Services
                 AppLogLevel.Info,
                 $"Precompute targets: totalFiles={totalFilesForLog}, {nameof(dotNetAssemblyCandidates)}={dotNetAssemblyCandidates}, batchSize={GetEffectiveIlPrecomputeBatchSize()}",
                 shouldOutputMessageToConsole: true);
-            if (totalFilesRelativePathCount >= LARGE_DISCOVERY_FILE_COUNT_LOG_THRESHOLD)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Info,
-                    $"Large file set detected (union(relative)={totalFilesRelativePathCount}). IL precompute will run in batches to limit peak memory usage.",
-                    shouldOutputMessageToConsole: true);
-            }
-            _progressReporter.ReportProgress(0.0);
         }
 
         /// <summary>
