@@ -91,7 +91,7 @@ This is the single most important rule in this repository.
 
 - **Methods**: Keep under ~100 lines. Extract helpers when a method exceeds this.
 - **Classes**: Keep under ~500 lines per file. Use `partial class` splits for larger services.
-- Already-split examples: `HtmlReportGenerateService` (5 files), `AssemblyMethodAnalyzer` (3 files), `DotNetDisassembleService` (2 files), `FileDiffService` (2 files)
+- Already-split examples: `HtmlReportGenerateService` (6 files), `AssemblyMethodAnalyzer` (5 files), `DotNetDisassembleService` (2 files), `FileDiffService` (2 files)
 
 #### Naming conventions
 
