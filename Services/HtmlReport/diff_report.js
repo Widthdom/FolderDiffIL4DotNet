@@ -383,6 +383,10 @@
             + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
             + px('--sc-body-w', 5);
     document.querySelectorAll('table.sc-detail').forEach(function(t) { t.style.width = detW + 'px'; });
+    // dc-detail (dependency changes): cb(3.2) + package(24) + status(7) + importance(7) + oldVer(12) + newVer(12) = 65.2em
+    // dc-detail のチェック列・Status列を sc-detail と同じ実幅にするため、列幅合計に一致する幅を設定
+    var dcW = (3.2 + 24 + 7 + 7 + 12 + 12) * scEmPx;
+    document.querySelectorAll('table.dc-detail').forEach(function(t) { t.style.width = dcW + 'px'; });
   }
 
   function initColResizeSingle(th) {
