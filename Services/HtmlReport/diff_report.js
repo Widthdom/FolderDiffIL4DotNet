@@ -764,7 +764,7 @@
     }
 
     var slug = 'diff_report_' + __reportDate__;
-    var excelFileName = slug + '_reviewed_excel.html';
+    var excelFileName = slug + '_reviewed_Excel-compatible.html';
     var out = '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
       + '<head><meta charset="UTF-8">\n'
       + '<style>\n'
