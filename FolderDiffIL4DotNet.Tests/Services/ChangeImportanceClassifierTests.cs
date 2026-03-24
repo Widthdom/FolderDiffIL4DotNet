@@ -482,5 +482,190 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // access arrow exists but no narrowing (equal), falls through to access widening check (also equal, no narrowing), then body-only
             Assert.Equal(ChangeImportance.Medium, ChangeImportanceClassifier.Classify(entry));
         }
+
+        // ── Mutation-killing: VisibilityOrdinal exhaustive ordinal values ──
+        // ミューテーションキル: VisibilityOrdinal の全序数値を網羅
+
+        [Theory]
+        [Trait("Category", "Unit")]
+        [InlineData("public", ChangeImportance.High)]
+        [InlineData("protected internal", ChangeImportance.High)]
+        [InlineData("protected", ChangeImportance.High)]
+        [InlineData("internal", ChangeImportance.Medium)]
+        [InlineData("private protected", ChangeImportance.Medium)]
+        [InlineData("private", ChangeImportance.Medium)]
+        public void Classify_RemovedAllAccessModifiers_ReturnsExpectedImportance(string access, ChangeImportance expected)
+        {
+            // Each access modifier tested via Removed branch to verify ordinal boundaries
+            // Removed ブランチを通じて各アクセス修飾子の序数境界を検証
+            var entry = new MemberChangeEntry("Removed", "MyApp.Service", "", access, "", "Method", "Foo", "", "void", "", "");
+            Assert.Equal(expected, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        [Theory]
+        [Trait("Category", "Unit")]
+        [InlineData("public", ChangeImportance.Medium)]
+        [InlineData("protected internal", ChangeImportance.Medium)]
+        [InlineData("protected", ChangeImportance.Medium)]
+        [InlineData("internal", ChangeImportance.Low)]
+        [InlineData("private protected", ChangeImportance.Low)]
+        [InlineData("private", ChangeImportance.Low)]
+        public void Classify_AddedAllAccessModifiers_ReturnsExpectedImportance(string access, ChangeImportance expected)
+        {
+            // Each access modifier tested via Added branch to verify ordinal boundaries
+            // Added ブランチを通じて各アクセス修飾子の序数境界を検証
+            var entry = new MemberChangeEntry("Added", "MyApp.Service", "", access, "", "Method", "Bar", "", "void", "", "");
+            Assert.Equal(expected, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        // ── Mutation-killing: GetMaxImportance returns correct max ──────────
+        // ミューテーションキル: GetMaxImportance が正しい最大値を返す
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetMaxImportance_AllLow_ReturnsLow()
+        {
+            // When all entries are Low, max should be Low (not Medium or High)
+            // すべてのエントリが Low の場合、最大値は Low（Medium や High ではない）
+            var entries = new[]
+            {
+                new MemberChangeEntry("Added", "MyApp.Service", "", "private", "", "Field", "_a", "int", "", "", ""),
+                new MemberChangeEntry("Added", "MyApp.Service", "", "internal", "", "Field", "_b", "int", "", "", ""),
+            };
+            var classified = entries.Select(ChangeImportanceClassifier.WithClassifiedImportance).ToList();
+            Assert.All(classified, c => Assert.Equal(ChangeImportance.Low, c.Importance));
+            Assert.Equal(ChangeImportance.Low, classified.Max(e => e.Importance));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetMaxImportance_MediumAndLow_ReturnsMedium()
+        {
+            // Medium is the highest when no High entries exist
+            // High エントリがない場合、Medium が最大値
+            var entries = new[]
+            {
+                new MemberChangeEntry("Added", "MyApp.Service", "", "private", "", "Field", "_a", "int", "", "", ""),
+                new MemberChangeEntry("Added", "MyApp.Service", "", "public", "", "Method", "Api", "", "void", "", ""),
+            };
+            var classified = entries.Select(ChangeImportanceClassifier.WithClassifiedImportance).ToList();
+            Assert.Equal(ChangeImportance.Low, classified[0].Importance);
+            Assert.Equal(ChangeImportance.Medium, classified[1].Importance);
+            Assert.Equal(ChangeImportance.Medium, classified.Max(e => e.Importance));
+        }
+
+        // ── Mutation-killing: Modified access narrowing — boundary at ordinal 3 ──
+        // ミューテーションキル: Modified アクセス縮小 — 序数 3 の境界
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Classify_ModifiedAccessNarrowedInternalToPrivate_NotFromPublicOrProtected_ReturnsMedium()
+        {
+            // internal (2) → private (0): oldOrd < 3 so narrowing check fails, falls to access widening (arrow present) → Medium
+            // internal (2) → private (0): oldOrd < 3 のため縮小チェック不成立、アクセス変更として Medium
+            var entry = new MemberChangeEntry("Modified", "MyApp.Service", "", "internal → private", "", "Method", "Helper", "", "void", "", "");
+            Assert.Equal(ChangeImportance.Medium, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Classify_ModifiedAccessWidenedPrivateProtectedToInternal_ReturnsMedium()
+        {
+            // private protected (1) → internal (2): widening, both below boundary → Medium via access arrow
+            // private protected (1) → internal (2): 拡大、両方とも境界未満 → アクセスアローで Medium
+            var entry = new MemberChangeEntry("Modified", "MyApp.Service", "", "private protected → internal", "", "Method", "Helper", "", "void", "", "");
+            Assert.Equal(ChangeImportance.Medium, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        // ── Mutation-killing: ContainsArrow false paths (no arrow in fields) ──
+        // ミューテーションキル: ContainsArrow の false パス（フィールドにアローなし）
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Classify_ModifiedNoArrowsEmptyBody_ReturnsLow()
+        {
+            // No arrows in any field, empty body → falls through all checks → Low
+            // どのフィールドにもアローなし、body も空 → すべてのチェックを通過 → Low
+            var entry = new MemberChangeEntry("Modified", "MyApp.Service", "", "public", "", "Method", "Noop", "", "void", "", "");
+            Assert.Equal(ChangeImportance.Low, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        // ── Mutation-killing: Multiple arrow fields — priority order ────────
+        // ミューテーションキル: 複数アローフィールド — 優先順位
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Classify_ModifiedReturnTypeAndParameters_BothArrows_ReturnsHighFromReturnType()
+        {
+            // Return type arrow is checked before parameters — ensures correct priority
+            // 戻り値型アローはパラメータより先にチェックされる — 正しい優先順位を保証
+            var entry = new MemberChangeEntry("Modified", "MyApp.Service", "", "public", "", "Method", "Get", "", "int → string", "int x → string x", "");
+            Assert.Equal(ChangeImportance.High, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Classify_ModifiedMemberTypeAndModifiers_BothArrows_ReturnsHighFromMemberType()
+        {
+            // MemberType arrow is checked before Modifiers — ensures correct priority
+            // MemberType アローは Modifiers より先にチェックされる — 正しい優先順位を保証
+            var entry = new MemberChangeEntry("Modified", "MyApp.Service", "", "public", "static → virtual", "Property", "Value", "int → long", "", "", "");
+            Assert.Equal(ChangeImportance.High, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        // ── Mutation-killing: default case in switch ────────────────────────
+        // ミューテーションキル: switch のデフォルトケース
+
+        [Theory]
+        [Trait("Category", "Unit")]
+        [InlineData("Renamed")]
+        [InlineData("Moved")]
+        [InlineData("")]
+        public void Classify_UnrecognizedChangeType_ReturnsLow(string changeType)
+        {
+            // Any unrecognized Change value should fall through to default → Low
+            // 認識されない Change 値はデフォルトに落ちて Low を返す
+            var entry = new MemberChangeEntry(changeType, "MyApp.Service", "", "public", "", "Method", "Foo", "", "void", "", "");
+            Assert.Equal(ChangeImportance.Low, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        // ── Mutation-killing: WithClassifiedImportance returns correct importance for each level ──
+        // ミューテーションキル: WithClassifiedImportance が各レベルの正しい重要度を返す
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WithClassifiedImportance_LowImportance_ReturnsLowNotDefault()
+        {
+            // Verify that Low importance is explicitly classified, not just the record default
+            // Low 重要度がレコードのデフォルトではなく明示的に分類されることを検証
+            var entry = new MemberChangeEntry("Added", "MyApp.Service", "", "private", "", "Method", "Helper", "", "void", "", "");
+            var result = ChangeImportanceClassifier.WithClassifiedImportance(entry);
+            Assert.Equal(ChangeImportance.Low, result.Importance);
+            Assert.Equal("Added", result.Change);
+            Assert.Equal("private", result.Access);
+        }
+
+        // ── Mutation-killing: IsPublicOrProtected boundary — ordinal 2 vs 3 ──
+        // ミューテーションキル: IsPublicOrProtected 境界 — 序数 2 対 3
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Classify_InternalIsNotPublicOrProtected_AddedReturnsLow()
+        {
+            // internal (ordinal=2) is just below >= 3 boundary → NOT public/protected → Low for Added
+            // internal（序数=2）は >= 3 境界のちょうど下 → public/protected ではない → Added で Low
+            var entry = new MemberChangeEntry("Added", "MyApp.Service", "", "internal", "", "Method", "Helper", "", "void", "", "");
+            Assert.Equal(ChangeImportance.Low, ChangeImportanceClassifier.Classify(entry));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Classify_ProtectedIsPublicOrProtected_AddedReturnsMedium()
+        {
+            // protected (ordinal=3) is exactly at >= 3 boundary → IS public/protected → Medium for Added
+            // protected（序数=3）はちょうど >= 3 境界 → public/protected である → Added で Medium
+            var entry = new MemberChangeEntry("Added", "MyApp.Service", "", "protected", "", "Method", "OnInit", "", "void", "", "");
+            Assert.Equal(ChangeImportance.Medium, ChangeImportanceClassifier.Classify(entry));
+        }
     }
 }
