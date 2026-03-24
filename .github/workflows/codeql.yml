@@ -43,9 +43,13 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Autobuild
+      - name: Restore dependencies
         if: ${{ matrix.language == 'csharp' }}
-        uses: github/codeql-action/autobuild@v3
+        run: dotnet restore FolderDiffIL4DotNet.sln
+
+      - name: Build for CodeQL
+        if: ${{ matrix.language == 'csharp' }}
+        run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
