@@ -140,6 +140,10 @@ This is the single most important rule in this repository.
 
 - **Do NOT create git tags** without explicit user permission. Tags trigger the release workflow (`release.yml`) and must be created only when the user explicitly requests it.
 - **Commit messages must be written in English.** Keep them concise and descriptive.
+- **Version bump procedure** — When bumping the version, perform all three steps in a single commit:
+  1. Update `version.json` (`"version"` field)
+  2. In `CHANGELOG.md` (both EN and JA sections): move `[Unreleased]` content under a new `[X.Y.Z] - YYYY-MM-DD` heading and add a fresh empty `[Unreleased]` section above it
+  3. In `CHANGELOG.md` bottom link references: update `[Unreleased]` compare link to `vX.Y.Z...HEAD`, and add a new `[X.Y.Z]` compare link pointing to `vPREVIOUS...vX.Y.Z`
 
 ### Communication
 
@@ -292,6 +296,10 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 
 - **git tag はユーザーの明示的な許可なく作成しないこと。** タグはリリースワークフロー（`release.yml`）を起動するため、ユーザーが明確に指示した場合のみ作成する。
 - **コミットメッセージは英語で記述すること。** 簡潔かつ内容が分かるメッセージにする。
+- **バージョンアップ手順** — バージョンを上げる際は、以下の3ステップを1コミットで行うこと：
+  1. `version.json` の `"version"` フィールドを更新
+  2. `CHANGELOG.md`（EN・JA 両セクション）：`[Unreleased]` の内容を新しい `[X.Y.Z] - YYYY-MM-DD` 見出しの下に移動し、その上に空の `[Unreleased]` セクションを追加
+  3. `CHANGELOG.md` 末尾のリンク参照：`[Unreleased]` の compare リンクを `vX.Y.Z...HEAD` に更新し、`vPREVIOUS...vX.Y.Z` を指す `[X.Y.Z]` の compare リンクを新規追加
 
 ### コミュニケーション
 
