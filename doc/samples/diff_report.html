@@ -1608,8 +1608,8 @@
   }
 
   // ── Keyboard navigation (WCAG 2.1 AA) ────────────────────────────────
-  // Escape closes the nearest open <details> when focus is inside it.
-  // Escapeキーでフォーカス中の<details>を閉じる。
+  // Escape closes the nearest open detail element when focus is inside it.
+  // Escapeキーでフォーカス中のdetail要素を閉じる。
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       var details = document.activeElement ? document.activeElement.closest('details[open]') : null;

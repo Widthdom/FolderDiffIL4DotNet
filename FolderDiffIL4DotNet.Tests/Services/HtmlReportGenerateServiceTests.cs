@@ -1366,7 +1366,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("filter-table", html);
-            Assert.Contains("<table class=\"filter-table\">", html);
+            Assert.Contains("<table class=\"filter-table\" aria-label=\"Diff Detail filters\">", html);
         }
 
         // ── Req2: stat-table borders / 統計テーブルボーダー ────────────────────
