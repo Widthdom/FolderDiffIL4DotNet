@@ -1,6 +1,27 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
            font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
+    /* ── Skip link for keyboard navigation / キーボードナビゲーション用スキップリンク ── */
+    .skip-link {
+      position: absolute; left: -9999px; top: auto;
+      width: 1px; height: 1px; overflow: hidden;
+      z-index: 200; padding: 0.5rem 1rem;
+      background: #1d1d1f; color: #fff; font-size: 14px;
+      text-decoration: none; border-radius: 0 0 8px 0;
+    }
+    .skip-link:focus {
+      position: fixed; left: 0; top: 0;
+      width: auto; height: auto;
+    }
+    /* ── Focus-visible styles (WCAG 2.1 AA) / フォーカス可視スタイル ────── */
+    :focus-visible {
+      outline: 2px solid #0051c3;
+      outline-offset: 2px;
+    }
+    input[type="text"]:focus-visible {
+      outline: 2px solid #0051c3;
+      outline-offset: -1px;
+    }
     h1 { font-size: 2.0rem; padding: 1.2rem 0 0.6rem; }
     h2 { font-size: 1rem; margin: 1.4rem 0 0.35rem; }
     h2.section-heading { font-size: 1.55rem; margin: 1.6rem 0 0.4rem; }
@@ -91,6 +112,26 @@
     }
     .btn-clear:hover { background: #f5f5f7; }
     .save-status { font-size: 12px; color: #86868b; }
+    /* ── Review progress bar ───────────────────────────────────────────── */
+    .progress-wrap {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 12px; color: #86868b; padding: 0.15rem 0;
+    }
+    .progress-bar {
+      width: 160px; height: 4px; background: #e5e5ea; border-radius: 2px; overflow: hidden;
+      flex-shrink: 0;
+    }
+    .progress-bar-fill {
+      height: 100%; width: 0%; background: #0051c3; border-radius: 2px;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .progress-bar-fill.complete { background: #0051c3; }
+    .progress-text {
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
+    .progress-detail {
+      font-size: 11px; color: #a1a1a6; white-space: nowrap;
+    }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; min-width: 7em; }

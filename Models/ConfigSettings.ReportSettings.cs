@@ -11,6 +11,8 @@ namespace FolderDiffIL4DotNet.Models
         public const bool DefaultShouldIncludeIgnoredFiles = true;
         /// <summary>Default value for <see cref="ShouldIncludeAssemblySemanticChangesInReport"/>. / <see cref="ShouldIncludeAssemblySemanticChangesInReport"/> の既定値。</summary>
         public const bool DefaultShouldIncludeAssemblySemanticChangesInReport = true;
+        /// <summary>Default value for <see cref="ShouldIncludeDependencyChangesInReport"/>. / <see cref="ShouldIncludeDependencyChangesInReport"/> の既定値。</summary>
+        public const bool DefaultShouldIncludeDependencyChangesInReport = true;
         /// <summary>Default value for <see cref="ShouldIncludeILCacheStatsInReport"/>. / <see cref="ShouldIncludeILCacheStatsInReport"/> の既定値。</summary>
         public const bool DefaultShouldIncludeILCacheStatsInReport = false;
         /// <summary>Default value for <see cref="ShouldGenerateHtmlReport"/>. / <see cref="ShouldGenerateHtmlReport"/> の既定値。</summary>
@@ -41,6 +43,12 @@ namespace FolderDiffIL4DotNet.Models
         /// ILMismatch アセンブリのメンバーレベル変更詳細をレポートに出力するかどうか。
         /// </summary>
         public bool ShouldIncludeAssemblySemanticChangesInReport { get; }
+
+        /// <summary>
+        /// Whether to include structured dependency changes for .deps.json files in the diff report.
+        /// .deps.json ファイルの構造化された依存関係変更をレポートに出力するかどうか。
+        /// </summary>
+        public bool ShouldIncludeDependencyChangesInReport { get; }
 
         /// <summary>
         /// Whether to include IL cache statistics in the diff report.

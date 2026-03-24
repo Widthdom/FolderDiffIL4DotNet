@@ -88,7 +88,7 @@ Large service classes are split into partial class files to keep each file focus
 | `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs) (type/method/property/field comparison), [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs) (snapshot construction, access/modifier extraction, signature type provider) |
 | `DepsJsonAnalyzer` | [`Services/DepsJsonAnalyzer.cs`](../Services/DepsJsonAnalyzer.cs) | (single file) Structured dependency change analysis for `.deps.json` files |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs) (sequential/chunk-parallel text comparison, memory-budget-aware parallelism) |
-| `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs) (version/label management, tool fingerprinting, process execution, usage recording) |
+| `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs) (version/label management, tool fingerprinting, process execution, usage recording), [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs) (line-based streaming disassembly, avoids LOH string allocations) |
 
 ## Nullable Reference Types
 
@@ -188,6 +188,8 @@ Benchmark classes:
 - [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): file enumeration (100 / 1K / 10K files) and SHA256 hash comparison.
 
 **CI integration:** The `benchmark` job in [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) runs all benchmarks on `workflow_dispatch` and uploads `BenchmarkDotNet.Artifacts/` as a CI artifact with JSON and GitHub exporters.
+
+**Regression detection:** The [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) workflow runs automatically on every PR to `main` and on `push` to `main`. It combines JSON results from all benchmark classes into a single report and uses [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) to compare against the stored baseline in the `gh-benchmarks` branch. If any benchmark degrades by more than 50% (alert threshold `150%`), the job fails and a PR comment is posted. On push to `main`, the results are stored as the new baseline.
 
 ### SHA256 Hash Pre-Seeding
 
@@ -355,6 +357,7 @@ Why this matters:
 | [`Program.cs`](../Program.cs) | Application entry point | Must remain thin |
 | [`ProgramRunner.cs`](../ProgramRunner.cs) | Argument validation, orchestration | Main control plane; help text in [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs), config loading/validation in [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) |
 | [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) | Reusable console/diagnostics/IO/text helpers | No folder-diff domain logic |
+| [`FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs`](../FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs) | File encoding auto-detection (BOM, UTF-8 validation, ANSI fallback) | Used by inline diff to correctly read non-UTF-8 files (e.g. Shift_JIS); requires `System.Text.Encoding.CodePages` |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | Immutable run paths and network-mode decisions | No mutable state |
 | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | Folder-diff orchestration and result routing | Owns progress and added/removed routing |
 | [`Services/FolderDiffExecutionStrategy.cs`](../Services/FolderDiffExecutionStrategy.cs) | Discovery filtering and auto-parallelism policy | Applies ignored extensions and network-aware auto parallelism |
@@ -637,6 +640,7 @@ Workflow/config files:
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
 - [.github/workflows/release.yml](../.github/workflows/release.yml)
 - [.github/workflows/codeql.yml](../.github/workflows/codeql.yml)
+- [.github/workflows/benchmark-regression.yml](../.github/workflows/benchmark-regression.yml)
 - [.github/dependabot.yml](../.github/dependabot.yml)
 
 Current CI behavior (`build` job — Ubuntu):
@@ -668,6 +672,13 @@ Security automation:
 - The Analyze step uses `continue-on-error: true` to tolerate the SARIF upload rejection that occurs when the repository's GitHub Default Setup code scanning is also active for the `actions` language
 - [`.github/dependabot.yml`](../.github/dependabot.yml) opens weekly update PRs for both `nuget` dependencies and GitHub Actions
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) protects the expected CI/release/security file presence and key settings from accidental removal
+
+Performance regression detection:
+- [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) runs BenchmarkDotNet on every `pull_request` and `push` to `main`, plus `workflow_dispatch`
+- Combines JSON results from all benchmark classes into a single report and compares against the stored baseline in the `gh-benchmarks` branch using [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark)
+- Alert threshold is `150%` (50% degradation causes failure); PR comments are posted on regression
+- On push to `main`, results are auto-pushed to `gh-benchmarks` as the new baseline
+- Benchmark artifacts are always uploaded as `BenchmarkResults`
 
 Versioning:
 - [`version.json`](../version.json) uses [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning)
@@ -891,7 +902,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 | `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs)（型/メソッド/プロパティ/フィールド比較）, [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs)（スナップショット構築、アクセス修飾子/修飾子抽出、シグネチャ型プロバイダ） |
 | `DepsJsonAnalyzer` | [`Services/DepsJsonAnalyzer.cs`](../Services/DepsJsonAnalyzer.cs) | （単一ファイル）`.deps.json` ファイルの構造化された依存関係変更分析 |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs)（逐次/チャンク並列テキスト比較、メモリ予算考慮の並列度制御） |
-| `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs)（バージョン/ラベル管理、ツールフィンガープリント、プロセス実行、使用記録） |
+| `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs)（バージョン/ラベル管理、ツールフィンガープリント、プロセス実行、使用記録）, [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs)（行単位ストリーミング逆アセンブル、LOH 文字列割り当て回避） |
 
 ## Nullable 参照型
 
@@ -991,6 +1002,8 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 - [`FolderDiffBenchmarks`](../FolderDiffIL4DotNet.Benchmarks/FolderDiffBenchmarks.cs): ファイル列挙（100 / 1K / 10K ファイル）と SHA256 ハッシュ比較。
 
 **CI 統合:** [`.github/workflows/dotnet.yml`](../.github/workflows/dotnet.yml) の `benchmark` ジョブは `workflow_dispatch` 時にすべてのベンチマークを実行し、JSON および GitHub エクスポーター付きの `BenchmarkDotNet.Artifacts/` を CI アーティファクトとしてアップロードします。
+
+**リグレッション検知:** [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) ワークフローは `main` への PR および `push` のたびに自動実行されます。全ベンチマーククラスの JSON 結果を単一レポートに統合し、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して `gh-benchmarks` ブランチに保存されたベースラインと比較します。いずれかのベンチマークが 50% 以上劣化した場合（閾値 `150%`）、ジョブが失敗し PR コメントが投稿されます。`main` への push 時には結果が新しいベースラインとして保存されます。
 
 ### SHA256 ハッシュのプリシード
 
@@ -1157,6 +1170,7 @@ sequenceDiagram
 | [`Program.cs`](../Program.cs) | アプリ起動点 | 薄いまま維持する |
 | [`ProgramRunner.cs`](../ProgramRunner.cs) | 引数検証、全体調停 | 制御プレーンの中心；ヘルプテキストは [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)、設定読込/バリデーションは [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) |
 | [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) | 再利用可能な console / diagnostics / I/O / text helper | フォルダ差分ドメインのポリシーを持たない |
+| [`FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs`](../FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs) | ファイルエンコーディング自動検出（BOM・UTF-8 検証・ANSI フォールバック） | インライン差分で非 UTF-8 ファイル（Shift_JIS 等）を正しく読むために使用；`System.Text.Encoding.CodePages` が必要 |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | 実行固有パスとネットワークモードの保持 | 可変状態を持たない |
 | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | フォルダ差分全体の調停と結果振り分け | 進捗と Added/Removed もここ |
 | [`Services/FolderDiffExecutionStrategy.cs`](../Services/FolderDiffExecutionStrategy.cs) | 列挙フィルタと自動並列度ポリシー | 無視拡張子適用とネットワーク考慮の並列度決定を担当 |
@@ -1437,6 +1451,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
 - [.github/workflows/release.yml](../.github/workflows/release.yml)
 - [.github/workflows/codeql.yml](../.github/workflows/codeql.yml)
+- [.github/workflows/benchmark-regression.yml](../.github/workflows/benchmark-regression.yml)
 - [.github/dependabot.yml](../.github/dependabot.yml)
 
 現在の CI 挙動（`build` ジョブ — Ubuntu）:
@@ -1468,6 +1483,13 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - Analyze ステップは `continue-on-error: true` を設定し、リポジトリの GitHub Default Setup コードスキャンが有効なとき `actions` 言語の SARIF アップロードが拒否されてもジョブが失敗しないようにします
 - [`.github/dependabot.yml`](../.github/dependabot.yml) は `nuget` 依存関係と GitHub Actions の更新 PR を週次で作成します
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) で CI / リリース / セキュリティ設定ファイルの存在と主要設定の剥がれを検知します
+
+パフォーマンスリグレッション検知:
+- [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) は `main` 向け `pull_request` と `push`、および `workflow_dispatch` で BenchmarkDotNet を実行します
+- 全ベンチマーククラスの JSON 結果を単一レポートに統合し、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して `gh-benchmarks` ブランチに保存されたベースラインと比較します
+- 閾値は `150%`（50% の劣化でジョブ失敗）。リグレッション時に PR コメントを投稿します
+- `main` への push 時には結果が `gh-benchmarks` に新しいベースラインとして自動 push されます
+- ベンチマーク成果物は常に `BenchmarkResults` としてアップロードされます
 
 バージョニング:
 - [`version.json`](../version.json) で [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) を利用
