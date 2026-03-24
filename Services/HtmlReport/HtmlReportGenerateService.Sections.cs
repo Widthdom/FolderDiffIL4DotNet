@@ -283,20 +283,29 @@ namespace FolderDiffIL4DotNet.Services
             if (diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch)
             {
                 // ILMismatch: read IL text from the *_IL.txt files written during comparison
+                // IL text files are always written in UTF-8 by ILTextOutputService
+                // IL テキストファイルは ILTextOutputService により常に UTF-8 で書き出される
                 string ilFileName = TextSanitizer.Sanitize(relPath) + "_" + Constants.LABEL_IL + ".txt";
                 string oldILPath = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "old", ilFileName);
                 string newILPath = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "new", ilFileName);
                 if (!File.Exists(oldILPath) || !File.Exists(newILPath)) return; // IL text not written; skip
-                oldLines = File.ReadAllLines(oldILPath);
-                newLines = File.ReadAllLines(newILPath);
+                oldLines = File.ReadAllLines(oldILPath, Encoding.UTF8);
+                newLines = File.ReadAllLines(newILPath, Encoding.UTF8);
             }
             else
             {
-                // TextMismatch: read from disk
+                // TextMismatch: read from disk with encoding auto-detection
+                // to correctly handle non-UTF-8 files (e.g. Shift_JIS Japanese text)
+                // TextMismatch: エンコーディング自動検出でディスクから読み込み
+                // 非 UTF-8 ファイル（Shift_JIS 日本語テキスト等）を正しく処理する
                 try
                 {
-                    oldLines = File.ReadAllLines(Path.Combine(oldFolderAbsolutePath, relPath));
-                    newLines = File.ReadAllLines(Path.Combine(newFolderAbsolutePath, relPath));
+                    string oldPath = Path.Combine(oldFolderAbsolutePath, relPath);
+                    string newPath = Path.Combine(newFolderAbsolutePath, relPath);
+                    var oldEncoding = EncodingDetector.DetectFileEncoding(oldPath);
+                    var newEncoding = EncodingDetector.DetectFileEncoding(newPath);
+                    oldLines = File.ReadAllLines(oldPath, oldEncoding);
+                    newLines = File.ReadAllLines(newPath, newEncoding);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
                 {
