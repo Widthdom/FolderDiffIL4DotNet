@@ -214,6 +214,9 @@ See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live samp
      is also downloaded for integrity verification of the reviewed HTML.
 5. Archive or share the downloaded file as the sign-off record,
      or print it to PDF for a hard-copy audit trail.
+6. (Optional) In the reviewed HTML, click "Download as Excel-compatible HTML"
+     to export the review data as an Excel-openable HTML table
+     (diff_report_YYYYMMDD_reviewed_Excel-compatible.html).
 ```
 
 ### Integrity verification flow
@@ -827,6 +830,9 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
      ダウンロードされ、レビュー済み HTML の整合性を検証可能。
 5. ダウンロードしたファイルをサインオフ記録として保管・共有、
      または PDF 印刷して書面の監査証跡として利用。
+6. （任意）reviewed HTML 内で「Download as Excel-compatible HTML」をクリックし、
+     レビューデータを Excel で開ける HTML テーブルとしてエクスポート
+     （diff_report_YYYYMMDD_reviewed_Excel-compatible.html）。
 ```
 
 ### 整合性検証フロー

@@ -148,7 +148,7 @@ The HTML report includes a client-side filter zone that allows users to narrow d
 ### Server-side (C#)
 
 - [`AppendFileRow()`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) emits `data-section`, `data-diff`, and (when applicable) `data-importance` attributes on each `<tr>`.
-- The **button row** (Download as reviewed, Fold all details, Reset filters, Clear all) is inside `<!--CTRL-->...<!--/CTRL-->` markers in [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) and is replaced with a reviewed banner by `downloadReviewed()`.
+- The **button row** (Download as reviewed, Fold all details, Reset filters, Clear all) is inside `<!--CTRL-->...<!--/CTRL-->` markers in [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) and is replaced with a reviewed banner by `downloadReviewed()`. The reviewed banner includes Verify integrity, Download as Excel-compatible HTML, Fold all details, and Reset filters buttons.
 - The **filter zone** (Diff Detail, Change Importance, Unchecked only, Search) is **outside** the CTRL markers so it persists in reviewed HTML.
 
 ### CSS ([`diff_report.css`](../Services/HtmlReport/diff_report.css))
@@ -165,6 +165,8 @@ The HTML report includes a client-side filter zone that allows users to narrow d
 - `syncFilterRowHeight()` — measures a Diff Detail row height and sets `--ft-row-h` CSS variable so Change Importance rows are exactly 2× height.
 - `wrapInputWithClear(inp)` — wraps the search input with a clear button (⊗) that dispatches both `input` and `change` events.
 - `downloadReviewed()` — clears all `filter-hidden` / `filter-hidden-parent` classes and inline table widths before capturing `outerHTML`, then restores live page state via `syncTableWidths()`.
+- `downloadExcelCompatibleHtml()` — generates a simplified HTML `<table>` with Excel XML namespace declarations and downloads it as `diff_report_YYYYMMDD_reviewed_Excel-compatible.html`. The table includes header metadata, all file sections with color-coded titles, per-file review state, legend, and summary. Available only in reviewed HTML.
+- `buildExcelRow(tr)` — extracts cell data from a file `<tr>` row and builds an 11-column Excel-compatible table row.
 
 ### Design decisions
 
@@ -962,7 +964,7 @@ HTML レポートには、複数の条件でファイル行を絞り込めるク
 ### サーバーサイド（C#）
 
 - [`AppendFileRow()`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs) が各 `<tr>` に `data-section`、`data-diff`、（該当する場合）`data-importance` 属性を出力。
-- **ボタン行**（Download as reviewed、Fold all details、Reset filters、Clear all）は [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) の `<!--CTRL-->...<!--/CTRL-->` マーカー内にあり、`downloadReviewed()` で reviewed バナーに置換される。
+- **ボタン行**（Download as reviewed、Fold all details、Reset filters、Clear all）は [`HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) の `<!--CTRL-->...<!--/CTRL-->` マーカー内にあり、`downloadReviewed()` で reviewed バナーに置換される。reviewed バナーには Verify integrity、Download as Excel-compatible HTML、Fold all details、Reset filters ボタンが含まれる。
 - **フィルターゾーン**（Diff Detail、Change Importance、Unchecked only、Search）は CTRL マーカーの**外**に配置され reviewed HTML にも残る。
 
 ### CSS（[`diff_report.css`](../Services/HtmlReport/diff_report.css)）
@@ -979,6 +981,8 @@ HTML レポートには、複数の条件でファイル行を絞り込めるク
 - `syncFilterRowHeight()` — Diff Detail 行の高さを測定し `--ft-row-h` CSS 変数を設定。Change Importance 行が正確に 2 倍の高さになる。
 - `wrapInputWithClear(inp)` — 検索入力をクリアボタン（⊗）付きラッパーで囲む。`input` と `change` の両イベントを発火。
 - `downloadReviewed()` — `filter-hidden` / `filter-hidden-parent` クラスとテーブルの inline width をクリアしてから `outerHTML` をキャプチャし、その後 `syncTableWidths()` でライブページの状態を復元。
+- `downloadExcelCompatibleHtml()` — Excel XML 名前空間宣言を含む簡素な HTML `<table>` を生成し、`diff_report_YYYYMMDD_reviewed_Excel-compatible.html` としてダウンロード。テーブルにはヘッダーメタデータ、色分けされたセクションタイトル付きの全ファイルセクション、ファイルごとのレビュー状態、凡例、サマリーが含まれる。reviewed HTML のみで利用可能。
+- `buildExcelRow(tr)` — ファイル `<tr>` 行からセルデータを抽出し、11列の Excel 互換テーブル行を構築。
 
 ### 設計判断
 
