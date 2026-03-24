@@ -466,6 +466,48 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal("/ci/cache", builder.ILCacheDirectoryAbsolutePath);
         }
 
+        // ── Mutation-testing additions / ミューテーションテスト追加 ──────────────
+
+        [Fact]
+        public void TryApplyInt_EmptyString_NoOverride()
+        {
+            // When env var is set to empty string, int.TryParse fails and no override occurs
+            // 環境変数が空文字の場合、int.TryParse が失敗しオーバーライドは行われない
+            var builder = new ConfigSettingsBuilder { MaxParallelism = 4 };
+            WithEnvVar("FOLDERDIFF_MAXPARALLELISM", string.Empty,
+                () => ConfigService.ApplyEnvironmentVariableOverrides(builder));
+
+            Assert.Equal(4, builder.MaxParallelism);
+        }
+
+        [Fact]
+        public void ApplyEnvironmentVariableOverrides_NoEnvVarsSet_DefaultsUnchanged()
+        {
+            // When no FOLDERDIFF_ env vars are set, all defaults remain unchanged
+            // FOLDERDIFF_ 環境変数が設定されていない場合、すべてのデフォルト値が変更されないこと
+            var builder = new ConfigSettingsBuilder();
+            var defaultMaxLog = builder.MaxLogGenerations;
+            var defaultEnableILCache = builder.EnableILCache;
+            var defaultShouldIncludeUnchanged = builder.ShouldIncludeUnchangedFiles;
+            var defaultMaxParallelism = builder.MaxParallelism;
+
+            // Ensure no FOLDERDIFF_ vars are set by clearing them
+            // FOLDERDIFF_ 変数が設定されていないことを確認するためクリア
+            WithEnvVars(
+                new[] {
+                    ("FOLDERDIFF_MAXLOGGENERATIONS", (string)null!),
+                    ("FOLDERDIFF_ENABLEILCACHE", (string)null!),
+                    ("FOLDERDIFF_SHOULDINCLUDEUNCHANGEDFILES", (string)null!),
+                    ("FOLDERDIFF_MAXPARALLELISM", (string)null!),
+                },
+                () => ConfigService.ApplyEnvironmentVariableOverrides(builder));
+
+            Assert.Equal(defaultMaxLog, builder.MaxLogGenerations);
+            Assert.Equal(defaultEnableILCache, builder.EnableILCache);
+            Assert.Equal(defaultShouldIncludeUnchanged, builder.ShouldIncludeUnchangedFiles);
+            Assert.Equal(defaultMaxParallelism, builder.MaxParallelism);
+        }
+
         private static async Task WithEnvVarsAsync(
             (string key, string value)[] vars,
             Func<Task> action)

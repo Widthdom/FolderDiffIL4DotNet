@@ -515,6 +515,67 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(JsonValueKind.Null, availProp.ValueKind);
         }
 
+        // ── Mutation-testing additions / ミューテーションテスト追加 ─────────────────
+
+        /// <summary>
+        /// Verifies that modified file with no DiffDetail recorded produces empty string in diffDetail field.
+        /// DiffDetail が記録されていない modified ファイルの diffDetail フィールドが空文字になることを確認する。
+        /// </summary>
+        [Fact]
+        public void BuildFileEntries_ModifiedFile_NoDiffDetail_ProducesEmptyDiffDetail()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("no-diff-detail");
+
+            // Add a modified file without recording any DiffDetail
+            // DiffDetail を記録せずに modified ファイルを追加
+            _resultLists.AddModifiedFileRelativePath("nodiff.dll");
+
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
+
+            var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
+            var record = JsonSerializer.Deserialize<JsonElement>(json);
+            var files = record.GetProperty("files");
+
+            foreach (var file in files.EnumerateArray())
+            {
+                if (file.GetProperty("category").GetString() == "Modified")
+                {
+                    Assert.Equal(string.Empty, file.GetProperty("diffDetail").GetString());
+                    Assert.Equal(string.Empty, file.GetProperty("disassembler").GetString());
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that modified file with DiffDetail but no disassembler label produces empty disassembler field.
+        /// DiffDetail はあるが逆アセンブララベルがない modified ファイルの disassembler フィールドが空文字になることを確認する。
+        /// </summary>
+        [Fact]
+        public void BuildFileEntries_ModifiedFile_NoDisassemblerLabel_ProducesEmptyDisassembler()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("no-disasm-label");
+
+            _resultLists.AddModifiedFileRelativePath("no-disasm.dll");
+            // Record DiffDetail but not disassembler label (no ilDisassemblerLabel parameter)
+            // DiffDetail のみ記録し、逆アセンブララベルは記録しない
+            _resultLists.RecordDiffDetail("no-disasm.dll", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
+
+            var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
+            var record = JsonSerializer.Deserialize<JsonElement>(json);
+            var files = record.GetProperty("files");
+
+            foreach (var file in files.EnumerateArray())
+            {
+                if (file.GetProperty("category").GetString() == "Modified")
+                {
+                    Assert.Equal("TextMismatch", file.GetProperty("diffDetail").GetString());
+                    Assert.Equal(string.Empty, file.GetProperty("disassembler").GetString());
+                }
+            }
+        }
+
         // ── Helpers / ヘルパー ────────────────────────────────────────────────────
 
         private static ReportGenerationContext CreateReportContext(

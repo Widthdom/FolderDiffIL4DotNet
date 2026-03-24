@@ -550,6 +550,126 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Equal(0, cache.Stats.Evicted);
         }
 
+        // ── Mutation-testing additions / ミューテーションテスト追加 ──────────────
+
+        [Fact]
+        public async Task TTL_AccessJustAfterExpiry_ReturnsNull()
+        {
+            // Verify the TTL boundary: entry accessed after TTL has elapsed must return null
+            // TTL 境界の検証: TTL 経過後にアクセスしたエントリは null を返すこと
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null, timeToLive: TimeSpan.FromMilliseconds(20));
+            var file = CreateTestFile("ttl-boundary.dll");
+            var tool = "tool";
+
+            await cache.SetILAsync(file, tool, "IL-ttl-boundary");
+            // Wait just past the TTL / TTL をわずかに超える時間待機
+            await Task.Delay(100);
+
+            var result = await cache.TryGetILAsync(file, tool);
+            Assert.Null(result);
+            Assert.True(cache.Stats.Expired >= 1, "Expected at least 1 expired entry");
+        }
+
+        [Fact]
+        public async Task LRU_AtExactCapacity_EvictsOldestOnInsert()
+        {
+            // When count == maxEntries, the next insert must trigger eviction
+            // count == maxEntries のとき、次の挿入で退去が発生すること
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null, ilCacheMaxMemoryEntries: 2);
+            var tool = "tool";
+
+            var file1 = CreateTestFile("cap1.dll", "cap-c1");
+            var file2 = CreateTestFile("cap2.dll", "cap-c2");
+            var file3 = CreateTestFile("cap3.dll", "cap-c3");
+
+            await cache.SetILAsync(file1, tool, "IL-cap1");
+            await cache.SetILAsync(file2, tool, "IL-cap2");
+            // Cache is exactly at capacity (2 entries). Next insert must evict the oldest (file1).
+            // キャッシュがちょうど容量上限（2エントリ）。次の挿入で最古（file1）が退去される。
+            await cache.SetILAsync(file3, tool, "IL-cap3");
+
+            Assert.Null(await cache.TryGetILAsync(file1, tool));
+            Assert.Equal("IL-cap2", await cache.TryGetILAsync(file2, tool));
+            Assert.Equal("IL-cap3", await cache.TryGetILAsync(file3, tool));
+            Assert.True(cache.Stats.Evicted >= 1);
+        }
+
+        [Fact]
+        public async Task DiskQuota_BothLimitsZero_NoFilesDeleted()
+        {
+            // When both maxDiskFileCount and maxDiskMegabytes are 0, no quota enforcement occurs
+            // maxDiskFileCount と maxDiskMegabytes がともに 0 の場合、クォータ制御は行われない
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir,
+                ilCacheMaxDiskFileCount: 0, ilCacheMaxDiskMegabytes: 0);
+            var tool = "tool";
+
+            for (int i = 0; i < 5; i++)
+            {
+                var file = CreateTestFile($"noquota-{i}.dll", $"noquota-content-{i}");
+                await cache.SetILAsync(file, tool, $"IL-noquota-{i}");
+                await Task.Delay(30);
+            }
+
+            var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
+            Assert.Equal(5, cacheFiles.Length);
+        }
+
+        [Fact]
+        public async Task DiskQuota_OnlyFileCountExceeds_TrimsByFileCount()
+        {
+            // maxDiskFileCount=2 with unlimited bytes: file count triggers trimming
+            // maxDiskFileCount=2 でバイト制限なし: ファイル数によるトリミングが発生
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir,
+                ilCacheMaxDiskFileCount: 2, ilCacheMaxDiskMegabytes: 0);
+            var tool = "tool";
+
+            for (int i = 0; i < 4; i++)
+            {
+                var file = CreateTestFile($"fconly-{i}.dll", $"fc-content-{i}");
+                await cache.SetILAsync(file, tool, $"IL-fc-{i}");
+                await Task.Delay(50);
+            }
+
+            var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
+            Assert.True(cacheFiles.Length <= 2, $"Expected <= 2 cache files after file-count trim, got {cacheFiles.Length}");
+        }
+
+        [Fact]
+        public async Task DiskQuota_OnlyBytesExceed_TrimsByBytes()
+        {
+            // maxDiskMegabytes very small (simulate by writing large IL), no file count limit
+            // maxDiskMegabytes を非常に小さく設定（大きな IL を書き込みで模擬）、ファイル数制限なし
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: _cacheDir,
+                ilCacheMaxDiskFileCount: 0, ilCacheMaxDiskMegabytes: 1);
+            var tool = "tool";
+
+            // Write multiple ~400KB entries to exceed 1 MB limit
+            // 複数の ~400KB エントリを書き込み 1 MB 制限を超過させる
+            for (int i = 0; i < 5; i++)
+            {
+                var file = CreateTestFile($"bytesonly-{i}.dll", $"bytes-content-{i}");
+                await cache.SetILAsync(file, tool, new string('Z', 200_000));
+                await Task.Delay(50);
+            }
+
+            var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
+            // Some files should have been trimmed by the bytes quota
+            // バイトクォータにより一部のファイルがトリミングされているはず
+            Assert.True(cacheFiles.Length < 5, $"Expected fewer than 5 cache files after byte trim, got {cacheFiles.Length}");
+        }
+
+        [Fact]
+        public async Task Precompute_NegativeParallel_ThrowsArgumentOutOfRange()
+        {
+            // Verify that negative maxParallel also throws, not just zero
+            // ゼロだけでなく負の maxParallel も例外をスローすることを確認
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null);
+            var file = CreateTestFile("neg.dll");
+
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
+                () => cache.PrecomputeAsync(new[] { file }, maxParallel: -1));
+        }
+
         [Fact]
         public async Task MemoryBudget_EntryCountAndMemoryBothEnforced()
         {
