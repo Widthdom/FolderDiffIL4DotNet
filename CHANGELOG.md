@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Fix stale coverage threshold values in documentation** — Updated coverage threshold references from the old `73%` line / `71%` branch values to the current CI-enforced `80%` line / `75%` branch in [`CLAUDE.md`](CLAUDE.md) (EN+JA), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md) (EN+JA), and [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA). Added `DocumentationThresholds_MatchCiWorkflow` test in [`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) that extracts `line_threshold` and `branch_threshold` from the CI workflow via regex and asserts all documentation files reference matching values, preventing future drift. Updated test count in [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md) from 676/677 to 677/678.
+
 ### [1.8.0] - 2026-03-24
 
 #### Added
@@ -600,6 +604,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Fixed
+
+- **ドキュメントのカバレッジ閾値を修正** — [`CLAUDE.md`](CLAUDE.md)（EN+JA）、[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md)（EN+JA）、[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA）のカバレッジ閾値を旧値（行 `73%` / 分岐 `71%`）から CI 実装と一致する現行値（行 `80%` / 分岐 `75%`）に更新。[`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) に `DocumentationThresholds_MatchCiWorkflow` テストを追加し、CI ワークフローから正規表現で閾値を抽出して全ドキュメントの記述と突合することで今後のドリフトを防止。[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md) のテスト件数を 676/677 → 677/678 に更新。
 
 ### [1.8.0] - 2026-03-24
 

@@ -645,7 +645,7 @@ Current CI behavior (`build` job — Ubuntu):
 - Installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool and runs tests with `DOTNET_ROLL_FORWARD=Major` so the preferred disassembler path is exercised in CI as well
 - Runs tests and coverage only when the test project exists
 - Generates coverage summary with `reportgenerator`
-- Enforces total coverage thresholds of `73%` line and `71%` branch from the generated Cobertura XML
+- Enforces total coverage thresholds of `80%` line and `75%` branch from the generated Cobertura XML
 - Publishes build output and uploads it as `FolderDiffIL4DotNet`
 - Uploads TRX and coverage files as `TestAndCoverage`
 
@@ -1443,7 +1443,7 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - 実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) を入れ、`DOTNET_ROLL_FORWARD=Major` 付きで `Category=E2E` の逆アセンブラテストも CI 上で動かす
 - テストプロジェクトが存在するときだけテストとカバレッジを実行
 - `reportgenerator` でカバレッジ要約を生成
-- 生成された Cobertura XML から total 行 `73%` / 分岐 `71%` のしきい値を強制する
+- 生成された Cobertura XML から total 行 `80%` / 分岐 `75%` のしきい値を強制する
 - publish 出力を `FolderDiffIL4DotNet` としてアップロード
 - TRX とカバレッジ関連を `TestAndCoverage` としてアップロード
 

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Architecture
@@ -61,6 +62,48 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("package-ecosystem: \"nuget\"", dependabotConfig, StringComparison.Ordinal);
             Assert.Contains("package-ecosystem: \"github-actions\"", dependabotConfig, StringComparison.Ordinal);
             Assert.Contains("interval: \"weekly\"", dependabotConfig, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Verifies that documentation files (CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md)
+        /// reference the same coverage thresholds as the CI workflow.
+        /// ドキュメント（CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md）が CI ワークフローと
+        /// 同じカバレッジ閾値を参照していることを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void DocumentationThresholds_MatchCiWorkflow()
+        {
+            // Extract actual thresholds from the CI workflow / CI ワークフローから実際の閾値を取得
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var lineMatch = Regex.Match(workflow, @"line_threshold\s*=\s*(\d+(?:\.\d+)?)");
+            var branchMatch = Regex.Match(workflow, @"branch_threshold\s*=\s*(\d+(?:\.\d+)?)");
+            Assert.True(lineMatch.Success, "Could not find line_threshold in dotnet.yml");
+            Assert.True(branchMatch.Success, "Could not find branch_threshold in dotnet.yml");
+
+            var lineThreshold = lineMatch.Groups[1].Value.TrimEnd('0').TrimEnd('.');
+            var branchThreshold = branchMatch.Groups[1].Value.TrimEnd('0').TrimEnd('.');
+
+            // Verify CLAUDE.md references correct thresholds / CLAUDE.md の閾値を検証
+            var claudeMd = File.ReadAllText(GetRepositoryFilePath("CLAUDE.md"));
+            Assert.Contains($"line >= {lineThreshold}%", claudeMd, StringComparison.Ordinal);
+            Assert.Contains($"branch >= {branchThreshold}%", claudeMd, StringComparison.Ordinal);
+            Assert.Contains($"行 >= {lineThreshold}%", claudeMd, StringComparison.Ordinal);
+            Assert.Contains($"ブランチ >= {branchThreshold}%", claudeMd, StringComparison.Ordinal);
+
+            // Verify TESTING_GUIDE.md references correct thresholds / TESTING_GUIDE.md の閾値を検証
+            var testingGuide = File.ReadAllText(GetRepositoryFilePath("doc", "TESTING_GUIDE.md"));
+            Assert.Contains($"`{lineThreshold}%` line", testingGuide, StringComparison.Ordinal);
+            Assert.Contains($"`{branchThreshold}%` branch", testingGuide, StringComparison.Ordinal);
+            Assert.Contains($"行 `{lineThreshold}%`", testingGuide, StringComparison.Ordinal);
+            Assert.Contains($"分岐 `{branchThreshold}%`", testingGuide, StringComparison.Ordinal);
+
+            // Verify DEVELOPER_GUIDE.md references correct thresholds / DEVELOPER_GUIDE.md の閾値を検証
+            var devGuide = File.ReadAllText(GetRepositoryFilePath("doc", "DEVELOPER_GUIDE.md"));
+            Assert.Contains($"`{lineThreshold}%` line", devGuide, StringComparison.Ordinal);
+            Assert.Contains($"`{branchThreshold}%` branch", devGuide, StringComparison.Ordinal);
+            Assert.Contains($"行 `{lineThreshold}%`", devGuide, StringComparison.Ordinal);
+            Assert.Contains($"分岐 `{branchThreshold}%`", devGuide, StringComparison.Ordinal);
         }
 
         private static string GetRepositoryFilePath(params string[] segments)
