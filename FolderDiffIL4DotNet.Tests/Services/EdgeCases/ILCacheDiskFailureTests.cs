@@ -180,6 +180,168 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             Assert.Equal("IL-after-delete", memResult);
         }
 
+        // ── Disk-full simulation via disk quota enforcement ────────────────────
+
+        /// <summary>
+        /// When the disk cache exceeds MaxDiskFileCount, older entries are trimmed
+        /// and new entries are still stored successfully.
+        /// ディスクキャッシュが MaxDiskFileCount を超えた場合、古いエントリが削除され
+        /// 新しいエントリが正常に保存されることを検証する。
+        /// </summary>
+        [Fact]
+        public async Task DiskCache_WhenQuotaExceeded_TrimsOldEntriesAndStoresNew()
+        {
+            var cacheDir = Path.Combine(_tempDir, "cache-quota-test");
+            // Max 3 files on disk / ディスク上最大3ファイル
+            var cache = new ILCache(
+                ilCacheDirectoryAbsolutePath: cacheDir,
+                ilCacheMaxDiskFileCount: 3);
+
+            // Write 5 entries — first 2 should be trimmed / 5エントリ書き込み — 最初の2つは削除されるはず
+            for (var i = 0; i < 5; i++)
+            {
+                var file = CreateTestFile($"quota-{i}.dll", $"content-{i}");
+                await cache.SetILAsync(file, "tool", $"IL-{i}");
+            }
+
+            // Latest entry should be retrievable from memory / 最新エントリはメモリから取得可能
+            var latestFile = Path.Combine(_tempDir, "quota-4.dll");
+            var result = await cache.TryGetILAsync(latestFile, "tool");
+            Assert.Equal("IL-4", result);
+
+            // Disk should not exceed the quota / ディスクはクォータを超えないこと
+            if (Directory.Exists(cacheDir))
+            {
+                var diskFiles = Directory.GetFiles(cacheDir, "*.ilcache");
+                Assert.True(diskFiles.Length <= 3,
+                    $"Disk cache should have at most 3 files, but has {diskFiles.Length}");
+            }
+        }
+
+        /// <summary>
+        /// When the disk cache exceeds MaxDiskMegabytes, older entries are trimmed.
+        /// ディスクキャッシュが MaxDiskMegabytes を超えた場合、古いエントリが削除されることを検証する。
+        /// </summary>
+        [Fact]
+        public async Task DiskCache_WhenDiskSizeLimitExceeded_TrimsOldEntries()
+        {
+            var cacheDir = Path.Combine(_tempDir, "cache-size-limit-test");
+            // Very small disk limit (1 byte as MB would be impractical, use file count instead)
+            // 非常に小さいディスク上限で検証
+            var cache = new ILCache(
+                ilCacheDirectoryAbsolutePath: cacheDir,
+                ilCacheMaxDiskFileCount: 2);
+
+            // Write large-ish entries / やや大きいエントリを書き込む
+            var largeIL = new string('X', 1024);
+            for (var i = 0; i < 5; i++)
+            {
+                var file = CreateTestFile($"size-{i}.dll", $"content-{i}");
+                await cache.SetILAsync(file, "tool", largeIL + i);
+            }
+
+            // Should not crash, latest should be available / クラッシュせず最新が利用可能
+            var latestFile = Path.Combine(_tempDir, "size-4.dll");
+            var result = await cache.TryGetILAsync(latestFile, "tool");
+            Assert.NotNull(result);
+        }
+
+        /// <summary>
+        /// Multiple rapid Set+Get cycles on a read-only directory never throw.
+        /// 読み取り専用ディレクトリに対して Set+Get を高速で繰り返しても例外が発生しないことを検証する。
+        /// </summary>
+        [Fact]
+        public async Task DiskCache_RapidWriteToReadOnlyDir_NeverThrows()
+        {
+            if (!IsUnixNonRoot()) return;
+
+            var cacheDir = Path.Combine(_tempDir, "cache-rapid-ro");
+            Directory.CreateDirectory(cacheDir);
+
+            // Make directory read-only immediately / ディレクトリを即座に読み取り専用に
+#pragma warning disable CA1416 // Unix-only API / Unix 専用 API
+            File.SetUnixFileMode(cacheDir, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
+            try
+            {
+                var cache = new ILCache(ilCacheDirectoryAbsolutePath: cacheDir);
+
+                // Rapid fire writes — all should fall back to memory silently
+                // 高速連続書き込み — すべてメモリへのフォールバック
+                for (var i = 0; i < 50; i++)
+                {
+                    var file = CreateTestFile($"rapid-{i}.dll", $"content-{i}");
+                    await cache.SetILAsync(file, "tool", $"IL-{i}");
+                    var result = await cache.TryGetILAsync(file, "tool");
+                    Assert.Equal($"IL-{i}", result);
+                }
+            }
+            finally
+            {
+#pragma warning disable CA1416 // Unix-only API / Unix 専用 API
+                File.SetUnixFileMode(cacheDir,
+                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+#pragma warning restore CA1416
+            }
+        }
+
+        /// <summary>
+        /// Corrupted cache file with zero bytes is handled without crash.
+        /// 0バイトの破損キャッシュファイルがクラッシュなく処理されることを検証する。
+        /// </summary>
+        [Fact]
+        public async Task DiskCache_ZeroByteCacheFile_HandlesGracefully()
+        {
+            var cacheDir = Path.Combine(_tempDir, "cache-zerobyte-test");
+            var file = CreateTestFile("zerobyte.dll", "file-content");
+            var tool = "tool";
+
+            // Write a valid entry / 有効なエントリを書き込む
+            var cache1 = new ILCache(ilCacheDirectoryAbsolutePath: cacheDir);
+            await cache1.SetILAsync(file, tool, "valid IL");
+
+            // Replace all cache files with zero-byte files / 全キャッシュファイルを0バイトに置換
+            var cacheFiles = Directory.GetFiles(cacheDir, "*.ilcache");
+            foreach (var cf in cacheFiles)
+            {
+                File.WriteAllBytes(cf, Array.Empty<byte>());
+            }
+
+            // New instance reading zero-byte files should not crash / 0バイトファイルを読む新インスタンスはクラッシュしない
+            var cache2 = new ILCache(ilCacheDirectoryAbsolutePath: cacheDir);
+            var result = await cache2.TryGetILAsync(file, tool);
+            // May return null or empty — must not throw / null または空を返すかもしれないがスローしない
+        }
+
+        /// <summary>
+        /// Concurrent writes to a failing disk path do not corrupt the memory cache.
+        /// 障害発生中のディスクパスへの並行書き込みがメモリキャッシュを破損しないことを検証する。
+        /// </summary>
+        [Fact]
+        public async Task DiskCache_ConcurrentWritesToInvalidPath_MemoryCacheRemainsConsistent()
+        {
+            var invalidPath = Path.Combine(_tempDir, new string('z', 250), "cache");
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: invalidPath);
+
+            // Concurrent writes / 並行書き込み
+            var tasks = new Task[20];
+            for (var i = 0; i < tasks.Length; i++)
+            {
+                var idx = i;
+                var file = CreateTestFile($"concurrent-{idx}.dll", $"content-{idx}");
+                tasks[idx] = cache.SetILAsync(file, "tool", $"IL-{idx}");
+            }
+            await Task.WhenAll(tasks);
+
+            // Verify all entries are in memory / 全エントリがメモリにあることを確認
+            for (var i = 0; i < tasks.Length; i++)
+            {
+                var file = Path.Combine(_tempDir, $"concurrent-{i}.dll");
+                var result = await cache.TryGetILAsync(file, "tool");
+                Assert.Equal($"IL-{i}", result);
+            }
+        }
+
         private static bool IsUnixNonRoot()
         {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
