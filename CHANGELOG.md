@@ -23,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Documentation
 
+- **Performance guide with memory architecture and benchmark baselines** — Created [`doc/PERFORMANCE_GUIDE.md`](doc/PERFORMANCE_GUIDE.md) (bilingual EN+JA) documenting: memory management architecture (IL memory cache LRU/TTL eviction, disk cache quotas, text diff memory budgets), overall memory profile estimates by project scale (1K vs 10K files), parallelism tuning, benchmark baseline metrics (folder enumeration, SHA256 hashing, Myers diff algorithm), CI regression detection workflow, and tuning recommendations by scenario (small/medium/large projects, network shares, CI, memory-constrained). Referenced from [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md).
+
 - **Structured exit code documentation** — Replaced bullet-list exit codes in [`README.md`](README.md) with detailed tables (EN+JA) showing code, meaning, and typical causes for each exit code (0, 1, 2, 3, 4).
 
 #### Changed
@@ -697,6 +699,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **ミューテーションテスト CI 統合** — [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) の `mutation-testing` ジョブを、既存の手動 `workflow_dispatch` トリガーに加えて、プルリクエスト時に自動実行されるよう変更。ミューテーションスコアサマリーを GitHub Actions ステップサマリーに投稿するステップを追加。
 
 #### Documentation
+
+- **メモリ管理アーキテクチャとベンチマークベースラインのパフォーマンスガイド** — バイリンガル（EN+JA）の [`doc/PERFORMANCE_GUIDE.md`](doc/PERFORMANCE_GUIDE.md) を作成。メモリ管理アーキテクチャ（IL メモリキャッシュ LRU/TTL エビクション、ディスクキャッシュクォータ、テキスト差分メモリバジェット）、プロジェクト規模別の全体メモリプロファイル推定（1K vs 10K ファイル）、並列度チューニング、ベンチマークベースライン指標（フォルダ列挙、SHA256 ハッシュ、Myers 差分アルゴリズム）、CI 回帰検出ワークフロー、シナリオ別チューニング推奨（小/中/大規模プロジェクト、ネットワーク共有、CI、メモリ制約）を文書化。[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) から参照。
 
 - **終了コードの構造化文書化** — [`README.md`](README.md) の終了コードを箇条書きから、コード・意味・主な発生条件を含む詳細テーブル（EN+JA）に置き換え。
 
