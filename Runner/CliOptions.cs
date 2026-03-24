@@ -14,5 +14,6 @@ namespace FolderDiffIL4DotNet.Runner
         bool SkipIL,
         bool NoTimestampWarnings,
         bool PrintConfig,
+        bool ValidateConfig,
         string? ParseError);
 }

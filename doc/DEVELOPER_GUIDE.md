@@ -8,6 +8,7 @@ Related documents:
 - [api/index.md](../api/index.md): generated API reference landing page
 - [docfx.json](../docfx.json): DocFX metadata/build configuration
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI pipeline definition
+- [SECURITY.md](../SECURITY.md): threat model, STRIDE analysis, and security mitigations
 
 <a id="guide-en-map"></a>
 ## Document Map
@@ -825,6 +826,7 @@ Some browsers (notably macOS Safari) ignore the `accept` attribute on `<input ty
 - [api/index.md](../api/index.md): 自動生成 API リファレンスの入口
 - [docfx.json](../docfx.json): DocFX のメタデータ/ビルド設定
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI パイプライン定義
+- [SECURITY.md](../SECURITY.md): 脅威モデル、STRIDE 分析、セキュリティ対策
 
 <a id="guide-ja-map"></a>
 ## ドキュメントの見取り図

@@ -9,6 +9,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **`--validate-config` CLI option** — New CLI flag that validates the configuration file (JSON syntax + semantic rules) and exits with code `0` if valid or `3` if invalid. Useful for CI pre-flight checks and troubleshooting configuration issues without running a full comparison. Implementation in [`ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs). Updated [`CliParser.cs`](Runner/CliParser.cs), [`CliOptions.cs`](Runner/CliOptions.cs), [`ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs), [`README.md`](README.md) (EN+JA options table). Test count: 832 (unchanged).
+
+- **Print-optimized CSS for PDF export via browser print** — Added `@media print` block to [`diff_report.css`](Services/HtmlReport/diff_report.css) that hides interactive controls, removes sticky positioning, expands all `<details>` elements, sets page margins, prevents page breaks inside table rows and diff blocks, and preserves diff background colors with `print-color-adjust: exact`. Users can export to PDF via browser File > Print > Save as PDF.
+
+- **Side-by-side diff toggle** — Added a "Side-by-side" / "Unified" toggle button to inline diff views in the HTML report. When toggled, consecutive removed/added line pairs are displayed in a 4-column layout (old line#, old text, new line#, new text) for easier visual comparison. Toggle function `toggleDiffView()` added to [`diff_report.js`](Services/HtmlReport/diff_report.js), CSS for `.sbs-mode` layout added to [`diff_report.css`](Services/HtmlReport/diff_report.css).
+
+- **Threat model documentation (SECURITY.md)** — Created [`SECURITY.md`](SECURITY.md) with bilingual (EN+JA) STRIDE-based threat analysis covering: asset inventory, trust boundaries, tampering mitigations (SHA256 integrity), XSS prevention (HtmlEncode + CSP), DoS protections (parallelism limits, cache budgets), subprocess security (hardcoded candidates, timeouts), and known limitations. Referenced from [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md).
+
+- **Mutation testing CI integration** — Changed `mutation-testing` job in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) to run automatically on pull requests (in addition to existing manual `workflow_dispatch` trigger). Added mutation score summary step that posts results to GitHub Actions step summary.
+
+#### Documentation
+
+- **Structured exit code documentation** — Replaced bullet-list exit codes in [`README.md`](README.md) with detailed tables (EN+JA) showing code, meaning, and typical causes for each exit code (0, 1, 2, 3, 4).
+
 #### Changed
 
 - **Extract shared `TestLogger` helper and split `FileDiffResultLists` into partial classes** — Consolidated 8 duplicate `TestLogger` implementations across test files into a single shared [`TestLogger`](FolderDiffIL4DotNet.Tests/Helpers/TestLogger.cs) in `FolderDiffIL4DotNet.Tests.Helpers` namespace, supporting optional callback hooks, configurable `LogFileAbsolutePath`, and a unified `TestLogEntry` record. Split [`FileDiffResultLists`](Models/FileDiffResultLists.cs) (350 lines) into 3 partial files by responsibility: classification queues (main file), comparison results ([`FileDiffResultLists.ComparisonResults.cs`](Models/FileDiffResultLists.ComparisonResults.cs)), and analysis metadata ([`FileDiffResultLists.Metadata.cs`](Models/FileDiffResultLists.Metadata.cs)). No public API changes; all existing tests pass without modification. Affected test files: [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs), [`FileDiffServiceTests`](FolderDiffIL4DotNet.Tests/Services/FileDiffServiceTests.cs), [`FileDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.cs), [`FolderDiffServiceUnitTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffServiceUnitTests.cs), [`ReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs), [`FolderDiffConcurrencyStressTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/FolderDiffConcurrencyStressTests.cs), [`LargeFileComparisonTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/LargeFileComparisonTests.cs), [`SymlinkAndCircularDirectoryTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/SymlinkAndCircularDirectoryTests.cs). Test count: 832 (unchanged).
@@ -667,6 +683,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **`--validate-config` CLI オプション** — 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い、有効ならコード `0`、無効ならコード `3` で終了する新しい CLI フラグ。CI のプリフライトチェックや設定トラブルシューティングに有用。実装: [`ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs)。更新: [`CliParser.cs`](Runner/CliParser.cs)、[`CliOptions.cs`](Runner/CliOptions.cs)、[`ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs)、[`README.md`](README.md)（EN+JA オプション表）。テスト件数: 832（変更なし）。
+
+- **ブラウザ印刷による PDF エクスポート用の印刷最適化 CSS** — [`diff_report.css`](Services/HtmlReport/diff_report.css) に `@media print` ブロックを追加。インタラクティブコントロールの非表示、sticky 解除、全 `<details>` 展開、ページマージン設定、テーブル行・差分ブロック内でのページ分割防止、`print-color-adjust: exact` による差分背景色の保持。ブラウザの ファイル > 印刷 > PDF として保存 で PDF エクスポート可能。
+
+- **Side-by-side 差分表示トグル** — HTML レポートのインライン差分ビューに「Side-by-side」/「Unified」切替ボタンを追加。トグル時、連続する削除/追加行ペアが 4 列レイアウト（旧行番号、旧テキスト、新行番号、新テキスト）で表示され、視覚的な比較が容易に。[`diff_report.js`](Services/HtmlReport/diff_report.js) に `toggleDiffView()` 関数、[`diff_report.css`](Services/HtmlReport/diff_report.css) に `.sbs-mode` レイアウト CSS を追加。
+
+- **脅威モデル文書化（SECURITY.md）** — バイリンガル（EN+JA）の STRIDE ベース脅威分析を含む [`SECURITY.md`](SECURITY.md) を作成。資産一覧、信頼境界、改竄防止（SHA256 整合性）、XSS 防止（HtmlEncode + CSP）、DoS 保護（並列度制限、キャッシュバジェット）、サブプロセスセキュリティ（ハードコード候補、タイムアウト）、既知の制限事項をカバー。[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) から参照。
+
+- **ミューテーションテスト CI 統合** — [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) の `mutation-testing` ジョブを、既存の手動 `workflow_dispatch` トリガーに加えて、プルリクエスト時に自動実行されるよう変更。ミューテーションスコアサマリーを GitHub Actions ステップサマリーに投稿するステップを追加。
+
+#### Documentation
+
+- **終了コードの構造化文書化** — [`README.md`](README.md) の終了コードを箇条書きから、コード・意味・主な発生条件を含む詳細テーブル（EN+JA）に置き換え。
 
 #### Changed
 

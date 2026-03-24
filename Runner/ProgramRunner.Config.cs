@@ -20,6 +20,40 @@ namespace FolderDiffIL4DotNet
         /// Prints the effective configuration (after JSON load + environment variable overrides) to stdout as JSON.
         /// 有効な設定（JSON 読込 + 環境変数オーバーライド適用後）を JSON として標準出力に書き出します。
         /// </summary>
+        /// <summary>
+        /// Validates the configuration (JSON load + environment variable overrides + semantic validation) and reports results.
+        /// 設定のバリデーション（JSON 読込 + 環境変数オーバーライド + セマンティック検証）を行い結果を報告します。
+        /// </summary>
+        private async Task<int> ValidateConfigAsync(string? configPath)
+        {
+            try
+            {
+                var builder = await _configService.LoadConfigBuilderAsync(configPath);
+                var validationResult = builder.Validate();
+                if (!validationResult.IsValid)
+                {
+                    Console.Error.WriteLine("Configuration validation failed:");
+                    foreach (var error in validationResult.Errors)
+                    {
+                        Console.Error.WriteLine($"  - {error}");
+                    }
+                    return (int)ProgramExitCode.ConfigurationError;
+                }
+
+                // Build to verify immutable object construction succeeds
+                // イミュータブルオブジェクトの構築が成功することを検証
+                builder.Build();
+                Console.WriteLine("Configuration is valid.");
+                return 0;
+            }
+            catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
+                or IOException or UnauthorizedAccessException)
+            {
+                Console.Error.WriteLine(ex.Message);
+                return (int)ProgramExitCode.ConfigurationError;
+            }
+        }
+
         private async Task<int> PrintConfigAsync(string? configPath)
         {
             try

@@ -115,6 +115,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--help`, `-h` | Show help and exit (code `0`). |
 | `--version` | Show the application version and exit (code `0`). |
 | `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects `config.json` + all `FOLDERDIFF_*` env var overrides. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
+| `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. |
 | `--no-pause` | Skip key-wait at process end. |
 | `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
 | `--threads <N>` | Override [`MaxParallelism`](#config-en-maxparallelism) for this run (`0` = auto). |
@@ -146,11 +147,14 @@ Main output:
 - Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#config-en-shouldoutputiltext) is `true`
 
 Process exit codes:
-- `0`: success
-- `2`: invalid arguments or input paths (includes preflight failures — see below)
-- `3`: configuration load/parse error
-- `4`: diff execution or report generation failure
-- `1`: unexpected internal error
+
+| Code | Meaning | Typical Causes |
+| --- | --- | --- |
+| `0` | Success | Normal completion, `--help`, `--version`, `--print-config`, `--validate-config` (valid) |
+| `1` | Unexpected internal error | Unclassifiable exception at application boundary |
+| `2` | Invalid arguments or input paths | Missing positional args, non-existent directories, illegal report label, preflight failures (see below) |
+| `3` | Configuration error | JSON syntax error, missing config file, semantic validation failure (`--validate-config` invalid) |
+| `4` | Execution failure | Runtime error during diff comparison or report generation |
 
 Before loading configuration, three preflight checks run against the reports output path (all failures produce exit code `2`):
 1. **Path length** — the constructed `Reports/<label>` path must not exceed the OS limit (260 chars on Windows without long-path opt-in, 1024 on macOS, 4096 on Linux).
@@ -731,6 +735,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--help`, `-h` | 使い方を表示してコード `0` で終了します。 |
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
 | `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。`config.json` のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
+| `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
 | `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り [`MaxParallelism`](#config-ja-maxparallelism) を上書きします（`0` = 自動）。 |
@@ -762,11 +767,14 @@ dotnet run -- --config /etc/my-config.json --print-config
 - [`ShouldOutputILText`](#config-ja-shouldoutputiltext) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
 
 プロセス終了コード:
-- `0`: 正常終了
-- `2`: 引数または入力パス不正（下記プリフライトチェック失敗を含む）
-- `3`: 設定ファイルの読込/解析失敗
-- `4`: 差分実行またはレポート生成失敗
-- `1`: 想定外の内部エラー
+
+| コード | 意味 | 主な発生条件 |
+| --- | --- | --- |
+| `0` | 正常終了 | 通常完了、`--help`、`--version`、`--print-config`、`--validate-config`（有効時） |
+| `1` | 想定外の内部エラー | アプリケーション境界での分類不能な例外 |
+| `2` | 引数または入力パス不正 | 位置引数の不足、存在しないディレクトリ、不正なレポートラベル、プリフライト失敗（下記参照） |
+| `3` | 設定エラー | JSON 構文エラー、設定ファイル不在、セマンティック検証失敗（`--validate-config` 無効時） |
+| `4` | 実行失敗 | 差分比較またはレポート生成中のランタイムエラー |
 
 設定読み込みの前に、レポート出力パスに対して 3 つのプリフライトチェックを実行します（いずれの失敗も終了コード `2`）:
 1. **パス長** — 構築した `Reports/<label>` パスが OS の上限を超えていないこと（Windows 標準は 260 文字、macOS は 1024 文字、Linux は 4096 文字）。
