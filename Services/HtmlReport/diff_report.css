@@ -105,6 +105,10 @@
       padding: 0.5rem 2rem; margin: 0 -2rem;
       font-size: 13px; color: #1f2328; font-weight: 500; z-index: 100;
     }
+    .reviewed-banner-actions {
+      display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center;
+      margin-left: auto; justify-content: flex-end;
+    }
     /* ── Apple-style buttons ─────────────────────────────────────────────── */
     .btn {
       display: inline-flex; align-items: center; gap: 0.35em;
