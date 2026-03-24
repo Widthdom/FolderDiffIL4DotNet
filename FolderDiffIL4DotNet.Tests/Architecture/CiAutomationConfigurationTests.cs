@@ -44,6 +44,26 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that the benchmark regression workflow detects performance degradation on PRs.
+        /// ベンチマークリグレッションワークフローが PR でパフォーマンス劣化を検知することを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BenchmarkRegressionWorkflow_DetectsPerformanceDegradation()
+        {
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "benchmark-regression.yml"));
+
+            Assert.Contains("name: Performance Regression Test", workflow, StringComparison.Ordinal);
+            Assert.Contains("pull_request:", workflow, StringComparison.Ordinal);
+            Assert.Contains("benchmark-action/github-action-benchmark@v1", workflow, StringComparison.Ordinal);
+            Assert.Contains("alert-threshold: '150%'", workflow, StringComparison.Ordinal);
+            Assert.Contains("fail-on-alert: true", workflow, StringComparison.Ordinal);
+            Assert.Contains("FolderDiffIL4DotNet.Benchmarks", workflow, StringComparison.Ordinal);
+            Assert.Contains("--exporters json", workflow, StringComparison.Ordinal);
+            Assert.Contains("combined-report.json", workflow, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that CodeQL and Dependabot are enabled for repository security maintenance.
         /// リポジトリのセキュリティ保守のため CodeQL と Dependabot が有効であることを検証します。
         /// </summary>
