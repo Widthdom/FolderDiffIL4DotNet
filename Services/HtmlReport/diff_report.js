@@ -737,9 +737,9 @@
       var label = card.querySelector('.header-card-label');
       var value = card.querySelector('.header-card-value');
       if (label && value) {
-        headerHtml += '<tr><td style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td>' + esc(value.textContent.trim()) + '</td>';
-        for (var i = 2; i < COLS; i++) headerHtml += '<td></td>';
+        headerHtml += '<tr><td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>';
+        for (var i = 2; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
         headerHtml += '</tr>';
       }
     });
@@ -748,9 +748,9 @@
       var label = hp.querySelector('.header-path-label');
       var value = hp.querySelector('.header-path-value');
       if (label && value) {
-        headerHtml += '<tr><td style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td>' + esc(value.textContent.trim()) + '</td>';
-        for (var i = 2; i < COLS; i++) headerHtml += '<td></td>';
+        headerHtml += '<tr><td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>';
+        for (var i = 2; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
         headerHtml += '</tr>';
       }
     });
@@ -792,8 +792,8 @@
       ['TextMatch / TextMismatch', 'Text-based match / mismatch']
     ];
     diffLegend.forEach(function(row) {
-      legendHtml += '<tr><td style="font-weight:bold">' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td>';
-      for (var i = 2; i < COLS; i++) legendHtml += '<td></td>';
+      legendHtml += '<tr><td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
+      for (var i = 2; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
       legendHtml += '</tr>';
     });
     legendHtml += emptyRow();
@@ -805,8 +805,8 @@
       ['Low', 'Low-impact change: body-only modification, internal/private member addition']
     ];
     impLegend.forEach(function(row) {
-      legendHtml += '<tr><td style="font-weight:bold">' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td>';
-      for (var i = 2; i < COLS; i++) legendHtml += '<td></td>';
+      legendHtml += '<tr><td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
+      for (var i = 2; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
       legendHtml += '</tr>';
     });
     legendHtml += emptyRow();
