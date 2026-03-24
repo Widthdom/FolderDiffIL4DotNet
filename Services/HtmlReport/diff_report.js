@@ -175,10 +175,12 @@
     // ボタン行を reviewed バナーに置換（フィルターゾーンは CTRL マーカー外なので維持）
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
       '<div class="reviewed-banner" role="banner"><span>Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</span>'
-      + ' <button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
-      + ' <button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
-      + ' <button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
-      + '</div>');
+      + '<div class="reviewed-banner-actions">'
+      + '<button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
+      + '<button class="btn" onclick="downloadExcelCompatibleHtml()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><rect x="1" y="1" width="14" height="14" rx="1.5"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="9" x2="15" y2="9"/><line x1="6" y1="1" x2="6" y2="15"/><line x1="11" y1="1" x2="11" y2="15"/></svg> Download as Excel-compatible HTML</button>'
+      + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
+      + '<button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
+      + '</div></div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
     html = html.replace('const __reviewedSha256__  = null;',
@@ -406,9 +408,10 @@
       'col-cb-g': 2.2 * emPx,
       'col-reason-g': px('--col-reason-w', 10),
       'col-notes-g': px('--col-notes-w', 10),
+      'col-status-g': 4.3 * emPx,
       'col-path-g': px('--col-path-w', 22),
       'col-ts-g': 28 * emPx,
-      'col-diff-g': px('--col-diff-w', 9),
+      'col-diff-g': px('--col-diff-w', 10.8),
       'col-disasm-g': px('--col-disasm-w', 28)
     };
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
@@ -679,6 +682,250 @@
         if (svg) { btn.textContent=''; btn.appendChild(svg); svg.style.display=''; }
       }, 1200);
     });
+  }
+
+  // ── Excel export ────────────────────────────────────────────────────
+  // Generates an Excel-compatible HTML table file from the current report data.
+  // 現在のレポートデータから Excel 互換 HTML テーブルファイルを生成します。
+  function downloadExcelCompatibleHtml() {
+    // Force-decode all lazy sections to capture all data / 全lazyセクションを強制デコードしデータを取得
+    forceDecodeLazySections();
+
+    var sectionNames = {
+      'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
+      'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
+      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly or disassembler unavailable',
+      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
+    };
+    // Section background colors for column header rows / 列ヘッダー行のセクション背景色
+    var sectionColors = {
+      'ign': '#f0f0f2', 'unch': '#f0f0f2',
+      'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd',
+      'sha256w': '#e3f2fd', 'tsw': '#e3f2fd'
+    };
+    // Section title text colors (match HTML report h2 styles) / セクションタイトルの文字色（HTMLレポートのh2スタイルと一致）
+    var sectionTextColors = {
+      'ign': '#000', 'unch': '#000',
+      'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3',
+      'sha256w': '#0051c3', 'tsw': '#0051c3'
+    };
+
+    // Helper: 11-cell empty row / 11セルの空行
+    var COLS = 11;
+    function emptyRow() {
+      var r = '<tr>';
+      for (var i = 0; i < COLS; i++) r += '<td></td>';
+      return r + '</tr>';
+    }
+    // Helper: section title row — col 1 (Excel B) / セクションタイトル行 — 列1（Excel B列）
+    function bannerRow(text, color, style) {
+      var s = style || '';
+      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = 2; i < COLS; i++) r += '<td></td>';
+      return r + '</tr>';
+    }
+    // Helper: 7-cell empty pad (align with col 7 = Excel H) / 7セルの空パディング（列7 = Excel H列に揃える）
+    var PAD7 = '<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
+    // Helper: section title row shifted to col 7 (Excel H) / 列7（Excel H列）に揃えたセクションタイトル行
+    function bannerRow7(text, color, style) {
+      var s = style || '';
+      var r = '<tr>' + PAD7 + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = 8; i < COLS; i++) r += '<td></td>';
+      return r + '</tr>';
+    }
+    // Helper: column header row — # at col 2 (Excel C) / 列ヘッダー行 — #は列2（Excel C列）
+    function colHeaderRow(bg) {
+      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Disassembler'];
+      var r = '<tr><td></td><td></td>';
+      hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
+      return r + '</tr>';
+    }
+
+    // Collect header info from report / レポートからヘッダー情報を収集
+    var headerCards = document.querySelectorAll('.header-card');
+    var headerHtml = '';
+    headerCards.forEach(function(card) {
+      var label = card.querySelector('.header-card-label');
+      var value = card.querySelector('.header-card-value');
+      if (label && value) {
+        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>';
+        for (var i = 9; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+        headerHtml += '</tr>';
+      }
+    });
+    var headerPaths = document.querySelectorAll('.header-path');
+    headerPaths.forEach(function(hp) {
+      var label = hp.querySelector('.header-path-label');
+      var value = hp.querySelector('.header-path-value');
+      if (label && value) {
+        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>';
+        for (var i = 9; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+        headerHtml += '</tr>';
+      }
+    });
+
+    // Build section tables / セクションテーブルを構築
+    var sectionsHtml = '';
+    var allRows = document.querySelectorAll('tbody > tr[data-section]');
+    var seenSections = [];
+    allRows.forEach(function(tr) {
+      var sec = tr.getAttribute('data-section');
+      if (seenSections.indexOf(sec) < 0) seenSections.push(sec);
+    });
+    // Separate warning sections (placed after Summary) / 警告セクションを分離（Summary の後に配置）
+    var warningSections = ['sha256w', 'tsw'];
+    var mainSections = seenSections.filter(function(s) { return warningSections.indexOf(s) < 0; });
+    var warnSections = seenSections.filter(function(s) { return warningSections.indexOf(s) >= 0; });
+
+    function buildSectionHtml(sec) {
+      var bgColor = sectionColors[sec] || '#f0f0f2';
+      var txtColor = sectionTextColors[sec] || '#000';
+      var name = sectionNames[sec] || sec;
+      var sectionRows = document.querySelectorAll('tbody > tr[data-section="' + sec + '"]');
+      var h = bannerRow(name + ' (' + sectionRows.length + ')', txtColor, 'font-weight:bold;padding:8px');
+      h += colHeaderRow(bgColor);
+      sectionRows.forEach(function(tr) { h += buildExcelRow(tr); });
+      h += emptyRow();
+      return h;
+    }
+
+    mainSections.forEach(function(sec) { sectionsHtml += buildSectionHtml(sec); });
+
+    // Build legend section / 凡例セクションを構築
+    var legendHtml = '';
+    // Legend — Diff Detail / 凡例 — 判定根拠
+    legendHtml += bannerRow7('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
+    var diffLegend = [
+      ['SHA256Match / SHA256Mismatch', 'Byte-for-byte match / mismatch (SHA256)'],
+      ['ILMatch / ILMismatch', 'IL (Intermediate Language) match / mismatch'],
+      ['TextMatch / TextMismatch', 'Text-based match / mismatch']
+    ];
+    diffLegend.forEach(function(row) {
+      legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
+      for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+      legendHtml += '</tr>';
+    });
+    legendHtml += emptyRow();
+    // Legend — Change Importance / 凡例 — 変更重要度
+    legendHtml += bannerRow7('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
+    var impLegend = [
+      ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
+      ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
+      ['Low', 'Low-impact change: body-only modification, internal/private member addition']
+    ];
+    impLegend.forEach(function(row) {
+      legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
+      for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+      legendHtml += '</tr>';
+    });
+    legendHtml += emptyRow();
+
+    // Build summary section / サマリーセクションを構築
+    var summaryHtml = '';
+    var statTable = document.querySelector('.stat-table');
+    if (statTable) {
+      summaryHtml += bannerRow7('Summary', '#000', 'font-weight:bold;padding:8px');
+      // Column header row for summary (same bg as Ignored Files header) / サマリーの列ヘッダー行（Ignored Files ヘッダーと同じ背景色）
+      summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
+        + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>';
+      for (var si = 9; si < COLS; si++) summaryHtml += '<td></td>';
+      summaryHtml += '</tr>';
+      statTable.querySelectorAll('tr').forEach(function(tr) {
+        // Skip header rows containing th elements / th要素を含むヘッダー行をスキップ
+        if (tr.querySelector('th')) return;
+        var cells = tr.querySelectorAll('td');
+        if (cells.length >= 2) {
+          summaryHtml += '<tr>' + PAD7 + '<td class="bd">' + esc(cells[0].textContent.trim()) + '</td>'
+            + '<td class="bd">' + esc(cells[1].textContent.trim()) + '</td>';
+          for (var i = 9; i < COLS; i++) summaryHtml += '<td></td>';
+          summaryHtml += '</tr>';
+        }
+      });
+      summaryHtml += emptyRow();
+    }
+
+    // Build warning sections (placed after Summary) / 警告セクション（Summary の後に配置）
+    var warningsHtml = '';
+    if (warnSections.length > 0) {
+      warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;padding:8px');
+    }
+    warnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
+
+    var slug = 'diff_report_' + __reportDate__;
+    var excelFileName = slug + '_reviewed_Excel-compatible.html';
+    var out = '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
+      + '<head><meta charset="UTF-8">\n'
+      + '<style>\n'
+      + 'table { border-collapse: collapse; font-family: "Meiryo UI", sans-serif; font-size: 11px; }\n'
+      + 'td, th { border: none; padding: 4px 8px; white-space: nowrap; vertical-align: top; }\n'
+      + 'td.bd, th.bd { border: 1px solid #ccc; }\n'
+      + '</style>\n'
+      + '</head><body>\n'
+      + '<table>\n'
+      + emptyRow() + '\n'
+      + headerHtml
+      + emptyRow() + '\n'
+      + legendHtml
+      + sectionsHtml
+      + summaryHtml
+      + warningsHtml
+      + '</table>\n'
+      + '</body></html>';
+
+    var blob = new Blob([out], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = excelFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function buildExcelRow(tr) {
+    var cells = tr.querySelectorAll('td');
+    if (cells.length < 9) return '';
+    // #
+    var no = cells[0].textContent.trim();
+    // Checkbox state / チェックボックス状態
+    var cb = cells[1].querySelector('input[type="checkbox"]');
+    var checked = cb && cb.checked ? '\u2713' : '';
+    // Justification (text input value) / 理由（テキスト入力値）
+    var reasonInp = cells[2].querySelector('input');
+    var reason = reasonInp ? reasonInp.value : '';
+    // Notes (text input value) / メモ（テキスト入力値）
+    var notesInp = cells[3].querySelector('input');
+    var notes = notesInp ? notesInp.value : '';
+    // Status / ステータス
+    var status = cells[4].textContent.trim();
+    // File Path / ファイルパス
+    var pathSpan = cells[5].querySelector('.path-text');
+    var path = pathSpan ? pathSpan.textContent.trim() : cells[5].textContent.trim();
+    // Timestamp / タイムスタンプ
+    var ts = cells[6].textContent.trim();
+    // Diff Detail
+    var diff = cells[7].textContent.trim();
+    // Disassembler
+    var disasm = cells[8].textContent.trim();
+
+    return '<tr><td></td><td></td>'
+      + '<td class="bd">' + esc(no) + '</td>'
+      + '<td class="bd">' + esc(checked) + '</td>'
+      + '<td class="bd">' + esc(reason) + '</td>'
+      + '<td class="bd">' + esc(notes) + '</td>'
+      + '<td class="bd" style="text-align:center">' + esc(status) + '</td>'
+      + '<td class="bd">' + esc(path) + '</td>'
+      + '<td class="bd" style="text-align:center;mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
+      + '<td class="bd" style="text-align:center">' + esc(diff) + '</td>'
+      + '<td class="bd">' + esc(disasm) + '</td>'
+      + '</tr>';
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   // ── Keyboard navigation (WCAG 2.1 AA) ────────────────────────────────

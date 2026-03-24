@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Excel-compatible HTML export from reviewed report** — Added a "Download as Excel-compatible HTML" button to the reviewed HTML report banner. When clicked, it generates a `diff_report_YYYYMMDD_reviewed_Excel-compatible.html` file containing a simplified HTML `<table>` with Excel XML namespace declarations (`xmlns:x="urn:schemas-microsoft-com:office:excel"`), allowing the file to be opened directly in Microsoft Excel as a spreadsheet. The exported table includes: report header metadata (Excel column H), all file sections (Ignored, Unchanged, Added, Removed, Modified, Warnings) with color-coded section titles (Excel column B), per-file data starting from column C (#, ✓, Justification, Notes, Status, File Path, Timestamp, Diff Reason, Disassembler), legend and summary sections. Inline diffs are excluded for clean tabular output. The button appears only in the reviewed HTML (not in the original `diff_report.html`), following the workflow: `diff_report.html` → `Download as reviewed` → `reviewed.html` → `Download as Excel-compatible HTML` → `Excel-compatible.html`. New JS functions: `downloadExcelCompatibleHtml()`, `buildExcelRow()`, `esc()` in [`diff_report.js`](Services/HtmlReport/diff_report.js). Updated [`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`HtmlReportGenerateService.Sections.cs`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`diff_report.css`](Services/HtmlReport/diff_report.css), [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added 2 tests in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs): `GenerateDiffReportHtml_ContainsExcelCompatibleHtmlExportFunction`, `GenerateDiffReportHtml_ExcelExportButton_NotInCtrlMarkers`. Test count: 832 (unchanged, existing test assertion updated).
+
 ### [1.9.0] - 2026-03-24
 
 #### Added
@@ -657,6 +661,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **レビュー済みレポートからの Excel 互換 HTML エクスポート** — レビュー済み HTML レポートのバナーに「Download as Excel-compatible HTML」ボタンを追加。クリックすると、Excel XML 名前空間宣言（`xmlns:x="urn:schemas-microsoft-com:office:excel"`）を含む簡素な HTML `<table>` 形式の `diff_report_YYYYMMDD_reviewed_Excel-compatible.html` ファイルが生成され、Microsoft Excel で直接スプレッドシートとして開くことが可能。エクスポートされるテーブルには、レポートヘッダーメタデータ（Excel H列）、全ファイルセクション（Ignored、Unchanged、Added、Removed、Modified、Warnings）の色分けされたセクションタイトル（Excel B列）、C列からのファイルデータ（#、✓、Justification、Notes、Status、File Path、Timestamp、Diff Reason、Disassembler）、凡例・サマリーセクションが含まれる。インライン差分はクリーンな表形式出力のため除外。ボタンは reviewed HTML のみに表示（元の `diff_report.html` には非表示）。ワークフロー：`diff_report.html` → `Download as reviewed` → `reviewed.html` → `Download as Excel-compatible HTML` → `Excel-compatible.html`。新規 JS 関数：`downloadExcelCompatibleHtml()`、`buildExcelRow()`、`esc()`（[`diff_report.js`](Services/HtmlReport/diff_report.js)）。更新ファイル：[`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs)、[`HtmlReportGenerateService.Sections.cs`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs)、[`diff_report.css`](Services/HtmlReport/diff_report.css)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。テスト 2 件追加（[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs)）：`GenerateDiffReportHtml_ContainsExcelCompatibleHtmlExportFunction`、`GenerateDiffReportHtml_ExcelExportButton_NotInCtrlMarkers`。テスト件数: 832（変更なし、既存テストのアサーション更新のみ）。
 
 ### [1.9.0] - 2026-03-24
 

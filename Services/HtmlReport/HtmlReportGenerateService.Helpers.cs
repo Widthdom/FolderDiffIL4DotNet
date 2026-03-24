@@ -26,6 +26,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <col class=\"col-cb-g\">");
             sb.AppendLine("  <col class=\"col-reason-g\">");
             sb.AppendLine("  <col class=\"col-notes-g\">");
+            sb.AppendLine("  <col class=\"col-status-g\">");
             sb.AppendLine("  <col class=\"col-path-g\">");
             sb.AppendLine("  <col class=\"col-ts-g\">");
             sb.AppendLine("  <col class=\"col-diff-g\">");
@@ -36,6 +37,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <th scope=\"col\" class=\"col-cb\">&#x2713;</th>");
             sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-reason-w\">{HtmlEncode("Justification")}</th>");
             sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-notes-w\">{HtmlEncode("Notes")}</th>");
+            sb.AppendLine($"  <th scope=\"col\" class=\"col-status\">{HtmlEncode("Status")}</th>");
             sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-path-w\">{HtmlEncode("File Path")}</th>");
             sb.AppendLine($"  <th scope=\"col\">{HtmlEncode("Timestamp")}</th>");
             sb.AppendLine($"  <th scope=\"col\" class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
@@ -70,6 +72,17 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{recordNo}\"></td>");
             sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\" aria-label=\"{HtmlEncode("Justification")} #{recordNo}\"></td>");
             sb.AppendLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\" aria-label=\"{HtmlEncode("Notes")} #{recordNo}\"></td>");
+            // Status column — marker based on section / Status列 — セクションに基づくマーカー
+            string statusMarker = sectionPrefix switch
+            {
+                "ign" => "[ x ]",
+                "unch" => "[ = ]",
+                "add" => "[ + ]",
+                "rem" => "[ - ]",
+                "mod" or "sha256w" or "tsw" => "[ * ]",
+                _ => ""
+            };
+            sb.AppendLine($"  <td class=\"col-status\">{HtmlEncode(statusMarker)}</td>");
             sb.AppendLine($"  <td class=\"col-path\"><div class=\"path-wrap\"><span class=\"path-text\">{HtmlEncode(path)}</span><button class=\"btn-copy-path\" onclick=\"copyPath(this)\" title=\"Copy\" aria-label=\"{HtmlEncode("Copy file path")}\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg></button></div></td>");
             sb.AppendLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
             string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";

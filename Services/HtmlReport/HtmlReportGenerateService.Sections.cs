@@ -349,7 +349,7 @@ namespace FolderDiffIL4DotNet.Services
                     .Replace("InlineDiffMaxEditDistance", "<code>InlineDiffMaxEditDistance</code>");
                 encoded += $" (current value: <code>{maxEditDistance}</code>)";
                 sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
+                sb.AppendLine($"  <td colspan=\"9\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
                 sb.AppendLine("</tr>");
                 return;
             }
@@ -357,7 +357,7 @@ namespace FolderDiffIL4DotNet.Services
             if (diffLines.Count > maxDiffLines)
             {
                 sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
+                sb.AppendLine($"  <td colspan=\"9\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
                     $"({diffLines.Count} diff lines; limit is {maxDiffLines}). " +
                     $"Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>{maxDiffLines}</code>)</p></td>");
                 sb.AppendLine("</tr>");
@@ -377,7 +377,7 @@ namespace FolderDiffIL4DotNet.Services
             string diffViewHtml = BuildDiffViewHtml(diffLines);
 
             sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine($"  <td colspan=\"8\">");
+            sb.AppendLine($"  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(diffViewHtml));
@@ -486,7 +486,7 @@ namespace FolderDiffIL4DotNet.Services
             string contentHtml = contentBuilder.ToString();
 
             sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine("  <td colspan=\"8\">");
+            sb.AppendLine("  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
@@ -569,7 +569,7 @@ namespace FolderDiffIL4DotNet.Services
             string contentHtml = contentBuilder.ToString();
 
             sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine("  <td colspan=\"8\">");
+            sb.AppendLine("  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
@@ -604,6 +604,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("Summary")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
+            sb.AppendLine("<colgroup><col class=\"stat-col1\"><col class=\"stat-col2\"></colgroup>");
             sb.AppendLine($"  <thead><tr><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Category</th><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Count</th></tr></thead>");
             sb.AppendLine("  <tbody>");
             var stats = _fileDiffResultLists.SummaryStatistics;
@@ -623,6 +624,7 @@ namespace FolderDiffIL4DotNet.Services
             var stats = ilCache.GetReportStats();
             sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("IL Cache Stats")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
+            sb.AppendLine("<colgroup><col class=\"stat-col1\"><col class=\"stat-col2\"></colgroup>");
             sb.AppendLine($"  <thead><tr><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Metric</th><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Value</th></tr></thead>");
             sb.AppendLine("  <tbody>");
             sb.AppendLine($"    <tr><td class=\"stat-label\">Hits</td><td class=\"stat-value\">{stats.Hits}</td></tr>");
