@@ -2140,8 +2140,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Ignored section heading should NOT appear / Ignored セクション見出しが表示されないこと
-            Assert.DoesNotContain("Ignored Files", html);
+            // The ignored section table should NOT appear (check for the section's data-section attribute, not the
+            // heading text which also appears in JS string literals)
+            // Ignored セクションテーブルが表示されないことを確認（JS 文字列リテラルにも含まれる見出しテキストではなく
+            // data-section 属性で検証）
+            Assert.DoesNotContain("data-section=\"ign\"", html);
         }
 
         /// <summary>
