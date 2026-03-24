@@ -136,25 +136,19 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             var path = CreateTempFile("empty.txt", Array.Empty<byte>());
             var encoding = EncodingDetector.DetectFileEncoding(path);
 
+            // Empty file should be treated as UTF-8 / 空ファイルは UTF-8 として扱うべき
             Assert.Equal(Encoding.UTF8.CodePage, encoding.CodePage);
         }
 
         [Fact]
-        public void DetectEncodingFromBytes_NullishBytes_ReturnsUtf8()
+        public void DetectFileEncoding_SmallFile_StillDetects()
         {
-            var encoding = EncodingDetector.DetectEncodingFromBytes(Array.Empty<byte>());
-            Assert.Equal(Encoding.UTF8.CodePage, encoding.CodePage);
-        }
-
-        [Fact]
-        public void DetectFileEncoding_SmallSampleSize_StillDetects()
-        {
-            // Verify detection works with a small sample / 小さいサンプルでも検出できることを検証
+            // Verify detection works with very small files / 非常に小さいファイルでも検出できることを検証
             var shiftJis = Encoding.GetEncoding(932);
             var content = shiftJis.GetBytes("テスト");
-            var path = CreateTempFile("small_sample.txt", content);
+            var path = CreateTempFile("small_file.txt", content);
 
-            var encoding = EncodingDetector.DetectFileEncoding(path, sampleSize: 16);
+            var encoding = EncodingDetector.DetectFileEncoding(path);
             Assert.NotEqual(Encoding.UTF8.CodePage, encoding.CodePage);
         }
     }
