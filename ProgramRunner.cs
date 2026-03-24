@@ -74,6 +74,11 @@ namespace FolderDiffIL4DotNet
                 return await PrintConfigAsync(opts.ConfigPath);
             }
 
+            if (opts.ValidateConfig)
+            {
+                return await ValidateConfigAsync(opts.ConfigPath);
+            }
+
             var result = await RunWithResultAsync(args, opts);
             OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings);
             PromptForExitKeyIfNeeded(opts);
