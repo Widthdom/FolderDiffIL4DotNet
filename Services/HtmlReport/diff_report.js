@@ -328,6 +328,9 @@
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
           }
           updateProgress();
+          // Apply current importance filters to newly rendered semantic change rows
+          // 新規レンダリングされたセマンティック変更行に現在の重要度フィルターを適用
+          applyFilters();
         } catch(e) {}
       });
     });
