@@ -234,6 +234,30 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
                 }
+
+                // Dependency changes sub-sections for .deps.json files
+                // .deps.json ファイルの依存関係変更サブセクション
+                if (ctx.Config.ShouldIncludeDependencyChangesInReport)
+                {
+                    foreach (var fileRelativePath in sortedModified)
+                    {
+                        if (ctx.FileDiffResultLists.FileRelativePathToDependencyChanges.TryGetValue(fileRelativePath, out var depSummary) && depSummary.HasChanges)
+                        {
+                            writer.WriteLine();
+                            writer.WriteLine($"#### Dependency Changes: {fileRelativePath}");
+                            writer.WriteLine();
+                            writer.WriteLine("| Status | Importance | Package | Old Version | New Version |");
+                            writer.WriteLine("|:------:|:----------:|---------|:-----------:|:-----------:|");
+                            foreach (var e in depSummary.EntriesByImportance)
+                            {
+                                string marker = e.Change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ ↑ ]", _ => e.Change };
+                                string oldVer = e.OldVersion.Length > 0 ? e.OldVersion : "—";
+                                string newVer = e.NewVersion.Length > 0 ? e.NewVersion : "—";
+                                writer.WriteLine($"| `{marker}` | `{e.Importance}` | {e.PackageName} | {oldVer} | {newVer} |");
+                            }
+                        }
+                    }
+                }
             }
         }
 

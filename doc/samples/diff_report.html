@@ -555,7 +555,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#0051c3">[ * ] Modified Files (14)</h2>
+<h2 style="color:#0051c3">[ * ] Modified Files (15)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -579,11 +579,54 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="mod" data-diff="TextMismatch">
+<tr data-section="mod" data-diff="TextMismatch" data-importance="High">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
   <td class="col-reason"><input type="text" id="reason_mod_0"></td>
   <td class="col-notes"><input type="text" id="notes_mod_0"></td>
+  <td class="col-path"><div class="path-wrap"><span class="path-text">bin/MyApp.deps.json</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
+  <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
+  <td class="col-diff"><code>TextMismatch</code> <code class="imp-high">High</code></td>
+  <td class="col-disasm"></td>
+</tr>
+<tr class="diff-row">
+  <td colspan="8">
+    <details id="deps_mod_0">
+      <summary class="diff-summary">#1 Show dependency changes (1 High)</summary>
+<div class="dependency-changes">
+<table class="semantic-changes-table dc-detail">
+<colgroup>
+  <col style="width:3em">
+  <col style="width:6em">
+  <col style="width:6em">
+  <col>
+  <col style="width:12em">
+  <col style="width:12em">
+</colgroup>
+<thead><tr>
+  <th>&#x2713;</th>
+  <th>Status</th>
+  <th>Importance</th>
+  <th>Package</th>
+  <th>Old Version</th>
+  <th>New Version</th>
+</tr></thead>
+<tbody>
+<tr data-sc-importance="High"><td><input type="checkbox" id="dc_mod_0_0"></td><td style="background:#ffeef0">[ - ]</td><td style="font-weight:700;color:#b31d28">High</td><td>System.Text.Json</td><td>7.0.0</td><td>&#x2014;</td></tr>
+<tr data-sc-importance="High"><td><input type="checkbox" id="dc_mod_0_1"></td><td style="background:#e3f2fd">[ ↑ ]</td><td style="font-weight:700;color:#b31d28">High</td><td>Serilog</td><td>3.0.0</td><td>4.1.0</td></tr>
+<tr data-sc-importance="Medium"><td><input type="checkbox" id="dc_mod_0_2"></td><td style="background:#e6ffed">[ + ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>Newtonsoft.Json</td><td>&#x2014;</td><td>13.0.3</td></tr>
+<tr data-sc-importance="Medium"><td><input type="checkbox" id="dc_mod_0_3"></td><td style="background:#e3f2fd">[ ↑ ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>Microsoft.Extensions.Logging</td><td>8.0.0</td><td>9.0.0</td></tr>
+<tr data-sc-importance="Low"><td><input type="checkbox" id="dc_mod_0_4"></td><td style="background:#e3f2fd">[ ↑ ]</td><td>Low</td><td>Microsoft.Extensions.DependencyInjection</td><td>9.0.0</td><td>9.0.8</td></tr>
+</tbody></table>
+</div>
+    </details>
+  </td>
+</tr>
+<tr data-section="mod" data-diff="TextMismatch">
+  <td class="col-no">2</td>
+  <td class="col-cb"><input type="checkbox" id="cb_mod_1"></td>
+  <td class="col-reason"><input type="text" id="reason_mod_1"></td>
+  <td class="col-notes"><input type="text" id="notes_mod_1"></td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">config/app.config</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:56:00 &#x2192; 2026-03-15 09:01:00</td>
   <td class="col-diff"><code>TextMismatch</code></td>
@@ -591,8 +634,8 @@
 </tr>
 <tr class="diff-row">
   <td colspan="8">
-        <details id="diff_mod_0" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTMgKzMsMiBAQDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1kZWwtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+MzwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1kZWwtdGQiPi0gICZsdDthZGQga2V5PSZxdW90O0Vudmlyb25tZW50JnF1b3Q7IHZhbHVlPSZxdW90O3N0YWdpbmcmcXVvdDsgLyZndDs8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtYWRkLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj4zPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAmbHQ7YWRkIGtleT0mcXVvdDtFbnZpcm9ubWVudCZxdW90OyB2YWx1ZT0mcXVvdDtwcm9kdWN0aW9uJnF1b3Q7IC8mZ3Q7PC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+NDwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWFkZC10ZCI+KyAgJmx0O2FkZCBrZXk9JnF1b3Q7TG9nTGV2ZWwmcXVvdDsgdmFsdWU9JnF1b3Q7V2FybmluZyZxdW90OyAvJmd0OzwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICA8L3Rib2R5PgogICAgICAgIDwvdGFibGU+CiAgICAgIDwvZGl2Pg==">
-      <summary class="diff-summary">#1 Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-1</span>)</summary>
+        <details id="diff_mod_1" data-diff-html="PGRpdiBjbGFzcz0iZGlmZi12aWV3Ij4KICAgICAgICA8dGFibGUgY2xhc3M9ImRpZmYtdGFibGUiPgogICAgICAgICAgPHRib2R5PgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtaHVuay10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiI+PC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtaHVuay10ZCI+QEAgLTMgKzMsMiBAQDwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICAgIDx0ciBjbGFzcz0iZGlmZi1kZWwtdHIiPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW9sZC1sbiI+MzwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1kZWwtdGQiPi0gICZsdDthZGQga2V5PSZxdW90O0Vudmlyb25tZW50JnF1b3Q7IHZhbHVlPSZxdW90O3N0YWdpbmcmcXVvdDsgLyZndDs8L3RkPgogICAgICAgICAgICA8L3RyPgogICAgICAgICAgICA8dHIgY2xhc3M9ImRpZmYtYWRkLXRyIj4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtbG4gZGlmZi1vbGQtbG4iPjwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtbmV3LWxuIj4zPC90ZD4KICAgICAgICAgICAgICA8dGQgY2xhc3M9ImRpZmYtYWRkLXRkIj4rICAmbHQ7YWRkIGtleT0mcXVvdDtFbnZpcm9ubWVudCZxdW90OyB2YWx1ZT0mcXVvdDtwcm9kdWN0aW9uJnF1b3Q7IC8mZ3Q7PC90ZD4KICAgICAgICAgICAgPC90cj4KICAgICAgICAgICAgPHRyIGNsYXNzPSJkaWZmLWFkZC10ciI+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWxuIGRpZmYtb2xkLWxuIj48L3RkPgogICAgICAgICAgICAgIDx0ZCBjbGFzcz0iZGlmZi1sbiBkaWZmLW5ldy1sbiI+NDwvdGQ+CiAgICAgICAgICAgICAgPHRkIGNsYXNzPSJkaWZmLWFkZC10ZCI+KyAgJmx0O2FkZCBrZXk9JnF1b3Q7TG9nTGV2ZWwmcXVvdDsgdmFsdWU9JnF1b3Q7V2FybmluZyZxdW90OyAvJmd0OzwvdGQ+CiAgICAgICAgICAgIDwvdHI+CiAgICAgICAgICA8L3Rib2R5PgogICAgICAgIDwvdGFibGU+CiAgICAgIDwvZGl2Pg==">
+      <summary class="diff-summary">#2 Show diff (<span class="diff-added-cnt">+2</span> / <span class="diff-removed-cnt">-1</span>)</summary>
     </details>
   </td>
 </tr>
@@ -850,8 +893,8 @@
     <tr><td class="stat-label">Unchanged</td><td class="stat-value">5</td></tr>
     <tr style="background:#e6ffed"><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
     <tr style="background:#ffeef0"><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
-    <tr style="background:#e3f2fd"><td class="stat-label">Modified</td><td class="stat-value">14</td></tr>
-    <tr><td class="stat-label">Compared</td><td class="stat-value">22 (Old) vs 22 (New)</td></tr>
+    <tr style="background:#e3f2fd"><td class="stat-label">Modified</td><td class="stat-value">15</td></tr>
+    <tr><td class="stat-label">Compared</td><td class="stat-value">23 (Old) vs 23 (New)</td></tr>
   </tbody>
 </table>
 <h2 class="section-heading">IL Cache Stats</h2>

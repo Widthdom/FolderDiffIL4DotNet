@@ -246,6 +246,14 @@ namespace FolderDiffIL4DotNet.Services
                     AppendAssemblySemanticChangesRow(sb, idx, path, semanticChanges, config);
                 }
 
+                // Dependency changes row for .deps.json files
+                // .deps.json ファイルの依存関係変更行
+                if (config.ShouldIncludeDependencyChangesInReport &&
+                    _fileDiffResultLists.FileRelativePathToDependencyChanges.TryGetValue(path, out var depChanges))
+                {
+                    AppendDependencyChangesRow(sb, idx, depChanges, config);
+                }
+
                 if (config.EnableInlineDiff &&
                     (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||
                      diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch))
@@ -483,6 +491,95 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  </td>");
             sb.AppendLine("</tr>");
         }
+
+        private void AppendDependencyChangesRow(
+            StringBuilder sb,
+            int idx,
+            DependencyChangeSummary summary,
+            IReadOnlyConfigSettings config,
+            string sectionPrefix = "mod")
+        {
+            int recordNo = idx + 1;
+            var contentBuilder = new StringBuilder();
+            contentBuilder.AppendLine("<div class=\"dependency-changes\">");
+
+            if (summary.Entries.Count > 0)
+            {
+                contentBuilder.AppendLine("<table class=\"semantic-changes-table dc-detail\">");
+                contentBuilder.AppendLine("<colgroup>");
+                contentBuilder.AppendLine("  <col style=\"width:3em\">");
+                contentBuilder.AppendLine("  <col style=\"width:6em\">");
+                contentBuilder.AppendLine("  <col style=\"width:6em\">");
+                contentBuilder.AppendLine("  <col>");
+                contentBuilder.AppendLine("  <col style=\"width:12em\">");
+                contentBuilder.AppendLine("  <col style=\"width:12em\">");
+                contentBuilder.AppendLine("</colgroup>");
+                contentBuilder.AppendLine("<thead><tr>");
+                contentBuilder.AppendLine($"  <th>&#x2713;</th>");
+                contentBuilder.AppendLine($"  <th>{HtmlEncode("Status")}</th>");
+                contentBuilder.AppendLine($"  <th>{HtmlEncode("Importance")}</th>");
+                contentBuilder.AppendLine($"  <th>{HtmlEncode("Package")}</th>");
+                contentBuilder.AppendLine($"  <th>{HtmlEncode("Old Version")}</th>");
+                contentBuilder.AppendLine($"  <th>{HtmlEncode("New Version")}</th>");
+                contentBuilder.AppendLine("</tr></thead>");
+                contentBuilder.AppendLine("<tbody>");
+                int dcRowIdx = 0;
+                foreach (var e in summary.EntriesByImportance)
+                {
+                    string dcImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
+                    string changeMarker = DependencyChangeToMarker(e.Change);
+                    string statusBg = DependencyChangeToStatusBg(e.Change);
+                    string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
+                    string impMarker = ImportanceToMarker(e.Importance);
+                    string impStyleVal = ImportanceToStyle(e.Importance);
+                    string impStyle = impStyleVal.Length > 0 ? $" style=\"{impStyleVal}\"" : "";
+                    string cbId = $"dc_{sectionPrefix}_{idx}_{dcRowIdx}";
+                    string oldVer = e.OldVersion.Length > 0 ? HtmlEncode(e.OldVersion) : "&#x2014;";
+                    string newVer = e.NewVersion.Length > 0 ? HtmlEncode(e.NewVersion) : "&#x2014;";
+                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td><input type=\"checkbox\" id=\"{cbId}\"></td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td>{HtmlEncode(e.PackageName)}</td><td>{oldVer}</td><td>{newVer}</td></tr>");
+                    dcRowIdx++;
+                }
+                contentBuilder.AppendLine("</tbody></table>");
+            }
+            else
+            {
+                contentBuilder.AppendLine($"<p>{HtmlEncode("No dependency changes detected.")}</p>");
+            }
+
+            contentBuilder.AppendLine("</div>");
+
+            string detailsId = $"deps_{sectionPrefix}_{idx}";
+            string highSuffix = summary.HighImportanceCount > 0
+                ? $" ({summary.HighImportanceCount} High)"
+                : "";
+            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show dependency changes")}{highSuffix}</summary>";
+            string contentHtml = contentBuilder.ToString();
+
+            sb.AppendLine("<tr class=\"diff-row\">");
+            sb.AppendLine("  <td colspan=\"8\">");
+            if (config.InlineDiffLazyRender)
+            {
+                string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
+                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
+                sb.AppendLine(summaryLabel);
+                sb.AppendLine("    </details>");
+            }
+            else
+            {
+                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
+                sb.AppendLine(summaryLabel);
+                sb.Append(contentHtml);
+                sb.AppendLine("    </details>");
+            }
+            sb.AppendLine("  </td>");
+            sb.AppendLine("</tr>");
+        }
+
+        private static string DependencyChangeToMarker(string change)
+            => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ ↑ ]", _ => change };
+
+        private static string DependencyChangeToStatusBg(string change)
+            => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Updated" => TH_BG_MODIFIED, _ => "" };
 
         private static string ChangeToMarker(string change)
             => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Modified" => "[ * ]", _ => change };

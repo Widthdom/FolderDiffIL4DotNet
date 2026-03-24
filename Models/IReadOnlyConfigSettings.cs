@@ -34,6 +34,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Whether to include member-level change details for ILMismatch assemblies. / ILMismatch アセンブリのメンバーレベル変更詳細をレポートに出力するかどうか。</summary>
         bool ShouldIncludeAssemblySemanticChangesInReport { get; }
 
+        /// <summary>Whether to include structured dependency changes for .deps.json files. / .deps.json ファイルの構造化された依存関係変更をレポートに出力するかどうか。</summary>
+        bool ShouldIncludeDependencyChangesInReport { get; }
+
         /// <summary>Whether to include IL cache statistics in the diff report. / IL キャッシュ統計情報を差分レポートに出力するかどうか。</summary>
         bool ShouldIncludeILCacheStatsInReport { get; }
 

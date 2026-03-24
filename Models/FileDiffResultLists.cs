@@ -126,6 +126,12 @@ namespace FolderDiffIL4DotNet.Models
         public ConcurrentDictionary<string, AssemblySemanticChangesSummary> FileRelativePathToAssemblySemanticChanges { get; } = new ConcurrentDictionary<string, AssemblySemanticChangesSummary>(StringComparer.Ordinal);
 
         /// <summary>
+        /// Dependency change summaries for .deps.json files, keyed by file relative path.
+        /// .deps.json ファイルに対する依存関係変更要約。キーはファイルの相対パス。
+        /// </summary>
+        public ConcurrentDictionary<string, DependencyChangeSummary> FileRelativePathToDependencyChanges { get; } = new ConcurrentDictionary<string, DependencyChangeSummary>(StringComparer.Ordinal);
+
+        /// <summary>
         /// Disassembler availability results probed at startup (null until probed).
         /// 起動時にプローブされた逆アセンブラ利用可否の結果（プローブ前は null）。
         /// </summary>
@@ -155,9 +161,15 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public ChangeImportance? GetMaxImportance(string fileRelativePath)
         {
+            ChangeImportance? max = null;
             if (FileRelativePathToAssemblySemanticChanges.TryGetValue(fileRelativePath, out var summary) && summary.HasChanges)
-                return summary.MaxImportance;
-            return null;
+                max = summary.MaxImportance;
+            if (FileRelativePathToDependencyChanges.TryGetValue(fileRelativePath, out var depSummary) && depSummary.HasChanges)
+            {
+                var depMax = depSummary.MaxImportance;
+                max = max == null ? depMax : (depMax > max.Value ? depMax : max.Value);
+            }
+            return max;
         }
 
         /// <summary>
@@ -232,6 +244,7 @@ namespace FolderDiffIL4DotNet.Models
             DisassemblerToolVersionsFromCache.Clear();
             NewFileTimestampOlderThanOldWarnings.Clear();
             FileRelativePathToAssemblySemanticChanges.Clear();
+            FileRelativePathToDependencyChanges.Clear();
             DisassemblerAvailability = null;
         }
 

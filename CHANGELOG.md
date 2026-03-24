@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Structured dependency change analysis for .deps.json files** — When a `.deps.json` file is classified as `TextMismatch`, a new best-effort `DepsJsonAnalyzer` parses the old and new JSON to produce a structured `DependencyChangeSummary` showing which NuGet packages were Added, Removed, or Updated. Version change importance is auto-classified: major version change = `High`, minor = `Medium`, patch = `Low`; removed packages = `High`; added packages = `Medium`. Results are displayed in both Markdown and HTML reports as a collapsible "Dependency Changes" table (same UX pattern as assembly semantic changes). New config setting `ShouldIncludeDependencyChangesInReport` (default: `true`). New models: [`DependencyChangeEntry`](Models/DependencyChangeEntry.cs), [`DependencyChangeSummary`](Models/DependencyChangeSummary.cs). New service: [`DepsJsonAnalyzer`](Services/DepsJsonAnalyzer.cs). Updated [`FileDiffResultLists`](Models/FileDiffResultLists.cs), [`FileDiffService`](Services/FileDiffService.cs), [`ReportGenerateService.SectionWriters`](Services/ReportGenerateService.SectionWriters.cs), [`HtmlReportGenerateService.Sections`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`doc/samples/diff_report.md`](doc/samples/diff_report.md), [`doc/samples/diff_report.html`](doc/samples/diff_report.html), [`doc/config.sample.jsonc`](doc/config.sample.jsonc). Added 20 tests in [`DepsJsonAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/DepsJsonAnalyzerTests.cs).
+
 ### [1.8.1] - 2026-03-24
 
 #### Performance
@@ -615,6 +619,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **.deps.json ファイルの構造化された依存関係変更分析** — `.deps.json` ファイルが `TextMismatch` と判定された際、新しいベストエフォートの `DepsJsonAnalyzer` が新旧 JSON をパースし、NuGet パッケージの追加・削除・更新を示す構造化された `DependencyChangeSummary` を生成します。バージョン変更の重要度は自動分類: メジャーバージョン変更 = `High`、マイナー = `Medium`、パッチ = `Low`、削除 = `High`、追加 = `Medium`。Markdown・HTML 両レポートに折りたたみ可能な「Dependency Changes」テーブルとして表示（アセンブリセマンティック変更と同じ UX パターン）。新設定 `ShouldIncludeDependencyChangesInReport`（デフォルト: `true`）。新モデル: [`DependencyChangeEntry`](Models/DependencyChangeEntry.cs)、[`DependencyChangeSummary`](Models/DependencyChangeSummary.cs)。新サービス: [`DepsJsonAnalyzer`](Services/DepsJsonAnalyzer.cs)。更新: [`FileDiffResultLists`](Models/FileDiffResultLists.cs)、[`FileDiffService`](Services/FileDiffService.cs)、[`ReportGenerateService.SectionWriters`](Services/ReportGenerateService.SectionWriters.cs)、[`HtmlReportGenerateService.Sections`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs)、[`doc/samples/diff_report.md`](doc/samples/diff_report.md)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)、[`doc/config.sample.jsonc`](doc/config.sample.jsonc)。[`DepsJsonAnalyzerTests`](FolderDiffIL4DotNet.Tests/Services/DepsJsonAnalyzerTests.cs) に 20 件のテストを追加。
 
 ### [1.8.1] - 2026-03-24
 

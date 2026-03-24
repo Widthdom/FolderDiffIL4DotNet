@@ -161,6 +161,15 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     bool areTextFilesEqual = await CompareAsTextAsync(fileRelativePath, file1AbsolutePath, file2AbsolutePath, maxParallel);
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+                    // Best-effort dependency change analysis for .deps.json files
+                    // .deps.json ファイルに対するベストエフォートの依存関係変更分析
+                    if (!areTextFilesEqual && _config.ShouldIncludeDependencyChangesInReport
+                        && fileRelativePath.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase))
+                    {
+                        TryAnalyzeDependencyChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
+                    }
+
                     return areTextFilesEqual;
                 }
 
@@ -182,6 +191,32 @@ namespace FolderDiffIL4DotNet.Services
                 LogUnexpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Best-effort dependency change analysis for .deps.json files.
+        /// Failures are logged but do not affect the comparison result.
+        /// .deps.json ファイルに対するベストエフォートの依存関係変更分析。
+        /// 失敗してもファイル比較結果には影響しません。
+        /// </summary>
+        private void TryAnalyzeDependencyChanges(string fileRelativePath, string oldPath, string newPath)
+        {
+            try
+            {
+                var summary = DepsJsonAnalyzer.Analyze(oldPath, newPath);
+                if (summary?.HasChanges == true)
+                {
+                    _fileDiffResultLists.FileRelativePathToDependencyChanges[fileRelativePath] = summary;
+                }
+            }
+#pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
+            catch (Exception ex)
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Dependency change analysis failed for '{fileRelativePath}': {ex.Message}",
+                    shouldOutputMessageToConsole: false, ex);
+            }
+#pragma warning restore CA1031
         }
 
         /// <summary>
