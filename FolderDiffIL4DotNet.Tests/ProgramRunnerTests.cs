@@ -9,6 +9,7 @@ using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests
@@ -25,7 +26,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -56,7 +57,7 @@ namespace FolderDiffIL4DotNet.Tests
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -85,7 +86,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new-config-missing");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -112,7 +113,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new-config-invalid");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -140,7 +141,7 @@ namespace FolderDiffIL4DotNet.Tests
                 ILCacheStatsLogIntervalSeconds = 0
             }.Build();
 
-            var cache = InvokeCreateIlCache(config, new TestLogger());
+            var cache = InvokeCreateIlCache(config, new TestLogger(logFileAbsolutePath: "test.log"));
 
             Assert.NotNull(cache);
             var memoryCache = GetPrivateFieldValue(cache, "_memoryCache");
@@ -162,7 +163,7 @@ namespace FolderDiffIL4DotNet.Tests
                 ILCacheDirectoryAbsolutePath = ""
             }.Build();
 
-            var cache = InvokeCreateIlCache(config, new TestLogger());
+            var cache = InvokeCreateIlCache(config, new TestLogger(logFileAbsolutePath: "test.log"));
 
             Assert.NotNull(cache);
             var diskCache = GetPrivateFieldValue(cache, "_diskCache");
@@ -183,7 +184,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public async Task RunAsync_HelpFlag_ExitsZeroWithoutInitializingLogger()
         {
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
@@ -211,7 +212,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public async Task RunAsync_HelpFlag_OutputContainsPrintConfigTipSection()
         {
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
@@ -243,7 +244,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var origErr = Console.Error;
             using var errSw = new System.IO.StringWriter();
@@ -274,7 +275,7 @@ namespace FolderDiffIL4DotNet.Tests
         [InlineData("--help")]
         public async Task RunAsync_HelpFlagVariants_AllExitZero(string flag)
         {
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
@@ -294,7 +295,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public async Task RunAsync_VersionFlag_ExitsZeroWithVersionOutput()
         {
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
@@ -329,7 +330,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -362,7 +363,7 @@ namespace FolderDiffIL4DotNet.Tests
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             await File.WriteAllTextAsync(customConfigPath, customConfigJson);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -400,7 +401,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -433,7 +434,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -467,7 +468,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -502,7 +503,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -532,7 +533,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -562,7 +563,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             try
@@ -591,7 +592,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public async Task RunAsync_PrintConfigFlag_ExitsZeroAndOutputsJson()
         {
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
@@ -624,7 +625,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public async Task RunAsync_PrintConfigFlag_ReflectsEnvVarOverride()
         {
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
@@ -656,7 +657,7 @@ namespace FolderDiffIL4DotNet.Tests
             Directory.CreateDirectory(tempRoot);
             var customConfigPath = Path.Combine(tempRoot, "custom.json");
             await File.WriteAllTextAsync(customConfigPath, """{ "MaxLogGenerations": 12 }""");
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
@@ -682,7 +683,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public async Task RunAsync_PrintConfigFlag_WithMissingConfig_ReturnsConfigurationError()
         {
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             await WithMissingConfigFileAsync(async () =>
@@ -705,7 +706,7 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
 
             // A label long enough so that BaseDirectory + "/Reports/" + label exceeds any OS path limit
@@ -766,7 +767,7 @@ namespace FolderDiffIL4DotNet.Tests
                 // Pass a path whose parent is `dir` -- the check probes a file inside `dir`
                 // 親ディレクトリが `dir` のパスを渡す — チェックは `dir` 内のファイルを調べる
                 Assert.Throws<UnauthorizedAccessException>(() =>
-                    RunPreflightValidator.CheckReportsParentWritableOrThrow(new TestLogger(), Path.Combine(dir, "label")));
+                    RunPreflightValidator.CheckReportsParentWritableOrThrow(new TestLogger(logFileAbsolutePath: "test.log"), Path.Combine(dir, "label")));
             }
             finally
             {
@@ -904,7 +905,7 @@ namespace FolderDiffIL4DotNet.Tests
                 var oldDir = Path.Combine(tempDir, "nonexistent-old");
 
                 Assert.Throws<DirectoryNotFoundException>(() =>
-                    RunPreflightValidator.ValidateRunDirectories(new TestLogger(), oldDir, newDir, reportDir));
+                    RunPreflightValidator.ValidateRunDirectories(new TestLogger(logFileAbsolutePath: "test.log"), oldDir, newDir, reportDir));
             }
             finally
             {
@@ -925,7 +926,7 @@ namespace FolderDiffIL4DotNet.Tests
                 var newDir = Path.Combine(tempDir, "nonexistent-new");
 
                 Assert.Throws<DirectoryNotFoundException>(() =>
-                    RunPreflightValidator.ValidateRunDirectories(new TestLogger(), oldDir, newDir, reportDir));
+                    RunPreflightValidator.ValidateRunDirectories(new TestLogger(logFileAbsolutePath: "test.log"), oldDir, newDir, reportDir));
             }
             finally
             {
@@ -948,7 +949,7 @@ namespace FolderDiffIL4DotNet.Tests
                 Directory.CreateDirectory(reportDir); // pre-create to trigger conflict / 競合を発生させるため事前作成
 
                 Assert.Throws<ArgumentException>(() =>
-                    RunPreflightValidator.ValidateRunDirectories(new TestLogger(), oldDir, newDir, reportDir));
+                    RunPreflightValidator.ValidateRunDirectories(new TestLogger(logFileAbsolutePath: "test.log"), oldDir, newDir, reportDir));
             }
             finally
             {
@@ -962,7 +963,7 @@ namespace FolderDiffIL4DotNet.Tests
             // Skipped when parent directory does not exist (no exception)
             // 親ディレクトリが存在しない場合はスキップ（例外なし）
             var nonexistentParentChild = "/nonexistent/parent/dir/report";
-            var ex = Record.Exception(() => RunPreflightValidator.CheckReportsParentWritableOrThrow(new TestLogger(), nonexistentParentChild));
+            var ex = Record.Exception(() => RunPreflightValidator.CheckReportsParentWritableOrThrow(new TestLogger(logFileAbsolutePath: "test.log"), nonexistentParentChild));
             Assert.Null(ex);
         }
 
@@ -975,7 +976,7 @@ namespace FolderDiffIL4DotNet.Tests
             Directory.CreateDirectory(dir);
             try
             {
-                var logger = new TestLogger();
+                var logger = new TestLogger(logFileAbsolutePath: "test.log");
                 var ex = Record.Exception(() =>
                     RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, Path.Combine(dir, "label")));
                 Assert.Null(ex);
@@ -1011,7 +1012,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             // Verify the method signature requires ILoggerService (compile-time contract check).
             // メソッドシグネチャが ILoggerService を要求することを確認（コンパイル時の契約チェック）。
-            var logger = new TestLogger();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var dir = Path.Combine(Path.GetTempPath(), "fd-perm-io-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(dir);
             try
@@ -1068,31 +1069,6 @@ namespace FolderDiffIL4DotNet.Tests
             catch
             {
                 // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
-            }
-        }
-
-        private sealed class TestLogger : ILoggerService
-        {
-            public string LogFileAbsolutePath => "test.log";
-
-            public List<string> Messages { get; } = new();
-
-            public void Initialize()
-            {
-            }
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
-            {
-                Messages.Add(message);
-            }
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
-            {
-                Messages.Add(message);
-            }
-
-            public void CleanupOldLogFiles(int maxLogGenerations)
-            {
             }
         }
     }
