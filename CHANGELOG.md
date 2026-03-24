@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Improve HTML report accessibility toward WCAG 2.1 Level AA compliance** — Added comprehensive accessibility attributes to the interactive HTML diff report. **Skip link**: keyboard-visible "Skip to main content" link. **ARIA attributes**: `role="toolbar"` on controls bar, `role="search"` on filter zone, `role="status"` and `aria-live="polite"` on save-status, `aria-label` on search input / file-row checkboxes / justification and notes inputs / copy-path buttons / semantic-changes checkboxes / filter tables. **Form association**: `<label for="...">` on filter table checkbox labels. **Table structure**: `scope="col"` on all `<th>` elements. **Decorative SVGs**: `aria-hidden="true"` on all decorative SVG icons. **Focus styles**: `:focus-visible` outline styles for all interactive elements. **Keyboard navigation**: Escape key handler to close nearest open `<details>` and return focus to `<summary>`. Updated test assertion in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs). Affected files: [`diff_report.css`](Services/HtmlReport/diff_report.css), [`diff_report.js`](Services/HtmlReport/diff_report.js), [`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs), [`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`HtmlReportGenerateService.Sections.cs`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`doc/samples/diff_report.html`](doc/samples/diff_report.html), [`HtmlReportGenerateServiceTests.cs`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
+
 ### [1.8.1] - 2026-03-24
 
 #### Performance
@@ -615,6 +619,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **HTML レポートのアクセシビリティを WCAG 2.1 Level AA 準拠に向けて改善** — インタラクティブ HTML 差分レポートに包括的なアクセシビリティ属性を追加。**スキップリンク**: キーボードフォーカス時に表示される「Skip to main content」リンク。**ARIA 属性**: コントロールバーに `role="toolbar"`、フィルターゾーンに `role="search"`、保存状態に `role="status"` と `aria-live="polite"`、検索入力・ファイル行チェックボックス・理由入力・メモ入力・パスコピーボタン・セマンティック変更チェックボックス・フィルターテーブルに `aria-label`。**フォーム関連付け**: フィルターテーブルのチェックボックスラベルに `<label for="...">`。**テーブル構造**: すべての `<th>` 要素に `scope="col"`。**装飾 SVG**: すべての装飾 SVG アイコンに `aria-hidden="true"`。**フォーカススタイル**: すべてのインタラクティブ要素に `:focus-visible` アウトラインスタイル。**キーボードナビゲーション**: Escape キーで最寄りの開いた `<details>` を閉じ `<summary>` にフォーカスを戻すハンドラ。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs) のテストアサーション更新。影響ファイル: [`diff_report.css`](Services/HtmlReport/diff_report.css), [`diff_report.js`](Services/HtmlReport/diff_report.js), [`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs), [`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`HtmlReportGenerateService.Sections.cs`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`doc/samples/diff_report.html`](doc/samples/diff_report.html), [`HtmlReportGenerateServiceTests.cs`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs)。
 
 ### [1.8.1] - 2026-03-24
 

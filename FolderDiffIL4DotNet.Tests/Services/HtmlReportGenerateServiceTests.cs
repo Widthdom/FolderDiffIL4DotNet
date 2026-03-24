@@ -1231,7 +1231,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             // Detail table must have checkbox header (✓) AND body checkboxes
             // 詳細テーブルにチェックヘッダ(✓)とボディのチェックボックスが両方存在すること
-            Assert.Contains("<th class=\"sc-col-cb\">&#x2713;</th>", html);
+            Assert.Contains("<th scope=\"col\" class=\"sc-col-cb\">&#x2713;</th>", html);
             Assert.Contains("<td class=\"sc-col-cb\"><input type=\"checkbox\"", html);
         }
 
