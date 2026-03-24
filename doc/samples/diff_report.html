@@ -1916,11 +1916,46 @@
 
     mainSections.forEach(function(sec) { sectionsHtml += buildSectionHtml(sec); });
 
+    // Build legend section / 凡例セクションを構築
+    var legendHtml = '';
+    // Legend — Diff Detail / 凡例 — 判定根拠
+    legendHtml += bannerRow('Legend \u2014 Diff Detail', '#f0f0f2', 'font-weight:bold;font-size:14px;padding:8px');
+    var diffLegend = [
+      ['SHA256Match / SHA256Mismatch', 'Byte-for-byte match / mismatch (SHA256)'],
+      ['ILMatch / ILMismatch', 'IL (Intermediate Language) match / mismatch'],
+      ['TextMatch / TextMismatch', 'Text-based match / mismatch']
+    ];
+    diffLegend.forEach(function(row) {
+      legendHtml += '<tr><td style="font-weight:bold">' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td>';
+      for (var i = 2; i < COLS; i++) legendHtml += '<td></td>';
+      legendHtml += '</tr>';
+    });
+    legendHtml += emptyRow();
+    // Legend — Change Importance / 凡例 — 変更重要度
+    legendHtml += bannerRow('Legend \u2014 Change Importance', '#f0f0f2', 'font-weight:bold;font-size:14px;padding:8px');
+    var impLegend = [
+      ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
+      ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
+      ['Low', 'Low-impact change: body-only modification, internal/private member addition']
+    ];
+    impLegend.forEach(function(row) {
+      legendHtml += '<tr><td style="font-weight:bold">' + esc(row[0]) + '</td><td>' + esc(row[1]) + '</td>';
+      for (var i = 2; i < COLS; i++) legendHtml += '<td></td>';
+      legendHtml += '</tr>';
+    });
+    legendHtml += emptyRow();
+
     // Build summary section / サマリーセクションを構築
     var summaryHtml = '';
+    var SUMMARY_BG = '#f0f0f2';
     var statTable = document.querySelector('.stat-table');
     if (statTable) {
-      summaryHtml += bannerRow('Summary', '#f0f0f2', 'font-weight:bold;font-size:14px;padding:8px');
+      summaryHtml += bannerRow('Summary', SUMMARY_BG, 'font-weight:bold;font-size:14px;padding:8px');
+      // Column header row for summary / サマリーの列ヘッダー行
+      summaryHtml += '<tr><td style="background:' + SUMMARY_BG + ';font-weight:bold">Category</td>'
+        + '<td style="background:' + SUMMARY_BG + ';font-weight:bold">Count</td>';
+      for (var si = 2; si < COLS; si++) summaryHtml += '<td style="background:' + SUMMARY_BG + '"></td>';
+      summaryHtml += '</tr>';
       statTable.querySelectorAll('tr').forEach(function(tr) {
         var cells = tr.querySelectorAll('th, td');
         if (cells.length >= 2) {
@@ -1953,6 +1988,7 @@
       + titleRow + '\n'
       + headerHtml
       + emptyRow() + '\n'
+      + legendHtml
       + sectionsHtml
       + summaryHtml
       + warningsHtml
