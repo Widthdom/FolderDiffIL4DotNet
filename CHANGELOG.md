@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Fix Japanese text garbling (mojibake) in TextMismatch inline diffs** — `File.ReadAllLines()` in `HtmlReportGenerateService.Sections.cs` was called without an explicit encoding parameter, causing non-UTF-8 text files (e.g. Shift_JIS encoded Japanese source files) to be read as UTF-8 and displayed with garbled characters in the HTML report's inline diff view. Added `EncodingDetector` utility class in `FolderDiffIL4DotNet.Core/Text/` that auto-detects file encoding via BOM inspection and UTF-8 byte validation, falling back to the system ANSI code page (e.g. Shift_JIS / cp932 on Japanese Windows). Added `System.Text.Encoding.CodePages` NuGet package to `FolderDiffIL4DotNet.Core` for legacy code page support. Registered `CodePagesEncodingProvider` in `Program.cs`. Also explicitly specified `Encoding.UTF8` for IL text file reads (ILMismatch path). Added `EncodingDetectorTests` test class (10 tests). Test count: 678 → 688 (EN), 679 → 689 (JA). Affected files: [`FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs`](FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs), [`FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj), [`Program.cs`](Program.cs), [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`EncodingDetectorTests.cs`](FolderDiffIL4DotNet.Tests/Core/Text/EncodingDetectorTests.cs).
+
 ### [1.8.1] - 2026-03-24
 
 #### Performance
@@ -615,6 +619,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Fixed
+
+- **TextMismatch インライン差分における日本語テキストの文字化けを修正** — `HtmlReportGenerateService.Sections.cs` の `File.ReadAllLines()` がエンコーディング引数なしで呼び出されていたため、非 UTF-8 テキストファイル（Shift_JIS エンコードの日本語ソースファイル等）が UTF-8 として読み取られ、HTML レポートのインライン差分ビューで文字化けが発生していた。`FolderDiffIL4DotNet.Core/Text/` に BOM 検査と UTF-8 バイト列検証によるエンコーディング自動検出ユーティリティ `EncodingDetector` クラスを追加。UTF-8 でない場合はシステム ANSI コードページ（日本語 Windows では Shift_JIS / cp932）にフォールバックする。レガシーコードページサポートのため `System.Text.Encoding.CodePages` NuGet パッケージを `FolderDiffIL4DotNet.Core` に追加。`Program.cs` で `CodePagesEncodingProvider` を登録。IL テキストファイル読み込み（ILMismatch パス）にも `Encoding.UTF8` を明示指定。`EncodingDetectorTests` テストクラス（10 テスト）を追加。テスト件数: 678 → 688（EN）、679 → 689（JA）。影響ファイル: [`FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs`](FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs)、[`FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj)、[`Program.cs`](Program.cs)、[`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs)、[`EncodingDetectorTests.cs`](FolderDiffIL4DotNet.Tests/Core/Text/EncodingDetectorTests.cs)。
 
 ### [1.8.1] - 2026-03-24
 
