@@ -173,7 +173,7 @@ describe('applyFilters', () => {
     `;
 
     const tableRows = rows.map(r =>
-      `<tr data-section="${r.section}" ${r.importance ? 'data-importance="' + r.importance + '"' : ''} ${r.diff ? 'data-diff="' + r.diff + '"' : ''}>
+      `<tr data-section="${r.section}" ${r.importance ? 'data-importance="' + r.importance + '"' : ''} ${r.importances ? 'data-importances="' + r.importances + '"' : ''} ${r.diff ? 'data-diff="' + r.diff + '"' : ''}>
         <td><input type="checkbox" id="chk-${r.id}" ${r.checked ? 'checked' : ''}></td>
         <td><span class="path-text">${r.path}</span></td>
       </tr>`
@@ -196,6 +196,23 @@ describe('applyFilters', () => {
 
     const rows = document.querySelectorAll('tr[data-section]');
     expect(rows[0].classList.contains('filter-hidden')).toBe(false);
+    expect(rows[1].classList.contains('filter-hidden')).toBe(true);
+  });
+
+  test('data-importances keeps row visible if any level passes filter', () => {
+    loadFilterEnv([
+      { id: '1', section: 'modified', importance: 'High', importances: 'High,Medium,Low', path: 'bin/MyApp.deps.json' },
+      { id: '2', section: 'modified', importance: 'High', path: 'lib/Core.dll' },
+    ]);
+
+    // Uncheck High filter
+    document.getElementById('filter-imp-high').checked = false;
+    window.applyFilters();
+
+    const rows = document.querySelectorAll('tr[data-section]');
+    // Row with data-importances containing Medium/Low should remain visible
+    expect(rows[0].classList.contains('filter-hidden')).toBe(false);
+    // Row with only data-importance="High" should be hidden
     expect(rows[1].classList.contains('filter-hidden')).toBe(true);
   });
 

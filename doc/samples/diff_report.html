@@ -251,6 +251,17 @@
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
+    /* ── Dependency changes ──────────────────────────────────────────── */
+    .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
+    /* dc-detail (dependency changes): checkbox(1) Status(2) Importance(3) Package(4) OldVer(5) NewVer(6) */
+    col.dc-col-cb-g { width: 3.2em; }
+    col.dc-col-status-g { width: 7em; }
+    col.dc-col-importance-g { width: 7em; }
+    col.dc-col-package-g { width: 24em; }
+    col.dc-col-ver-g { width: 12em; }
+    table.semantic-changes-table.dc-detail td:nth-child(1),
+    table.semantic-changes-table.dc-detail td:nth-child(2),
+    table.semantic-changes-table.dc-detail td:nth-child(3) { text-align: center; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; min-width: 7em; }
     .filter-chip { display: inline-flex; align-items: center; gap: 0.3em; white-space: nowrap; cursor: pointer; min-width: 5.5em; }
@@ -579,7 +590,7 @@
   <th class="col-disasm-hd th-resizable" data-col-var="--col-disasm-w">Disassembler</th>
 </tr></thead>
 <tbody>
-<tr data-section="mod" data-diff="TextMismatch" data-importance="High">
+<tr data-section="mod" data-diff="TextMismatch" data-importance="High" data-importances="High,Medium,Low">
   <td class="col-no">1</td>
   <td class="col-cb"><input type="checkbox" id="cb_mod_0"></td>
   <td class="col-reason"><input type="text" id="reason_mod_0"></td>
@@ -596,12 +607,12 @@
 <div class="dependency-changes">
 <table class="semantic-changes-table dc-detail">
 <colgroup>
-  <col style="width:3em">
-  <col style="width:6em">
-  <col style="width:6em">
-  <col>
-  <col style="width:12em">
-  <col style="width:12em">
+  <col class="dc-col-cb-g">
+  <col class="dc-col-status-g">
+  <col class="dc-col-importance-g">
+  <col class="dc-col-package-g">
+  <col class="dc-col-ver-g">
+  <col class="dc-col-ver-g">
 </colgroup>
 <thead><tr>
   <th>&#x2713;</th>
@@ -613,10 +624,10 @@
 </tr></thead>
 <tbody>
 <tr data-sc-importance="High"><td><input type="checkbox" id="dc_mod_0_0"></td><td style="background:#ffeef0">[ - ]</td><td style="font-weight:700;color:#b31d28">High</td><td>System.Text.Json</td><td>7.0.0</td><td>&#x2014;</td></tr>
-<tr data-sc-importance="High"><td><input type="checkbox" id="dc_mod_0_1"></td><td style="background:#e3f2fd">[ ↑ ]</td><td style="font-weight:700;color:#b31d28">High</td><td>Serilog</td><td>3.0.0</td><td>4.1.0</td></tr>
+<tr data-sc-importance="High"><td><input type="checkbox" id="dc_mod_0_1"></td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:700;color:#b31d28">High</td><td>Serilog</td><td>3.0.0</td><td>4.1.0</td></tr>
 <tr data-sc-importance="Medium"><td><input type="checkbox" id="dc_mod_0_2"></td><td style="background:#e6ffed">[ + ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>Newtonsoft.Json</td><td>&#x2014;</td><td>13.0.3</td></tr>
-<tr data-sc-importance="Medium"><td><input type="checkbox" id="dc_mod_0_3"></td><td style="background:#e3f2fd">[ ↑ ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>Microsoft.Extensions.Logging</td><td>8.0.0</td><td>9.0.0</td></tr>
-<tr data-sc-importance="Low"><td><input type="checkbox" id="dc_mod_0_4"></td><td style="background:#e3f2fd">[ ↑ ]</td><td>Low</td><td>Microsoft.Extensions.DependencyInjection</td><td>9.0.0</td><td>9.0.8</td></tr>
+<tr data-sc-importance="Medium"><td><input type="checkbox" id="dc_mod_0_3"></td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>Microsoft.Extensions.Logging</td><td>8.0.0</td><td>9.0.0</td></tr>
+<tr data-sc-importance="Low"><td><input type="checkbox" id="dc_mod_0_4"></td><td style="background:#e3f2fd">[ * ]</td><td>Low</td><td>Microsoft.Extensions.DependencyInjection</td><td>9.0.0</td><td>9.0.8</td></tr>
 </tbody></table>
 </div>
     </details>
@@ -1548,9 +1559,17 @@
       }
       // Importance filter (only for rows with importance) / 重要度フィルター（importance属性ありの行のみ）
       if (show && impActive) {
-        var imp = tr.getAttribute('data-importance');
-        if (imp) {
-          if (!impFilter[imp]) show = false;
+        var imps = tr.getAttribute('data-importances');
+        if (imps) {
+          // Show if ANY importance level passes the filter / いずれかの重要度レベルがフィルターを通過すれば表示
+          var levels = imps.split(',');
+          var anyMatch = levels.some(function(l) { return impFilter[l]; });
+          if (!anyMatch) show = false;
+        } else {
+          var imp = tr.getAttribute('data-importance');
+          if (imp) {
+            if (!impFilter[imp]) show = false;
+          }
         }
       }
       // Unchecked only filter

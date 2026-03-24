@@ -173,6 +173,20 @@ namespace FolderDiffIL4DotNet.Models
         }
 
         /// <summary>
+        /// Returns all distinct <see cref="ChangeImportance"/> levels for a file across assembly semantic and dependency changes.
+        /// ファイルのアセンブリセマンティック変更と依存関係変更にわたる重複のない <see cref="ChangeImportance"/> レベルをすべて返します。
+        /// </summary>
+        public HashSet<ChangeImportance> GetAllImportanceLevels(string fileRelativePath)
+        {
+            var levels = new HashSet<ChangeImportance>();
+            if (FileRelativePathToAssemblySemanticChanges.TryGetValue(fileRelativePath, out var summary))
+                foreach (var e in summary.Entries) levels.Add(e.Importance);
+            if (FileRelativePathToDependencyChanges.TryGetValue(fileRelativePath, out var depSummary))
+                foreach (var e in depSummary.Entries) levels.Add(e.Importance);
+            return levels;
+        }
+
+        /// <summary>
         /// Computed property returning aggregated file counts (Added/Removed/Modified/Unchanged/Ignored) for the summary section.
         /// サマリーセクション向けのファイル件数を一括で返す計算プロパティ。
         /// </summary>

@@ -500,9 +500,17 @@
       }
       // Importance filter (only for rows with importance) / 重要度フィルター（importance属性ありの行のみ）
       if (show && impActive) {
-        var imp = tr.getAttribute('data-importance');
-        if (imp) {
-          if (!impFilter[imp]) show = false;
+        var imps = tr.getAttribute('data-importances');
+        if (imps) {
+          // Show if ANY importance level passes the filter / いずれかの重要度レベルがフィルターを通過すれば表示
+          var levels = imps.split(',');
+          var anyMatch = levels.some(function(l) { return impFilter[l]; });
+          if (!anyMatch) show = false;
+        } else {
+          var imp = tr.getAttribute('data-importance');
+          if (imp) {
+            if (!impFilter[imp]) show = false;
+          }
         }
       }
       // Unchecked only filter

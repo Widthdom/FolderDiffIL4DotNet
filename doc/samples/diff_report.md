@@ -108,9 +108,9 @@
 |:------:|:----------:|---------|:-----------:|:-----------:|
 | `[ - ]` | `High` | System.Text.Json | 7.0.0 | — |
 | `[ + ]` | `Medium` | Newtonsoft.Json | — | 13.0.3 |
-| `[ ↑ ]` | `High` | Serilog | 3.0.0 | 4.1.0 |
-| `[ ↑ ]` | `Medium` | Microsoft.Extensions.Logging | 8.0.0 | 9.0.0 |
-| `[ ↑ ]` | `Low` | Microsoft.Extensions.DependencyInjection | 9.0.0 | 9.0.8 |
+| `[ * ]` | `High` | Serilog | 3.0.0 | 4.1.0 |
+| `[ * ]` | `Medium` | Microsoft.Extensions.Logging | 8.0.0 | 9.0.0 |
+| `[ * ]` | `Low` | Microsoft.Extensions.DependencyInjection | 9.0.0 | 9.0.8 |
 
 ## Summary
 

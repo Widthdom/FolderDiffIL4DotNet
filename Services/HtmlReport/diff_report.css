@@ -262,3 +262,14 @@
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
+    /* ── Dependency changes ──────────────────────────────────────────── */
+    .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
+    /* dc-detail (dependency changes): checkbox(1) Status(2) Importance(3) Package(4) OldVer(5) NewVer(6) */
+    col.dc-col-cb-g { width: 3.2em; }
+    col.dc-col-status-g { width: 7em; }
+    col.dc-col-importance-g { width: 7em; }
+    col.dc-col-package-g { width: 24em; }
+    col.dc-col-ver-g { width: 12em; }
+    table.semantic-changes-table.dc-detail td:nth-child(1),
+    table.semantic-changes-table.dc-detail td:nth-child(2),
+    table.semantic-changes-table.dc-detail td:nth-child(3) { text-align: center; }

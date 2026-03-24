@@ -51,17 +51,21 @@ namespace FolderDiffIL4DotNet.Services
             string timestamp,
             string col6,
             string disasm = "",
-            string importance = "")
+            string importance = "",
+            string importanceLevels = "")
         {
             string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
             string notesId  = $"notes_{sectionPrefix}_{idx}";
             int recordNo    = idx + 1;
             string impAttr = string.IsNullOrEmpty(importance) ? "" : $" data-importance=\"{HtmlEncode(importance)}\"";
+            // All distinct importance levels for filtering (comma-separated)
+            // フィルタリング用の全重要度レベル（カンマ区切り）
+            string impsAttr = string.IsNullOrEmpty(importanceLevels) ? "" : $" data-importances=\"{HtmlEncode(importanceLevels)}\"";
             // Normalize diff detail to category for filtering / フィルタリング用に diff detail をカテゴリに正規化
             string diffCat = NormalizeDiffCategory(col6);
             string diffAttr = string.IsNullOrEmpty(diffCat) ? "" : $" data-diff=\"{diffCat}\"";
-            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\"{impAttr}{diffAttr}>");
+            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\"{impAttr}{impsAttr}{diffAttr}>");
             sb.AppendLine($"  <td class=\"col-no\">{recordNo}</td>");
             sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td>");
             sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\"></td>");
@@ -177,6 +181,17 @@ namespace FolderDiffIL4DotNet.Services
         {
             var importance = _fileDiffResultLists.GetMaxImportance(fileRelativePath);
             return importance != null ? ImportanceToLabel(importance.Value) : "";
+        }
+
+        /// <summary>
+        /// Returns comma-separated importance level labels for filtering, or empty if none exist.
+        /// フィルタリング用のカンマ区切り重要度レベルラベルを返します（存在しない場合は空文字列）。
+        /// </summary>
+        private string GetImportanceLevelsLabel(string fileRelativePath)
+        {
+            var levels = _fileDiffResultLists.GetAllImportanceLevels(fileRelativePath);
+            if (levels.Count == 0) return "";
+            return string.Join(",", levels.OrderDescending().Select(ImportanceToLabel));
         }
 
         /// <summary>

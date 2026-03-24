@@ -250,7 +250,7 @@ namespace FolderDiffIL4DotNet.Services
                             writer.WriteLine("|:------:|:----------:|---------|:-----------:|:-----------:|");
                             foreach (var e in depSummary.EntriesByImportance)
                             {
-                                string marker = e.Change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ ↑ ]", _ => e.Change };
+                                string marker = e.Change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ * ]", _ => e.Change };
                                 string oldVer = e.OldVersion.Length > 0 ? e.OldVersion : "—";
                                 string newVer = e.NewVersion.Length > 0 ? e.NewVersion : "—";
                                 writer.WriteLine($"| `{marker}` | `{e.Importance}` | {e.PackageName} | {oldVer} | {newVer} |");

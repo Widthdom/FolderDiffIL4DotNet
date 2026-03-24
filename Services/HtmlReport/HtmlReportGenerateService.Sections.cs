@@ -236,7 +236,8 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
                 string col6 = BuildDiffDetailDisplay(diffDetail);
                 string imp = GetImportanceLabel(path);
-                AppendFileRow(sb, "mod", idx, path, ts, col6, asm ?? "", imp);
+                string impLevels = GetImportanceLevelsLabel(path);
+                AppendFileRow(sb, "mod", idx, path, ts, col6, asm ?? "", imp, impLevels);
 
                 // Method-level changes row (above IL diff)
                 if (config.ShouldIncludeAssemblySemanticChangesInReport &&
@@ -507,12 +508,12 @@ namespace FolderDiffIL4DotNet.Services
             {
                 contentBuilder.AppendLine("<table class=\"semantic-changes-table dc-detail\">");
                 contentBuilder.AppendLine("<colgroup>");
-                contentBuilder.AppendLine("  <col style=\"width:3em\">");
-                contentBuilder.AppendLine("  <col style=\"width:6em\">");
-                contentBuilder.AppendLine("  <col style=\"width:6em\">");
-                contentBuilder.AppendLine("  <col>");
-                contentBuilder.AppendLine("  <col style=\"width:12em\">");
-                contentBuilder.AppendLine("  <col style=\"width:12em\">");
+                contentBuilder.AppendLine("  <col class=\"dc-col-cb-g\">");
+                contentBuilder.AppendLine("  <col class=\"dc-col-status-g\">");
+                contentBuilder.AppendLine("  <col class=\"dc-col-importance-g\">");
+                contentBuilder.AppendLine("  <col class=\"dc-col-package-g\">");
+                contentBuilder.AppendLine("  <col class=\"dc-col-ver-g\">");
+                contentBuilder.AppendLine("  <col class=\"dc-col-ver-g\">");
                 contentBuilder.AppendLine("</colgroup>");
                 contentBuilder.AppendLine("<thead><tr>");
                 contentBuilder.AppendLine($"  <th>&#x2713;</th>");
@@ -576,7 +577,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         private static string DependencyChangeToMarker(string change)
-            => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ ↑ ]", _ => change };
+            => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ * ]", _ => change };
 
         private static string DependencyChangeToStatusBg(string change)
             => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Updated" => TH_BG_MODIFIED, _ => "" };
@@ -662,7 +663,8 @@ namespace FolderDiffIL4DotNet.Services
                         }
                         string col6 = BuildDiffDetailDisplay(kv.Value);
                         string imp = GetImportanceLabel(kv.Key);
-                        AppendFileRow(sb, "sha256w", idx, kv.Key, ts, col6, importance: imp);
+                        string impLevels = GetImportanceLevelsLabel(kv.Key);
+                        AppendFileRow(sb, "sha256w", idx, kv.Key, ts, col6, importance: imp, importanceLevels: impLevels);
                         idx++;
                     }
                     sb.AppendLine("</tbody></table></div>");
@@ -688,7 +690,8 @@ namespace FolderDiffIL4DotNet.Services
                     _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(w.FileRelativePath, out var asm);
                     string col6 = BuildDiffDetailDisplay(diffDetail);
                     string imp = GetImportanceLabel(w.FileRelativePath);
-                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6, importance: imp);
+                    string impLevels = GetImportanceLevelsLabel(w.FileRelativePath);
+                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6, importance: imp, importanceLevels: impLevels);
 
                     if (config.EnableInlineDiff &&
                         (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||
