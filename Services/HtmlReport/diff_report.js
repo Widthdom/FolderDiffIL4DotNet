@@ -735,7 +735,7 @@
     }
     // Helper: column header row with section bg color (shifted 1 col right) / セクション背景色の列ヘッダー行（1列右にずらし）
     function colHeaderRow(bg) {
-      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Detail', 'Disassembler'];
+      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Disassembler'];
       var r = '<tr><td></td>';
       hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
       return r + '</tr>';
@@ -915,10 +915,10 @@
       + '<td class="bd">' + esc(checked) + '</td>'
       + '<td class="bd">' + esc(reason) + '</td>'
       + '<td class="bd">' + esc(notes) + '</td>'
-      + '<td class="bd">' + esc(status) + '</td>'
+      + '<td class="bd" style="text-align:center">' + esc(status) + '</td>'
       + '<td class="bd">' + esc(path) + '</td>'
-      + '<td class="bd" style="mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
-      + '<td class="bd">' + esc(diff) + '</td>'
+      + '<td class="bd" style="text-align:center;mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
+      + '<td class="bd" style="text-align:center">' + esc(diff) + '</td>'
       + '<td class="bd">' + esc(disasm) + '</td>'
       + '</tr>';
   }
