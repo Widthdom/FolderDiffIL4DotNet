@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Audit log records full relative paths for Added/Removed files** — Previously, `AuditLogGenerateService.BuildFileEntries()` used `Path.GetFileName(absPath)` for Added and Removed files, recording only the file name (e.g. `guide.md`). When identically named files existed in different subdirectories, they became indistinguishable in the audit trail — a critical defect for audit traceability. Now uses `Path.GetRelativePath()` against the new folder (for Added) and old folder (for Removed), producing paths like `docs/guide.md` and `tools/old-tool.txt` consistent with Modified/Unchanged/Ignored entries. Updated [`AuditLogGenerateService.cs`](Services/AuditLogGenerateService.cs), [`doc/samples/audit_log.json`](doc/samples/audit_log.json). Added `GenerateAuditLog_AddedRemovedFiles_RecordRelativePaths` test in [`AuditLogGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs). Test count: 678 → 679.
+
 ### [1.8.0] - 2026-03-24
 
 #### Added
@@ -600,6 +604,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Fixed
+
+- **監査ログの Added/Removed ファイルに完全な相対パスを記録** — 従来 `AuditLogGenerateService.BuildFileEntries()` は Added/Removed ファイルに `Path.GetFileName(absPath)` を使用し、ファイル名のみ（例: `guide.md`）を記録していた。異なるサブディレクトリに同名ファイルが存在する場合に監査証跡上で識別不能となる重大な欠陥であった。`Path.GetRelativePath()` を使用して new フォルダ（Added）および old フォルダ（Removed）からの相対パスを算出するよう修正し、`docs/guide.md` や `tools/old-tool.txt` のように Modified/Unchanged/Ignored エントリと一貫したパスを記録するようにした。変更ファイル: [`AuditLogGenerateService.cs`](Services/AuditLogGenerateService.cs)、[`doc/samples/audit_log.json`](doc/samples/audit_log.json)。`GenerateAuditLog_AddedRemovedFiles_RecordRelativePaths` テストを [`AuditLogGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs) に追加。テスト件数: 678 → 679。
 
 ### [1.8.0] - 2026-03-24
 

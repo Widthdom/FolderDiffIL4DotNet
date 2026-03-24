@@ -103,7 +103,7 @@ namespace FolderDiffIL4DotNet.Services
             string reportsFolderAbsolutePath)
         {
             var stats = _fileDiffResultLists.SummaryStatistics;
-            var files = BuildFileEntries();
+            var files = BuildFileEntries(oldFolderAbsolutePath, newFolderAbsolutePath);
 
             var mdReportHash = ComputeFileHash(
                 Path.Combine(reportsFolderAbsolutePath, "diff_report.md"));
@@ -142,26 +142,29 @@ namespace FolderDiffIL4DotNet.Services
             };
         }
 
-        private List<AuditLogFileEntry> BuildFileEntries()
+        private List<AuditLogFileEntry> BuildFileEntries(
+            string oldFolderAbsolutePath, string newFolderAbsolutePath)
         {
             var entries = new List<AuditLogFileEntry>();
 
-            // Added files
+            // Added files (absolute paths relative to new folder)
+            // Added ファイル（new フォルダからの相対パス）
             foreach (var absPath in _fileDiffResultLists.AddedFilesAbsolutePath)
             {
                 entries.Add(new AuditLogFileEntry
                 {
-                    RelativePath = Path.GetFileName(absPath),
+                    RelativePath = Path.GetRelativePath(newFolderAbsolutePath, absPath),
                     Category = CATEGORY_ADDED
                 });
             }
 
-            // Removed files
+            // Removed files (absolute paths relative to old folder)
+            // Removed ファイル（old フォルダからの相対パス）
             foreach (var absPath in _fileDiffResultLists.RemovedFilesAbsolutePath)
             {
                 entries.Add(new AuditLogFileEntry
                 {
-                    RelativePath = Path.GetFileName(absPath),
+                    RelativePath = Path.GetRelativePath(oldFolderAbsolutePath, absPath),
                     Category = CATEGORY_REMOVED
                 });
             }
