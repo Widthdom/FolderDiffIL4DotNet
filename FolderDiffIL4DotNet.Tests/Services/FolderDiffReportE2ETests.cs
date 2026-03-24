@@ -89,7 +89,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             auditService.GenerateAuditLog(reportContext);
 
             // Verify Markdown report / Markdown レポートを検証
-            var mdPath = Path.Combine(reportDir, ReportGenerateService.DIFF_REPORT_FILE_NAME);
+            var mdPath = Path.Combine(reportDir, "diff_report.md");
             Assert.True(File.Exists(mdPath), "diff_report.md should be created");
             var mdContent = File.ReadAllText(mdPath);
             Assert.Contains("[+] Added Files", mdContent);
@@ -161,7 +161,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             auditService.GenerateAuditLog(reportContext);
 
             // Verify zero changes in Markdown summary / Markdown サマリでゼロ変更を確認
-            var mdContent = File.ReadAllText(Path.Combine(reportDir, ReportGenerateService.DIFF_REPORT_FILE_NAME));
+            var mdContent = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("| Added | 0 |", mdContent);
             Assert.Contains("| Removed | 0 |", mdContent);
             Assert.Contains("| Modified | 0 |", mdContent);
@@ -209,7 +209,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             auditService.GenerateAuditLog(reportContext);
 
             // Verify relative paths in Markdown / Markdown 内の相対パスを確認
-            var mdContent = File.ReadAllText(Path.Combine(reportDir, ReportGenerateService.DIFF_REPORT_FILE_NAME));
+            var mdContent = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains(Path.Combine("src", "app", "main.cs"), mdContent);
             Assert.Contains(Path.Combine("docs", "readme.md"), mdContent);
             Assert.Contains(Path.Combine("tools", "old-tool.txt"), mdContent);
@@ -264,12 +264,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             new HtmlReportGenerateService(_resultLists, _logger, config).GenerateDiffReportHtml(reportContext);
             new AuditLogGenerateService(_resultLists, _logger).GenerateAuditLog(reportContext);
 
-            Assert.True(File.Exists(Path.Combine(reportDir, ReportGenerateService.DIFF_REPORT_FILE_NAME)));
+            Assert.True(File.Exists(Path.Combine(reportDir, "diff_report.md")));
             Assert.True(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
             Assert.True(File.Exists(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME)));
 
             // Verify summary consistency in Markdown / Markdown のサマリ整合性を確認
-            var mdContent = File.ReadAllText(Path.Combine(reportDir, ReportGenerateService.DIFF_REPORT_FILE_NAME));
+            var mdContent = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("| Added | 1 |", mdContent);
             Assert.Contains("| Removed | 1 |", mdContent);
             Assert.Contains("| Modified | 7 |", mdContent);
