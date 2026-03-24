@@ -80,7 +80,8 @@ Large service classes are split into partial class files to keep each file focus
 
 | Class | Main file | Partial files |
 | --- | --- | --- |
-| `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs) (nested types: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`) |
+| `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs) (nested types: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`), [`Runner/ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs) (CLI help message), [`Runner/ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) (config loading, validation, CLI overrides) |
+| `ConfigSettings` | [`Models/ConfigSettings.cs`](../Models/ConfigSettings.cs) | [`Models/ConfigSettings.ReportSettings.cs`](../Models/ConfigSettings.ReportSettings.cs) (report output control), [`Models/ConfigSettings.ILSettings.cs`](../Models/ConfigSettings.ILSettings.cs) (IL comparison, cache, disassembler), [`Models/ConfigSettings.DiffSettings.cs`](../Models/ConfigSettings.DiffSettings.cs) (parallelism, network, inline diff) |
 | `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) (loads [`diff_report.css`](../Services/HtmlReport/diff_report.css) embedded resource), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) (loads [`diff_report.js`](../Services/HtmlReport/diff_report.js) template with `{{STORAGE_KEY}}`/`{{REPORT_DATE}}` placeholders) |
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/ReportGenerateService.SectionWriters.cs`](../Services/ReportGenerateService.SectionWriters.cs) |
@@ -351,7 +352,7 @@ Why this matters:
 | File | Responsibility | Notes |
 | --- | --- | --- |
 | [`Program.cs`](../Program.cs) | Application entry point | Must remain thin |
-| [`ProgramRunner.cs`](../ProgramRunner.cs) | Argument validation, config loading, run DI creation, orchestration | Main control plane |
+| [`ProgramRunner.cs`](../ProgramRunner.cs) | Argument validation, orchestration | Main control plane; help text in [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs), config loading/validation in [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) |
 | [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) | Reusable console/diagnostics/IO/text helpers | No folder-diff domain logic |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | Immutable run paths and network-mode decisions | No mutable state |
 | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | Folder-diff orchestration and result routing | Owns progress and added/removed routing |
@@ -881,7 +882,8 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 
 | クラス | メインファイル | Partial ファイル |
 | --- | --- | --- |
-| `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs)（ネスト型: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`） |
+| `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs)（ネスト型: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`）、[`Runner/ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)（CLI ヘルプメッセージ）、[`Runner/ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs)（設定読込・バリデーション・CLI オーバーライド） |
+| `ConfigSettings` | [`Models/ConfigSettings.cs`](../Models/ConfigSettings.cs) | [`Models/ConfigSettings.ReportSettings.cs`](../Models/ConfigSettings.ReportSettings.cs)（レポート出力制御）、[`Models/ConfigSettings.ILSettings.cs`](../Models/ConfigSettings.ILSettings.cs)（IL 比較・キャッシュ・逆アセンブラ）、[`Models/ConfigSettings.DiffSettings.cs`](../Models/ConfigSettings.DiffSettings.cs)（並列処理・ネットワーク・インライン差分） |
 | `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) ([`diff_report.css`](../Services/HtmlReport/diff_report.css) 埋め込みリソースを読み込み), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) ([`diff_report.js`](../Services/HtmlReport/diff_report.js) テンプレートをプレースホルダー置換して読み込み) |
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/ReportGenerateService.SectionWriters.cs`](../Services/ReportGenerateService.SectionWriters.cs) |
@@ -1151,7 +1153,7 @@ sequenceDiagram
 | ファイル | 主な責務 | 補足 |
 | --- | --- | --- |
 | [`Program.cs`](../Program.cs) | アプリ起動点 | 薄いまま維持する |
-| [`ProgramRunner.cs`](../ProgramRunner.cs) | 引数検証、設定読込、実行 DI 作成、全体調停 | 制御プレーンの中心 |
+| [`ProgramRunner.cs`](../ProgramRunner.cs) | 引数検証、全体調停 | 制御プレーンの中心；ヘルプテキストは [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)、設定読込/バリデーションは [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) |
 | [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) | 再利用可能な console / diagnostics / I/O / text helper | フォルダ差分ドメインのポリシーを持たない |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | 実行固有パスとネットワークモードの保持 | 可変状態を持たない |
 | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | フォルダ差分全体の調停と結果振り分け | 進捗と Added/Removed もここ |
