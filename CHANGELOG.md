@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Review progress bar in HTML report** — Added a progress bar to the HTML report controls bar that shows how many files have been reviewed out of the total (e.g. "42 / 500 reviewed"). The bar updates in real time as checkboxes are checked, merges saved state from localStorage with current DOM state to correctly count lazy-loaded sections, and displays a green fill with smooth CSS transition. The total reviewable file count is injected at generation time based on which sections are included (Added, Removed, Modified, and optionally Unchanged/Ignored). The progress bar is preserved in reviewed HTML (read-only mode). Added `__totalFiles__` JS constant with `{{TOTAL_FILES}}` placeholder substitution, `updateProgress()` function in [`diff_report.js`](Services/HtmlReport/diff_report.js), progress bar CSS in [`diff_report.css`](Services/HtmlReport/diff_report.css), HTML generation in [`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs), placeholder injection in [`HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added 2 tests in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs): `GenerateDiffReportHtml_ContainsProgressBar_WithCorrectTotalFiles`, `GenerateDiffReportHtml_ProgressBar_ExcludesIgnoredFilesWhenNotIncluded`. Test count: 679 → 681.
+
 ### [1.8.1] - 2026-03-24
 
 #### Performance
@@ -615,6 +619,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **HTMLレポートにレビュー進捗バーを追加** — HTMLレポートのコントロールバーに、レビュー済みファイル数と総数を表示するプログレスバーを追加（例: "42 / 500 reviewed"）。チェックボックスの操作に連動してリアルタイム更新され、localStorageの保存済み状態と現在のDOMを統合して遅延ロードセクションも正確にカウントする。緑色のバーにスムーズなCSSトランジションを適用。総ファイル数はレポート生成時に含まれるセクション（Added, Removed, Modified, および任意のUnchanged/Ignored）に基づいて注入される。プログレスバーはreviewed HTML（読み取り専用モード）でも保持される。[`diff_report.js`](Services/HtmlReport/diff_report.js)に`__totalFiles__`定数と`updateProgress()`関数、[`diff_report.css`](Services/HtmlReport/diff_report.css)にCSS、[`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs)にHTML生成、[`HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)にプレースホルダー注入を追加。[`doc/samples/diff_report.html`](doc/samples/diff_report.html)を更新。[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs)に2テスト追加: `GenerateDiffReportHtml_ContainsProgressBar_WithCorrectTotalFiles`, `GenerateDiffReportHtml_ProgressBar_ExcludesIgnoredFilesWhenNotIncluded`。テスト件数: 679 → 681。
 
 ### [1.8.1] - 2026-03-24
 

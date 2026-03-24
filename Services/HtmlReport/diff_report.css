@@ -91,6 +91,23 @@
     }
     .btn-clear:hover { background: #f5f5f7; }
     .save-status { font-size: 12px; color: #86868b; }
+    /* ── Review progress bar ───────────────────────────────────────────── */
+    .progress-wrap {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-size: 12px; color: #86868b; padding: 0.15rem 0;
+    }
+    .progress-bar {
+      width: 160px; height: 4px; background: #e5e5ea; border-radius: 2px; overflow: hidden;
+      flex-shrink: 0;
+    }
+    .progress-bar-fill {
+      height: 100%; width: 0%; background: #34c759; border-radius: 2px;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .progress-bar-fill.complete { background: #30d158; }
+    .progress-text {
+      white-space: nowrap; font-variant-numeric: tabular-nums;
+    }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; min-width: 7em; }

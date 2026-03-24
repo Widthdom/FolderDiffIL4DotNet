@@ -111,6 +111,12 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("</div>");
             sb.AppendLine("<!--/CTRL-->");
 
+            // Review progress bar / レビュー進捗バー
+            sb.AppendLine("<div class=\"progress-wrap\">");
+            sb.AppendLine("  <div class=\"progress-bar\"><div id=\"progress-bar-fill\" class=\"progress-bar-fill\"></div></div>");
+            sb.AppendLine("  <span id=\"progress-text\" class=\"progress-text\"></span>");
+            sb.AppendLine("</div>");
+
             // Filter zone (kept in reviewed HTML for read-only filtering)
             // フィルターゾーン（reviewed HTML にも残し読み取り専用フィルタリングに使用）
             sb.AppendLine("<div class=\"filter-zone\">");
@@ -175,7 +181,14 @@ namespace FolderDiffIL4DotNet.Services
             AppendWarningsSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
 
             sb.AppendLine("</main>");
-            AppendJs(sb, storageKey, reportDate);
+
+            // Calculate total reviewable files for progress bar / プログレスバー用のレビュー対象ファイル総数を算出
+            int totalFiles = _fileDiffResultLists.AddedFilesAbsolutePath.Count
+                + _fileDiffResultLists.RemovedFilesAbsolutePath.Count
+                + _fileDiffResultLists.ModifiedFilesRelativePath.Count
+                + (config.ShouldIncludeUnchangedFiles ? _fileDiffResultLists.UnchangedFilesRelativePath.Count : 0)
+                + (config.ShouldIncludeIgnoredFiles ? _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count : 0);
+            AppendJs(sb, storageKey, reportDate, totalFiles);
             sb.AppendLine("</body>");
             sb.AppendLine("</html>");
             return sb.ToString();

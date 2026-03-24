@@ -11,13 +11,15 @@ namespace FolderDiffIL4DotNet.Services
         private const string JS_RESOURCE_NAME = "FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js";
         private const string JS_PLACEHOLDER_STORAGE_KEY = "{{STORAGE_KEY}}";
         private const string JS_PLACEHOLDER_REPORT_DATE = "{{REPORT_DATE}}";
+        private const string JS_PLACEHOLDER_TOTAL_FILES = "{{TOTAL_FILES}}";
 
-        private static void AppendJs(StringBuilder sb, string storageKey, string reportDate)
+        private static void AppendJs(StringBuilder sb, string storageKey, string reportDate, int totalFiles)
         {
             var jsTemplate = LoadEmbeddedResource(JS_RESOURCE_NAME);
             var js = jsTemplate
                 .Replace(JS_PLACEHOLDER_STORAGE_KEY, storageKey)
-                .Replace(JS_PLACEHOLDER_REPORT_DATE, reportDate);
+                .Replace(JS_PLACEHOLDER_REPORT_DATE, reportDate)
+                .Replace(JS_PLACEHOLDER_TOTAL_FILES, totalFiles.ToString(System.Globalization.CultureInfo.InvariantCulture));
             sb.AppendLine("<script>");
             sb.AppendLine(js);
             sb.AppendLine("</script>");

@@ -39,6 +39,7 @@ function loadScript(options = {}) {
     reportDate = '2026-01-01',
     savedState = null,
     bodyHtml = '',
+    totalFiles = 0,
   } = options;
 
   // Reset DOM
@@ -49,7 +50,8 @@ function loadScript(options = {}) {
   // Replace template placeholders
   let js = JS_SOURCE
     .replace("'{{STORAGE_KEY}}'", JSON.stringify(storageKey))
-    .replace("'{{REPORT_DATE}}'", JSON.stringify(reportDate));
+    .replace("'{{REPORT_DATE}}'", JSON.stringify(reportDate))
+    .replace('{{TOTAL_FILES}}', String(totalFiles));
 
   if (savedState !== null) {
     js = js.replace(
@@ -514,5 +516,74 @@ describe('downloadReviewed', () => {
     const state = window.collectState();
     expect(state).toHaveProperty('chk-dl', true);
     expect(state).not.toHaveProperty('filter-imp-high');
+  });
+});
+
+// ─── updateProgress ──────────────────────────────────────────────────────────
+describe('updateProgress', () => {
+  it('updates bar width and text based on checked checkboxes', () => {
+    loadScript({
+      totalFiles: 4,
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+        <input type="checkbox" id="cb_rem_0" checked>
+        <input type="checkbox" id="cb_unch_0">
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-bar-fill').style.width).toBe('50%');
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 4 reviewed');
+  });
+
+  it('adds complete class when all files are reviewed', () => {
+    loadScript({
+      totalFiles: 2,
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0" checked>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-bar-fill').classList.contains('complete')).toBe(true);
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 2 reviewed');
+  });
+
+  it('does nothing when totalFiles is 0', () => {
+    loadScript({
+      totalFiles: 0,
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-bar-fill').style.width).toBe('');
+    expect(document.getElementById('progress-text').textContent).toBe('');
+  });
+
+  it('counts checked state from localStorage for lazy-loaded sections', () => {
+    loadScript({
+      totalFiles: 3,
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+      `,
+    });
+    // Simulate lazy-loaded checkbox state in localStorage
+    // 遅延ロードセクションのチェックボックス状態をlocalStorageでシミュレート
+    localStorage.setItem('test-key', JSON.stringify({ cb_unch_0: true, cb_ign_0: true }));
+    fireDOMContentLoaded();
+
+    // 1 from DOM (checked) + 2 from localStorage = 3
+    expect(document.getElementById('progress-text').textContent).toBe('3 / 3 reviewed');
   });
 });

@@ -1867,6 +1867,58 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain("ilspycmd", html);
         }
 
+        [Fact]
+        public void GenerateDiffReportHtml_ContainsProgressBar_WithCorrectTotalFiles()
+        {
+            // Arrange: create files across multiple sections / 複数セクションにファイルを作成
+            var (oldDir, newDir, reportDir) = MakeDirs("progress-bar");
+
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "new.dll"));
+            _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "old.dll"));
+            _resultLists.AddModifiedFileRelativePath("changed.dll");
+            _resultLists.RecordDiffDetail("changed.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            _resultLists.AddUnchangedFileRelativePath("same.dll");
+
+            var config = CreateConfig();
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: progress bar HTML elements present / プログレスバーHTML要素が存在すること
+            Assert.Contains("progress-bar-fill", html);
+            Assert.Contains("progress-text", html);
+            Assert.Contains("progress-wrap", html);
+            // Assert: total files count injected correctly (1 added + 1 removed + 1 modified + 1 unchanged = 4)
+            // 合計ファイル数が正しく注入されること（追加1 + 削除1 + 変更1 + 変更なし1 = 4）
+            Assert.Contains("const __totalFiles__      = 4;", html);
+            // Assert: updateProgress function present / updateProgress関数が存在すること
+            Assert.Contains("updateProgress()", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_ProgressBar_ExcludesIgnoredFilesWhenNotIncluded()
+        {
+            // Arrange: add ignored files but don't include them in report
+            // 無視ファイルを追加するがレポートに含めない設定
+            var (oldDir, newDir, reportDir) = MakeDirs("progress-no-ign");
+
+            _resultLists.AddModifiedFileRelativePath("changed.dll");
+            _resultLists.RecordDiffDetail("changed.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            _resultLists.RecordIgnoredFile("ignored.log", FileDiffResultLists.IgnoredFileLocation.Old);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldIncludeIgnoredFiles = false;
+            builder.ShouldIncludeUnchangedFiles = false;
+            var config = builder.Build();
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // totalFiles should be 1 (only the modified file), not 2
+            // totalFilesは1（変更ファイルのみ）であり、2ではないこと
+            Assert.Contains("const __totalFiles__      = 1;", html);
+        }
+
         private static ConfigSettingsBuilder CreateConfigBuilder(bool enableInlineDiff = true, bool lazyRender = false) => new()
         {
             IgnoredExtensions = new List<string>(),
