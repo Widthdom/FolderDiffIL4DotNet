@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Performance
+
+- **Streaming IL comparison to reduce memory for large assemblies** — Previously, IL disassembly output was captured as a single large string via `ReadToEndAsync()`, then split into a `List<string>` of filtered lines for each side (old/new), requiring ~4× the IL text size in peak memory (two full strings + two filtered line lists). For large assemblies this caused Large Object Heap (LOH) pressure and GC stalls. Replaced with a two-level streaming approach: (1) **Line-based process reading** — `DotNetDisassembleService.Streaming.cs` reads process stdout line-by-line via `ReadLineAsync()` loop, returning `IReadOnlyList<string>` directly without an intermediate huge string. Cache hits split the cached string to lines via `StringReader`. New interface method `DisassemblePairAsLinesWithSameDisassemblerAsync` on `IDotNetDisassembleService`. (2) **Streaming filtered comparison** — `ILOutputService.StreamingFilteredSequenceEqual` compares two line lists by advancing dual indices and skipping excluded lines (MVID, configured ignore-strings) in O(1) extra memory, short-circuiting on first mismatch. When IL text file output is not requested (the common case), no filtered line lists are materialized. When output is requested, `FilterIlLines` builds the lists for `WriteFullIlTextsAsync`. Added 15 tests in `ILOutputServiceTests`: 7 for `StreamingFilteredSequenceEqual` (identical, different, MVID skip, ignore-strings skip, length mismatch, both empty, all excluded), 2 for `FilterIlLines`, 5 for `SplitToLines` (LF, CRLF, empty, null, trailing newline), 1 behavioral equivalence test. Test count: 678 → 693 (EN), 679 → 694 (JA). Affected files: [`IDotNetDisassembleService.cs`](Services/IDotNetDisassembleService.cs), [`DotNetDisassembleService.Streaming.cs`](Services/DotNetDisassembleService.Streaming.cs) (new), [`ILOutputService.cs`](Services/ILOutputService.cs), [`ILOutputServiceTests.cs`](FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs).
+
 ### [1.8.1] - 2026-03-24
 
 #### Performance
@@ -615,6 +619,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### パフォーマンス
+
+- **巨大アセンブリ向けストリーミング IL 比較によるメモリ削減** — 従来、IL 逆アセンブル出力は `ReadToEndAsync()` で単一の巨大文字列として取得し、old/new 各側でフィルタ済み `List<string>` に分割していたため、ピークメモリは IL テキストサイズの約 4 倍（文字列 2 本 + フィルタ済み行リスト 2 本）に達していました。大規模アセンブリでは Large Object Heap (LOH) への圧力と GC ストールの原因となっていました。2 段階のストリーミング方式に置き換えました: (1) **行単位プロセス読み取り** — `DotNetDisassembleService.Streaming.cs` がプロセスの stdout を `ReadLineAsync()` ループで行単位読み取りし、中間の巨大文字列を介さず `IReadOnlyList<string>` を直接返します。キャッシュヒット時は `StringReader` で分割。`IDotNetDisassembleService` に新インターフェースメソッド `DisassemblePairAsLinesWithSameDisassemblerAsync` を追加。(2) **ストリーミングフィルタ比較** — `ILOutputService.StreamingFilteredSequenceEqual` が 2 つの行リストを双方向インデックスで進め、除外行（MVID、設定済み無視文字列）をスキップしながら O(1) 追加メモリで比較し、最初の不一致で即終了します。IL テキストファイル出力が不要な場合（通常ケース）、フィルタ済み行リストは実体化されません。出力が必要な場合は `FilterIlLines` がリストを構築し `WriteFullIlTextsAsync` に渡します。`ILOutputServiceTests` に 15 テスト追加: `StreamingFilteredSequenceEqual` 7 件（一致・不一致・MVID スキップ・無視文字列スキップ・長さ不一致・両方空・全行除外）、`FilterIlLines` 2 件、`SplitToLines` 5 件（LF・CRLF・空文字列・null・末尾改行）、動作等価性テスト 1 件。テスト件数: 678 → 693 (EN), 679 → 694 (JA)。影響ファイル: [`IDotNetDisassembleService.cs`](Services/IDotNetDisassembleService.cs), [`DotNetDisassembleService.Streaming.cs`](Services/DotNetDisassembleService.Streaming.cs)（新規）, [`ILOutputService.cs`](Services/ILOutputService.cs), [`ILOutputServiceTests.cs`](FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs)。
 
 ### [1.8.1] - 2026-03-24
 
