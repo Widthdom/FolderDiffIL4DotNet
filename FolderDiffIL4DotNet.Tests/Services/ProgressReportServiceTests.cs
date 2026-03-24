@@ -242,6 +242,49 @@ namespace FolderDiffIL4DotNet.Tests.Services
             service.Dispose();
         }
 
+        // ── Mutation-testing additions / ミューテーションテスト追加 ──────────────
+
+        [Fact]
+        public void ReportProgress_AtExactlyZero_DoesNotThrow()
+        {
+            // Boundary test: 0.0 is the lower inclusive bound
+            // 境界テスト: 0.0 は下限の包含値
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+
+            var ex = Record.Exception(() => service.ReportProgress(0.0));
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void ReportProgress_AtExactlyHundred_DoesNotThrow()
+        {
+            // Boundary test: 100.0 is the upper inclusive bound
+            // 境界テスト: 100.0 は上限の包含値
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+
+            var ex = Record.Exception(() => service.ReportProgress(100.0));
+
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void Dispose_ThenReportProgress_NoExceptionAndNoOutput()
+        {
+            // Verify that calling ReportProgress after Dispose silently returns without exception
+            // Dispose 後の ReportProgress 呼び出しが例外なしに黙って戻ることを確認
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            service.Dispose();
+
+            var ex = Record.Exception(() => service.ReportProgress(50.0));
+
+            Assert.Null(ex);
+            var lastPercentage = GetPrivateField<double>(service, "_lastPercentage");
+            // _lastPercentage should not have been updated after dispose
+            // Dispose 後に _lastPercentage は更新されないこと
+            Assert.Equal(double.NegativeInfinity, lastPercentage);
+        }
+
         private static T GetPrivateField<T>(object target, string fieldName)
         {
             var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);

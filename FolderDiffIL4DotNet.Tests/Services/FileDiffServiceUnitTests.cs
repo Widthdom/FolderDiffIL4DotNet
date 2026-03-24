@@ -642,6 +642,300 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 () => service.PrecomputeAsync(null!, maxParallel: 1));
         }
 
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenHash1HexIsNull_DoesNotPreSeedFile1ButPreSeedsFile2()
+        {
+            // When the hash computation returns null for hash1Hex, PreSeedFileHash should
+            // NOT be called for file1 but should still be called for file2 (non-null).
+            // hash1Hex が null の場合、file1 の PreSeedFileHash は呼ばれず、file2（非 null）のみ呼ばれるべき。
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                UseHashHexOverride = true,
+                Hash1HexOverride = null,
+                Hash2HexOverride = "b".PadRight(64, '0'),
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            await service.FilesAreEqualAsync("nullhash1.dat", maxParallel: 1);
+
+            // Only file2 should have been pre-seeded / file2 のみ事前登録されるべき
+            Assert.Single(ilOutputService.PreSeedCalls);
+            Assert.Equal(Path.Combine("/virtual/new", "nullhash1.dat"), ilOutputService.PreSeedCalls[0].Path);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenHash2HexIsNull_PreSeedsFile1ButDoesNotPreSeedFile2()
+        {
+            // When the hash computation returns null for hash2Hex, PreSeedFileHash should
+            // be called for file1 (non-null) but NOT for file2.
+            // hash2Hex が null の場合、file1（非 null）の PreSeedFileHash は呼ばれ、file2 は呼ばれないべき。
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                UseHashHexOverride = true,
+                Hash1HexOverride = "a".PadRight(64, '0'),
+                Hash2HexOverride = null,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            await service.FilesAreEqualAsync("nullhash2.dat", maxParallel: 1);
+
+            // Only file1 should have been pre-seeded / file1 のみ事前登録されるべき
+            Assert.Single(ilOutputService.PreSeedCalls);
+            Assert.Equal(Path.Combine("/virtual/old", "nullhash2.dat"), ilOutputService.PreSeedCalls[0].Path);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenBothHashHexAreNull_DoesNotPreSeedEither()
+        {
+            // When the hash computation returns null for both hash1Hex and hash2Hex,
+            // PreSeedFileHash should NOT be called at all.
+            // hash1Hex と hash2Hex の両方が null の場合、PreSeedFileHash はいっさい呼ばれないべき。
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                UseHashHexOverride = true,
+                Hash1HexOverride = null,
+                Hash2HexOverride = null,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            await service.FilesAreEqualAsync("nullboth.dat", maxParallel: 1);
+
+            // Neither file should have been pre-seeded / どちらも事前登録されないべき
+            Assert.Empty(ilOutputService.PreSeedCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenOptimizeForNetworkSharesTrue_UsesSequentialTextDiffOnly()
+        {
+            // Under network-share optimisation, CompareAsTextAsync should use sequential
+            // text diff (DiffTextFilesAsync) and never use parallel chunk comparison.
+            // ネットワーク共有最適化時は逐次テキスト比較（DiffTextFilesAsync）のみを使用し、
+            // 並列チャンク比較は使用しないべき。
+            const string relativePath = "network.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            // Set up large files that would normally trigger parallel comparison
+            // 通常なら並列比較をトリガーする大きなファイルを設定
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldPath, new string('X', 4096));
+            fileComparisonService.SetFileContent(newPath, new string('X', 4096));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: true,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 4);
+
+            Assert.True(areEqual);
+            // Sequential text diff should be used / 逐次テキスト比較が使用されるべき
+            Assert.Single(fileComparisonService.TextDiffCalls);
+            // Parallel chunk comparison should NOT be used / 並列チャンク比較は使用されないべき
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenRequestedMaxParallelIsOne_UsesSequentialTextDiff()
+        {
+            // DetermineEffectiveTextDiffParallelism with requestedMaxParallel <= 1 returns
+            // as-is, and the caller falls back to sequential diff.
+            // requestedMaxParallel <= 1 の場合、DetermineEffectiveTextDiffParallelism はそのまま返し、
+            // 呼び出し元は逐次比較にフォールバックする。
+            const string relativePath = "single-thread.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = true
+            };
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldPath, new string('Z', 2048));
+            fileComparisonService.SetFileContent(newPath, new string('Z', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                });
+
+            // maxParallel=1 triggers the requestedMaxParallel <= 1 early return
+            // maxParallel=1 は requestedMaxParallel <= 1 の早期リターンをトリガーする
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.True(areEqual);
+            // Sequential text diff should be used since parallelism is 1
+            // 並列度が 1 のため逐次テキスト比較が使用されるべき
+            Assert.Single(fileComparisonService.TextDiffCalls);
+            Assert.Empty(fileComparisonService.ReadChunkCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenMemoryLimitIsZero_UsesUnlimitedParallelism()
+        {
+            // DetermineEffectiveTextDiffParallelism with memoryLimit <= 0 means unlimited,
+            // so it should use the requested parallelism without reduction.
+            // memoryLimit <= 0 は制限なしを意味し、要求された並列度をそのまま使用すべき。
+            const string relativePath = "unlimited.txt";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+            };
+            var oldPath = Path.Combine("/virtual/old", relativePath);
+            var newPath = Path.Combine("/virtual/new", relativePath);
+            fileComparisonService.SetFileContent(oldPath, new string('M', 2048));
+            fileComparisonService.SetFileContent(newPath, new string('M', 2048));
+
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: false,
+                configure: config =>
+                {
+                    config.TextDiffParallelThresholdKilobytes = 1;
+                    config.TextDiffChunkSizeKilobytes = 1;
+                    // 0 means unlimited / 0 は制限なしを意味する
+                    config.TextDiffParallelMemoryLimitMegabytes = 0;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 4);
+
+            Assert.True(areEqual);
+            // Parallel chunk comparison should be used (no memory limit applied)
+            // 並列チャンク比較が使用されるべき（メモリ制限なし）
+            Assert.NotEmpty(fileComparisonService.ReadChunkCalls);
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            // No memory budget log entry should appear / メモリ予算ログエントリは出力されないべき
+            Assert.DoesNotContain(logger.Entries,
+                entry => entry.Message.Contains("Text diff memory budget applied", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenNonTextExtensionAndHashDiffers_RecordsSHA256Mismatch()
+        {
+            // When the file extension is not in TextFileExtensions and hash differs,
+            // the result should be SHA256Mismatch (fall-through to the final return false).
+            // ファイル拡張子が TextFileExtensions に含まれず、ハッシュが異なる場合、
+            // 結果は SHA256Mismatch（最終的な return false へのフォールスルー）になるべき。
+            const string relativePath = "binary.dat";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Mismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            // No text diff or IL diff should be attempted / テキスト差分も IL 差分も試行されないべき
+            Assert.Empty(fileComparisonService.TextDiffCalls);
+            Assert.Empty(ilOutputService.DiffCalls);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenILDiffReturnsNotEqual_RecordsILMismatch()
+        {
+            // When IL comparison returns not-equal, DiffDetail should be ILMismatch and
+            // the method should return false.
+            // IL 比較が不一致を返した場合、DiffDetail は ILMismatch で、メソッドは false を返すべき。
+            const string relativePath = "changed.dll";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffResult = (AreEqual: false, DisassemblerLabel: "test-disasm v2.0")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.ShouldIncludeAssemblySemanticChangesInReport = false);
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            Assert.Equal(FileDiffResultLists.DiffDetailResult.ILMismatch,
+                resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
+            // Disassembler label should be recorded / 逆アセンブララベルが記録されるべき
+            Assert.Equal("test-disasm v2.0",
+                resultLists.FileRelativePathToIlDisassemblerLabelDictionary[relativePath]);
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenCancellationRequested_ThrowsOperationCanceledException()
+        {
+            // FilesAreEqualAsync should throw OperationCanceledException when
+            // the cancellation token is already cancelled.
+            // キャンセルトークンが既にキャンセル済みの場合、OperationCanceledException をスローすべき。
+            var fileComparisonService = new FakeFileComparisonService { HashResult = true };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger);
+
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(
+                () => service.FilesAreEqualAsync("cancel.txt", maxParallel: 1, cancellationToken: cts.Token));
+
+            // No hash computation should have been attempted / ハッシュ計算は試行されないべき
+            Assert.Empty(fileComparisonService.HashCalls);
+        }
+
         private static FileDiffService CreateService(
             FakeFileComparisonService fileComparisonService,
             FakeILOutputService ilOutputService,
@@ -692,6 +986,24 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public Exception ReadChunkException { get; set; }
 
+            /// <summary>
+            /// When set to true, overrides the Hash1Hex/Hash2Hex return values with <see cref="Hash1HexOverride"/>/<see cref="Hash2HexOverride"/>.
+            /// true に設定すると、Hash1Hex/Hash2Hex の戻り値を <see cref="Hash1HexOverride"/>/<see cref="Hash2HexOverride"/> で上書きします。
+            /// </summary>
+            public bool UseHashHexOverride { get; set; }
+
+            /// <summary>
+            /// Custom Hash1Hex value returned when <see cref="UseHashHexOverride"/> is true. Null triggers the null-check path.
+            /// <see cref="UseHashHexOverride"/> が true の場合に返すカスタム Hash1Hex 値。null は null チェックパスを起動します。
+            /// </summary>
+            public string? Hash1HexOverride { get; set; }
+
+            /// <summary>
+            /// Custom Hash2Hex value returned when <see cref="UseHashHexOverride"/> is true. Null triggers the null-check path.
+            /// <see cref="UseHashHexOverride"/> が true の場合に返すカスタム Hash2Hex 値。null は null チェックパスを起動します。
+            /// </summary>
+            public string? Hash2HexOverride { get; set; }
+
             public DotNetExecutableDetectionResult DotNetDetectionResult { get; set; } =
                 new(DotNetExecutableDetectionStatus.NotDotNetExecutable);
 
@@ -724,8 +1036,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 {
                     throw HashException;
                 }
-                string? hash1 = HashResult ? "a".PadRight(64, '0') : "a".PadRight(64, '0');
-                string? hash2 = HashResult ? "a".PadRight(64, '0') : "b".PadRight(64, '0');
+                string? hash1;
+                string? hash2;
+                if (UseHashHexOverride)
+                {
+                    hash1 = Hash1HexOverride;
+                    hash2 = Hash2HexOverride;
+                }
+                else
+                {
+                    hash1 = HashResult ? "a".PadRight(64, '0') : "a".PadRight(64, '0');
+                    hash2 = HashResult ? "a".PadRight(64, '0') : "b".PadRight(64, '0');
+                }
                 return Task.FromResult((HashResult, hash1, hash2));
             }
 
