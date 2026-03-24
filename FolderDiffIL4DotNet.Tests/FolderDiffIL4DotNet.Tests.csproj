@@ -8,10 +8,11 @@
     <NoWarn>$(NoWarn);CA1031;CS8600;CS8603;CS8604;CS8605;CS8618;CS8619;CS8620;CS8625;xUnit1012</NoWarn>
   </PropertyGroup>
 
-  <!-- Exclude FakeDisassembler sources from being compiled into the test project (TestLogger.cs is kept) -->
-  <!-- FakeDisassembler のソースをテストプロジェクトのコンパイル対象から除外（TestLogger.cs は維持） -->
+  <!-- Exclude all FakeDisassembler files (sources + obj/ generated files), then re-include shared test helpers -->
+  <!-- FakeDisassembler の全ファイル（ソース＋obj/生成ファイル）を除外し、共有テストヘルパーのみ再インクルード -->
   <ItemGroup>
-    <Compile Remove="Helpers\FakeDisassemblerProgram.cs" />
+    <Compile Remove="Helpers\**\*.cs" />
+    <Compile Include="Helpers\TestLogger.cs" />
   </ItemGroup>
 
   <ItemGroup>
