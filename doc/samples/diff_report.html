@@ -1114,6 +1114,7 @@
     var html    = document.documentElement.outerHTML;
     // Restore live page state
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
+    applyFilters();
     syncTableWidths();
     // Embed state
     html = html.replace('const __savedState__  = null;',
