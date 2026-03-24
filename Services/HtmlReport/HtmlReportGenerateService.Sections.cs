@@ -349,7 +349,7 @@ namespace FolderDiffIL4DotNet.Services
                     .Replace("InlineDiffMaxEditDistance", "<code>InlineDiffMaxEditDistance</code>");
                 encoded += $" (current value: <code>{maxEditDistance}</code>)";
                 sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
+                sb.AppendLine($"  <td colspan=\"9\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
                 sb.AppendLine("</tr>");
                 return;
             }
@@ -357,7 +357,7 @@ namespace FolderDiffIL4DotNet.Services
             if (diffLines.Count > maxDiffLines)
             {
                 sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"8\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
+                sb.AppendLine($"  <td colspan=\"9\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
                     $"({diffLines.Count} diff lines; limit is {maxDiffLines}). " +
                     $"Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>{maxDiffLines}</code>)</p></td>");
                 sb.AppendLine("</tr>");
@@ -377,7 +377,7 @@ namespace FolderDiffIL4DotNet.Services
             string diffViewHtml = BuildDiffViewHtml(diffLines);
 
             sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine($"  <td colspan=\"8\">");
+            sb.AppendLine($"  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(diffViewHtml));
@@ -486,7 +486,7 @@ namespace FolderDiffIL4DotNet.Services
             string contentHtml = contentBuilder.ToString();
 
             sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine("  <td colspan=\"8\">");
+            sb.AppendLine("  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
@@ -569,7 +569,7 @@ namespace FolderDiffIL4DotNet.Services
             string contentHtml = contentBuilder.ToString();
 
             sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine("  <td colspan=\"8\">");
+            sb.AppendLine("  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
