@@ -28,7 +28,7 @@
   "htmlReportSha256": "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5",
   "files": [
     {
-      "relativePath": "guide.md",
+      "relativePath": "docs/guide.md",
       "category": "Added",
       "diffDetail": "",
       "disassembler": ""
@@ -124,7 +124,7 @@
       "disassembler": "dotnet-ildasm (version: 0.12.2)"
     },
     {
-      "relativePath": "old-tool.txt",
+      "relativePath": "tools/old-tool.txt",
       "category": "Removed",
       "diffDetail": "",
       "disassembler": ""

@@ -187,6 +187,46 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        // ── Added/Removed relative paths / Added/Removed の相対パス ────────────────
+
+        /// <summary>
+        /// Verifies that Added/Removed files record full relative paths (not just file names),
+        /// so that files in subdirectories are uniquely identifiable in the audit log.
+        /// Added/Removed ファイルが（ファイル名だけでなく）完全な相対パスで記録され、
+        /// サブディレクトリ内のファイルが監査ログで一意に識別可能であることを確認する。
+        /// </summary>
+        [Fact]
+        public void GenerateAuditLog_AddedRemovedFiles_RecordRelativePaths()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("rel-paths");
+
+            // Create nested files / ネストされたファイルを作成
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "sub", "dir", "new-file.txt"));
+            _resultLists.AddAddedFileAbsolutePath(Path.Combine(newDir, "root-file.txt"));
+            _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "lib", "old-lib.dll"));
+            _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "old-root.txt"));
+
+            _service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir));
+
+            var json = File.ReadAllText(Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME));
+            var record = JsonSerializer.Deserialize<JsonElement>(json);
+            var files = record.GetProperty("files");
+
+            var paths = new System.Collections.Generic.List<string>();
+            foreach (var file in files.EnumerateArray())
+            {
+                paths.Add(file.GetProperty("relativePath").GetString()!);
+            }
+
+            // Added files should have relative paths from newDir / Added は newDir からの相対パス
+            Assert.Contains(Path.Combine("sub", "dir", "new-file.txt"), paths);
+            Assert.Contains("root-file.txt", paths);
+
+            // Removed files should have relative paths from oldDir / Removed は oldDir からの相対パス
+            Assert.Contains(Path.Combine("lib", "old-lib.dll"), paths);
+            Assert.Contains("old-root.txt", paths);
+        }
+
         // ── File entries sorted / ファイルエントリのソート ─────────────────────────
 
         /// <summary>
