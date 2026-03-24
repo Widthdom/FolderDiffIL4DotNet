@@ -120,8 +120,12 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Disassembles old/new .NET assemblies with the same disassembler, applies exclusion lines (MVID, configured strings), and compares the IL.
+        /// Uses line-based streaming: reads process stdout line-by-line (avoids LOH allocations) and compares
+        /// without materializing filtered line lists when IL text output is not required.
         /// Outputs IL text files when <paramref name="shouldOutputIlText"/> is true.
         /// old/new の .NET アセンブリを同一逆アセンブラで逆アセンブルし、MVID などの除外行を適用したうえで IL を比較します。
+        /// 行単位のストリーミング処理を使用: プロセスの stdout を行単位で読み取り（LOH 割り当てを回避）、
+        /// IL テキスト出力が不要な場合はフィルタ済み行リストを実体化せずに比較します。
         /// <paramref name="shouldOutputIlText"/> が true の場合は IL テキストをファイルに出力します。
         /// </summary>
         public async Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)
@@ -129,27 +133,33 @@ namespace FolderDiffIL4DotNet.Services
             string file1AbsolutePath = Path.Combine(oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(newFolderAbsolutePath, fileRelativePath);
 
-            // Disassemble old/new with the same disassembler (same version identity).
-            // old/new を同一逆アセンブラ（同一バージョン識別）で逆アセンブルする。
-            var (ilText1, commandString1, ilText2, commandString2) =
-                await _dotNetDisassembleService.DisassemblePairWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
-            var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
-
-            // Split into lines and exclude MVID lines and configured ignore-strings in a single pass (avoids intermediate list allocations).
-            // 行単位に分割し、再ビルドで変わり得る MVID 行および設定で指定された文字列を含む行を除外する（中間リスト割り当てを回避するため 1 パスで実行）。
             var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(_config);
             bool shouldIgnore = _config.ShouldIgnoreILLinesContainingConfiguredStrings;
-            var il1LinesExcluded = SplitAndFilterIlLines(ilText1, shouldIgnore, ilIgnoreContainingStrings);
-            var il2LinesExcluded = SplitAndFilterIlLines(ilText2, shouldIgnore, ilIgnoreContainingStrings);
-            bool areILsEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
+
+            // Disassemble old/new as lines (reads process stdout line-by-line, avoiding LOH-sized string allocations).
+            // old/new を行リストとして逆アセンブル（プロセス stdout を行単位で読み取り、LOH サイズの文字列割り当てを回避）。
+            var (il1Lines, commandString1, il2Lines, commandString2) =
+                await _dotNetDisassembleService.DisassemblePairAsLinesWithSameDisassemblerAsync(file1AbsolutePath, file2AbsolutePath, cancellationToken);
+            var disassemblerLabel = BuildComparisonDisassemblerLabel(commandString1, commandString2);
+
+            if (!shouldOutputIlText)
+            {
+                // Streaming comparison: filter and compare line-by-line without materializing filtered lists.
+                // ストリーミング比較: フィルタ済み行リストを実体化せずに行単位でフィルタ・比較する。
+                bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings);
+                return (areILsEqual, disassemblerLabel);
+            }
+
+            // Materialized path: need full filtered lists for IL text file output.
+            // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
+            var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
+            var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
+            bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
             try
             {
-                if (shouldOutputIlText)
-                {
-                    // Save the exclusion-filtered IL text as *_IL.txt when requested.
-                    // 要求されている場合は、比較用に除外した IL テキストを *_IL.txt として保存する。
-                    await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
-                }
+                // Save the exclusion-filtered IL text as *_IL.txt.
+                // 比較用に除外した IL テキストを *_IL.txt として保存する。
+                await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
             }
             catch (Exception)
             {
@@ -158,7 +168,77 @@ namespace FolderDiffIL4DotNet.Services
                 _logger.LogMessage(AppLogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
                 throw;
             }
-            return (areILsEqual, disassemblerLabel);
+            return (areEqual, disassemblerLabel);
+        }
+
+        /// <summary>
+        /// Compares two IL line collections after applying exclusion filters, without materializing
+        /// the filtered results into separate lists. Advances dual indices, skipping excluded lines,
+        /// and short-circuits on the first mismatch — O(1) extra memory beyond the input lists.
+        /// 2 つの IL 行コレクションを除外フィルタ適用後に比較します。フィルタ済みの別リストを
+        /// 実体化せずに 2 つのインデックスを進め、除外行をスキップしながら最初の不一致で即終了します。
+        /// 入力リスト以外の追加メモリは O(1) です。
+        /// </summary>
+        internal static bool StreamingFilteredSequenceEqual(
+            IReadOnlyList<string> lines1,
+            IReadOnlyList<string> lines2,
+            bool shouldIgnoreContainingStrings,
+            IReadOnlyCollection<string> ilIgnoreContainingStrings)
+        {
+            int i = 0, j = 0;
+            int count1 = lines1.Count, count2 = lines2.Count;
+            while (true)
+            {
+                // Advance past excluded lines / 除外行をスキップ
+                while (i < count1 && ShouldExcludeIlLine(lines1[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
+                {
+                    i++;
+                }
+                while (j < count2 && ShouldExcludeIlLine(lines2[j], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
+                {
+                    j++;
+                }
+
+                bool end1 = i >= count1;
+                bool end2 = j >= count2;
+
+                if (end1 && end2)
+                {
+                    return true;
+                }
+                if (end1 || end2)
+                {
+                    return false;
+                }
+                if (!string.Equals(lines1[i], lines2[j], StringComparison.Ordinal))
+                {
+                    return false;
+                }
+                i++;
+                j++;
+            }
+        }
+
+        /// <summary>
+        /// Filters IL lines by applying exclusion rules, returning a new list of non-excluded lines.
+        /// Used when the filtered result must be materialized (e.g. for IL text file output).
+        /// IL 行を除外ルールでフィルタリングし、除外されなかった行の新しいリストを返します。
+        /// フィルタ結果の実体化が必要な場合（IL テキストファイル出力等）に使用します。
+        /// </summary>
+        internal static List<string> FilterIlLines(
+            IReadOnlyList<string> lines,
+            bool shouldIgnoreContainingStrings,
+            IReadOnlyCollection<string> ilIgnoreContainingStrings)
+        {
+            var result = new List<string>(lines.Count);
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (!ShouldExcludeIlLine(lines[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
+                {
+                    result.Add(lines[i]);
+                }
+            }
+            return result;
         }
 
         /// <summary>

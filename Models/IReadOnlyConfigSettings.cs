@@ -10,6 +10,8 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public interface IReadOnlyConfigSettings
     {
+        // ── General / 一般 ──────────────────────────────────────────────────
+
         /// <summary>
         /// List of file extensions to ignore during comparison.
         /// 無視する拡張子のリスト。
@@ -24,6 +26,11 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>Maximum number of log generations to retain. / ログの最大世代数。</summary>
         int MaxLogGenerations { get; }
+
+        /// <summary>Console spinner frame strings. / コンソールスピナーのフレーム文字列リスト。</summary>
+        IReadOnlyList<string> SpinnerFrames { get; }
+
+        // ── Report output / レポート出力 ────────────────────────────────────
 
         /// <summary>Whether to include unchanged files in the report. / 差異なしのファイルをレポートに出力するか否か。</summary>
         bool ShouldIncludeUnchangedFiles { get; }
@@ -43,6 +50,14 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Whether to generate a structured JSON audit log. / 構造化 JSON 監査ログを生成するかどうか。</summary>
         bool ShouldGenerateAuditLog { get; }
 
+        /// <summary>Whether to include per-file timestamps in the report. / ファイルごとの更新日時をレポートに出力するか否か。</summary>
+        bool ShouldOutputFileTimestamps { get; }
+
+        /// <summary>Whether to warn when the new file's timestamp is older than the old file's. / new 側の更新日時が old 側より古い場合に警告を出すかどうか。</summary>
+        bool ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp { get; }
+
+        // ── IL comparison / IL 比較 ─────────────────────────────────────────
+
         /// <summary>Whether to output full IL text. / IL全文を出力するか否か。</summary>
         bool ShouldOutputILText { get; }
 
@@ -52,23 +67,10 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>List of strings to ignore in IL lines during comparison. / IL 比較時に無視対象とする文字列リスト。</summary>
         IReadOnlyList<string> ILIgnoreLineContainingStrings { get; }
 
-        /// <summary>Whether to include per-file timestamps in the report. / ファイルごとの更新日時をレポートに出力するか否か。</summary>
-        bool ShouldOutputFileTimestamps { get; }
+        /// <summary>Whether to skip IL comparison for .NET assemblies. / .NET アセンブリの IL 比較をスキップするかどうか。</summary>
+        bool SkipIL { get; }
 
-        /// <summary>Whether to warn when the new file's timestamp is older than the old file's. / new 側の更新日時が old 側より古い場合に警告を出すかどうか。</summary>
-        bool ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp { get; }
-
-        /// <summary>Maximum degree of parallelism for file comparison. / ファイル比較処理の最大並列度。</summary>
-        int MaxParallelism { get; }
-
-        /// <summary>Size threshold (KiB) for parallel text diff. / テキスト差分の並列切替閾値（KiB）。</summary>
-        int TextDiffParallelThresholdKilobytes { get; }
-
-        /// <summary>Chunk size (KiB) for parallel text diff. / テキスト差分の並列チャンクサイズ（KiB）。</summary>
-        int TextDiffChunkSizeKilobytes { get; }
-
-        /// <summary>Additional buffer budget (MB) for parallel text diff. / テキスト差分の並列バッファ予算（MB）。</summary>
-        int TextDiffParallelMemoryLimitMegabytes { get; }
+        // ── IL cache / IL キャッシュ ────────────────────────────────────────
 
         /// <summary>Whether to cache IL disassembly results. / IL 逆アセンブル結果をキャッシュするか。</summary>
         bool EnableILCache { get; }
@@ -91,11 +93,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Batch size for IL precomputation. / IL 事前計算のバッチサイズ。</summary>
         int ILPrecomputeBatchSize { get; }
 
-        /// <summary>Whether to optimize for network shares. / ネットワーク共有に最適化するかどうか。</summary>
-        bool OptimizeForNetworkShares { get; }
-
-        /// <summary>Whether to auto-detect network shares. / ネットワーク共有を自動検出するかどうか。</summary>
-        bool AutoDetectNetworkShares { get; }
+        // ── Disassembler / 逆アセンブラ ─────────────────────────────────────
 
         /// <summary>Blacklist TTL (minutes) for disassembler tools. / 逆アセンブラツールのブラックリスト有効期間（分）。</summary>
         int DisassemblerBlacklistTtlMinutes { get; }
@@ -103,8 +101,29 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Timeout (seconds) for each disassembler process. 0 = no timeout. / 逆アセンブラプロセスのタイムアウト（秒）。0 = 無制限。</summary>
         int DisassemblerTimeoutSeconds { get; }
 
-        /// <summary>Whether to skip IL comparison for .NET assemblies. / .NET アセンブリの IL 比較をスキップするかどうか。</summary>
-        bool SkipIL { get; }
+        // ── Parallelism / 並列処理 ──────────────────────────────────────────
+
+        /// <summary>Maximum degree of parallelism for file comparison. / ファイル比較処理の最大並列度。</summary>
+        int MaxParallelism { get; }
+
+        /// <summary>Size threshold (KiB) for parallel text diff. / テキスト差分の並列切替閾値（KiB）。</summary>
+        int TextDiffParallelThresholdKilobytes { get; }
+
+        /// <summary>Chunk size (KiB) for parallel text diff. / テキスト差分の並列チャンクサイズ（KiB）。</summary>
+        int TextDiffChunkSizeKilobytes { get; }
+
+        /// <summary>Additional buffer budget (MB) for parallel text diff. / テキスト差分の並列バッファ予算（MB）。</summary>
+        int TextDiffParallelMemoryLimitMegabytes { get; }
+
+        // ── Network / ネットワーク ──────────────────────────────────────────
+
+        /// <summary>Whether to optimize for network shares. / ネットワーク共有に最適化するかどうか。</summary>
+        bool OptimizeForNetworkShares { get; }
+
+        /// <summary>Whether to auto-detect network shares. / ネットワーク共有を自動検出するかどうか。</summary>
+        bool AutoDetectNetworkShares { get; }
+
+        // ── Inline diff / インライン差分 ────────────────────────────────────
 
         /// <summary>Whether to display inline diffs in the HTML report. / HTML レポートにインライン差分を表示するかどうか。</summary>
         bool EnableInlineDiff { get; }
@@ -123,8 +142,5 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>Whether to lazy-render inline diffs. / インライン差分を遅延レンダリングするかどうか。</summary>
         bool InlineDiffLazyRender { get; }
-
-        /// <summary>Console spinner frame strings. / コンソールスピナーのフレーム文字列リスト。</summary>
-        IReadOnlyList<string> SpinnerFrames { get; }
     }
 }
