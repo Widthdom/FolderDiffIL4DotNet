@@ -1954,6 +1954,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static ConfigSettings CreateConfig(bool enableInlineDiff = true, bool lazyRender = false) => CreateConfigBuilder(enableInlineDiff, lazyRender).Build();
 
+        /// <summary>
+        /// Verifies that the generated HTML includes the downloadExcelCompatibleHtml function
+        /// for exporting an Excel-compatible HTML table from the reviewed report.
+        /// reviewed レポートから Excel 互換 HTML テーブルをエクスポートする
+        /// downloadExcelCompatibleHtml 関数が生成 HTML に含まれることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsExcelCompatibleHtmlExportFunction()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("excel-export");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: JS contains downloadExcelCompatibleHtml function / JS に downloadExcelCompatibleHtml 関数が含まれることを検証
+            Assert.Contains("function downloadExcelCompatibleHtml()", html);
+            Assert.Contains("function buildExcelRow(tr)", html);
+            Assert.Contains("_reviewed_Excel-compatible.html", html);
+        }
+
+        /// <summary>
+        /// Verifies that the Excel export button is placed inside the reviewed banner (via JS),
+        /// not inside the CTRL markers of the original report.
+        /// Excel エクスポートボタンが CTRL マーカー内ではなく、JS による reviewed バナー内に
+        /// 配置されることを確認する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ExcelExportButton_NotInCtrlMarkers()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("excel-btn-ctrl");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // The CTRL section should NOT contain the Excel export button (it is in the reviewed banner only)
+            // CTRL セクションには Excel エクスポートボタンを含まないことを検証（reviewed バナーのみ）
+            int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
+            int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
+            Assert.True(ctrlStart >= 0, "<!--CTRL--> marker not found");
+            Assert.True(ctrlEnd > ctrlStart, "<!--/CTRL--> marker not found");
+            string ctrlSection = html[ctrlStart..ctrlEnd];
+            Assert.DoesNotContain("downloadExcelCompatibleHtml", ctrlSection);
+
+            // But the function exists in JS (outside CTRL) / JS 内（CTRL 外）に関数が存在することを検証
+            Assert.Contains("downloadExcelCompatibleHtml", html);
+        }
+
         private static ReportGenerationContext CreateReportContext(
             string oldDir, string newDir, string reportDir,
             ConfigSettings config, ILCache? ilCache = null)

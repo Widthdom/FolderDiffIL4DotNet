@@ -115,7 +115,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  </div>");
             sb.AppendLine("  <div class=\"ctrl-actions\">");
             sb.AppendLine("    <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
-            sb.AppendLine("    <button class=\"btn\" onclick=\"downloadExcel()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><rect x=\"1\" y=\"1\" width=\"14\" height=\"14\" rx=\"1.5\"/><line x1=\"1\" y1=\"5\" x2=\"15\" y2=\"5\"/><line x1=\"1\" y1=\"9\" x2=\"15\" y2=\"9\"/><line x1=\"6\" y1=\"1\" x2=\"6\" y2=\"15\"/><line x1=\"11\" y1=\"1\" x2=\"11\" y2=\"15\"/></svg> " + HtmlEncode("Export as Excel-compatible HTML") + "</button>");
             sb.AppendLine("    <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
             sb.AppendLine("    <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
             sb.AppendLine("    <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");

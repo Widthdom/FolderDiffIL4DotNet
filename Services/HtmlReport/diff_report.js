@@ -178,6 +178,7 @@
       + ' <button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
       + ' <button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
       + ' <button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
+      + ' <button class="btn" onclick="downloadExcelCompatibleHtml()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><rect x="1" y="1" width="14" height="14" rx="1.5"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="9" x2="15" y2="9"/><line x1="6" y1="1" x2="6" y2="15"/><line x1="11" y1="1" x2="11" y2="15"/></svg> Download as Excel-compatible HTML</button>'
       + '</div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
@@ -684,7 +685,7 @@
   // ── Excel export ────────────────────────────────────────────────────
   // Generates an Excel-compatible HTML table file from the current report data.
   // 現在のレポートデータから Excel 互換 HTML テーブルファイルを生成します。
-  function downloadExcel() {
+  function downloadExcelCompatibleHtml() {
     // Force-decode all lazy sections to capture all data / 全lazyセクションを強制デコードしデータを取得
     forceDecodeLazySections();
 

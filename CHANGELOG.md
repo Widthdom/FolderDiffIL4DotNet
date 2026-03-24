@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Excel-compatible HTML export from reviewed report** — Added a "Download as Excel-compatible HTML" button to the reviewed HTML report banner. When clicked, it generates a separate `diff_report_YYYYMMDD_reviewed_Excel-compatible.html` file containing a simplified HTML `<table>` with Excel XML namespace declarations (`xmlns:x="urn:schemas-microsoft-com:office:excel"`), allowing the file to be opened directly in Microsoft Excel as a spreadsheet. The exported table includes: report header metadata, all file sections (Ignored, Unchanged, Added, Removed, Modified, Warnings) with color-coded section headers matching the original report, per-file review state (checkbox status, justification, notes), and a summary section. Inline diffs are excluded for clean tabular output. The button appears only in the reviewed HTML (not in the original `diff_report.html`), following the workflow: `diff_report.html` → `Download as reviewed` → `reviewed.html` → `Download as Excel-compatible HTML` → `Excel-compatible.html`. New JS functions: `downloadExcelCompatibleHtml()`, `buildExcelRow()`, `esc()` in [`diff_report.js`](Services/HtmlReport/diff_report.js). Updated [`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs) (CTRL button removal), [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added 2 tests in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs): `GenerateDiffReportHtml_ContainsExcelCompatibleHtmlExportFunction`, `GenerateDiffReportHtml_ExcelExportButton_NotInCtrlMarkers`.
+
 ### [1.9.0] - 2026-03-24
 
 #### Added
@@ -657,6 +661,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **レビュー済みレポートからの Excel 互換 HTML エクスポート** — レビュー済み HTML レポートのバナーに「Download as Excel-compatible HTML」ボタンを追加。クリックすると、Excel XML 名前空間宣言（`xmlns:x="urn:schemas-microsoft-com:office:excel"`）を含む簡素な HTML `<table>` 形式の `diff_report_YYYYMMDD_reviewed_Excel-compatible.html` ファイルが生成され、Microsoft Excel で直接スプレッドシートとして開くことが可能。エクスポートされるテーブルには、レポートヘッダーメタデータ、全ファイルセクション（Ignored、Unchanged、Added、Removed、Modified、Warnings）の色分けされたセクションヘッダー、ファイルごとのレビュー状態（チェックボックス、理由、メモ）、サマリーセクションが含まれる。インライン差分はクリーンな表形式出力のため除外。ボタンは reviewed HTML のみに表示（元の `diff_report.html` には非表示）。ワークフロー：`diff_report.html` → `Download as reviewed` → `reviewed.html` → `Download as Excel-compatible HTML` → `Excel-compatible.html`。新規 JS 関数：`downloadExcelCompatibleHtml()`、`buildExcelRow()`、`esc()`（[`diff_report.js`](Services/HtmlReport/diff_report.js)）。更新ファイル：[`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。テスト 2 件追加（[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs)）：`GenerateDiffReportHtml_ContainsExcelCompatibleHtmlExportFunction`、`GenerateDiffReportHtml_ExcelExportButton_NotInCtrlMarkers`。
 
 ### [1.9.0] - 2026-03-24
 
