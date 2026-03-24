@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Refactor `ProgramRunner` into focused partial files** — Extracted CLI help text to [`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs) and config loading/validation/CLI override methods to [`Runner/ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs). The main [`ProgramRunner.cs`](ProgramRunner.cs) now focuses on orchestration only (~370 lines, down from 506). No behavioral changes. Affected files: [`ProgramRunner.cs`](ProgramRunner.cs), [`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs), [`Runner/ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md).
+
+- **Refactor `ConfigSettings` into category-based partial files** — Split the 40+ property monolithic [`ConfigSettings.cs`](Models/ConfigSettings.cs) (404 lines) into focused partial files by setting category: [`ConfigSettings.ReportSettings.cs`](Models/ConfigSettings.ReportSettings.cs) (report output control), [`ConfigSettings.ILSettings.cs`](Models/ConfigSettings.ILSettings.cs) (IL comparison, cache, disassembler), [`ConfigSettings.DiffSettings.cs`](Models/ConfigSettings.DiffSettings.cs) (parallelism, network, inline diff). Reorganized [`IReadOnlyConfigSettings.cs`](Models/IReadOnlyConfigSettings.cs) with category section comments. No behavioral changes. Affected files: [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs), [`Models/ConfigSettings.ReportSettings.cs`](Models/ConfigSettings.ReportSettings.cs), [`Models/ConfigSettings.ILSettings.cs`](Models/ConfigSettings.ILSettings.cs), [`Models/ConfigSettings.DiffSettings.cs`](Models/ConfigSettings.DiffSettings.cs), [`Models/IReadOnlyConfigSettings.cs`](Models/IReadOnlyConfigSettings.cs), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md).
+
 ### [1.8.1] - 2026-03-24
 
 #### Performance
@@ -615,6 +621,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **`ProgramRunner` を責務別の部分ファイルへリファクタリング** — CLI ヘルプテキストを [`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs) に、設定読込・バリデーション・CLI オーバーライドメソッドを [`Runner/ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs) に分離。メインの [`ProgramRunner.cs`](ProgramRunner.cs) はオーケストレーションのみに集中（506 行→約 370 行）。動作変更なし。影響ファイル: [`ProgramRunner.cs`](ProgramRunner.cs), [`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs), [`Runner/ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)。
+
+- **`ConfigSettings` をカテゴリ別の部分ファイルへリファクタリング** — 40 以上のプロパティを持つモノリシックな [`ConfigSettings.cs`](Models/ConfigSettings.cs)（404 行）を設定カテゴリごとの部分ファイルに分割: [`ConfigSettings.ReportSettings.cs`](Models/ConfigSettings.ReportSettings.cs)（レポート出力制御）、[`ConfigSettings.ILSettings.cs`](Models/ConfigSettings.ILSettings.cs)（IL 比較・キャッシュ・逆アセンブラ）、[`ConfigSettings.DiffSettings.cs`](Models/ConfigSettings.DiffSettings.cs)（並列処理・ネットワーク・インライン差分）。[`IReadOnlyConfigSettings.cs`](Models/IReadOnlyConfigSettings.cs) にカテゴリ別セクションコメントを追加。動作変更なし。影響ファイル: [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs), [`Models/ConfigSettings.ReportSettings.cs`](Models/ConfigSettings.ReportSettings.cs), [`Models/ConfigSettings.ILSettings.cs`](Models/ConfigSettings.ILSettings.cs), [`Models/ConfigSettings.DiffSettings.cs`](Models/ConfigSettings.DiffSettings.cs), [`Models/IReadOnlyConfigSettings.cs`](Models/IReadOnlyConfigSettings.cs), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)。
 
 ### [1.8.1] - 2026-03-24
 
