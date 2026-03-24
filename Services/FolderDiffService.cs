@@ -17,6 +17,7 @@ namespace FolderDiffIL4DotNet.Services
     public sealed partial class FolderDiffService : IFolderDiffService
     {
         private const string SPINNER_LABEL_FOLDER_DIFF = "Diffing folders";
+        private const string SPINNER_LABEL_DISCOVERING_FILES = "Discovering files";
         private const string SPINNER_LABEL_SCANNING_ASSEMBLIES = "Scanning assemblies";
         private const string LOG_NETWORK_OPTIMIZED_SKIP_IL = $"Network-optimized mode: skip {Constants.LABEL_IL} precompute to reduce network I/O.";
         private const string LOG_FOLDER_DIFF_COMPLETED = "Folder diff completed.";
@@ -137,8 +138,6 @@ namespace FolderDiffIL4DotNet.Services
             var folderDiffCompleted = false;
             try
             {
-                _progressReporter.ReportProgress(0.0);
-
                 EnumerateAllFiles();
 
                 var totalFilesRelativePathCount = _executionStrategy.ComputeUnionFileCount(
@@ -150,7 +149,6 @@ namespace FolderDiffIL4DotNet.Services
                     folderDiffCompleted = true;
                     return;
                 }
-                _progressReporter.ReportProgress(0.0);
 
                 var maxParallel = _executionStrategy.DetermineMaxParallel();
                 LogDiscoveryStats(totalFilesRelativePathCount, maxParallel);
@@ -245,10 +243,17 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private void EnumerateAllFiles()
         {
+            // Show a dedicated "Discovering files" phase so the user sees progress during file enumeration.
+            // ファイル列挙中にユーザーへ進捗を示すため、専用の「Discovering files」フェーズを表示する。
+            _progressReporter.ResetProgress();
+            _progressReporter.SetLabel(SPINNER_LABEL_DISCOVERING_FILES);
+            _progressReporter.ReportProgress(0.0);
+
             _fileDiffResultLists.SetOldFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_oldFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.Old));
-            _progressReporter.ReportProgress(0.0);
+            _progressReporter.ReportProgress(50.0);
+
             _fileDiffResultLists.SetNewFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_newFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.New));
-            _progressReporter.ReportProgress(0.0);
+            _progressReporter.ReportProgress(100.0);
         }
 
         /// <summary>
@@ -261,7 +266,6 @@ namespace FolderDiffIL4DotNet.Services
                 AppLogLevel.Info,
                 $"Parallel diff processing: maxParallel={maxParallel} (configured={_config.MaxParallelism}, OptimizeForNetworkShares={_optimizeForNetworkShares}, logical processors={Environment.ProcessorCount})",
                 shouldOutputMessageToConsole: true);
-            _progressReporter.ReportProgress(0.0);
 
             int oldCount = _fileDiffResultLists.OldFilesAbsolutePath.Count;
             int newCount = _fileDiffResultLists.NewFilesAbsolutePath.Count;
