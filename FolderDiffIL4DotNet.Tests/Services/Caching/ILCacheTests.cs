@@ -643,18 +643,18 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
                 ilCacheMaxDiskFileCount: 0, ilCacheMaxDiskMegabytes: 1);
             var tool = "tool";
 
-            // Write multiple ~400KB entries to exceed 1 MB limit
-            // 複数の ~400KB エントリを書き込み 1 MB 制限を超過させる
+            // Write multiple ~500KB entries to clearly exceed 1 MB limit
+            // 複数の ~500KB エントリを書き込み 1 MB 制限を明確に超過させる
             for (int i = 0; i < 5; i++)
             {
                 var file = CreateTestFile($"bytesonly-{i}.dll", $"bytes-content-{i}");
-                await cache.SetILAsync(file, tool, new string('Z', 200_000));
+                await cache.SetILAsync(file, tool, new string('Z', 500_000));
                 await Task.Delay(50);
             }
 
             var cacheFiles = Directory.GetFiles(_cacheDir, "*.ilcache");
-            // Some files should have been trimmed by the bytes quota
-            // バイトクォータにより一部のファイルがトリミングされているはず
+            // Some files should have been trimmed by the bytes quota (5 * 500KB = 2.5MB > 1MB)
+            // バイトクォータにより一部のファイルがトリミングされているはず（5 * 500KB = 2.5MB > 1MB）
             Assert.True(cacheFiles.Length < 5, $"Expected fewer than 5 cache files after byte trim, got {cacheFiles.Length}");
         }
 

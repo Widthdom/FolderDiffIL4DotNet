@@ -1424,7 +1424,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.NewService", "", "public", "", "Class", "", "", "", "", ""),
+                    // Importance must be set explicitly; Classify is not called by the report service
+                    // 重要度は明示的に設定する必要がある（レポートサービスは Classify を呼ばない）
+                    new("Added", "MyApp.NewService", "", "public", "", "Class", "", "", "", "", "", ChangeImportance.Medium),
                 },
             };
 
