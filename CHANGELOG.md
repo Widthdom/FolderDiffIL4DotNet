@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.9.0] - 2026-03-24
+
 #### Added
 
 - **Performance regression detection in CI (`benchmark-regression.yml`)** — Added a new GitHub Actions workflow [`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) that automatically runs BenchmarkDotNet benchmarks on every PR to `main` and on `push` to `main`. On push to `main`, benchmark results are stored in the `gh-benchmarks` branch as the baseline. On PRs, results are compared against the stored baseline using [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) with a `150%` alert threshold (50% degradation triggers failure). The workflow combines JSON results from all benchmark classes (`TextDifferBenchmarks`, `FolderDiffBenchmarks`) into a single combined report via a Python merge step. PR comments are posted when regressions are detected. Added `BenchmarkRegressionWorkflow_DetectsPerformanceDegradation` test in [`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) to verify workflow structure. Test count: 678 → 679 (EN), 679 → 680 (JA). Affected files: [`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml), [`CiAutomationConfigurationTests.cs`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs).
@@ -656,6 +658,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.9.0] - 2026-03-24
+
 #### Added
 
 - **CI でのパフォーマンスリグレッション検知 (`benchmark-regression.yml`)** — `main` への PR および `push` のたびに BenchmarkDotNet ベンチマークを自動実行する GitHub Actions ワークフロー [`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) を追加。`main` への push 時にベンチマーク結果を `gh-benchmarks` ブランチにベースラインとして保存。PR 時には [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用してベースラインと比較し、`150%` の閾値（50% の劣化）を超えるとジョブが失敗する。全ベンチマーククラス（`TextDifferBenchmarks`、`FolderDiffBenchmarks`）の JSON 結果を Python マージステップで単一の結合レポートに統合。リグレッション検知時に PR コメントを投稿する。[`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) に `BenchmarkRegressionWorkflow_DetectsPerformanceDegradation` テストを追加してワークフロー構造を検証。テスト件数: 678 → 679（EN）、679 → 680（JA）。影響ファイル: [`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml)、[`CiAutomationConfigurationTests.cs`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs)。
@@ -1301,7 +1305,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.6.0...v1.7.0
