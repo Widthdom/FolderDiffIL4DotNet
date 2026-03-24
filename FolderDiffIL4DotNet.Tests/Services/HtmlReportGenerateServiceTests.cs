@@ -2523,6 +2523,53 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("downloadExcelCompatibleHtml", html);
         }
 
+        /// <summary>
+        /// Verifies that the downloadAsPdf function exists in JS and its button reference is not in CTRL markers.
+        /// downloadAsPdf 関数が JS に存在し、ボタン参照が CTRL マーカー内にないことを検証する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_PdfExportButton_NotInCtrlMarkers()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("pdf-btn-ctrl");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // The CTRL section should NOT contain the PDF export button (it is in the reviewed banner only)
+            // CTRL セクションには PDF エクスポートボタンを含まないことを検証（reviewed バナーのみ）
+            int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
+            int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
+            Assert.True(ctrlStart >= 0, "<!--CTRL--> marker not found");
+            Assert.True(ctrlEnd > ctrlStart, "<!--/CTRL--> marker not found");
+            string ctrlSection = html[ctrlStart..ctrlEnd];
+            Assert.DoesNotContain("downloadAsPdf", ctrlSection);
+
+            // But the function exists in JS (outside CTRL) / JS 内（CTRL 外）に関数が存在することを検証
+            Assert.Contains("function downloadAsPdf()", html);
+        }
+
+        /// <summary>
+        /// Verifies that PDF print header/footer CSS classes exist in the embedded CSS.
+        /// PDF 印刷ヘッダー/フッター CSS クラスが埋め込み CSS に存在することを検証する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_ContainsPdfPrintCssClasses()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("pdf-css");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // PDF print header/footer CSS classes should be embedded / PDF 印刷用 CSS クラスが埋め込まれていること
+            Assert.Contains(".pdf-print-header", html);
+            Assert.Contains(".pdf-print-footer", html);
+            Assert.Contains("pdf-print-mode", html);
+        }
+
         private static ReportGenerationContext CreateReportContext(
             string oldDir, string newDir, string reportDir,
             ConfigSettings config, ILCache? ilCache = null)

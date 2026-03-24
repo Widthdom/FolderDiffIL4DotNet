@@ -358,6 +358,8 @@
     table.diff-table.sbs-mode td.sbs-new { width: 45%; background: #e6ffed; color: #22863a; }
     table.diff-table.sbs-mode td.sbs-ctx { background: #fff; color: #24292e; }
     table.diff-table.sbs-mode td.sbs-empty { background: #f6f8fa; }
+    /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
+    .pdf-print-header, .pdf-print-footer { display: none; }
     /* ── Print styles / 印刷スタイル ───────────────────────────────────── */
     @media print {
       /* Hide interactive controls / インタラクティブコントロールを非表示 */
@@ -394,4 +396,19 @@
       tr.diff-add-tr, td.diff-add-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       tr.diff-hunk-tr, td.diff-hunk-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       td.col-status { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      /* ── PDF-mode header / footer (shown only when body.pdf-print-mode) / PDF モード用ヘッダー・フッター ── */
+      body.pdf-print-mode { padding-top: 1.4cm; padding-bottom: 1.2cm; }
+      body.pdf-print-mode .pdf-print-header {
+        display: block !important; position: fixed; top: 0; left: 0; right: 0;
+        padding: 0.3cm 1.5cm; font-size: 8px; color: #555; border-bottom: 0.5px solid #ccc;
+        background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; z-index: 9999;
+      }
+      body.pdf-print-mode .pdf-print-footer {
+        display: block !important; position: fixed; bottom: 0; left: 0; right: 0;
+        padding: 0.3cm 1.5cm; font-size: 8px; color: #555; border-top: 0.5px solid #ccc;
+        background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; z-index: 9999;
+      }
+      body.pdf-print-mode .pdf-print-header { display: flex !important; justify-content: space-between; align-items: center; }
+      body.pdf-print-mode .pdf-print-footer { display: flex !important; justify-content: space-between; align-items: center; }
+      body.pdf-print-mode .reviewed-banner { display: none !important; }
     }
