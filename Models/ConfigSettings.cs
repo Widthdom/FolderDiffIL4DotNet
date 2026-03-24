@@ -36,12 +36,18 @@ namespace FolderDiffIL4DotNet.Models
     /// <summary>
     /// Immutable model class that holds settings from config.json.
     /// Constructed exclusively via <see cref="ConfigSettingsBuilder.Build"/>.
+    /// Category-specific defaults and properties are in partial files:
+    /// <c>ConfigSettings.ReportSettings.cs</c>, <c>ConfigSettings.ILSettings.cs</c>,
+    /// <c>ConfigSettings.DiffSettings.cs</c>.
     /// config.json の設定を保持するイミュータブルなモデルクラス。
     /// <see cref="ConfigSettingsBuilder.Build"/> を経由してのみ構築されます。
+    /// カテゴリ別のデフォルト値・プロパティは部分ファイルに分割:
+    /// <c>ConfigSettings.ReportSettings.cs</c>、<c>ConfigSettings.ILSettings.cs</c>、
+    /// <c>ConfigSettings.DiffSettings.cs</c>。
     /// </summary>
-    public sealed class ConfigSettings : IReadOnlyConfigSettings
+    public sealed partial class ConfigSettings : IReadOnlyConfigSettings
     {
-        // ── Numeric defaults / 数値デフォルト ──────────────────────────────
+        // ── General defaults / 一般デフォルト ────────────────────────────────
         /// <summary>Default value for <see cref="MaxLogGenerations"/>. / <see cref="MaxLogGenerations"/> の既定値。</summary>
         public const int DefaultMaxLogGenerations = 5;
         /// <summary>Default value for <see cref="MaxParallelism"/>. / <see cref="MaxParallelism"/> の既定値。</summary>
@@ -111,6 +117,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="InlineDiffLazyRender"/>. / <see cref="InlineDiffLazyRender"/> の既定値。</summary>
         public const bool DefaultInlineDiffLazyRender = true;
 
+        // ── Collection defaults / コレクションデフォルト ─────────────────────
         internal static readonly string[] DefaultIgnoredExtensionsValues =
         {
             ".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"
@@ -136,9 +143,13 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         internal ConfigSettings(ConfigSettingsBuilder builder)
         {
+            // General / 一般
             IgnoredExtensions = builder.IgnoredExtensions.AsReadOnly();
             TextFileExtensions = builder.TextFileExtensions.AsReadOnly();
             MaxLogGenerations = builder.MaxLogGenerations;
+            SpinnerFrames = builder.SpinnerFrames.AsReadOnly();
+
+            // Report / レポート
             ShouldIncludeUnchangedFiles = builder.ShouldIncludeUnchangedFiles;
             ShouldIncludeIgnoredFiles = builder.ShouldIncludeIgnoredFiles;
             ShouldIncludeAssemblySemanticChangesInReport = builder.ShouldIncludeAssemblySemanticChangesInReport;
@@ -146,15 +157,16 @@ namespace FolderDiffIL4DotNet.Models
             ShouldIncludeILCacheStatsInReport = builder.ShouldIncludeILCacheStatsInReport;
             ShouldGenerateHtmlReport = builder.ShouldGenerateHtmlReport;
             ShouldGenerateAuditLog = builder.ShouldGenerateAuditLog;
+            ShouldOutputFileTimestamps = builder.ShouldOutputFileTimestamps;
+            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp;
+
+            // IL comparison / IL 比較
             ShouldOutputILText = builder.ShouldOutputILText;
             ShouldIgnoreILLinesContainingConfiguredStrings = builder.ShouldIgnoreILLinesContainingConfiguredStrings;
             ILIgnoreLineContainingStrings = builder.ILIgnoreLineContainingStrings.AsReadOnly();
-            ShouldOutputFileTimestamps = builder.ShouldOutputFileTimestamps;
-            ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp;
-            MaxParallelism = builder.MaxParallelism;
-            TextDiffParallelThresholdKilobytes = builder.TextDiffParallelThresholdKilobytes;
-            TextDiffChunkSizeKilobytes = builder.TextDiffChunkSizeKilobytes;
-            TextDiffParallelMemoryLimitMegabytes = builder.TextDiffParallelMemoryLimitMegabytes;
+            SkipIL = builder.SkipIL;
+
+            // IL cache / IL キャッシュ
             EnableILCache = builder.EnableILCache;
             ILCacheDirectoryAbsolutePath = builder.ILCacheDirectoryAbsolutePath;
             ILCacheStatsLogIntervalSeconds = builder.ILCacheStatsLogIntervalSeconds;
@@ -162,19 +174,31 @@ namespace FolderDiffIL4DotNet.Models
             ILCacheMaxDiskMegabytes = builder.ILCacheMaxDiskMegabytes;
             ILCacheMaxMemoryMegabytes = builder.ILCacheMaxMemoryMegabytes;
             ILPrecomputeBatchSize = builder.ILPrecomputeBatchSize;
-            OptimizeForNetworkShares = builder.OptimizeForNetworkShares;
-            AutoDetectNetworkShares = builder.AutoDetectNetworkShares;
+
+            // Disassembler / 逆アセンブラ
             DisassemblerBlacklistTtlMinutes = builder.DisassemblerBlacklistTtlMinutes;
             DisassemblerTimeoutSeconds = builder.DisassemblerTimeoutSeconds;
-            SkipIL = builder.SkipIL;
+
+            // Parallelism / 並列処理
+            MaxParallelism = builder.MaxParallelism;
+            TextDiffParallelThresholdKilobytes = builder.TextDiffParallelThresholdKilobytes;
+            TextDiffChunkSizeKilobytes = builder.TextDiffChunkSizeKilobytes;
+            TextDiffParallelMemoryLimitMegabytes = builder.TextDiffParallelMemoryLimitMegabytes;
+
+            // Network / ネットワーク
+            OptimizeForNetworkShares = builder.OptimizeForNetworkShares;
+            AutoDetectNetworkShares = builder.AutoDetectNetworkShares;
+
+            // Inline diff / インライン差分
             EnableInlineDiff = builder.EnableInlineDiff;
             InlineDiffContextLines = builder.InlineDiffContextLines;
             InlineDiffMaxEditDistance = builder.InlineDiffMaxEditDistance;
             InlineDiffMaxDiffLines = builder.InlineDiffMaxDiffLines;
             InlineDiffMaxOutputLines = builder.InlineDiffMaxOutputLines;
             InlineDiffLazyRender = builder.InlineDiffLazyRender;
-            SpinnerFrames = builder.SpinnerFrames.AsReadOnly();
         }
+
+        // ── General properties / 一般プロパティ ─────────────────────────────
 
         /// <summary>
         /// List of file extensions to ignore during comparison.
