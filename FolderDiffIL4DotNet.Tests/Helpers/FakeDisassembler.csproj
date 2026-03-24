@@ -10,4 +10,8 @@
     <!-- Output to the same directory as the test project so dotnet build automatically copies it -->
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Exclude test helpers that depend on the main project / メインプロジェクトに依存するテストヘルパーを除外 -->
+    <Compile Remove="TestLogger.cs" />
+  </ItemGroup>
 </Project>
