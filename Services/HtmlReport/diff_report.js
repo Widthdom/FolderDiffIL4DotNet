@@ -784,7 +784,7 @@
       var txtColor = sectionTextColors[sec] || '#000';
       var name = sectionNames[sec] || sec;
       var sectionRows = document.querySelectorAll('tbody > tr[data-section="' + sec + '"]');
-      var h = bannerRow(name + ' (' + sectionRows.length + ')', txtColor, 'font-weight:bold;font-size:14px;padding:8px');
+      var h = bannerRow(name + ' (' + sectionRows.length + ')', txtColor, 'font-weight:bold;padding:8px');
       h += colHeaderRow(bgColor);
       sectionRows.forEach(function(tr) { h += buildExcelRow(tr); });
       h += emptyRow();
@@ -796,7 +796,7 @@
     // Build legend section / 凡例セクションを構築
     var legendHtml = '';
     // Legend — Diff Detail / 凡例 — 判定根拠
-    legendHtml += bannerRow6('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;font-size:14px;padding:8px');
+    legendHtml += bannerRow6('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
     var diffLegend = [
       ['SHA256Match / SHA256Mismatch', 'Byte-for-byte match / mismatch (SHA256)'],
       ['ILMatch / ILMismatch', 'IL (Intermediate Language) match / mismatch'],
@@ -809,7 +809,7 @@
     });
     legendHtml += emptyRow();
     // Legend — Change Importance / 凡例 — 変更重要度
-    legendHtml += bannerRow6('Legend \u2014 Change Importance', '#000', 'font-weight:bold;font-size:14px;padding:8px');
+    legendHtml += bannerRow6('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
     var impLegend = [
       ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
       ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
@@ -826,7 +826,7 @@
     var summaryHtml = '';
     var statTable = document.querySelector('.stat-table');
     if (statTable) {
-      summaryHtml += bannerRow6('Summary', '#000', 'font-weight:bold;font-size:14px;padding:8px');
+      summaryHtml += bannerRow6('Summary', '#000', 'font-weight:bold;padding:8px');
       // Column header row for summary (same bg as Ignored Files header) / サマリーの列ヘッダー行（Ignored Files ヘッダーと同じ背景色）
       summaryHtml += '<tr>' + PAD6 + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
         + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>';
@@ -849,7 +849,7 @@
     // Build warning sections (placed after Summary) / 警告セクション（Summary の後に配置）
     var warningsHtml = '';
     if (warnSections.length > 0) {
-      warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;font-size:14px;padding:8px');
+      warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;padding:8px');
     }
     warnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
 
