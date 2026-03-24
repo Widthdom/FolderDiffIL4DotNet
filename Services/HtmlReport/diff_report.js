@@ -95,6 +95,7 @@
     var html    = document.documentElement.outerHTML;
     // Restore live page state / ライブページの状態を復元
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
+    applyFilters();
     syncTableWidths();
     // Embed state
     html = html.replace('const __savedState__  = null;',

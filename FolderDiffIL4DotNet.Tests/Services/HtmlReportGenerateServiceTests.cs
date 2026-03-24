@@ -1802,6 +1802,27 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_DownloadReviewed_RestoresFiltersAfterCapture()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("filter-restore");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: applyFilters() is called after outerHTML capture to restore live page filter state
+            // outerHTML キャプチャ後に applyFilters() が呼ばれ、ライブページのフィルタ状態が復元されることを検証
+            int outerHtmlIdx = html.IndexOf("document.documentElement.outerHTML", StringComparison.Ordinal);
+            int restoreComment = html.IndexOf("Restore live page state", StringComparison.Ordinal);
+            int applyFiltersIdx = html.IndexOf("applyFilters();", restoreComment, StringComparison.Ordinal);
+            Assert.True(restoreComment > outerHtmlIdx,
+                "Restore comment must appear after outerHTML capture");
+            Assert.True(applyFiltersIdx > outerHtmlIdx,
+                "applyFilters() must be called after outerHTML capture to restore live filter state");
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_HeaderShowsDisassemblerAvailabilityTable()
         {
             // Arrange: populate availability probe results
