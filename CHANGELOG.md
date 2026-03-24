@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **E2E integration tests for full folder diff → report generation pipeline** — Added 7 integration tests in [`FolderDiffReportE2ETests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffReportE2ETests.cs) that exercise the complete pipeline: folder diff → Markdown/HTML/audit log generation → output verification. Scenarios: full pipeline with all file categories (Added/Removed/Modified/Unchanged/Ignored), all-unchanged zero-change summary, subdirectory relative path preservation, parallel vs sequential classification consistency, audit log SHA256 hash verification, HTML interactive elements and section structure, inline diff content for modified text files. Test count: 678 → 691 (EN), 679 → 692 (JA). Affected files: [`FolderDiffReportE2ETests.cs`](FolderDiffIL4DotNet.Tests/Services/FolderDiffReportE2ETests.cs) (new), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md).
+
+- **Corrupted localStorage resilience tests for HTML report JavaScript** — Added 7 Jest/jsdom tests in [`diff_report.test.js`](JsTests/diff_report.test.js) covering corrupted localStorage scenarios: invalid JSON, empty string, null value, non-object JSON (array), localStorage quota exceeded (QuotaExceededError), non-existent element IDs in saved state, wrong type values (string for checkbox, number for text input). Verifies that DOMContentLoaded and autoSave never crash regardless of localStorage corruption. JS test count: 26 → 33. Affected files: [`diff_report.test.js`](JsTests/diff_report.test.js), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md).
+
+- **Enhanced disk-full IL cache write tests** — Added 6 tests in [`ILCacheDiskFailureTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/ILCacheDiskFailureTests.cs): disk quota enforcement (MaxDiskFileCount trimming), disk size limit trimming, rapid writes to read-only directory with memory fallback, zero-byte corrupted cache file handling, concurrent writes to invalid disk path with memory cache consistency. Test count: 678 → 691 (EN), 679 → 692 (JA). Affected files: [`ILCacheDiskFailureTests.cs`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/ILCacheDiskFailureTests.cs), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md).
+
+#### Fixed
+
+- **`autoSave()` and `DOMContentLoaded` resilience to corrupted localStorage** — Previously, `autoSave()` in `diff_report.js` called `localStorage.setItem()` without a try-catch, causing an unhandled `QuotaExceededError` when localStorage is full, which could break subsequent user interactions. Similarly, `DOMContentLoaded` and lazy-section restore code called `JSON.parse(localStorage.getItem(...))` without error handling, crashing the entire page initialization if localStorage contained corrupted (non-JSON) data. Added try-catch around all `localStorage.setItem()` calls in `autoSave()` and all `JSON.parse(localStorage.getItem(...))` calls in `DOMContentLoaded`, `setupLazyDiff`, and `setupLazySection`. Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) with the same fixes. Affected files: [`diff_report.js`](Services/HtmlReport/diff_report.js), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 ### [1.8.1] - 2026-03-24
 
 #### Performance
@@ -615,6 +627,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **フォルダ差分→レポート生成のフルパイプライン E2E 統合テスト** — [`FolderDiffReportE2ETests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffReportE2ETests.cs) に 7 件の統合テストを追加。フォルダ差分 → Markdown/HTML/監査ログ生成 → 出力検証のフルパイプラインを実行。シナリオ：全ファイルカテゴリ（Added/Removed/Modified/Unchanged/Ignored）、全ファイル変更なしのゼロ変更サマリー、サブディレクトリ相対パス保持、並列/逐次分類の整合性、監査ログ SHA256 ハッシュ検証、HTML インタラクティブ要素・セクション構造、変更テキストファイルへのインライン差分コンテンツ。テスト件数: 679 → 692 (JA)、678 → 691 (EN)。影響ファイル: [`FolderDiffReportE2ETests.cs`](FolderDiffIL4DotNet.Tests/Services/FolderDiffReportE2ETests.cs)（新規）、[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md)。
+
+- **HTML レポート JavaScript の破損 localStorage 耐性テスト** — [`diff_report.test.js`](JsTests/diff_report.test.js) に 7 件の Jest/jsdom テストを追加。破損 localStorage シナリオ：不正 JSON、空文字列、null 値、非オブジェクト JSON（配列）、localStorage 容量超過（QuotaExceededError）、保存状態内の存在しない要素 ID、型不一致値（チェックボックスに文字列、テキスト入力に数値）。localStorage の破損に関わらず DOMContentLoaded と autoSave がクラッシュしないことを検証。JS テスト件数: 26 → 33。影響ファイル: [`diff_report.test.js`](JsTests/diff_report.test.js)、[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md)。
+
+- **ディスクフル IL キャッシュ書き込みテストの拡充** — [`ILCacheDiskFailureTests`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/ILCacheDiskFailureTests.cs) に 6 件のテストを追加。ディスククォータ適用（MaxDiskFileCount トリミング）、ディスクサイズ制限トリミング、読み取り専用ディレクトリへの高速連続書き込みとメモリフォールバック、0バイト破損キャッシュファイル処理、無効ディスクパスへの並行書き込みとメモリキャッシュ整合性。テスト件数: 679 → 692 (JA)、678 → 691 (EN)。影響ファイル: [`ILCacheDiskFailureTests.cs`](FolderDiffIL4DotNet.Tests/Services/EdgeCases/ILCacheDiskFailureTests.cs)、[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md)。
+
+#### Fixed
+
+- **`autoSave()` と `DOMContentLoaded` の破損 localStorage 耐性** — 従来 `diff_report.js` の `autoSave()` は `localStorage.setItem()` を try-catch なしで呼び出しており、localStorage 満杯時に未処理の `QuotaExceededError` が発生し、以降のユーザー操作が中断される可能性があった。同様に `DOMContentLoaded` と遅延セクション復元のコードが `JSON.parse(localStorage.getItem(...))` をエラーハンドリングなしで呼び出しており、localStorage に不正な（非 JSON）データが含まれている場合にページ初期化全体がクラッシュしていた。`autoSave()` 内のすべての `localStorage.setItem()` 呼び出しと、`DOMContentLoaded`・`setupLazyDiff`・`setupLazySection` 内のすべての `JSON.parse(localStorage.getItem(...))` 呼び出しに try-catch を追加。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) にも同じ修正を適用。影響ファイル: [`diff_report.js`](Services/HtmlReport/diff_report.js)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。
 
 ### [1.8.1] - 2026-03-24
 

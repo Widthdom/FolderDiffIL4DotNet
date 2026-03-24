@@ -13,7 +13,10 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');
+    var toRestore = __savedState__;
+    if (!toRestore) {
+      try { toRestore = JSON.parse(localStorage.getItem(__storageKey__) || 'null'); } catch(e) { toRestore = null; }
+    }
     if (toRestore) {
       Object.entries(toRestore).forEach(function(entry) {
         var el = document.getElementById(entry[0]);
@@ -66,7 +69,12 @@
   }
 
   function autoSave() {
-    localStorage.setItem(__storageKey__, JSON.stringify(collectState()));
+    try {
+      localStorage.setItem(__storageKey__, JSON.stringify(collectState()));
+    } catch(e) {
+      // Gracefully handle localStorage quota exceeded or other storage errors
+      // localStorage 容量超過やその他のストレージエラーを安全に処理
+    }
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Auto-saved at ' + formatTs(new Date());
   }
@@ -263,7 +271,8 @@
             });
           }
           // Restore state for new inputs
-          var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');
+          var toRestore = __savedState__;
+          if (!toRestore) { try { toRestore = JSON.parse(localStorage.getItem(__storageKey__) || 'null'); } catch(e) { toRestore = null; } }
           if (toRestore) {
             d.querySelectorAll('input[id]').forEach(function(el) {
               if (el.id in toRestore) {
@@ -306,7 +315,8 @@
             });
           }
           // Restore state for new inputs / 新規inputの状態を復元
-          var toRestore = __savedState__ || JSON.parse(localStorage.getItem(__storageKey__) || 'null');
+          var toRestore = __savedState__;
+          if (!toRestore) { try { toRestore = JSON.parse(localStorage.getItem(__storageKey__) || 'null'); } catch(e) { toRestore = null; } }
           if (toRestore) {
             d.querySelectorAll('input[id], textarea[id]').forEach(function(el) {
               if (toRestore[el.id] === undefined) return;
