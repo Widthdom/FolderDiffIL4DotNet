@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -182,12 +183,18 @@ namespace FolderDiffIL4DotNet.Services
 
             sb.AppendLine("</main>");
 
-            // Calculate total reviewable files for progress bar / プログレスバー用のレビュー対象ファイル総数を算出
+            // Calculate total reviewable files for progress bar (Added + Removed + Modified + Warning sections)
+            // Unchanged/Ignored are excluded — they don't require active review.
+            // プログレスバー用のレビュー対象ファイル総数を算出（Added + Removed + Modified + Warningsセクション）
+            // Unchanged/Ignoredはアクティブなレビュー不要のため除外。
+            int sha256WarnCount = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
+                .Values.Count(r => r == FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            int tsWarnCount = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Count;
             int totalFiles = _fileDiffResultLists.AddedFilesAbsolutePath.Count
                 + _fileDiffResultLists.RemovedFilesAbsolutePath.Count
                 + _fileDiffResultLists.ModifiedFilesRelativePath.Count
-                + (config.ShouldIncludeUnchangedFiles ? _fileDiffResultLists.UnchangedFilesRelativePath.Count : 0)
-                + (config.ShouldIncludeIgnoredFiles ? _fileDiffResultLists.IgnoredFilesRelativePathToLocation.Count : 0);
+                + sha256WarnCount
+                + tsWarnCount;
             AppendJs(sb, storageKey, reportDate, totalFiles);
             sb.AppendLine("</body>");
             sb.AppendLine("</html>");

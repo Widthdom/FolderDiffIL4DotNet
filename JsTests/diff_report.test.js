@@ -530,13 +530,32 @@ describe('updateProgress', () => {
         <input type="checkbox" id="cb_add_0" checked>
         <input type="checkbox" id="cb_mod_0">
         <input type="checkbox" id="cb_rem_0" checked>
-        <input type="checkbox" id="cb_unch_0">
+        <input type="checkbox" id="cb_sha256w_0">
       `,
     });
     fireDOMContentLoaded();
 
     expect(document.getElementById('progress-bar-fill').style.width).toBe('50%');
     expect(document.getElementById('progress-text').textContent).toBe('2 / 4 reviewed');
+  });
+
+  it('excludes unchanged and ignored checkboxes from count', () => {
+    loadScript({
+      totalFiles: 2,
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0" checked>
+        <input type="checkbox" id="cb_unch_0" checked>
+        <input type="checkbox" id="cb_ign_0" checked>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    // cb_unch_0 and cb_ign_0 are excluded — only cb_add_0 + cb_mod_0 counted
+    // cb_unch_0 と cb_ign_0 は除外 — cb_add_0 + cb_mod_0 のみカウント
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 2 reviewed');
   });
 
   it('adds complete class when all files are reviewed', () => {
@@ -578,12 +597,12 @@ describe('updateProgress', () => {
         <input type="checkbox" id="cb_add_0" checked>
       `,
     });
-    // Simulate lazy-loaded checkbox state in localStorage
-    // 遅延ロードセクションのチェックボックス状態をlocalStorageでシミュレート
-    localStorage.setItem('test-key', JSON.stringify({ cb_unch_0: true, cb_ign_0: true }));
+    // Simulate lazy-loaded checkbox state in localStorage (sha256w/tsw from warning sections)
+    // 遅延ロードセクションのチェックボックス状態をlocalStorageでシミュレート（警告セクション）
+    localStorage.setItem('test-key', JSON.stringify({ cb_sha256w_0: true, cb_tsw_0: true }));
     fireDOMContentLoaded();
 
-    // 1 from DOM (checked) + 2 from localStorage = 3
+    // 1 from DOM (cb_add_0 checked) + 2 from localStorage (sha256w + tsw) = 3
     expect(document.getElementById('progress-text').textContent).toBe('3 / 3 reviewed');
   });
 });

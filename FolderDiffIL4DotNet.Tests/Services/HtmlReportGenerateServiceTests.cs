@@ -1888,35 +1888,34 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("progress-bar-fill", html);
             Assert.Contains("progress-text", html);
             Assert.Contains("progress-wrap", html);
-            // Assert: total files count injected correctly (1 added + 1 removed + 1 modified + 1 unchanged = 4)
-            // 合計ファイル数が正しく注入されること（追加1 + 削除1 + 変更1 + 変更なし1 = 4）
+            // Assert: total = 1 added + 1 removed + 1 modified + 1 SHA256Mismatch warning = 4
+            // (Unchanged is excluded from progress count)
+            // 合計 = 追加1 + 削除1 + 変更1 + SHA256Mismatch警告1 = 4（Unchangedは進捗カウントから除外）
             Assert.Contains("const __totalFiles__      = 4;", html);
             // Assert: updateProgress function present / updateProgress関数が存在すること
             Assert.Contains("updateProgress()", html);
         }
 
         [Fact]
-        public void GenerateDiffReportHtml_ProgressBar_ExcludesIgnoredFilesWhenNotIncluded()
+        public void GenerateDiffReportHtml_ProgressBar_ExcludesUnchangedAndIgnored()
         {
-            // Arrange: add ignored files but don't include them in report
-            // 無視ファイルを追加するがレポートに含めない設定
+            // Arrange: add ignored/unchanged files — they should not affect progress total
+            // Ignored/Unchangedファイルを追加 — 進捗合計に影響しないこと
             var (oldDir, newDir, reportDir) = MakeDirs("progress-no-ign");
 
             _resultLists.AddModifiedFileRelativePath("changed.dll");
             _resultLists.RecordDiffDetail("changed.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+            _resultLists.AddUnchangedFileRelativePath("same.dll");
             _resultLists.RecordIgnoredFile("ignored.log", FileDiffResultLists.IgnoredFileLocation.Old);
 
-            var builder = CreateConfigBuilder();
-            builder.ShouldIncludeIgnoredFiles = false;
-            builder.ShouldIncludeUnchangedFiles = false;
-            var config = builder.Build();
+            var config = CreateConfig();
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // totalFiles should be 1 (only the modified file), not 2
-            // totalFilesは1（変更ファイルのみ）であり、2ではないこと
-            Assert.Contains("const __totalFiles__      = 1;", html);
+            // totalFiles = 1 modified + 1 SHA256Mismatch warning = 2 (Unchanged/Ignored excluded)
+            // totalFiles = 変更1 + SHA256Mismatch警告1 = 2（Unchanged/Ignoredは除外）
+            Assert.Contains("const __totalFiles__      = 2;", html);
         }
 
         private static ConfigSettingsBuilder CreateConfigBuilder(bool enableInlineDiff = true, bool lazyRender = false) => new()

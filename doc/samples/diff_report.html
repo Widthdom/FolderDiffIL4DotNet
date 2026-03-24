@@ -109,10 +109,10 @@
       flex-shrink: 0;
     }
     .progress-bar-fill {
-      height: 100%; width: 0%; background: #34c759; border-radius: 2px;
+      height: 100%; width: 0%; background: #0051c3; border-radius: 2px;
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .progress-bar-fill.complete { background: #30d158; }
+    .progress-bar-fill.complete { background: #0051c3; }
     .progress-text {
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }
@@ -1050,7 +1050,7 @@
   const __finalSha256__     = null;
   // Total number of reviewable files (injected at generation time). Do not change whitespace.
   // レビュー対象ファイルの総数（生成時に注入）。空白を変更しないこと。
-  const __totalFiles__      = 18;
+  const __totalFiles__      = 22;
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -1131,7 +1131,10 @@
     });
     var checked = 0;
     Object.keys(saved).forEach(function(k) {
-      if (k.indexOf('cb_') === 0 && saved[k]) checked++;
+      if (k.indexOf('cb_') !== 0 || !saved[k]) return;
+      // Exclude Unchanged/Ignored from progress count / Unchanged/Ignoredは進捗カウントから除外
+      if (k.indexOf('cb_unch_') === 0 || k.indexOf('cb_ign_') === 0) return;
+      checked++;
     });
     var pct = Math.min(100, checked / __totalFiles__ * 100);
     var bar = document.getElementById('progress-bar-fill');

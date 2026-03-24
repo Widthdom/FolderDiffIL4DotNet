@@ -88,7 +88,10 @@
     });
     var checked = 0;
     Object.keys(saved).forEach(function(k) {
-      if (k.indexOf('cb_') === 0 && saved[k]) checked++;
+      if (k.indexOf('cb_') !== 0 || !saved[k]) return;
+      // Exclude Unchanged/Ignored from progress count / Unchanged/Ignoredは進捗カウントから除外
+      if (k.indexOf('cb_unch_') === 0 || k.indexOf('cb_ign_') === 0) return;
+      checked++;
     });
     var pct = Math.min(100, checked / __totalFiles__ * 100);
     var bar = document.getElementById('progress-bar-fill');

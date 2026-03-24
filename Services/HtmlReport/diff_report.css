@@ -101,10 +101,10 @@
       flex-shrink: 0;
     }
     .progress-bar-fill {
-      height: 100%; width: 0%; background: #34c759; border-radius: 2px;
+      height: 100%; width: 0%; background: #0051c3; border-radius: 2px;
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .progress-bar-fill.complete { background: #30d158; }
+    .progress-bar-fill.complete { background: #0051c3; }
     .progress-text {
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }
