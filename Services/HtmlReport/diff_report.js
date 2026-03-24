@@ -726,7 +726,7 @@
     function colHeaderRow(bg) {
       var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'File Path', 'Timestamp', 'Diff Detail', 'Disassembler'];
       var r = '<tr>';
-      hdrs.forEach(function(h) { r += '<td style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
+      hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
       return r + '</tr>';
     }
 
@@ -846,7 +846,8 @@
       + '<head><meta charset="UTF-8">\n'
       + '<style>\n'
       + 'table { border-collapse: collapse; font-family: "Meiryo UI", sans-serif; font-size: 11px; }\n'
-      + 'td, th { border: 1px solid #ccc; padding: 4px 8px; white-space: nowrap; vertical-align: top; }\n'
+      + 'td, th { border: none; padding: 4px 8px; white-space: nowrap; vertical-align: top; }\n'
+      + 'td.bd, th.bd { border: 1px solid #ccc; }\n'
       + '</style>\n'
       + '</head><body>\n'
       + '<table>\n'
@@ -895,14 +896,14 @@
     var disasm = cells[7].textContent.trim();
 
     return '<tr>'
-      + '<td>' + esc(no) + '</td>'
-      + '<td>' + esc(checked) + '</td>'
-      + '<td class="wrap">' + esc(reason) + '</td>'
-      + '<td class="wrap">' + esc(notes) + '</td>'
-      + '<td>' + esc(path) + '</td>'
-      + '<td>' + esc(ts) + '</td>'
-      + '<td>' + esc(diff) + '</td>'
-      + '<td>' + esc(disasm) + '</td>'
+      + '<td class="bd">' + esc(no) + '</td>'
+      + '<td class="bd">' + esc(checked) + '</td>'
+      + '<td class="bd">' + esc(reason) + '</td>'
+      + '<td class="bd">' + esc(notes) + '</td>'
+      + '<td class="bd">' + esc(path) + '</td>'
+      + '<td class="bd">' + esc(ts) + '</td>'
+      + '<td class="bd">' + esc(diff) + '</td>'
+      + '<td class="bd">' + esc(disasm) + '</td>'
       + '</tr>';
   }
 
