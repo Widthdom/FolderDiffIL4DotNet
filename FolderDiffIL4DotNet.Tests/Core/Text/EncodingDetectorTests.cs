@@ -114,11 +114,17 @@ namespace FolderDiffIL4DotNet.Tests.Core.Text
             Assert.NotEqual(Encoding.UTF8.CodePage, encoding.CodePage);
         }
 
-        [Fact]
+        [SkippableFact]
         public void DetectFileEncoding_ShiftJis_CanDecodeJapaneseCorrectly()
         {
-            // Verifies that a Shift_JIS file is readable with the detected encoding
-            // Shift_JIS ファイルが検出されたエンコーディングで正しく読めることを検証
+            // This test requires a Japanese locale (ANSI code page 932) for the
+            // auto-detection fallback to select Shift_JIS. Skip on other locales.
+            // このテストは自動検出フォールバックが Shift_JIS を選択するために
+            // 日本語ロケール（ANSI コードページ 932）を必要とします。
+            Skip.If(
+                System.Globalization.CultureInfo.CurrentCulture.TextInfo.ANSICodePage != 932,
+                "Requires Japanese locale (ANSI code page 932)");
+
             var shiftJis = Encoding.GetEncoding(932);
             const string originalText = "日本語のテキストファイル\r\nテスト行";
             var content = shiftJis.GetBytes(originalText);
