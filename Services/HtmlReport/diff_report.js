@@ -710,33 +710,33 @@
       'sha256w': '#0051c3', 'tsw': '#0051c3'
     };
 
-    // Helper: 10-cell empty row / 10セルの空行
-    var COLS = 10;
+    // Helper: 11-cell empty row / 11セルの空行
+    var COLS = 11;
     function emptyRow() {
       var r = '<tr>';
       for (var i = 0; i < COLS; i++) r += '<td></td>';
       return r + '</tr>';
     }
-    // Helper: section title row — no bg fill, colored text (col 1) / セクションタイトル行 — 背景なし、文字色付き（列1）
+    // Helper: section title row — col 1 (Excel B) / セクションタイトル行 — 列1（Excel B列）
     function bannerRow(text, color, style) {
       var s = style || '';
       var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
       for (var i = 2; i < COLS; i++) r += '<td></td>';
       return r + '</tr>';
     }
-    // Helper: 6-cell empty pad (align with File Path column = col 6) / 6セルの空パディング（File Path列 = 列6に揃える）
-    var PAD6 = '<td></td><td></td><td></td><td></td><td></td><td></td>';
-    // Helper: section title row shifted to File Path column / File Path列に揃えたセクションタイトル行
-    function bannerRow6(text, color, style) {
+    // Helper: 7-cell empty pad (align with col 7 = Excel H) / 7セルの空パディング（列7 = Excel H列に揃える）
+    var PAD7 = '<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
+    // Helper: section title row shifted to col 7 (Excel H) / 列7（Excel H列）に揃えたセクションタイトル行
+    function bannerRow7(text, color, style) {
       var s = style || '';
-      var r = '<tr>' + PAD6 + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 7; i < COLS; i++) r += '<td></td>';
+      var r = '<tr>' + PAD7 + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = 8; i < COLS; i++) r += '<td></td>';
       return r + '</tr>';
     }
-    // Helper: column header row with section bg color (shifted 1 col right) / セクション背景色の列ヘッダー行（1列右にずらし）
+    // Helper: column header row — # at col 2 (Excel C) / 列ヘッダー行 — #は列2（Excel C列）
     function colHeaderRow(bg) {
       var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Disassembler'];
-      var r = '<tr><td></td>';
+      var r = '<tr><td></td><td></td>';
       hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
       return r + '</tr>';
     }
@@ -748,9 +748,9 @@
       var label = card.querySelector('.header-card-label');
       var value = card.querySelector('.header-card-value');
       if (label && value) {
-        headerHtml += '<tr>' + PAD6 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
           + '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>';
-        for (var i = 8; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+        for (var i = 9; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
         headerHtml += '</tr>';
       }
     });
@@ -759,9 +759,9 @@
       var label = hp.querySelector('.header-path-label');
       var value = hp.querySelector('.header-path-value');
       if (label && value) {
-        headerHtml += '<tr>' + PAD6 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
           + '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>';
-        for (var i = 8; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+        for (var i = 9; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
         headerHtml += '</tr>';
       }
     });
@@ -796,28 +796,28 @@
     // Build legend section / 凡例セクションを構築
     var legendHtml = '';
     // Legend — Diff Detail / 凡例 — 判定根拠
-    legendHtml += bannerRow6('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow7('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
     var diffLegend = [
       ['SHA256Match / SHA256Mismatch', 'Byte-for-byte match / mismatch (SHA256)'],
       ['ILMatch / ILMismatch', 'IL (Intermediate Language) match / mismatch'],
       ['TextMatch / TextMismatch', 'Text-based match / mismatch']
     ];
     diffLegend.forEach(function(row) {
-      legendHtml += '<tr>' + PAD6 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
-      for (var i = 8; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+      legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
+      for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
       legendHtml += '</tr>';
     });
     legendHtml += emptyRow();
     // Legend — Change Importance / 凡例 — 変更重要度
-    legendHtml += bannerRow6('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow7('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
     var impLegend = [
       ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
       ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
       ['Low', 'Low-impact change: body-only modification, internal/private member addition']
     ];
     impLegend.forEach(function(row) {
-      legendHtml += '<tr>' + PAD6 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
-      for (var i = 8; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+      legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
+      for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
       legendHtml += '</tr>';
     });
     legendHtml += emptyRow();
@@ -826,20 +826,20 @@
     var summaryHtml = '';
     var statTable = document.querySelector('.stat-table');
     if (statTable) {
-      summaryHtml += bannerRow6('Summary', '#000', 'font-weight:bold;padding:8px');
+      summaryHtml += bannerRow7('Summary', '#000', 'font-weight:bold;padding:8px');
       // Column header row for summary (same bg as Ignored Files header) / サマリーの列ヘッダー行（Ignored Files ヘッダーと同じ背景色）
-      summaryHtml += '<tr>' + PAD6 + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
+      summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
         + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>';
-      for (var si = 8; si < COLS; si++) summaryHtml += '<td></td>';
+      for (var si = 9; si < COLS; si++) summaryHtml += '<td></td>';
       summaryHtml += '</tr>';
       statTable.querySelectorAll('tr').forEach(function(tr) {
         // Skip header rows containing th elements / th要素を含むヘッダー行をスキップ
         if (tr.querySelector('th')) return;
         var cells = tr.querySelectorAll('td');
         if (cells.length >= 2) {
-          summaryHtml += '<tr>' + PAD6 + '<td class="bd">' + esc(cells[0].textContent.trim()) + '</td>'
+          summaryHtml += '<tr>' + PAD7 + '<td class="bd">' + esc(cells[0].textContent.trim()) + '</td>'
             + '<td class="bd">' + esc(cells[1].textContent.trim()) + '</td>';
-          for (var i = 8; i < COLS; i++) summaryHtml += '<td></td>';
+          for (var i = 9; i < COLS; i++) summaryHtml += '<td></td>';
           summaryHtml += '</tr>';
         }
       });
@@ -910,7 +910,7 @@
     // Disassembler
     var disasm = cells[8].textContent.trim();
 
-    return '<tr><td></td>'
+    return '<tr><td></td><td></td>'
       + '<td class="bd">' + esc(no) + '</td>'
       + '<td class="bd">' + esc(checked) + '</td>'
       + '<td class="bd">' + esc(reason) + '</td>'
