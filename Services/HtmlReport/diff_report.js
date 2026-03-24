@@ -408,10 +408,10 @@
       'col-cb-g': 2.2 * emPx,
       'col-reason-g': px('--col-reason-w', 10),
       'col-notes-g': px('--col-notes-w', 10),
-      'col-status-g': 3.6 * emPx,
+      'col-status-g': 4.3 * emPx,
       'col-path-g': px('--col-path-w', 22),
       'col-ts-g': 28 * emPx,
-      'col-diff-g': px('--col-diff-w', 9),
+      'col-diff-g': px('--col-diff-w', 10.8),
       'col-disasm-g': px('--col-disasm-w', 28)
     };
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {

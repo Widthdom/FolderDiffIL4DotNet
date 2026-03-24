@@ -188,7 +188,7 @@
       .save-status { flex-basis: 100%; }
     }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em;
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-disasm-w: 28em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
 }
@@ -196,7 +196,7 @@
     col.col-cb-g     { width: 2.2em; }
     col.col-reason-g { width: var(--col-reason-w); }
     col.col-notes-g  { width: var(--col-notes-w); }
-    col.col-status-g { width: 3.6em; }
+    col.col-status-g { width: 4.3em; }
     col.col-path-g   { width: var(--col-path-w); }
     col.col-ts-g     { width: 28em; }
     col.col-diff-g   { width: var(--col-diff-w); }
@@ -220,14 +220,14 @@
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
-    td.col-status { width: 3.6em; text-align: center; white-space: nowrap;
+    td.col-status { width: 4.3em; text-align: center; white-space: nowrap;
                     font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; font-weight: bold; }
     td.col-path { white-space: nowrap; overflow: hidden; }
     td.col-path .path-wrap { display: flex; align-items: center; }
     td.col-path .path-text { overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
     td.col-ts    { white-space: nowrap; text-align: center; }
     td.col-diff  { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-                   font-size: 12px; white-space: nowrap; min-width: 9em; text-align: center; }
+                   font-size: 12px; white-space: nowrap; min-width: 10.8em; text-align: center; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
