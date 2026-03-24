@@ -707,7 +707,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Justification / Timestamp / Diff Reason 列は中央揃え
             Assert.Contains("td.col-reason { overflow: hidden; text-align: center; }", html);
             Assert.Contains("td.col-ts    { white-space: nowrap; text-align: center; }", html);
-            Assert.Contains("min-width: 9em; text-align: center; }", html); // col-diff has text-align: center
+            Assert.Contains("min-width: 10.8em; text-align: center; }", html); // col-diff has text-align: center
             // File Path is NOT center-aligned / File Path 列は中央揃えではない
             Assert.Contains("td.col-path { white-space: nowrap; overflow: hidden; }", html);
             // Notes column is NOT center-aligned / Notes 列は中央揃えではない
