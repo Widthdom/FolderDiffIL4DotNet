@@ -640,6 +640,28 @@ Guardrails:
 <a id="guide-en-ci-release"></a>
 ## CI and Release Notes
 
+### Workflow Overview
+
+```
+On pull_request:
+  ├─ dotnet.yml (build)             → Build + Test + Coverage enforcement
+  ├─ dotnet.yml (mutation-testing)  → Stryker mutation testing
+  ├─ dotnet.yml (test-windows)     → Windows cross-platform verification
+  ├─ benchmark-regression.yml       → Performance regression detection
+  └─ codeql.yml                     → Security static analysis (C# + Actions)
+
+On push to main:
+  ├─ dotnet.yml (build)             → Build + Test + Coverage enforcement
+  ├─ dotnet.yml (test-windows)     → Windows cross-platform verification
+  ├─ benchmark-regression.yml       → Performance regression detection + baseline update
+  └─ codeql.yml                     → Security static analysis
+
+On v* tag push:
+  └─ release.yml                    → Build + Test + Publish + GitHub Release creation
+```
+
+Quality is guarded across six axes: **correctness** (tests), **coverage** (line/branch thresholds), **detection strength** (mutation testing), **performance** (benchmark regression), **security** (CodeQL), and **compatibility** (Windows).
+
 Workflow/config files:
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
 - [.github/workflows/release.yml](../.github/workflows/release.yml)
@@ -663,6 +685,19 @@ Current CI behavior (`build` job — Ubuntu):
 - Runs in parallel with `build` on `windows-latest`
 - Restores, builds, installs [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/), and runs the full test suite with `DOTNET_ROLL_FORWARD=Major`
 - Ensures Windows-specific code paths are exercised and the E2E disassembler test runs on every push
+
+`mutation-testing` job — Stryker:
+- Runs on `pull_request` and `workflow_dispatch` only (not on push to `main`)
+- Uses [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) to inject mutations into production code and verify tests detect them
+- Configuration is in [`stryker-config.json`](../stryker-config.json)
+- Posts the mutation score to the GitHub Actions job summary
+- Uploads the full Stryker HTML/JSON report as `StrykerReport`
+- Break threshold is `50%` — the job fails if the mutation score falls below this
+
+`benchmark` job (manual only):
+- Runs only on `workflow_dispatch`
+- Executes [BenchmarkDotNet](https://benchmarkdotnet.org/) benchmarks from `FolderDiffIL4DotNet.Benchmarks` and uploads results as `BenchmarkResults`
+- Exports JSON and GitHub-flavored results for manual comparison
 
 Release automation:
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs for pushed `v*` tags and manual dispatch with an explicit existing tag input
@@ -1455,6 +1490,28 @@ API リファレンス生成とサイト構築には DocFX を使います。
 <a id="guide-ja-ci-release"></a>
 ## CI とリリースまわり
 
+### ワークフロー概観
+
+```
+PR 作成時:
+  ├─ dotnet.yml (build)             → ビルド + テスト + カバレッジ検証
+  ├─ dotnet.yml (mutation-testing)  → Stryker ミューテーションテスト
+  ├─ dotnet.yml (test-windows)     → Windows クロスプラットフォーム検証
+  ├─ benchmark-regression.yml       → パフォーマンス回帰検知
+  └─ codeql.yml                     → セキュリティ静的解析（C# + Actions）
+
+main push 時:
+  ├─ dotnet.yml (build)             → ビルド + テスト + カバレッジ検証
+  ├─ dotnet.yml (test-windows)     → Windows クロスプラットフォーム検証
+  ├─ benchmark-regression.yml       → パフォーマンス回帰検知 + ベースライン更新
+  └─ codeql.yml                     → セキュリティ静的解析
+
+v* タグ push 時:
+  └─ release.yml                    → ビルド + テスト + 発行 + GitHub Release 作成
+```
+
+品質は6軸で守られています: **正しさ**（テスト）、**網羅性**（行/ブランチカバレッジ閾値）、**検出力**（ミューテーションテスト）、**速度**（ベンチマーク回帰検知）、**安全性**（CodeQL）、**互換性**（Windows）。
+
 ワークフロー/設定:
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
 - [.github/workflows/release.yml](../.github/workflows/release.yml)
@@ -1478,6 +1535,19 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - `build` ジョブと並行して `windows-latest` 上で実行
 - restore / build / [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) インストール後、`DOTNET_ROLL_FORWARD=Major` 付きでフルテストスイートを実行
 - Windows 固有のコードパスを検証し、E2E 逆アセンブラテストを push のたびに実行することを保証する
+
+`mutation-testing` ジョブ — Stryker:
+- `pull_request` と `workflow_dispatch` でのみ実行（`main` への push では実行されない）
+- [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) でプロダクションコードにミューテーションを注入し、テストが検出できるか検証する
+- 設定は [`stryker-config.json`](../stryker-config.json) に定義
+- ミューテーションスコアを GitHub Actions ジョブサマリに投稿
+- 完全な Stryker HTML/JSON レポートを `StrykerReport` としてアップロード
+- 閾値は `50%` — ミューテーションスコアがこれを下回るとジョブ失敗
+
+`benchmark` ジョブ（手動のみ）:
+- `workflow_dispatch` でのみ実行
+- `FolderDiffIL4DotNet.Benchmarks` の [BenchmarkDotNet](https://benchmarkdotnet.org/) ベンチマークを実行し、結果を `BenchmarkResults` としてアップロード
+- JSON と GitHub 形式で結果をエクスポートし、手動比較に使用
 
 リリース自動化:
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) は `v*` タグ push と、既存タグを明示指定する `workflow_dispatch` で実行します
