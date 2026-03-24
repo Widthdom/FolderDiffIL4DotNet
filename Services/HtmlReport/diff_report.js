@@ -328,6 +328,9 @@
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
           }
           updateProgress();
+          // Apply current importance filters to newly rendered semantic change rows
+          // 新規レンダリングされたセマンティック変更行に現在の重要度フィルターを適用
+          applyFilters();
         } catch(e) {}
       });
     });
@@ -615,6 +618,38 @@
         tr.classList.remove('filter-hidden');
       });
     }
+    // Fix group-cont headers: when a group header row is hidden, promote the first visible
+    // continuation row to show typename/basetype so it doesn't appear orphaned.
+    // グループヘッダー行が非表示時、最初の可視 group-cont 行に typename/basetype を復元
+    document.querySelectorAll('.semantic-changes-table.sc-detail tbody').forEach(function(tbody) {
+      var rows = tbody.querySelectorAll('tr[data-sc-typename]');
+      var prevType = '';
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i];
+        if (r.classList.contains('filter-hidden')) continue;
+        var tn = r.getAttribute('data-sc-typename') || '';
+        if (tn !== prevType) {
+          // First visible row for this type — ensure it shows typename/basetype
+          // この型の最初の可視行 — typename/basetype を表示
+          r.classList.remove('group-cont');
+          var cells = r.querySelectorAll('td');
+          if (cells.length >= 3) {
+            cells[1].textContent = tn;
+            cells[2].textContent = r.getAttribute('data-sc-basetype') || '';
+          }
+        } else {
+          // Continuation — restore group-cont styling and clear typename/basetype cells
+          // 継続行 — group-cont スタイルを復元し typename/basetype セルをクリア
+          r.classList.add('group-cont');
+          var cells = r.querySelectorAll('td');
+          if (cells.length >= 3) {
+            cells[1].textContent = '';
+            cells[2].textContent = '';
+          }
+        }
+        prevType = tn;
+      }
+    });
 
     autoSave();
   }

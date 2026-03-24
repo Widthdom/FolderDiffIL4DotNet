@@ -452,7 +452,10 @@ namespace FolderDiffIL4DotNet.Services
                     string baseTypeTd = !isCont ? HtmlEncode(e.BaseType) : "";
                     prevType = e.TypeName;
                     string scImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
-                    string trOpen = isCont ? $"<tr class=\"group-cont\"{scImpAttr}>" : $"<tr{scImpAttr}>";
+                    // Store typename/basetype on every row so JS can restore group headers after filtering
+                    // フィルタ後にグループヘッダーを復元できるよう、全行に typename/basetype を格納
+                    string scGroupAttrs = $" data-sc-typename=\"{HtmlEncode(e.TypeName)}\" data-sc-basetype=\"{HtmlEncode(e.BaseType)}\"";
+                    string trOpen = isCont ? $"<tr class=\"group-cont\"{scImpAttr}{scGroupAttrs}>" : $"<tr{scImpAttr}{scGroupAttrs}>";
                     string accessTd = CodeWrapArrow(e.Access);
                     string modifiersTd = CodeWrapArrow(e.Modifiers);
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
