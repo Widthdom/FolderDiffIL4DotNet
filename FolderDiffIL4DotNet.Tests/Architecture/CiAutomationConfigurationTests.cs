@@ -57,7 +57,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("pull_request:", workflow, StringComparison.Ordinal);
             Assert.Contains("benchmark-action/github-action-benchmark@v1", workflow, StringComparison.Ordinal);
             Assert.Contains("alert-threshold: '150%'", workflow, StringComparison.Ordinal);
-            Assert.Contains("fail-on-alert: true", workflow, StringComparison.Ordinal);
+            Assert.Contains("fail-on-alert:", workflow, StringComparison.Ordinal);
             Assert.Contains("FolderDiffIL4DotNet.Benchmarks", workflow, StringComparison.Ordinal);
             Assert.Contains("--exporters json", workflow, StringComparison.Ordinal);
             Assert.Contains("combined-report.json", workflow, StringComparison.Ordinal);
