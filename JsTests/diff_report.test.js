@@ -249,8 +249,14 @@ describe('applyFilters', () => {
         <input type="checkbox" id="filter-imp-high" checked>
         <input type="checkbox" id="filter-imp-medium" checked>
         <input type="checkbox" id="filter-imp-low" checked>
+        <input type="checkbox" id="filter-diff-sha256match" checked>
+        <input type="checkbox" id="filter-diff-sha256mismatch" checked>
+        <input type="checkbox" id="filter-diff-ilmatch" checked>
+        <input type="checkbox" id="filter-diff-ilmismatch" checked>
+        <input type="checkbox" id="filter-diff-textmatch" checked>
+        <input type="checkbox" id="filter-diff-textmismatch" checked>
         <input type="checkbox" id="filter-unchecked">
-        <input type="text" id="filter-search">
+        <input type="text" id="filter-search" value="nomatch">
         <span id="save-status"></span>
         <table><tbody>
           <tr data-section="modified"><td><span class="path-text">readme.txt</span></td></tr>
