@@ -122,10 +122,10 @@
     // Replace button row with reviewed banner (filter zone is preserved outside CTRL markers)
     // ボタン行を reviewed バナーに置換（フィルターゾーンは CTRL マーカー外なので維持）
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,
-      '<div class="reviewed-banner"><span>Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</span>'
+      '<div class="reviewed-banner" role="banner"><span>Reviewed: ' + formatTs(new Date()) + ' &#x2014; read-only</span>'
       + ' <button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
       + ' <button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
-      + ' <button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
+      + ' <button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
       + '</div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
@@ -438,7 +438,8 @@
     btn.className = 'btn-input-clear';
     btn.tabIndex = -1;
     btn.title = 'Clear';
-    btn.innerHTML = '<svg width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="1" x2="7" y2="7"/><line x1="7" y1="1" x2="1" y2="7"/></svg>';
+    btn.setAttribute('aria-label', 'Clear');
+    btn.innerHTML = '<svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="1" x2="7" y2="7"/><line x1="7" y1="1" x2="1" y2="7"/></svg>';
     wrap.appendChild(btn);
     function sync() { wrap.classList.toggle('has-text', inp.value.length > 0); }
     inp.addEventListener('input', sync);
@@ -578,3 +579,18 @@
       }, 1200);
     });
   }
+
+  // ── Keyboard navigation (WCAG 2.1 AA) ────────────────────────────────
+  // Escape closes the nearest open detail element when focus is inside it.
+  // Escapeキーでフォーカス中のdetail要素を閉じる。
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var details = document.activeElement ? document.activeElement.closest('details[open]') : null;
+      if (details) {
+        details.removeAttribute('open');
+        var summary = details.querySelector('summary');
+        if (summary) summary.focus();
+        e.preventDefault();
+      }
+    }
+  });
