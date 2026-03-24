@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **`applyFilters()` null safety for missing filter DOM elements** — Previously, `applyFilters()` in `diff_report.js` directly accessed `.checked` on `getElementById('filter-diff-*')` results without null checks, causing a TypeError when those DOM elements are absent (e.g. in reviewed mode or minimal DOM environments). Added a local `chk(id)` helper that returns `el.checked` when the element exists and defaults to `true` (all-pass) when missing. Applied the same null-safe pattern to `filter-unchecked` (defaults to `false`) and `filter-search` (defaults to empty string). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html) with the same fix. Affected files: [`diff_report.js`](Services/HtmlReport/diff_report.js), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 ### [1.8.0] - 2026-03-24
 
 #### Added
@@ -600,6 +604,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Fixed
+
+- **`applyFilters()` のフィルター DOM 要素欠落時の null 安全性強化** — `diff_report.js` の `applyFilters()` が `getElementById('filter-diff-*')` の結果に対して null チェックなしで `.checked` を参照していたため、DOM 要素が存在しない場合（レビュー済みモードや最小 DOM 環境等）に TypeError が発生していた。要素が存在すれば `el.checked` を返し、存在しなければ `true`（全通過）をデフォルトとするローカルヘルパー `chk(id)` を追加。`filter-unchecked`（デフォルト: `false`）と `filter-search`（デフォルト: 空文字列）にも同様の null 安全パターンを適用。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) にも同一修正を反映。影響ファイル: [`diff_report.js`](Services/HtmlReport/diff_report.js)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。
 
 ### [1.8.0] - 2026-03-24
 

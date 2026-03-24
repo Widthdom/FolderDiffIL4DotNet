@@ -1472,19 +1472,22 @@
     // If any element is missing (e.g. reviewed mode), skip
     if (!impHigh) return;
 
+    // Helper: read checkbox state, default to true if element is missing / ヘルパー: チェックボックス状態取得、要素がなければ true
+    function chk(id) { var el = document.getElementById(id); return el ? el.checked : true; }
+
     // Diff detail filter (6 individual values) / Diff Detail フィルター（6個別値）
     var diffFilter = {
-      SHA256Match:    document.getElementById('filter-diff-sha256match').checked,
-      SHA256Mismatch: document.getElementById('filter-diff-sha256mismatch').checked,
-      ILMatch:        document.getElementById('filter-diff-ilmatch').checked,
-      ILMismatch:     document.getElementById('filter-diff-ilmismatch').checked,
-      TextMatch:      document.getElementById('filter-diff-textmatch').checked,
-      TextMismatch:   document.getElementById('filter-diff-textmismatch').checked
+      SHA256Match:    chk('filter-diff-sha256match'),
+      SHA256Mismatch: chk('filter-diff-sha256mismatch'),
+      ILMatch:        chk('filter-diff-ilmatch'),
+      ILMismatch:     chk('filter-diff-ilmismatch'),
+      TextMatch:      chk('filter-diff-textmatch'),
+      TextMismatch:   chk('filter-diff-textmismatch')
     };
-    var impFilter  = { High: impHigh.checked, Medium: document.getElementById('filter-imp-medium').checked, Low: document.getElementById('filter-imp-low').checked };
-    var onlyUnchecked = document.getElementById('filter-unchecked').checked;
+    var impFilter  = { High: impHigh.checked, Medium: chk('filter-imp-medium'), Low: chk('filter-imp-low') };
+    var onlyUnchecked = document.getElementById('filter-unchecked') ? document.getElementById('filter-unchecked').checked : false;
     var searchEl   = document.getElementById('filter-search');
-    var searchText = (searchEl.value || '').toLowerCase().trim();
+    var searchText = searchEl ? (searchEl.value || '').toLowerCase().trim() : '';
 
     // All checked = no filtering for that category
     var diffActive = !(diffFilter.SHA256Match && diffFilter.SHA256Mismatch && diffFilter.ILMatch && diffFilter.ILMismatch && diffFilter.TextMatch && diffFilter.TextMismatch);
