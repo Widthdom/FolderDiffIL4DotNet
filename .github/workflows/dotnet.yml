@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - pre-main-integration
   pull_request:
     branches:
       - main
+      - pre-main-integration
   workflow_dispatch:
 
 permissions:

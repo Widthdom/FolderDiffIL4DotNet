@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Add `pre-main-integration` branch to CI pipeline triggers** — Updated all three GitHub Actions workflows (`dotnet.yml`, `benchmark-regression.yml`, `codeql.yml`) to trigger on `push` and `pull_request` events targeting the `pre-main-integration` branch, in addition to `main`. This enables `pre-main-integration` to serve as a final gate before merging to `main`, with the full CI suite (build, test, coverage, benchmark regression, CodeQL) running on PRs and pushes to that branch. Affected files: [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml), [`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml), [`.github/workflows/codeql.yml`](.github/workflows/codeql.yml).
+
 #### Added
 
 - **Excel-compatible HTML export from reviewed report** — Added a "Download as Excel-compatible HTML" button to the reviewed HTML report banner. When clicked, it generates a `diff_report_YYYYMMDD_reviewed_Excel-compatible.html` file containing a simplified HTML `<table>` with Excel XML namespace declarations (`xmlns:x="urn:schemas-microsoft-com:office:excel"`), allowing the file to be opened directly in Microsoft Excel as a spreadsheet. The exported table includes: report header metadata (Excel column H), all file sections (Ignored, Unchanged, Added, Removed, Modified, Warnings) with color-coded section titles (Excel column B), per-file data starting from column C (#, ✓, Justification, Notes, Status, File Path, Timestamp, Diff Reason, Disassembler), legend and summary sections. Inline diffs are excluded for clean tabular output. The button appears only in the reviewed HTML (not in the original `diff_report.html`), following the workflow: `diff_report.html` → `Download as reviewed` → `reviewed.html` → `Download as Excel-compatible HTML` → `Excel-compatible.html`. New JS functions: `downloadExcelCompatibleHtml()`, `buildExcelRow()`, `esc()` in [`diff_report.js`](Services/HtmlReport/diff_report.js). Updated [`HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`HtmlReportGenerateService.Sections.cs`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`diff_report.css`](Services/HtmlReport/diff_report.css), [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added 2 tests in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs): `GenerateDiffReportHtml_ContainsExcelCompatibleHtmlExportFunction`, `GenerateDiffReportHtml_ExcelExportButton_NotInCtrlMarkers`. Test count: 832 (unchanged, existing test assertion updated).
@@ -661,6 +665,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **CI パイプラインのトリガーに `pre-main-integration` ブランチを追加** — 3 つの GitHub Actions ワークフロー（`dotnet.yml`、`benchmark-regression.yml`、`codeql.yml`）を更新し、`main` に加えて `pre-main-integration` ブランチへの `push` および `pull_request` イベントでもトリガーされるようにした。これにより `pre-main-integration` が `main` へのマージ前の最終防衛線として機能し、当該ブランチへの PR・push 時にフル CI スイート（ビルド、テスト、カバレッジ、ベンチマーク回帰、CodeQL）が実行される。影響ファイル: [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml)、[`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml)、[`.github/workflows/codeql.yml`](.github/workflows/codeql.yml)。
 
 #### Added
 
