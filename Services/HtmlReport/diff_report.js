@@ -9,6 +9,7 @@
   // Total number of reviewable files (injected at generation time). Do not change whitespace.
   // レビュー対象ファイルの総数（生成時に注入）。空白を変更しないこと。
   const __totalFiles__      = {{TOTAL_FILES}};
+  const __totalFilesDetail__ = '{{TOTAL_FILES_DETAIL}}';
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -102,6 +103,8 @@
       else bar.classList.remove('complete');
     }
     if (txt) txt.textContent = checked + ' / ' + __totalFiles__ + ' reviewed';
+    var det = document.getElementById('progress-detail');
+    if (det && __totalFilesDetail__) det.textContent = '(' + __totalFilesDetail__ + ')';
   }
 
   async function downloadReviewed() {

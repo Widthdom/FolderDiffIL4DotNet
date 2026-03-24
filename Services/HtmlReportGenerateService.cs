@@ -104,6 +104,11 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<div class=\"controls\">");
             sb.AppendLine("<!--CTRL-->");
             sb.AppendLine("<div class=\"ctrl-buttons\">");
+            sb.AppendLine("  <div class=\"progress-wrap\">");
+            sb.AppendLine("    <div class=\"progress-bar\"><div id=\"progress-bar-fill\" class=\"progress-bar-fill\"></div></div>");
+            sb.AppendLine("    <span id=\"progress-text\" class=\"progress-text\"></span>");
+            sb.AppendLine("    <span id=\"progress-detail\" class=\"progress-detail\"></span>");
+            sb.AppendLine("  </div>");
             sb.AppendLine("  <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
             sb.AppendLine("  <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
@@ -111,12 +116,6 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <span id=\"save-status\" class=\"save-status\"></span>");
             sb.AppendLine("</div>");
             sb.AppendLine("<!--/CTRL-->");
-
-            // Review progress bar / レビュー進捗バー
-            sb.AppendLine("<div class=\"progress-wrap\">");
-            sb.AppendLine("  <div class=\"progress-bar\"><div id=\"progress-bar-fill\" class=\"progress-bar-fill\"></div></div>");
-            sb.AppendLine("  <span id=\"progress-text\" class=\"progress-text\"></span>");
-            sb.AppendLine("</div>");
 
             // Filter zone (kept in reviewed HTML for read-only filtering)
             // フィルターゾーン（reviewed HTML にも残し読み取り専用フィルタリングに使用）
@@ -187,18 +186,37 @@ namespace FolderDiffIL4DotNet.Services
             // Unchanged/Ignored are excluded — they don't require active review.
             // プログレスバー用のレビュー対象ファイル総数を算出（Added + Removed + Modified + Warningsセクション）
             // Unchanged/Ignoredはアクティブなレビュー不要のため除外。
+            int addedCount = _fileDiffResultLists.AddedFilesAbsolutePath.Count;
+            int removedCount = _fileDiffResultLists.RemovedFilesAbsolutePath.Count;
+            int modifiedCount = _fileDiffResultLists.ModifiedFilesRelativePath.Count;
             int sha256WarnCount = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                 .Values.Count(r => r == FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             int tsWarnCount = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Count;
-            int totalFiles = _fileDiffResultLists.AddedFilesAbsolutePath.Count
-                + _fileDiffResultLists.RemovedFilesAbsolutePath.Count
-                + _fileDiffResultLists.ModifiedFilesRelativePath.Count
-                + sha256WarnCount
-                + tsWarnCount;
-            AppendJs(sb, storageKey, reportDate, totalFiles);
+            int totalFiles = addedCount + removedCount + modifiedCount + sha256WarnCount + tsWarnCount;
+            string totalFilesDetail = BuildTotalFilesDetail(addedCount, removedCount, modifiedCount, sha256WarnCount, tsWarnCount);
+            AppendJs(sb, storageKey, reportDate, totalFiles, totalFilesDetail);
             sb.AppendLine("</body>");
             sb.AppendLine("</html>");
             return sb.ToString();
+        }
+
+        // ── Progress detail ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Builds a compact breakdown string for the progress bar detail (e.g. "Added: 1 + Removed: 1 + Modified: 14").
+        /// Sections with 0 count are omitted.
+        /// プログレスバーの明細文字列を構築します（例: "Added: 1 + Removed: 1 + Modified: 14"）。
+        /// 件数0のセクションは省略されます。
+        /// </summary>
+        private static string BuildTotalFilesDetail(int added, int removed, int modified, int sha256Warn, int tsWarn)
+        {
+            var parts = new System.Collections.Generic.List<string>(5);
+            if (added > 0) parts.Add($"Added: {added}");
+            if (removed > 0) parts.Add($"Removed: {removed}");
+            if (modified > 0) parts.Add($"Modified: {modified}");
+            if (sha256Warn > 0) parts.Add($"SHA256Warn: {sha256Warn}");
+            if (tsWarn > 0) parts.Add($"TsWarn: {tsWarn}");
+            return string.Join(" + ", parts);
         }
 
         // ── Head ─────────────────────────────────────────────────────────────

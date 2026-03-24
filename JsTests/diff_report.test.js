@@ -40,6 +40,7 @@ function loadScript(options = {}) {
     savedState = null,
     bodyHtml = '',
     totalFiles = 0,
+    totalFilesDetail = '',
   } = options;
 
   // Reset DOM
@@ -51,7 +52,8 @@ function loadScript(options = {}) {
   let js = JS_SOURCE
     .replace("'{{STORAGE_KEY}}'", JSON.stringify(storageKey))
     .replace("'{{REPORT_DATE}}'", JSON.stringify(reportDate))
-    .replace('{{TOTAL_FILES}}', String(totalFiles));
+    .replace('{{TOTAL_FILES}}', String(totalFiles))
+    .replace('{{TOTAL_FILES_DETAIL}}', totalFilesDetail);
 
   if (savedState !== null) {
     js = js.replace(
@@ -604,5 +606,23 @@ describe('updateProgress', () => {
 
     // 1 from DOM (cb_add_0 checked) + 2 from localStorage (sha256w + tsw) = 3
     expect(document.getElementById('progress-text').textContent).toBe('3 / 3 reviewed');
+  });
+
+  it('shows detail breakdown when totalFilesDetail is provided', () => {
+    loadScript({
+      totalFiles: 3,
+      totalFilesDetail: 'Added: 1 + Modified: 2',
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+        <input type="checkbox" id="cb_mod_1">
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-detail').textContent).toBe('(Added: 1 + Modified: 2)');
   });
 });

@@ -116,6 +116,9 @@
     .progress-text {
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }
+    .progress-detail {
+      font-size: 11px; color: #a1a1a6; white-space: nowrap;
+    }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 9em; --col-disasm-w: 28em;
@@ -294,6 +297,11 @@
 <div class="controls">
 <!--CTRL-->
 <div class="ctrl-buttons">
+  <div class="progress-wrap">
+    <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
+    <span id="progress-text" class="progress-text"></span>
+    <span id="progress-detail" class="progress-detail"></span>
+  </div>
   <button class="btn" onclick="downloadReviewed()">&#x2913; Download as reviewed</button>
   <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
   <button class="btn btn-clear" onclick="resetFilters()"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>
@@ -301,10 +309,6 @@
   <span id="save-status" class="save-status"></span>
 </div>
 <!--/CTRL-->
-<div class="progress-wrap">
-  <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
-  <span id="progress-text" class="progress-text"></span>
-</div>
 <div class="filter-zone">
 <div class="ctrl-filter-row">
   <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
@@ -1051,6 +1055,7 @@
   // Total number of reviewable files (injected at generation time). Do not change whitespace.
   // レビュー対象ファイルの総数（生成時に注入）。空白を変更しないこと。
   const __totalFiles__      = 22;
+  const __totalFilesDetail__ = 'Added: 1 + Removed: 1 + Modified: 14 + SHA256Warn: 1 + TsWarn: 5';
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -1145,6 +1150,8 @@
       else bar.classList.remove('complete');
     }
     if (txt) txt.textContent = checked + ' / ' + __totalFiles__ + ' reviewed';
+    var det = document.getElementById('progress-detail');
+    if (det && __totalFilesDetail__) det.textContent = '(' + __totalFilesDetail__ + ')';
   }
 
   async function downloadReviewed() {

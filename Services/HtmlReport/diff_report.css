@@ -108,6 +108,9 @@
     .progress-text {
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }
+    .progress-detail {
+      font-size: 11px; color: #a1a1a6; white-space: nowrap;
+    }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; min-width: 7em; }
