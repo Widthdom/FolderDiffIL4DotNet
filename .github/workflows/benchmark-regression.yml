@@ -39,7 +39,7 @@ jobs:
         run: dotnet restore FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj
 
       - name: Run benchmarks
-        run: dotnet run --project FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj --configuration Release -- --exporters json
+        run: dotnet run --project FolderDiffIL4DotNet.Benchmarks/FolderDiffIL4DotNet.Benchmarks.csproj --configuration Release -- --exporters json --filter '*'
 
       - name: Combine benchmark results
         run: |
