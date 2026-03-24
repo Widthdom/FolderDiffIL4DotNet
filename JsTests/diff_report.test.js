@@ -626,3 +626,109 @@ describe('updateProgress', () => {
     expect(document.getElementById('progress-detail').textContent).toBe('(Added: 1 + Modified: 2)');
   });
 });
+
+// ─── Corrupted localStorage ──────────────────────────────────────────────────
+// 破損した localStorage のテスト — JSON パースエラーや不正データへの耐性を検証
+describe('corrupted localStorage', () => {
+  test('invalid JSON in localStorage does not crash DOMContentLoaded', () => {
+    loadScript({
+      bodyHtml: `
+        <input type="checkbox" id="chk-corrupt">
+        <input type="text" id="note-corrupt">
+      `,
+    });
+    // Write invalid JSON before firing DOMContentLoaded / 不正な JSON を書き込み
+    localStorage.setItem('test-key', '{corrupted json!!!');
+
+    // Should not throw / 例外をスローしないこと
+    expect(() => fireDOMContentLoaded()).not.toThrow();
+
+    // Inputs should remain at defaults (unchecked, empty) / 入力はデフォルトのまま
+    expect(document.getElementById('chk-corrupt').checked).toBe(false);
+    expect(document.getElementById('note-corrupt').value).toBe('');
+  });
+
+  test('empty string in localStorage does not crash DOMContentLoaded', () => {
+    loadScript({
+      bodyHtml: '<input type="checkbox" id="chk-empty">',
+    });
+    localStorage.setItem('test-key', '');
+
+    expect(() => fireDOMContentLoaded()).not.toThrow();
+    expect(document.getElementById('chk-empty').checked).toBe(false);
+  });
+
+  test('null value in localStorage is treated as no saved state', () => {
+    loadScript({
+      bodyHtml: '<input type="checkbox" id="chk-null">',
+    });
+    localStorage.setItem('test-key', 'null');
+
+    expect(() => fireDOMContentLoaded()).not.toThrow();
+    expect(document.getElementById('chk-null').checked).toBe(false);
+  });
+
+  test('non-object JSON in localStorage does not crash', () => {
+    loadScript({
+      bodyHtml: '<input type="checkbox" id="chk-array">',
+    });
+    // Array instead of object / オブジェクトではなく配列
+    localStorage.setItem('test-key', '[1, 2, 3]');
+
+    expect(() => fireDOMContentLoaded()).not.toThrow();
+  });
+
+  test('autoSave succeeds even when localStorage throws on setItem', () => {
+    loadScript({
+      bodyHtml: `
+        <input type="checkbox" id="chk-quota" checked>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    // Simulate localStorage quota exceeded / localStorage 容量超過をシミュレート
+    const originalSetItem = localStorage.setItem.bind(localStorage);
+    localStorage.setItem = () => { throw new DOMException('QuotaExceededError'); };
+
+    // autoSave should not crash the page / autoSave はページをクラッシュさせないこと
+    expect(() => window.autoSave()).not.toThrow();
+
+    // Restore original / 元に戻す
+    localStorage.setItem = originalSetItem;
+  });
+
+  test('state with non-existent element IDs is safely ignored', () => {
+    loadScript({
+      bodyHtml: '<input type="checkbox" id="chk-exists">',
+    });
+    localStorage.setItem('test-key', JSON.stringify({
+      'chk-exists': true,
+      'chk-nonexistent': true,
+      'note-missing': 'ghost value'
+    }));
+
+    expect(() => fireDOMContentLoaded()).not.toThrow();
+    expect(document.getElementById('chk-exists').checked).toBe(true);
+  });
+
+  test('state with wrong type values is handled gracefully', () => {
+    loadScript({
+      bodyHtml: `
+        <input type="checkbox" id="chk-type">
+        <input type="text" id="note-type">
+      `,
+    });
+    // Checkbox gets a string, text input gets a number / チェックボックスに文字列、テキストに数値
+    localStorage.setItem('test-key', JSON.stringify({
+      'chk-type': 'yes',
+      'note-type': 12345
+    }));
+
+    expect(() => fireDOMContentLoaded()).not.toThrow();
+    // Boolean("yes") is true / Boolean("yes") は true
+    expect(document.getElementById('chk-type').checked).toBe(true);
+    // Number is coerced to string / 数値は文字列に変換される
+    expect(document.getElementById('note-type').value).toBe('12345');
+  });
+});
