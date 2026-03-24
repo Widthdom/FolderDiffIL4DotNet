@@ -717,11 +717,11 @@
       for (var i = 0; i < COLS; i++) r += '<td></td>';
       return r + '</tr>';
     }
-    // Helper: section title row — no bg fill, colored text (col 0) / セクションタイトル行 — 背景なし、文字色付き（列0）
+    // Helper: section title row — no bg fill, colored text (col 1) / セクションタイトル行 — 背景なし、文字色付き（列1）
     function bannerRow(text, color, style) {
       var s = style || '';
-      var r = '<tr><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 1; i < COLS; i++) r += '<td></td>';
+      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = 2; i < COLS; i++) r += '<td></td>';
       return r + '</tr>';
     }
     // Helper: 6-cell empty pad (align with File Path column = col 6) / 6セルの空パディング（File Path列 = 列6に揃える）
@@ -849,7 +849,6 @@
     // Build warning sections (placed after Summary) / 警告セクション（Summary の後に配置）
     var warningsHtml = '';
     if (warnSections.length > 0) {
-      warningsHtml += emptyRow();
       warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;font-size:14px;padding:8px');
     }
     warnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
@@ -865,6 +864,7 @@
       + '</style>\n'
       + '</head><body>\n'
       + '<table>\n'
+      + emptyRow() + '\n'
       + headerHtml
       + emptyRow() + '\n'
       + legendHtml

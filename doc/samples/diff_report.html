@@ -238,7 +238,9 @@
     .btn-copy-path:hover { background: #e8e8ed; color: #333; }
     .btn-copy-path svg { pointer-events: none; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
-    table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; }
+    table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; table-layout: fixed; }
+    table.stat-table col.stat-col1 { width: 10em; }
+    table.stat-table col.stat-col2 { width: 20em; }
     table.stat-table th { border: 1px solid #bbb; padding: 3px 14px; font-size: 13px; text-align: left; white-space: nowrap; }
     table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }
     table.stat-table td.stat-label { color: #444; white-space: nowrap; }
@@ -1017,6 +1019,7 @@
 </div>
 <h2 class="section-heading">Summary</h2>
 <table class="stat-table">
+<colgroup><col class="stat-col1"><col class="stat-col2"></colgroup>
   <thead><tr><th scope="col" style="background:#f5f5f7">Category</th><th scope="col" style="background:#f5f5f7">Count</th></tr></thead>
   <tbody>
     <tr><td class="stat-label">Ignored</td><td class="stat-value">3</td></tr>
@@ -1029,6 +1032,7 @@
 </table>
 <h2 class="section-heading">IL Cache Stats</h2>
 <table class="stat-table">
+<colgroup><col class="stat-col1"><col class="stat-col2"></colgroup>
   <thead><tr><th scope="col" style="background:#f5f5f7">Metric</th><th scope="col" style="background:#f5f5f7">Value</th></tr></thead>
   <tbody>
     <tr><td class="stat-label">Hits</td><td class="stat-value">42</td></tr>
@@ -1908,8 +1912,8 @@
     // Helper: section title row — no bg fill, colored text (col 0) / セクションタイトル行 — 背景なし、文字色付き（列0）
     function bannerRow(text, color, style) {
       var s = style || '';
-      var r = '<tr><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 1; i < COLS; i++) r += '<td></td>';
+      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = 2; i < COLS; i++) r += '<td></td>';
       return r + '</tr>';
     }
     // Helper: 6-cell empty pad (align with File Path column = col 6) / 6セルの空パディング（File Path列 = 列6に揃える）
@@ -2037,7 +2041,6 @@
     // Build warning sections (placed after Summary) / 警告セクション（Summary の後に配置）
     var warningsHtml = '';
     if (warnSections.length > 0) {
-      warningsHtml += emptyRow();
       warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;font-size:14px;padding:8px');
     }
     warnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
@@ -2053,6 +2056,7 @@
       + '</style>\n'
       + '</head><body>\n'
       + '<table>\n'
+      + emptyRow() + '\n'
       + headerHtml
       + emptyRow() + '\n'
       + legendHtml

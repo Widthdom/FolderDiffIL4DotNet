@@ -604,6 +604,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("Summary")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
+            sb.AppendLine("<colgroup><col class=\"stat-col1\"><col class=\"stat-col2\"></colgroup>");
             sb.AppendLine($"  <thead><tr><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Category</th><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Count</th></tr></thead>");
             sb.AppendLine("  <tbody>");
             var stats = _fileDiffResultLists.SummaryStatistics;
@@ -623,6 +624,7 @@ namespace FolderDiffIL4DotNet.Services
             var stats = ilCache.GetReportStats();
             sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("IL Cache Stats")}</h2>");
             sb.AppendLine("<table class=\"stat-table\">");
+            sb.AppendLine("<colgroup><col class=\"stat-col1\"><col class=\"stat-col2\"></colgroup>");
             sb.AppendLine($"  <thead><tr><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Metric</th><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Value</th></tr></thead>");
             sb.AppendLine("  <tbody>");
             sb.AppendLine($"    <tr><td class=\"stat-label\">Hits</td><td class=\"stat-value\">{stats.Hits}</td></tr>");
