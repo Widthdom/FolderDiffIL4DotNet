@@ -12,7 +12,7 @@ namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// Line-based (streaming) disassembly methods that avoid large single-string allocations.
-    /// Reads process stdout line-by-line instead of <see cref="StreamReader.ReadToEndAsync"/>,
+    /// Reads process stdout line-by-line instead of <c>StreamReader.ReadToEndAsync</c>,
     /// keeping individual line strings small and GC-friendly (avoids Large Object Heap pressure).
     /// プロセスの stdout を行単位で読み取り、巨大な単一文字列割り当てを回避する
     /// ストリーミング逆アセンブルメソッド群。LOH 圧迫を防ぎ GC フレンドリーに動作します。
