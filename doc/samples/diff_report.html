@@ -75,7 +75,15 @@
       padding: 0.7rem max(2rem, calc(50vw - 50%));
       display: flex; flex-direction: column; gap: 0.55rem; z-index: 100;
     }
-    .ctrl-buttons { display: flex; gap: 1rem; align-items: center; }
+    .ctrl-buttons {
+      display: grid; grid-template-columns: minmax(22rem, 1fr) auto;
+      gap: 0.75rem 1rem; align-items: center;
+    }
+    .ctrl-progress { min-width: 0; }
+    .ctrl-actions {
+      display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+      justify-content: flex-end; min-width: 0;
+    }
     .filter-zone {
       padding: 0; display: flex; flex-direction: column; gap: 0.55rem;
     }
@@ -122,12 +130,12 @@
     .save-status { font-size: 12px; color: #86868b; }
     /* ── Review progress bar ───────────────────────────────────────────── */
     .progress-wrap {
-      display: flex; align-items: center; gap: 0.6rem;
-      font-size: 12px; color: #86868b; padding: 0.15rem 0;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem;
+      font-size: 12px; color: #86868b; padding: 0.15rem 0; min-width: 0;
     }
     .progress-bar {
       width: 160px; height: 4px; background: #e5e5ea; border-radius: 2px; overflow: hidden;
-      flex-shrink: 0;
+      flex: 0 0 160px; max-width: 100%;
     }
     .progress-bar-fill {
       height: 100%; width: 0%; background: #0051c3; border-radius: 2px;
@@ -138,7 +146,9 @@
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }
     .progress-detail {
-      font-size: 11px; color: #a1a1a6; white-space: nowrap;
+      font-size: 11px; color: #a1a1a6;
+      white-space: normal; overflow-wrap: anywhere;
+      flex: 1 1 16rem; min-width: 12rem;
     }
     .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Column width CSS variables ──────────────────────────────────────── */
@@ -306,7 +316,8 @@
     .filter-sep { width: 1px; height: 1.2em; background: #ccc; margin: 0 0.35rem; }
     .filter-search-wrap {
       position: relative; display: flex; align-items: center;
-      border: 1px solid #ccc; border-radius: 6px; flex: 1; min-width: 40em;
+      border: 1px solid #ccc; border-radius: 6px;
+      flex: 1 1 16rem; min-width: min(100%, 16rem); max-width: 100%;
       background: transparent;
     }
     .filter-search-wrap:focus-within { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
@@ -314,11 +325,30 @@
     .filter-search {
       width: 100%; padding: 0.25rem 1.4rem 0.25rem 0.6rem; border: none; border-radius: 6px;
       font-size: 12px; font-family: inherit; outline: none;
-      background: transparent;
+      background: transparent; min-width: 0;
+    }
+    .ctrl-filter-row > .filter-search,
+    .ctrl-filter-row > .filter-search-wrap {
+      flex: 1 1 16rem; min-width: min(100%, 16rem);
     }
     tr.filter-hidden { display: none !important; }
     tr.diff-row.filter-hidden-parent { display: none !important; }
     .lazy-section summary { cursor: pointer; font-size: 13px; color: #6e6e73; padding: 0.2rem 0; }
+    @media (max-width: 1100px) {
+      body { padding: 0 1rem 2rem; }
+      .controls { padding: 0.7rem max(1rem, calc(50vw - 50%)); }
+      .ctrl-buttons { grid-template-columns: 1fr; align-items: stretch; }
+      .ctrl-actions { justify-content: flex-start; }
+    }
+    @media (max-width: 720px) {
+      .progress-wrap { align-items: flex-start; }
+      .progress-bar { width: 100%; flex-basis: 100%; }
+      .progress-detail { flex-basis: 100%; min-width: 0; }
+      .ctrl-actions .btn {
+        white-space: normal; text-align: center; justify-content: center;
+      }
+      .save-status { flex-basis: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -326,16 +356,20 @@
 <div class="controls" role="toolbar" aria-label="Report controls">
 <!--CTRL-->
 <div class="ctrl-buttons">
-  <div class="progress-wrap">
-    <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
-    <span id="progress-text" class="progress-text"></span>
-    <span id="progress-detail" class="progress-detail"></span>
+  <div class="ctrl-progress">
+    <div class="progress-wrap">
+      <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
+      <span id="progress-text" class="progress-text"></span>
+      <span id="progress-detail" class="progress-detail"></span>
+    </div>
   </div>
-  <button class="btn" onclick="downloadReviewed()">&#x2913; Download as reviewed</button>
-  <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
-  <button class="btn btn-clear" onclick="resetFilters()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>
-  <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
-  <span id="save-status" class="save-status" role="status" aria-live="polite"></span>
+  <div class="ctrl-actions">
+    <button class="btn" onclick="downloadReviewed()">&#x2913; Download as reviewed</button>
+    <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
+    <button class="btn btn-clear" onclick="resetFilters()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>
+    <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
+    <span id="save-status" class="save-status" role="status" aria-live="polite"></span>
+  </div>
 </div>
 <!--/CTRL-->
 <div class="filter-zone" role="search" aria-label="Report filters">

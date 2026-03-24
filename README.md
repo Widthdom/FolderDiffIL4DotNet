@@ -195,7 +195,7 @@ A **filter bar** is displayed below the controls bar. Filters include:
 | Unchecked only | When checked, hides rows whose checkbox (✓ column) is already ticked |
 | Search | Free-text input that matches against file paths (case-insensitive substring match) |
 
-Filters can be combined; the **Reset filters** button restores all checkboxes and clears the search box. Filter state is **not** saved to localStorage. The filter controls **are preserved** in the "Download as reviewed" output so reviewers can also filter rows. The reviewed HTML starts with all rows visible (filter-hidden state is cleared at download time).
+Filters can be combined; the **Reset filters** button restores all checkboxes and clears the search box. Filter state is **not** saved to localStorage. The filter controls **are preserved** in the "Download as reviewed" output so reviewers can also filter rows. The reviewed HTML starts with all rows visible (filter-hidden state is cleared at download time). On narrow windows, the progress summary stays on the first line and the action buttons wrap onto the next line instead of being clipped.
 
 See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live sample (open in a browser).
 
@@ -808,7 +808,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | 未チェックのみ | チェックすると、✓ 列のチェックボックスが既にオンの行を非表示にする |
 | 検索 | ファイルパスに対するフリーテキスト入力（大文字小文字を区別しない部分一致） |
 
-フィルタは組み合わせ可能です。**フィルタリセット**ボタンですべてのチェックボックスを復元し検索ボックスをクリアします。フィルタ状態は localStorage には保存**されません**。フィルタコントロールは「Download as reviewed」の出力に**引き継がれ**、レビュアーも行のフィルタリングが可能です。reviewed HTML はダウンロード時にフィルタ非表示状態がクリアされ、すべての行が表示された状態で始まります。
+フィルタは組み合わせ可能です。**フィルタリセット**ボタンですべてのチェックボックスを復元し検索ボックスをクリアします。フィルタ状態は localStorage には保存**されません**。フィルタコントロールは「Download as reviewed」の出力に**引き継がれ**、レビュアーも行のフィルタリングが可能です。reviewed HTML はダウンロード時にフィルタ非表示状態がクリアされ、すべての行が表示された状態で始まります。ウィンドウ幅が狭い場合は、進捗表示を1段目に維持し、各アクションボタンは2段目へ回り込むため見切れません。
 
 ライブサンプルは [doc/samples/diff_report.html](doc/samples/diff_report.html) を参照してください（ブラウザで開いてください）。
 

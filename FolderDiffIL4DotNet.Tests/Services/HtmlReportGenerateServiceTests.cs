@@ -1897,6 +1897,27 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_ControlsUseResponsiveProgressAndActionGroups()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("responsive-controls");
+
+            var config = CreateConfig();
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("class=\"ctrl-progress\"", html);
+            Assert.Contains("class=\"ctrl-actions\"", html);
+            Assert.Contains("@media (max-width: 1100px)", html);
+            Assert.Contains("@media (max-width: 720px)", html);
+
+            int progressIdx = html.IndexOf("class=\"ctrl-progress\"", StringComparison.Ordinal);
+            int actionsIdx = html.IndexOf("class=\"ctrl-actions\"", StringComparison.Ordinal);
+            Assert.True(progressIdx >= 0 && actionsIdx > progressIdx,
+                "progress group should appear before action buttons so buttons can wrap beneath it on narrow windows");
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_ProgressBar_ExcludesUnchangedAndIgnored()
         {
             // Arrange: add ignored/unchanged files — they should not affect progress total
