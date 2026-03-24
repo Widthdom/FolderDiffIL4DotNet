@@ -9,7 +9,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
     /// Tests for <see cref="ChangeImportanceClassifier"/>.
     /// <see cref="ChangeImportanceClassifier"/> のテスト。
     /// </summary>
-    public sealed class ChangeImportanceClassifierTests
+    public sealed partial class ChangeImportanceClassifierTests
     {
         // ── High: Removed public/protected ────────────────────────────────
 
