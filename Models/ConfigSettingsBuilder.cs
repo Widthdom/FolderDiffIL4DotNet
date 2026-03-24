@@ -45,6 +45,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.ShouldIncludeAssemblySemanticChangesInReport"/>
         public bool ShouldIncludeAssemblySemanticChangesInReport { get; set; } = ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport;
 
+        /// <inheritdoc cref="ConfigSettings.ShouldIncludeDependencyChangesInReport"/>
+        public bool ShouldIncludeDependencyChangesInReport { get; set; } = ConfigSettings.DefaultShouldIncludeDependencyChangesInReport;
+
         /// <inheritdoc cref="ConfigSettings.ShouldIncludeILCacheStatsInReport"/>
         public bool ShouldIncludeILCacheStatsInReport { get; set; } = ConfigSettings.DefaultShouldIncludeILCacheStatsInReport;
 

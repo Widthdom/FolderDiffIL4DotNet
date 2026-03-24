@@ -27,6 +27,10 @@
   // レポートにアセンブリセマンティック変更（メソッドレベル差分）を含める（デフォルト: true）
   "ShouldIncludeAssemblySemanticChangesInReport": true,
 
+  // Include structured dependency changes for .deps.json files in the report (default: true)
+  // レポートに .deps.json ファイルの構造化された依存関係変更を含める（デフォルト: true）
+  "ShouldIncludeDependencyChangesInReport": true,
+
   // Include IL cache hit/miss statistics in the report (default: false)
   // レポートに IL キャッシュのヒット/ミス統計を含める（デフォルト: false）
   "ShouldIncludeILCacheStatsInReport": false,

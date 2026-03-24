@@ -391,6 +391,11 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>When <code>true</code>, includes <code>Assembly Semantic Changes</code> for <code>ILMismatch</code> assemblies. Uses <code>System.Reflection.Metadata</code> to detect type/method/property/field additions, removals, and modifications. Shown as an expandable inline row above the IL diff in the HTML report.</td>
     </tr>
+    <tr id="config-en-shouldincludedependencychangesinreport">
+      <td><code>ShouldIncludeDependencyChangesInReport</code></td>
+      <td><code>true</code></td>
+      <td>When <code>true</code>, includes structured <code>Dependency Changes</code> for <code>.deps.json</code> files classified as <code>TextMismatch</code>. Parses old and new JSON to show which NuGet packages were Added, Removed, or Updated with semver-based importance classification.</td>
+    </tr>
     <tr id="config-en-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
       <td><code>false</code></td>
@@ -997,6 +1002,11 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
       <td><code>ShouldIncludeAssemblySemanticChangesInReport</code></td>
       <td><code>true</code></td>
       <td><code>true</code> の場合、<code>ILMismatch</code> と判定された .NET アセンブリについて <code>Assembly Semantic Changes</code> を出力します。<code>System.Reflection.Metadata</code> を使用して型・メソッド・プロパティ・フィールドの増減および変更を検出します。HTML レポートでは IL diff の上に展開可能なインライン行として表示されます。</td>
+    </tr>
+    <tr id="config-ja-shouldincludedependencychangesinreport">
+      <td><code>ShouldIncludeDependencyChangesInReport</code></td>
+      <td><code>true</code></td>
+      <td><code>true</code> の場合、<code>TextMismatch</code> と判定された <code>.deps.json</code> ファイルについて構造化された <code>Dependency Changes</code> を出力します。新旧 JSON をパースし、NuGet パッケージの追加・削除・更新を semver ベースの重要度分類付きで表示します。</td>
     </tr>
     <tr id="config-ja-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>

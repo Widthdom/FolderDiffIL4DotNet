@@ -82,10 +82,11 @@
 |:------:|-----------|:---------:|
 | `[ - ]` | /Users/UserA/workspace/old/legacy/old-tool.txt | 2026-03-15 08:55:00 |
 
-## [ * ] Modified Files (14)
+## [ * ] Modified Files (15)
 
 | Status | File Path | Timestamp | Legend | Disassembler |
 |:------:|-----------|:---------:|:------:|--------------|
+| `[ * ]` | bin/MyApp.deps.json | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `TextMismatch` `High` | |
 | `[ * ]` | config/app.config | 2026-03-15 08:56:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
 | `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
 | `[ * ]` | src/DataModel.edmx | 2026-03-15 08:55:00 → 2026-03-15 09:04:00 | `TextMismatch` | |
@@ -101,6 +102,16 @@
 | `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` `Low` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | |
 
+#### Dependency Changes: bin/MyApp.deps.json
+
+| Package | Status | Importance | Old Version | New Version |
+|---------|:------:|:----------:|:-----------:|:-----------:|
+| System.Text.Json | `[ - ]` | `High` | 7.0.0 | — |
+| Newtonsoft.Json | `[ + ]` | `Medium` | — | 13.0.3 |
+| Serilog | `[ * ]` | `High` | 3.0.0 | 4.1.0 |
+| Microsoft.Extensions.Logging | `[ * ]` | `Medium` | 8.0.0 | 9.0.0 |
+| Microsoft.Extensions.DependencyInjection | `[ * ]` | `Low` | 9.0.0 | 9.0.8 |
+
 ## Summary
 
 | Category | Count |
@@ -109,8 +120,8 @@
 | Unchanged | 5 |
 | Added | 1 |
 | Removed | 1 |
-| Modified | 14 |
-| Compared | 23 (Old) vs 23 (New) |
+| Modified | 15 |
+| Compared | 24 (Old) vs 24 (New) |
 
 ## IL Cache Stats
 
