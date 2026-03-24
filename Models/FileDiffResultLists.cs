@@ -9,9 +9,11 @@ namespace FolderDiffIL4DotNet.Models
 {
     /// <summary>
     /// Holds lists of file comparison results.
+    /// This partial file contains nested types, file classification queues, and classification methods.
     /// ファイル比較結果のリストを保持するクラス。
+    /// この partial ファイルにはネスト型、ファイル分類キュー、分類メソッドを含みます。
     /// </summary>
-    public sealed class FileDiffResultLists
+    public sealed partial class FileDiffResultLists
     {
         /// <summary>
         /// Enum representing the basis for match/mismatch determination per file.
@@ -59,6 +61,11 @@ namespace FolderDiffIL4DotNet.Models
             int UnchangedCount,
             int IgnoredCount);
 
+        // ──────────────────────────────────────────────
+        // File classification queues
+        // ファイル分類キュー
+        // ──────────────────────────────────────────────
+
         /// <summary>Absolute paths of all files found in the old (baseline) folder. / 旧（ベースライン）フォルダ内の全ファイル絶対パス。</summary>
         public ConcurrentQueue<string> OldFilesAbsolutePath { get; } = new ConcurrentQueue<string>();
 
@@ -77,125 +84,10 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Relative paths of files that differ between old and new. / 旧新間で差異のあるファイルの相対パス。</summary>
         public ConcurrentQueue<string> ModifiedFilesRelativePath { get; } = new ConcurrentQueue<string>();
 
-        /// <summary>
-        /// Thread-safe dictionary mapping file relative paths to their comparison results.
-        /// ファイル間の比較結果を保持する辞書（並列比較で安全に書き込みできるよう ConcurrentDictionary）。
-        /// </summary>
-        public ConcurrentDictionary<string, DiffDetailResult> FileRelativePathToDiffDetailDictionary { get; } = new ConcurrentDictionary<string, DiffDetailResult>(StringComparer.Ordinal);
-
-        /// <summary>
-        /// Disassembler display label per IL-compared file (e.g., "dotnet-ildasm (version: 0.12.0)").
-        /// IL 比較を実施したファイルごとの逆アセンブラ表示ラベル（例: "dotnet-ildasm (version: 0.12.0)"）。
-        /// </summary>
-        public ConcurrentDictionary<string, string> FileRelativePathToIlDisassemblerLabelDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
-
-        /// <summary>
-        /// Returns <see langword="true"/> when at least one file comparison resulted in a SHA256 mismatch.
-        /// 少なくとも 1 件のファイル比較で SHA256 不一致が発生した場合に <see langword="true"/> を返します。
-        /// </summary>
-        public bool HasAnySha256Mismatch => FileRelativePathToDiffDetailDictionary.Values.Any(result => result == DiffDetailResult.SHA256Mismatch);
-
-        /// <summary>
-        /// Relative paths and folder locations (old/new) of files excluded by IgnoredExtensions.
-        /// IgnoredExtensions 対象ファイルの相対パスと所在（旧/新フォルダ）情報。
-        /// </summary>
-        public ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Disassembler names and versions used during actual tool execution.
-        /// 実行中に使用された逆アセンブラの名称とバージョン（実ツール実行）。
-        /// </summary>
-        public ConcurrentDictionary<string, byte> DisassemblerToolVersions { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Disassembler names and versions retrieved via cache.
-        /// キャッシュ経由で利用された逆アセンブラの名称とバージョン。
-        /// </summary>
-        public ConcurrentDictionary<string, byte> DisassemblerToolVersionsFromCache { get; } = new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Warnings for Modified files where the new file's timestamp is older than the old file's.
-        /// Modified と判定されたファイルのうち、new 側の更新日時が old 側より古いものの警告一覧。
-        /// </summary>
-        public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(StringComparer.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Assembly semantic change summaries for ILMismatch files, keyed by file relative path.
-        /// ILMismatch ファイルに対するアセンブリセマンティック変更要約。キーはファイルの相対パス。
-        /// </summary>
-        public ConcurrentDictionary<string, AssemblySemanticChangesSummary> FileRelativePathToAssemblySemanticChanges { get; } = new ConcurrentDictionary<string, AssemblySemanticChangesSummary>(StringComparer.Ordinal);
-
-        /// <summary>
-        /// Dependency change summaries for .deps.json files, keyed by file relative path.
-        /// .deps.json ファイルに対する依存関係変更要約。キーはファイルの相対パス。
-        /// </summary>
-        public ConcurrentDictionary<string, DependencyChangeSummary> FileRelativePathToDependencyChanges { get; } = new ConcurrentDictionary<string, DependencyChangeSummary>(StringComparer.Ordinal);
-
-        /// <summary>
-        /// Disassembler availability results probed at startup (null until probed).
-        /// 起動時にプローブされた逆アセンブラ利用可否の結果（プローブ前は null）。
-        /// </summary>
-        private IReadOnlyList<DisassemblerProbeResult>? _disassemblerAvailability;
-
-        /// <summary>
-        /// Gets or sets the disassembler availability probe results.
-        /// Thread-safe via <see cref="Volatile"/>.
-        /// 逆アセンブラ利用可否プローブ結果を取得・設定します。
-        /// <see cref="Volatile"/> によりスレッドセーフです。
-        /// </summary>
-        public IReadOnlyList<DisassemblerProbeResult>? DisassemblerAvailability
-        {
-            get => Volatile.Read(ref _disassemblerAvailability);
-            set => Volatile.Write(ref _disassemblerAvailability, value);
-        }
-
-        /// <summary>
-        /// Returns <see langword="true"/> when at least one modified file has a newer-side timestamp older than the older-side.
-        /// Modified ファイルのうち新側タイムスタンプが旧側より古いものが 1 件以上ある場合に <see langword="true"/> を返します。
-        /// </summary>
-        public bool HasAnyNewFileTimestampOlderThanOldWarning => !NewFileTimestampOlderThanOldWarnings.IsEmpty;
-
-        /// <summary>
-        /// Returns the maximum <see cref="ChangeImportance"/> for a file, or <see langword="null"/> if no semantic changes exist.
-        /// ファイルの最大 <see cref="ChangeImportance"/> を返します。セマンティック変更が存在しない場合は <see langword="null"/>。
-        /// </summary>
-        public ChangeImportance? GetMaxImportance(string fileRelativePath)
-        {
-            ChangeImportance? max = null;
-            if (FileRelativePathToAssemblySemanticChanges.TryGetValue(fileRelativePath, out var summary) && summary.HasChanges)
-                max = summary.MaxImportance;
-            if (FileRelativePathToDependencyChanges.TryGetValue(fileRelativePath, out var depSummary) && depSummary.HasChanges)
-            {
-                var depMax = depSummary.MaxImportance;
-                max = max == null ? depMax : (depMax > max.Value ? depMax : max.Value);
-            }
-            return max;
-        }
-
-        /// <summary>
-        /// Returns all distinct <see cref="ChangeImportance"/> levels for a file across assembly semantic and dependency changes.
-        /// ファイルのアセンブリセマンティック変更と依存関係変更にわたる重複のない <see cref="ChangeImportance"/> レベルをすべて返します。
-        /// </summary>
-        public HashSet<ChangeImportance> GetAllImportanceLevels(string fileRelativePath)
-        {
-            var levels = new HashSet<ChangeImportance>();
-            if (FileRelativePathToAssemblySemanticChanges.TryGetValue(fileRelativePath, out var summary))
-                foreach (var e in summary.Entries) levels.Add(e.Importance);
-            if (FileRelativePathToDependencyChanges.TryGetValue(fileRelativePath, out var depSummary))
-                foreach (var e in depSummary.Entries) levels.Add(e.Importance);
-            return levels;
-        }
-
-        /// <summary>
-        /// Computed property returning aggregated file counts (Added/Removed/Modified/Unchanged/Ignored) for the summary section.
-        /// サマリーセクション向けのファイル件数を一括で返す計算プロパティ。
-        /// </summary>
-        public DiffSummaryStatistics SummaryStatistics => new(
-            AddedCount: AddedFilesAbsolutePath.Count,
-            RemovedCount: RemovedFilesAbsolutePath.Count,
-            ModifiedCount: ModifiedFilesRelativePath.Count,
-            UnchangedCount: UnchangedFilesRelativePath.Count,
-            IgnoredCount: IgnoredFilesRelativePathToLocation.Count);
+        // ──────────────────────────────────────────────
+        // Classification methods
+        // 分類メソッド
+        // ──────────────────────────────────────────────
 
         /// <summary>Replaces the old-file list with the specified paths. / 旧ファイルリストを指定パスで置換します。</summary>
         /// <param name="oldFilesAbsolutePath">Absolute paths of old-side files. / 旧側ファイルの絶対パス群。</param>
@@ -239,6 +131,22 @@ namespace FolderDiffIL4DotNet.Models
             EnqueuePath(ModifiedFilesRelativePath, fileRelativePath, nameof(fileRelativePath));
         }
 
+        // ──────────────────────────────────────────────
+        // Aggregation
+        // 集計
+        // ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Computed property returning aggregated file counts (Added/Removed/Modified/Unchanged/Ignored) for the summary section.
+        /// サマリーセクション向けのファイル件数を一括で返す計算プロパティ。
+        /// </summary>
+        public DiffSummaryStatistics SummaryStatistics => new(
+            AddedCount: AddedFilesAbsolutePath.Count,
+            RemovedCount: RemovedFilesAbsolutePath.Count,
+            ModifiedCount: ModifiedFilesRelativePath.Count,
+            UnchangedCount: UnchangedFilesRelativePath.Count,
+            IgnoredCount: IgnoredFilesRelativePathToLocation.Count);
+
         /// <summary>
         /// Resets all comparison result state.
         /// 比較結果の状態をすべて初期化します。
@@ -262,73 +170,10 @@ namespace FolderDiffIL4DotNet.Models
             DisassemblerAvailability = null;
         }
 
-        /// <summary>
-        /// Records the comparison result for a file, optionally associating a disassembler label for IL comparisons.
-        /// ファイルの比較結果を記録します。IL 比較時は逆アセンブラ表示ラベルも関連付けます。
-        /// </summary>
-        public void RecordDiffDetail(string fileRelativePath, DiffDetailResult diffDetailResult, string? ilDisassemblerLabel = null)
-        {
-            // Upsert: overwrite if exists, add if not (thread-safe)
-            // 既に存在する場合は上書き、存在しなければ追加（スレッドセーフ）
-            FileRelativePathToDiffDetailDictionary[fileRelativePath] = diffDetailResult;
-            if (diffDetailResult == DiffDetailResult.ILMatch || diffDetailResult == DiffDetailResult.ILMismatch)
-            {
-                if (!string.IsNullOrWhiteSpace(ilDisassemblerLabel))
-                {
-                    FileRelativePathToIlDisassemblerLabelDictionary[fileRelativePath] = ilDisassemblerLabel;
-                }
-                else
-                {
-                    FileRelativePathToIlDisassemblerLabelDictionary.TryRemove(fileRelativePath, out _);
-                }
-            }
-            else
-            {
-                FileRelativePathToIlDisassemblerLabelDictionary.TryRemove(fileRelativePath, out _);
-            }
-        }
-
-        /// <summary>
-        /// Records the location info for a file matched by IgnoredExtensions.
-        /// IgnoredExtensions に該当したファイルの所在情報を記録します。
-        /// </summary>
-        public void RecordIgnoredFile(string fileRelativePath, IgnoredFileLocation location)
-        {
-            if (string.IsNullOrWhiteSpace(fileRelativePath))
-            {
-                throw new ArgumentException($"{nameof(fileRelativePath)} cannot be null or whitespace.");
-            }
-            IgnoredFilesRelativePathToLocation.AddOrUpdate(fileRelativePath, location, (_, existing) => existing | location);
-        }
-
-        /// <summary>
-        /// Records the disassembler tool name and version used.
-        /// 使用した逆アセンブラ名とバージョンを記録します。
-        /// </summary>
-        public void RecordDisassemblerToolVersion(string toolName, string? version, bool fromCache = false)
-        {
-            if (string.IsNullOrWhiteSpace(toolName))
-            {
-                return;
-            }
-            var label = string.IsNullOrWhiteSpace(version) ? toolName : $"{toolName} (version: {version})";
-            var target = fromCache ? DisassemblerToolVersionsFromCache : DisassemblerToolVersions;
-            target[label] = 0;
-        }
-
-        /// <summary>
-        /// Records a warning when a Modified file's new-side timestamp is older than its old-side timestamp.
-        /// Modified と判定されたファイルについて、new 側の更新日時が old 側より古い場合の警告を記録します。
-        /// </summary>
-        public void RecordNewFileTimestampOlderThanOldWarning(string fileRelativePath, string oldTimestamp, string newTimestamp)
-        {
-            if (string.IsNullOrWhiteSpace(fileRelativePath))
-            {
-                throw new ArgumentException($"{nameof(fileRelativePath)} cannot be null or whitespace.");
-            }
-
-            NewFileTimestampOlderThanOldWarnings[fileRelativePath] = new FileTimestampRegressionWarning(fileRelativePath, oldTimestamp, newTimestamp);
-        }
+        // ──────────────────────────────────────────────
+        // Private helpers
+        // プライベートヘルパー
+        // ──────────────────────────────────────────────
 
         private void ReplaceQueueItems(ConcurrentQueue<string> targetQueue, IEnumerable<string> items, string paramName)
         {

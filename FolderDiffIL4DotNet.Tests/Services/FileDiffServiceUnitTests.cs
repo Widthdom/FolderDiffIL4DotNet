@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -819,29 +820,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
-        private sealed class TestLogger : ILoggerService
-        {
-            public string? LogFileAbsolutePath => null;
-
-            public List<LogEntry> Entries { get; } = new();
-
-            public void Initialize()
-            {
-            }
-
-            public void CleanupOldLogFiles(int maxLogGenerations)
-            {
-            }
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, Exception? exception = null)
-                => LogMessage(logLevel, message, shouldOutputMessageToConsole, consoleForegroundColor: null, exception);
-
-            public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
-                => Entries.Add(new LogEntry(logLevel, message, exception));
-        }
-
         private sealed record DiffCall(string FileRelativePath, string OldFolderAbsolutePath, string NewFolderAbsolutePath, bool ShouldOutputIlText);
-
-        private sealed record LogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
     }
 }
