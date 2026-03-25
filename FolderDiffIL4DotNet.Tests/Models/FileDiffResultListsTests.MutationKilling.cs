@@ -9,7 +9,6 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Models
 {
-    [Collection("FileDiffResultLists")]
     public partial class FileDiffResultListsTests
     {
         // ── Mutation-killing: RecordIgnoredFile bitwise OR vs AND ──────────

@@ -7,7 +7,7 @@ using Xunit;
 namespace FolderDiffIL4DotNet.Tests.Models
 {
     [Collection("FileDiffResultLists")]
-    public class FileDiffResultListsTests : IDisposable
+    public partial class FileDiffResultListsTests : IDisposable
     {
         private readonly FileDiffResultLists _sut = new();
 
