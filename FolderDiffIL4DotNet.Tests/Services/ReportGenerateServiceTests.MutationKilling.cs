@@ -420,5 +420,242 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(lowIdx < noIdx, "Low importance should appear before null importance");
         }
 
+        // ── Mutation-killing: GetUnchangedSortOrder return values ─────────
+        // ミューテーションキル: GetUnchangedSortOrder の戻り値
+
+        /// <summary>
+        /// Unchanged files are sorted: SHA256Match → ILMatch → TextMatch.
+        /// Unchanged ファイルは SHA256Match → ILMatch → TextMatch の順にソートされる。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReport_UnchangedFiles_SortedByDiffDetailType()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-unch-sort");
+            var newDir = Path.Combine(_rootDir, "new-unch-sort");
+            var reportDir = Path.Combine(_rootDir, "report-unch-sort");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // Add files in reverse order of expected sort / 期待されるソート順の逆順で追加
+            _resultLists.AddUnchangedFileRelativePath("c-text-match.dll");
+            _resultLists.RecordDiffDetail("c-text-match.dll", FileDiffResultLists.DiffDetailResult.TextMatch);
+
+            _resultLists.AddUnchangedFileRelativePath("b-il-match.dll");
+            _resultLists.RecordDiffDetail("b-il-match.dll", FileDiffResultLists.DiffDetailResult.ILMatch);
+
+            _resultLists.AddUnchangedFileRelativePath("a-sha256-match.dll");
+            _resultLists.RecordDiffDetail("a-sha256-match.dll", FileDiffResultLists.DiffDetailResult.SHA256Match);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            int shaIdx = reportText.IndexOf("a-sha256-match.dll", System.StringComparison.Ordinal);
+            int ilIdx = reportText.IndexOf("b-il-match.dll", System.StringComparison.Ordinal);
+            int textIdx = reportText.IndexOf("c-text-match.dll", System.StringComparison.Ordinal);
+
+            Assert.True(shaIdx >= 0, "SHA256Match file should appear in report");
+            Assert.True(ilIdx >= 0, "ILMatch file should appear in report");
+            Assert.True(textIdx >= 0, "TextMatch file should appear in report");
+            Assert.True(shaIdx < ilIdx, "SHA256Match should appear before ILMatch");
+            Assert.True(ilIdx < textIdx, "ILMatch should appear before TextMatch");
+        }
+
+        // ── Mutation-killing: GetModifiedSortOrder return values ──────────
+        // ミューテーションキル: GetModifiedSortOrder の戻り値
+
+        /// <summary>
+        /// Modified files are sorted: TextMismatch → ILMismatch → SHA256Mismatch.
+        /// Modified ファイルは TextMismatch → ILMismatch → SHA256Mismatch の順にソートされる。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReport_ModifiedFiles_SortedByDiffDetailType()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-mod-sort");
+            var newDir = Path.Combine(_rootDir, "new-mod-sort");
+            var reportDir = Path.Combine(_rootDir, "report-mod-sort");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // Add in reverse order of expected sort / 期待されるソート順の逆順で追加
+            _resultLists.AddModifiedFileRelativePath("c-sha256-mismatch.dll");
+            _resultLists.RecordDiffDetail("c-sha256-mismatch.dll", FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+
+            _resultLists.AddModifiedFileRelativePath("b-il-mismatch.dll");
+            _resultLists.RecordDiffDetail("b-il-mismatch.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm");
+
+            _resultLists.AddModifiedFileRelativePath("a-text-mismatch.txt");
+            _resultLists.RecordDiffDetail("a-text-mismatch.txt", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            int modifiedIdx = reportText.IndexOf("## [ * ] Modified Files", System.StringComparison.Ordinal);
+            Assert.True(modifiedIdx >= 0);
+            string modifiedSection = reportText.Substring(modifiedIdx);
+
+            int textIdx = modifiedSection.IndexOf("a-text-mismatch.txt", System.StringComparison.Ordinal);
+            int ilIdx = modifiedSection.IndexOf("b-il-mismatch.dll", System.StringComparison.Ordinal);
+            int sha256Idx = modifiedSection.IndexOf("c-sha256-mismatch.dll", System.StringComparison.Ordinal);
+
+            Assert.True(textIdx >= 0, "TextMismatch file should appear in Modified section");
+            Assert.True(ilIdx >= 0, "ILMismatch file should appear in Modified section");
+            Assert.True(sha256Idx >= 0, "SHA256Mismatch file should appear in Modified section");
+            Assert.True(textIdx < ilIdx, "TextMismatch should appear before ILMismatch");
+            Assert.True(ilIdx < sha256Idx, "ILMismatch should appear before SHA256Mismatch");
+        }
+
+        // ── Mutation-killing: GetIgnoredFileLocationLabel return values ───
+        // ミューテーションキル: GetIgnoredFileLocationLabel の戻り値
+
+        /// <summary>
+        /// Ignored files show correct location label (Old / New / Both).
+        /// 無視ファイルが正しいロケーションラベル（Old / New / Both）を表示する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReport_IgnoredFiles_ShowCorrectLocationLabels()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-ign-loc");
+            var newDir = Path.Combine(_rootDir, "new-ign-loc");
+            var reportDir = Path.Combine(_rootDir, "report-ign-loc");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.RecordIgnoredFile("old-only.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
+            _resultLists.RecordIgnoredFile("new-only.pdb", FileDiffResultLists.IgnoredFileLocation.New);
+            _resultLists.RecordIgnoredFile("both.pdb", FileDiffResultLists.IgnoredFileLocation.Old | FileDiffResultLists.IgnoredFileLocation.New);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldIncludeIgnoredFiles = true;
+            var config = builder.Build();
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // Verify each location label appears / 各ロケーションラベルの表示を検証
+            Assert.Contains("old-only.pdb", reportText);
+            Assert.Contains("new-only.pdb", reportText);
+            Assert.Contains("both.pdb", reportText);
+            // Verify Old/New/Both labels in the ignored section / 無視セクションで Old/New/Both ラベルを検証
+            Assert.Contains("Old", reportText);
+            Assert.Contains("New", reportText);
+            Assert.Contains("Both", reportText);
+        }
+
+        // ── Mutation-killing: BuildDiffDetailDisplay importance vs null ───
+        // ミューテーションキル: BuildDiffDetailDisplay の重要度 vs null
+
+        /// <summary>
+        /// Modified files with importance show importance label, without show only diff detail.
+        /// 重要度のある Modified ファイルは重要度ラベルを表示し、ない場合は差分詳細のみ表示する。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReport_ModifiedFile_ImportanceDisplayDiffers()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-imp-disp");
+            var newDir = Path.Combine(_rootDir, "new-imp-disp");
+            var reportDir = Path.Combine(_rootDir, "report-imp-disp");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // File with importance / 重要度ありファイル
+            _resultLists.AddModifiedFileRelativePath("with-imp.dll");
+            _resultLists.RecordDiffDetail("with-imp.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm");
+            _resultLists.FileRelativePathToAssemblySemanticChanges["with-imp.dll"] = new AssemblySemanticChangesSummary
+            {
+                Entries = new List<MemberChangeEntry>
+                {
+                    new("Removed", "MyApp.Service", "", "public", "", "Method", "Execute", "", "void", "", ""),
+                }
+            };
+
+            // File without importance / 重要度なしファイル
+            _resultLists.AddModifiedFileRelativePath("no-imp.dll");
+            _resultLists.RecordDiffDetail("no-imp.dll", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // with-imp.dll should have importance label / with-imp.dll は重要度ラベルを持つべき
+            Assert.Contains("`ILMismatch` `High`", reportText);
+            // no-imp.dll should have only diff detail without importance / no-imp.dll は差分詳細のみ
+            Assert.Contains("`TextMismatch`", reportText);
+        }
+
+        // ── Mutation-killing: disassembler display for IL results ──────────
+        // ミューテーションキル: IL 結果の逆アセンブラ表示
+
+        /// <summary>
+        /// Disassembler label is shown for ILMatch/ILMismatch but not for TextMismatch.
+        /// 逆アセンブララベルは ILMatch/ILMismatch で表示されるが TextMismatch では非表示。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReport_DisassemblerLabel_ShownOnlyForILResults()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-disasm-disp");
+            var newDir = Path.Combine(_rootDir, "new-disasm-disp");
+            var reportDir = Path.Combine(_rootDir, "report-disasm-disp");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _resultLists.AddModifiedFileRelativePath("il-file.dll");
+            _resultLists.RecordDiffDetail("il-file.dll", FileDiffResultLists.DiffDetailResult.ILMismatch, "dotnet-ildasm (version: 0.12.0)");
+
+            _resultLists.AddModifiedFileRelativePath("text-file.config");
+            _resultLists.RecordDiffDetail("text-file.config", FileDiffResultLists.DiffDetailResult.TextMismatch);
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            // IL file row should show disassembler label / IL ファイル行は逆アセンブララベルを表示
+            Assert.Contains("dotnet-ildasm (version: 0.12.0)", reportText);
+        }
+
+        // ── Mutation-killing: GetDisassemblerDisplayOrder return values ───
+        // ミューテーションキル: GetDisassemblerDisplayOrder の戻り値
+
+        /// <summary>
+        /// Disassembler display order: dotnet-ildasm → ildasm → ilspycmd.
+        /// 逆アセンブラ表示順: dotnet-ildasm → ildasm → ilspycmd。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReport_DisassemblerHeaderOrder_IsCorrect()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-disasm-order");
+            var newDir = Path.Combine(_rootDir, "new-disasm-order");
+            var reportDir = Path.Combine(_rootDir, "report-disasm-order");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            // Record both tools by adding files that use them / 両方のツールを記録するためファイルを追加
+            _resultLists.AddUnchangedFileRelativePath("a.dll");
+            _resultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "ilspycmd (version: 8.0.0)");
+            _resultLists.AddUnchangedFileRelativePath("b.dll");
+            _resultLists.RecordDiffDetail("b.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "dotnet-ildasm (version: 0.12.0)");
+
+            var config = CreateConfig();
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+
+            int ildasmIdx = reportText.IndexOf("dotnet-ildasm", System.StringComparison.Ordinal);
+            int ilspyIdx = reportText.IndexOf("ilspycmd", System.StringComparison.Ordinal);
+            Assert.True(ildasmIdx >= 0, "dotnet-ildasm should appear in report");
+            Assert.True(ilspyIdx >= 0, "ilspycmd should appear in report");
+            Assert.True(ildasmIdx < ilspyIdx, "dotnet-ildasm should appear before ilspycmd");
+        }
     }
 }
