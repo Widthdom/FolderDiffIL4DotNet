@@ -30,17 +30,10 @@ namespace FolderDiffIL4DotNet.Tests.Models
         {
             // Kills mutation: `< 1` → `<= 1` (value 1 must be valid)
             // ミューテーションキル: `< 1` → `<= 1`
-            var builder = new ConfigSettingsBuilder
-            {
-                TextDiffParallelThresholdKilobytes = 1,
-                TextDiffChunkSizeKilobytes = 1, // avoid chunk >= threshold error / チャンク >= 閾値エラーを回避
-            };
-            // chunk == threshold triggers error, so only test threshold alone
-            // チャンク == 閾値はエラーになるため、閾値のみテスト
-            var builderThresholdOnly = new ConfigSettingsBuilder { TextDiffParallelThresholdKilobytes = 1 };
-            var result = builderThresholdOnly.Validate();
             // Default chunk (64) >= threshold (1) triggers chunk error, but threshold itself is valid
             // デフォルトチャンク (64) >= 閾値 (1) でチャンクエラーが出るが、閾値自体は有効
+            var builder = new ConfigSettingsBuilder { TextDiffParallelThresholdKilobytes = 1 };
+            var result = builder.Validate();
             Assert.DoesNotContain(result.Errors, e =>
                 e.Contains("TextDiffParallelThresholdKilobytes must be 1 or greater", System.StringComparison.Ordinal));
         }
