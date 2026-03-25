@@ -353,9 +353,8 @@
     .sbs-toggle { font-size: 11px; color: #0051c3; background: none; border: 1px solid #0051c3;
                   border-radius: 4px; padding: 2px 8px; cursor: pointer; margin: 4px 0 4px 3.2em; }
     .sbs-toggle:hover { background: #e8f0fe; }
-    table.diff-table.sbs-mode { table-layout: fixed; }
-    table.diff-table.sbs-mode td.sbs-old { width: 45%; background: #ffeef0; color: #b31d28; }
-    table.diff-table.sbs-mode td.sbs-new { width: 45%; background: #e6ffed; color: #22863a; }
+    table.diff-table.sbs-mode td.sbs-old { background: #ffeef0; color: #b31d28; }
+    table.diff-table.sbs-mode td.sbs-new { background: #e6ffed; color: #22863a; }
     table.diff-table.sbs-mode td.sbs-ctx { background: #fff; color: #24292e; }
     table.diff-table.sbs-mode td.sbs-empty { background: #f6f8fa; }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
