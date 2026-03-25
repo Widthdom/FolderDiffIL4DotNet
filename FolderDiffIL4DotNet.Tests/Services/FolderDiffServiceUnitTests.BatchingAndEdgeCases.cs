@@ -3,6 +3,7 @@
 /// FolderDiffService のバッチ処理、重複排除、エッジケーステストを含むパーシャルクラス。
 /// </summary>
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;

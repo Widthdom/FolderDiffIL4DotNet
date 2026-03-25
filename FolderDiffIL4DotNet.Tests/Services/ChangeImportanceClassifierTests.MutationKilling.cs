@@ -1,3 +1,4 @@
+using System.Linq;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
