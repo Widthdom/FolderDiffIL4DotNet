@@ -299,6 +299,85 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(ChangeImportance.Low, summary.MaxImportance);
         }
 
+        // ── Mutation-killing: Library key parsing boundaries ─────────────
+        // ミューテーションキル: ライブラリキー解析の境界
+
+        [Fact]
+        public void Analyze_LibraryKeySlashAtEnd_SkippedGracefully()
+        {
+            // Key "Package/" has slash at last position → slashIndex >= Length - 1 → skip
+            // Kills mutation: `>=` → `>` in slashIndex boundary check
+            // キー "Package/" のスラッシュが末尾位置 → slashIndex >= Length - 1 → スキップ
+            var oldFile = CreateDepsJson("old-slash-end.deps.json", @"{""libraries"":{""Package/"":{}}}");
+            var newFile = CreateDepsJson("new-slash-end.deps.json", @"{""libraries"":{""Other/1.0.0"":{}}}");
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile);
+
+            Assert.NotNull(result);
+            // "Package/" should be skipped, only "Other" should be Added
+            // "Package/" はスキップされ、"Other" のみが Added
+            Assert.Equal(1, result!.AddedCount);
+            Assert.Equal(0, result.RemovedCount);
+            Assert.Contains(result.Entries, e => e.PackageName == "Other");
+        }
+
+        [Fact]
+        public void Analyze_LibraryKeySlashAtStart_SkippedGracefully()
+        {
+            // Key "/1.0.0" has slash at index 0 → slashIndex <= 0 → skip
+            // Kills mutation: `<=` → `<` in slashIndex boundary check
+            // キー "/1.0.0" のスラッシュがインデックス 0 → slashIndex <= 0 → スキップ
+            var oldFile = CreateDepsJson("old-slash-start.deps.json", @"{""libraries"":{""/1.0.0"":{}}}");
+            var newFile = CreateDepsJson("new-slash-start.deps.json", @"{""libraries"":{""Valid/2.0.0"":{}}}");
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile);
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result!.AddedCount);
+            Assert.Contains(result.Entries, e => e.PackageName == "Valid");
+        }
+
+        [Fact]
+        public void Analyze_LibraryKeyNoSlash_SkippedGracefully()
+        {
+            // Key without slash → slashIndex = -1 (< 0 which is <= 0) → skip
+            // スラッシュなしキー → slashIndex = -1（<= 0）→ スキップ
+            var oldFile = CreateDepsJson("old-no-slash.deps.json", @"{""libraries"":{""PackageNoSlash"":{}}}");
+            var newFile = CreateDepsJson("new-no-slash.deps.json", @"{""libraries"":{""Valid/1.0.0"":{}}}");
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile);
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result!.AddedCount);
+            Assert.Contains(result.Entries, e => e.PackageName == "Valid");
+        }
+
+        // ── Mutation-killing: ChangeOrder sort correctness ─────────────────
+        // ミューテーションキル: ChangeOrder ソートの正確性
+
+        [Fact]
+        public void Analyze_MixedChanges_SortedByChangeOrderThenName()
+        {
+            // Verify sort order: Added → Removed → Updated, then alphabetical by name
+            // Kills mutation on ChangeOrder return values
+            // ソート順を検証: Added → Removed → Updated、次に名前のアルファベット順
+            var oldFile = CreateDepsJson("old-sort.deps.json", @"{""libraries"":{""ZPkg/1.0.0"":{},""APkg/1.0.0"":{}}}");
+            var newFile = CreateDepsJson("new-sort.deps.json", @"{""libraries"":{""ZPkg/2.0.0"":{},""NewPkg/1.0.0"":{}}}");
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile);
+
+            Assert.NotNull(result);
+            Assert.Equal(3, result!.Entries.Count);
+
+            // Order: Added (NewPkg) → Removed (APkg) → Updated (ZPkg)
+            Assert.Equal("Added", result.Entries[0].Change);
+            Assert.Equal("NewPkg", result.Entries[0].PackageName);
+            Assert.Equal("Removed", result.Entries[1].Change);
+            Assert.Equal("APkg", result.Entries[1].PackageName);
+            Assert.Equal("Updated", result.Entries[2].Change);
+            Assert.Equal("ZPkg", result.Entries[2].PackageName);
+        }
+
         // ── Mutation-killing: Importance count properties ───────────────
         // ミューテーションキル: 重要度カウントプロパティ
 
