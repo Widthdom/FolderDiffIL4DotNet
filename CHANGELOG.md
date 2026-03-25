@@ -55,6 +55,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Fix `FakeDisassembler.csproj` / test project build interaction** — Fixed `TestLogger.cs` auto-inclusion in `FakeDisassembler.csproj` and `Helpers/obj/` generated file exposure by keeping the broad `Helpers\**\*.cs` exclusion, explicitly re-including `Helpers\TestLogger.cs`, and adding `<Compile Remove="TestLogger.cs" />` to `FakeDisassembler.csproj`.
 
+- **Sync side-by-side diff toggle to sample HTML** — The side-by-side diff toggle feature (CSS `.sbs-toggle`/`.sbs-mode` styles, JS `toggleDiffView()` function, and lazy-load button insertion in `setupLazyDiff()`) was missing from [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added the CSS styles, JS function, and button insertion code to match [`diff_report.css`](Services/HtmlReport/diff_report.css) and [`diff_report.js`](Services/HtmlReport/diff_report.js).
+
 ### [1.9.0] - 2026-03-24
 
 #### Added
@@ -751,6 +753,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **初回 main プッシュ時の benchmark CI 失敗を修正** — [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) に `gh-benchmarks` ブランチ自動作成ステップを追加。
 
 - **`FakeDisassembler.csproj` / テストプロジェクトのビルド連携を修正** — `TestLogger.cs` の自動インクルード問題と `Helpers/obj/` 生成ファイル露出を修正。
+
+- **サンプル HTML に side-by-side 差分トグルを同期** — side-by-side 差分トグル機能（CSS `.sbs-toggle`/`.sbs-mode` スタイル、JS `toggleDiffView()` 関数、`setupLazyDiff()` でのボタン挿入）が [`doc/samples/diff_report.html`](doc/samples/diff_report.html) に反映されていなかった問題を修正。[`diff_report.css`](Services/HtmlReport/diff_report.css) および [`diff_report.js`](Services/HtmlReport/diff_report.js) と一致するよう CSS スタイル、JS 関数、ボタン挿入コードを追加。
 
 ### [1.9.0] - 2026-03-24
 

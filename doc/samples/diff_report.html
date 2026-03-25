@@ -343,6 +343,15 @@
     tr.filter-hidden { display: none !important; }
     tr.diff-row.filter-hidden-parent { display: none !important; }
     .lazy-section summary { cursor: pointer; font-size: 13px; color: #6e6e73; padding: 0.2rem 0; }
+    /* ── Side-by-side diff mode / サイドバイサイド差分モード ────────────── */
+    .sbs-toggle { font-size: 11px; color: #0051c3; background: none; border: 1px solid #0051c3;
+                  border-radius: 4px; padding: 2px 8px; cursor: pointer; margin: 4px 0 4px 3.2em; }
+    .sbs-toggle:hover { background: #e8f0fe; }
+    table.diff-table.sbs-mode { table-layout: fixed; }
+    table.diff-table.sbs-mode td.sbs-old { width: 45%; background: #ffeef0; color: #b31d28; }
+    table.diff-table.sbs-mode td.sbs-new { width: 45%; background: #e6ffed; color: #22863a; }
+    table.diff-table.sbs-mode td.sbs-ctx { background: #fff; color: #24292e; }
+    table.diff-table.sbs-mode td.sbs-empty { background: #f6f8fa; }
     @media (max-width: 1100px) {
       body { padding: 0 1rem 2rem; }
       .controls { padding: 0.7rem max(1rem, calc(50vw - 50%)); }
@@ -1500,6 +1509,141 @@
     return new TextDecoder('utf-8').decode(bytes);
   }
 
+  // Toggle between unified and side-by-side diff view / 統合ビューとサイドバイサイドビューを切り替え
+  function toggleDiffView(detailsEl) {
+    var table = detailsEl.querySelector('.diff-table');
+    if (!table) return;
+    var btn = detailsEl.querySelector('.sbs-toggle');
+    if (table.classList.contains('sbs-mode')) {
+      // Restore unified view / 統合ビューに復元
+      table.classList.remove('sbs-mode');
+      var tbody = table.querySelector('tbody');
+      if (table._unifiedHtml) { tbody.innerHTML = table._unifiedHtml; }
+      if (btn) btn.textContent = 'Side-by-side';
+      return;
+    }
+    // Switch to side-by-side / サイドバイサイドに切り替え
+    var tbody = table.querySelector('tbody');
+    table._unifiedHtml = tbody.innerHTML;
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+    var newRows = [];
+    var i = 0;
+    while (i < rows.length) {
+      var r = rows[i];
+      if (r.classList.contains('diff-hunk-tr')) {
+        // Hunk header: span full width (4 columns) / ハンクヘッダー: 全幅
+        var tr = document.createElement('tr');
+        tr.className = 'diff-hunk-tr';
+        var td = document.createElement('td');
+        td.className = 'diff-hunk-td';
+        td.colSpan = 4;
+        td.textContent = r.querySelector('.diff-hunk-td') ? r.querySelector('.diff-hunk-td').textContent : '';
+        tr.appendChild(td);
+        newRows.push(tr);
+        i++;
+      } else if (r.classList.contains('diff-del-tr') && i + 1 < rows.length && rows[i + 1].classList.contains('diff-add-tr')) {
+        // Consecutive del+add pair: merge into side-by-side / 連続するdel+addペア: サイドバイサイドにマージ
+        var delRow = r;
+        var addRow = rows[i + 1];
+        var tr = document.createElement('tr');
+        var delLn = delRow.querySelector('.diff-ln');
+        var delTd = delRow.querySelector('.diff-del-td');
+        var addLn = addRow.querySelector('.diff-ln');
+        var addTd = addRow.querySelector('.diff-add-td');
+        var tdOldLn = document.createElement('td');
+        tdOldLn.className = 'diff-ln';
+        tdOldLn.textContent = delLn ? delLn.textContent : '';
+        var tdOldText = document.createElement('td');
+        tdOldText.className = 'sbs-old';
+        tdOldText.textContent = delTd ? delTd.textContent : '';
+        tdOldText.style.whiteSpace = 'pre';
+        var tdNewLn = document.createElement('td');
+        tdNewLn.className = 'diff-ln';
+        tdNewLn.textContent = addLn ? addLn.textContent : '';
+        var tdNewText = document.createElement('td');
+        tdNewText.className = 'sbs-new';
+        tdNewText.textContent = addTd ? addTd.textContent : '';
+        tdNewText.style.whiteSpace = 'pre';
+        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
+        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        newRows.push(tr);
+        i += 2;
+      } else if (r.classList.contains('diff-del-tr')) {
+        // Standalone deletion / 単独の削除行
+        var tr = document.createElement('tr');
+        var delLn = r.querySelector('.diff-ln');
+        var delTd = r.querySelector('.diff-del-td');
+        var tdOldLn = document.createElement('td');
+        tdOldLn.className = 'diff-ln';
+        tdOldLn.textContent = delLn ? delLn.textContent : '';
+        var tdOldText = document.createElement('td');
+        tdOldText.className = 'sbs-old';
+        tdOldText.textContent = delTd ? delTd.textContent : '';
+        tdOldText.style.whiteSpace = 'pre';
+        var tdNewLn = document.createElement('td');
+        tdNewLn.className = 'diff-ln sbs-empty';
+        var tdNewText = document.createElement('td');
+        tdNewText.className = 'sbs-empty';
+        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
+        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        newRows.push(tr);
+        i++;
+      } else if (r.classList.contains('diff-add-tr')) {
+        // Standalone addition / 単独の追加行
+        var tr = document.createElement('tr');
+        var addLn = r.querySelector('.diff-ln');
+        var addTd = r.querySelector('.diff-add-td');
+        var tdOldLn = document.createElement('td');
+        tdOldLn.className = 'diff-ln sbs-empty';
+        var tdOldText = document.createElement('td');
+        tdOldText.className = 'sbs-empty';
+        var tdNewLn = document.createElement('td');
+        tdNewLn.className = 'diff-ln';
+        tdNewLn.textContent = addLn ? addLn.textContent : '';
+        var tdNewText = document.createElement('td');
+        tdNewText.className = 'sbs-new';
+        tdNewText.textContent = addTd ? addTd.textContent : '';
+        tdNewText.style.whiteSpace = 'pre';
+        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
+        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        newRows.push(tr);
+        i++;
+      } else if (r.classList.contains('diff-trunc-tr')) {
+        // Truncation row: span full width / 省略行: 全幅
+        var tr = document.createElement('tr');
+        tr.className = 'diff-trunc-tr';
+        var td = document.createElement('td');
+        td.className = 'diff-trunc-td';
+        td.colSpan = 4;
+        td.textContent = r.querySelector('.diff-trunc-td') ? r.querySelector('.diff-trunc-td').textContent : '';
+        tr.appendChild(td);
+        newRows.push(tr);
+        i++;
+      } else {
+        // Context row: span old-text and new-text columns / コンテキスト行: old-textとnew-text列を結合
+        var tr = document.createElement('tr');
+        tr.className = 'diff-ctx-tr';
+        var lnTd = r.querySelector('.diff-ln');
+        var ctxTd = r.querySelector('.diff-ctx-td');
+        var tdLn = document.createElement('td');
+        tdLn.className = 'diff-ln';
+        tdLn.textContent = lnTd ? lnTd.textContent : '';
+        var tdCtx = document.createElement('td');
+        tdCtx.className = 'sbs-ctx';
+        tdCtx.colSpan = 3;
+        tdCtx.textContent = ctxTd ? ctxTd.textContent : '';
+        tdCtx.style.whiteSpace = 'pre';
+        tr.appendChild(tdLn); tr.appendChild(tdCtx);
+        newRows.push(tr);
+        i++;
+      }
+    }
+    tbody.innerHTML = '';
+    newRows.forEach(function(tr) { tbody.appendChild(tr); });
+    table.classList.add('sbs-mode');
+    if (btn) btn.textContent = 'Unified';
+  }
+
   // Lazy-render: diff table HTML is stored base64-encoded in data-diff-html.
   // On first open, decode and insert into DOM, then remove the attribute.
   function setupLazyDiff() {
@@ -1512,6 +1656,15 @@
         d.removeEventListener('toggle', onToggle);
         try {
           d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+          // Insert side-by-side toggle button before each diff-table / 各diff-tableの前にサイドバイサイド切り替えボタンを挿入
+          d.querySelectorAll('.diff-table').forEach(function(tbl) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'sbs-toggle';
+            btn.textContent = 'Side-by-side';
+            btn.addEventListener('click', function() { toggleDiffView(d); });
+            tbl.parentNode.insertBefore(btn, tbl);
+          });
           // Re-init column resize handles on newly rendered tables
           d.querySelectorAll('th.th-resizable').forEach(function(th) {
             if (th.querySelector('.col-resize-handle')) return;
