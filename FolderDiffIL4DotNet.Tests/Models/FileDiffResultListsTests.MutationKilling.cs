@@ -108,7 +108,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Removed", "MyApp.Svc", "", "public", "", "Method", "Execute", "", "void", "", ""),
+                    new("Removed", "MyApp.Svc", "", "public", "", "Method", "Execute", "", "void", "", "", ChangeImportance.High),
                 }
             };
 
@@ -148,7 +148,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Svc", "", "private", "", "Method", "Helper", "", "void", "", ""),
+                    new("Added", "MyApp.Svc", "", "private", "", "Method", "Helper", "", "void", "", "", ChangeImportance.Low),
                 }
             };
             _sut.FileRelativePathToDependencyChanges["both.dll"] = new DependencyChangeSummary
@@ -175,7 +175,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Removed", "MyApp.Svc", "", "public", "", "Method", "Execute", "", "void", "", ""),
+                    new("Removed", "MyApp.Svc", "", "public", "", "Method", "Execute", "", "void", "", "", ChangeImportance.High),
                 }
             };
             _sut.FileRelativePathToDependencyChanges["asm-wins.dll"] = new DependencyChangeSummary
@@ -202,7 +202,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Added", "MyApp.Svc", "", "public", "", "Method", "NewApi", "", "void", "", ""),
+                    new("Added", "MyApp.Svc", "", "public", "", "Method", "NewApi", "", "void", "", "", ChangeImportance.Medium),
                 }
             };
             _sut.FileRelativePathToDependencyChanges["equal.dll"] = new DependencyChangeSummary
@@ -238,8 +238,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Removed", "MyApp.Svc", "", "public", "", "Method", "A", "", "void", "", ""),
-                    new("Added", "MyApp.Svc", "", "private", "", "Method", "B", "", "void", "", ""),
+                    new("Removed", "MyApp.Svc", "", "public", "", "Method", "A", "", "void", "", "", ChangeImportance.High),
+                    new("Added", "MyApp.Svc", "", "private", "", "Method", "B", "", "void", "", "", ChangeImportance.Low),
                 }
             };
 

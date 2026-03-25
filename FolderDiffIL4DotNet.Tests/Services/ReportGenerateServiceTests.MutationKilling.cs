@@ -573,7 +573,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 Entries = new List<MemberChangeEntry>
                 {
-                    new("Removed", "MyApp.Service", "", "public", "", "Method", "Execute", "", "void", "", ""),
+                    new("Removed", "MyApp.Service", "", "public", "", "Method", "Execute", "", "void", "", "", ChangeImportance.High),
                 }
             };
 
