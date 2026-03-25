@@ -538,14 +538,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // Verify each location label appears / 各ロケーションラベルの表示を検証
+            // Verify each file and location label appears / 各ファイルとロケーションラベルの表示を検証
             Assert.Contains("old-only.pdb", reportText);
             Assert.Contains("new-only.pdb", reportText);
             Assert.Contains("both.pdb", reportText);
-            // Verify Old/New/Both labels in the ignored section / 無視セクションで Old/New/Both ラベルを検証
-            Assert.Contains("Old", reportText);
-            Assert.Contains("New", reportText);
-            Assert.Contains("Both", reportText);
+            // Location labels are "(old)", "(new)", "(old/new)" / ロケーションラベルは "(old)"、"(new)"、"(old/new)"
+            Assert.Contains("(old)", reportText);
+            Assert.Contains("(new)", reportText);
+            Assert.Contains("(old/new)", reportText);
         }
 
         // ── Mutation-killing: BuildDiffDetailDisplay importance vs null ───
@@ -641,7 +641,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
-            // Record both tools by adding files that use them / 両方のツールを記録するためファイルを追加
+            // Record both tools in DisassemblerToolVersions (used by header) and per-file labels
+            // DisassemblerToolVersions（ヘッダーで使用）とファイル単位ラベルの両方にツールを記録
+            _resultLists.RecordDisassemblerToolVersion("ilspycmd", "8.0.0");
+            _resultLists.RecordDisassemblerToolVersion("dotnet-ildasm", "0.12.0");
             _resultLists.AddUnchangedFileRelativePath("a.dll");
             _resultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "ilspycmd (version: 8.0.0)");
             _resultLists.AddUnchangedFileRelativePath("b.dll");
