@@ -641,10 +641,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
-            // Record both tools in DisassemblerToolVersions (used by header) and per-file labels
-            // DisassemblerToolVersions（ヘッダーで使用）とファイル単位ラベルの両方にツールを記録
+            // Record tools in DisassemblerToolVersions (used by header) and set probe results
+            // DisassemblerToolVersions（ヘッダーで使用）にツールを記録し、プローブ結果を設定
             _resultLists.RecordDisassemblerToolVersion("ilspycmd", "8.0.0");
             _resultLists.RecordDisassemblerToolVersion("dotnet-ildasm", "0.12.0");
+            // Probe results must be set for the availability table to be written
+            // 利用可否テーブルが書き込まれるためにプローブ結果の設定が必要
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", true, "0.12.0", "/usr/local/bin/dotnet-ildasm"),
+                new("ilspycmd", true, "8.0.0", "/usr/local/bin/ilspycmd"),
+            };
             _resultLists.AddUnchangedFileRelativePath("a.dll");
             _resultLists.RecordDiffDetail("a.dll", FileDiffResultLists.DiffDetailResult.ILMatch, "ilspycmd (version: 8.0.0)");
             _resultLists.AddUnchangedFileRelativePath("b.dll");
@@ -654,11 +661,16 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            int ildasmIdx = reportText.IndexOf("dotnet-ildasm", System.StringComparison.Ordinal);
-            int ilspyIdx = reportText.IndexOf("ilspycmd", System.StringComparison.Ordinal);
-            Assert.True(ildasmIdx >= 0, "dotnet-ildasm should appear in report");
-            Assert.True(ilspyIdx >= 0, "ilspycmd should appear in report");
-            Assert.True(ildasmIdx < ilspyIdx, "dotnet-ildasm should appear before ilspycmd");
+            // The availability table header lists tools in order: dotnet-ildasm before ilspycmd
+            // 利用可否テーブルのヘッダーではツールが順に並ぶ: dotnet-ildasm が ilspycmd より先
+            int headerIdx = reportText.IndexOf("### Disassembler Availability", System.StringComparison.Ordinal);
+            Assert.True(headerIdx >= 0, "Disassembler Availability section should exist");
+            string headerSection = reportText.Substring(headerIdx);
+            int ildasmIdx = headerSection.IndexOf("dotnet-ildasm", System.StringComparison.Ordinal);
+            int ilspyIdx = headerSection.IndexOf("ilspycmd", System.StringComparison.Ordinal);
+            Assert.True(ildasmIdx >= 0, "dotnet-ildasm should appear in availability table");
+            Assert.True(ilspyIdx >= 0, "ilspycmd should appear in availability table");
+            Assert.True(ildasmIdx < ilspyIdx, "dotnet-ildasm should appear before ilspycmd in header");
         }
     }
 }
