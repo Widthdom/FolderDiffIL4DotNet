@@ -4,9 +4,11 @@ on:
   pull_request:
     branches:
       - main
+      - pre-main-integration
   push:
     branches:
       - main
+      - pre-main-integration
   workflow_dispatch:
 
 permissions:
@@ -72,6 +74,15 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "Baseline branch gh-benchmarks does not exist yet. Will be created on first push to main."
           fi
+
+      - name: Create gh-benchmarks branch if missing
+        if: steps.check-baseline.outputs.exists != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git checkout --orphan gh-benchmarks
+          git rm -rf . 2>/dev/null || true
+          git commit --allow-empty -m "Initialize gh-benchmarks branch"
+          git push origin gh-benchmarks
+          git checkout -
 
       - name: Detect performance regression
         if: steps.check-baseline.outputs.exists == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')

@@ -11,7 +11,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
     /// <see cref="DepsJsonAnalyzer"/> のユニットテスト。
     /// </summary>
     [Trait("Category", "Unit")]
-    public sealed class DepsJsonAnalyzerTests : IDisposable
+    public sealed partial class DepsJsonAnalyzerTests : IDisposable
     {
         private readonly string _tempDir;
 

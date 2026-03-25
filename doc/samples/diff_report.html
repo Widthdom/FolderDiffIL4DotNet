@@ -358,6 +358,8 @@
       }
       .save-status { flex-basis: 100%; }
     }
+    /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
+    .pdf-print-header, .pdf-print-footer { display: none; }
   </style>
 </head>
 <body>
@@ -1383,6 +1385,7 @@
       + '<div class="reviewed-banner-actions">'
       + '<button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
       + '<button class="btn" onclick="downloadExcelCompatibleHtml()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><rect x="1" y="1" width="14" height="14" rx="1.5"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="9" x2="15" y2="9"/><line x1="6" y1="1" x2="6" y2="15"/><line x1="11" y1="1" x2="11" y2="15"/></svg> Download as Excel-compatible HTML</button>'
+      + '<button class="btn" onclick="downloadAsPdf()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M4 1h6l4 4v10H2V1h2z"/><polyline points="10,1 10,5 14,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="10.5" x2="11" y2="10.5"/><line x1="5" y1="13" x2="9" y2="13"/></svg> Download as PDF</button>'
       + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
       + '<button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
       + '</div></div>');
@@ -1874,6 +1877,48 @@
         if (svg) { btn.textContent=''; btn.appendChild(svg); svg.style.display=''; }
       }, 1200);
     });
+  }
+
+  // ── PDF export via browser print / ブラウザ印刷による PDF エクスポート ──
+  function downloadAsPdf() {
+    forceDecodeLazySections();
+    var headerCards = document.querySelectorAll('.header-card');
+    var appVersion = '', computerName = '';
+    headerCards.forEach(function(card) {
+      var label = (card.querySelector('.header-card-label') || {}).textContent || '';
+      var value = (card.querySelector('.header-card-value') || {}).textContent || '';
+      if (label.indexOf('App Version') >= 0) appVersion = value;
+      if (label.indexOf('Computer') >= 0) computerName = value;
+    });
+    var pathEls = document.querySelectorAll('.header-path');
+    var oldPath = '', newPath = '';
+    pathEls.forEach(function(el) {
+      var label = (el.querySelector('.header-path-label') || {}).textContent || '';
+      var value = (el.querySelector('.header-path-value') || {}).textContent || '';
+      if (label === 'Old Folder') oldPath = value;
+      if (label === 'New Folder') newPath = value;
+    });
+    var bannerSpan = document.querySelector('.reviewed-banner > span');
+    var reviewedDate = bannerSpan ? bannerSpan.textContent : '';
+    var header = document.createElement('div');
+    header.className = 'pdf-print-header';
+    header.innerHTML = '<span>Folder Diff Report \u2014 ' + esc(appVersion) + '</span>'
+      + '<span>' + esc(oldPath) + ' \u2192 ' + esc(newPath) + '</span>';
+    var footer = document.createElement('div');
+    footer.className = 'pdf-print-footer';
+    footer.innerHTML = '<span>' + esc(reviewedDate) + ' \u2014 ' + esc(computerName) + '</span>'
+      + '<span>Page numbers: enable in browser print settings</span>';
+    document.body.appendChild(header);
+    document.body.appendChild(footer);
+    document.body.classList.add('pdf-print-mode');
+    function cleanup() {
+      document.body.classList.remove('pdf-print-mode');
+      if (header.parentNode) header.parentNode.removeChild(header);
+      if (footer.parentNode) footer.parentNode.removeChild(footer);
+      window.removeEventListener('afterprint', cleanup);
+    }
+    window.addEventListener('afterprint', cleanup);
+    window.print();
   }
 
   // ── Excel export ────────────────────────────────────────────────────

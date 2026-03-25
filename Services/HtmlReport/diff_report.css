@@ -349,3 +349,66 @@
     col.dc-col-ver-g { width: 12em; }
     table.semantic-changes-table.dc-detail td:nth-child(3),
     table.semantic-changes-table.dc-detail td:nth-child(4) { text-align: center; }
+    /* ── Side-by-side diff mode / サイドバイサイド差分モード ────────────── */
+    .sbs-toggle { font-size: 11px; color: #0051c3; background: none; border: 1px solid #0051c3;
+                  border-radius: 4px; padding: 2px 8px; cursor: pointer; margin: 4px 0 4px 3.2em; }
+    .sbs-toggle:hover { background: #e8f0fe; }
+    table.diff-table.sbs-mode { table-layout: fixed; }
+    table.diff-table.sbs-mode td.sbs-old { width: 45%; background: #ffeef0; color: #b31d28; }
+    table.diff-table.sbs-mode td.sbs-new { width: 45%; background: #e6ffed; color: #22863a; }
+    table.diff-table.sbs-mode td.sbs-ctx { background: #fff; color: #24292e; }
+    table.diff-table.sbs-mode td.sbs-empty { background: #f6f8fa; }
+    /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
+    .pdf-print-header, .pdf-print-footer { display: none; }
+    /* ── Print styles / 印刷スタイル ───────────────────────────────────── */
+    @media print {
+      /* Hide interactive controls / インタラクティブコントロールを非表示 */
+      .controls, .controls-bar, .reviewed-banner, .filter-zone,
+      .btn, .btn-clear, .btn-copy-path, .sbs-toggle,
+      .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
+      button, .filter-search-wrap, .btn-input-clear { display: none !important; }
+      input[type="checkbox"] { pointer-events: none; }
+      input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
+      /* Remove sticky positioning / スティッキー配置を解除 */
+      .controls, .reviewed-banner { position: static !important; }
+      /* Expand all details elements / 全details要素を展開 */
+      details { display: block !important; }
+      details > summary { display: none !important; }
+      details[open] > summary { display: none !important; }
+      /* Page setup / ページ設定 */
+      @page { margin: 1.5cm; }
+      body { padding: 0; font-size: 12px; max-width: 100%; }
+      /* Avoid page breaks inside rows and diff blocks / 行・差分ブロック内での改ページ回避 */
+      tr, .diff-view, details { page-break-inside: avoid; break-inside: avoid; }
+      table { page-break-inside: auto; }
+      /* Ensure monospace fonts print correctly / 等幅フォントの印刷を保証 */
+      code, table.diff-table, td.col-diff, td.col-disasm {
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 10px !important;
+      }
+      /* Show full file paths / ファイルパスを全表示 */
+      td.col-path, td.col-path .path-text {
+        white-space: normal !important; word-break: break-all;
+        overflow: visible !important; text-overflow: unset !important;
+      }
+      /* Ensure backgrounds print / 背景色を印刷 */
+      tr.diff-del-tr, td.diff-del-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr.diff-add-tr, td.diff-add-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr.diff-hunk-tr, td.diff-hunk-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      td.col-status { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      /* ── PDF-mode header / footer (shown only when body.pdf-print-mode) / PDF モード用ヘッダー・フッター ── */
+      body.pdf-print-mode { padding-top: 1.4cm; padding-bottom: 1.2cm; }
+      body.pdf-print-mode .pdf-print-header {
+        display: block !important; position: fixed; top: 0; left: 0; right: 0;
+        padding: 0.3cm 1.5cm; font-size: 8px; color: #555; border-bottom: 0.5px solid #ccc;
+        background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; z-index: 9999;
+      }
+      body.pdf-print-mode .pdf-print-footer {
+        display: block !important; position: fixed; bottom: 0; left: 0; right: 0;
+        padding: 0.3cm 1.5cm; font-size: 8px; color: #555; border-top: 0.5px solid #ccc;
+        background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; z-index: 9999;
+      }
+      body.pdf-print-mode .pdf-print-header { display: flex !important; justify-content: space-between; align-items: center; }
+      body.pdf-print-mode .pdf-print-footer { display: flex !important; justify-content: space-between; align-items: center; }
+      body.pdf-print-mode .reviewed-banner { display: none !important; }
+    }

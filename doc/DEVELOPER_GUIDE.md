@@ -8,6 +8,8 @@ Related documents:
 - [api/index.md](../api/index.md): generated API reference landing page
 - [docfx.json](../docfx.json): DocFX metadata/build configuration
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI pipeline definition
+- [SECURITY.md](../SECURITY.md): threat model, STRIDE analysis, and security mitigations
+- [doc/PERFORMANCE_GUIDE.md](PERFORMANCE_GUIDE.md#perf-en-memory): memory management, benchmark baselines, and tuning recommendations
 
 <a id="guide-en-map"></a>
 ## Document Map
@@ -82,10 +84,10 @@ Large service classes are split into partial class files to keep each file focus
 | --- | --- | --- |
 | `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs) (nested types: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`), [`Runner/ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs) (CLI help message), [`Runner/ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) (config loading, validation, CLI overrides) |
 | `ConfigSettings` | [`Models/ConfigSettings.cs`](../Models/ConfigSettings.cs) | [`Models/ConfigSettings.ReportSettings.cs`](../Models/ConfigSettings.ReportSettings.cs) (report output control), [`Models/ConfigSettings.ILSettings.cs`](../Models/ConfigSettings.ILSettings.cs) (IL comparison, cache, disassembler), [`Models/ConfigSettings.DiffSettings.cs`](../Models/ConfigSettings.DiffSettings.cs) (parallelism, network, inline diff) |
-| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) (loads [`diff_report.css`](../Services/HtmlReport/diff_report.css) embedded resource), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) (loads [`diff_report.js`](../Services/HtmlReport/diff_report.js) template with `{{STORAGE_KEY}}`/`{{REPORT_DATE}}` placeholders) |
+| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs) (report section builders), [`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs) (inline diff, semantic changes, dependency changes detail rows), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) (loads [`diff_report.css`](../Services/HtmlReport/diff_report.css) embedded resource), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) (loads [`diff_report.js`](../Services/HtmlReport/diff_report.js) template with `{{STORAGE_KEY}}`/`{{REPORT_DATE}}` placeholders) |
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/ReportGenerateService.SectionWriters.cs`](../Services/ReportGenerateService.SectionWriters.cs) |
-| `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs) (type/method/property/field comparison), [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs) (snapshot construction, access/modifier extraction, signature type provider) |
+| `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs) (type/method/property/field comparison), [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs) (snapshot construction, signature building), [`…AccessHelpers.cs`](../Services/AssemblyMethodAnalyzer.AccessHelpers.cs) (access/modifier extraction, type kind detection, IL byte reading), [`…SignatureProvider.cs`](../Services/AssemblyMethodAnalyzer.SignatureProvider.cs) (generic context, signature type provider) |
 | `DepsJsonAnalyzer` | [`Services/DepsJsonAnalyzer.cs`](../Services/DepsJsonAnalyzer.cs) | (single file) Structured dependency change analysis for `.deps.json` files |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs) (sequential/chunk-parallel text comparison, memory-budget-aware parallelism) |
 | `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs) (version/label management, tool fingerprinting, process execution, usage recording), [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs) (line-based streaming disassembly, avoids LOH string allocations) |
@@ -383,7 +385,7 @@ Why this matters:
 | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; "Download as reviewed" computes SHA256 of the reviewed HTML via Web Crypto API, embeds the hash for self-verification, downloads a companion `.sha256` verification file, and adds a "Verify integrity" button to the reviewed banner; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
 | [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | Structured JSON audit log generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) and computes SHA256 integrity hashes of `diff_report.md` / `diff_report.html`; produces [`audit_log.json`](samples/audit_log.json); skipped when [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) is `false` |
 | [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | Audit log data models | [`AuditLogRecord`](../Models/AuditLogEntry.cs) (top-level), [`AuditLogFileEntry`](../Models/AuditLogEntry.cs) (per-file), [`AuditLogSummary`](../Models/AuditLogEntry.cs) (counts) |
-| [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object |
+| [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object; split into partial files: [`FileDiffResultLists.ComparisonResults.cs`](../Models/FileDiffResultLists.ComparisonResults.cs) (diff details, disassembler labels, ignored files), [`FileDiffResultLists.Metadata.cs`](../Models/FileDiffResultLists.Metadata.cs) (semantic changes, dependency changes, warnings, disassembler info) |
 
 <a id="guide-en-comparison-pipeline"></a>
 ## Comparison Pipeline
@@ -638,6 +640,28 @@ Guardrails:
 <a id="guide-en-ci-release"></a>
 ## CI and Release Notes
 
+### Workflow Overview
+
+```
+On pull_request:
+  ├─ dotnet.yml (build)             → Build + Test + Coverage enforcement
+  ├─ dotnet.yml (mutation-testing)  → Stryker mutation testing
+  ├─ dotnet.yml (test-windows)     → Windows cross-platform verification
+  ├─ benchmark-regression.yml       → Performance regression detection
+  └─ codeql.yml                     → Security static analysis (C# + Actions)
+
+On push to main:
+  ├─ dotnet.yml (build)             → Build + Test + Coverage enforcement
+  ├─ dotnet.yml (test-windows)     → Windows cross-platform verification
+  ├─ benchmark-regression.yml       → Performance regression detection + baseline update
+  └─ codeql.yml                     → Security static analysis
+
+On v* tag push:
+  └─ release.yml                    → Build + Test + Publish + GitHub Release creation
+```
+
+Quality is guarded across six axes: **correctness** (tests), **coverage** (line/branch thresholds), **detection strength** (mutation testing), **performance** (benchmark regression), **security** (CodeQL), and **compatibility** (Windows).
+
 Workflow/config files:
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
 - [.github/workflows/release.yml](../.github/workflows/release.yml)
@@ -661,6 +685,19 @@ Current CI behavior (`build` job — Ubuntu):
 - Runs in parallel with `build` on `windows-latest`
 - Restores, builds, installs [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/), and runs the full test suite with `DOTNET_ROLL_FORWARD=Major`
 - Ensures Windows-specific code paths are exercised and the E2E disassembler test runs on every push
+
+`mutation-testing` job — Stryker:
+- Runs on `pull_request` and `workflow_dispatch` only (not on push to `main`)
+- Uses [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) to inject mutations into production code and verify tests detect them
+- Configuration is in [`stryker-config.json`](../stryker-config.json)
+- Posts the mutation score to the GitHub Actions job summary
+- Uploads the full Stryker HTML/JSON report as `StrykerReport`
+- Break threshold is `50%` — the job fails if the mutation score falls below this
+
+`benchmark` job (manual only):
+- Runs only on `workflow_dispatch`
+- Executes [BenchmarkDotNet](https://benchmarkdotnet.org/) benchmarks from `FolderDiffIL4DotNet.Benchmarks` and uploads results as `BenchmarkResults`
+- Exports JSON and GitHub-flavored results for manual comparison
 
 Release automation:
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs for pushed `v*` tags and manual dispatch with an explicit existing tag input
@@ -825,6 +862,8 @@ Some browsers (notably macOS Safari) ignore the `accept` attribute on `<input ty
 - [api/index.md](../api/index.md): 自動生成 API リファレンスの入口
 - [docfx.json](../docfx.json): DocFX のメタデータ/ビルド設定
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml): CI パイプライン定義
+- [SECURITY.md](../SECURITY.md): 脅威モデル、STRIDE 分析、セキュリティ対策
+- [doc/PERFORMANCE_GUIDE.md](PERFORMANCE_GUIDE.md#perf-ja-memory): メモリ管理、ベンチマークベースライン、チューニング推奨
 
 <a id="guide-ja-map"></a>
 ## ドキュメントの見取り図
@@ -898,10 +937,10 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 | --- | --- | --- |
 | `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs)（ネスト型: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`）、[`Runner/ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)（CLI ヘルプメッセージ）、[`Runner/ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs)（設定読込・バリデーション・CLI オーバーライド） |
 | `ConfigSettings` | [`Models/ConfigSettings.cs`](../Models/ConfigSettings.cs) | [`Models/ConfigSettings.ReportSettings.cs`](../Models/ConfigSettings.ReportSettings.cs)（レポート出力制御）、[`Models/ConfigSettings.ILSettings.cs`](../Models/ConfigSettings.ILSettings.cs)（IL 比較・キャッシュ・逆アセンブラ）、[`Models/ConfigSettings.DiffSettings.cs`](../Models/ConfigSettings.DiffSettings.cs)（並列処理・ネットワーク・インライン差分） |
-| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) ([`diff_report.css`](../Services/HtmlReport/diff_report.css) 埋め込みリソースを読み込み), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) ([`diff_report.js`](../Services/HtmlReport/diff_report.js) テンプレートをプレースホルダー置換して読み込み) |
+| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs)（レポートセクション生成）、[`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs)（インライン差分、セマンティック変更、依存関係変更の詳細行）、[`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) ([`diff_report.css`](../Services/HtmlReport/diff_report.css) 埋め込みリソースを読み込み), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) ([`diff_report.js`](../Services/HtmlReport/diff_report.js) テンプレートをプレースホルダー置換して読み込み) |
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/ReportGenerateService.SectionWriters.cs`](../Services/ReportGenerateService.SectionWriters.cs) |
-| `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs)（型/メソッド/プロパティ/フィールド比較）, [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs)（スナップショット構築、アクセス修飾子/修飾子抽出、シグネチャ型プロバイダ） |
+| `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs)（型/メソッド/プロパティ/フィールド比較）、[`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs)（スナップショット構築、シグネチャ構築）、[`…AccessHelpers.cs`](../Services/AssemblyMethodAnalyzer.AccessHelpers.cs)（アクセス修飾子抽出、型種別判定、IL バイト読み取り）、[`…SignatureProvider.cs`](../Services/AssemblyMethodAnalyzer.SignatureProvider.cs)（ジェネリックコンテキスト、シグネチャ型プロバイダ） |
 | `DepsJsonAnalyzer` | [`Services/DepsJsonAnalyzer.cs`](../Services/DepsJsonAnalyzer.cs) | （単一ファイル）`.deps.json` ファイルの構造化された依存関係変更分析 |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs)（逐次/チャンク並列テキスト比較、メモリ予算考慮の並列度制御） |
 | `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs)（バージョン/ラベル管理、ツールフィンガープリント、プロセス実行、使用記録）, [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs)（行単位ストリーミング逆アセンブル、LOH 文字列割り当て回避） |
@@ -1198,7 +1237,7 @@ sequenceDiagram
 | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；「Download as reviewed」は Web Crypto API でレビュー済み HTML の SHA256 を計算・埋め込み（自己検証用）、コンパニオン `.sha256` 検証ファイルもダウンロードし、レビュー済みバナーに「Verify integrity」ボタンを追加；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | 構造化 JSON 監査ログ生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読み、`diff_report.md` / `diff_report.html` の SHA256 インテグリティハッシュを計算；[`audit_log.json`](samples/audit_log.json) を生成；[`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | 監査ログデータモデル | [`AuditLogRecord`](../Models/AuditLogEntry.cs)（トップレベル）、[`AuditLogFileEntry`](../Models/AuditLogEntry.cs)（ファイル単位）、[`AuditLogSummary`](../Models/AuditLogEntry.cs)（件数集計） |
-| [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態 |
+| [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態；partial ファイル分割: [`FileDiffResultLists.ComparisonResults.cs`](../Models/FileDiffResultLists.ComparisonResults.cs)（差分詳細、逆アセンブララベル、除外ファイル）、[`FileDiffResultLists.Metadata.cs`](../Models/FileDiffResultLists.Metadata.cs)（セマンティック変更、依存関係変更、警告、逆アセンブラ情報） |
 
 <a id="guide-ja-comparison-pipeline"></a>
 ## 比較パイプライン
@@ -1451,6 +1490,28 @@ API リファレンス生成とサイト構築には DocFX を使います。
 <a id="guide-ja-ci-release"></a>
 ## CI とリリースまわり
 
+### ワークフロー概観
+
+```
+PR 作成時:
+  ├─ dotnet.yml (build)             → ビルド + テスト + カバレッジ検証
+  ├─ dotnet.yml (mutation-testing)  → Stryker ミューテーションテスト
+  ├─ dotnet.yml (test-windows)     → Windows クロスプラットフォーム検証
+  ├─ benchmark-regression.yml       → パフォーマンス回帰検知
+  └─ codeql.yml                     → セキュリティ静的解析（C# + Actions）
+
+main push 時:
+  ├─ dotnet.yml (build)             → ビルド + テスト + カバレッジ検証
+  ├─ dotnet.yml (test-windows)     → Windows クロスプラットフォーム検証
+  ├─ benchmark-regression.yml       → パフォーマンス回帰検知 + ベースライン更新
+  └─ codeql.yml                     → セキュリティ静的解析
+
+v* タグ push 時:
+  └─ release.yml                    → ビルド + テスト + 発行 + GitHub Release 作成
+```
+
+品質は6軸で守られています: **正しさ**（テスト）、**網羅性**（行/ブランチカバレッジ閾値）、**検出力**（ミューテーションテスト）、**速度**（ベンチマーク回帰検知）、**安全性**（CodeQL）、**互換性**（Windows）。
+
 ワークフロー/設定:
 - [.github/workflows/dotnet.yml](../.github/workflows/dotnet.yml)
 - [.github/workflows/release.yml](../.github/workflows/release.yml)
@@ -1474,6 +1535,19 @@ API リファレンス生成とサイト構築には DocFX を使います。
 - `build` ジョブと並行して `windows-latest` 上で実行
 - restore / build / [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) インストール後、`DOTNET_ROLL_FORWARD=Major` 付きでフルテストスイートを実行
 - Windows 固有のコードパスを検証し、E2E 逆アセンブラテストを push のたびに実行することを保証する
+
+`mutation-testing` ジョブ — Stryker:
+- `pull_request` と `workflow_dispatch` でのみ実行（`main` への push では実行されない）
+- [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) でプロダクションコードにミューテーションを注入し、テストが検出できるか検証する
+- 設定は [`stryker-config.json`](../stryker-config.json) に定義
+- ミューテーションスコアを GitHub Actions ジョブサマリに投稿
+- 完全な Stryker HTML/JSON レポートを `StrykerReport` としてアップロード
+- 閾値は `50%` — ミューテーションスコアがこれを下回るとジョブ失敗
+
+`benchmark` ジョブ（手動のみ）:
+- `workflow_dispatch` でのみ実行
+- `FolderDiffIL4DotNet.Benchmarks` の [BenchmarkDotNet](https://benchmarkdotnet.org/) ベンチマークを実行し、結果を `BenchmarkResults` としてアップロード
+- JSON と GitHub 形式で結果をエクスポートし、手動比較に使用
 
 リリース自動化:
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) は `v*` タグ push と、既存タグを明示指定する `workflow_dispatch` で実行します

@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - pre-main-integration
   pull_request:
     branches:
       - main
+      - pre-main-integration
   workflow_dispatch:
 
 permissions:
@@ -142,7 +144,7 @@ jobs:
 
   mutation-testing:
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -180,6 +182,27 @@ jobs:
         env:
           DOTNET_ROLL_FORWARD: Major
         run: dotnet tool run dotnet-stryker --config-file stryker-config.json --output StrykerOutput
+
+      - name: Post mutation score summary
+        if: always()
+        run: |
+          REPORT=$(find StrykerOutput -name '*.json' -path '*/reports/*' | head -1)
+          if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
+            SCORE=$(python3 -c "
+          import json, sys
+          with open('$REPORT') as f:
+              data = json.load(f)
+          score = data.get('mutationScore', data.get('files', {}).get('mutationScore', 'N/A'))
+          print(score)
+          " 2>/dev/null || echo "N/A")
+            echo "## Mutation Testing Results" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Mutation Score:** ${SCORE}%" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## Mutation Testing Results" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "⚠ Could not find Stryker JSON report to extract mutation score." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload mutation testing report
         if: always()

@@ -178,6 +178,7 @@
       + '<div class="reviewed-banner-actions">'
       + '<button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
       + '<button class="btn" onclick="downloadExcelCompatibleHtml()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><rect x="1" y="1" width="14" height="14" rx="1.5"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="9" x2="15" y2="9"/><line x1="6" y1="1" x2="6" y2="15"/><line x1="11" y1="1" x2="11" y2="15"/></svg> Download as Excel-compatible HTML</button>'
+      + '<button class="btn" onclick="downloadAsPdf()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M4 1h6l4 4v10H2V1h2z"/><polyline points="10,1 10,5 14,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="10.5" x2="11" y2="10.5"/><line x1="5" y1="13" x2="9" y2="13"/></svg> Download as PDF</button>'
       + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
       + '<button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
       + '</div></div>');
@@ -292,6 +293,141 @@
     return new TextDecoder('utf-8').decode(bytes);
   }
 
+  // Toggle between unified and side-by-side diff view / 統合ビューとサイドバイサイドビューを切り替え
+  function toggleDiffView(detailsEl) {
+    var table = detailsEl.querySelector('.diff-table');
+    if (!table) return;
+    var btn = detailsEl.querySelector('.sbs-toggle');
+    if (table.classList.contains('sbs-mode')) {
+      // Restore unified view / 統合ビューに復元
+      table.classList.remove('sbs-mode');
+      var tbody = table.querySelector('tbody');
+      if (table._unifiedHtml) { tbody.innerHTML = table._unifiedHtml; }
+      if (btn) btn.textContent = 'Side-by-side';
+      return;
+    }
+    // Switch to side-by-side / サイドバイサイドに切り替え
+    var tbody = table.querySelector('tbody');
+    table._unifiedHtml = tbody.innerHTML;
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+    var newRows = [];
+    var i = 0;
+    while (i < rows.length) {
+      var r = rows[i];
+      if (r.classList.contains('diff-hunk-tr')) {
+        // Hunk header: span full width (4 columns) / ハンクヘッダー: 全幅
+        var tr = document.createElement('tr');
+        tr.className = 'diff-hunk-tr';
+        var td = document.createElement('td');
+        td.className = 'diff-hunk-td';
+        td.colSpan = 4;
+        td.textContent = r.querySelector('.diff-hunk-td') ? r.querySelector('.diff-hunk-td').textContent : '';
+        tr.appendChild(td);
+        newRows.push(tr);
+        i++;
+      } else if (r.classList.contains('diff-del-tr') && i + 1 < rows.length && rows[i + 1].classList.contains('diff-add-tr')) {
+        // Consecutive del+add pair: merge into side-by-side / 連続するdel+addペア: サイドバイサイドにマージ
+        var delRow = r;
+        var addRow = rows[i + 1];
+        var tr = document.createElement('tr');
+        var delLn = delRow.querySelector('.diff-ln');
+        var delTd = delRow.querySelector('.diff-del-td');
+        var addLn = addRow.querySelector('.diff-ln');
+        var addTd = addRow.querySelector('.diff-add-td');
+        var tdOldLn = document.createElement('td');
+        tdOldLn.className = 'diff-ln';
+        tdOldLn.textContent = delLn ? delLn.textContent : '';
+        var tdOldText = document.createElement('td');
+        tdOldText.className = 'sbs-old';
+        tdOldText.textContent = delTd ? delTd.textContent : '';
+        tdOldText.style.whiteSpace = 'pre';
+        var tdNewLn = document.createElement('td');
+        tdNewLn.className = 'diff-ln';
+        tdNewLn.textContent = addLn ? addLn.textContent : '';
+        var tdNewText = document.createElement('td');
+        tdNewText.className = 'sbs-new';
+        tdNewText.textContent = addTd ? addTd.textContent : '';
+        tdNewText.style.whiteSpace = 'pre';
+        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
+        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        newRows.push(tr);
+        i += 2;
+      } else if (r.classList.contains('diff-del-tr')) {
+        // Standalone deletion / 単独の削除行
+        var tr = document.createElement('tr');
+        var delLn = r.querySelector('.diff-ln');
+        var delTd = r.querySelector('.diff-del-td');
+        var tdOldLn = document.createElement('td');
+        tdOldLn.className = 'diff-ln';
+        tdOldLn.textContent = delLn ? delLn.textContent : '';
+        var tdOldText = document.createElement('td');
+        tdOldText.className = 'sbs-old';
+        tdOldText.textContent = delTd ? delTd.textContent : '';
+        tdOldText.style.whiteSpace = 'pre';
+        var tdNewLn = document.createElement('td');
+        tdNewLn.className = 'diff-ln sbs-empty';
+        var tdNewText = document.createElement('td');
+        tdNewText.className = 'sbs-empty';
+        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
+        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        newRows.push(tr);
+        i++;
+      } else if (r.classList.contains('diff-add-tr')) {
+        // Standalone addition / 単独の追加行
+        var tr = document.createElement('tr');
+        var addLn = r.querySelector('.diff-ln');
+        var addTd = r.querySelector('.diff-add-td');
+        var tdOldLn = document.createElement('td');
+        tdOldLn.className = 'diff-ln sbs-empty';
+        var tdOldText = document.createElement('td');
+        tdOldText.className = 'sbs-empty';
+        var tdNewLn = document.createElement('td');
+        tdNewLn.className = 'diff-ln';
+        tdNewLn.textContent = addLn ? addLn.textContent : '';
+        var tdNewText = document.createElement('td');
+        tdNewText.className = 'sbs-new';
+        tdNewText.textContent = addTd ? addTd.textContent : '';
+        tdNewText.style.whiteSpace = 'pre';
+        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
+        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        newRows.push(tr);
+        i++;
+      } else if (r.classList.contains('diff-trunc-tr')) {
+        // Truncation row: span full width / 省略行: 全幅
+        var tr = document.createElement('tr');
+        tr.className = 'diff-trunc-tr';
+        var td = document.createElement('td');
+        td.className = 'diff-trunc-td';
+        td.colSpan = 4;
+        td.textContent = r.querySelector('.diff-trunc-td') ? r.querySelector('.diff-trunc-td').textContent : '';
+        tr.appendChild(td);
+        newRows.push(tr);
+        i++;
+      } else {
+        // Context row: span old-text and new-text columns / コンテキスト行: old-textとnew-text列を結合
+        var tr = document.createElement('tr');
+        tr.className = 'diff-ctx-tr';
+        var lnTd = r.querySelector('.diff-ln');
+        var ctxTd = r.querySelector('.diff-ctx-td');
+        var tdLn = document.createElement('td');
+        tdLn.className = 'diff-ln';
+        tdLn.textContent = lnTd ? lnTd.textContent : '';
+        var tdCtx = document.createElement('td');
+        tdCtx.className = 'sbs-ctx';
+        tdCtx.colSpan = 3;
+        tdCtx.textContent = ctxTd ? ctxTd.textContent : '';
+        tdCtx.style.whiteSpace = 'pre';
+        tr.appendChild(tdLn); tr.appendChild(tdCtx);
+        newRows.push(tr);
+        i++;
+      }
+    }
+    tbody.innerHTML = '';
+    newRows.forEach(function(tr) { tbody.appendChild(tr); });
+    table.classList.add('sbs-mode');
+    if (btn) btn.textContent = 'Unified';
+  }
+
   // Lazy-render: diff table HTML is stored base64-encoded in data-diff-html.
   // On first open, decode and insert into DOM, then remove the attribute.
   function setupLazyDiff() {
@@ -304,8 +440,16 @@
         d.removeEventListener('toggle', onToggle);
         try {
           d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+          // Insert side-by-side toggle button before each diff-table / 各diff-tableの前にサイドバイサイド切り替えボタンを挿入
+          d.querySelectorAll('.diff-table').forEach(function(tbl) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'sbs-toggle';
+            btn.textContent = 'Side-by-side';
+            btn.addEventListener('click', function() { toggleDiffView(d); });
+            tbl.parentNode.insertBefore(btn, tbl);
+          });
           // Re-init column resize handles on newly rendered tables
-          d.querySelectorAll('th.th-resizable').forEach(function(th) {
             if (th.querySelector('.col-resize-handle')) return;
             initColResizeSingle(th);
           });
@@ -682,6 +826,65 @@
         if (svg) { btn.textContent=''; btn.appendChild(svg); svg.style.display=''; }
       }, 1200);
     });
+  }
+
+  // ── PDF export via browser print / ブラウザ印刷による PDF エクスポート ──
+  // Injects fixed-position header/footer elements and triggers window.print().
+  // 固定位置のヘッダー/フッター要素を注入し、window.print() を呼び出します。
+  function downloadAsPdf() {
+    // Force-decode all lazy sections / 全 lazy セクションを強制デコード
+    forceDecodeLazySections();
+
+    // Extract report metadata from header DOM / ヘッダー DOM からレポートメタデータを抽出
+    var headerCards = document.querySelectorAll('.header-card');
+    var appVersion = '';
+    var computerName = '';
+    headerCards.forEach(function(card) {
+      var label = (card.querySelector('.header-card-label') || {}).textContent || '';
+      var value = (card.querySelector('.header-card-value') || {}).textContent || '';
+      if (label.indexOf('App Version') >= 0) appVersion = value;
+      if (label.indexOf('Computer') >= 0) computerName = value;
+    });
+    var pathEls = document.querySelectorAll('.header-path');
+    var oldPath = '';
+    var newPath = '';
+    pathEls.forEach(function(el) {
+      var label = (el.querySelector('.header-path-label') || {}).textContent || '';
+      var value = (el.querySelector('.header-path-value') || {}).textContent || '';
+      if (label === 'Old Folder') oldPath = value;
+      if (label === 'New Folder') newPath = value;
+    });
+
+    // Get reviewed date from banner / バナーからレビュー日を取得
+    var bannerSpan = document.querySelector('.reviewed-banner > span');
+    var reviewedDate = bannerSpan ? bannerSpan.textContent : '';
+
+    // Create header element / ヘッダー要素を作成
+    var header = document.createElement('div');
+    header.className = 'pdf-print-header';
+    header.innerHTML = '<span>Folder Diff Report \u2014 ' + esc(appVersion) + '</span>'
+      + '<span>' + esc(oldPath) + ' \u2192 ' + esc(newPath) + '</span>';
+
+    // Create footer element / フッター要素を作成
+    var footer = document.createElement('div');
+    footer.className = 'pdf-print-footer';
+    footer.innerHTML = '<span>' + esc(reviewedDate) + ' \u2014 ' + esc(computerName) + '</span>'
+      + '<span>Page numbers: enable in browser print settings</span>';
+
+    // Inject and activate PDF print mode / PDF 印刷モードを注入・有効化
+    document.body.appendChild(header);
+    document.body.appendChild(footer);
+    document.body.classList.add('pdf-print-mode');
+
+    // Clean up after print dialog closes / 印刷ダイアログ終了後にクリーンアップ
+    function cleanup() {
+      document.body.classList.remove('pdf-print-mode');
+      if (header.parentNode) header.parentNode.removeChild(header);
+      if (footer.parentNode) footer.parentNode.removeChild(footer);
+      window.removeEventListener('afterprint', cleanup);
+    }
+    window.addEventListener('afterprint', cleanup);
+    window.print();
   }
 
   // ── Excel export ────────────────────────────────────────────────────

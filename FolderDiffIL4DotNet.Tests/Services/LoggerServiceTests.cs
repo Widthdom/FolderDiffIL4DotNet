@@ -286,6 +286,99 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        // ── Mutation-testing additions / ミューテーションテスト追加 ──────────────
+
+        [Fact]
+        public void CleanupOldLogFiles_ExactlyAtMaxGenerations_NothingDeleted()
+        {
+            // When file count == maxLogGenerations, no files should be deleted
+            // ファイル数 == maxLogGenerations のとき、ファイルは削除されないこと
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var log1 = Path.Combine(tempDir, "log_20240101.log");
+            var log2 = Path.Combine(tempDir, "log_20240102.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(log1, "a");
+            File.WriteAllText(log2, "b");
+            File.WriteAllText(active, "c");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                // 3 files, maxLogGenerations=3 → no deletion
+                // 3 ファイル、maxLogGenerations=3 → 削除なし
+                logger.CleanupOldLogFiles(maxLogGenerations: 3);
+
+                Assert.True(File.Exists(log1));
+                Assert.True(File.Exists(log2));
+                Assert.True(File.Exists(active));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_FewerThanMaxGenerations_NothingDeleted()
+        {
+            // When file count < maxLogGenerations, no files should be deleted
+            // ファイル数 < maxLogGenerations のとき、ファイルは削除されないこと
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(active, "a");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                // 1 file, maxLogGenerations=5 → no deletion
+                // 1 ファイル、maxLogGenerations=5 → 削除なし
+                logger.CleanupOldLogFiles(maxLogGenerations: 5);
+
+                Assert.True(File.Exists(active));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void FormatMessage_WhitespaceOnlyMessage_ReturnsPrefixOnly()
+        {
+            // When message is whitespace-only, FormatMessage should return just the prefix
+            // メッセージがホワイトスペースのみの場合、FormatMessage はプレフィックスのみを返す
+            var logger = new LoggerService();
+            var originalOut = Console.Out;
+            var writer = new StringWriter();
+
+            try
+            {
+                Console.SetOut(writer);
+                SetPrivateField(logger, "_logFileAbsolutePath", null);
+
+                logger.LogMessage(AppLogLevel.Info, "   ", shouldOutputMessageToConsole: true);
+
+                var consoleText = writer.ToString();
+                // Should contain just the prefix without trailing whitespace message
+                // プレフィックスのみが含まれ、後続のホワイトスペースメッセージがないこと
+                Assert.Contains("[INFO]", consoleText);
+                // The trimmed line should be exactly the prefix
+                // トリムされた行はプレフィックスのみであること
+                var trimmed = consoleText.Trim();
+                Assert.Equal("[INFO]", trimmed);
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+            }
+        }
+
         private static void SetPrivateField(object target, string fieldName, string value)
         {
             var fieldInfo = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);

@@ -1,3 +1,4 @@
+using System.Linq;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -8,7 +9,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
     /// Tests for <see cref="ChangeImportanceClassifier"/>.
     /// <see cref="ChangeImportanceClassifier"/> のテスト。
     /// </summary>
-    public sealed class ChangeImportanceClassifierTests
+    public sealed partial class ChangeImportanceClassifierTests
     {
         // ── High: Removed public/protected ────────────────────────────────
 
@@ -220,5 +221,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var entry = new MemberChangeEntry("Added", "MyApp.Service", "", "private", "", "Field", "_data", "string", "", "", "");
             Assert.Equal(ChangeImportance.Low, entry.Importance);
         }
+
     }
 }
