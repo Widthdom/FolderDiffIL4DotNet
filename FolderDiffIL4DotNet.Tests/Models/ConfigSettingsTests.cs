@@ -329,5 +329,103 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 e.Contains("TextDiffParallelThresholdKilobytes", StringComparison.Ordinal));
         }
 
+        // ── Helpers / ヘルパー ────────────────────────────────────────────────────
+
+        private static void AssertMatchesDefaults(ConfigSettings config)
+        {
+            Assert.Equal(ExpectedDefaultIgnoredExtensions, config.IgnoredExtensions);
+            Assert.Equal(ExpectedDefaultTextFileExtensions, config.TextFileExtensions);
+            Assert.Equal(ConfigSettings.DefaultMaxLogGenerations, config.MaxLogGenerations);
+            Assert.Equal(ConfigSettings.DefaultShouldIncludeUnchangedFiles, config.ShouldIncludeUnchangedFiles);
+            Assert.Equal(ConfigSettings.DefaultShouldIncludeIgnoredFiles, config.ShouldIncludeIgnoredFiles);
+            Assert.Equal(ConfigSettings.DefaultShouldOutputILText, config.ShouldOutputILText);
+            Assert.Equal(ConfigSettings.DefaultShouldIgnoreILLinesContainingConfiguredStrings, config.ShouldIgnoreILLinesContainingConfiguredStrings);
+            Assert.NotNull(config.ILIgnoreLineContainingStrings);
+            Assert.Empty(config.ILIgnoreLineContainingStrings);
+            Assert.Equal(ConfigSettings.DefaultShouldOutputFileTimestamps, config.ShouldOutputFileTimestamps);
+            Assert.Equal(ConfigSettings.DefaultShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp, config.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+            Assert.Equal(ConfigSettings.DefaultMaxParallelism, config.MaxParallelism);
+            Assert.Equal(ConfigSettings.DefaultTextDiffParallelThresholdKilobytes, config.TextDiffParallelThresholdKilobytes);
+            Assert.Equal(ConfigSettings.DefaultTextDiffChunkSizeKilobytes, config.TextDiffChunkSizeKilobytes);
+            Assert.Equal(ConfigSettings.DefaultTextDiffParallelMemoryLimitMegabytes, config.TextDiffParallelMemoryLimitMegabytes);
+            Assert.Equal(ConfigSettings.DefaultEnableILCache, config.EnableILCache);
+            Assert.Equal(string.Empty, config.ILCacheDirectoryAbsolutePath);
+            Assert.Equal(ConfigSettings.DefaultILCacheStatsLogIntervalSeconds, config.ILCacheStatsLogIntervalSeconds);
+            Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskFileCount, config.ILCacheMaxDiskFileCount);
+            Assert.Equal(ConfigSettings.DefaultILCacheMaxDiskMegabytes, config.ILCacheMaxDiskMegabytes);
+            Assert.Equal(ConfigSettings.DefaultILCacheMaxMemoryMegabytes, config.ILCacheMaxMemoryMegabytes);
+            Assert.Equal(ConfigSettings.DefaultILPrecomputeBatchSize, config.ILPrecomputeBatchSize);
+            Assert.Equal(ConfigSettings.DefaultOptimizeForNetworkShares, config.OptimizeForNetworkShares);
+            Assert.Equal(ConfigSettings.DefaultAutoDetectNetworkShares, config.AutoDetectNetworkShares);
+            Assert.Equal(ConfigSettings.DefaultSkipIL, config.SkipIL);
+            Assert.Equal(ConfigSettings.DefaultShouldIncludeILCacheStatsInReport, config.ShouldIncludeILCacheStatsInReport);
+            Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
+            Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
+            Assert.Equal(ConfigSettings.DefaultDisassemblerTimeoutSeconds, config.DisassemblerTimeoutSeconds);
+            Assert.Equal(ConfigSettings.DefaultEnableInlineDiff, config.EnableInlineDiff);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffContextLines, config.InlineDiffContextLines);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffMaxEditDistance, config.InlineDiffMaxEditDistance);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffMaxDiffLines, config.InlineDiffMaxDiffLines);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffMaxOutputLines, config.InlineDiffMaxOutputLines);
+            Assert.Equal(ConfigSettings.DefaultInlineDiffLazyRender, config.InlineDiffLazyRender);
+            Assert.Equal(ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport, config.ShouldIncludeAssemblySemanticChangesInReport);
+            Assert.Equal(ConfigSettings.DefaultShouldGenerateHtmlReport, config.ShouldGenerateHtmlReport);
+            Assert.Equal(ConfigSettings.DefaultShouldGenerateAuditLog, config.ShouldGenerateAuditLog);
+        }
+
+        private static void AssertJsonBool(JsonElement root, string propertyName, bool expected)
+        {
+            Assert.True(root.TryGetProperty(propertyName, out var el),
+                $"config.sample.jsonc is missing property '{propertyName}'");
+            Assert.Equal(expected, el.GetBoolean());
+        }
+
+        private static void AssertJsonInt(JsonElement root, string propertyName, int expected)
+        {
+            Assert.True(root.TryGetProperty(propertyName, out var el),
+                $"config.sample.jsonc is missing property '{propertyName}'");
+            Assert.Equal(expected, el.GetInt32());
+        }
+
+        private static string FindRepoRoot()
+        {
+            // Walk up from the test assembly output directory to find the repo root (contains .git)
+            // テストアセンブリ出力ディレクトリから上へ辿り、リポジトリルート（.git を含む）を探す
+            var dir = AppContext.BaseDirectory;
+            while (dir != null)
+            {
+                if (System.IO.Directory.Exists(System.IO.Path.Combine(dir, ".git")))
+                {
+                    return dir;
+                }
+                dir = System.IO.Path.GetDirectoryName(dir);
+            }
+            return System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+        }
+
+        private static string StripJsoncComments(string jsonc)
+        {
+            // Remove single-line comments (// ...) while preserving strings / 文字列を保持しつつ行コメントを除去
+            var sb = new System.Text.StringBuilder(jsonc.Length);
+            bool inString = false;
+            for (int i = 0; i < jsonc.Length; i++)
+            {
+                var c = jsonc[i];
+                if (inString)
+                {
+                    sb.Append(c);
+                    if (c == '\\' && i + 1 < jsonc.Length) { sb.Append(jsonc[++i]); }
+                    else if (c == '"') { inString = false; }
+                }
+                else if (c == '"') { inString = true; sb.Append(c); }
+                else if (c == '/' && i + 1 < jsonc.Length && jsonc[i + 1] == '/')
+                {
+                    while (i < jsonc.Length && jsonc[i] != '\n') { i++; }
+                    if (i < jsonc.Length) { sb.Append('\n'); }
+                }
+                else { sb.Append(c); }
+            }
+            return sb.ToString();
+        }
     }
 }
