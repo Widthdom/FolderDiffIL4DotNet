@@ -57,6 +57,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Sync side-by-side diff toggle to sample HTML** — The side-by-side diff toggle feature (CSS `.sbs-toggle`/`.sbs-mode` styles, JS `toggleDiffView()` function, and lazy-load button insertion in `setupLazyDiff()`) was missing from [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added the CSS styles, JS function, and button insertion code to match [`diff_report.css`](Services/HtmlReport/diff_report.css) and [`diff_report.js`](Services/HtmlReport/diff_report.js).
 
+- **Fix side-by-side diff layout and spacing issues** — Removed `table-layout: fixed` and `width: 45%` from `.sbs-mode` CSS, which caused background colors to not cover overflowing text and created unnatural spacing between left/right panels. Changed hunk header (`@@`) and truncation rows in `toggleDiffView()` to use 2 `diff-ln` prefix cells + `colSpan=2` content cell (matching unified mode layout) instead of a single `colSpan=4` cell, so `@@` headers align consistently between unified and side-by-side views. Updated [`diff_report.css`](Services/HtmlReport/diff_report.css), [`diff_report.js`](Services/HtmlReport/diff_report.js), and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 ### [1.9.0] - 2026-03-24
 
 #### Added
@@ -755,6 +757,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **`FakeDisassembler.csproj` / テストプロジェクトのビルド連携を修正** — `TestLogger.cs` の自動インクルード問題と `Helpers/obj/` 生成ファイル露出を修正。
 
 - **サンプル HTML に side-by-side 差分トグルを同期** — side-by-side 差分トグル機能（CSS `.sbs-toggle`/`.sbs-mode` スタイル、JS `toggleDiffView()` 関数、`setupLazyDiff()` でのボタン挿入）が [`doc/samples/diff_report.html`](doc/samples/diff_report.html) に反映されていなかった問題を修正。[`diff_report.css`](Services/HtmlReport/diff_report.css) および [`diff_report.js`](Services/HtmlReport/diff_report.js) と一致するよう CSS スタイル、JS 関数、ボタン挿入コードを追加。
+
+- **Side-by-side 差分レイアウトとスペーシングの問題を修正** — `.sbs-mode` CSS から `table-layout: fixed` と `width: 45%` を削除。これらが原因で背景色がはみ出したテキストをカバーせず、左右パネル間に不自然な空白が発生していた。`toggleDiffView()` のハンクヘッダー（`@@`）と省略行を、単一 `colSpan=4` セルから、`diff-ln` プレフィックスセル 2 つ + `colSpan=2` コンテンツセル（unified モードと同じレイアウト）に変更し、`@@` ヘッダーの位置が unified と side-by-side で一貫するようにした。[`diff_report.css`](Services/HtmlReport/diff_report.css)、[`diff_report.js`](Services/HtmlReport/diff_report.js)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
 
 ### [1.9.0] - 2026-03-24
 

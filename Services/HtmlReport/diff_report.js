@@ -315,14 +315,19 @@
     while (i < rows.length) {
       var r = rows[i];
       if (r.classList.contains('diff-hunk-tr')) {
-        // Hunk header: span full width (4 columns) / ハンクヘッダー: 全幅
+        // Hunk header: match unified layout (2 line-number cells + content spanning 2 columns)
+        // ハンクヘッダー: unified と同じレイアウト（行番号セル2つ＋内容2列結合）
         var tr = document.createElement('tr');
         tr.className = 'diff-hunk-tr';
+        var tdLn1 = document.createElement('td');
+        tdLn1.className = 'diff-ln';
+        var tdLn2 = document.createElement('td');
+        tdLn2.className = 'diff-ln';
         var td = document.createElement('td');
         td.className = 'diff-hunk-td';
-        td.colSpan = 4;
+        td.colSpan = 2;
         td.textContent = r.querySelector('.diff-hunk-td') ? r.querySelector('.diff-hunk-td').textContent : '';
-        tr.appendChild(td);
+        tr.appendChild(tdLn1); tr.appendChild(tdLn2); tr.appendChild(td);
         newRows.push(tr);
         i++;
       } else if (r.classList.contains('diff-del-tr') && i + 1 < rows.length && rows[i + 1].classList.contains('diff-add-tr')) {
@@ -393,14 +398,18 @@
         newRows.push(tr);
         i++;
       } else if (r.classList.contains('diff-trunc-tr')) {
-        // Truncation row: span full width / 省略行: 全幅
+        // Truncation row: match unified layout / 省略行: unified と同じレイアウト
         var tr = document.createElement('tr');
         tr.className = 'diff-trunc-tr';
+        var tdLn1 = document.createElement('td');
+        tdLn1.className = 'diff-ln';
+        var tdLn2 = document.createElement('td');
+        tdLn2.className = 'diff-ln';
         var td = document.createElement('td');
         td.className = 'diff-trunc-td';
-        td.colSpan = 4;
+        td.colSpan = 2;
         td.textContent = r.querySelector('.diff-trunc-td') ? r.querySelector('.diff-trunc-td').textContent : '';
-        tr.appendChild(td);
+        tr.appendChild(tdLn1); tr.appendChild(tdLn2); tr.appendChild(td);
         newRows.push(tr);
         i++;
       } else {
