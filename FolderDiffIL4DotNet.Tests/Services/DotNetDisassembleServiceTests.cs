@@ -11,7 +11,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
-    public sealed class DotNetDisassembleServiceTests : IDisposable
+    public sealed partial class DotNetDisassembleServiceTests : IDisposable
     {
         private readonly string _rootDir;
         private readonly FileDiffResultLists _resultLists = new();

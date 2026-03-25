@@ -12,7 +12,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
     /// Tests for <see cref="AuditLogGenerateService"/>.
     /// <see cref="AuditLogGenerateService"/> のテスト。
     /// </summary>
-    public sealed class AuditLogGenerateServiceTests : IDisposable
+    public sealed partial class AuditLogGenerateServiceTests : IDisposable
     {
         private readonly string _rootDir;
         private readonly FileDiffResultLists _resultLists = new();

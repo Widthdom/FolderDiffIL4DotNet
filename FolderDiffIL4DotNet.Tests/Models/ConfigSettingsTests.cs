@@ -5,7 +5,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Models
 {
-    public sealed class ConfigSettingsTests
+    public sealed partial class ConfigSettingsTests
     {
         private static readonly string[] ExpectedDefaultIgnoredExtensions =
         {
