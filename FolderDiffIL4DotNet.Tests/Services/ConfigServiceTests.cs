@@ -8,7 +8,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
-    public class ConfigServiceTests
+    public partial class ConfigServiceTests
     {
         private static readonly string ConfigFilePath = Path.Combine(AppContext.BaseDirectory, "config.json");
 

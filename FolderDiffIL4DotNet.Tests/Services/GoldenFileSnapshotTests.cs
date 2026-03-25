@@ -17,7 +17,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
     /// リグレッションを検出するスナップショットテスト。
     /// </summary>
     [Trait("Category", "Unit")]
-    public sealed class GoldenFileSnapshotTests : IDisposable
+    public sealed partial class GoldenFileSnapshotTests : IDisposable
     {
         private readonly string _rootDir;
         private readonly FileDiffResultLists _resultLists = new();

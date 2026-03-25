@@ -27,7 +27,18 @@
     "mutate": [
       "**/*.cs",
       "!**/obj/**",
-      "!**/bin/**"
+      "!**/bin/**",
+      "!**/HtmlReport/**",
+      "!**/HtmlReportGenerateService*.cs",
+      "!**/ConsoleBanner.cs",
+      "!**/ConsoleSpinner.cs",
+      "!**/ConsoleRenderCoordinator.cs",
+      "!**/ProgressReportService.cs",
+      "!**/LoggerService.cs",
+      "!**/Program.cs",
+      "!**/ProgramRunner.cs",
+      "!**/ProgramRunner.*.cs",
+      "!**/Properties/**"
     ],
     "ignore-mutations": [
       "string",

@@ -7,7 +7,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services.Caching
 {
-    public class ILCacheTests : IDisposable
+    public partial class ILCacheTests : IDisposable
     {
         private readonly string _tempDir;
         private readonly string _cacheDir;
