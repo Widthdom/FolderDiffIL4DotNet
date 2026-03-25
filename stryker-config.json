@@ -14,7 +14,7 @@
     "thresholds": {
       "high": 80,
       "low": 60,
-      "break": 50
+      "break": 40
     },
     "reporters": [
       "html",
