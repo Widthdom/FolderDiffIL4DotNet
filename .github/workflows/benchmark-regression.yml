@@ -84,7 +84,7 @@ jobs:
           git rm -rf . 2>/dev/null || true
           git commit --allow-empty -m "Initialize gh-benchmarks branch"
           git push origin gh-benchmarks
-          git checkout -
+          git checkout "$GITHUB_SHA"
 
       - name: Detect performance regression
         if: steps.check-baseline.outputs.exists == 'true' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
