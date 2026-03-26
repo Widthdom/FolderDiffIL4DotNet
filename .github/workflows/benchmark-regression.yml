@@ -78,6 +78,8 @@ jobs:
       - name: Create gh-benchmarks branch if missing
         if: steps.check-baseline.outputs.exists != 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout --orphan gh-benchmarks
           git rm -rf . 2>/dev/null || true
           git commit --allow-empty -m "Initialize gh-benchmarks branch"
