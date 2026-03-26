@@ -195,7 +195,9 @@ namespace FolderDiffIL4DotNet.Services
 
             var bar = new string(barChars);
             var percentText = $"{formattedPercentage}%";
-            var prefix = string.IsNullOrEmpty(_labelPrefix) ? string.Empty : _labelPrefix + " ";
+            var prefix = string.IsNullOrEmpty(_labelPrefix)
+                ? string.Empty
+                : _labelPrefix.PadRight(ConsoleRenderCoordinator.STATUS_LABEL_WIDTH) + " ";
             if (!string.IsNullOrEmpty(_labelPrefix))
             {
                 var spinnerSegment = $"{_keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length]} ";

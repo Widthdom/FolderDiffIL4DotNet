@@ -13,6 +13,12 @@ namespace FolderDiffIL4DotNet.Core.Console
         private static long _lastProgressRenderTicks = DateTime.MinValue.Ticks;
 
         /// <summary>
+        /// Fixed display width for status labels so that spinners and progress bars align vertically.
+        /// スピナーや進捗バーの左端を揃えるためのステータスラベル固定表示幅。
+        /// </summary>
+        public const int STATUS_LABEL_WIDTH = 22;
+
+        /// <summary>
         /// Synchronization lock for console rendering.
         /// コンソール描画の同期用ロック。
         /// </summary>

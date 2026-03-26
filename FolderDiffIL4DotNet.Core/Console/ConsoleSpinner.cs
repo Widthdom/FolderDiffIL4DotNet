@@ -65,7 +65,9 @@ namespace FolderDiffIL4DotNet.Core.Console
                     continue;
                 }
 
-                var prefix = string.IsNullOrEmpty(_label) ? string.Empty : _label + " ";
+                var prefix = string.IsNullOrEmpty(_label)
+                    ? string.Empty
+                    : _label.PadRight(ConsoleRenderCoordinator.STATUS_LABEL_WIDTH) + " ";
                 var frame = _frames[_frameIndex++ % _frames.Length];
                 var text = $"{prefix}{frame}";
                 _lastRenderLength = text.Length;
