@@ -53,6 +53,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Fix benchmark CI failure when `gh-benchmarks` branch does not exist on first push to main** — Added a step to [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) that creates an empty orphan `gh-benchmarks` branch before the benchmark action runs (only on first push to main when the branch is missing).
 
+- **Fix benchmark CI `gh-benchmarks` branch creation failing due to missing git user identity** — The "Create gh-benchmarks branch if missing" step in [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) failed with `fatal: empty ident name ... not allowed` (exit code 128) because `git commit --allow-empty` requires a configured git user identity, which GitHub Actions runners do not provide by default. Added `git config user.name` and `git config user.email` for `github-actions[bot]` before the commit step.
+
 - **Fix `FakeDisassembler.csproj` / test project build interaction** — Fixed `TestLogger.cs` auto-inclusion in `FakeDisassembler.csproj` and `Helpers/obj/` generated file exposure by keeping the broad `Helpers\**\*.cs` exclusion, explicitly re-including `Helpers\TestLogger.cs`, and adding `<Compile Remove="TestLogger.cs" />` to `FakeDisassembler.csproj`.
 
 - **Sync side-by-side diff toggle to sample HTML** — The side-by-side diff toggle feature (CSS `.sbs-toggle`/`.sbs-mode` styles, JS `toggleDiffView()` function, and lazy-load button insertion in `setupLazyDiff()`) was missing from [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added the CSS styles, JS function, and button insertion code to match [`diff_report.css`](Services/HtmlReport/diff_report.css) and [`diff_report.js`](Services/HtmlReport/diff_report.js).
@@ -753,6 +755,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Fixed
 
 - **初回 main プッシュ時の benchmark CI 失敗を修正** — [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) に `gh-benchmarks` ブランチ自動作成ステップを追加。
+
+- **benchmark CI の `gh-benchmarks` ブランチ作成が git ユーザー ID 未設定で失敗する問題を修正** — [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) の "Create gh-benchmarks branch if missing" ステップで、`git commit --allow-empty` が `fatal: empty ident name ... not allowed`（終了コード 128）で失敗していた。GitHub Actions ランナーにはデフォルトの git ユーザー ID が設定されていないため、コミット前に `git config user.name` と `git config user.email` で `github-actions[bot]` を設定するよう修正。
 
 - **`FakeDisassembler.csproj` / テストプロジェクトのビルド連携を修正** — `TestLogger.cs` の自動インクルード問題と `Helpers/obj/` 生成ファイル露出を修正。
 
