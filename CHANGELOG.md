@@ -49,11 +49,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Add `pre-main-integration` branch to CI pipeline triggers** — Updated all three GitHub Actions workflows (`dotnet.yml`, `benchmark-regression.yml`, `codeql.yml`) to trigger on `push` and `pull_request` events targeting the `pre-main-integration` branch, in addition to `main`.
 
+- **Align console status bar labels to fixed width** — Pad all status labels (`ProgressReportService` and `ConsoleSpinner`) to a fixed width of 22 characters using `PadRight`, so that spinners and progress bars start at a consistent column regardless of label length. Affected files: [`ConsoleRenderCoordinator.cs`](FolderDiffIL4DotNet.Core/Console/ConsoleRenderCoordinator.cs), [`ConsoleSpinner.cs`](FolderDiffIL4DotNet.Core/Console/ConsoleSpinner.cs), [`ProgressReportService.cs`](Services/ProgressReportService.cs).
+
+- **Raise benchmark regression threshold from 150% to 200%** — CI runner performance fluctuates enough to cause false positives at the previous 150% threshold. Raised to 200% in [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml). Updated `BenchmarkRegressionWorkflow_DetectsPerformanceDegradation` assertion in [`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) to match.
+
 #### Fixed
 
 - **Fix benchmark CI failure when `gh-benchmarks` branch does not exist on first push to main** — Added a step to [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) that creates an empty orphan `gh-benchmarks` branch before the benchmark action runs (only on first push to main when the branch is missing).
 
 - **Fix benchmark CI `gh-benchmarks` branch creation failing due to missing git user identity** — The "Create gh-benchmarks branch if missing" step in [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) failed with `fatal: empty ident name ... not allowed` (exit code 128) because `git commit --allow-empty` requires a configured git user identity, which GitHub Actions runners do not provide by default. Added `git config user.name` and `git config user.email` for `github-actions[bot]` before the commit step.
+
+- **Fix benchmark-regression CI: use `GITHUB_SHA` instead of `git checkout -`** — After creating an orphan `gh-benchmarks` branch and removing all files, `git checkout -` fails with `pathspec '-' did not match any file(s)` because the orphan branch context breaks the previous-branch reference. Use `git checkout $GITHUB_SHA` to reliably return to the original commit. Affected files: [`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml).
 
 - **Fix `FakeDisassembler.csproj` / test project build interaction** — Fixed `TestLogger.cs` auto-inclusion in `FakeDisassembler.csproj` and `Helpers/obj/` generated file exposure by keeping the broad `Helpers\**\*.cs` exclusion, explicitly re-including `Helpers\TestLogger.cs`, and adding `<Compile Remove="TestLogger.cs" />` to `FakeDisassembler.csproj`.
 
@@ -746,6 +752,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **CI パイプラインのトリガーに `pre-main-integration` ブランチを追加** — 3 つの GitHub Actions ワークフローを更新し、`pre-main-integration` ブランチでもフル CI スイートが実行されるようにした。
 
+- **コンソール ステータスバーのラベル幅を固定化** — すべてのステータスラベル（`ProgressReportService` と `ConsoleSpinner`）を `PadRight` で 22 文字固定幅に統一。ラベルの長さに関わらずスピナーやプログレスバーが同じ列から開始されるようになった。影響ファイル: [`ConsoleRenderCoordinator.cs`](FolderDiffIL4DotNet.Core/Console/ConsoleRenderCoordinator.cs)、[`ConsoleSpinner.cs`](FolderDiffIL4DotNet.Core/Console/ConsoleSpinner.cs)、[`ProgressReportService.cs`](Services/ProgressReportService.cs)。
+
+- **ベンチマーク回帰閾値を 150% から 200% に引き上げ** — CI ランナーの性能変動により 150% 閾値で誤検知が発生していた。[`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) で 200% に引き上げ。[`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) の `BenchmarkRegressionWorkflow_DetectsPerformanceDegradation` アサーションも更新。
+
 #### Added
 
 - **Stryker ミューテーションスコア改善のための 38 件のミューテーションキリングテスト追加** — 4 つのテストクラスにわたり標的テストを追加：`ConfigSettingsTests.ValidationBoundary.cs`（9 テスト）、`FileDiffResultListsTests.MutationKilling.cs`（18 テスト）、`ReportGenerateServiceTests.MutationKilling.cs`（7 テスト）、`DepsJsonAnalyzerTests.MutationKilling.cs`（4 テスト）。境界検証、ビット OR/AND、`||`/`&&` 条件、`GetMaxImportance` ロジック、ソート順検証、逆アセンブラヘッダー順序、ライブラリキー解析境界をカバー。テスト件数: 870（+38）。
@@ -757,6 +767,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **初回 main プッシュ時の benchmark CI 失敗を修正** — [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) に `gh-benchmarks` ブランチ自動作成ステップを追加。
 
 - **benchmark CI の `gh-benchmarks` ブランチ作成が git ユーザー ID 未設定で失敗する問題を修正** — [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) の "Create gh-benchmarks branch if missing" ステップで、`git commit --allow-empty` が `fatal: empty ident name ... not allowed`（終了コード 128）で失敗していた。GitHub Actions ランナーにはデフォルトの git ユーザー ID が設定されていないため、コミット前に `git config user.name` と `git config user.email` で `github-actions[bot]` を設定するよう修正。
+
+- **benchmark-regression CI: `git checkout -` の代わりに `GITHUB_SHA` を使用するよう修正** — orphan `gh-benchmarks` ブランチ作成後にすべてのファイルを削除した状態では、`git checkout -` が `pathspec '-' did not match any file(s)` で失敗していた（orphan ブランチのコンテキストが前のブランチ参照を壊すため）。`git checkout $GITHUB_SHA` を使用して元のコミットに確実に戻るよう修正。影響ファイル: [`.github/workflows/benchmark-regression.yml`](.github/workflows/benchmark-regression.yml)。
 
 - **`FakeDisassembler.csproj` / テストプロジェクトのビルド連携を修正** — `TestLogger.cs` の自動インクルード問題と `Helpers/obj/` 生成ファイル露出を修正。
 

@@ -170,7 +170,7 @@ See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample o
 
 Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** alongside [`diff_report.md`](doc/samples/diff_report.md) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json)).
 
-The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. All user-supplied data (file paths, timestamps, version strings) is HTML-encoded via `System.Net.WebUtility.HtmlEncode` to prevent XSS. A `Content-Security-Policy` meta tag (`default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'`) further limits the impact of any injection by blocking external resource loading, form submissions, and plugin execution.
+The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
 
 Every file entry is displayed in a table with interactive columns for sign-off:
 
@@ -243,8 +243,7 @@ Submitting the reviewed HTML together with the companion `.sha256` file constitu
 
 **Why tampering is detected:** The reviewed HTML contains a SHA256 hash that was computed from the file's entire content at download time. If anyone — even someone who removes the read-only attribute and edits the file in a text editor — changes even a single character, the SHA256 of the modified file will no longer match the embedded hash. The "Verify integrity" button re-reads the file from disk, recomputes the hash, and compares it against the embedded value: any mismatch results in a "FAILED" dialog.
 
-> **How the embedded hash works (placeholder technique):**
-> A naive approach would be circular — the hash depends on the file content, but the file content includes the hash. To solve this, the tool first writes a dummy placeholder (64 zeros) where the hash will go, computes the SHA256 of that placeholder version, then replaces the placeholder with the real hash. Verification reverses the process: swap the embedded hash back to zeros, recompute, and compare.
+> **How the embedded hash works:** The tool uses a placeholder technique to embed the hash inside the file without circular dependency. For technical details, see [doc/DEVELOPER_GUIDE.md § Integrity Verification Technical Notes](doc/DEVELOPER_GUIDE.md#html-report-integrity-verification-technical-notes).
 
 **Command-line verification by OS:**
 
@@ -526,7 +525,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-inlinediffmaxeditdistance">
       <td><code>InlineDiffMaxEditDistance</code></td>
       <td><code>4000</code></td>
-      <td>Maximum allowed edit distance (total inserted + deleted lines) for inline diff computation. If the actual diff exceeds this value the inline diff is skipped. Uses Myers diff algorithm (<a href="http://www.xmailserver.org/diff2.pdf">E. W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986</a>) with O(D²&nbsp;+&nbsp;N&nbsp;+&nbsp;M) complexity, so very large files with few changes are handled efficiently. File size alone does not cause a skip.</td>
+      <td>Maximum allowed edit distance (total inserted + deleted lines) for inline diff computation. If the actual diff exceeds this value the inline diff is skipped. Very large files with few changes are handled efficiently. File size alone does not cause a skip.</td>
     </tr>
     <tr id="config-en-inlinediffmaxdifflines">
       <td><code>InlineDiffMaxDiffLines</code></td>
@@ -541,7 +540,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-inlinedifflazyrender">
       <td><code>InlineDiffLazyRender</code></td>
       <td><code>true</code></td>
-      <td>When <code>true</code> (default), inline diff tables are Base64-encoded and stored in a <code>data-diff-html</code> attribute; JavaScript decodes and injects them into the DOM only when the user expands a <code>&lt;details&gt;</code> row. This dramatically reduces the initial DOM node count when there are many modified files (e.g. 5 000 files × 200 diff rows = 1 M fewer nodes), making the page much faster to load and interact with. Set to <code>false</code> if you need the browser's <em>Find in page</em> to search inside collapsed diff content.</td>
+      <td>When <code>true</code> (default), inline diff content is lazily loaded when the user expands the diff section, dramatically reducing the initial page load time when there are many modified files. Set to <code>false</code> if you need the browser's <em>Find in page</em> to search inside collapsed diff content.</td>
     </tr>
     <tr>
       <td id="config-en-spinnerframes"><code>SpinnerFrames</code></td>
@@ -790,7 +789,7 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 
 実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
-HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ユーザー提供データ（ファイルパス、タイムスタンプ、バージョン文字列）はすべて `System.Net.WebUtility.HtmlEncode` で HTML エンコードし、XSS を防止します。さらに `Content-Security-Policy` メタタグ（`default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'`）により、外部リソース読み込み・フォーム送信・プラグイン実行を遮断し、万一のインジェクション時の影響範囲を限定します。
+HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
 
 全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 
@@ -863,8 +862,7 @@ flowchart TD
 
 **なぜ改竄が検出されるか:** レビュー済み HTML には、ダウンロード時にファイル全体から計算した SHA256 ハッシュが埋め込まれています。たとえば読み取り専用属性を解除してテキストエディタで 1 文字でも書き換えると、ファイルの SHA256 が埋め込みハッシュと一致しなくなります。「Verify integrity」ボタンはファイルをディスクから再読み込みし、ハッシュを再計算して埋め込み値と比較するため、不一致があれば「FAILED」ダイアログが表示されます。
 
-> **埋め込みハッシュの仕組み（プレースホルダ方式）:**
-> 単純にハッシュをファイルに書き込もうとすると、「ハッシュはファイル内容に依存するが、ファイル内容にはハッシュが含まれる」という鶏と卵の問題が生じます。これを解決するため、まずハッシュの入る場所にダミーの値（ゼロ 64 文字）を仮置きし、その仮置き版でSHA256 を計算してから、ダミーを本物のハッシュに差し替えます。検証時はこの逆を行います — 埋め込みハッシュをゼロに戻してから再計算し、一致すれば改竄なしと判定します。
+> **埋め込みハッシュの仕組み:** プレースホルダ方式によりファイル内にハッシュを循環依存なく埋め込みます。技術的な詳細は [doc/DEVELOPER_GUIDE.md § Integrity Verification Technical Notes](doc/DEVELOPER_GUIDE.md#html-report-integrity-verification-technical-notes) を参照してください。
 
 **OS 別コマンドライン検証:**
 
@@ -1145,7 +1143,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
     <tr id="config-ja-inlinediffmaxeditdistance">
       <td><code>InlineDiffMaxEditDistance</code></td>
       <td><code>4000</code></td>
-      <td>インライン差分計算に許容する最大編集距離（挿入行数 + 削除行数の合計）。実際の差分がこの値を超えた場合はインライン差分の表示をスキップします。Myers diff algorithm（<a href="http://www.xmailserver.org/diff2.pdf">E. W. Myers, "An O(ND) Difference Algorithm and Its Variations", 1986</a>）を使用するため、差分が少なければ数百万行のファイルも高速に処理できます。ファイルサイズ単体はスキップの原因になりません。</td>
+      <td>インライン差分計算に許容する最大編集距離（挿入行数 + 削除行数の合計）。実際の差分がこの値を超えた場合はインライン差分の表示をスキップします。差分が少なければ大きなファイルも高速に処理できます。ファイルサイズ単体はスキップの原因になりません。</td>
     </tr>
     <tr id="config-ja-inlinediffmaxdifflines">
       <td><code>InlineDiffMaxDiffLines</code></td>
@@ -1160,7 +1158,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
     <tr id="config-ja-inlinedifflazyrender">
       <td><code>InlineDiffLazyRender</code></td>
       <td><code>true</code></td>
-      <td><code>true</code>（既定）の場合、インライン差分テーブルの HTML を Base64 エンコードして <code>data-diff-html</code> 属性に格納し、ユーザーが <code>&lt;details&gt;</code> 行を展開したときだけ JavaScript でデコード・DOM に挿入します。Modified ファイルが大量にある場合（例: 5,000 件 × 200 diff 行 = 100 万ノード削減）に初期 DOM ノード数を大幅に削減でき、ページの初期表示・操作が高速になります。<code>false</code> にすると全差分テーブルを DOM に直接埋め込みます（ブラウザの「ページ内検索」で折りたたまれた差分内容も検索したい場合に有用）。</td>
+      <td><code>true</code>（既定）の場合、インライン差分コンテンツはユーザーが差分セクションを展開したときに遅延ロードされ、Modified ファイルが大量にある場合のページ初期表示が大幅に高速化されます。<code>false</code> にするとブラウザの「ページ内検索」で折りたたまれた差分内容も検索可能になります。</td>
     </tr>
     <tr id="config-ja-spinnerframes">
       <td><code>SpinnerFrames</code></td>
