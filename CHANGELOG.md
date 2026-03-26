@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Dedicated PDF export with header/footer from reviewed report** — Added a "Download as PDF" button to the reviewed HTML banner that triggers browser print with `position: fixed` header and footer on every page. The header shows the report title, app version, and comparison paths (old → new). The footer shows the reviewed date, computer name, and a note to enable page numbers in browser print settings. New `downloadAsPdf()` function in [`diff_report.js`](Services/HtmlReport/diff_report.js), CSS classes `.pdf-print-header`, `.pdf-print-footer`, `body.pdf-print-mode` in [`diff_report.css`](Services/HtmlReport/diff_report.css). Updated [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added 2 tests in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs): `GenerateDiffReportHtml_PdfExportButton_NotInCtrlMarkers`, `GenerateDiffReportHtml_ContainsPdfPrintCssClasses`.
 
-- **Side-by-side diff toggle** — Added a "Side-by-side" / "Unified" toggle button to inline diff views in the HTML report. When toggled, consecutive removed/added line pairs are displayed in a 4-column layout (old line#, old text, new line#, new text) for easier visual comparison. Toggle function `toggleDiffView()` added to [`diff_report.js`](Services/HtmlReport/diff_report.js), CSS for `.sbs-mode` layout added to [`diff_report.css`](Services/HtmlReport/diff_report.css).
+- **Side-by-side diff toggle** — Added a "Side-by-side" / "Unified" toggle button to inline diff views in the HTML report. When toggled, consecutive removed/added line pairs are displayed in a 3-column layout (line#, old text, new text) where the red and green columns each get exactly half the remaining width after subtracting the line number column, with no gap between them. Toggle function `toggleDiffView()` added to [`diff_report.js`](Services/HtmlReport/diff_report.js), CSS for `.sbs-mode` layout added to [`diff_report.css`](Services/HtmlReport/diff_report.css).
 
 - **Threat model documentation (SECURITY.md)** — Created [`SECURITY.md`](SECURITY.md) with bilingual (EN+JA) STRIDE-based threat analysis covering: asset inventory, trust boundaries, tampering mitigations (SHA256 integrity), XSS prevention (HtmlEncode + CSP), DoS protections (parallelism limits, cache budgets), subprocess security (hardcoded candidates, timeouts), and known limitations. Referenced from [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md).
 
@@ -54,6 +54,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Fix benchmark CI failure when `gh-benchmarks` branch does not exist on first push to main** — Added a step to [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) that creates an empty orphan `gh-benchmarks` branch before the benchmark action runs (only on first push to main when the branch is missing).
 
 - **Fix `FakeDisassembler.csproj` / test project build interaction** — Fixed `TestLogger.cs` auto-inclusion in `FakeDisassembler.csproj` and `Helpers/obj/` generated file exposure by keeping the broad `Helpers\**\*.cs` exclusion, explicitly re-including `Helpers\TestLogger.cs`, and adding `<Compile Remove="TestLogger.cs" />` to `FakeDisassembler.csproj`.
+
+- **Sync side-by-side diff toggle to sample HTML** — The side-by-side diff toggle feature (CSS `.sbs-toggle`/`.sbs-mode` styles, JS `toggleDiffView()` function, and lazy-load button insertion in `setupLazyDiff()`) was missing from [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added the CSS styles, JS function, and button insertion code to match [`diff_report.css`](Services/HtmlReport/diff_report.css) and [`diff_report.js`](Services/HtmlReport/diff_report.js).
+
+- **Fix side-by-side diff layout and spacing issues** — Redesigned side-by-side mode from a 4-column layout (old line#, old text, new line#, new text) to a 3-column layout (single line#, old text, new text). Uses `table-layout: fixed` with a `<colgroup>` to enforce equal widths: the line number column gets `3.5em`, and the old/new text columns each get `calc(50% - 1.75em)`, ensuring they are always exactly equal with no gap between red and green areas. Old and new line numbers are merged into a single cell (e.g. `10/12` for paired rows). Updated [`diff_report.css`](Services/HtmlReport/diff_report.css), [`diff_report.js`](Services/HtmlReport/diff_report.js), and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
 
 ### [1.9.0] - 2026-03-24
 
@@ -712,7 +716,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **レビュー済みレポートからのヘッダー/フッター付き専用 PDF エクスポート** — レビュー済み HTML バナーに「Download as PDF」ボタンを追加。クリックするとブラウザ印刷を起動し、`position: fixed` で全ページにヘッダーとフッターを表示する。ヘッダーにはレポートタイトル、アプリバージョン、比較パス（旧 → 新）を表示。フッターにはレビュー日時、コンピュータ名、ページ番号はブラウザ印刷設定で有効化する旨のガイドを表示。新規 JS 関数 `downloadAsPdf()`（[`diff_report.js`](Services/HtmlReport/diff_report.js)）。CSS クラス `.pdf-print-header`、`.pdf-print-footer`、`body.pdf-print-mode`（[`diff_report.css`](Services/HtmlReport/diff_report.css)）。[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。テスト 2 件追加（[`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs)）：`GenerateDiffReportHtml_PdfExportButton_NotInCtrlMarkers`、`GenerateDiffReportHtml_ContainsPdfPrintCssClasses`。
 
-- **Side-by-side 差分表示トグル** — HTML レポートのインライン差分ビューに「Side-by-side」/「Unified」切替ボタンを追加。トグル時、連続する削除/追加行ペアが 4 列レイアウト（旧行番号、旧テキスト、新行番号、新テキスト）で表示され、視覚的な比較が容易に。[`diff_report.js`](Services/HtmlReport/diff_report.js) に `toggleDiffView()` 関数、[`diff_report.css`](Services/HtmlReport/diff_report.css) に `.sbs-mode` レイアウト CSS を追加。
+- **Side-by-side 差分表示トグル** — HTML レポートのインライン差分ビューに「Side-by-side」/「Unified」切替ボタンを追加。トグル時、連続する削除/追加行ペアが 3 列レイアウト（行番号、旧テキスト、新テキスト）で表示され、赤領域と緑領域はそれぞれ行番号列を除いた残りの幅の正確に半分を占め、隙間なく隣接する。[`diff_report.js`](Services/HtmlReport/diff_report.js) に `toggleDiffView()` 関数、[`diff_report.css`](Services/HtmlReport/diff_report.css) に `.sbs-mode` レイアウト CSS を追加。
 
 - **脅威モデル文書化（SECURITY.md）** — バイリンガル（EN+JA）の STRIDE ベース脅威分析を含む [`SECURITY.md`](SECURITY.md) を作成。資産一覧、信頼境界、改竄防止（SHA256 整合性）、XSS 防止（HtmlEncode + CSP）、DoS 保護（並列度制限、キャッシュバジェット）、サブプロセスセキュリティ（ハードコード候補、タイムアウト）、既知の制限事項をカバー。[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) から参照。
 
@@ -751,6 +755,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **初回 main プッシュ時の benchmark CI 失敗を修正** — [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) に `gh-benchmarks` ブランチ自動作成ステップを追加。
 
 - **`FakeDisassembler.csproj` / テストプロジェクトのビルド連携を修正** — `TestLogger.cs` の自動インクルード問題と `Helpers/obj/` 生成ファイル露出を修正。
+
+- **サンプル HTML に side-by-side 差分トグルを同期** — side-by-side 差分トグル機能（CSS `.sbs-toggle`/`.sbs-mode` スタイル、JS `toggleDiffView()` 関数、`setupLazyDiff()` でのボタン挿入）が [`doc/samples/diff_report.html`](doc/samples/diff_report.html) に反映されていなかった問題を修正。[`diff_report.css`](Services/HtmlReport/diff_report.css) および [`diff_report.js`](Services/HtmlReport/diff_report.js) と一致するよう CSS スタイル、JS 関数、ボタン挿入コードを追加。
+
+- **Side-by-side 差分レイアウトとスペーシングの問題を修正** — side-by-side モードを 4 列レイアウト（旧行番号、旧テキスト、新行番号、新テキスト）から 3 列レイアウト（単一行番号、旧テキスト、新テキスト）に再設計。`table-layout: fixed` と `<colgroup>` により等幅を強制：行番号列は `3.5em`、旧/新テキスト列はそれぞれ `calc(50% - 1.75em)` で、赤領域と緑領域が常に正確に等幅かつ隙間なく隣接する。旧行番号と新行番号はペア行で単一セルに統合（例: `10/12`）。[`diff_report.css`](Services/HtmlReport/diff_report.css)、[`diff_report.js`](Services/HtmlReport/diff_report.js)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
 
 ### [1.9.0] - 2026-03-24
 

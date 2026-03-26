@@ -294,6 +294,9 @@
   }
 
   // Toggle between unified and side-by-side diff view / 統合ビューとサイドバイサイドビューを切り替え
+  // 3-column layout: [LineNum] [Old/Red] [New/Green]
+  // Red and green columns each get exactly (table_width - line_number_width) / 2
+  // 3列レイアウト: [行番号] [旧/赤] [新/緑] — 赤と緑は (テーブル幅 - 行番号列幅) / 2 で等幅、隙間なし
   function toggleDiffView(detailsEl) {
     var table = detailsEl.querySelector('.diff-table');
     if (!table) return;
@@ -301,6 +304,8 @@
     if (table.classList.contains('sbs-mode')) {
       // Restore unified view / 統合ビューに復元
       table.classList.remove('sbs-mode');
+      var cg = table.querySelector('.sbs-colgroup');
+      if (cg) cg.remove();
       var tbody = table.querySelector('tbody');
       if (table._unifiedHtml) { tbody.innerHTML = table._unifiedHtml; }
       if (btn) btn.textContent = 'Side-by-side';
@@ -309,102 +314,122 @@
     // Switch to side-by-side / サイドバイサイドに切り替え
     var tbody = table.querySelector('tbody');
     table._unifiedHtml = tbody.innerHTML;
+    // Add colgroup for fixed 3-column widths / 固定3列幅の colgroup を追加
+    var cg = document.createElement('colgroup');
+    cg.className = 'sbs-colgroup';
+    var col1 = document.createElement('col');
+    col1.style.width = '3.5em';
+    var col2 = document.createElement('col');
+    col2.style.width = 'calc(50% - 1.75em)';
+    var col3 = document.createElement('col');
+    col3.style.width = 'calc(50% - 1.75em)';
+    cg.appendChild(col1); cg.appendChild(col2); cg.appendChild(col3);
+    table.insertBefore(cg, table.firstChild);
+    // Helper: extract line number text from unified row / 統合行から行番号テキストを取得するヘルパー
+    function getLinePair(row) {
+      var lns = row.querySelectorAll('.diff-ln');
+      var oldLn = lns.length > 0 ? lns[0].textContent.trim() : '';
+      var newLn = lns.length > 1 ? lns[1].textContent.trim() : '';
+      return { old: oldLn, new: newLn };
+    }
     var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
     var newRows = [];
     var i = 0;
     while (i < rows.length) {
       var r = rows[i];
       if (r.classList.contains('diff-hunk-tr')) {
-        // Hunk header: span full width (4 columns) / ハンクヘッダー: 全幅
+        // Hunk header: [LN] [hunk text spanning 2 cols]
+        // ハンクヘッダー: [行番号] [ハンクテキスト 2列結合]
         var tr = document.createElement('tr');
         tr.className = 'diff-hunk-tr';
+        var tdLn = document.createElement('td');
+        tdLn.className = 'diff-ln';
         var td = document.createElement('td');
         td.className = 'diff-hunk-td';
-        td.colSpan = 4;
+        td.colSpan = 2;
         td.textContent = r.querySelector('.diff-hunk-td') ? r.querySelector('.diff-hunk-td').textContent : '';
-        tr.appendChild(td);
+        tr.appendChild(tdLn); tr.appendChild(td);
         newRows.push(tr);
         i++;
       } else if (r.classList.contains('diff-del-tr') && i + 1 < rows.length && rows[i + 1].classList.contains('diff-add-tr')) {
-        // Consecutive del+add pair: merge into side-by-side / 連続するdel+addペア: サイドバイサイドにマージ
+        // Consecutive del+add pair: [oldLn/newLn] [old text] [new text]
+        // 連続するdel+addペア: [旧行番号/新行番号] [旧テキスト] [新テキスト]
         var delRow = r;
         var addRow = rows[i + 1];
         var tr = document.createElement('tr');
-        var delLn = delRow.querySelector('.diff-ln');
+        var delP = getLinePair(delRow);
+        var addP = getLinePair(addRow);
+        var oldLnText = delP.old || delP.new;
+        var newLnText = addP.new || addP.old;
+        var tdLn = document.createElement('td');
+        tdLn.className = 'diff-ln';
+        tdLn.textContent = oldLnText && newLnText ? oldLnText + '/' + newLnText : (oldLnText || newLnText);
         var delTd = delRow.querySelector('.diff-del-td');
-        var addLn = addRow.querySelector('.diff-ln');
         var addTd = addRow.querySelector('.diff-add-td');
-        var tdOldLn = document.createElement('td');
-        tdOldLn.className = 'diff-ln';
-        tdOldLn.textContent = delLn ? delLn.textContent : '';
         var tdOldText = document.createElement('td');
         tdOldText.className = 'sbs-old';
         tdOldText.textContent = delTd ? delTd.textContent : '';
         tdOldText.style.whiteSpace = 'pre';
-        var tdNewLn = document.createElement('td');
-        tdNewLn.className = 'diff-ln';
-        tdNewLn.textContent = addLn ? addLn.textContent : '';
         var tdNewText = document.createElement('td');
         tdNewText.className = 'sbs-new';
         tdNewText.textContent = addTd ? addTd.textContent : '';
         tdNewText.style.whiteSpace = 'pre';
-        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
-        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        tr.appendChild(tdLn); tr.appendChild(tdOldText); tr.appendChild(tdNewText);
         newRows.push(tr);
         i += 2;
       } else if (r.classList.contains('diff-del-tr')) {
-        // Standalone deletion / 単独の削除行
+        // Standalone deletion: [oldLn] [old text] [empty]
+        // 単独の削除行: [旧行番号] [旧テキスト] [空]
         var tr = document.createElement('tr');
-        var delLn = r.querySelector('.diff-ln');
+        var lnP = getLinePair(r);
+        var tdLn = document.createElement('td');
+        tdLn.className = 'diff-ln';
+        tdLn.textContent = lnP.old || lnP.new;
         var delTd = r.querySelector('.diff-del-td');
-        var tdOldLn = document.createElement('td');
-        tdOldLn.className = 'diff-ln';
-        tdOldLn.textContent = delLn ? delLn.textContent : '';
         var tdOldText = document.createElement('td');
         tdOldText.className = 'sbs-old';
         tdOldText.textContent = delTd ? delTd.textContent : '';
         tdOldText.style.whiteSpace = 'pre';
-        var tdNewLn = document.createElement('td');
-        tdNewLn.className = 'diff-ln sbs-empty';
         var tdNewText = document.createElement('td');
         tdNewText.className = 'sbs-empty';
-        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
-        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        tr.appendChild(tdLn); tr.appendChild(tdOldText); tr.appendChild(tdNewText);
         newRows.push(tr);
         i++;
       } else if (r.classList.contains('diff-add-tr')) {
-        // Standalone addition / 単独の追加行
+        // Standalone addition: [newLn] [empty] [new text]
+        // 単独の追加行: [新行番号] [空] [新テキスト]
         var tr = document.createElement('tr');
-        var addLn = r.querySelector('.diff-ln');
+        var lnP = getLinePair(r);
+        var tdLn = document.createElement('td');
+        tdLn.className = 'diff-ln';
+        tdLn.textContent = lnP.new || lnP.old;
         var addTd = r.querySelector('.diff-add-td');
-        var tdOldLn = document.createElement('td');
-        tdOldLn.className = 'diff-ln sbs-empty';
         var tdOldText = document.createElement('td');
         tdOldText.className = 'sbs-empty';
-        var tdNewLn = document.createElement('td');
-        tdNewLn.className = 'diff-ln';
-        tdNewLn.textContent = addLn ? addLn.textContent : '';
         var tdNewText = document.createElement('td');
         tdNewText.className = 'sbs-new';
         tdNewText.textContent = addTd ? addTd.textContent : '';
         tdNewText.style.whiteSpace = 'pre';
-        tr.appendChild(tdOldLn); tr.appendChild(tdOldText);
-        tr.appendChild(tdNewLn); tr.appendChild(tdNewText);
+        tr.appendChild(tdLn); tr.appendChild(tdOldText); tr.appendChild(tdNewText);
         newRows.push(tr);
         i++;
       } else if (r.classList.contains('diff-trunc-tr')) {
-        // Truncation row: span full width / 省略行: 全幅
+        // Truncation row: [LN] [text spanning 2 cols]
+        // 省略行: [行番号] [テキスト 2列結合]
         var tr = document.createElement('tr');
         tr.className = 'diff-trunc-tr';
+        var tdLn = document.createElement('td');
+        tdLn.className = 'diff-ln';
         var td = document.createElement('td');
         td.className = 'diff-trunc-td';
-        td.colSpan = 4;
+        td.colSpan = 2;
         td.textContent = r.querySelector('.diff-trunc-td') ? r.querySelector('.diff-trunc-td').textContent : '';
-        tr.appendChild(td);
+        tr.appendChild(tdLn); tr.appendChild(td);
         newRows.push(tr);
         i++;
       } else {
-        // Context row: span old-text and new-text columns / コンテキスト行: old-textとnew-text列を結合
+        // Context row: [LN] [text spanning 2 cols]
+        // コンテキスト行: [行番号] [テキスト 2列結合]
         var tr = document.createElement('tr');
         tr.className = 'diff-ctx-tr';
         var lnTd = r.querySelector('.diff-ln');
@@ -414,7 +439,7 @@
         tdLn.textContent = lnTd ? lnTd.textContent : '';
         var tdCtx = document.createElement('td');
         tdCtx.className = 'sbs-ctx';
-        tdCtx.colSpan = 3;
+        tdCtx.colSpan = 2;
         tdCtx.textContent = ctxTd ? ctxTd.textContent : '';
         tdCtx.style.whiteSpace = 'pre';
         tr.appendChild(tdLn); tr.appendChild(tdCtx);
