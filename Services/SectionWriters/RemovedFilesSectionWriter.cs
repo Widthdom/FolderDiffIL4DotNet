@@ -15,13 +15,13 @@ namespace FolderDiffIL4DotNet.Services
                 int count = ctx.FileDiffResultLists.RemovedFilesAbsolutePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_REMOVED} {REPORT_LABEL_REMOVED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp |");
-                writer.WriteLine("|:------:|-----------|:---------:|");
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Estimated Change |");
+                writer.WriteLine("|:------:|-----------|:---------:|:------:|:----------------:|");
                 foreach (var oldFileAbsolutePath in ctx.FileDiffResultLists.RemovedFilesAbsolutePath)
                 {
                     string tsCol = ctx.Config.ShouldOutputFileTimestamps
                         ? Caching.TimestampCache.GetOrAdd(oldFileAbsolutePath) : "";
-                    writer.WriteLine($"| `{REPORT_MARKER_REMOVED}` | {oldFileAbsolutePath} | {tsCol} |");
+                    writer.WriteLine($"| `{REPORT_MARKER_REMOVED}` | {oldFileAbsolutePath} | {tsCol} | | |");
                 }
             }
         }

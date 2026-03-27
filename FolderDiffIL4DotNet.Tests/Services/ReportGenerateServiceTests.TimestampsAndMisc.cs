@@ -343,32 +343,30 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("| Status | File Path | Timestamp | Legend |", ignoredSection);
             Assert.DoesNotContain("Disassembler", ignoredSection);
 
-            // Unchanged Files: 5-column header (keeps Disassembler)
-            // Unchanged Files: 5 列ヘッダ（Disassembler あり）
+            // Unchanged Files: 6-column header (keeps Estimated Change + Disassembler)
+            // Unchanged Files: 6 列ヘッダ（Estimated Change + Disassembler あり）
             int unchangedIdx = reportText.IndexOf("## [ = ] Unchanged Files", StringComparison.Ordinal);
             Assert.True(unchangedIdx >= 0);
             string unchangedSection = reportText.Substring(unchangedIdx, reportText.IndexOf("## [", unchangedIdx + 1, StringComparison.Ordinal) - unchangedIdx);
-            Assert.Contains("| Status | File Path | Timestamp | Legend | Disassembler |", unchangedSection);
+            Assert.Contains("| Status | File Path | Timestamp | Legend | Estimated Change | Disassembler |", unchangedSection);
             Assert.Contains("dotnet-ildasm (version: 0.12.0)", unchangedSection);
 
-            // Added Files: 3-column header (no Legend, no Disassembler)
-            // Added Files: 3 列ヘッダ（Legend・Disassembler なし）
+            // Added Files: 5-column header (Legend + Estimated Change, no Disassembler)
+            // Added Files: 5 列ヘッダ（Legend + Estimated Change あり、Disassembler なし）
             int addedIdx = reportText.IndexOf("## [ + ] Added Files", StringComparison.Ordinal);
             Assert.True(addedIdx >= 0);
             string addedSection = reportText.Substring(addedIdx, reportText.IndexOf("## [", addedIdx + 1, StringComparison.Ordinal) - addedIdx);
-            Assert.Contains("| Status | File Path | Timestamp |", addedSection);
-            Assert.DoesNotContain("Legend", addedSection);
+            Assert.Contains("| Status | File Path | Timestamp | Legend | Estimated Change |", addedSection);
             Assert.DoesNotContain("Disassembler", addedSection);
 
-            // Removed Files: 3-column header (no Legend, no Disassembler)
-            // Removed Files: 3 列ヘッダ（Legend・Disassembler なし）
+            // Removed Files: 5-column header (Legend + Estimated Change, no Disassembler)
+            // Removed Files: 5 列ヘッダ（Legend + Estimated Change あり、Disassembler なし）
             int removedIdx = reportText.IndexOf("## [ - ] Removed Files", StringComparison.Ordinal);
             Assert.True(removedIdx >= 0);
             int removedEnd = reportText.IndexOf("## [", removedIdx + 1, StringComparison.Ordinal);
             if (removedEnd < 0) removedEnd = reportText.IndexOf("## Summary", StringComparison.Ordinal);
             string removedSection = reportText.Substring(removedIdx, removedEnd - removedIdx);
-            Assert.Contains("| Status | File Path | Timestamp |", removedSection);
-            Assert.DoesNotContain("Legend", removedSection);
+            Assert.Contains("| Status | File Path | Timestamp | Legend | Estimated Change |", removedSection);
             Assert.DoesNotContain("Disassembler", removedSection);
         }
     }

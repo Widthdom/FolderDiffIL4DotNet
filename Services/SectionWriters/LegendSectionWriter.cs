@@ -7,6 +7,8 @@ namespace FolderDiffIL4DotNet.Services
     // ReportGenerateService.SectionWriters.cs から抽出した凡例セクションライタ。
     public sealed partial class ReportGenerateService
     {
+        private const string REPORT_CHANGE_TAG_LEGEND_HEADER = "### Legend — Estimated Change";
+
         /// <summary>Writes the Legend section for diff-detail labels. / 判定根拠ラベルの凡例を書き込みます。</summary>
         private sealed class LegendSectionWriter : IReportSectionWriter
         {
@@ -27,7 +29,34 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"| `High` | Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change |");
                 writer.WriteLine($"| `Medium` | Notable change: public/protected member addition, modifier change, access widening, internal removal |");
                 writer.WriteLine($"| `Low` | Low-impact change: body-only modification, internal/private member addition |");
+                writer.WriteLine();
+                writer.WriteLine(REPORT_CHANGE_TAG_LEGEND_HEADER);
+                writer.WriteLine();
+                writer.WriteLine("| Label | Description |");
+                writer.WriteLine("|-------|-------------|");
+                foreach (var (tag, label) in ChangeTagClassifier.AllLabels)
+                {
+                    writer.WriteLine($"| `{label}` | {GetChangeTagDescriptionForMarkdown(tag)} |");
+                }
             }
+
+            private static string GetChangeTagDescriptionForMarkdown(ChangeTag tag)
+                => tag switch
+                {
+                    ChangeTag.MethodAdd => "New method added",
+                    ChangeTag.MethodRemove => "Method removed",
+                    ChangeTag.TypeAdd => "New type added",
+                    ChangeTag.TypeRemove => "Type removed",
+                    ChangeTag.Extract => "Method body extracted to new private/internal method",
+                    ChangeTag.Inline => "Private/internal method inlined into another method",
+                    ChangeTag.Move => "Method moved between types",
+                    ChangeTag.Rename => "Method renamed (same signature and IL body)",
+                    ChangeTag.Signature => "Method/property signature changed",
+                    ChangeTag.Access => "Access modifier changed",
+                    ChangeTag.BodyEdit => "Method body IL changed only",
+                    ChangeTag.DepUpdate => "Dependency package version changed only",
+                    _ => ""
+                };
         }
     }
 }

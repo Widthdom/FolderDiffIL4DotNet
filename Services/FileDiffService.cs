@@ -143,6 +143,7 @@ namespace FolderDiffIL4DotNet.Services
                         if (!areDotNetAssembliesEqual && _config.ShouldIncludeAssemblySemanticChangesInReport)
                         {
                             TryAnalyzeAssemblySemanticChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
+                            TryClassifyChangeTags(fileRelativePath);
                         }
 
                         return areDotNetAssembliesEqual;
@@ -168,6 +169,7 @@ namespace FolderDiffIL4DotNet.Services
                         && fileRelativePath.EndsWith(".deps.json", StringComparison.OrdinalIgnoreCase))
                     {
                         TryAnalyzeDependencyChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
+                        TryClassifyChangeTags(fileRelativePath);
                     }
 
                     return areTextFilesEqual;
@@ -243,6 +245,22 @@ namespace FolderDiffIL4DotNet.Services
                     shouldOutputMessageToConsole: false, ex);
             }
 #pragma warning restore CA1031
+        }
+
+        /// <summary>
+        /// Best-effort change tag classification based on available semantic and dependency data.
+        /// セマンティック・依存関係データに基づくベストエフォートの変更タグ分類。
+        /// </summary>
+        private void TryClassifyChangeTags(string fileRelativePath)
+        {
+            _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges.TryGetValue(fileRelativePath, out var semanticChanges);
+            _fileDiffResultLists.FileRelativePathToDependencyChanges.TryGetValue(fileRelativePath, out var depChanges);
+
+            var tags = ChangeTagClassifier.Classify(semanticChanges, depChanges);
+            if (tags.Count > 0)
+            {
+                _fileDiffResultLists.FileRelativePathToChangeTags[fileRelativePath] = tags;
+            }
         }
 
         private void LogExpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)

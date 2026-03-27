@@ -110,6 +110,12 @@ namespace FolderDiffIL4DotNet.Models
         public ConcurrentDictionary<string, DependencyChangeSummary> FileRelativePathToDependencyChanges { get; } = new ConcurrentDictionary<string, DependencyChangeSummary>(StringComparer.Ordinal);
 
         /// <summary>
+        /// Estimated change pattern tags per file, keyed by file relative path.
+        /// ファイルごとの推定変更パターンタグ。キーはファイルの相対パス。
+        /// </summary>
+        public ConcurrentDictionary<string, IReadOnlyList<ChangeTag>> FileRelativePathToChangeTags { get; } = new ConcurrentDictionary<string, IReadOnlyList<ChangeTag>>(StringComparer.Ordinal);
+
+        /// <summary>
         /// Returns the maximum <see cref="ChangeImportance"/> for a file, or <see langword="null"/> if no semantic changes exist.
         /// ファイルの最大 <see cref="ChangeImportance"/> を返します。セマンティック変更が存在しない場合は <see langword="null"/>。
         /// </summary>

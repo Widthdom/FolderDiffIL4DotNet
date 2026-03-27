@@ -167,6 +167,7 @@ namespace FolderDiffIL4DotNet.Models
             NewFileTimestampOlderThanOldWarnings.Clear();
             FileRelativePathToAssemblySemanticChanges.Clear();
             FileRelativePathToDependencyChanges.Clear();
+            FileRelativePathToChangeTags.Clear();
             DisassemblerAvailability = null;
         }
 

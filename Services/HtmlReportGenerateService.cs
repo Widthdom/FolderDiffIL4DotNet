@@ -205,6 +205,18 @@ namespace FolderDiffIL4DotNet.Services
             }
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
+            // Estimated Change legend table (read-only, no filter checkboxes)
+            // 推定変更凡例テーブル（読み取り専用、フィルターチェックボックスなし）
+            sb.AppendLine("<div class=\"filter-table-wrap\">");
+            sb.AppendLine("<table class=\"legend-table\" aria-label=\"Estimated Change legend\">");
+            sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"2\">Estimated Change</th></tr></thead>");
+            sb.AppendLine("<tbody>");
+            foreach (var (tag, label) in ChangeTagClassifier.AllLabels)
+            {
+                sb.AppendLine($"<tr><td><code>{HtmlEncode(label)}</code></td><td>{HtmlEncode(GetChangeTagDescription(tag))}</td></tr>");
+            }
+            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</div>");
             sb.AppendLine("</div>"); // end .filter-tables
 
             sb.AppendLine("</div>");  // end .filter-zone

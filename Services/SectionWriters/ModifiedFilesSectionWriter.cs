@@ -17,8 +17,8 @@ namespace FolderDiffIL4DotNet.Services
                 int count = ctx.FileDiffResultLists.ModifiedFilesRelativePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_MODIFIED} {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp | Legend | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|:------:|--------------|");
+                writer.WriteLine("| Status | File Path | Timestamp | Legend | Estimated Change | Disassembler |");
+                writer.WriteLine("|:------:|-----------|:---------:|:------:|:----------------:|--------------|");
                 var sortedModified = ctx.FileDiffResultLists.ModifiedFilesRelativePath
                     .OrderBy(p => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(p => GetImportanceSortOrder(ctx.FileDiffResultLists.GetMaxImportance(p)))
@@ -35,7 +35,8 @@ namespace FolderDiffIL4DotNet.Services
                         string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
                         tsCol = $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
                     }
-                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
+                    var tagDisplay = BuildChangeTagDisplay(fileRelativePath, ctx.FileDiffResultLists);
+                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {tagDisplay} | {disasmDisplay} |");
                 }
 
                 // Dependency changes sub-sections for .deps.json files
