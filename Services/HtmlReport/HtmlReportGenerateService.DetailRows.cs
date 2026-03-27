@@ -380,13 +380,13 @@ namespace FolderDiffIL4DotNet.Services
 
             var sb = new StringBuilder();
 
-            // New version vulnerabilities (active risk) / 新バージョンの脆弱性（現在のリスク）
+            // New version vulnerabilities (active risk) — always red to signal danger
+            // 新バージョンの脆弱性（現在のリスク）— 危険を示すため常に赤系
             foreach (var v in vuln.NewVersionVulnerabilities)
             {
                 string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
-                string sevStyle = VulnerabilitySeverityToStyle(v.Severity);
                 string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
-                sb.Append($"<span class=\"vuln-badge vuln-new\" style=\"{sevStyle}\" title=\"{HtmlEncode(sevLabel)}: {HtmlEncode(v.AdvisoryUrl)}\">");
+                sb.Append($"<span class=\"vuln-badge vuln-new\" style=\"{NEW_VULN_STYLE}\" title=\"{HtmlEncode(sevLabel)}: {HtmlEncode(v.AdvisoryUrl)}\">");
                 if (v.AdvisoryUrl.Length > 0)
                     sb.Append($"<a href=\"{HtmlEncode(v.AdvisoryUrl)}\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline\">{HtmlEncode(advisoryId)}</a>");
                 else
@@ -413,7 +413,7 @@ namespace FolderDiffIL4DotNet.Services
 
                     string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
                     string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
-                    sb.Append("<span class=\"vuln-badge vuln-resolved\" style=\"background:#dcfce7;color:#166534;text-decoration:line-through;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block\" title=\"Resolved: ");
+                    sb.Append($"<span class=\"vuln-badge vuln-resolved\" style=\"{RESOLVED_VULN_STYLE}\" title=\"Resolved: ");
                     sb.Append(HtmlEncode(v.AdvisoryUrl));
                     sb.Append("\">");
                     if (v.AdvisoryUrl.Length > 0)
@@ -447,19 +447,6 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Returns inline CSS for vulnerability severity badges.
-        /// 脆弱性深刻度バッジのインライン CSS を返します。
-        /// </summary>
-        private static string VulnerabilitySeverityToStyle(int severity)
-            => severity switch
-            {
-                3 => "background:#fecaca;color:#991b1b;font-weight:bold;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block",  // Critical
-                2 => "background:#fed7aa;color:#9a3412;font-weight:bold;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block",  // High
-                1 => "background:#fef08a;color:#854d0e;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block",                   // Moderate
-                _ => "background:#e5e7eb;color:#374151;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block"                    // Low/Unknown
-            };
-
-        /// <summary>
         /// Extracts a short advisory ID from the advisory URL for display.
         /// 表示用にアドバイザリ URL から短い ID を抽出します。
         /// </summary>
@@ -474,7 +461,9 @@ namespace FolderDiffIL4DotNet.Services
             return "Advisory";
         }
 
-        // Vulnerability icon constants / 脆弱性アイコン定数
+        // Vulnerability style/icon constants / 脆弱性スタイル・アイコン定数
+        private const string NEW_VULN_STYLE = "background:#fecaca;color:#991b1b;font-weight:bold;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block";
+        private const string RESOLVED_VULN_STYLE = "background:#dcfce7;color:#166534;text-decoration:line-through;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block";
         private const string VULN_ICON = "&#x26A0;";     // ⚠ warning sign
         private const string RESOLVED_ICON = "&#x2705;";  // ✅ check mark
     }
