@@ -194,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             var bar = new string(barChars);
-            var percentText = $"{formattedPercentage}%";
+            var percentText = $"{formattedPercentage,6}%";
             var prefix = string.IsNullOrEmpty(_labelPrefix)
                 ? string.Empty
                 : _labelPrefix.PadRight(ConsoleRenderCoordinator.STATUS_LABEL_WIDTH) + " ";

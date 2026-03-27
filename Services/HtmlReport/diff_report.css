@@ -355,18 +355,24 @@
     .sbs-toggle:hover { background: #e8f0fe; }
     table.diff-table.sbs-mode { table-layout: fixed; }
     table.diff-table.sbs-mode td.sbs-old,
-    table.diff-table.sbs-mode td.sbs-new { overflow: hidden; text-overflow: ellipsis; }
+    table.diff-table.sbs-mode td.sbs-new { overflow: hidden; padding: 0; }
     table.diff-table.sbs-mode td.sbs-old { background: #ffeef0; color: #b31d28; }
     table.diff-table.sbs-mode td.sbs-new { background: #e6ffed; color: #22863a; }
     table.diff-table.sbs-mode td.sbs-ctx { background: #fff; color: #24292e; }
     table.diff-table.sbs-mode td.sbs-empty { background: #f6f8fa; }
+    .sbs-inner { overflow: hidden; white-space: pre; padding: 1px 6px; }
+    .sbs-scroll-tr td { position: sticky; bottom: 0; z-index: 2;
+                        background: #f6f8fa; padding: 0 !important;
+                        border-top: 1px solid #e0e0e0; }
+    .sbs-scroll-proxy { overflow-x: auto; overflow-y: hidden; }
+    .sbs-scroll-proxy > div { height: 1px; }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
     /* ── Print styles / 印刷スタイル ───────────────────────────────────── */
     @media print {
       /* Hide interactive controls / インタラクティブコントロールを非表示 */
       .controls, .controls-bar, .reviewed-banner, .filter-zone,
-      .btn, .btn-clear, .btn-copy-path, .sbs-toggle,
+      .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
       .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
       button, .filter-search-wrap, .btn-input-clear { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }

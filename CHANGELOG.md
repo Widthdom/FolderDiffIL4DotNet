@@ -27,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Excel-compatible HTML export from reviewed report** — Added a "Download as Excel-compatible HTML" button to the reviewed HTML report banner. Generates a simplified HTML `<table>` with Excel XML namespace declarations, allowing direct import into Microsoft Excel. New JS functions: `downloadExcelCompatibleHtml()`, `buildExcelRow()`, `esc()` in [`diff_report.js`](Services/HtmlReport/diff_report.js). Added 2 tests in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
 
+- **Synchronized horizontal scrolling for side-by-side diff view** — Added sticky proxy scrollbars at the bottom of each column (old/new) in side-by-side diff mode. When content overflows horizontally, scrolling one column's proxy bar automatically scrolls the other column in sync. Each cell's text content is wrapped in a `<div class="sbs-inner">` with `overflow: hidden`, and a `<tfoot>` with two proxy scrollbar divs provides the visible scrollbars with `position: sticky; bottom: 0`. Updated [`diff_report.js`](Services/HtmlReport/diff_report.js), [`diff_report.css`](Services/HtmlReport/diff_report.css), and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 #### Documentation
 
 - **CI/CD workflow overview diagram in DEVELOPER_GUIDE.md** — Added a visual text-based workflow diagram showing which CI jobs run on which triggers (PR, push to main, tag push), along with descriptions of `mutation-testing` and `benchmark` jobs that were previously undocumented. Both English and Japanese sections updated in [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md). Quality axes summary (correctness, coverage, detection strength, performance, security, compatibility) included for quick comprehension.
@@ -36,6 +38,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Structured exit code documentation** — Replaced bullet-list exit codes in [`README.md`](README.md) with detailed tables (EN+JA) showing code, meaning, and typical causes for each exit code (0, 1, 2, 3, 4).
 
 #### Changed
+
+- **Right-align console progress percentage for consistent `%` position** — Changed the progress bar percentage format from `{formattedPercentage}%` to `{formattedPercentage,6}%` in [`ProgressReportService.cs`](Services/ProgressReportService.cs), so that `%` is always at the same column regardless of digit count (e.g. `"  0.00%"`, `" 50.00%"`, `"100.00%"`).
 
 - **Split 10 large test files into partial classes for maintainability** — Refactored test classes that had grown beyond ~500 lines into focused partial class files: `ChangeImportanceClassifierTests` → 2 files (`.MutationKilling.cs`), `ProgramRunnerTests` → 4 files (`.HelpVersion.cs`, `.CliOverrides.cs`, `.Preflight.cs`), `HtmlReportGenerateServiceTests` → 7 files (`.InlineDiff.cs`, `.LazyRender.cs`, `.SemanticChanges.cs`, `.SortAndResources.cs`, `.Filtering.cs`, `.MutationKilling.cs`), `FileDiffServiceUnitTests` → 5 files (`.HashAndErrorHandling.cs`, `.ILComparison.cs`, `.TextComparison.cs`, `.TextComparisonEdgeCases.cs`), `ReportGenerateServiceTests` → 6 files (`.Header.cs`, `.SectionsAndWarnings.cs`, `.SortOrder.cs`, `.TimestampsAndMisc.cs`, `.MutationKilling.cs`), `FolderDiffServiceUnitTests` → 2 files (`.BatchingAndEdgeCases.cs`), `ILCacheTests` → 2 files (`.Advanced.cs`), `DepsJsonAnalyzerTests` → 2 files (`.MutationKilling.cs`), `DotNetDisassembleServiceTests` → 2 files (`.UnitAndPrefetch.cs`), `ConfigSettingsTests` → 3 files (`.InlineDiffAndMutation.cs`, `.ValidationBoundary.cs`), `FileDiffResultListsTests` → 2 files (`.MutationKilling.cs`). No behavioral changes; all tests pass without modification.
 
@@ -55,6 +59,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Fix Excel-compatible HTML export missing empty sections and summary styling** — Three issues fixed: (1) Sections with 0 files (e.g. Added Files) were completely omitted including their heading — now all main sections are always output regardless of file count. (2) Summary table rows for Added/Removed/Modified lacked background colors — now match the HTML report's `#e6ffed`/`#ffeef0`/`#e3f2fd` palette. (3) Summary Count column values were left-aligned — now right-aligned. Updated [`diff_report.js`](Services/HtmlReport/diff_report.js) and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 - **Fix benchmark CI failure when `gh-benchmarks` branch does not exist on first push to main** — Added a step to [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) that creates an empty orphan `gh-benchmarks` branch before the benchmark action runs (only on first push to main when the branch is missing).
 
 - **Fix benchmark CI `gh-benchmarks` branch creation failing due to missing git user identity** — The "Create gh-benchmarks branch if missing" step in [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) failed with `fatal: empty ident name ... not allowed` (exit code 128) because `git commit --allow-empty` requires a configured git user identity, which GitHub Actions runners do not provide by default. Added `git config user.name` and `git config user.email` for `github-actions[bot]` before the commit step.
@@ -64,6 +70,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Fix `FakeDisassembler.csproj` / test project build interaction** — Fixed `TestLogger.cs` auto-inclusion in `FakeDisassembler.csproj` and `Helpers/obj/` generated file exposure by keeping the broad `Helpers\**\*.cs` exclusion, explicitly re-including `Helpers\TestLogger.cs`, and adding `<Compile Remove="TestLogger.cs" />` to `FakeDisassembler.csproj`.
 
 - **Sync side-by-side diff toggle to sample HTML** — The side-by-side diff toggle feature (CSS `.sbs-toggle`/`.sbs-mode` styles, JS `toggleDiffView()` function, and lazy-load button insertion in `setupLazyDiff()`) was missing from [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Added the CSS styles, JS function, and button insertion code to match [`diff_report.css`](Services/HtmlReport/diff_report.css) and [`diff_report.js`](Services/HtmlReport/diff_report.js).
+
+- **Fix HTML report JavaScript completely broken due to missing forEach line in setupLazyDiff()** — A missing `d.querySelectorAll('th.th-resizable').forEach(function(th) {` line in the column resize re-initialization block of `setupLazyDiff()` in [`diff_report.js`](Services/HtmlReport/diff_report.js) caused a JavaScript syntax error that prevented the entire `<script>` block from executing. All interactive features were broken: filters, header buttons (Download as reviewed, Fold all, Reset filters, Clear all), inline diff rendering, and semantic change rendering. Only native HTML `<details>` open/close for Unchanged/Ignored sections still worked. Restored the missing line to match the equivalent pattern in `setupLazySection()`.
+
+- **Fix side-by-side diff line number column overflow for large line numbers** — The side-by-side diff view used `3.5em` for the line number column, which overflows when line numbers are large (e.g. `160016/160022`). Widened to `7em` (matching the combined width of the two unified-mode line number columns) so merged line numbers display without clipping. Updated [`diff_report.js`](Services/HtmlReport/diff_report.js) colgroup widths and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
 
 - **Fix side-by-side diff layout and spacing issues** — Redesigned side-by-side mode from a 4-column layout (old line#, old text, new line#, new text) to a 3-column layout (single line#, old text, new text). Uses `table-layout: fixed` with a `<colgroup>` to enforce equal widths: the line number column gets `3.5em`, and the old/new text columns each get `calc(50% - 1.75em)`, ensuring they are always exactly equal with no gap between red and green areas. Old and new line numbers are merged into a single cell (e.g. `10/12` for paired rows). Updated [`diff_report.css`](Services/HtmlReport/diff_report.css), [`diff_report.js`](Services/HtmlReport/diff_report.js), and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
 
@@ -740,6 +750,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **コンソール進捗パーセンテージの `%` 位置を右揃えで統一** — [`ProgressReportService.cs`](Services/ProgressReportService.cs) のプログレスバーパーセンテージ書式を `{formattedPercentage}%` から `{formattedPercentage,6}%` に変更。桁数に関わらず `%` が常に同じ列に表示されるようスペースパディング（例: `"  0.00%"`、`" 50.00%"`、`"100.00%"`）。
+
 - **大規模テストファイル 10 件を partial class に分割し保守性を向上** — 約 500 行を超えていたテストクラスを責務別の partial class ファイルに分割。`ConfigSettingsTests` → 3 ファイル（`.InlineDiffAndMutation.cs`、`.ValidationBoundary.cs`）、`FileDiffResultListsTests` → 2 ファイル（`.MutationKilling.cs`）含む計 12 クラスを分割。動作変更なし。
 
 - **UI/コンソール/ログコードを Stryker ミューテーションテストから除外** — [`stryker-config.json`](stryker-config.json) の `mutate` 除外リストを更新。UI レンダリング・コンソール出力・ログ記録のコードパスを除外し、シグナル対ノイズ比を改善。
@@ -762,6 +774,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **レビュー済みレポートからの Excel 互換 HTML エクスポート** — レビュー済み HTML レポートのバナーに「Download as Excel-compatible HTML」ボタンを追加。Excel で直接開ける HTML テーブル形式のファイルを生成。テスト 2 件追加。
 
+- **Side-by-side 差分ビューの同期水平スクロール** — side-by-side 差分モードの各列（旧/新）の下部にスティッキープロキシスクロールバーを追加。コンテンツが水平方向にオーバーフローした場合、一方のプロキシバーをスクロールすると他方の列も連動してスクロールする。各セルのテキストコンテンツは `overflow: hidden` の `<div class="sbs-inner">` でラップし、`<tfoot>` 内の 2 つのプロキシスクロールバー div が `position: sticky; bottom: 0` で可視スクロールバーを提供。[`diff_report.js`](Services/HtmlReport/diff_report.js)、[`diff_report.css`](Services/HtmlReport/diff_report.css)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
+
 #### Fixed
 
 - **初回 main プッシュ時の benchmark CI 失敗を修正** — [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) に `gh-benchmarks` ブランチ自動作成ステップを追加。
@@ -773,6 +787,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **`FakeDisassembler.csproj` / テストプロジェクトのビルド連携を修正** — `TestLogger.cs` の自動インクルード問題と `Helpers/obj/` 生成ファイル露出を修正。
 
 - **サンプル HTML に side-by-side 差分トグルを同期** — side-by-side 差分トグル機能（CSS `.sbs-toggle`/`.sbs-mode` スタイル、JS `toggleDiffView()` 関数、`setupLazyDiff()` でのボタン挿入）が [`doc/samples/diff_report.html`](doc/samples/diff_report.html) に反映されていなかった問題を修正。[`diff_report.css`](Services/HtmlReport/diff_report.css) および [`diff_report.js`](Services/HtmlReport/diff_report.js) と一致するよう CSS スタイル、JS 関数、ボタン挿入コードを追加。
+
+- **setupLazyDiff() の forEach 行欠落による HTML レポート JavaScript 全機能停止を修正** — [`diff_report.js`](Services/HtmlReport/diff_report.js) の `setupLazyDiff()` 内、列リサイズ再初期化ブロックで `d.querySelectorAll('th.th-resizable').forEach(function(th) {` の行が欠落しており、JavaScript シンタックスエラーが発生して `<script>` ブロック全体が実行されなくなっていた。フィルター、ヘッダーボタン（Download as reviewed、Fold all、Reset filters、Clear all）、インライン差分レンダリング、セマンティック変更レンダリングなど全インタラクティブ機能が動作しなくなっていた。Unchanged/Ignored セクションのネイティブ HTML `<details>` 開閉のみ動作。`setupLazySection()` の同等パターンに合わせて欠落行を復元。
+
+- **Excel 互換 HTML エクスポートで空セクション欠落・サマリースタイル不備を修正** — 3 つの問題を修正: (1) ファイル数 0 のセクション（例: Added Files）が見出しごと出力されなかった → ファイル数に関係なく全メインセクションを常に出力。(2) サマリーテーブルの Added/Removed/Modified 行に背景色がなかった → HTML レポートと同じ `#e6ffed`/`#ffeef0`/`#e3f2fd` パレットに合わせて背景色を追加。(3) サマリーの Count 列の値が左揃えだった → 右揃えに変更。[`diff_report.js`](Services/HtmlReport/diff_report.js) と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
+
+- **Side-by-side 差分の行番号列が大きな行番号ではみ出す問題を修正** — side-by-side 差分ビューの行番号列が `3.5em` で、大きな行番号（例: `160016/160022`）でオーバーフローしていた。unified モードの行番号列 2 つ分の合計幅に合わせて `7em` に拡大。[`diff_report.js`](Services/HtmlReport/diff_report.js) の colgroup 幅と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
 
 - **Side-by-side 差分レイアウトとスペーシングの問題を修正** — side-by-side モードを 4 列レイアウト（旧行番号、旧テキスト、新行番号、新テキスト）から 3 列レイアウト（単一行番号、旧テキスト、新テキスト）に再設計。`table-layout: fixed` と `<colgroup>` により等幅を強制：行番号列は `3.5em`、旧/新テキスト列はそれぞれ `calc(50% - 1.75em)` で、赤領域と緑領域が常に正確に等幅かつ隙間なく隣接する。旧行番号と新行番号はペア行で単一セルに統合（例: `10/12`）。[`diff_report.css`](Services/HtmlReport/diff_report.css)、[`diff_report.js`](Services/HtmlReport/diff_report.js)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
 
