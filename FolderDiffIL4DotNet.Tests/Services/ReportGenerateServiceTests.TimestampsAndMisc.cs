@@ -335,38 +335,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // Ignored Files: 4-column header (Status, File Path, Timestamp, Legend — no Disassembler)
-            // Ignored Files: 4 列ヘッダ（Status, File Path, Timestamp, Legend — Disassembler なし）
+            // Ignored Files: 3-column header (Status, File Path, Timestamp — no Diff Reason, no Estimated Change, no Disassembler)
+            // Ignored Files: 3 列ヘッダ（Status, File Path, Timestamp — Diff Reason・Estimated Change・Disassembler なし）
             int ignoredIdx = reportText.IndexOf("## [ x ] Ignored Files", StringComparison.Ordinal);
             Assert.True(ignoredIdx >= 0);
             string ignoredSection = reportText.Substring(ignoredIdx, reportText.IndexOf("## [", ignoredIdx + 1, StringComparison.Ordinal) - ignoredIdx);
-            Assert.Contains("| Status | File Path | Timestamp | Legend |", ignoredSection);
+            Assert.Contains("| Status | File Path | Timestamp |", ignoredSection);
+            Assert.DoesNotContain("Diff Reason", ignoredSection);
             Assert.DoesNotContain("Disassembler", ignoredSection);
 
-            // Unchanged Files: 6-column header (keeps Estimated Change + Disassembler)
-            // Unchanged Files: 6 列ヘッダ（Estimated Change + Disassembler あり）
+            // Unchanged Files: 5-column header (Status, File Path, Timestamp, Diff Reason, Disassembler — no Estimated Change)
+            // Unchanged Files: 5 列ヘッダ（Status, File Path, Timestamp, Diff Reason, Disassembler — Estimated Change なし）
             int unchangedIdx = reportText.IndexOf("## [ = ] Unchanged Files", StringComparison.Ordinal);
             Assert.True(unchangedIdx >= 0);
             string unchangedSection = reportText.Substring(unchangedIdx, reportText.IndexOf("## [", unchangedIdx + 1, StringComparison.Ordinal) - unchangedIdx);
-            Assert.Contains("| Status | File Path | Timestamp | Legend | Estimated Change | Disassembler |", unchangedSection);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Disassembler |", unchangedSection);
+            Assert.DoesNotContain("Estimated Change", unchangedSection);
             Assert.Contains("dotnet-ildasm (version: 0.12.0)", unchangedSection);
 
-            // Added Files: 5-column header (Legend + Estimated Change, no Disassembler)
-            // Added Files: 5 列ヘッダ（Legend + Estimated Change あり、Disassembler なし）
+            // Added Files: 3-column header (Status, File Path, Timestamp — no Diff Reason, no Estimated Change, no Disassembler)
+            // Added Files: 3 列ヘッダ（Status, File Path, Timestamp — Diff Reason・Estimated Change・Disassembler なし）
             int addedIdx = reportText.IndexOf("## [ + ] Added Files", StringComparison.Ordinal);
             Assert.True(addedIdx >= 0);
             string addedSection = reportText.Substring(addedIdx, reportText.IndexOf("## [", addedIdx + 1, StringComparison.Ordinal) - addedIdx);
-            Assert.Contains("| Status | File Path | Timestamp | Legend | Estimated Change |", addedSection);
+            Assert.Contains("| Status | File Path | Timestamp |", addedSection);
+            Assert.DoesNotContain("Diff Reason", addedSection);
             Assert.DoesNotContain("Disassembler", addedSection);
 
-            // Removed Files: 5-column header (Legend + Estimated Change, no Disassembler)
-            // Removed Files: 5 列ヘッダ（Legend + Estimated Change あり、Disassembler なし）
+            // Removed Files: 3-column header (Status, File Path, Timestamp — no Diff Reason, no Estimated Change, no Disassembler)
+            // Removed Files: 3 列ヘッダ（Status, File Path, Timestamp — Diff Reason・Estimated Change・Disassembler なし）
             int removedIdx = reportText.IndexOf("## [ - ] Removed Files", StringComparison.Ordinal);
             Assert.True(removedIdx >= 0);
             int removedEnd = reportText.IndexOf("## [", removedIdx + 1, StringComparison.Ordinal);
             if (removedEnd < 0) removedEnd = reportText.IndexOf("## Summary", StringComparison.Ordinal);
             string removedSection = reportText.Substring(removedIdx, removedEnd - removedIdx);
-            Assert.Contains("| Status | File Path | Timestamp | Legend | Estimated Change |", removedSection);
+            Assert.Contains("| Status | File Path | Timestamp |", removedSection);
+            Assert.DoesNotContain("Diff Reason", removedSection);
             Assert.DoesNotContain("Disassembler", removedSection);
         }
     }
