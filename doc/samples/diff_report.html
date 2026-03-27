@@ -2257,7 +2257,7 @@
     // セクションテーブルを構築 — 0件でも全メインセクションを見出し付きで出力
     var sectionsHtml = '';
     // Canonical section order (ign only if present in report) / 正規セクション順序（ignはレポートに存在する場合のみ）
-    var hasIgnSection = document.querySelectorAll('tbody > tr[data-section="ign"]').length > 0
+    var hasIgnSection = document.querySelectorAll('tbody > tr[data-section' + '="ign"]').length > 0
       || document.querySelector('h2') && Array.prototype.slice.call(document.querySelectorAll('h2')).some(function(h) { return h.textContent.indexOf('Ignored Files') >= 0; });
     var allSectionKeys = hasIgnSection ? ['ign', 'unch', 'add', 'rem', 'mod'] : ['unch', 'add', 'rem', 'mod'];
     // Separate warning sections (placed after Summary) / 警告セクションを分離（Summary の後に配置）
