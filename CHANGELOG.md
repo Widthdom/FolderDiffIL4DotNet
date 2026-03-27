@@ -53,6 +53,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Fix Excel-compatible HTML export missing empty sections and summary styling** — Three issues fixed: (1) Sections with 0 files (e.g. Added Files) were completely omitted including their heading — now all main sections are always output regardless of file count. (2) Summary table rows for Added/Removed/Modified lacked background colors — now match the HTML report's `#e6ffed`/`#ffeef0`/`#e3f2fd` palette. (3) Summary Count column values were left-aligned — now right-aligned. Updated [`diff_report.js`](Services/HtmlReport/diff_report.js) and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 - **Fix benchmark CI failure when `gh-benchmarks` branch does not exist on first push to main** — Added a step to [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) that creates an empty orphan `gh-benchmarks` branch before the benchmark action runs (only on first push to main when the branch is missing).
 
 - **Fix benchmark CI `gh-benchmarks` branch creation failing due to missing git user identity** — The "Create gh-benchmarks branch if missing" step in [`benchmark-regression.yml`](.github/workflows/benchmark-regression.yml) failed with `fatal: empty ident name ... not allowed` (exit code 128) because `git commit --allow-empty` requires a configured git user identity, which GitHub Actions runners do not provide by default. Added `git config user.name` and `git config user.email` for `github-actions[bot]` before the commit step.
@@ -771,6 +773,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **サンプル HTML に side-by-side 差分トグルを同期** — side-by-side 差分トグル機能（CSS `.sbs-toggle`/`.sbs-mode` スタイル、JS `toggleDiffView()` 関数、`setupLazyDiff()` でのボタン挿入）が [`doc/samples/diff_report.html`](doc/samples/diff_report.html) に反映されていなかった問題を修正。[`diff_report.css`](Services/HtmlReport/diff_report.css) および [`diff_report.js`](Services/HtmlReport/diff_report.js) と一致するよう CSS スタイル、JS 関数、ボタン挿入コードを追加。
 
 - **setupLazyDiff() の forEach 行欠落による HTML レポート JavaScript 全機能停止を修正** — [`diff_report.js`](Services/HtmlReport/diff_report.js) の `setupLazyDiff()` 内、列リサイズ再初期化ブロックで `d.querySelectorAll('th.th-resizable').forEach(function(th) {` の行が欠落しており、JavaScript シンタックスエラーが発生して `<script>` ブロック全体が実行されなくなっていた。フィルター、ヘッダーボタン（Download as reviewed、Fold all、Reset filters、Clear all）、インライン差分レンダリング、セマンティック変更レンダリングなど全インタラクティブ機能が動作しなくなっていた。Unchanged/Ignored セクションのネイティブ HTML `<details>` 開閉のみ動作。`setupLazySection()` の同等パターンに合わせて欠落行を復元。
+
+- **Excel 互換 HTML エクスポートで空セクション欠落・サマリースタイル不備を修正** — 3 つの問題を修正: (1) ファイル数 0 のセクション（例: Added Files）が見出しごと出力されなかった → ファイル数に関係なく全メインセクションを常に出力。(2) サマリーテーブルの Added/Removed/Modified 行に背景色がなかった → HTML レポートと同じ `#e6ffed`/`#ffeef0`/`#e3f2fd` パレットに合わせて背景色を追加。(3) サマリーの Count 列の値が左揃えだった → 右揃えに変更。[`diff_report.js`](Services/HtmlReport/diff_report.js) と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
 
 - **Side-by-side 差分の行番号列が大きな行番号ではみ出す問題を修正** — side-by-side 差分ビューの行番号列が `3.5em` で、大きな行番号（例: `160016/160022`）でオーバーフローしていた。unified モードの行番号列 2 つ分の合計幅に合わせて `7em` に拡大。[`diff_report.js`](Services/HtmlReport/diff_report.js) の colgroup 幅と [`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
 

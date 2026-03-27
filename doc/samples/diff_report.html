@@ -2253,18 +2253,21 @@
       }
     });
 
-    // Build section tables / セクションテーブルを構築
+    // Build section tables — always include all main sections even when empty
+    // セクションテーブルを構築 — 0件でも全メインセクションを見出し付きで出力
     var sectionsHtml = '';
-    var allRows = document.querySelectorAll('tbody > tr[data-section]');
-    var seenSections = [];
-    allRows.forEach(function(tr) {
-      var sec = tr.getAttribute('data-section');
-      if (seenSections.indexOf(sec) < 0) seenSections.push(sec);
-    });
+    // Canonical section order (ign only if present in report) / 正規セクション順序（ignはレポートに存在する場合のみ）
+    var hasIgnSection = document.querySelectorAll('tbody > tr[data-section="ign"]').length > 0
+      || document.querySelector('h2') && Array.prototype.slice.call(document.querySelectorAll('h2')).some(function(h) { return h.textContent.indexOf('Ignored Files') >= 0; });
+    var allSectionKeys = hasIgnSection ? ['ign', 'unch', 'add', 'rem', 'mod'] : ['unch', 'add', 'rem', 'mod'];
     // Separate warning sections (placed after Summary) / 警告セクションを分離（Summary の後に配置）
     var warningSections = ['sha256w', 'tsw'];
-    var mainSections = seenSections.filter(function(s) { return warningSections.indexOf(s) < 0; });
-    var warnSections = seenSections.filter(function(s) { return warningSections.indexOf(s) >= 0; });
+    // Discover any warning sections that exist in the DOM / DOM に存在する警告セクションを検出
+    var seenWarnSections = [];
+    document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
+      var sec = tr.getAttribute('data-section');
+      if (warningSections.indexOf(sec) >= 0 && seenWarnSections.indexOf(sec) < 0) seenWarnSections.push(sec);
+    });
 
     function buildSectionHtml(sec) {
       var bgColor = sectionColors[sec] || '#f0f0f2';
@@ -2278,7 +2281,7 @@
       return h;
     }
 
-    mainSections.forEach(function(sec) { sectionsHtml += buildSectionHtml(sec); });
+    allSectionKeys.forEach(function(sec) { sectionsHtml += buildSectionHtml(sec); });
 
     // Build legend section / 凡例セクションを構築
     var legendHtml = '';
@@ -2319,13 +2322,17 @@
         + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>';
       for (var si = 9; si < COLS; si++) summaryHtml += '<td></td>';
       summaryHtml += '</tr>';
+      // Row background colors matching HTML report summary table / HTMLレポートのサマリーテーブルに合わせた行背景色
+      var summaryRowColors = { 'Added': '#e6ffed', 'Removed': '#ffeef0', 'Modified': '#e3f2fd' };
       statTable.querySelectorAll('tr').forEach(function(tr) {
         // Skip header rows containing th elements / th要素を含むヘッダー行をスキップ
         if (tr.querySelector('th')) return;
         var cells = tr.querySelectorAll('td');
         if (cells.length >= 2) {
-          summaryHtml += '<tr>' + PAD7 + '<td class="bd">' + esc(cells[0].textContent.trim()) + '</td>'
-            + '<td class="bd">' + esc(cells[1].textContent.trim()) + '</td>';
+          var label = cells[0].textContent.trim();
+          var bgStyle = summaryRowColors[label] ? 'background:' + summaryRowColors[label] + ';' : '';
+          summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="' + bgStyle + '">' + esc(label) + '</td>'
+            + '<td class="bd" style="' + bgStyle + 'text-align:right">' + esc(cells[1].textContent.trim()) + '</td>';
           for (var i = 9; i < COLS; i++) summaryHtml += '<td></td>';
           summaryHtml += '</tr>';
         }
@@ -2335,10 +2342,10 @@
 
     // Build warning sections (placed after Summary) / 警告セクション（Summary の後に配置）
     var warningsHtml = '';
-    if (warnSections.length > 0) {
+    if (seenWarnSections.length > 0) {
       warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;padding:8px');
     }
-    warnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
+    seenWarnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
 
     var slug = 'diff_report_' + __reportDate__;
     var excelFileName = slug + '_reviewed_Excel-compatible.html';
