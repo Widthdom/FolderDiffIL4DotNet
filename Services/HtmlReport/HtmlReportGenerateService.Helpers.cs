@@ -94,7 +94,7 @@ namespace FolderDiffIL4DotNet.Services
             else if (sectionPrefix == "mod" && diffCat == "ILMismatch")
                 col6Cell += " <code>Unknown</code>";
             sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
-            string tagCell = string.IsNullOrEmpty(changeTag) ? "" : $"<code>{HtmlEncode(changeTag)}</code>";
+            string tagCell = FormatChangeTagHtml(changeTag);
             sb.AppendLine($"  <td class=\"col-tag\">{tagCell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
             sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
@@ -237,6 +237,17 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Formats change tags as HTML with each tag individually wrapped in <c>&lt;code&gt;</c>.
+        /// 変更タグを個別に <c>&lt;code&gt;</c> で囲んだ HTML を返します。
+        /// </summary>
+        private static string FormatChangeTagHtml(string changeTag)
+        {
+            if (string.IsNullOrEmpty(changeTag)) return "";
+            var parts = changeTag.Split(new[] { ", " }, StringSplitOptions.None);
+            return string.Join(", ", parts.Select(p => $"<code>{HtmlEncode(p)}</code>"));
+        }
+
+        /// <summary>
         /// Returns a sort ordinal for <see cref="ChangeImportance"/> (High=0 first).
         /// <see cref="ChangeImportance"/> のソート序数を返します（High=0 が先頭）。
         /// </summary>
@@ -372,6 +383,15 @@ namespace FolderDiffIL4DotNet.Services
         private static void AppendFilterTableRow(StringBuilder sb, string id, string labelHtml, string description)
         {
             sb.AppendLine($"<tr><td class=\"ft-cb\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{id}\">{labelHtml}</label></td><td class=\"ft-desc\">{description}</td></tr>");
+        }
+
+        /// <summary>
+        /// Appends filter table cells (cb + label + desc) without <c>tr</c> wrapping, for 2-column layouts.
+        /// 2段組みレイアウト用に、<c>tr</c> なしでフィルターテーブルセル（cb + label + desc）を追加します。
+        /// </summary>
+        private static void AppendFilterTableCells(StringBuilder sb, (string Id, string Display, string Description) entry)
+        {
+            sb.Append($"<td class=\"ft-cb\"><input type=\"checkbox\" id=\"{entry.Id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{entry.Id}\">{entry.Display}</label></td><td class=\"ft-desc\">{HtmlEncode(entry.Description)}</td>");
         }
 
         /// <summary>

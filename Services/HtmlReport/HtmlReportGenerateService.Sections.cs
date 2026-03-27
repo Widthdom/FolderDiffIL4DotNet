@@ -143,7 +143,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
             sb.AppendLine("<details class=\"lazy-section\">");
             sb.AppendLine("<summary></summary>");
-            AppendTableStart(sb, TH_BG_DEFAULT, "Diff Reason", hideClasses: "hide-tag");
+            AppendTableStart(sb, TH_BG_DEFAULT, "Diff Reason");
             sb.AppendLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
@@ -332,7 +332,7 @@ namespace FolderDiffIL4DotNet.Services
                 if (sha256Files.Count > 0)
                 {
                     sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable")} ({sha256Files.Count})</h2>");
-                    AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason", hideClasses: "hide-tag");
+                    AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
                     sb.AppendLine("<tbody>");
                     int idx = 0;
                     foreach (var kv in sha256Files)

@@ -419,18 +419,15 @@
 <div class="filter-tables">
 <div class="filter-table-wrap">
 <table class="filter-table" aria-label="Diff Detail filters">
-<thead><tr><th scope="col" colspan="3">Diff Detail</th></tr></thead>
+<thead><tr><th scope="col" colspan="6">Diff Detail</th></tr></thead>
 <tbody>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-sha256match" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-sha256match"><code>SHA256Match</code></label></td><td class="ft-desc">Byte-for-byte match (SHA256)</td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-sha256mismatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-sha256mismatch"><code>SHA256Mismatch</code></label></td><td class="ft-desc">Byte-for-byte mismatch (SHA256)</td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-ilmatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-ilmatch"><code>ILMatch</code></label></td><td class="ft-desc">IL (Intermediate Language) match</td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-ilmismatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-ilmismatch"><code>ILMismatch</code></label></td><td class="ft-desc">IL (Intermediate Language) mismatch</td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-textmatch"><code>TextMatch</code></label></td><td class="ft-desc">Text-based match</td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmismatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-textmismatch"><code>TextMismatch</code></label></td><td class="ft-desc">Text-based mismatch</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-sha256match" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-sha256match"><code>SHA256Match</code></label></td><td class="ft-desc">Byte-for-byte match (SHA256)</td><td class="ft-cb"><input type="checkbox" id="filter-diff-sha256mismatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-sha256mismatch"><code>SHA256Mismatch</code></label></td><td class="ft-desc">Byte-for-byte mismatch (SHA256)</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-ilmatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-ilmatch"><code>ILMatch</code></label></td><td class="ft-desc">IL (Intermediate Language) match</td><td class="ft-cb"><input type="checkbox" id="filter-diff-ilmismatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-ilmismatch"><code>ILMismatch</code></label></td><td class="ft-desc">IL (Intermediate Language) mismatch</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-diff-textmatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-textmatch"><code>TextMatch</code></label></td><td class="ft-desc">Text-based match</td><td class="ft-cb"><input type="checkbox" id="filter-diff-textmismatch" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-diff-textmismatch"><code>TextMismatch</code></label></td><td class="ft-desc">Text-based mismatch</td></tr>
 </tbody></table>
 </div>
 <div class="filter-table-wrap">
-<table class="filter-table filter-table-dbl" aria-label="Change Importance filters">
+<table class="filter-table" aria-label="Change Importance filters">
 <thead><tr><th scope="col" colspan="3">Change Importance</th></tr></thead>
 <tbody>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-high"><span style="color:#d1242f;font-weight:bold">High</span></label></td><td class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
@@ -439,20 +436,14 @@
 </tbody></table>
 </div>
 <div class="filter-table-wrap"><table class="filter-table" aria-label="Estimated Change legend">
-<thead><tr><th colspan="2">Legend — Estimated Change</th></tr></thead>
+<thead><tr><th colspan="4">Legend — Estimated Change</th></tr></thead>
 <tbody>
-<tr><td class="ft-label"><code>+Method</code></td><td class="ft-desc">New method added</td></tr>
-<tr><td class="ft-label"><code>-Method</code></td><td class="ft-desc">Method removed</td></tr>
-<tr><td class="ft-label"><code>+Type</code></td><td class="ft-desc">New type added</td></tr>
-<tr><td class="ft-label"><code>-Type</code></td><td class="ft-desc">Type removed</td></tr>
-<tr><td class="ft-label"><code>Extract</code></td><td class="ft-desc">Method body extracted to new private/internal method</td></tr>
-<tr><td class="ft-label"><code>Inline</code></td><td class="ft-desc">Private/internal method inlined into another method</td></tr>
-<tr><td class="ft-label"><code>Move</code></td><td class="ft-desc">Method moved between types</td></tr>
-<tr><td class="ft-label"><code>Rename</code></td><td class="ft-desc">Method renamed (same signature and IL body)</td></tr>
-<tr><td class="ft-label"><code>Signature</code></td><td class="ft-desc">Method/property signature changed</td></tr>
-<tr><td class="ft-label"><code>Access</code></td><td class="ft-desc">Access modifier changed</td></tr>
-<tr><td class="ft-label"><code>BodyEdit</code></td><td class="ft-desc">Method body IL changed only</td></tr>
-<tr><td class="ft-label"><code>DepUpdate</code></td><td class="ft-desc">Dependency package version changed only</td></tr>
+<tr><td class="ft-label"><code>+Method</code></td><td class="ft-desc">New method added</td><td class="ft-label"><code>-Method</code></td><td class="ft-desc">Method removed</td></tr>
+<tr><td class="ft-label"><code>+Type</code></td><td class="ft-desc">New type added</td><td class="ft-label"><code>-Type</code></td><td class="ft-desc">Type removed</td></tr>
+<tr><td class="ft-label"><code>Extract</code></td><td class="ft-desc">Method body extracted to new private/internal method</td><td class="ft-label"><code>Inline</code></td><td class="ft-desc">Private/internal method inlined into another method</td></tr>
+<tr><td class="ft-label"><code>Move</code></td><td class="ft-desc">Method moved between types</td><td class="ft-label"><code>Rename</code></td><td class="ft-desc">Method renamed (same signature and IL body)</td></tr>
+<tr><td class="ft-label"><code>Signature</code></td><td class="ft-desc">Method/property signature changed</td><td class="ft-label"><code>Access</code></td><td class="ft-desc">Access modifier changed</td></tr>
+<tr><td class="ft-label"><code>BodyEdit</code></td><td class="ft-desc">Method body IL changed only</td><td class="ft-label"><code>DepUpdate</code></td><td class="ft-desc">Dependency package version changed only</td></tr>
 </tbody></table></div>
 </div>
 </div>
@@ -560,7 +551,7 @@
 <details class="lazy-section">
 <summary></summary>
 <div class="table-scroll">
-<table class="hide-tag">
+<table>
 <colgroup>
   <col class="col-no-g">
   <col class="col-cb-g">
@@ -921,7 +912,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Core.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:12:00 &#x2192; 2026-03-15 09:03:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
-  <td class="col-tag"><code>-Method, Signature</code></td>
+  <td class="col-tag"><code>-Method</code>, <code>Signature</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">
@@ -947,7 +938,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/ApiClient.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:55:00 &#x2192; 2026-03-15 09:04:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
-  <td class="col-tag"><code>+Type, +Method</code></td>
+  <td class="col-tag"><code>+Type</code>, <code>+Method</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">
@@ -973,7 +964,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/App.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
-  <td class="col-tag"><code>Extract, +Method</code></td>
+  <td class="col-tag"><code>Extract</code>, <code>+Method</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">
@@ -999,7 +990,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
-  <td class="col-tag"><code>Move, Rename</code></td>
+  <td class="col-tag"><code>Move</code>, <code>Rename</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">
@@ -1126,7 +1117,7 @@
 <h2 class="section-heading">Warnings</h2>
 <h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable (1)</h2>
 <div class="table-scroll">
-<table class="hide-tag">
+<table>
 <colgroup>
   <col class="col-no-g">
   <col class="col-cb-g">
@@ -1222,7 +1213,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">lib/Core.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:12:00 &#x2192; 2026-03-15 09:03:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
-  <td class="col-tag"><code>-Method, Signature</code></td>
+  <td class="col-tag"><code>-Method</code>, <code>Signature</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">
@@ -1248,7 +1239,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
-  <td class="col-tag"><code>Move, Rename</code></td>
+  <td class="col-tag"><code>Move</code>, <code>Rename</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
 </tr>
 <tr class="diff-row">

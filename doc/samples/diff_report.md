@@ -110,10 +110,10 @@
 | `[ * ]` | src/LargeConfig.xml | 2026-03-15 08:54:00 → 2026-03-15 09:05:00 | `TextMismatch` | | |
 | `[ * ]` | src/Strings.resx | 2026-03-15 08:57:00 → 2026-03-15 09:03:00 | `TextMismatch` | | |
 | `[ * ]` | src/Web.config | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `TextMismatch` | | |
-| `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` `High` | `-Method, Signature` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | src/ApiClient.dll | 2026-03-15 08:55:00 → 2026-03-15 09:04:00 | `ILMismatch` `High` | `+Type, +Method` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | src/App.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Extract, +Method` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Move, Rename` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` `High` | `-Method`, `Signature` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ * ]` | src/ApiClient.dll | 2026-03-15 08:55:00 → 2026-03-15 09:04:00 | `ILMismatch` `High` | `+Type`, `+Method` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ * ]` | src/App.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Extract`, `+Method` | `dotnet-ildasm (version: 0.12.2)` |
+| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Move`, `Rename` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | lib/Logging.dll | 2026-03-15 08:52:00 → 2026-03-15 09:03:00 | `ILMismatch` `Medium` | `Access` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` `Low` | `BodyEdit` | `dotnet-ildasm (version: 0.12.2)` |
 | `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` `Low` | `Inline` | `dotnet-ildasm (version: 0.12.2)` |
@@ -163,7 +163,7 @@
 | Status | File Path | Timestamp | Legend | Estimated Change |
 |:------:|-----------|:---------:|:------:|:----------------:|
 | `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | |
-| `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` `High` | `-Method, Signature` |
-| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Move, Rename` |
+| `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` `High` | `-Method`, `Signature` |
+| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Move`, `Rename` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` `Low` | `BodyEdit` |
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | |

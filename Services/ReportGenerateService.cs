@@ -356,11 +356,10 @@ namespace FolderDiffIL4DotNet.Services
 
         private static string BuildChangeTagDisplay(string fileRelativePath, FileDiffResultLists fileDiffResultLists)
         {
-            if (fileDiffResultLists.FileRelativePathToChangeTags.TryGetValue(fileRelativePath, out var tags))
+            if (fileDiffResultLists.FileRelativePathToChangeTags.TryGetValue(fileRelativePath, out var tags) && tags.Count > 0)
             {
-                var display = ChangeTagClassifier.FormatTags(tags);
-                if (!string.IsNullOrEmpty(display))
-                    return $"`{display}`";
+                // Wrap each tag label individually in backticks / 各タグラベルを個別にバッククォートで囲む
+                return string.Join(", ", tags.Select(t => $"`{ChangeTagClassifier.GetLabel(t)}`"));
             }
             return "";
         }
