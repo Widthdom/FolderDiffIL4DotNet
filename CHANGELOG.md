@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Extract `DiffPipelineExecutor` from `ProgramRunner`** — Moved diff execution pipeline (scoped DI container construction, folder diff execution, and Markdown/HTML/audit-log report generation) from `ProgramRunner` into a dedicated [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs). `ProgramRunner` now focuses on CLI dispatch, argument validation, config loading, and exit-code mapping, delegating the heavy pipeline work to `DiffPipelineExecutor`. No behavioral changes. Updated [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA architecture diagrams, file tables, design intent). Test count: 899 (unchanged).
+
 ### [1.10.0] - 2026-03-27
 
 #### Added
@@ -727,6 +731,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **`DiffPipelineExecutor` を `ProgramRunner` から抽出** — 差分実行パイプライン（スコープ付き DI コンテナ構築、フォルダ差分実行、Markdown/HTML/監査ログの全レポート生成）を `ProgramRunner` から専用の [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs) に移動。`ProgramRunner` は CLI 分岐・引数検証・設定読込・終了コード写像に集中し、重いパイプライン処理を `DiffPipelineExecutor` に委譲する形に整理。動作変更なし。[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA アーキテクチャ図・ファイル表・設計意図）を更新。テスト件数: 899（変更なし）。
 
 ### [1.10.0] - 2026-03-27
 
