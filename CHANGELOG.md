@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.10.0] - 2026-03-27
+
 #### Added
 
 - **`--validate-config` CLI option** — New CLI flag that validates the configuration file (JSON syntax + semantic rules) and exits with code `0` if valid or `3` if invalid. Useful for CI pre-flight checks and troubleshooting configuration issues without running a full comparison. Implementation in [`ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs). Updated [`CliParser.cs`](Runner/CliParser.cs), [`CliOptions.cs`](Runner/CliOptions.cs), [`ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs), [`README.md`](README.md) (EN+JA options table). Test count: 832 (unchanged).
@@ -725,6 +727,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.10.0] - 2026-03-27
 
 #### Added
 
@@ -1443,7 +1447,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.7.0...v1.8.0
