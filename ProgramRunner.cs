@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
@@ -8,9 +7,6 @@ using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
-using FolderDiffIL4DotNet.Services.Caching;
-using FolderDiffIL4DotNet.Services.ILOutput;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FolderDiffIL4DotNet
 {
@@ -190,20 +186,6 @@ namespace FolderDiffIL4DotNet
             }
         }
 
-        private static DiffExecutionContext BuildExecutionContext(RunArguments runArguments, ConfigSettings config)
-        {
-            return RunScopeBuilder.BuildExecutionContext(
-                runArguments.OldFolderAbsolutePath,
-                runArguments.NewFolderAbsolutePath,
-                runArguments.ReportsFolderAbsolutePath,
-                config);
-        }
-
-        private ServiceProvider BuildRunServiceProvider(ConfigSettings config, DiffExecutionContext executionContext)
-        {
-            return RunScopeBuilder.Build(config, executionContext, _logger);
-        }
-
         /// <summary>
         /// Returns the report output directory initialization as a typed result.
         /// レポート出力先ディレクトリの初期化を型付き結果として返します。
@@ -224,7 +206,9 @@ namespace FolderDiffIL4DotNet
 
         /// <summary>
         /// Returns the diff execution and report generation phase as a typed result.
+        /// Delegates to <see cref="DiffPipelineExecutor"/> for the actual pipeline work.
         /// 差分実行とレポート生成フェーズを型付き結果として返します。
+        /// 実際のパイプライン処理は <see cref="DiffPipelineExecutor"/> に委譲します。
         /// </summary>
         private async Task<StepResult<RunCompletionState>> TryExecuteRunAsync(
             RunArguments runArguments,
@@ -234,7 +218,17 @@ namespace FolderDiffIL4DotNet
         {
             try
             {
-                var completionState = await RunPipelineAsync(runArguments, config, appVersion, computerName);
+                var executor = new DiffPipelineExecutor(_logger);
+                var pipelineResult = await executor.ExecuteAsync(
+                    runArguments.OldFolderAbsolutePath,
+                    runArguments.NewFolderAbsolutePath,
+                    runArguments.ReportsFolderAbsolutePath,
+                    config,
+                    appVersion,
+                    computerName);
+                var completionState = new RunCompletionState(
+                    pipelineResult.HasSha256MismatchWarnings,
+                    pipelineResult.HasTimestampRegressionWarnings);
                 return StepResult<RunCompletionState>.FromValue(completionState);
             }
             catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
@@ -262,73 +256,10 @@ namespace FolderDiffIL4DotNet
             return ProgramRunResult.Failure(exitCode);
         }
 
-        private async Task<RunCompletionState> RunPipelineAsync(RunArguments runArguments, ConfigSettings config, string appVersion, string computerName)
-        {
-            var executionContext = BuildExecutionContext(runArguments, config);
-            using var runProvider = BuildRunServiceProvider(config, executionContext);
-            using var scope = runProvider.CreateScope();
-            return await ExecuteScopedRunAsync(scope.ServiceProvider, executionContext, appVersion, computerName, config);
-        }
-
         private static void PrepareReportsDirectory(string reportsFolderAbsolutePath)
         {
             ConsoleBanner.Print();
             Directory.CreateDirectory(reportsFolderAbsolutePath);
-        }
-
-        private async Task<RunCompletionState> ExecuteScopedRunAsync(
-            IServiceProvider scopedProvider,
-            DiffExecutionContext executionContext,
-            string appVersion,
-            string computerName,
-            ConfigSettings config)
-        {
-            var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
-            resultLists.DisassemblerAvailability = DisassemblerHelper.ProbeAllCandidates();
-            var elapsedTimeString = await ExecuteDiffAsync(scopedProvider);
-            GenerateReport(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config);
-            return new RunCompletionState(resultLists.HasAnySha256Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);
-        }
-
-        private async Task<string> ExecuteDiffAsync(IServiceProvider scopedProvider)
-        {
-            var progressReporter = scopedProvider.GetRequiredService<ProgressReportService>();
-            try
-            {
-                var stopwatch = Stopwatch.StartNew();
-                await scopedProvider.GetRequiredService<IFolderDiffService>().ExecuteFolderDiffAsync();
-                stopwatch.Stop();
-                var elapsedTimeString = FormatElapsedTime(stopwatch.Elapsed);
-                _logger.LogMessage(AppLogLevel.Info, $"Elapsed Time: {elapsedTimeString}", shouldOutputMessageToConsole: true);
-                return elapsedTimeString;
-            }
-            finally
-            {
-                progressReporter.Dispose();
-            }
-        }
-
-        private static void GenerateReport(
-            IServiceProvider scopedProvider,
-            DiffExecutionContext executionContext,
-            string appVersion,
-            string elapsedTimeString,
-            string computerName,
-            ConfigSettings config)
-        {
-            var ilCache = scopedProvider.GetService<ILCache>();
-            var reportContext = new ReportGenerationContext(
-                executionContext.OldFolderAbsolutePath,
-                executionContext.NewFolderAbsolutePath,
-                executionContext.ReportsFolderAbsolutePath,
-                appVersion,
-                elapsedTimeString,
-                computerName,
-                config,
-                ilCache);
-            scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(reportContext);
-            scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(reportContext);
-            scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(reportContext);
         }
 
         private void PromptForExitKeyIfNeeded(CliOptions opts)
@@ -357,18 +288,12 @@ namespace FolderDiffIL4DotNet
 
         /// <summary>
         /// Formats elapsed time in a human-readable form (e.g. <c>0h 5m 30.1s</c>).
-        /// Seconds are shown to one decimal place (tenths, truncated).
+        /// Delegates to <see cref="DiffPipelineExecutor.FormatElapsedTime"/>.
         /// 経過時間を人間が判読しやすい形式（例: <c>0h 5m 30.1s</c>）に変換します。
-        /// 秒は小数点以下 1 桁（1/10 秒単位、切り捨て）まで表示します。
+        /// <see cref="DiffPipelineExecutor.FormatElapsedTime"/> に委譲します。
         /// </summary>
         internal static string FormatElapsedTime(TimeSpan elapsed)
-        {
-            int hours = (int)Math.Floor(elapsed.TotalHours);
-            int minutes = elapsed.Minutes;
-            int seconds = elapsed.Seconds;
-            int tenths = elapsed.Milliseconds / 100;
-            return $"{hours}h {minutes}m {seconds}.{tenths}s";
-        }
+            => DiffPipelineExecutor.FormatElapsedTime(elapsed);
 
     }
 }
