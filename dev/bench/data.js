@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774612918634,
+  "lastUpdate": 1774616547581,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -528,6 +528,72 @@ window.BENCHMARK_DATA = {
             "value": 27022097.352083333,
             "unit": "ns",
             "range": "± 146490.36408777392"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "4c1a99164db75978fb6aec9cfe33c720a0910db8",
+          "message": "Extract DiffPipelineExecutor from ProgramRunner for better separation of concerns (#99)\n\n* Extract DiffPipelineExecutor from ProgramRunner for better separation of concerns\n\nMove diff execution pipeline (scoped DI container construction, folder diff\nexecution, and report generation) from ProgramRunner into a dedicated\nDiffPipelineExecutor class. ProgramRunner now focuses on CLI dispatch,\nargument validation, config loading, and exit-code mapping.\n\nNo behavioral changes - all existing tests pass without modification.\n\nhttps://claude.ai/code/session_01FBnxzn2fbWcza8AhpSTQq5\n\n* Add per-class coverage thresholds for core diff logic in CI\n\nExtend the CI coverage enforcement script to check class-level coverage\nfor FileDiffService, FolderDiffService, and FileComparisonService\n(line >= 90%, branch >= 85%) in addition to the existing total thresholds.\nThe script parses Cobertura XML <class> elements for matching class names.\n\nAdded CiAutomationConfigurationTests assertion for per-class thresholds.\nUpdated CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md (EN+JA).\n\nhttps://claude.ai/code/session_01FBnxzn2fbWcza8AhpSTQq5\n\n* Fix per-class coverage to aggregate partial class entries\n\nCoverlet reports partial classes as separate <class> entries with\nthe same name but different filenames. The previous implementation\nchecked each entry independently, causing false failures when a\npartial file had lower coverage. Now aggregate line/branch hit\ncounts across all entries sharing the same class name before\ncomparing against thresholds.\n\nhttps://claude.ai/code/session_01FBnxzn2fbWcza8AhpSTQq5\n\n* Make per-class coverage thresholds warning-only to diagnose CI failure\n\nThe per-class thresholds (90% line, 85% branch) for core diff classes\nmay exceed current actual coverage. Change to non-blocking warnings\nso CI prints the actual values without failing the build. Once we\nsee the real numbers, we can set appropriate enforced thresholds.\n\nhttps://claude.ai/code/session_01FBnxzn2fbWcza8AhpSTQq5\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-03-27T21:59:04+09:00",
+          "tree_id": "810b80f3d46e405d0f618605a9026e9c2f57de1a",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/4c1a99164db75978fb6aec9cfe33c720a0910db8"
+        },
+        "date": 1774616547367,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62213.068385532926,
+            "unit": "ns",
+            "range": "± 207.33704496430119"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 583622.7599158654,
+            "unit": "ns",
+            "range": "± 2391.9481325743054"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5914229.734933035,
+            "unit": "ns",
+            "range": "± 25283.199523854495"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 75555.67081392728,
+            "unit": "ns",
+            "range": "± 123.29220193480155"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2666.036557006836,
+            "unit": "ns",
+            "range": "± 46.3966137514814"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 262624.7450195312,
+            "unit": "ns",
+            "range": "± 2187.012322548922"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27585158.7,
+            "unit": "ns",
+            "range": "± 102742.7890373458"
           }
         ]
       }
