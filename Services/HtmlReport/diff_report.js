@@ -475,6 +475,7 @@
             tbl.parentNode.insertBefore(btn, tbl);
           });
           // Re-init column resize handles on newly rendered tables
+          d.querySelectorAll('th.th-resizable').forEach(function(th) {
             if (th.querySelector('.col-resize-handle')) return;
             initColResizeSingle(th);
           });
