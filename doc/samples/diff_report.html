@@ -1683,11 +1683,22 @@
       while (td.firstChild) div.appendChild(td.firstChild);
       td.appendChild(div);
     });
-    // Calculate max content width for proxy scrollbar spacers
-    // プロキシスクロールバーのスペーサー用に最大コンテンツ幅を計算
+    // Calculate max content width across all inner divs
+    // 全 inner div の最大コンテンツ幅を計算
     var maxW = 0;
     tbody.querySelectorAll('.sbs-inner').forEach(function(div) {
       if (div.scrollWidth > maxW) maxW = div.scrollWidth;
+    });
+    // Force all inner divs to the same scrollable width so short lines scroll together.
+    // Wrap content in a span with min-width so every row has the same scroll range.
+    // 短い行も一緒にスクロールするよう全 inner div を同じスクロール可能幅に統一。
+    // 各行のコンテンツを min-width 付き span でラップし全行同一スクロール範囲にする。
+    tbody.querySelectorAll('.sbs-inner').forEach(function(div) {
+      var span = document.createElement('span');
+      span.style.display = 'inline-block';
+      span.style.minWidth = maxW + 'px';
+      while (div.firstChild) span.appendChild(div.firstChild);
+      div.appendChild(span);
     });
     // Add sticky proxy scrollbar row (tfoot) for synchronized horizontal scrolling
     // 水平スクロール同期用のスティッキープロキシスクロールバー行（tfoot）を追加
