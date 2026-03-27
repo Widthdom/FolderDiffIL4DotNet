@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774624685518,
+  "lastUpdate": 1774643293003,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -660,6 +660,72 @@ window.BENCHMARK_DATA = {
             "value": 28522044.454166666,
             "unit": "ns",
             "range": "± 431898.43352461455"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "faf35dc558e0f1a864504fb33ca96b4d099edb7d",
+          "message": "Add Estimated Change tags column to all report tables (#101)\n\n* Add Estimated Change tags column to all report tables\n\nAutomatically infer change patterns (Extract, Inline, Move, Rename,\nSignature, Access, BodyEdit, DepUpdate, +Method, -Method, +Type, -Type)\nfrom semantic analysis and dependency data. Display in a new \"Estimated\nChange\" column between Diff Reason and Disassembler in all report tables.\n\nNew: ChangeTag enum, ChangeTagClassifier service with heuristic pattern\ndetection, integration in FileDiffService pipeline, HTML/Markdown column\nand legend support. Also fixes Disassembler column being incorrectly\nhidden in SHA256Mismatch and timestamp-regression warning tables.\n\n30 new tests in ChangeTagClassifierTests. Updated sample reports, docs.\n\nhttps://claude.ai/code/session_01WS27QQVhV5mrMbHquz6Xii\n\n* Refine Estimated Change column: per-tag formatting, 2-col legends, visibility fixes\n\n- Wrap each tag individually in <code>/<backtick> (e.g. <code>-Method</code>, <code>Signature</code>)\n  instead of wrapping the entire comma-separated string\n- Remove hide-tag from Unchanged and SHA256Mismatch warning tables\n  so Estimated Change column is visible in all tables\n- Diff Detail filter: 2-column layout (3 rows × 2 items)\n- Change Importance filter: remove double-height rows\n- Estimated Change legend: 6 rows × 2 items (was 12 rows × 1)\n- Update HTML and Markdown samples accordingly\n\nhttps://claude.ai/code/session_01WS27QQVhV5mrMbHquz6Xii\n\n* Fix Markdown report table columns: simplify Ignored/Added/Removed, rename Legend to Diff Reason\n\n- Ignored/Added/Removed: reduce to 3-col (Status, File Path, Timestamp)\n- Unchanged: remove Estimated Change col, rename Legend→Diff Reason (5-col)\n- Modified: rename Legend→Diff Reason (6-col)\n- Warning tables: rename Legend→Diff Reason, add Disassembler column (6-col)\n- Update doc/samples/diff_report.md to match\n- Update test assertions in GoldenFileSnapshotTests and ReportGenerateServiceTests\n\nhttps://claude.ai/code/session_01WS27QQVhV5mrMbHquz6Xii\n\n* Update CHANGELOG: detail Markdown column structure changes for Estimated Change feature\n\nClarify per-table column layouts (Ignored/Added/Removed 3-col, Unchanged 5-col,\nModified/Warning 6-col), Legend→Diff Reason rename, per-tag formatting, and\nupdated test files in both EN and JA sections.\n\nhttps://claude.ai/code/session_01WS27QQVhV5mrMbHquz6Xii\n\n* Fix test assertions: update Warning table column expectations to match new 6-col layout\n\nSortOrder and SectionsAndWarnings tests still asserted old 4-col\n\"| Legend |\" headers. Updated to expect \"| Diff Reason | Estimated Change\n| Disassembler |\" matching the WarningsSectionWriter changes.\n\nhttps://claude.ai/code/session_01WS27QQVhV5mrMbHquz6Xii\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-03-28T05:24:59+09:00",
+          "tree_id": "d9619e80724ccf684b55be7e4064c0be22a8775d",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/faf35dc558e0f1a864504fb33ca96b4d099edb7d"
+        },
+        "date": 1774643292574,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61422.269243512834,
+            "unit": "ns",
+            "range": "± 358.66317942414213"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 578362.45703125,
+            "unit": "ns",
+            "range": "± 962.2917124401697"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5971602.328425481,
+            "unit": "ns",
+            "range": "± 14180.897250902124"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74853.9633265904,
+            "unit": "ns",
+            "range": "± 458.29851741321175"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2618.207834879557,
+            "unit": "ns",
+            "range": "± 24.93868722278659"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 266719.56744791666,
+            "unit": "ns",
+            "range": "± 1178.1318494947436"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27751431.635416668,
+            "unit": "ns",
+            "range": "± 239905.48039740114"
           }
         ]
       }
