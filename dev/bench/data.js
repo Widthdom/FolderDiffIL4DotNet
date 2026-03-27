@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774584152807,
+  "lastUpdate": 1774602189359,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -198,6 +198,72 @@ window.BENCHMARK_DATA = {
             "value": 29080464.2625,
             "unit": "ns",
             "range": "± 128386.49103075224"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "40f04f1b0312cc926ef4a8c6de75b5abe27d21a0",
+          "message": "Merge pull request #94 from Widthdom/claude/fix-diff-report-filters-2h1FJ",
+          "timestamp": "2026-03-27T17:59:48+09:00",
+          "tree_id": "c842b73072bdc4acc9cfaa2c33f9bea304d4c082",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/40f04f1b0312cc926ef4a8c6de75b5abe27d21a0"
+        },
+        "date": 1774602189007,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61006.11486816406,
+            "unit": "ns",
+            "range": "± 119.8213830193909"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 576276.2557842548,
+            "unit": "ns",
+            "range": "± 1170.0973538761086"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5924912.7109375,
+            "unit": "ns",
+            "range": "± 14859.502645457304"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 75460.96668419472,
+            "unit": "ns",
+            "range": "± 190.69651179323836"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2630.585531779698,
+            "unit": "ns",
+            "range": "± 10.582636073799875"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 261518.08922526042,
+            "unit": "ns",
+            "range": "± 1657.8964832017482"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 28432671.00625,
+            "unit": "ns",
+            "range": "± 200343.81166089882"
           }
         ]
       }
