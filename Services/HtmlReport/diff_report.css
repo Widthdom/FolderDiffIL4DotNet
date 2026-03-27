@@ -350,11 +350,14 @@
     col.sc-col-body-g { width: var(--sc-body-w); }
     /* ── Dependency changes ──────────────────────────────────────────── */
     .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
-    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) */
+    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) [Vuln(7)] */
     col.dc-col-package-g { width: 24em; }
     col.dc-col-ver-g { width: 12em; }
+    col.dc-col-vuln-g { width: 18em; }
     table.semantic-changes-table.dc-detail td:nth-child(3),
     table.semantic-changes-table.dc-detail td:nth-child(4) { text-align: center; }
+    .vuln-badge { font-size: 11px; white-space: nowrap; }
+    .vuln-badge a { font-size: 11px; }
     /* ── Side-by-side diff mode / サイドバイサイド差分モード ────────────── */
     .sbs-toggle { font-size: 11px; color: #0051c3; background: none; border: 1px solid #0051c3;
                   border-radius: 4px; padding: 2px 8px; cursor: pointer; margin: 4px 0 4px 3.2em; }

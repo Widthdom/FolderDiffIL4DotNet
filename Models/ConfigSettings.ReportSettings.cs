@@ -13,6 +13,8 @@ namespace FolderDiffIL4DotNet.Models
         public const bool DefaultShouldIncludeAssemblySemanticChangesInReport = true;
         /// <summary>Default value for <see cref="ShouldIncludeDependencyChangesInReport"/>. / <see cref="ShouldIncludeDependencyChangesInReport"/> の既定値。</summary>
         public const bool DefaultShouldIncludeDependencyChangesInReport = true;
+        /// <summary>Default value for <see cref="EnableNuGetVulnerabilityCheck"/>. / <see cref="EnableNuGetVulnerabilityCheck"/> の既定値。</summary>
+        public const bool DefaultEnableNuGetVulnerabilityCheck = false;
         /// <summary>Default value for <see cref="ShouldIncludeILCacheStatsInReport"/>. / <see cref="ShouldIncludeILCacheStatsInReport"/> の既定値。</summary>
         public const bool DefaultShouldIncludeILCacheStatsInReport = false;
         /// <summary>Default value for <see cref="ShouldGenerateHtmlReport"/>. / <see cref="ShouldGenerateHtmlReport"/> の既定値。</summary>
@@ -49,6 +51,14 @@ namespace FolderDiffIL4DotNet.Models
         /// .deps.json ファイルの構造化された依存関係変更をレポートに出力するかどうか。
         /// </summary>
         public bool ShouldIncludeDependencyChangesInReport { get; }
+
+        /// <summary>
+        /// Whether to check NuGet package versions against known vulnerabilities (NVD/GitHub Advisory via NuGet API).
+        /// Requires network access. Disabled by default.
+        /// NuGet パッケージバージョンを既知の脆弱性（NuGet API 経由の NVD/GitHub Advisory）と突合するかどうか。
+        /// ネットワークアクセスが必要。デフォルトは無効。
+        /// </summary>
+        public bool EnableNuGetVulnerabilityCheck { get; }
 
         /// <summary>
         /// Whether to include IL cache statistics in the diff report.

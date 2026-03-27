@@ -412,6 +412,11 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>When <code>true</code>, includes structured <code>Dependency Changes</code> for <code>.deps.json</code> files classified as <code>TextMismatch</code>. Parses old and new JSON to show which NuGet packages were Added, Removed, or Updated with semver-based importance classification.</td>
     </tr>
+    <tr id="config-en-enablenugetvulnerabilitycheck">
+      <td><code>EnableNuGetVulnerabilityCheck</code></td>
+      <td><code>false</code></td>
+      <td>When <code>true</code>, checks NuGet package versions against the NuGet V3 vulnerability API (GitHub Advisory / NVD). Requires network access. When enabled, the dependency changes table shows a <code>Vulnerabilities</code> column with severity-labeled advisory links: active vulnerabilities in the new version are highlighted in red/orange, and vulnerabilities resolved by the update are shown with green strikethrough. Requires <code>ShouldIncludeDependencyChangesInReport</code> to be <code>true</code>.</td>
+    </tr>
     <tr id="config-en-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
       <td><code>false</code></td>
@@ -1039,6 +1044,11 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
       <td><code>ShouldIncludeDependencyChangesInReport</code></td>
       <td><code>true</code></td>
       <td><code>true</code> の場合、<code>TextMismatch</code> と判定された <code>.deps.json</code> ファイルについて構造化された <code>Dependency Changes</code> を出力します。新旧 JSON をパースし、NuGet パッケージの追加・削除・更新を semver ベースの重要度分類付きで表示します。</td>
+    </tr>
+    <tr id="config-ja-enablenugetvulnerabilitycheck">
+      <td><code>EnableNuGetVulnerabilityCheck</code></td>
+      <td><code>false</code></td>
+      <td><code>true</code> の場合、NuGet V3 脆弱性 API（GitHub Advisory / NVD）を使用して NuGet パッケージバージョンの既知脆弱性をチェックします。ネットワークアクセスが必要です。有効時、依存関係変更テーブルに <code>Vulnerabilities</code> 列が追加され、深刻度ラベル付きアドバイザリリンクが表示されます。新バージョンの脆弱性は赤/オレンジでハイライト、更新により解消された脆弱性は緑の取り消し線で表示されます。<code>ShouldIncludeDependencyChangesInReport</code> が <code>true</code> である必要があります。</td>
     </tr>
     <tr id="config-ja-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>

@@ -304,6 +304,41 @@ namespace FolderDiffIL4DotNet.Services
             return $"`{diffDetail}` `{importance.Value}`";
         }
 
+        /// <summary>
+        /// Builds a Markdown vulnerability column value for a dependency change entry.
+        /// 依存関係変更エントリの Markdown 脆弱性カラム値を構築します。
+        /// </summary>
+        private static string BuildMarkdownVulnColumn(VulnerabilityCheckResult? vuln)
+        {
+            if (vuln == null || !vuln.HasAnyVulnerabilities)
+                return "—";
+
+            var parts = new System.Collections.Generic.List<string>();
+
+            // New version vulnerabilities / 新バージョンの脆弱性
+            foreach (var v in vuln.NewVersionVulnerabilities)
+            {
+                string sev = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
+                parts.Add($"⚠ {sev}");
+            }
+
+            // Resolved vulnerabilities / 解消済み脆弱性
+            if (vuln.HasResolvedVulnerabilities)
+            {
+                foreach (var v in vuln.OldVersionVulnerabilities)
+                {
+                    bool alsoNew = false;
+                    foreach (var nv in vuln.NewVersionVulnerabilities)
+                        if (string.Equals(nv.AdvisoryUrl, v.AdvisoryUrl, System.StringComparison.Ordinal)) { alsoNew = true; break; }
+                    if (alsoNew) continue;
+                    string sev = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
+                    parts.Add($"~~{sev}~~");
+                }
+            }
+
+            return parts.Count > 0 ? string.Join(", ", parts) : "—";
+        }
+
         private static string BuildDisassemblerDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
         {
             if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch || diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&
