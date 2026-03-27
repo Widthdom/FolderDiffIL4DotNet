@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Models;
 
 namespace FolderDiffIL4DotNet.Services
@@ -177,7 +178,7 @@ namespace FolderDiffIL4DotNet.Services
 
                 return (false, null, resolved);
             }
-            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException or NotSupportedException or UnauthorizedAccessException)
+            catch (Exception ex) when (ExceptionFilters.IsProcessExecutionRecoverable(ex))
             {
                 return (false, null, null);
             }

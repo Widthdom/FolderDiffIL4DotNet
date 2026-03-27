@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Core.Text;
 
@@ -62,7 +63,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 return await File.ReadAllTextAsync(cacheFileAbsolutePath);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
                 LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
             }
@@ -87,7 +88,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 await File.WriteAllTextAsync(cacheFileAbsolutePath, ilText);
                 EnforceQuota();
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
                 LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
             }
@@ -114,7 +115,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                     File.Delete(cacheFileAbsolutePath);
                 }
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
@@ -136,7 +137,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 Directory.CreateDirectory(cacheDirectoryAbsolutePath);
                 return true;
             }
-            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogDirectoryInitializationFailure(cacheDirectoryAbsolutePath, ex);
             }
@@ -248,7 +249,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 file.Delete();
                 return true;
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
                 LogDeleteFailure(file.FullName, ex);
             }

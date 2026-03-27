@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 
 namespace FolderDiffIL4DotNet.Services
@@ -59,7 +60,7 @@ namespace FolderDiffIL4DotNet.Services
                         }
                     }
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+                catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
                 {
                     _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute IL related hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }

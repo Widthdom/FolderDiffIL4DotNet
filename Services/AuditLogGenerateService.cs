@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 
@@ -86,7 +87,7 @@ namespace FolderDiffIL4DotNet.Services
                     $"Audit log generated: {auditLogPath}",
                     shouldOutputMessageToConsole: true);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
                     $"Failed to write audit log to '{auditLogPath}': {ex.Message}",

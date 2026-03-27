@@ -101,8 +101,24 @@ namespace FolderDiffIL4DotNet.Services
             // Skip link for keyboard navigation / キーボードナビゲーション用スキップリンク
             sb.AppendLine("<a href=\"#main-content\" class=\"skip-link\">Skip to main content</a>");
 
-            // Controls bar — button row is stripped in downloadReviewed, filter zone is kept
-            // コントロールバー — ボタン行は downloadReviewed で除去、フィルターゾーンは維持
+            AppendControlsBar(sb);
+            AppendFilterZone(sb);
+            sb.AppendLine("</div>");  // end .controls
+
+            AppendMainSections(sb, oldFolderAbsolutePath, newFolderAbsolutePath,
+                reportsFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config, ilCache);
+
+            AppendProgressAndJs(sb, storageKey, reportDate);
+            sb.AppendLine("</body>");
+            sb.AppendLine("</html>");
+            return sb.ToString();
+        }
+
+        // ── Controls bar (button row stripped in downloadReviewed) ─────────────
+        // コントロールバー（ボタン行は downloadReviewed で除去）
+
+        private static void AppendControlsBar(StringBuilder sb)
+        {
             sb.AppendLine("<div class=\"controls\" role=\"toolbar\" aria-label=\"Report controls\">");
             sb.AppendLine("<!--CTRL-->");
             sb.AppendLine("<div class=\"ctrl-buttons\">");
@@ -122,9 +138,38 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  </div>");
             sb.AppendLine("</div>");
             sb.AppendLine("<!--/CTRL-->");
+        }
 
-            // Filter zone (kept in reviewed HTML for read-only filtering)
-            // フィルターゾーン（reviewed HTML にも残し読み取り専用フィルタリングに使用）
+        // ── Filter zone (kept in reviewed HTML for read-only filtering) ───────
+        // フィルターゾーン（reviewed HTML にも残し読み取り専用フィルタリングに使用）
+
+        /// <summary>
+        /// Diff Detail filter definitions used to build filter table rows.
+        /// Diff Detail フィルターテーブル行の定義。
+        /// </summary>
+        private static readonly (string Id, string Display, string Description)[] s_diffDetailFilters =
+        {
+            ("filter-diff-sha256match",    "<code>SHA256Match</code>",    "Byte-for-byte match (SHA256)"),
+            ("filter-diff-sha256mismatch", "<code>SHA256Mismatch</code>", "Byte-for-byte mismatch (SHA256)"),
+            ("filter-diff-ilmatch",        "<code>ILMatch</code>",        "IL (Intermediate Language) match"),
+            ("filter-diff-ilmismatch",     "<code>ILMismatch</code>",     "IL (Intermediate Language) mismatch"),
+            ("filter-diff-textmatch",      "<code>TextMatch</code>",      "Text-based match"),
+            ("filter-diff-textmismatch",   "<code>TextMismatch</code>",   "Text-based mismatch"),
+        };
+
+        /// <summary>
+        /// Change Importance filter definitions used to build filter table rows.
+        /// Change Importance フィルターテーブル行の定義。
+        /// </summary>
+        private static readonly (string Id, string Display, string Description)[] s_importanceFilters =
+        {
+            ("filter-imp-high",   "<span style=\"color:#d1242f;font-weight:bold\">High</span>",   "Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"),
+            ("filter-imp-medium", "<span style=\"color:#d97706;font-weight:bold\">Medium</span>", "Notable change: public/protected member addition, modifier change, access widening, internal removal"),
+            ("filter-imp-low",    "Low",                                                           "Low-impact change: body-only modification, internal/private member addition"),
+        };
+
+        private static void AppendFilterZone(StringBuilder sb)
+        {
             sb.AppendLine("<div class=\"filter-zone\" role=\"search\" aria-label=\"Report filters\">");
 
             // Search + Unchecked only row / 検索 + 未チェックのみ行
@@ -142,12 +187,10 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<table class=\"filter-table\" aria-label=\"Diff Detail filters\">");
             sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"3\">Diff Detail</th></tr></thead>");
             sb.AppendLine("<tbody>");
-            AppendFilterTableRow(sb, "filter-diff-sha256match", "<code>SHA256Match</code>", HtmlEncode("Byte-for-byte match (SHA256)"));
-            AppendFilterTableRow(sb, "filter-diff-sha256mismatch", "<code>SHA256Mismatch</code>", HtmlEncode("Byte-for-byte mismatch (SHA256)"));
-            AppendFilterTableRow(sb, "filter-diff-ilmatch", "<code>ILMatch</code>", HtmlEncode("IL (Intermediate Language) match"));
-            AppendFilterTableRow(sb, "filter-diff-ilmismatch", "<code>ILMismatch</code>", HtmlEncode("IL (Intermediate Language) mismatch"));
-            AppendFilterTableRow(sb, "filter-diff-textmatch", "<code>TextMatch</code>", HtmlEncode("Text-based match"));
-            AppendFilterTableRow(sb, "filter-diff-textmismatch", "<code>TextMismatch</code>", HtmlEncode("Text-based mismatch"));
+            foreach (var (id, display, desc) in s_diffDetailFilters)
+            {
+                AppendFilterTableRow(sb, id, display, HtmlEncode(desc));
+            }
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
 
@@ -156,16 +199,31 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("<table class=\"filter-table filter-table-dbl\" aria-label=\"Change Importance filters\">");
             sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"3\">Change Importance</th></tr></thead>");
             sb.AppendLine("<tbody>");
-            AppendFilterTableRow(sb, "filter-imp-high", "<span style=\"color:#d1242f;font-weight:bold\">High</span>", HtmlEncode("Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"));
-            AppendFilterTableRow(sb, "filter-imp-medium", "<span style=\"color:#d97706;font-weight:bold\">Medium</span>", HtmlEncode("Notable change: public/protected member addition, modifier change, access widening, internal removal"));
-            AppendFilterTableRow(sb, "filter-imp-low", "Low", HtmlEncode("Low-impact change: body-only modification, internal/private member addition"));
+            foreach (var (id, display, desc) in s_importanceFilters)
+            {
+                AppendFilterTableRow(sb, id, display, HtmlEncode(desc));
+            }
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
             sb.AppendLine("</div>"); // end .filter-tables
 
             sb.AppendLine("</div>");  // end .filter-zone
-            sb.AppendLine("</div>");  // end .controls
+        }
 
+        // ── Main content sections ─────────────────────────────────────────────
+        // メインコンテンツセクション
+
+        private void AppendMainSections(
+            StringBuilder sb,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath,
+            string reportsFolderAbsolutePath,
+            string appVersion,
+            string elapsedTimeString,
+            string computerName,
+            IReadOnlyConfigSettings config,
+            ILCache? ilCache)
+        {
             sb.AppendLine("<main id=\"main-content\">");
             AppendHeaderSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath,
                 appVersion, elapsedTimeString, computerName, config);
@@ -187,11 +245,13 @@ namespace FolderDiffIL4DotNet.Services
             AppendWarningsSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
 
             sb.AppendLine("</main>");
+        }
 
-            // Calculate total reviewable files for progress bar (Added + Removed + Modified + Warning sections)
-            // Unchanged/Ignored are excluded — they don't require active review.
-            // プログレスバー用のレビュー対象ファイル総数を算出（Added + Removed + Modified + Warningsセクション）
-            // Unchanged/Ignoredはアクティブなレビュー不要のため除外。
+        // ── Progress bar calculation and JS injection ─────────────────────────
+        // プログレスバー計算と JS 注入
+
+        private void AppendProgressAndJs(StringBuilder sb, string storageKey, string reportDate)
+        {
             int addedCount = _fileDiffResultLists.AddedFilesAbsolutePath.Count;
             int removedCount = _fileDiffResultLists.RemovedFilesAbsolutePath.Count;
             int modifiedCount = _fileDiffResultLists.ModifiedFilesRelativePath.Count;
@@ -201,9 +261,6 @@ namespace FolderDiffIL4DotNet.Services
             int totalFiles = addedCount + removedCount + modifiedCount + sha256WarnCount + tsWarnCount;
             string totalFilesDetail = BuildTotalFilesDetail(addedCount, removedCount, modifiedCount, sha256WarnCount, tsWarnCount);
             AppendJs(sb, storageKey, reportDate, totalFiles, totalFilesDetail);
-            sb.AppendLine("</body>");
-            sb.AppendLine("</html>");
-            return sb.ToString();
         }
 
         // ── Progress detail ──────────────────────────────────────────────────

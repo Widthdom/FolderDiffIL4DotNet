@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
@@ -218,7 +219,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 FileSystemUtility.TrySetReadOnly(diffReportAbsolutePath);
             }
-            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogReportProtectionWarning(ex);
             }

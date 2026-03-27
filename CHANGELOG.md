@@ -13,6 +13,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Extract `DiffPipelineExecutor` from `ProgramRunner`** — Moved diff execution pipeline (scoped DI container construction, folder diff execution, and Markdown/HTML/audit-log report generation) from `ProgramRunner` into a dedicated [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs). `ProgramRunner` now focuses on CLI dispatch, argument validation, config loading, and exit-code mapping, delegating the heavy pipeline work to `DiffPipelineExecutor`. No behavioral changes. Updated [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA architecture diagrams, file tables, design intent). Test count: 899 (unchanged).
 
+- **Structural refactoring for maintainability** — Five refactoring improvements with no behavioral changes:
+  1. **Extract `NetworkPathDetector` from `FileSystemUtility`** — Moved all network-path detection logic (Windows UNC, macOS statfs, Linux /proc/mounts) from [`FileSystemUtility.cs`](FolderDiffIL4DotNet.Core/IO/FileSystemUtility.cs) (385→85 lines) into a new [`NetworkPathDetector.cs`](FolderDiffIL4DotNet.Core/IO/NetworkPathDetector.cs) (270 lines). `FileSystemUtility.IsLikelyNetworkPath` now delegates to `NetworkPathDetector`.
+  2. **Split `ReportGenerateService.SectionWriters.cs` into 10 individual files** — Each nested `IReportSectionWriter` implementation (Header, Legend, Ignored, Unchanged, Added, Removed, Modified, Summary, ILCacheStats, Warnings) now has its own file under [`Services/SectionWriters/`](Services/SectionWriters/).
+  3. **Extract `BuildHtml()` into focused methods** — The 125-line `BuildHtml()` method in [`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs) was split into `AppendControlsBar()`, `AppendFilterZone()`, `AppendMainSections()`, and `AppendProgressAndJs()`.
+  4. **Add `ExceptionFilters` utility** — Created [`ExceptionFilters.cs`](FolderDiffIL4DotNet.Core/Common/ExceptionFilters.cs) with named predicates (`IsFileIoRecoverable`, `IsFileIoOrOperationRecoverable`, `IsPathOrFileIoRecoverable`, `IsProcessExecutionRecoverable`) to replace 20+ inline `catch (Exception ex) when (ex is ...)` patterns across services.
+  5. **Loop-based filter table rows** — Replaced 9 sequential `AppendFilterTableRow()` calls in `HtmlReportGenerateService` with data-driven loops over `s_diffDetailFilters` and `s_importanceFilters` arrays.
+  Updated [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA partial class tables, network path detection references). Test count: 900 (unchanged).
+
 #### Added
 
 - **Per-class coverage thresholds for core diff logic** — Extended the CI coverage enforcement script in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) to check per-class coverage for `FileDiffService`, `FolderDiffService`, and `FileComparisonService` (line >= 90%, branch >= 85%), in addition to the existing total thresholds (line >= 80%, branch >= 75%). The script aggregates line/branch hits across all `<class>` entries sharing the same name to correctly handle partial classes (e.g. `FileDiffService.cs` + `FileDiffService.TextComparison.cs`). Added `DotNetWorkflow_EnforcesPerClassCoverageThresholds` test in [`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs). Updated [`CLAUDE.md`](CLAUDE.md), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA). Test count: 900 (+1).
@@ -739,6 +747,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Changed
 
 - **`DiffPipelineExecutor` を `ProgramRunner` から抽出** — 差分実行パイプライン（スコープ付き DI コンテナ構築、フォルダ差分実行、Markdown/HTML/監査ログの全レポート生成）を `ProgramRunner` から専用の [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs) に移動。`ProgramRunner` は CLI 分岐・引数検証・設定読込・終了コード写像に集中し、重いパイプライン処理を `DiffPipelineExecutor` に委譲する形に整理。動作変更なし。[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA アーキテクチャ図・ファイル表・設計意図）を更新。テスト件数: 899（変更なし）。
+
+- **保守性向上のための構造リファクタリング** — 動作変更なしの5つのリファクタリング改善:
+  1. **`NetworkPathDetector` を `FileSystemUtility` から抽出** — ネットワークパス検出ロジック（Windows UNC、macOS statfs、Linux /proc/mounts）を [`FileSystemUtility.cs`](FolderDiffIL4DotNet.Core/IO/FileSystemUtility.cs)（385→85行）から新規 [`NetworkPathDetector.cs`](FolderDiffIL4DotNet.Core/IO/NetworkPathDetector.cs)（270行）に移動。`FileSystemUtility.IsLikelyNetworkPath` は `NetworkPathDetector` に委譲。
+  2. **`ReportGenerateService.SectionWriters.cs` を10個の個別ファイルに分割** — ネストされた各 `IReportSectionWriter` 実装（Header、Legend、Ignored、Unchanged、Added、Removed、Modified、Summary、ILCacheStats、Warnings）を [`Services/SectionWriters/`](Services/SectionWriters/) 配下に個別ファイル化。
+  3. **`BuildHtml()` を集約メソッドに分割** — [`HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs) の125行の `BuildHtml()` メソッドを `AppendControlsBar()`、`AppendFilterZone()`、`AppendMainSections()`、`AppendProgressAndJs()` に分割。
+  4. **`ExceptionFilters` ユーティリティ追加** — [`ExceptionFilters.cs`](FolderDiffIL4DotNet.Core/Common/ExceptionFilters.cs) を作成。名前付き述語（`IsFileIoRecoverable`、`IsFileIoOrOperationRecoverable`、`IsPathOrFileIoRecoverable`、`IsProcessExecutionRecoverable`）で、サービス全体の20箇所以上のインライン `catch (Exception ex) when (ex is ...)` パターンを置換。
+  5. **フィルタテーブル行のループ化** — `HtmlReportGenerateService` の9回の連続 `AppendFilterTableRow()` 呼び出しを `s_diffDetailFilters` / `s_importanceFilters` 配列に基づくデータ駆動ループに置換。
+  [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA partial class テーブル、ネットワークパス検出参照）を更新。テスト件数: 900（変更なし）。
 
 #### Added
 

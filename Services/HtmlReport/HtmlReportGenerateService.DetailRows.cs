@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -145,7 +146,7 @@ namespace FolderDiffIL4DotNet.Services
                     var newEncoding = EncodingDetector.DetectFileEncoding(newPath);
                     return (File.ReadAllLines(oldPath, oldEncoding), File.ReadAllLines(newPath, newEncoding));
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+                catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
                         $"Inline diff skipped for '{relPath}': {ex.Message}",

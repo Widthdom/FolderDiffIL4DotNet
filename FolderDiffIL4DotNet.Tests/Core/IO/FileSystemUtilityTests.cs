@@ -136,9 +136,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void IsLikelyWindowsNetworkPath_ForwardSlashIpUncPath_ReturnsTrue()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "IsLikelyWindowsNetworkPath",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             // //192.168.1.1/share is a valid UNC path on Windows (forward-slash form)
@@ -154,9 +154,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void IsLikelyWindowsNetworkPath_BackslashUncPath_ReturnsTrue()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "IsLikelyWindowsNetworkPath",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             var result = method.Invoke(null, [@"\\server\share\folder"]);
@@ -166,9 +166,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void GetBestMatchingMountFileSystemType_PicksMostSpecificMountPoint()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "GetBestMatchingMountFileSystemType",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             var fullPath = "/mnt/share/deep/file.txt";
@@ -187,9 +187,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void GetBestMatchingMountFileSystemType_IgnoresInvalidLines()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "GetBestMatchingMountFileSystemType",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             var fullPath = "/tmp/file.txt";
@@ -208,9 +208,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void GetBestMatchingMountFileSystemType_NullInputs_ReturnsNull()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "GetBestMatchingMountFileSystemType",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             Assert.Null(method.Invoke(null, new object[] { null, new[] { "tmpfs /tmp tmpfs rw 0 0" } }));
@@ -317,9 +317,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             {
                 return;
             }
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "GetUnixMountsFilePath",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
             var result = method.Invoke(null, null) as string;
             // Either /proc/mounts or /etc/mtab should exist
@@ -334,9 +334,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void IsLikelyUnixNetworkPath_WhenNoMountsFile_ReturnsFalse()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "IsLikelyUnixNetworkPath",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             // /nonexistent/path passes TryGetFullPath; if a mounts file is found, it branches there.
@@ -354,9 +354,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void TryReadMountLines_NonexistentFile_ReturnsNull()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "TryReadMountLines",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             // Nonexistent file triggers IOException and returns null
@@ -372,9 +372,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void IsLikelyWindowsNetworkPath_ForwardSlashUncPrefixVariants_ReturnTrue()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "IsLikelyWindowsNetworkPath",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             // //server/share format UNC path / //server/share 形式の UNC パス
@@ -390,9 +390,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void GetBestMatchingMountFileSystemType_ExactPathMatch_ReturnsFsType()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "GetBestMatchingMountFileSystemType",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             var fullPath = "/mnt/share";
@@ -412,9 +412,9 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [Fact]
         public void GetBestMatchingMountFileSystemType_EscapedSpaceInMountPoint_Matches()
         {
-            var method = typeof(FileSystemUtility).GetMethod(
+            var method = typeof(NetworkPathDetector).GetMethod(
                 "GetBestMatchingMountFileSystemType",
-                BindingFlags.Static | BindingFlags.NonPublic);
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             Assert.NotNull(method);
 
             // Lines containing \040 (space) in the mount point
