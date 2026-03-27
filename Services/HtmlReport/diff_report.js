@@ -140,7 +140,7 @@
     // テーブルの inline width をクリアし reviewed ロード時に再計算させる
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
@@ -161,6 +161,7 @@
       + '; --col-notes-w: '   + curWidths['--col-notes-w']
       + '; --col-path-w: '    + curWidths['--col-path-w']
       + '; --col-diff-w: '    + curWidths['--col-diff-w']
+      + '; --col-tag-w: '     + curWidths['--col-tag-w']
       + '; --col-disasm-w: '  + curWidths['--col-disasm-w']
       + '; --sc-class-w: '    + curWidths['--sc-class-w']
       + '; --sc-basetype-w: ' + curWidths['--sc-basetype-w']
@@ -276,7 +277,7 @@
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
@@ -646,6 +647,7 @@
       'col-path-g': px('--col-path-w', 22),
       'col-ts-g': 28 * emPx,
       'col-diff-g': px('--col-diff-w', 10.8),
+      'col-tag-g': px('--col-tag-w', 14),
       'col-disasm-g': px('--col-disasm-w', 28)
     };
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
@@ -653,10 +655,12 @@
       if (!cg) return;
       var hideDisasm = t.classList.contains('hide-disasm');
       var hideCol6 = t.classList.contains('hide-col6');
+      var hideTag = t.classList.contains('hide-tag');
       var w = 0;
       cg.querySelectorAll('col').forEach(function(col) {
         if (hideDisasm && col.classList.contains('col-disasm-g')) return;
         if (hideCol6 && col.classList.contains('col-diff-g')) return;
+        if (hideTag && col.classList.contains('col-tag-g')) return;
         if (colW[col.className] !== undefined) w += colW[col.className];
       });
       if (w > 0) t.style.width = w + 'px';
@@ -1003,8 +1007,8 @@
       'sha256w': '#0051c3', 'tsw': '#0051c3'
     };
 
-    // Helper: 11-cell empty row / 11セルの空行
-    var COLS = 11;
+    // Helper: 12-cell empty row / 12セルの空行
+    var COLS = 12;
     function emptyRow() {
       var r = '<tr>';
       for (var i = 0; i < COLS; i++) r += '<td></td>';
@@ -1028,7 +1032,7 @@
     }
     // Helper: column header row — # at col 2 (Excel C) / 列ヘッダー行 — #は列2（Excel C列）
     function colHeaderRow(bg) {
-      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Disassembler'];
+      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler'];
       var r = '<tr><td></td><td></td>';
       hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
       return r + '</tr>';
@@ -1117,6 +1121,28 @@
       legendHtml += '</tr>';
     });
     legendHtml += emptyRow();
+    // Legend — Estimated Change / 凡例 — 推定変更
+    legendHtml += bannerRow7('Legend \u2014 Estimated Change', '#000', 'font-weight:bold;padding:8px');
+    var tagLegend = [
+      ['+Method', 'New method added'],
+      ['-Method', 'Method removed'],
+      ['+Type', 'New type added'],
+      ['-Type', 'Type removed'],
+      ['Extract', 'Method body extracted to new private/internal method'],
+      ['Inline', 'Private/internal method inlined into another method'],
+      ['Move', 'Method moved between types'],
+      ['Rename', 'Method renamed (same signature and IL body)'],
+      ['Signature', 'Method/property signature changed'],
+      ['Access', 'Access modifier changed'],
+      ['BodyEdit', 'Method body IL changed only'],
+      ['DepUpdate', 'Dependency package version changed only']
+    ];
+    tagLegend.forEach(function(row) {
+      legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
+      for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+      legendHtml += '</tr>';
+    });
+    legendHtml += emptyRow();
 
     // Build summary section / サマリーセクションを構築
     var summaryHtml = '';
@@ -1186,7 +1212,7 @@
 
   function buildExcelRow(tr) {
     var cells = tr.querySelectorAll('td');
-    if (cells.length < 9) return '';
+    if (cells.length < 10) return '';
     // #
     var no = cells[0].textContent.trim();
     // Checkbox state / チェックボックス状態
@@ -1207,8 +1233,10 @@
     var ts = cells[6].textContent.trim();
     // Diff Detail
     var diff = cells[7].textContent.trim();
+    // Estimated Change / 推定変更
+    var tag = cells[8].textContent.trim();
     // Disassembler
-    var disasm = cells[8].textContent.trim();
+    var disasm = cells[9].textContent.trim();
 
     return '<tr><td></td><td></td>'
       + '<td class="bd">' + esc(no) + '</td>'
@@ -1219,6 +1247,7 @@
       + '<td class="bd">' + esc(path) + '</td>'
       + '<td class="bd" style="text-align:center;mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
       + '<td class="bd" style="text-align:center">' + esc(diff) + '</td>'
+      + '<td class="bd">' + esc(tag) + '</td>'
       + '<td class="bd">' + esc(disasm) + '</td>'
       + '</tr>';
   }

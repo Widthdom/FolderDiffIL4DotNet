@@ -30,6 +30,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine("  <col class=\"col-path-g\">");
             sb.AppendLine("  <col class=\"col-ts-g\">");
             sb.AppendLine("  <col class=\"col-diff-g\">");
+            sb.AppendLine("  <col class=\"col-tag-g\">");
             sb.AppendLine("  <col class=\"col-disasm-g\">");
             sb.AppendLine("</colgroup>");
             sb.AppendLine($"<thead><tr style=\"background:{bg}\">");
@@ -41,6 +42,7 @@ namespace FolderDiffIL4DotNet.Services
             sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-path-w\">{HtmlEncode("File Path")}</th>");
             sb.AppendLine($"  <th scope=\"col\">{HtmlEncode("Timestamp")}</th>");
             sb.AppendLine($"  <th scope=\"col\" class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
+            sb.AppendLine($"  <th scope=\"col\" class=\"col-tag-hd th-resizable\" data-col-var=\"--col-tag-w\">{HtmlEncode("Estimated Change")}</th>");
             sb.AppendLine($"  <th scope=\"col\" class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{HtmlEncode("Disassembler")}</th>");
             sb.AppendLine("</tr></thead>");
         }
@@ -54,7 +56,8 @@ namespace FolderDiffIL4DotNet.Services
             string col6,
             string disasm = "",
             string importance = "",
-            string importanceLevels = "")
+            string importanceLevels = "",
+            string changeTag = "")
         {
             string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
@@ -91,6 +94,8 @@ namespace FolderDiffIL4DotNet.Services
             else if (sectionPrefix == "mod" && diffCat == "ILMismatch")
                 col6Cell += " <code>Unknown</code>";
             sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
+            string tagCell = FormatChangeTagHtml(changeTag);
+            sb.AppendLine($"  <td class=\"col-tag\">{tagCell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
             sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
             sb.AppendLine("</tr>");
@@ -219,6 +224,28 @@ namespace FolderDiffIL4DotNet.Services
                 ChangeImportance.Low => "Low",
                 _ => ""
             };
+
+        /// <summary>
+        /// Returns the formatted change tag display string for a file, or empty if no tags.
+        /// ファイルの変更タグ表示文字列を返します（タグなしの場合は空文字列）。
+        /// </summary>
+        private string GetChangeTagDisplay(string fileRelativePath)
+        {
+            if (_fileDiffResultLists.FileRelativePathToChangeTags.TryGetValue(fileRelativePath, out var tags))
+                return ChangeTagClassifier.FormatTags(tags);
+            return "";
+        }
+
+        /// <summary>
+        /// Formats change tags as HTML with each tag individually wrapped in <c>&lt;code&gt;</c>.
+        /// 変更タグを個別に <c>&lt;code&gt;</c> で囲んだ HTML を返します。
+        /// </summary>
+        private static string FormatChangeTagHtml(string changeTag)
+        {
+            if (string.IsNullOrEmpty(changeTag)) return "";
+            var parts = changeTag.Split(new[] { ", " }, StringSplitOptions.None);
+            return string.Join(", ", parts.Select(p => $"<code>{HtmlEncode(p)}</code>"));
+        }
 
         /// <summary>
         /// Returns a sort ordinal for <see cref="ChangeImportance"/> (High=0 first).
@@ -357,6 +384,37 @@ namespace FolderDiffIL4DotNet.Services
         {
             sb.AppendLine($"<tr><td class=\"ft-cb\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{id}\">{labelHtml}</label></td><td class=\"ft-desc\">{description}</td></tr>");
         }
+
+        /// <summary>
+        /// Appends filter table cells (cb + label + desc) without <c>tr</c> wrapping, for 2-column layouts.
+        /// 2段組みレイアウト用に、<c>tr</c> なしでフィルターテーブルセル（cb + label + desc）を追加します。
+        /// </summary>
+        private static void AppendFilterTableCells(StringBuilder sb, (string Id, string Display, string Description) entry)
+        {
+            sb.Append($"<td class=\"ft-cb\"><input type=\"checkbox\" id=\"{entry.Id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{entry.Id}\">{entry.Display}</label></td><td class=\"ft-desc\">{HtmlEncode(entry.Description)}</td>");
+        }
+
+        /// <summary>
+        /// Returns a short description for a <see cref="ChangeTag"/> value, used in the legend table.
+        /// <see cref="ChangeTag"/> 値の短い説明を返します（凡例テーブル用）。
+        /// </summary>
+        private static string GetChangeTagDescription(ChangeTag tag)
+            => tag switch
+            {
+                ChangeTag.MethodAdd => "New method added",
+                ChangeTag.MethodRemove => "Method removed",
+                ChangeTag.TypeAdd => "New type added",
+                ChangeTag.TypeRemove => "Type removed",
+                ChangeTag.Extract => "Method body extracted to new private/internal method",
+                ChangeTag.Inline => "Private/internal method inlined into another method",
+                ChangeTag.Move => "Method moved between types",
+                ChangeTag.Rename => "Method renamed (same signature and IL body)",
+                ChangeTag.Signature => "Method/property signature changed",
+                ChangeTag.Access => "Access modifier changed",
+                ChangeTag.BodyEdit => "Method body IL changed only",
+                ChangeTag.DepUpdate => "Dependency package version changed only",
+                _ => ""
+            };
 
         // ── Utilities ────────────────────────────────────────────────────────
 

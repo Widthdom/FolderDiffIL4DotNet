@@ -18,8 +18,8 @@ namespace FolderDiffIL4DotNet.Services
                 int count = ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_IGNORED} {REPORT_LABEL_IGNORED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp | Legend |");
-                writer.WriteLine("|:------:|-----------|:---------:|:------:|");
+                writer.WriteLine("| Status | File Path | Timestamp |");
+                writer.WriteLine("|:------:|-----------|:---------:|");
                 foreach (var entry in ctx.FileDiffResultLists.IgnoredFilesRelativePathToLocation.OrderBy(kvp => kvp.Key, System.StringComparer.OrdinalIgnoreCase))
                 {
                     bool hasOld = (entry.Value & FileDiffResultLists.IgnoredFileLocation.Old) != 0;
@@ -37,7 +37,7 @@ namespace FolderDiffIL4DotNet.Services
                         var timestampInfo = BuildIgnoredFileTimestampInfo(entry, ctx.OldFolderAbsolutePath, ctx.NewFolderAbsolutePath);
                         if (!string.IsNullOrEmpty(timestampInfo)) tsCol = timestampInfo;
                     }
-                    writer.WriteLine($"| `{REPORT_MARKER_IGNORED}` | {displayPath} {locationLabel} | {tsCol} | |");
+                    writer.WriteLine($"| `{REPORT_MARKER_IGNORED}` | {displayPath} {locationLabel} | {tsCol} |");
                 }
             }
         }

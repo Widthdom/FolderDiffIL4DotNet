@@ -182,26 +182,51 @@ namespace FolderDiffIL4DotNet.Services
             // Filter tables row / フィルターテーブル行
             sb.AppendLine("<div class=\"filter-tables\">");
 
-            // Diff Detail filter table / Diff Detail フィルターテーブル
+            // Diff Detail filter table (2 items per row) / Diff Detail フィルターテーブル（1行2項目）
             sb.AppendLine("<div class=\"filter-table-wrap\">");
             sb.AppendLine("<table class=\"filter-table\" aria-label=\"Diff Detail filters\">");
-            sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"3\">Diff Detail</th></tr></thead>");
+            sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"6\">Diff Detail</th></tr></thead>");
             sb.AppendLine("<tbody>");
-            foreach (var (id, display, desc) in s_diffDetailFilters)
+            for (int i = 0; i < s_diffDetailFilters.Length; i += 2)
             {
-                AppendFilterTableRow(sb, id, display, HtmlEncode(desc));
+                sb.Append("<tr>");
+                AppendFilterTableCells(sb, s_diffDetailFilters[i]);
+                if (i + 1 < s_diffDetailFilters.Length)
+                    AppendFilterTableCells(sb, s_diffDetailFilters[i + 1]);
+                else
+                    sb.Append("<td></td><td></td><td></td>");
+                sb.AppendLine("</tr>");
             }
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");
 
             // Change Importance filter table / Change Importance フィルターテーブル
             sb.AppendLine("<div class=\"filter-table-wrap\">");
-            sb.AppendLine("<table class=\"filter-table filter-table-dbl\" aria-label=\"Change Importance filters\">");
+            sb.AppendLine("<table class=\"filter-table\" aria-label=\"Change Importance filters\">");
             sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"3\">Change Importance</th></tr></thead>");
             sb.AppendLine("<tbody>");
             foreach (var (id, display, desc) in s_importanceFilters)
             {
                 AppendFilterTableRow(sb, id, display, HtmlEncode(desc));
+            }
+            sb.AppendLine("</tbody></table>");
+            sb.AppendLine("</div>");
+            // Estimated Change legend table (2 items per row, read-only, no filter checkboxes)
+            // 推定変更凡例テーブル（1行2項目、読み取り専用、フィルターチェックボックスなし）
+            sb.AppendLine("<div class=\"filter-table-wrap\">");
+            sb.AppendLine("<table class=\"filter-table\" aria-label=\"Estimated Change legend\">");
+            sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"4\">Legend — Estimated Change</th></tr></thead>");
+            sb.AppendLine("<tbody>");
+            var allLabels = ChangeTagClassifier.AllLabels.ToArray();
+            for (int i = 0; i < allLabels.Length; i += 2)
+            {
+                sb.Append("<tr>");
+                sb.Append($"<td class=\"ft-label\"><code>{HtmlEncode(allLabels[i].Value)}</code></td><td class=\"ft-desc\">{HtmlEncode(GetChangeTagDescription(allLabels[i].Key))}</td>");
+                if (i + 1 < allLabels.Length)
+                    sb.Append($"<td class=\"ft-label\"><code>{HtmlEncode(allLabels[i + 1].Value)}</code></td><td class=\"ft-desc\">{HtmlEncode(GetChangeTagDescription(allLabels[i + 1].Key))}</td>");
+                else
+                    sb.Append("<td></td><td></td>");
+                sb.AppendLine("</tr>");
             }
             sb.AppendLine("</tbody></table>");
             sb.AppendLine("</div>");

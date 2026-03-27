@@ -354,6 +354,16 @@ namespace FolderDiffIL4DotNet.Services
                 _ => 3 // null / no semantic changes
             };
 
+        private static string BuildChangeTagDisplay(string fileRelativePath, FileDiffResultLists fileDiffResultLists)
+        {
+            if (fileDiffResultLists.FileRelativePathToChangeTags.TryGetValue(fileRelativePath, out var tags) && tags.Count > 0)
+            {
+                // Wrap each tag label individually in backticks / 各タグラベルを個別にバッククォートで囲む
+                return string.Join(", ", tags.Select(t => $"`{ChangeTagClassifier.GetLabel(t)}`"));
+            }
+            return "";
+        }
+
         private static List<string> GetNormalizedIlIgnoreContainingStrings(IReadOnlyConfigSettings config)
         {
             if (config?.ILIgnoreLineContainingStrings == null) return new List<string>();
