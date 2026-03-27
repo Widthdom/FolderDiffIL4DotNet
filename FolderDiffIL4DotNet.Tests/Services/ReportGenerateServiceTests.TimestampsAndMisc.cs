@@ -301,8 +301,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         // ── Column structure: per-table columns / テーブルごとの列構成 ─────────
 
         /// <summary>
-        /// Verifies that Ignored Files table has 4 columns (no Disassembler) and Added/Removed have 3 columns (no Legend, no Disassembler).
-        /// Ignored Files テーブルが 4 列（Disassembler なし）、Added/Removed が 3 列（Legend・Disassembler なし）であることを確認する。
+        /// Verifies that Ignored/Added/Removed tables have 3 columns and Unchanged has 5 columns (no Estimated Change).
+        /// Ignored/Added/Removed テーブルが 3 列、Unchanged が 5 列（Estimated Change なし）であることを確認する。
         /// </summary>
         [Fact]
         public void GenerateDiffReport_ColumnStructure_PerTableColumns()

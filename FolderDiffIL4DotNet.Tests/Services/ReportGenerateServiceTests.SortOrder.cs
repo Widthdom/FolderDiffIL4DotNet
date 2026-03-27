@@ -46,18 +46,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
 
-            // SHA256Mismatch warning table: 4 columns (no Disassembler)
+            // SHA256Mismatch warning table: 6 columns (Diff Reason + Estimated Change + Disassembler)
+            // SHA256Mismatch 警告テーブル: 6 列（Diff Reason + Estimated Change + Disassembler）
             int sha256Start = reportText.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);
             Assert.True(sha256Start >= 0);
             int tsRegressedStart = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             string sha256Section = reportText.Substring(sha256Start, tsRegressedStart - sha256Start);
-            Assert.Contains("| Status | File Path | Timestamp | Legend |", sha256Section);
-            Assert.DoesNotContain("Disassembler", sha256Section);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |", sha256Section);
 
-            // new file timestamps older than old warning table: 4 columns (no Disassembler)
+            // new file timestamps older than old warning table: 6 columns (Diff Reason + Estimated Change + Disassembler)
+            // タイムスタンプ逆行警告テーブル: 6 列（Diff Reason + Estimated Change + Disassembler）
             string tsSection = reportText.Substring(tsRegressedStart);
-            Assert.Contains("| Status | File Path | Timestamp | Legend |", tsSection);
-            Assert.DoesNotContain("Disassembler", tsSection);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |", tsSection);
         }
 
         // ── Assembly Semantic Changes removed from Markdown report ─────────────
