@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774610842701,
+  "lastUpdate": 1774612918634,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -462,6 +462,72 @@ window.BENCHMARK_DATA = {
             "value": 27601775.96875,
             "unit": "ns",
             "range": "± 195665.8274006356"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8d884e1362e5db8bc37e542b24d94e6383f82fee",
+          "message": "Extract DiffPipelineExecutor from ProgramRunner for better separation of concerns (#97)\n\nMove diff execution pipeline (scoped DI container construction, folder diff\nexecution, and report generation) from ProgramRunner into a dedicated\nDiffPipelineExecutor class. ProgramRunner now focuses on CLI dispatch,\nargument validation, config loading, and exit-code mapping.\n\nNo behavioral changes - all existing tests pass without modification.\n\nhttps://claude.ai/code/session_01FBnxzn2fbWcza8AhpSTQq5\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-03-27T20:58:38+09:00",
+          "tree_id": "4a50a669a99ef3c10e7d7a1c2e107bc9808efcd8",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/8d884e1362e5db8bc37e542b24d94e6383f82fee"
+        },
+        "date": 1774612918012,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62892.79349928636,
+            "unit": "ns",
+            "range": "± 184.8463249551783"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 584386.0486328125,
+            "unit": "ns",
+            "range": "± 4104.039167711971"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5868519.179036458,
+            "unit": "ns",
+            "range": "± 6821.637126643141"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74398.74731445312,
+            "unit": "ns",
+            "range": "± 179.40397317131178"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2588.9571838378906,
+            "unit": "ns",
+            "range": "± 23.385994584028513"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 261417.32384440105,
+            "unit": "ns",
+            "range": "± 1862.2138354985848"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27022097.352083333,
+            "unit": "ns",
+            "range": "± 146490.36408777392"
           }
         ]
       }
