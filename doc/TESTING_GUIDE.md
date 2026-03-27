@@ -140,6 +140,7 @@ After running with coverage, results are created under `TestResults/**/coverage.
 
 Coverage percentages vary as code and tests change. Generate a fresh local report when you need the current values, and use CI as the authoritative enforcement point.
 CI fails if total coverage drops below `80%` line or `75%` branch.
+Additionally, core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`) are held to higher per-class thresholds of `90%` line and `85%` branch.
 
 Optional local summary generation (uses the local tool manifest):
 
@@ -164,7 +165,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - CI runs two jobs: the `build` job (Ubuntu) installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool before the test step and runs it with `DOTNET_ROLL_FORWARD=Major` so the preferred disassembler path is exercised in GitHub Actions; the `test-windows` job (Windows) runs the same suite on `windows-latest` with `dotnet-ildasm` installed as well.
 - `TestAndCoverage` artifact includes TRX and coverage outputs.
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
-- A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `80%` line or `75%` branch.
+- A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `80%` line or `75%` branch. The same step also enforces per-class thresholds (`90%` line, `85%` branch) for core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`).
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) runs on `v*` tags, rebuilds/tests/publishes the app, archives publish/docs output, and creates a GitHub Release from the pushed tag.
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) runs CodeQL for both `csharp` and `actions` on code changes plus a weekly schedule; uses `fetch-depth: 0` on checkout for [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) and `continue-on-error: true` on the Analyze step to tolerate the Default Setup conflict.
 - [`.github/dependabot.yml`](../.github/dependabot.yml) enables weekly update PRs for NuGet and GitHub Actions.
@@ -339,6 +340,7 @@ dotnet tool run dotnet-stryker --config-file stryker-config.json
 
 カバレッジ値はコードとテストの変化に応じて変動します。現時点の値が必要な場合はローカルでレポートを再生成し、しきい値の強制は CI を正本として扱ってください。
 CI では total の最小値として、行 `80%` / 分岐 `75%` を下回ると失敗します。
+さらに、コア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）にはクラス単位で行 `90%` / 分岐 `85%` の高い閾値が適用されます。
 
 ローカルで要約を作る場合（ローカルツールマニフェストを使用）:
 
@@ -363,7 +365,7 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 - CI は 2 つのジョブで構成されます。`build` ジョブ（Ubuntu）はテスト前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし `DOTNET_ROLL_FORWARD=Major` 付きで優先逆アセンブラ経路を実行します。`test-windows` ジョブ（Windows）も `windows-latest` 上で同じテストスイートを実行し、`dotnet-ildasm` をインストールした状態で検証します。
 - `TestAndCoverage` アーティファクトに TRX とカバレッジ関連ファイルを格納します。
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
-- 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `80%` / 分岐 `75%` を下回るとワークフローを失敗させます。
+- 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `80%` / 分岐 `75%` を下回るとワークフローを失敗させます。同ステップでコア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）のクラス単位しきい値（行 `90%` / 分岐 `85%`）も強制します。
 - [`.github/workflows/release.yml`](../.github/workflows/release.yml) は `v*` タグで実行し、再ビルド/再テスト/publish 後に publish 出力とドキュメントをアーカイブし、push されたタグから GitHub Release を作成します。
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) は `csharp` と `actions` に対する CodeQL をコード変更時と週次で実行します。[Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) 向けに Checkout で `fetch-depth: 0` を指定し、Default Setup との競合を吸収するため Analyze ステップに `continue-on-error: true` を設定しています。
 - [`.github/dependabot.yml`](../.github/dependabot.yml) は NuGet と GitHub Actions の更新 PR を週次で有効化します。

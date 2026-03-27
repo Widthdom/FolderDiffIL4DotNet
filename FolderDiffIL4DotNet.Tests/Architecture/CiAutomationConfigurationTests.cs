@@ -85,6 +85,23 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that the CI workflow enforces higher per-class coverage thresholds for core diff logic.
+        /// CI ワークフローがコア差分ロジックに対してクラス単位の高い閾値を強制していることを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void DotNetWorkflow_EnforcesPerClassCoverageThresholds()
+        {
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+
+            Assert.Contains("core_class_line_threshold = 90.0", workflow, StringComparison.Ordinal);
+            Assert.Contains("core_class_branch_threshold = 85.0", workflow, StringComparison.Ordinal);
+            Assert.Contains("FileDiffService", workflow, StringComparison.Ordinal);
+            Assert.Contains("FolderDiffService", workflow, StringComparison.Ordinal);
+            Assert.Contains("FileComparisonService", workflow, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that documentation files (CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md)
         /// reference the same coverage thresholds as the CI workflow.
         /// ドキュメント（CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md）が CI ワークフローと

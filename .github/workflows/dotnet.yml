@@ -88,6 +88,16 @@ jobs:
           line_threshold = 80.0
           branch_threshold = 75.0
 
+          # Per-class higher thresholds for core diff logic.
+          # コア差分ロジックに対するクラス単位の高い閾値。
+          core_class_line_threshold = 90.0
+          core_class_branch_threshold = 85.0
+          core_classes = [
+              "FolderDiffIL4DotNet.Services.FileDiffService",
+              "FolderDiffIL4DotNet.Services.FolderDiffService",
+              "FolderDiffIL4DotNet.Services.FileComparisonService",
+          ]
+
           matches = glob.glob("TestResults/**/coverage.cobertura.xml", recursive=True)
           if not matches:
             print("coverage.cobertura.xml was not found.", file=sys.stderr)
@@ -106,8 +116,65 @@ jobs:
           if branch_rate < branch_threshold:
             failures.append(f"branch coverage {branch_rate:.2f}% < {branch_threshold:.2f}%")
 
+          # Check per-class thresholds for core diff classes.
+          # Partial classes produce multiple <class> entries with the same name
+          # but different filenames — aggregate line/branch hits across all entries.
+          # コア差分クラスのクラス単位閾値をチェック。
+          # Partial class は同名で異なるファイルの複数 <class> エントリを生成するため、
+          # 全エントリの行数・ブランチ数を集約してから判定する。
+          print()
+          print("--- Core class coverage ---")
+          from collections import defaultdict
+          agg = defaultdict(lambda: {"lines_covered": 0, "lines_total": 0,
+                                      "branches_covered": 0, "branches_total": 0})
+          for pkg in root.findall(".//package"):
+            for cls in pkg.findall(".//class"):
+              cls_name = cls.attrib.get("name", "")
+              if cls_name not in core_classes:
+                continue
+              for line in cls.findall(".//line"):
+                agg[cls_name]["lines_total"] += 1
+                if int(line.attrib.get("hits", "0")) > 0:
+                  agg[cls_name]["lines_covered"] += 1
+                if line.attrib.get("branch", "false").lower() == "true":
+                  cc = line.attrib.get("condition-coverage", "")
+                  # Format: "X% (covered/total)"
+                  # 形式: "X% (covered/total)"
+                  if "(" in cc and "/" in cc:
+                    inner = cc.split("(")[1].rstrip(")")
+                    cov, tot = inner.split("/")
+                    agg[cls_name]["branches_covered"] += int(cov)
+                    agg[cls_name]["branches_total"] += int(tot)
+
+          core_warnings = []
+          for cls_name in core_classes:
+            d = agg[cls_name]
+            if d["lines_total"] == 0:
+              print(f"  {cls_name}: no coverage data found (skipped)")
+              continue
+            cls_line = d["lines_covered"] / d["lines_total"] * 100.0
+            cls_branch = (d["branches_covered"] / d["branches_total"] * 100.0
+                          if d["branches_total"] > 0 else 100.0)
+            status = "OK"
+            if cls_line < core_class_line_threshold or cls_branch < core_class_branch_threshold:
+              status = "BELOW TARGET"
+            print(f"  {cls_name}: line {cls_line:.2f}%, branch {cls_branch:.2f}% [{status}]")
+            if cls_line < core_class_line_threshold:
+              core_warnings.append(
+                f"{cls_name} line coverage {cls_line:.2f}% < {core_class_line_threshold:.2f}%"
+              )
+            if cls_branch < core_class_branch_threshold:
+              core_warnings.append(
+                f"{cls_name} branch coverage {cls_branch:.2f}% < {core_class_branch_threshold:.2f}%"
+              )
+
+          if core_warnings:
+            print("\nCore class coverage warnings (non-blocking):", file=sys.stderr)
+            for w in core_warnings:
+              print(f"  - {w}", file=sys.stderr)
+
           if failures:
-            print("Coverage threshold check failed:", file=sys.stderr)
+            print("\nCoverage threshold check failed:", file=sys.stderr)
             for failure in failures:
               print(f"  - {failure}", file=sys.stderr)
             sys.exit(1)
