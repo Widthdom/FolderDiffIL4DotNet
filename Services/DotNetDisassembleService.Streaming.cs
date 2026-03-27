@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Core.IO;
 
@@ -259,7 +260,7 @@ namespace FolderDiffIL4DotNet.Services
                 var errorOutput = errTask.Result;
                 return (ExitCode: process.ExitCode, StdoutLines: stdoutLines, Stderr: errorOutput, Error: null);
             }
-            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException or NotSupportedException or UnauthorizedAccessException)
+            catch (Exception ex) when (ExceptionFilters.IsProcessExecutionRecoverable(ex))
             {
                 return (ExitCode: int.MinValue, StdoutLines: null, Stderr: null, Error: ex);
             }

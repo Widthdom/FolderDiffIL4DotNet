@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 
 namespace FolderDiffIL4DotNet.Services.Caching
 {
@@ -193,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     _memoryCache.GetFileHash(fileAbsolutePath);
                 }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or NotSupportedException)
+                catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Core.Text;
@@ -344,7 +345,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 return (false, null, label);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 return (false, null, null);
@@ -392,7 +393,7 @@ namespace FolderDiffIL4DotNet.Services
                 await _ilCache.SetILAsync(dotNetAssemblyFileAbsolutePath, label, ilText);
                 Interlocked.Increment(ref _ilCacheStores);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to set IL cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }

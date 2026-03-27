@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -111,8 +112,7 @@ namespace FolderDiffIL4DotNet.Services
                 // .NET 実行可能のみを対象に、逆アセンブル用キャッシュをプリフェッチ
                 await _dotNetDisassembleService.PrefetchIlCacheAsync(filesAbsolutePaths.Where(DotNetDetector.IsDotNetExecutable), maxParallel, cancellationToken);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
-                or InvalidOperationException or NotSupportedException)
+            catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning, $"Failed to precompute SHA256 hashes: {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
