@@ -54,6 +54,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 ```
 
 - CI coverage thresholds: line >= 80%, branch >= 75%
+- Core diff class thresholds (FileDiffService, FolderDiffService, FileComparisonService): line >= 90%, branch >= 85%
 - **Before committing**, always run tests with the Release configuration to match CI: `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo`. Release builds enable `TreatWarningsAsErrors` and full code analysis rules (e.g. CA1031), which are not enforced in Debug builds. If `dotnet` is unavailable, state this explicitly.
 
 ### Bilingual Rule
@@ -210,6 +211,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 ```
 
 - CI カバレッジ閾値: 行 >= 80%、ブランチ >= 75%
+- コア差分クラス閾値（FileDiffService、FolderDiffService、FileComparisonService）: 行 >= 90%、ブランチ >= 85%
 - **コミット前に**必ず Release 構成でテストを実行し CI と同一条件を確認すること: `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo`。Release ビルドでは `TreatWarningsAsErrors` と完全なコード解析ルール（CA1031 等）が有効になるため、Debug ビルドでは検出できない問題を事前に捕捉できる。`dotnet` が利用不可なら明記すること。
 
 ### 英日併記ルール

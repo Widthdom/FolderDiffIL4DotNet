@@ -13,6 +13,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Extract `DiffPipelineExecutor` from `ProgramRunner`** — Moved diff execution pipeline (scoped DI container construction, folder diff execution, and Markdown/HTML/audit-log report generation) from `ProgramRunner` into a dedicated [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs). `ProgramRunner` now focuses on CLI dispatch, argument validation, config loading, and exit-code mapping, delegating the heavy pipeline work to `DiffPipelineExecutor`. No behavioral changes. Updated [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA architecture diagrams, file tables, design intent). Test count: 899 (unchanged).
 
+#### Added
+
+- **Per-class coverage thresholds for core diff logic** — Extended the CI coverage enforcement script in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) to check per-class coverage for `FileDiffService`, `FolderDiffService`, and `FileComparisonService` (line >= 90%, branch >= 85%), in addition to the existing total thresholds (line >= 80%, branch >= 75%). The script parses Cobertura XML `<class>` elements for matching class names. Added `DotNetWorkflow_EnforcesPerClassCoverageThresholds` test in [`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs). Updated [`CLAUDE.md`](CLAUDE.md), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA). Test count: 900 (+1).
+
 ### [1.10.0] - 2026-03-27
 
 #### Added
@@ -735,6 +739,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Changed
 
 - **`DiffPipelineExecutor` を `ProgramRunner` から抽出** — 差分実行パイプライン（スコープ付き DI コンテナ構築、フォルダ差分実行、Markdown/HTML/監査ログの全レポート生成）を `ProgramRunner` から専用の [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs) に移動。`ProgramRunner` は CLI 分岐・引数検証・設定読込・終了コード写像に集中し、重いパイプライン処理を `DiffPipelineExecutor` に委譲する形に整理。動作変更なし。[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA アーキテクチャ図・ファイル表・設計意図）を更新。テスト件数: 899（変更なし）。
+
+#### Added
+
+- **コア差分ロジックに対するクラス単位カバレッジ閾値** — CI カバレッジ強制スクリプト（[`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml)）を拡張し、`FileDiffService`、`FolderDiffService`、`FileComparisonService` に対してクラス単位の閾値（行 >= 90%、ブランチ >= 85%）を既存の total 閾値（行 >= 80%、ブランチ >= 75%）に加えてチェック。Cobertura XML の `<class>` 要素を解析して該当クラスを照合。[`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) に `DotNetWorkflow_EnforcesPerClassCoverageThresholds` テスト追加。[`CLAUDE.md`](CLAUDE.md)、[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md)、[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA）を更新。テスト件数: 900（+1）。
 
 ### [1.10.0] - 2026-03-27
 

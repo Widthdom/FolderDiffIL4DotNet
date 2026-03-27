@@ -88,6 +88,16 @@ jobs:
           line_threshold = 80.0
           branch_threshold = 75.0
 
+          # Per-class higher thresholds for core diff logic.
+          # コア差分ロジックに対するクラス単位の高い閾値。
+          core_class_line_threshold = 90.0
+          core_class_branch_threshold = 85.0
+          core_classes = [
+              "FolderDiffIL4DotNet.Services.FileDiffService",
+              "FolderDiffIL4DotNet.Services.FolderDiffService",
+              "FolderDiffIL4DotNet.Services.FileComparisonService",
+          ]
+
           matches = glob.glob("TestResults/**/coverage.cobertura.xml", recursive=True)
           if not matches:
             print("coverage.cobertura.xml was not found.", file=sys.stderr)
@@ -106,8 +116,29 @@ jobs:
           if branch_rate < branch_threshold:
             failures.append(f"branch coverage {branch_rate:.2f}% < {branch_threshold:.2f}%")
 
+          # Check per-class thresholds for core diff classes.
+          # コア差分クラスのクラス単位閾値をチェック。
+          print()
+          print("--- Core class coverage ---")
+          for pkg in root.findall(".//package"):
+            for cls in pkg.findall(".//class"):
+              cls_name = cls.attrib.get("name", "")
+              if cls_name not in core_classes:
+                continue
+              cls_line = float(cls.attrib.get("line-rate", "0")) * 100.0
+              cls_branch = float(cls.attrib.get("branch-rate", "0")) * 100.0
+              print(f"  {cls_name}: line {cls_line:.2f}%, branch {cls_branch:.2f}%")
+              if cls_line < core_class_line_threshold:
+                failures.append(
+                  f"{cls_name} line coverage {cls_line:.2f}% < {core_class_line_threshold:.2f}%"
+                )
+              if cls_branch < core_class_branch_threshold:
+                failures.append(
+                  f"{cls_name} branch coverage {cls_branch:.2f}% < {core_class_branch_threshold:.2f}%"
+                )
+
           if failures:
-            print("Coverage threshold check failed:", file=sys.stderr)
+            print("\nCoverage threshold check failed:", file=sys.stderr)
             for failure in failures:
               print(f"  - {failure}", file=sys.stderr)
             sys.exit(1)
