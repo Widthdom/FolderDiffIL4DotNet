@@ -439,10 +439,10 @@ namespace FolderDiffIL4DotNet.Services
                 return "";
 
             var parts = new System.Collections.Generic.List<string>();
-            if (vulnNew > 0)
-                parts.Add($"<span style=\"color:#dc2626\">{VULN_ICON} {vulnNew} vuln</span>");
             if (resolved > 0)
-                parts.Add($"<span style=\"color:#16a34a\">{RESOLVED_ICON} {resolved} resolved</span>");
+                parts.Add($"<span style=\"color:#16a34a\">{resolved} resolved</span>");
+            if (vulnNew > 0)
+                parts.Add($"<span style=\"color:#dc2626\">{vulnNew} vuln</span>");
             return " " + string.Join(" ", parts);
         }
 
@@ -461,10 +461,8 @@ namespace FolderDiffIL4DotNet.Services
             return "Advisory";
         }
 
-        // Vulnerability style/icon constants / 脆弱性スタイル・アイコン定数
+        // Vulnerability style constants / 脆弱性スタイル定数
         private const string NEW_VULN_STYLE = "background:#fecaca;color:#991b1b;font-weight:bold;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block";
         private const string RESOLVED_VULN_STYLE = "background:#dcfce7;color:#166534;text-decoration:line-through;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block";
-        private const string VULN_ICON = "&#x26A0;";     // ⚠ warning sign
-        private const string RESOLVED_ICON = "&#x2705;";  // ✅ check mark
     }
 }
