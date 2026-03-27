@@ -1,5 +1,10 @@
 # FolderDiffIL4DotNet (English)
 
+[![Build and Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/dotnet.yml)
+[![CodeQL](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/codeql.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/codeql.yml)
+[![Release](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/release.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/release.yml)
+[![Performance Regression Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml)
+
 `FolderDiffIL4DotNet` is a .NET console application that compares two folders and outputs a Markdown report.
 For .NET assemblies, it compares IL while ignoring build-specific information such as `// MVID:` lines, so assemblies whose contents are effectively the same can still be judged equal.
 
@@ -614,6 +619,11 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 ---
 
 # FolderDiffIL4DotNet（日本語）
+
+[![Build and Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/dotnet.yml)
+[![CodeQL](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/codeql.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/codeql.yml)
+[![Release](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/release.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/release.yml)
+[![Performance Regression Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/benchmark-regression.yml)
 
 `FolderDiffIL4DotNet` は、2つのフォルダを比較して Markdown レポートを出力する .NET コンソールアプリです。
 .NET アセンブリは `// MVID:` などのビルド固有情報を除外して IL 比較することで、アセンブリの中身が実質的に同じであれば同一と判断します。
