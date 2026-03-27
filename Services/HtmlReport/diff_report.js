@@ -318,11 +318,11 @@
     var cg = document.createElement('colgroup');
     cg.className = 'sbs-colgroup';
     var col1 = document.createElement('col');
-    col1.style.width = '3.5em';
+    col1.style.width = '7em';
     var col2 = document.createElement('col');
-    col2.style.width = 'calc(50% - 1.75em)';
+    col2.style.width = 'calc(50% - 3.5em)';
     var col3 = document.createElement('col');
-    col3.style.width = 'calc(50% - 1.75em)';
+    col3.style.width = 'calc(50% - 3.5em)';
     cg.appendChild(col1); cg.appendChild(col2); cg.appendChild(col3);
     table.insertBefore(cg, table.firstChild);
     // Helper: extract line number text from unified row / 統合行から行番号テキストを取得するヘルパー
