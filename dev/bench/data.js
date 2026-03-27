@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774606719346,
+  "lastUpdate": 1774609726266,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -330,6 +330,72 @@ window.BENCHMARK_DATA = {
             "value": 39934413.343589745,
             "unit": "ns",
             "range": "± 537177.328566666"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f018e625b9d1a6afabef69d2ed9890698a9d26eb",
+          "message": "Add CI/CD status badges to README (#96)\n\n* Add CI status badges to README\n\nAdd GitHub Actions workflow badges (Build and Test, CodeQL, Release,\nPerformance Regression Test) to both English and Japanese sections of\nthe README for at-a-glance CI status visibility.\n\nhttps://claude.ai/code/session_01A1dkBMGWtgXrmWWK8rYwow\n\n* Add technology stack badges to README\n\nAdd shields.io badges for .NET 8, C# 13, cross-platform support,\nand GPL-3.0 license to both English and Japanese sections, displayed\nbelow the CI status badges.\n\nhttps://claude.ai/code/session_01A1dkBMGWtgXrmWWK8rYwow\n\n* Fix license badge from GPL-3.0 to MIT\n\nThe LICENSE file is MIT, not GPL-3.0. Corrected the shields.io badge\nin both English and Japanese sections.\n\nhttps://claude.ai/code/session_01A1dkBMGWtgXrmWWK8rYwow\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-03-27T20:05:22+09:00",
+          "tree_id": "cb92ae54d922428fb4664606cd7042287a382633",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/f018e625b9d1a6afabef69d2ed9890698a9d26eb"
+        },
+        "date": 1774609725685,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61995.28860909598,
+            "unit": "ns",
+            "range": "± 241.35505766665963"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 584138.0875651041,
+            "unit": "ns",
+            "range": "± 2514.4229784349186"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 6020198.309895833,
+            "unit": "ns",
+            "range": "± 28888.88746454545"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 76039.05398995536,
+            "unit": "ns",
+            "range": "± 297.51043984637613"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2673.008727312088,
+            "unit": "ns",
+            "range": "± 48.70529526943879"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 264351.4229329427,
+            "unit": "ns",
+            "range": "± 1753.2468077006488"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27411140.04017857,
+            "unit": "ns",
+            "range": "± 117800.5854714359"
           }
         ]
       }
