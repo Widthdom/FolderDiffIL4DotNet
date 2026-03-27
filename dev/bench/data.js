@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774616547581,
+  "lastUpdate": 1774624685518,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -594,6 +594,72 @@ window.BENCHMARK_DATA = {
             "value": 27585158.7,
             "unit": "ns",
             "range": "± 102742.7890373458"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dc6a012a9c000fb7b4b26d5fda290abc58351193",
+          "message": "Refactor: extract NetworkPathDetector, split SectionWriters, add ExceptionFilters (#100)\n\nFive structural refactoring improvements with no behavioral changes:\n\n1. Extract NetworkPathDetector from FileSystemUtility (385→85 lines)\n   - All network-path detection logic moved to new NetworkPathDetector.cs\n   - FileSystemUtility.IsLikelyNetworkPath delegates to NetworkPathDetector\n\n2. Split ReportGenerateService.SectionWriters.cs into 10 individual files\n   - Each IReportSectionWriter (Header, Legend, Ignored, Unchanged, Added,\n     Removed, Modified, Summary, ILCacheStats, Warnings) now has its own\n     file under Services/SectionWriters/\n\n3. Extract BuildHtml() into focused methods\n   - 125-line method split into AppendControlsBar(), AppendFilterZone(),\n     AppendMainSections(), and AppendProgressAndJs()\n\n4. Add ExceptionFilters utility (Core/Common/ExceptionFilters.cs)\n   - Named predicates replace 22 inline catch-when patterns across 16 files\n   - IsFileIoRecoverable, IsFileIoOrOperationRecoverable,\n     IsPathOrFileIoRecoverable, IsProcessExecutionRecoverable\n\n5. Loop-based filter table rows in HtmlReportGenerateService\n   - 9 sequential AppendFilterTableRow() calls replaced with data-driven\n     loops over s_diffDetailFilters and s_importanceFilters arrays\n\nUpdated DEVELOPER_GUIDE.md, CHANGELOG.md, CLAUDE.md.\n\nhttps://claude.ai/code/session_01J6mMnKgXPVGurZLB1JUGNs\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-03-28T00:14:43+09:00",
+          "tree_id": "b127aaee07e7e981e55d1a52cdef67222499cd88",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/dc6a012a9c000fb7b4b26d5fda290abc58351193"
+        },
+        "date": 1774624685239,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62156.82304499699,
+            "unit": "ns",
+            "range": "± 117.03876276493851"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 583560.2034630409,
+            "unit": "ns",
+            "range": "± 1235.9885056082235"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 6044330.3359375,
+            "unit": "ns",
+            "range": "± 26791.466874306218"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74048.29048665364,
+            "unit": "ns",
+            "range": "± 137.21788277768636"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2904.7606746128627,
+            "unit": "ns",
+            "range": "± 43.79682919464456"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 276184.31744791666,
+            "unit": "ns",
+            "range": "± 3840.0394695868995"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 28522044.454166666,
+            "unit": "ns",
+            "range": "± 431898.43352461455"
           }
         ]
       }
