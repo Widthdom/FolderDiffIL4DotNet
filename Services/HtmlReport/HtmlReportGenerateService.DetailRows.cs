@@ -413,7 +413,7 @@ namespace FolderDiffIL4DotNet.Services
 
                     string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
                     string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
-                    sb.Append("<span class=\"vuln-badge vuln-resolved\" style=\"background:#dcfce7;color:#166534;text-decoration:line-through\" title=\"Resolved: ");
+                    sb.Append("<span class=\"vuln-badge vuln-resolved\" style=\"background:#dcfce7;color:#166534;text-decoration:line-through;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block\" title=\"Resolved: ");
                     sb.Append(HtmlEncode(v.AdvisoryUrl));
                     sb.Append("\">");
                     if (v.AdvisoryUrl.Length > 0)
