@@ -39,6 +39,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **Right-align console progress percentage for consistent `%` position** — Changed the progress bar percentage format from `{formattedPercentage}%` to `{formattedPercentage,6}%` in [`ProgressReportService.cs`](Services/ProgressReportService.cs), so that `%` is always at the same column regardless of digit count (e.g. `"  0.00%"`, `" 50.00%"`, `"100.00%"`).
+
 - **Split 10 large test files into partial classes for maintainability** — Refactored test classes that had grown beyond ~500 lines into focused partial class files: `ChangeImportanceClassifierTests` → 2 files (`.MutationKilling.cs`), `ProgramRunnerTests` → 4 files (`.HelpVersion.cs`, `.CliOverrides.cs`, `.Preflight.cs`), `HtmlReportGenerateServiceTests` → 7 files (`.InlineDiff.cs`, `.LazyRender.cs`, `.SemanticChanges.cs`, `.SortAndResources.cs`, `.Filtering.cs`, `.MutationKilling.cs`), `FileDiffServiceUnitTests` → 5 files (`.HashAndErrorHandling.cs`, `.ILComparison.cs`, `.TextComparison.cs`, `.TextComparisonEdgeCases.cs`), `ReportGenerateServiceTests` → 6 files (`.Header.cs`, `.SectionsAndWarnings.cs`, `.SortOrder.cs`, `.TimestampsAndMisc.cs`, `.MutationKilling.cs`), `FolderDiffServiceUnitTests` → 2 files (`.BatchingAndEdgeCases.cs`), `ILCacheTests` → 2 files (`.Advanced.cs`), `DepsJsonAnalyzerTests` → 2 files (`.MutationKilling.cs`), `DotNetDisassembleServiceTests` → 2 files (`.UnitAndPrefetch.cs`), `ConfigSettingsTests` → 3 files (`.InlineDiffAndMutation.cs`, `.ValidationBoundary.cs`), `FileDiffResultListsTests` → 2 files (`.MutationKilling.cs`). No behavioral changes; all tests pass without modification.
 
 - **Exclude UI/console/logging code from Stryker mutation testing** — Updated [`stryker-config.json`](stryker-config.json) `mutate` exclusions to cover `HtmlReport/**`, `HtmlReportGenerateService*.cs`, `ConsoleBanner.cs`, `ConsoleSpinner.cs`, `ConsoleRenderCoordinator.cs`, `ProgressReportService.cs`, `LoggerService.cs`, `Program.cs`, `ProgramRunner.cs`, `ProgramRunner.*.cs`, and `Properties/**`. These are UI rendering, console output, and logging code paths where mutation testing provides low signal-to-noise ratio.
@@ -741,6 +743,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **終了コードの構造化文書化** — [`README.md`](README.md) の終了コードを箇条書きから、コード・意味・主な発生条件を含む詳細テーブル（EN+JA）に置き換え。
 
 #### Changed
+
+- **コンソール進捗パーセンテージの `%` 位置を右揃えで統一** — [`ProgressReportService.cs`](Services/ProgressReportService.cs) のプログレスバーパーセンテージ書式を `{formattedPercentage}%` から `{formattedPercentage,6}%` に変更。桁数に関わらず `%` が常に同じ列に表示されるようスペースパディング（例: `"  0.00%"`、`" 50.00%"`、`"100.00%"`）。
 
 - **大規模テストファイル 10 件を partial class に分割し保守性を向上** — 約 500 行を超えていたテストクラスを責務別の partial class ファイルに分割。`ConfigSettingsTests` → 3 ファイル（`.InlineDiffAndMutation.cs`、`.ValidationBoundary.cs`）、`FileDiffResultListsTests` → 2 ファイル（`.MutationKilling.cs`）含む計 12 クラスを分割。動作変更なし。
 
