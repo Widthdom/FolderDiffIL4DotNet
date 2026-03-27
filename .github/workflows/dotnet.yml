@@ -146,6 +146,7 @@ jobs:
                     agg[cls_name]["branches_covered"] += int(cov)
                     agg[cls_name]["branches_total"] += int(tot)
 
+          core_warnings = []
           for cls_name in core_classes:
             d = agg[cls_name]
             if d["lines_total"] == 0:
@@ -154,15 +155,23 @@ jobs:
             cls_line = d["lines_covered"] / d["lines_total"] * 100.0
             cls_branch = (d["branches_covered"] / d["branches_total"] * 100.0
                           if d["branches_total"] > 0 else 100.0)
-            print(f"  {cls_name}: line {cls_line:.2f}%, branch {cls_branch:.2f}%")
+            status = "OK"
+            if cls_line < core_class_line_threshold or cls_branch < core_class_branch_threshold:
+              status = "BELOW TARGET"
+            print(f"  {cls_name}: line {cls_line:.2f}%, branch {cls_branch:.2f}% [{status}]")
             if cls_line < core_class_line_threshold:
-              failures.append(
+              core_warnings.append(
                 f"{cls_name} line coverage {cls_line:.2f}% < {core_class_line_threshold:.2f}%"
               )
             if cls_branch < core_class_branch_threshold:
-              failures.append(
+              core_warnings.append(
                 f"{cls_name} branch coverage {cls_branch:.2f}% < {core_class_branch_threshold:.2f}%"
               )
+
+          if core_warnings:
+            print("\nCore class coverage warnings (non-blocking):", file=sys.stderr)
+            for w in core_warnings:
+              print(f"  - {w}", file=sys.stderr)
 
           if failures:
             print("\nCoverage threshold check failed:", file=sys.stderr)

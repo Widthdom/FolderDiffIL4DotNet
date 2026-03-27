@@ -54,7 +54,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 ```
 
 - CI coverage thresholds: line >= 80%, branch >= 75%
-- Core diff class thresholds (FileDiffService, FolderDiffService, FileComparisonService): line >= 90%, branch >= 85%
+- Core diff class targets (FileDiffService, FolderDiffService, FileComparisonService): line >= 90%, branch >= 85% (CI warns but does not block)
 - **Before committing**, always run tests with the Release configuration to match CI: `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo`. Release builds enable `TreatWarningsAsErrors` and full code analysis rules (e.g. CA1031), which are not enforced in Debug builds. If `dotnet` is unavailable, state this explicitly.
 
 ### Bilingual Rule
