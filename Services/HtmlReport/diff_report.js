@@ -306,8 +306,6 @@
       table.classList.remove('sbs-mode');
       var cg = table.querySelector('.sbs-colgroup');
       if (cg) cg.remove();
-      var tf = table.querySelector('tfoot.sbs-tfoot');
-      if (tf) tf.remove();
       var tbody = table.querySelector('tbody');
       if (table._unifiedHtml) { tbody.innerHTML = table._unifiedHtml; }
       if (btn) btn.textContent = 'Side-by-side';
@@ -320,11 +318,11 @@
     var cg = document.createElement('colgroup');
     cg.className = 'sbs-colgroup';
     var col1 = document.createElement('col');
-    col1.style.width = '7em';
+    col1.style.width = '3.5em';
     var col2 = document.createElement('col');
-    col2.style.width = 'calc(50% - 3.5em)';
+    col2.style.width = 'calc(50% - 1.75em)';
     var col3 = document.createElement('col');
-    col3.style.width = 'calc(50% - 3.5em)';
+    col3.style.width = 'calc(50% - 1.75em)';
     cg.appendChild(col1); cg.appendChild(col2); cg.appendChild(col3);
     table.insertBefore(cg, table.firstChild);
     // Helper: extract line number text from unified row / 統合行から行番号テキストを取得するヘルパー
@@ -451,68 +449,6 @@
     }
     tbody.innerHTML = '';
     newRows.forEach(function(tr) { tbody.appendChild(tr); });
-    // Wrap sbs-old/sbs-new content in inner divs for synchronized horizontal scrolling
-    // sbs-old/sbs-new のコンテンツを水平スクロール同期用の inner div でラップ
-    tbody.querySelectorAll('td.sbs-old, td.sbs-new').forEach(function(td) {
-      var div = document.createElement('div');
-      div.className = 'sbs-inner';
-      while (td.firstChild) div.appendChild(td.firstChild);
-      td.appendChild(div);
-    });
-    // Calculate max content width across all inner divs
-    // 全 inner div の最大コンテンツ幅を計算
-    var maxW = 0;
-    tbody.querySelectorAll('.sbs-inner').forEach(function(div) {
-      if (div.scrollWidth > maxW) maxW = div.scrollWidth;
-    });
-    // Force all inner divs to the same scrollable width so short lines scroll together.
-    // Wrap content in a span with min-width so every row has the same scroll range.
-    // 短い行も一緒にスクロールするよう全 inner div を同じスクロール可能幅に統一。
-    // 各行のコンテンツを min-width 付き span でラップし全行同一スクロール範囲にする。
-    tbody.querySelectorAll('.sbs-inner').forEach(function(div) {
-      var span = document.createElement('span');
-      span.style.display = 'inline-block';
-      span.style.minWidth = maxW + 'px';
-      while (div.firstChild) span.appendChild(div.firstChild);
-      div.appendChild(span);
-    });
-    // Add sticky proxy scrollbar row (tfoot) for synchronized horizontal scrolling
-    // 水平スクロール同期用のスティッキープロキシスクロールバー行（tfoot）を追加
-    var tfoot = document.createElement('tfoot');
-    tfoot.className = 'sbs-tfoot';
-    var scrollTr = document.createElement('tr');
-    scrollTr.className = 'sbs-scroll-tr';
-    var tdLn = document.createElement('td');
-    var tdOld = document.createElement('td');
-    var proxyOld = document.createElement('div');
-    proxyOld.className = 'sbs-scroll-proxy';
-    var spacerOld = document.createElement('div');
-    spacerOld.style.width = maxW + 'px';
-    proxyOld.appendChild(spacerOld);
-    tdOld.appendChild(proxyOld);
-    var tdNew = document.createElement('td');
-    var proxyNew = document.createElement('div');
-    proxyNew.className = 'sbs-scroll-proxy';
-    var spacerNew = document.createElement('div');
-    spacerNew.style.width = maxW + 'px';
-    proxyNew.appendChild(spacerNew);
-    tdNew.appendChild(proxyNew);
-    scrollTr.appendChild(tdLn); scrollTr.appendChild(tdOld); scrollTr.appendChild(tdNew);
-    tfoot.appendChild(scrollTr);
-    table.appendChild(tfoot);
-    // Sync scroll between proxy bars and inner divs
-    // プロキシバーと inner div 間のスクロール同期
-    var syncing = false;
-    function syncScroll(src, tgt) {
-      if (syncing) return;
-      syncing = true;
-      tgt.scrollLeft = src.scrollLeft;
-      var sl = src.scrollLeft;
-      tbody.querySelectorAll('.sbs-inner').forEach(function(d) { d.scrollLeft = sl; });
-      syncing = false;
-    }
-    proxyOld.addEventListener('scroll', function() { syncScroll(proxyOld, proxyNew); });
-    proxyNew.addEventListener('scroll', function() { syncScroll(proxyNew, proxyOld); });
     table.classList.add('sbs-mode');
     if (btn) btn.textContent = 'Unified';
   }
@@ -539,7 +475,6 @@
             tbl.parentNode.insertBefore(btn, tbl);
           });
           // Re-init column resize handles on newly rendered tables
-          d.querySelectorAll('th.th-resizable').forEach(function(th) {
             if (th.querySelector('.col-resize-handle')) return;
             initColResizeSingle(th);
           });
@@ -1059,21 +994,18 @@
       }
     });
 
-    // Build section tables — always include all main sections even when empty
-    // セクションテーブルを構築 — 0件でも全メインセクションを見出し付きで出力
+    // Build section tables / セクションテーブルを構築
     var sectionsHtml = '';
-    // Canonical section order (ign only if present in report) / 正規セクション順序（ignはレポートに存在する場合のみ）
-    var hasIgnSection = document.querySelectorAll('tbody > tr[data-section="ign"]').length > 0
-      || document.querySelector('h2') && Array.prototype.slice.call(document.querySelectorAll('h2')).some(function(h) { return h.textContent.indexOf('Ignored Files') >= 0; });
-    var allSectionKeys = hasIgnSection ? ['ign', 'unch', 'add', 'rem', 'mod'] : ['unch', 'add', 'rem', 'mod'];
+    var allRows = document.querySelectorAll('tbody > tr[data-section]');
+    var seenSections = [];
+    allRows.forEach(function(tr) {
+      var sec = tr.getAttribute('data-section');
+      if (seenSections.indexOf(sec) < 0) seenSections.push(sec);
+    });
     // Separate warning sections (placed after Summary) / 警告セクションを分離（Summary の後に配置）
     var warningSections = ['sha256w', 'tsw'];
-    // Discover any warning sections that exist in the DOM / DOM に存在する警告セクションを検出
-    var seenWarnSections = [];
-    document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
-      var sec = tr.getAttribute('data-section');
-      if (warningSections.indexOf(sec) >= 0 && seenWarnSections.indexOf(sec) < 0) seenWarnSections.push(sec);
-    });
+    var mainSections = seenSections.filter(function(s) { return warningSections.indexOf(s) < 0; });
+    var warnSections = seenSections.filter(function(s) { return warningSections.indexOf(s) >= 0; });
 
     function buildSectionHtml(sec) {
       var bgColor = sectionColors[sec] || '#f0f0f2';
@@ -1087,7 +1019,7 @@
       return h;
     }
 
-    allSectionKeys.forEach(function(sec) { sectionsHtml += buildSectionHtml(sec); });
+    mainSections.forEach(function(sec) { sectionsHtml += buildSectionHtml(sec); });
 
     // Build legend section / 凡例セクションを構築
     var legendHtml = '';
@@ -1128,17 +1060,13 @@
         + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>';
       for (var si = 9; si < COLS; si++) summaryHtml += '<td></td>';
       summaryHtml += '</tr>';
-      // Row background colors matching HTML report summary table / HTMLレポートのサマリーテーブルに合わせた行背景色
-      var summaryRowColors = { 'Added': '#e6ffed', 'Removed': '#ffeef0', 'Modified': '#e3f2fd' };
       statTable.querySelectorAll('tr').forEach(function(tr) {
         // Skip header rows containing th elements / th要素を含むヘッダー行をスキップ
         if (tr.querySelector('th')) return;
         var cells = tr.querySelectorAll('td');
         if (cells.length >= 2) {
-          var label = cells[0].textContent.trim();
-          var bgStyle = summaryRowColors[label] ? 'background:' + summaryRowColors[label] + ';' : '';
-          summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="' + bgStyle + '">' + esc(label) + '</td>'
-            + '<td class="bd" style="' + bgStyle + 'text-align:right">' + esc(cells[1].textContent.trim()) + '</td>';
+          summaryHtml += '<tr>' + PAD7 + '<td class="bd">' + esc(cells[0].textContent.trim()) + '</td>'
+            + '<td class="bd">' + esc(cells[1].textContent.trim()) + '</td>';
           for (var i = 9; i < COLS; i++) summaryHtml += '<td></td>';
           summaryHtml += '</tr>';
         }
@@ -1148,10 +1076,10 @@
 
     // Build warning sections (placed after Summary) / 警告セクション（Summary の後に配置）
     var warningsHtml = '';
-    if (seenWarnSections.length > 0) {
+    if (warnSections.length > 0) {
       warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;padding:8px');
     }
-    seenWarnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
+    warnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
 
     var slug = 'diff_report_' + __reportDate__;
     var excelFileName = slug + '_reviewed_Excel-compatible.html';
