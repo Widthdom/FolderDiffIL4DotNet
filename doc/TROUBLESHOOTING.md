@@ -126,7 +126,7 @@ The tool marked **In Use** in the report is the one that was successfully probed
 
 ### IL cache disk usage grows too large
 
-**Symptom:** The `ILCache/` directory under the application folder consumes excessive disk space.
+**Symptom:** The IL cache directory consumes excessive disk space. By default, this is the OS user-local cache path (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache` on Windows, `~/.local/share/FolderDiffIL4DotNet/ILCache` on macOS/Linux) unless `ILCacheDirectoryAbsolutePath` is configured.
 
 **Cause:** Default disk cache limits may be too generous for your use case (default: 1000 files, 512 MiB).
 
@@ -221,7 +221,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 **Cause:** Less than 100 MiB free on the drive that will hold the `Reports/` folder.
 
-**Solution:** Free up disk space or redirect reports to a different drive using a full path for the `<reportLabel>` argument or moving the application directory.
+**Solution:** Free up disk space on the drive that contains the application `Reports/` folder, use a shorter report label if path length is also a factor, or move the application/workspace to a drive with more free space. The `<reportLabel>` argument is a folder name, not an output-path override.
 
 ### All files reported as "Modified" even though they are functionally identical
 
@@ -375,7 +375,7 @@ FolderDiffIL4DotNet を実行し、レポートヘッダの **Disassembler Avail
 
 ### IL キャッシュのディスク使用量が大きくなりすぎる
 
-**症状:** アプリケーションフォルダ配下の `ILCache/` ディレクトリが過剰なディスク領域を消費する。
+**症状:** IL キャッシュディレクトリが過剰なディスク領域を消費する。既定では `ILCacheDirectoryAbsolutePath` 未設定時、OS 標準のユーザーローカルキャッシュパス（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux: `~/.local/share/FolderDiffIL4DotNet/ILCache`）が使われる。
 
 **原因:** デフォルトのディスクキャッシュ上限が用途に対して大きすぎる（デフォルト: 1000 ファイル、512 MiB）。
 
@@ -470,7 +470,7 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 **原因:** `Reports/` フォルダを保持するドライブの空き容量が 100 MiB 未満。
 
-**解決策:** ディスク容量を確保するか、レポートを別のドライブにリダイレクト。
+**解決策:** アプリケーションの `Reports/` フォルダが置かれるドライブの空き容量を増やすか、パス長も問題なら短いレポートラベルを使うか、アプリケーション/ワークスペース自体を空き容量の多いドライブへ移動してください。`<reportLabel>` 引数は出力先パスではなくフォルダ名です。
 
 ### 機能的に同一なのにすべてのファイルが「Modified」と報告される
 

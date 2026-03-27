@@ -192,7 +192,7 @@ Every file entry is displayed in a table with interactive columns for sign-off:
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
 | Diff Reason | Diff type only: `SHA256Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. For `ILMismatch` entries with assembly semantic changes, the file-level max importance is appended (e.g. `ILMismatch` `High`). (Unchanged/Modified/Warnings only; not shown for Added/Removed) |
-| Disassembler | Disassembler label and version used for IL comparison (e.g. [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm 0.12.2.0)`); shown only for Unchanged and Modified sections |
+| Disassembler | Disassembler label and version used for IL comparison (e.g. [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm <version>)`); shown only for Unchanged and Modified sections |
 
 Not all columns appear in every table. Added and Removed tables show only ✓, Justification, Notes, File Path, and Timestamp. Ignored tables additionally show Diff Reason (as "Location"). Unchanged and Modified tables show all columns including Disassembler. Warning tables (SHA256Mismatch, Timestamps Regressed) show Diff Reason but not Disassembler. Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
@@ -204,8 +204,8 @@ A **filter bar** is displayed below the controls bar. Filters include:
 
 | Filter | Description |
 |---|---|
+| Diff Detail | Checkboxes for `SHA256Match`, `SHA256Mismatch`, `ILMatch`, `ILMismatch`, `TextMatch`, `TextMismatch` — filter by comparison result |
 | Importance | Checkboxes for `High`, `Medium`, `Low` — toggle to show/hide Modified files by change importance |
-| File Type | Checkboxes for `DLL`, `EXE`, `Config`, `Resource`, `Other` — filter by file extension category |
 | Unchecked only | When checked, hides rows whose checkbox (✓ column) is already ticked |
 | Search | Free-text input that matches against file paths (case-insensitive substring match) |
 
@@ -821,7 +821,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
 | Diff Reason | 差分タイプのみ: `SHA256Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など。`ILMismatch` でアセンブリ セマンティック変更がある場合、ファイルレベルの最大重要度が追記される（例: `ILMismatch` `High`）。（Unchanged/Modified/Warnings のみ。Added/Removed には表示されない） |
-| Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm 0.12.2.0)`）。Unchanged と Modified セクションのみに表示 |
+| Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm <version>)`）。Unchanged と Modified セクションのみに表示 |
 
 すべてのテーブルに全列が表示されるわけではありません。Added・Removed テーブルには ✓・Justification・Notes・File Path・Timestamp のみが表示されます。Ignored テーブルにはさらに Diff Reason（「Location」として表示）が追加されます。Unchanged・Modified テーブルには Disassembler を含むすべての列が表示されます。警告テーブル（SHA256Mismatch、Timestamps Regressed）には Diff Reason が表示されますが Disassembler は表示されません。Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 
@@ -833,8 +833,8 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 
 | フィルタ | 説明 |
 |---|---|
+| Diff Detail | `SHA256Match`・`SHA256Mismatch`・`ILMatch`・`ILMismatch`・`TextMatch`・`TextMismatch` のチェックボックス — 比較結果で絞り込み |
 | 重要度 | `High`・`Medium`・`Low` のチェックボックス — Modified ファイルを変更の重要度で表示/非表示 |
-| ファイル種別 | `DLL`・`EXE`・`Config`・`Resource`・`Other` のチェックボックス — 拡張子カテゴリで絞り込み |
 | 未チェックのみ | チェックすると、✓ 列のチェックボックスが既にオンの行を非表示にする |
 | 検索 | ファイルパスに対するフリーテキスト入力（大文字小文字を区別しない部分一致） |
 
