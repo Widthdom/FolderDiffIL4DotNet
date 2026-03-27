@@ -27,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Excel-compatible HTML export from reviewed report** — Added a "Download as Excel-compatible HTML" button to the reviewed HTML report banner. Generates a simplified HTML `<table>` with Excel XML namespace declarations, allowing direct import into Microsoft Excel. New JS functions: `downloadExcelCompatibleHtml()`, `buildExcelRow()`, `esc()` in [`diff_report.js`](Services/HtmlReport/diff_report.js). Added 2 tests in [`HtmlReportGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.cs).
 
+- **Synchronized horizontal scrolling for side-by-side diff view** — Added sticky proxy scrollbars at the bottom of each column (old/new) in side-by-side diff mode. When content overflows horizontally, scrolling one column's proxy bar automatically scrolls the other column in sync. Each cell's text content is wrapped in a `<div class="sbs-inner">` with `overflow: hidden`, and a `<tfoot>` with two proxy scrollbar divs provides the visible scrollbars with `position: sticky; bottom: 0`. Updated [`diff_report.js`](Services/HtmlReport/diff_report.js), [`diff_report.css`](Services/HtmlReport/diff_report.css), and [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 #### Documentation
 
 - **CI/CD workflow overview diagram in DEVELOPER_GUIDE.md** — Added a visual text-based workflow diagram showing which CI jobs run on which triggers (PR, push to main, tag push), along with descriptions of `mutation-testing` and `benchmark` jobs that were previously undocumented. Both English and Japanese sections updated in [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md). Quality axes summary (correctness, coverage, detection strength, performance, security, compatibility) included for quick comprehension.
@@ -755,6 +757,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Stryker ミューテーションスコア改善のための 38 件のミューテーションキリングテスト追加** — 4 つのテストクラスにわたり標的テストを追加：`ConfigSettingsTests.ValidationBoundary.cs`（9 テスト）、`FileDiffResultListsTests.MutationKilling.cs`（18 テスト）、`ReportGenerateServiceTests.MutationKilling.cs`（7 テスト）、`DepsJsonAnalyzerTests.MutationKilling.cs`（4 テスト）。境界検証、ビット OR/AND、`||`/`&&` 条件、`GetMaxImportance` ロジック、ソート順検証、逆アセンブラヘッダー順序、ライブラリキー解析境界をカバー。テスト件数: 870（+38）。
 
 - **レビュー済みレポートからの Excel 互換 HTML エクスポート** — レビュー済み HTML レポートのバナーに「Download as Excel-compatible HTML」ボタンを追加。Excel で直接開ける HTML テーブル形式のファイルを生成。テスト 2 件追加。
+
+- **Side-by-side 差分ビューの同期水平スクロール** — side-by-side 差分モードの各列（旧/新）の下部にスティッキープロキシスクロールバーを追加。コンテンツが水平方向にオーバーフローした場合、一方のプロキシバーをスクロールすると他方の列も連動してスクロールする。各セルのテキストコンテンツは `overflow: hidden` の `<div class="sbs-inner">` でラップし、`<tfoot>` 内の 2 つのプロキシスクロールバー div が `position: sticky; bottom: 0` で可視スクロールバーを提供。[`diff_report.js`](Services/HtmlReport/diff_report.js)、[`diff_report.css`](Services/HtmlReport/diff_report.css)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html) を更新。
 
 #### Fixed
 

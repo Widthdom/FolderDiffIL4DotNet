@@ -306,6 +306,8 @@
       table.classList.remove('sbs-mode');
       var cg = table.querySelector('.sbs-colgroup');
       if (cg) cg.remove();
+      var tf = table.querySelector('tfoot.sbs-tfoot');
+      if (tf) tf.remove();
       var tbody = table.querySelector('tbody');
       if (table._unifiedHtml) { tbody.innerHTML = table._unifiedHtml; }
       if (btn) btn.textContent = 'Side-by-side';
@@ -449,6 +451,57 @@
     }
     tbody.innerHTML = '';
     newRows.forEach(function(tr) { tbody.appendChild(tr); });
+    // Wrap sbs-old/sbs-new content in inner divs for synchronized horizontal scrolling
+    // sbs-old/sbs-new のコンテンツを水平スクロール同期用の inner div でラップ
+    tbody.querySelectorAll('td.sbs-old, td.sbs-new').forEach(function(td) {
+      var div = document.createElement('div');
+      div.className = 'sbs-inner';
+      while (td.firstChild) div.appendChild(td.firstChild);
+      td.appendChild(div);
+    });
+    // Calculate max content width for proxy scrollbar spacers
+    // プロキシスクロールバーのスペーサー用に最大コンテンツ幅を計算
+    var maxW = 0;
+    tbody.querySelectorAll('.sbs-inner').forEach(function(div) {
+      if (div.scrollWidth > maxW) maxW = div.scrollWidth;
+    });
+    // Add sticky proxy scrollbar row (tfoot) for synchronized horizontal scrolling
+    // 水平スクロール同期用のスティッキープロキシスクロールバー行（tfoot）を追加
+    var tfoot = document.createElement('tfoot');
+    tfoot.className = 'sbs-tfoot';
+    var scrollTr = document.createElement('tr');
+    scrollTr.className = 'sbs-scroll-tr';
+    var tdLn = document.createElement('td');
+    var tdOld = document.createElement('td');
+    var proxyOld = document.createElement('div');
+    proxyOld.className = 'sbs-scroll-proxy';
+    var spacerOld = document.createElement('div');
+    spacerOld.style.width = maxW + 'px';
+    proxyOld.appendChild(spacerOld);
+    tdOld.appendChild(proxyOld);
+    var tdNew = document.createElement('td');
+    var proxyNew = document.createElement('div');
+    proxyNew.className = 'sbs-scroll-proxy';
+    var spacerNew = document.createElement('div');
+    spacerNew.style.width = maxW + 'px';
+    proxyNew.appendChild(spacerNew);
+    tdNew.appendChild(proxyNew);
+    scrollTr.appendChild(tdLn); scrollTr.appendChild(tdOld); scrollTr.appendChild(tdNew);
+    tfoot.appendChild(scrollTr);
+    table.appendChild(tfoot);
+    // Sync scroll between proxy bars and inner divs
+    // プロキシバーと inner div 間のスクロール同期
+    var syncing = false;
+    function syncScroll(src, tgt) {
+      if (syncing) return;
+      syncing = true;
+      tgt.scrollLeft = src.scrollLeft;
+      var sl = src.scrollLeft;
+      tbody.querySelectorAll('.sbs-inner').forEach(function(d) { d.scrollLeft = sl; });
+      syncing = false;
+    }
+    proxyOld.addEventListener('scroll', function() { syncScroll(proxyOld, proxyNew); });
+    proxyNew.addEventListener('scroll', function() { syncScroll(proxyNew, proxyOld); });
     table.classList.add('sbs-mode');
     if (btn) btn.textContent = 'Unified';
   }
