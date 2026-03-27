@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **Per-class coverage thresholds for core diff logic** — Extended the CI coverage enforcement script in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) to check per-class coverage for `FileDiffService`, `FolderDiffService`, and `FileComparisonService` (line >= 90%, branch >= 85%), in addition to the existing total thresholds (line >= 80%, branch >= 75%). The script parses Cobertura XML `<class>` elements for matching class names. Added `DotNetWorkflow_EnforcesPerClassCoverageThresholds` test in [`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs). Updated [`CLAUDE.md`](CLAUDE.md), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA). Test count: 900 (+1).
+- **Per-class coverage thresholds for core diff logic** — Extended the CI coverage enforcement script in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) to check per-class coverage for `FileDiffService`, `FolderDiffService`, and `FileComparisonService` (line >= 90%, branch >= 85%), in addition to the existing total thresholds (line >= 80%, branch >= 75%). The script aggregates line/branch hits across all `<class>` entries sharing the same name to correctly handle partial classes (e.g. `FileDiffService.cs` + `FileDiffService.TextComparison.cs`). Added `DotNetWorkflow_EnforcesPerClassCoverageThresholds` test in [`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs). Updated [`CLAUDE.md`](CLAUDE.md), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA). Test count: 900 (+1).
 
 ### [1.10.0] - 2026-03-27
 
@@ -742,7 +742,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **コア差分ロジックに対するクラス単位カバレッジ閾値** — CI カバレッジ強制スクリプト（[`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml)）を拡張し、`FileDiffService`、`FolderDiffService`、`FileComparisonService` に対してクラス単位の閾値（行 >= 90%、ブランチ >= 85%）を既存の total 閾値（行 >= 80%、ブランチ >= 75%）に加えてチェック。Cobertura XML の `<class>` 要素を解析して該当クラスを照合。[`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) に `DotNetWorkflow_EnforcesPerClassCoverageThresholds` テスト追加。[`CLAUDE.md`](CLAUDE.md)、[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md)、[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA）を更新。テスト件数: 900（+1）。
+- **コア差分ロジックに対するクラス単位カバレッジ閾値** — CI カバレッジ強制スクリプト（[`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml)）を拡張し、`FileDiffService`、`FolderDiffService`、`FileComparisonService` に対してクラス単位の閾値（行 >= 90%、ブランチ >= 85%）を既存の total 閾値（行 >= 80%、ブランチ >= 75%）に加えてチェック。同名の全 `<class>` エントリの行数・ブランチ数を集約し、partial class（例: `FileDiffService.cs` + `FileDiffService.TextComparison.cs`）を正しく処理する。[`CiAutomationConfigurationTests`](FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) に `DotNetWorkflow_EnforcesPerClassCoverageThresholds` テスト追加。[`CLAUDE.md`](CLAUDE.md)、[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md)、[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA）を更新。テスト件数: 900（+1）。
 
 ### [1.10.0] - 2026-03-27
 
