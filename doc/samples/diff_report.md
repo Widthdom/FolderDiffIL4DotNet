@@ -121,13 +121,13 @@
 
 #### Dependency Changes: bin/MyApp.deps.json
 
-| Package | Status | Importance | Old Version | New Version |
-|---------|:------:|:----------:|:-----------:|:-----------:|
-| System.Text.Json | `[ - ]` | `High` | 7.0.0 | — |
-| Newtonsoft.Json | `[ + ]` | `Medium` | — | 13.0.3 |
-| Serilog | `[ * ]` | `High` | 3.0.0 | 4.1.0 |
-| Microsoft.Extensions.Logging | `[ * ]` | `Medium` | 8.0.0 | 9.0.0 |
-| Microsoft.Extensions.DependencyInjection | `[ * ]` | `Low` | 9.0.0 | 9.0.8 |
+| Package | Status | Importance | Old Version | New Version | Vulnerabilities |
+|---------|:------:|:----------:|:-----------:|:-----------:|:---------------:|
+| System.Text.Json | `[ - ]` | `High` | 7.0.0 | — | — |
+| Newtonsoft.Json | `[ + ]` | `Medium` | — | 13.0.3 | ⚠ Moderate |
+| Serilog | `[ * ]` | `High` | 3.0.0 | 4.1.0 | ~~High~~ |
+| Microsoft.Extensions.Logging | `[ * ]` | `Medium` | 8.0.0 | 9.0.0 | — |
+| Microsoft.Extensions.DependencyInjection | `[ * ]` | `Low` | 9.0.0 | 9.0.8 | — |
 
 ## Summary
 
