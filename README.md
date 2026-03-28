@@ -150,12 +150,7 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 > **Tip:** When a configuration error occurs (exit code `3`), a hint is printed to stderr suggesting `--print-config` for diagnosis.
 
-Main output:
-- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
-- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json))
-- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) — structured audit log with SHA256 integrity hashes for tamper detection (disable with `"ShouldGenerateAuditLog": false`)
-- `Reports/<label>/sbom.cdx.json` or `sbom.spdx.json` — SBOM (Software Bill of Materials) in CycloneDX or SPDX format (enable with `"ShouldGenerateSbom": true`)
-- Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#config-en-shouldoutputiltext) is `true`
+Main output is written to `Reports/<label>/`. See [Generated Artifacts](#readme-en-generated-artifacts) for the full list.
 
 Process exit codes:
 
@@ -797,12 +792,7 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 > **ヒント:** 設定エラー（終了コード `3`）が発生した場合、診断用に `--print-config` を提案するヒントが stderr に出力されます。
 
-主な出力:
-- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
-- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化可）
-- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) — 改竄検知用 SHA256 インテグリティハッシュを含む構造化監査ログ（`"ShouldGenerateAuditLog": false` で無効化可）
-- `Reports/<label>/sbom.cdx.json` または `sbom.spdx.json` — CycloneDX または SPDX 形式の SBOM（ソフトウェア部品表）（`"ShouldGenerateSbom": true` で有効化）
-- [`ShouldOutputILText`](#config-ja-shouldoutputiltext) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
+主な出力は `Reports/<label>/` に書き込まれます。完全なリストは[生成物](#readme-ja-generated-artifacts)を参照してください。
 
 プロセス終了コード:
 

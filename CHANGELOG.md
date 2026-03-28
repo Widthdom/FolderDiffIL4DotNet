@@ -63,6 +63,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Add Estimated Change column description to README** — Added the missing "Estimated Change" column to the Interactive HTML Review Report column tables in [`README.md`](README.md) (EN+JA). Documents the 12 pattern-based classification tags (`+Method`, `-Method`, `+Type`, `-Type`, `Extract`, `Inline`, `Move`, `Rename`, `Signature`, `Access`, `BodyEdit`, `DepUpdate`) and clarifies that the column is shown only in Unchanged and Modified sections. Also updated the column-visibility summary paragraph in both EN and JA sections.
 
+- **Deduplicate generated artifacts documentation** — The output artifacts list was duplicated in three places: README "Main output" (Usage section), README "Generated Artifacts" (dedicated section), and DEVELOPER_GUIDE "Generated during a run". Replaced the README "Main output" lists (EN+JA) with one-line cross-references to the "Generated Artifacts" section. Replaced the DEVELOPER_GUIDE lists (EN+JA) with cross-references to README, retaining only the ILCache directory detail that is developer-specific. Affected files: [`README.md`](README.md), [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md).
+
 - **CI/CD workflow overview diagram in DEVELOPER_GUIDE.md** — Added a visual text-based workflow diagram showing which CI jobs run on which triggers (PR, push to main, tag push), along with descriptions of `mutation-testing` and `benchmark` jobs that were previously undocumented. Both English and Japanese sections updated in [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md). Quality axes summary (correctness, coverage, detection strength, performance, security, compatibility) included for quick comprehension.
 
 - **Performance guide with memory architecture and benchmark baselines** — Created [`doc/PERFORMANCE_GUIDE.md`](doc/PERFORMANCE_GUIDE.md) (bilingual EN+JA) documenting: memory management architecture (IL memory cache LRU/TTL eviction, disk cache quotas, text diff memory budgets), overall memory profile estimates by project scale (1K vs 10K files), parallelism tuning, benchmark baseline metrics (folder enumeration, SHA256 hashing, Myers diff algorithm), CI regression detection workflow, and tuning recommendations by scenario (small/medium/large projects, network shares, CI, memory-constrained). Referenced from [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md).
@@ -805,6 +807,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Documentation
 
 - **README に Estimated Change 列の説明を追加** — インタラクティブ HTML レビューレポートの列テーブル（[`README.md`](README.md) EN+JA）に未記載だった「Estimated Change」列を追加。12 種のパターン分類タグ（`+Method`・`-Method`・`+Type`・`-Type`・`Extract`・`Inline`・`Move`・`Rename`・`Signature`・`Access`・`BodyEdit`・`DepUpdate`）を記載し、Unchanged・Modified セクションのみに表示される旨を明記。列の表示範囲に関する説明パラグラフも EN+JA 両方で更新。
+
+- **生成物ドキュメントの重複を解消** — 出力成果物リストが README「主な出力」（Usage セクション）、README「生成物」（専用セクション）、DEVELOPER_GUIDE「実行時に生成される主な成果物」の 3 箇所で重複していた。README の「主な出力」リスト（EN+JA）を「生成物」セクションへの 1 行参照に置換。DEVELOPER_GUIDE のリスト（EN+JA）を README への参照に置換し、開発者固有の ILCache ディレクトリ情報のみ保持。対象ファイル: [`README.md`](README.md)、[`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)。
 
 - **DEVELOPER_GUIDE.md に CI/CD ワークフロー概観図を追加** — どのトリガー（PR、main push、タグ push）でどの CI ジョブが実行されるかを示すテキストベースのワークフロー図を追加。これまでドキュメント化されていなかった `mutation-testing` ジョブと `benchmark` ジョブの説明も追記。英語・日本語の両セクションを更新（[`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)）。品質を守る 6 軸（正しさ、網羅性、検出力、速度、安全性、互換性）のサマリも記載。
 
