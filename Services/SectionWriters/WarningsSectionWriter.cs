@@ -31,7 +31,7 @@ namespace FolderDiffIL4DotNet.Services
                         .ToList();
                     if (sha256Files.Count > 0)
                     {
-                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable ({sha256Files.Count})");
+                        writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file ({sha256Files.Count})");
                         writer.WriteLine();
                         writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |");
                         writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|");

@@ -67,7 +67,7 @@
     var sectionNames = {
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
       'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
-      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly or disassembler unavailable',
+      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
       'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
     };
     // Section background colors for column header rows / 列ヘッダー行のセクション背景色

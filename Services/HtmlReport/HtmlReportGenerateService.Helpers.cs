@@ -379,6 +379,43 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("</div>");
         }
 
+        /// <summary>
+        /// Appends warning banners for disassembler issues (no tool available, mixed tool usage).
+        /// 逆アセンブラの問題に関する警告バナーを追加（ツール未検出、複数ツール混在）。
+        /// </summary>
+        private void AppendDisassemblerWarnings(TextWriter writer)
+        {
+            // Warning: no disassembler available / 警告: 逆アセンブラが利用不可
+            var probeResults = _fileDiffResultLists.DisassemblerAvailability;
+            if (probeResults != null && probeResults.Count > 0 && !probeResults.Any(p => p.Available))
+            {
+                writer.WriteLine("<div class=\"header-path\" style=\"border-left:4px solid #d73a49;background:#ffeef0\">");
+                writer.WriteLine($"  <div class=\"header-path-label\" style=\"color:#d73a49\">{HtmlEncode("⚠ Warning")}</div>");
+                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode("No disassembler tool is available. .NET assembly comparison will fail if any .dll/.exe files with differing SHA256 hashes are detected. Install dotnet-ildasm or ilspycmd to enable IL-level comparison.")}</div>");
+                writer.WriteLine("</div>");
+            }
+
+            // Warning: multiple different disassembler tools used / 警告: 異なる逆アセンブラツールが混在
+            var distinctToolNames = _fileDiffResultLists.DisassemblerToolVersions.Keys
+                .Concat(_fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
+                .Where(label => !string.IsNullOrWhiteSpace(label))
+                .Select(label =>
+                {
+                    var vIdx = label.IndexOf(" (version:", StringComparison.OrdinalIgnoreCase);
+                    return vIdx >= 0 ? label.Substring(0, vIdx).Trim() : label.Trim();
+                })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (distinctToolNames.Count > 1)
+            {
+                writer.WriteLine("<div class=\"header-path\" style=\"border-left:4px solid #e36209;background:#fff8e1\">");
+                writer.WriteLine($"  <div class=\"header-path-label\" style=\"color:#e36209\">{HtmlEncode("⚠ Warning")}</div>");
+                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode($"Multiple disassembler tools were used in this run ({string.Join(", ", distinctToolNames)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. For consistent results, ensure only one disassembler tool is installed.")}</div>");
+                writer.WriteLine("</div>");
+            }
+        }
+
         /// <summary>Appends a filter table row with checkbox, label, and description. / チェックボックス、ラベル、説明を含むフィルターテーブル行を追加します。</summary>
         private static void AppendFilterTableRow(TextWriter writer, string id, string labelHtml, string description)
         {

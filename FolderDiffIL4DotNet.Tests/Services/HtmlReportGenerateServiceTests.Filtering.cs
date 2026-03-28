@@ -319,5 +319,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("const __totalFiles__      = 2;", html);
         }
 
+        // -----------------------------------------------------------------------
+        // Disassembler warning banners (HTML)
+        // 逆アセンブラ警告バナー（HTML）
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void GenerateDiffReportHtml_WarnsWhenNoDisassemblerAvailable()
+        {
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", false, null, null),
+                new("ilspycmd", false, null, null),
+            };
+
+            var (oldDir, newDir, reportDir) = MakeDirs("no-disasm-html");
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("No disassembler tool is available", html);
+            Assert.Contains("border-left:4px solid #d73a49", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_NoDisassemblerWarning_WhenOneAvailable()
+        {
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", true, "0.12.0", "/usr/bin/dotnet-ildasm"),
+                new("ilspycmd", false, null, null),
+            };
+
+            var (oldDir, newDir, reportDir) = MakeDirs("one-disasm-html");
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.DoesNotContain("No disassembler tool is available", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_WarnsWhenMultipleDisassemblersUsed()
+        {
+            _resultLists.DisassemblerToolVersions["dotnet-ildasm (version: 0.12.0)"] = 0;
+            _resultLists.DisassemblerToolVersions["ilspycmd (version: 8.2.0)"] = 0;
+
+            var (oldDir, newDir, reportDir) = MakeDirs("mixed-disasm-html");
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("Multiple disassembler tools were used", html);
+            Assert.Contains("border-left:4px solid #e36209", html);
+        }
+
     }
 }

@@ -43,6 +43,7 @@ namespace FolderDiffIL4DotNet.Services
 
             // Disassembler availability with in-use marker / 逆アセンブラ可用性（使用中マーカー付き）
             AppendDisassemblerAvailabilitySection(writer, _fileDiffResultLists.DisassemblerAvailability, BuildDisassemblerHeaderText());
+            AppendDisassemblerWarnings(writer);
 
             // Ignored Extensions (standalone rounded section) / 無視する拡張子（独立した角丸セクション）
             writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">Ignored Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</div></div>");
@@ -330,7 +331,7 @@ namespace FolderDiffIL4DotNet.Services
                     .ToList();
                 if (sha256Files.Count > 0)
                 {
-                    writer.WriteLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable")} ({sha256Files.Count})</h2>");
+                    writer.WriteLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file")} ({sha256Files.Count})</h2>");
                     AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason");
                     writer.WriteLine("<tbody>");
                     int idx = 0;
