@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
@@ -145,8 +147,16 @@ namespace FolderDiffIL4DotNet.Services
             if (!shouldOutputIlText)
             {
                 // Streaming comparison: filter and compare line-by-line without materializing filtered lists.
+                // If lines differ, fall back to block-aware comparison to handle method reordering.
                 // ストリーミング比較: フィルタ済み行リストを実体化せずに行単位でフィルタ・比較する。
+                // 行単位で不一致の場合、メソッド並び順変更を考慮しブロック単位比較にフォールバック。
                 bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings);
+                if (!areILsEqual)
+                {
+                    var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
+                    var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
+                    areILsEqual = BlockAwareSequenceEqual(filtered1, filtered2);
+                }
                 return (areILsEqual, disassemblerLabel);
             }
 
@@ -155,6 +165,12 @@ namespace FolderDiffIL4DotNet.Services
             var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
             var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
             bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
+            if (!areEqual)
+            {
+                // Fall back to block-aware comparison to handle method/class reordering by the compiler.
+                // コンパイラによるメソッド・クラスの並び替えを考慮し、ブロック単位比較にフォールバック。
+                areEqual = BlockAwareSequenceEqual(il1LinesExcluded, il2LinesExcluded);
+            }
             try
             {
                 // Save the exclusion-filtered IL text as *_IL.txt.
@@ -296,6 +312,80 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return ilIgnoreContainingStrings.Any(target => line.Contains(target, StringComparison.Ordinal));
+        }
+
+        /// <summary>
+        /// Compares two filtered IL line lists using block-aware (order-independent) comparison.
+        /// Parses IL into logical blocks (methods, classes, etc.) via <see cref="ILBlockParser"/>,
+        /// hashes each block, and compares as multisets. This handles compiler-induced reordering
+        /// of methods/classes that would cause false positives in line-by-line comparison.
+        /// フィルタ済み IL 行リストをブロック単位（順序非依存）で比較します。
+        /// <see cref="ILBlockParser"/> で IL を論理ブロック（メソッド、クラス等）に分割し、
+        /// 各ブロックをハッシュ化してマルチセットとして比較します。コンパイラによるメソッド・クラスの
+        /// 並び替えが原因の行単位比較での誤検知を解消します。
+        /// </summary>
+        internal static bool BlockAwareSequenceEqual(IReadOnlyList<string> filteredLines1, IReadOnlyList<string> filteredLines2)
+        {
+            var blocks1 = ILBlockParser.ParseBlocks(filteredLines1);
+            var blocks2 = ILBlockParser.ParseBlocks(filteredLines2);
+
+            if (blocks1.Count != blocks2.Count)
+            {
+                return false;
+            }
+
+            // Build multiset of block hashes for each side and compare
+            // 各側のブロックハッシュのマルチセットを構築して比較
+            var hashBag1 = BuildBlockHashBag(blocks1);
+            var hashBag2 = BuildBlockHashBag(blocks2);
+
+            if (hashBag1.Count != hashBag2.Count)
+            {
+                return false;
+            }
+
+            foreach (var kvp in hashBag1)
+            {
+                if (!hashBag2.TryGetValue(kvp.Key, out int count2) || count2 != kvp.Value)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Builds a multiset (hash → count) from a list of IL blocks.
+        /// IL ブロックのリストからマルチセット（ハッシュ → 出現回数）を構築します。
+        /// </summary>
+        private static Dictionary<string, int> BuildBlockHashBag(List<List<string>> blocks)
+        {
+            var bag = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var block in blocks)
+            {
+                string hash = ComputeBlockHash(block);
+                bag.TryGetValue(hash, out int count);
+                bag[hash] = count + 1;
+            }
+            return bag;
+        }
+
+        /// <summary>
+        /// Computes a SHA256 hash of an IL block's content (all lines joined with newline).
+        /// IL ブロックの内容（全行を改行で結合）の SHA256 ハッシュを計算します。
+        /// </summary>
+        private static string ComputeBlockHash(List<string> blockLines)
+        {
+            using var sha256 = SHA256.Create();
+            var sb = new StringBuilder();
+            for (int i = 0; i < blockLines.Count; i++)
+            {
+                if (i > 0) sb.Append('\n');
+                sb.Append(blockLines[i]);
+            }
+            byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));
+            return BitConverter.ToString(hashBytes).Replace("-", string.Empty);
         }
 
         /// <summary>

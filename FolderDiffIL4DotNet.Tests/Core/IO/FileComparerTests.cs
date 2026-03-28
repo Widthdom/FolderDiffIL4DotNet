@@ -140,5 +140,55 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
             var file2 = CreateTempFile("b.bin", System.Text.Encoding.UTF8.GetBytes("bbb"));
             Assert.NotEqual(FileComparer.ComputeFileSha256Hex(file1), FileComparer.ComputeFileSha256Hex(file2));
         }
+
+        // --- Encoding-aware text comparison tests / エンコーディング対応テキスト比較テスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public async Task DiffTextFilesAsync_Utf8WithAndWithoutBom_SameContent_ReturnsTrue()
+        {
+            // UTF-8 with BOM and without BOM, same logical content
+            // BOM 付き UTF-8 と BOM なし UTF-8、同じ論理内容
+            var content = "hello\nworld";
+            var utf8NoBom = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+            var utf8WithBom = new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: true);
+            var file1 = CreateTempFile("nobom.txt", utf8NoBom.GetPreamble().Length > 0
+                ? Concat(utf8NoBom.GetPreamble(), utf8NoBom.GetBytes(content))
+                : utf8NoBom.GetBytes(content));
+            var file2 = CreateTempFile("withbom.txt", Concat(utf8WithBom.GetPreamble(), utf8WithBom.GetBytes(content)));
+
+            Assert.True(await FileComparer.DiffTextFilesAsync(file1, file2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public async Task DiffTextFilesAsync_Utf16LeVsUtf8_SameContent_ReturnsTrue()
+        {
+            // UTF-16 LE and UTF-8, same logical content
+            // UTF-16 LE と UTF-8、同じ論理内容
+            var content = "test line\nsecond line";
+            var file1 = CreateTempFile("utf16le.txt", Concat(System.Text.Encoding.Unicode.GetPreamble(), System.Text.Encoding.Unicode.GetBytes(content)));
+            var file2 = CreateTempFile("utf8.txt", System.Text.Encoding.UTF8.GetBytes(content));
+
+            Assert.True(await FileComparer.DiffTextFilesAsync(file1, file2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public async Task DiffTextFilesAsync_DifferentContentDifferentEncoding_ReturnsFalse()
+        {
+            var file1 = CreateTempFile("utf16.txt", Concat(System.Text.Encoding.Unicode.GetPreamble(), System.Text.Encoding.Unicode.GetBytes("hello")));
+            var file2 = CreateTempFile("utf8.txt", System.Text.Encoding.UTF8.GetBytes("world"));
+
+            Assert.False(await FileComparer.DiffTextFilesAsync(file1, file2));
+        }
+
+        private static byte[] Concat(byte[] a, byte[] b)
+        {
+            var result = new byte[a.Length + b.Length];
+            System.Buffer.BlockCopy(a, 0, result, 0, a.Length);
+            System.Buffer.BlockCopy(b, 0, result, a.Length, b.Length);
+            return result;
+        }
     }
 }

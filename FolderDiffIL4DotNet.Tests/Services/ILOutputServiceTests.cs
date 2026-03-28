@@ -294,6 +294,130 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(result);
         }
 
+        // --- BlockAwareSequenceEqual tests / ブロック単位比較テスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_IdenticalLines_ReturnsTrue()
+        {
+            var lines = new List<string> { ".assembly test {}", ".method void Foo() {", "  ret", "}" };
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines, new List<string>(lines)));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_ReorderedMethods_ReturnsTrue()
+        {
+            var lines1 = new List<string>
+            {
+                ".assembly test {}",
+                ".method public void Foo() cil managed",
+                "{",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  nop",
+                "  ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                ".assembly test {}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  nop",
+                "  ret",
+                "}",
+                ".method public void Foo() cil managed",
+                "{",
+                "  ret",
+                "}"
+            };
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_DifferentMethodBody_ReturnsFalse()
+        {
+            var lines1 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.0",
+                "  ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}"
+            };
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_DifferentBlockCount_ReturnsFalse()
+        {
+            var lines1 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ret",
+                "}"
+            };
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_BothEmpty_ReturnsTrue()
+        {
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(new List<string>(), new List<string>()));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_DuplicateMethods_Reordered_ReturnsTrue()
+        {
+            // Two identical methods in different order — multiset comparison must handle duplicates
+            // 同一メソッドが2つ、順序が異なる — マルチセット比較で重複を正しく処理
+            var lines1 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ret",
+                "}",
+                ".method public void Foo() cil managed",
+                "{",
+                "  ret",
+                "}"
+            };
+            var lines2 = new List<string>(lines1); // Same content, same order
+
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
         // --- FilterIlLines tests / FilterIlLines テスト ---
 
         [Fact]

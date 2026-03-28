@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Block-aware IL comparison for order-independent method matching** — IL comparison now falls back to block-aware (order-independent) comparison when line-by-line comparison detects a mismatch. IL output is parsed into logical blocks (methods, classes, properties, etc.) by the new [`Services/ILOutput/ILBlockParser.cs`](Services/ILOutput/ILBlockParser.cs), and each block is hashed and compared as a multiset. This eliminates false positives caused by compiler-induced method/class reordering across different compiler versions or rebuild configurations. The fast streaming line-by-line comparison remains the primary path; block parsing only activates on mismatch. Modified: [`Services/ILOutputService.cs`](Services/ILOutputService.cs) (added `BlockAwareSequenceEqual`, `BuildBlockHashBag`, `ComputeBlockHash`). Tests: [`ILBlockParserTests`](FolderDiffIL4DotNet.Tests/Services/ILBlockParserTests.cs) (6 tests), [`ILOutputServiceTests`](FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs) (6 new `BlockAwareSequenceEqual_*` tests). Test count: 993 (+12).
+
+- **Encoding-aware text file comparison** — `FileComparer.DiffTextFilesAsync` now uses `EncodingDetector` to auto-detect each file's encoding (BOM detection, UTF-8 validation, system ANSI code page fallback) before line-by-line comparison. Previously, `StreamReader` used the default UTF-8 encoding, which could produce false positives when comparing files with different encodings (e.g. UTF-8 vs Shift_JIS) or BOM differences. The inline diff generation in `HtmlReportGenerateService` already used `EncodingDetector`; this change aligns the comparison phase with the same detection logic. Modified: [`FolderDiffIL4DotNet.Core/IO/FileComparer.cs`](FolderDiffIL4DotNet.Core/IO/FileComparer.cs). Tests: [`FileComparerTests`](FolderDiffIL4DotNet.Tests/Core/IO/FileComparerTests.cs) (3 new encoding-aware tests). Test count: 993 (+3 from encoding tests, already counted above).
+
 #### Added
 
 - **SBOM (Software Bill of Materials) generation (`ShouldGenerateSbom`, `SbomFormat`)** — New opt-in config settings that generate an SBOM listing all components found in the compared folders, for supply-chain security compliance (Executive Order 14028, EU CRA, etc.). Supports two industry-standard formats: CycloneDX 1.5 JSON (`sbom.cdx.json`) and SPDX 2.3 JSON (`sbom.spdx.json`). Each component entry includes file path, diff status (Added/Removed/Modified/Unchanged), SHA256 hash, and diff detail. Disabled by default. New files: [`Models/SbomModels.cs`](Models/SbomModels.cs) (CycloneDX + SPDX model classes, `SbomFormat` enum), [`Services/SbomGenerateService.cs`](Services/SbomGenerateService.cs) (generation service with `BuildComponentList`, `SerializeCycloneDx`, `SerializeSpdx`). Config: [`Models/ConfigSettings.ReportSettings.cs`](Models/ConfigSettings.ReportSettings.cs), [`Models/ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs), [`Models/IReadOnlyConfigSettings.cs`](Models/IReadOnlyConfigSettings.cs). Pipeline: [`Runner/RunScopeBuilder.cs`](Runner/RunScopeBuilder.cs), [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs). Tests: [`SbomGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs) (25 tests). Updated [`doc/config.sample.jsonc`](doc/config.sample.jsonc), [`README.md`](README.md) (EN+JA config tables, output lists), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md). Test count: 981 (+25).
@@ -759,6 +765,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **ブロック単位 IL 比較による順序非依存メソッドマッチング** — IL 比較において、行単位比較で不一致を検出した場合にブロック単位（順序非依存）比較にフォールバックするよう改善。IL 出力を新規 [`Services/ILOutput/ILBlockParser.cs`](Services/ILOutput/ILBlockParser.cs) で論理ブロック（メソッド、クラス、プロパティ等）に分割し、各ブロックをハッシュ化してマルチセットとして比較する。これにより、コンパイラバージョンやリビルド設定の違いによるメソッド・クラスの並び替えが原因の誤検知（false positive）を解消。高速なストリーミング行単位比較は一次パスとして維持し、ブロック解析は不一致時のみ発動。変更: [`Services/ILOutputService.cs`](Services/ILOutputService.cs)（`BlockAwareSequenceEqual`、`BuildBlockHashBag`、`ComputeBlockHash` 追加）。テスト: [`ILBlockParserTests`](FolderDiffIL4DotNet.Tests/Services/ILBlockParserTests.cs)（6 件）、[`ILOutputServiceTests`](FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs)（`BlockAwareSequenceEqual_*` 6 件追加）。テスト件数: 993（+12）。
+
+- **エンコーディング検出付きテキストファイル比較** — `FileComparer.DiffTextFilesAsync` が `EncodingDetector` を使用して各ファイルのエンコーディング（BOM 検出、UTF-8 検証、システム ANSI コードページフォールバック）を自動検出してから行単位比較を行うよう改善。従来は `StreamReader` が既定の UTF-8 エンコーディングを使用していたため、異なるエンコーディング（UTF-8 vs Shift_JIS 等）や BOM 有無の違いで誤判定が発生する可能性があった。`HtmlReportGenerateService` のインライン差分生成では既に `EncodingDetector` を使用しており、比較フェーズも同一の検出ロジックに統一。変更: [`FolderDiffIL4DotNet.Core/IO/FileComparer.cs`](FolderDiffIL4DotNet.Core/IO/FileComparer.cs)。テスト: [`FileComparerTests`](FolderDiffIL4DotNet.Tests/Core/IO/FileComparerTests.cs)（エンコーディング対応テスト 3 件追加）。テスト件数: 993（上記に含む）。
 
 #### Added
 
