@@ -224,8 +224,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // テーブルの構造と内容が HTML に含まれていることを検証
             Assert.Contains("dotnet-ildasm", html);
             Assert.Contains("ilspycmd", html);
-            Assert.Contains("color:#22863a", html); // green for Yes / Yes 用の緑
-            Assert.Contains("color:#b31d28", html); // red for No / No 用の赤
+            Assert.Contains("class=\"status-available\"", html); // green for Available / Available 用の緑
+            Assert.Contains("class=\"status-unavailable\"", html); // red for Not Available / Not Available 用の赤
             Assert.Contains("0.12.2", html);
         }
 
@@ -338,7 +338,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("No disassembler tool is available", html);
-            Assert.Contains("border-left:4px solid #d73a49", html);
+            Assert.Contains("warn-danger", html);
         }
 
         [Fact]
@@ -368,7 +368,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
             Assert.Contains("Multiple disassembler tools were used", html);
-            Assert.Contains("border-left:4px solid #e36209", html);
+            Assert.Contains("warn-caution", html);
         }
 
     }

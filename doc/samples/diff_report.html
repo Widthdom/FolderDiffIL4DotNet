@@ -8,7 +8,8 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-           font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
+           font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto;
+           background: var(--color-bg); color: var(--color-text); }
     /* ── Skip link for keyboard navigation / キーボードナビゲーション用スキップリンク ── */
     .skip-link {
       position: absolute; left: -9999px; top: auto;
@@ -154,7 +155,100 @@
       white-space: normal; overflow-wrap: anywhere;
       flex: 1 1 16rem; min-width: 12rem;
     }
-    .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
+    .empty { color: var(--color-empty); font-size: 12px; margin-bottom: 0.8rem; }
+    /* ── Color CSS variables (light mode) / カラー CSS 変数（ライトモード） ── */
+    :root {
+      --color-bg: #fff; --color-text: #1d1d1f; --color-text-secondary: #86868b;
+      --color-text-tertiary: #6e6e73; --color-text-quaternary: #a1a1a6;
+      --color-text-muted: #999; --color-text-faint: #aaa; --color-text-stat: #444;
+      --color-border: #e0e0e0; --color-border-strong: #bbb; --color-border-light: #ddd;
+      --color-border-separator: #ccc;
+      --color-surface: #fff; --color-surface-card: #f5f5f7; --color-surface-code: #f0f0f0;
+      --color-surface-hover: #f3eef8; --color-surface-input-focus: #fffff8;
+      --color-btn-bg: #1d1d1f; --color-btn-text: #fff; --color-btn-hover: #424245;
+      --color-btn-clear-hover: #f5f5f7; --color-btn-clear-text: #1d1d1f;
+      --color-btn-copy-text: #bbb; --color-btn-copy-hover-bg: #e8e8ed; --color-btn-copy-hover-text: #333;
+      --color-accent: #0051c3; --color-accent-hover-bg: #e8f0fe;
+      --color-accent-focus-shadow: rgba(0,81,195,0.15);
+      --color-added: #22863a; --color-added-bg: #e6ffed;
+      --color-removed: #b31d28; --color-removed-bg: #ffeef0;
+      --color-modified: #0051c3; --color-modified-bg: #e3f2fd;
+      --color-default-bg: #f0f0f2;
+      --color-diff-row-bg: #edf0f4; --color-diff-ln-bg: #f6f8fa;
+      --color-diff-hunk-text: #0057ae; --color-diff-ctx-text: #24292e; --color-diff-ctx-bg: #fff;
+      --color-diff-trunc-bg: #fffbdd; --color-diff-trunc-text: #735c0f;
+      --color-diff-summary-text: #0051c3;
+      --color-sc-header-bg: #98989d; --color-sc-header-text: #fff; --color-sc-cell-bg: #fff;
+      --color-sc-caveat: #6b6b6e;
+      --color-progress-bg: #e5e5ea; --color-progress-fill: #0051c3;
+      --color-importance-high: #d1242f; --color-importance-medium: #d97706;
+      --color-vuln-new-bg: #fecaca; --color-vuln-new-text: #991b1b;
+      --color-vuln-resolved-bg: #dcfce7; --color-vuln-resolved-text: #166534;
+      --color-vuln-resolved-count: #16a34a; --color-vuln-new-count: #dc2626;
+      --color-warn-danger-border: #d73a49; --color-warn-danger-bg: #ffeef0;
+      --color-warn-caution-border: #e36209; --color-warn-caution-bg: #fff8e1;
+      --color-controls-bg: rgba(255,255,255,0.1);
+      --color-resize-handle-hover: rgba(0,0,0,0.18);
+      --color-print-text: #555; --color-print-border: #ccc; --color-print-bg: #fff;
+      --color-lazy-summary: #6e6e73; --color-reviewed-banner-text: #1f2328;
+      --color-empty: #999; --color-sbs-empty-bg: #f6f8fa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-bg: #0d1117; --color-text: #e6edf3; --color-text-secondary: #8b949e;
+        --color-text-tertiary: #8b949e; --color-text-quaternary: #6e7681;
+        --color-text-muted: #6e7681; --color-text-faint: #484f58; --color-text-stat: #c9d1d9;
+        --color-border: #30363d; --color-border-strong: #484f58; --color-border-light: #21262d;
+        --color-border-separator: #30363d;
+        --color-surface: #0d1117; --color-surface-card: #161b22; --color-surface-code: #1c2128;
+        --color-surface-hover: #1c1430; --color-surface-input-focus: #161b22;
+        --color-btn-bg: #e6edf3; --color-btn-text: #0d1117; --color-btn-hover: #c9d1d9;
+        --color-btn-clear-hover: #21262d; --color-btn-clear-text: #e6edf3;
+        --color-btn-copy-text: #484f58; --color-btn-copy-hover-bg: #30363d; --color-btn-copy-hover-text: #e6edf3;
+        --color-accent: #58a6ff; --color-accent-hover-bg: #1c2d4a;
+        --color-accent-focus-shadow: rgba(88,166,255,0.2);
+        --color-added: #3fb950; --color-added-bg: #12261e;
+        --color-removed: #f85149; --color-removed-bg: #2d1214;
+        --color-modified: #58a6ff; --color-modified-bg: #12233d;
+        --color-default-bg: #161b22;
+        --color-diff-row-bg: #161b22; --color-diff-ln-bg: #1c2128;
+        --color-diff-hunk-text: #79c0ff; --color-diff-ctx-text: #e6edf3; --color-diff-ctx-bg: #0d1117;
+        --color-diff-trunc-bg: #2d2a0f; --color-diff-trunc-text: #d29922;
+        --color-diff-summary-text: #58a6ff;
+        --color-sc-header-bg: #30363d; --color-sc-header-text: #e6edf3; --color-sc-cell-bg: #0d1117;
+        --color-sc-caveat: #8b949e;
+        --color-progress-bg: #21262d; --color-progress-fill: #58a6ff;
+        --color-importance-high: #f85149; --color-importance-medium: #d29922;
+        --color-vuln-new-bg: #3d1214; --color-vuln-new-text: #f85149;
+        --color-vuln-resolved-bg: #0f2d1a; --color-vuln-resolved-text: #3fb950;
+        --color-vuln-resolved-count: #3fb950; --color-vuln-new-count: #f85149;
+        --color-warn-danger-border: #f85149; --color-warn-danger-bg: #2d1214;
+        --color-warn-caution-border: #d29922; --color-warn-caution-bg: #2d2a0f;
+        --color-controls-bg: rgba(13,17,23,0.7);
+        --color-resize-handle-hover: rgba(255,255,255,0.18);
+        --color-print-text: #8b949e; --color-print-border: #30363d; --color-print-bg: #0d1117;
+        --color-lazy-summary: #8b949e; --color-reviewed-banner-text: #e6edf3;
+        --color-empty: #6e7681; --color-sbs-empty-bg: #1c2128;
+      }
+    }
+    /* ── Theme-aware utility classes ── */
+    .imp-high { color: var(--color-importance-high); font-weight: bold; }
+    .imp-medium { color: var(--color-importance-medium); font-weight: bold; }
+    .status-available { color: var(--color-added); }
+    .status-unavailable { color: var(--color-removed); }
+    .vuln-new { background: var(--color-vuln-new-bg); color: var(--color-vuln-new-text); font-weight: bold;
+                padding: 1px 5px; border-radius: 3px; margin: 1px; display: inline-block; }
+    .vuln-resolved { background: var(--color-vuln-resolved-bg); color: var(--color-vuln-resolved-text);
+                     text-decoration: line-through; padding: 1px 5px; border-radius: 3px; margin: 1px; display: inline-block; }
+    .vuln-resolved-count { color: var(--color-vuln-resolved-count); }
+    .vuln-new-count { color: var(--color-vuln-new-count); }
+    .warn-danger { border-left: 4px solid var(--color-warn-danger-border); background: var(--color-warn-danger-bg); }
+    .warn-danger .header-path-label { color: var(--color-warn-danger-border); }
+    .warn-caution { border-left: 4px solid var(--color-warn-caution-border); background: var(--color-warn-caution-bg); }
+    .warn-caution .header-path-label { color: var(--color-warn-caution-border); }
+    .color-added { color: var(--color-added); }
+    .color-removed { color: var(--color-removed); }
+    .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;

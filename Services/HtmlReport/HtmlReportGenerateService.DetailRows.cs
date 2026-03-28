@@ -224,9 +224,9 @@ namespace FolderDiffIL4DotNet.Services
                     string statusBg = ChangeToStatusBg(e.Change);
                     string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
                     string impMarker = ImportanceToMarker(e.Importance);
-                    string impStyleVal = ImportanceToStyle(e.Importance);
-                    string impStyle = impStyleVal.Length > 0 ? $" style=\"{impStyleVal}\"" : "";
-                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{scRowIdx + 1}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    string impCls = ImportanceToClass(e.Importance);
+                    string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
+                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{scRowIdx + 1}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                     scRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -309,13 +309,13 @@ namespace FolderDiffIL4DotNet.Services
                     string statusBg = DependencyChangeToStatusBg(e.Change);
                     string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
                     string impMarker = ImportanceToMarker(e.Importance);
-                    string impStyleVal = ImportanceToStyle(e.Importance);
-                    string impStyle = impStyleVal.Length > 0 ? $" style=\"{impStyleVal}\"" : "";
+                    string impCls = ImportanceToClass(e.Importance);
+                    string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
                     string cbId = $"dc_{sectionPrefix}_{idx}_{dcRowIdx}";
                     string oldVer = e.OldVersion.Length > 0 ? HtmlEncode(e.OldVersion) : "&#x2014;";
                     string newVer = e.NewVersion.Length > 0 ? HtmlEncode(e.NewVersion) : "&#x2014;";
                     string vulnCell = hasAnyVuln ? $"<td>{BuildVulnerabilityCell(e.Vulnerabilities)}</td>" : "";
-                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}</tr>");
+                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusStyle}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}</tr>");
                     dcRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -386,7 +386,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
                 string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
-                sb.Append($"<span class=\"vuln-badge vuln-new\" style=\"{NEW_VULN_STYLE}\" title=\"{HtmlEncode(sevLabel)}: {HtmlEncode(v.AdvisoryUrl)}\">");
+                sb.Append($"<span class=\"vuln-badge {NEW_VULN_CLASS}\" title=\"{HtmlEncode(sevLabel)}: {HtmlEncode(v.AdvisoryUrl)}\">");
                 if (v.AdvisoryUrl.Length > 0)
                     sb.Append($"<a href=\"{HtmlEncode(v.AdvisoryUrl)}\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline\">{HtmlEncode(advisoryId)}</a>");
                 else
@@ -413,7 +413,7 @@ namespace FolderDiffIL4DotNet.Services
 
                     string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
                     string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
-                    sb.Append($"<span class=\"vuln-badge vuln-resolved\" style=\"{RESOLVED_VULN_STYLE}\" title=\"Resolved: ");
+                    sb.Append($"<span class=\"vuln-badge {RESOLVED_VULN_CLASS}\" title=\"Resolved: ");
                     sb.Append(HtmlEncode(v.AdvisoryUrl));
                     sb.Append("\">");
                     if (v.AdvisoryUrl.Length > 0)
@@ -440,9 +440,9 @@ namespace FolderDiffIL4DotNet.Services
 
             var parts = new System.Collections.Generic.List<string>();
             if (resolved > 0)
-                parts.Add($"<span style=\"color:#16a34a\">{resolved} resolved</span>");
+                parts.Add($"<span class=\"vuln-resolved-count\">{resolved} resolved</span>");
             if (vulnNew > 0)
-                parts.Add($"<span style=\"color:#dc2626\">{vulnNew} vuln</span>");
+                parts.Add($"<span class=\"vuln-new-count\">{vulnNew} vuln</span>");
             return " " + string.Join(" ", parts);
         }
 
@@ -462,7 +462,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         // Vulnerability style constants / 脆弱性スタイル定数
-        private const string NEW_VULN_STYLE = "background:#fecaca;color:#991b1b;font-weight:bold;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block";
-        private const string RESOLVED_VULN_STYLE = "background:#dcfce7;color:#166534;text-decoration:line-through;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block";
+        private const string NEW_VULN_CLASS = "vuln-new";
+        private const string RESOLVED_VULN_CLASS = "vuln-resolved";
     }
 }
