@@ -16,7 +16,7 @@ namespace FolderDiffIL4DotNet.Services
     public sealed partial class HtmlReportGenerateService
     {
         private void AppendInlineDiffRow(
-            StringBuilder sb,
+            TextWriter writer,
             int idx,
             string relPath,
             string oldFolderAbsolutePath,
@@ -60,19 +60,19 @@ namespace FolderDiffIL4DotNet.Services
                 string encoded = HtmlEncode(diffLines[0].Text)
                     .Replace("InlineDiffMaxEditDistance", "<code>InlineDiffMaxEditDistance</code>");
                 encoded += $" (current value: <code>{maxEditDistance}</code>)";
-                sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"9\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
-                sb.AppendLine("</tr>");
+                writer.WriteLine("<tr class=\"diff-row\">");
+                writer.WriteLine($"  <td colspan=\"9\"><p class=\"diff-skipped\">#{recordNo} {encoded}</p></td>");
+                writer.WriteLine("</tr>");
                 return;
             }
 
             if (diffLines.Count > maxDiffLines)
             {
-                sb.AppendLine("<tr class=\"diff-row\">");
-                sb.AppendLine($"  <td colspan=\"9\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
+                writer.WriteLine("<tr class=\"diff-row\">");
+                writer.WriteLine($"  <td colspan=\"9\"><p class=\"diff-skipped\">#{recordNo} Inline diff skipped: diff too large " +
                     $"({diffLines.Count} diff lines; limit is {maxDiffLines}). " +
                     $"Increase <code>InlineDiffMaxDiffLines</code> in config to enable. (current value: <code>{maxDiffLines}</code>)</p></td>");
-                sb.AppendLine("</tr>");
+                writer.WriteLine("</tr>");
                 return;
             }
 
@@ -88,24 +88,24 @@ namespace FolderDiffIL4DotNet.Services
             string summary = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>";
             string diffViewHtml = BuildDiffViewHtml(diffLines);
 
-            sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine($"  <td colspan=\"9\">");
+            writer.WriteLine("<tr class=\"diff-row\">");
+            writer.WriteLine($"  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(diffViewHtml));
-                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
-                sb.AppendLine(summary);
-                sb.AppendLine("    </details>");
+                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
+                writer.WriteLine(summary);
+                writer.WriteLine("    </details>");
             }
             else
             {
-                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
-                sb.AppendLine(summary);
-                sb.Append(diffViewHtml);
-                sb.AppendLine("    </details>");
+                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
+                writer.WriteLine(summary);
+                writer.Write(diffViewHtml);
+                writer.WriteLine("    </details>");
             }
-            sb.AppendLine("  </td>");
-            sb.AppendLine("</tr>");
+            writer.WriteLine("  </td>");
+            writer.WriteLine("</tr>");
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         private void AppendAssemblySemanticChangesRow(
-            StringBuilder sb,
+            TextWriter writer,
             int idx,
             string assemblyPath,
             AssemblySemanticChangesSummary summary,
@@ -245,28 +245,28 @@ namespace FolderDiffIL4DotNet.Services
             string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show assembly semantic changes")}{highSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
 
-            sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine("  <td colspan=\"9\">");
+            writer.WriteLine("<tr class=\"diff-row\">");
+            writer.WriteLine("  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
-                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
-                sb.AppendLine(summaryLabel);
-                sb.AppendLine("    </details>");
+                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
+                writer.WriteLine(summaryLabel);
+                writer.WriteLine("    </details>");
             }
             else
             {
-                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
-                sb.AppendLine(summaryLabel);
-                sb.Append(contentHtml);
-                sb.AppendLine("    </details>");
+                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
+                writer.WriteLine(summaryLabel);
+                writer.Write(contentHtml);
+                writer.WriteLine("    </details>");
             }
-            sb.AppendLine("  </td>");
-            sb.AppendLine("</tr>");
+            writer.WriteLine("  </td>");
+            writer.WriteLine("</tr>");
         }
 
         private void AppendDependencyChangesRow(
-            StringBuilder sb,
+            TextWriter writer,
             int idx,
             DependencyChangeSummary summary,
             IReadOnlyConfigSettings config,
@@ -335,24 +335,24 @@ namespace FolderDiffIL4DotNet.Services
             string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show dependency changes")}{highSuffix}{vulnSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
 
-            sb.AppendLine("<tr class=\"diff-row\">");
-            sb.AppendLine("  <td colspan=\"9\">");
+            writer.WriteLine("<tr class=\"diff-row\">");
+            writer.WriteLine("  <td colspan=\"9\">");
             if (config.InlineDiffLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
-                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
-                sb.AppendLine(summaryLabel);
-                sb.AppendLine("    </details>");
+                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
+                writer.WriteLine(summaryLabel);
+                writer.WriteLine("    </details>");
             }
             else
             {
-                sb.AppendLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
-                sb.AppendLine(summaryLabel);
-                sb.Append(contentHtml);
-                sb.AppendLine("    </details>");
+                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
+                writer.WriteLine(summaryLabel);
+                writer.Write(contentHtml);
+                writer.WriteLine("    </details>");
             }
-            sb.AppendLine("  </td>");
-            sb.AppendLine("</tr>");
+            writer.WriteLine("  </td>");
+            writer.WriteLine("</tr>");
         }
 
         private static string DependencyChangeToMarker(string change)

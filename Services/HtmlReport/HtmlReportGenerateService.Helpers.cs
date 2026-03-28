@@ -14,41 +14,41 @@ namespace FolderDiffIL4DotNet.Services
     {
         // ── Table helpers ────────────────────────────────────────────────────
 
-        private static void AppendTableStart(StringBuilder sb, string headerBgColor, string col6Header,
+        private static void AppendTableStart(TextWriter writer, string headerBgColor, string col6Header,
             string hideClasses = "")
         {
             string bg = headerBgColor ?? TH_BG_DEFAULT;
             string tableCls = string.IsNullOrEmpty(hideClasses) ? "" : $" class=\"{hideClasses}\"";
-            sb.AppendLine("<div class=\"table-scroll\">");
-            sb.AppendLine($"<table{tableCls}>");
-            sb.AppendLine("<colgroup>");
-            sb.AppendLine("  <col class=\"col-no-g\">");
-            sb.AppendLine("  <col class=\"col-cb-g\">");
-            sb.AppendLine("  <col class=\"col-reason-g\">");
-            sb.AppendLine("  <col class=\"col-notes-g\">");
-            sb.AppendLine("  <col class=\"col-status-g\">");
-            sb.AppendLine("  <col class=\"col-path-g\">");
-            sb.AppendLine("  <col class=\"col-ts-g\">");
-            sb.AppendLine("  <col class=\"col-diff-g\">");
-            sb.AppendLine("  <col class=\"col-tag-g\">");
-            sb.AppendLine("  <col class=\"col-disasm-g\">");
-            sb.AppendLine("</colgroup>");
-            sb.AppendLine($"<thead><tr style=\"background:{bg}\">");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-no\">#</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-cb\">&#x2713;</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-reason-w\">{HtmlEncode("Justification")}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-notes-w\">{HtmlEncode("Notes")}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-status\">{HtmlEncode("Status")}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-path-w\">{HtmlEncode("File Path")}</th>");
-            sb.AppendLine($"  <th scope=\"col\">{HtmlEncode("Timestamp")}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-tag-hd th-resizable\" data-col-var=\"--col-tag-w\">{HtmlEncode("Estimated Change")}</th>");
-            sb.AppendLine($"  <th scope=\"col\" class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{HtmlEncode("Disassembler")}</th>");
-            sb.AppendLine("</tr></thead>");
+            writer.WriteLine("<div class=\"table-scroll\">");
+            writer.WriteLine($"<table{tableCls}>");
+            writer.WriteLine("<colgroup>");
+            writer.WriteLine("  <col class=\"col-no-g\">");
+            writer.WriteLine("  <col class=\"col-cb-g\">");
+            writer.WriteLine("  <col class=\"col-reason-g\">");
+            writer.WriteLine("  <col class=\"col-notes-g\">");
+            writer.WriteLine("  <col class=\"col-status-g\">");
+            writer.WriteLine("  <col class=\"col-path-g\">");
+            writer.WriteLine("  <col class=\"col-ts-g\">");
+            writer.WriteLine("  <col class=\"col-diff-g\">");
+            writer.WriteLine("  <col class=\"col-tag-g\">");
+            writer.WriteLine("  <col class=\"col-disasm-g\">");
+            writer.WriteLine("</colgroup>");
+            writer.WriteLine($"<thead><tr style=\"background:{bg}\">");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-no\">#</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-cb\">&#x2713;</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-reason-w\">{HtmlEncode("Justification")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-notes-w\">{HtmlEncode("Notes")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-status\">{HtmlEncode("Status")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-path-w\">{HtmlEncode("File Path")}</th>");
+            writer.WriteLine($"  <th scope=\"col\">{HtmlEncode("Timestamp")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-tag-hd th-resizable\" data-col-var=\"--col-tag-w\">{HtmlEncode("Estimated Change")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{HtmlEncode("Disassembler")}</th>");
+            writer.WriteLine("</tr></thead>");
         }
 
         private static void AppendFileRow(
-            StringBuilder sb,
+            TextWriter writer,
             string sectionPrefix,
             int idx,
             string path,
@@ -70,11 +70,11 @@ namespace FolderDiffIL4DotNet.Services
             // Normalize diff detail to category for filtering / フィルタリング用に diff detail をカテゴリに正規化
             string diffCat = NormalizeDiffCategory(col6);
             string diffAttr = string.IsNullOrEmpty(diffCat) ? "" : $" data-diff=\"{diffCat}\"";
-            sb.AppendLine($"<tr data-section=\"{sectionPrefix}\"{impAttr}{impsAttr}{diffAttr}>");
-            sb.AppendLine($"  <td class=\"col-no\">{recordNo}</td>");
-            sb.AppendLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{recordNo}\"></td>");
-            sb.AppendLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\" aria-label=\"{HtmlEncode("Justification")} #{recordNo}\"></td>");
-            sb.AppendLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\" aria-label=\"{HtmlEncode("Notes")} #{recordNo}\"></td>");
+            writer.WriteLine($"<tr data-section=\"{sectionPrefix}\"{impAttr}{impsAttr}{diffAttr}>");
+            writer.WriteLine($"  <td class=\"col-no\">{recordNo}</td>");
+            writer.WriteLine($"  <td class=\"col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{recordNo}\"></td>");
+            writer.WriteLine($"  <td class=\"col-reason\"><input type=\"text\" id=\"{reasonId}\" aria-label=\"{HtmlEncode("Justification")} #{recordNo}\"></td>");
+            writer.WriteLine($"  <td class=\"col-notes\"><input type=\"text\" id=\"{notesId}\" aria-label=\"{HtmlEncode("Notes")} #{recordNo}\"></td>");
             // Status column — marker based on section / Status列 — セクションに基づくマーカー
             string statusMarker = sectionPrefix switch
             {
@@ -85,20 +85,20 @@ namespace FolderDiffIL4DotNet.Services
                 "mod" or "sha256w" or "tsw" => "[ * ]",
                 _ => ""
             };
-            sb.AppendLine($"  <td class=\"col-status\">{HtmlEncode(statusMarker)}</td>");
-            sb.AppendLine($"  <td class=\"col-path\"><div class=\"path-wrap\"><span class=\"path-text\">{HtmlEncode(path)}</span><button class=\"btn-copy-path\" onclick=\"copyPath(this)\" title=\"Copy\" aria-label=\"{HtmlEncode("Copy file path")}\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg></button></div></td>");
-            sb.AppendLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
+            writer.WriteLine($"  <td class=\"col-status\">{HtmlEncode(statusMarker)}</td>");
+            writer.WriteLine($"  <td class=\"col-path\"><div class=\"path-wrap\"><span class=\"path-text\">{HtmlEncode(path)}</span><button class=\"btn-copy-path\" onclick=\"copyPath(this)\" title=\"Copy\" aria-label=\"{HtmlEncode("Copy file path")}\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><rect x=\"5.5\" y=\"5.5\" width=\"9\" height=\"9\" rx=\"1.5\"/><path d=\"M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5\"/></svg></button></div></td>");
+            writer.WriteLine($"  <td class=\"col-ts\">{HtmlEncode(timestamp)}</td>");
             string col6Cell = string.IsNullOrEmpty(col6) ? "" : $"<code>{HtmlEncode(col6)}</code>";
             if (!string.IsNullOrEmpty(importance))
                 col6Cell += $" <code>{HtmlEncode(importance)}</code>";
             else if (sectionPrefix == "mod" && diffCat == "ILMismatch")
                 col6Cell += " <code>Unknown</code>";
-            sb.AppendLine($"  <td class=\"col-diff\">{col6Cell}</td>");
+            writer.WriteLine($"  <td class=\"col-diff\">{col6Cell}</td>");
             string tagCell = FormatChangeTagHtml(changeTag);
-            sb.AppendLine($"  <td class=\"col-tag\">{tagCell}</td>");
+            writer.WriteLine($"  <td class=\"col-tag\">{tagCell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
-            sb.AppendLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
-            sb.AppendLine("</tr>");
+            writer.WriteLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
+            writer.WriteLine("</tr>");
         }
 
         private static string BuildDiffViewHtml(IReadOnlyList<TextDiffer.DiffLine> diffLines)
@@ -353,15 +353,15 @@ namespace FolderDiffIL4DotNet.Services
         /// Appends the Disassembler Availability section as a standalone rounded block.
         /// 逆アセンブラ利用可否を独立した角丸セクションとして追加します。
         /// </summary>
-        private static void AppendDisassemblerAvailabilitySection(StringBuilder sb, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
+        private static void AppendDisassemblerAvailabilitySection(TextWriter writer, IReadOnlyList<DisassemblerProbeResult>? probeResults, string inUseHeaderText)
         {
             if (probeResults == null || probeResults.Count == 0)
             {
                 return;
             }
-            sb.AppendLine("<div class=\"header-path\">");
-            sb.AppendLine($"  <div class=\"header-path-label\">{HtmlEncode("Disassembler Availability")}</div>");
-            sb.AppendLine("  <div class=\"header-path-value\">");
+            writer.WriteLine("<div class=\"header-path\">");
+            writer.WriteLine($"  <div class=\"header-path-label\">{HtmlEncode("Disassembler Availability")}</div>");
+            writer.WriteLine("  <div class=\"header-path-value\">");
             foreach (var probe in probeResults)
             {
                 // Check if this tool is the one actually used / このツールが実際に使用されたかチェック
@@ -373,25 +373,25 @@ namespace FolderDiffIL4DotNet.Services
                         : $"<span style=\"color:#22863a\">Available ({HtmlEncode(probe.Version)})</span>")
                     : "<span style=\"color:#b31d28\">Not Available</span>";
                 var inUseLabel = isInUse ? " — In Use" : "";
-                sb.AppendLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}{inUseLabel}</div>");
+                writer.WriteLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}{inUseLabel}</div>");
             }
-            sb.AppendLine("  </div>");
-            sb.AppendLine("</div>");
+            writer.WriteLine("  </div>");
+            writer.WriteLine("</div>");
         }
 
         /// <summary>Appends a filter table row with checkbox, label, and description. / チェックボックス、ラベル、説明を含むフィルターテーブル行を追加します。</summary>
-        private static void AppendFilterTableRow(StringBuilder sb, string id, string labelHtml, string description)
+        private static void AppendFilterTableRow(TextWriter writer, string id, string labelHtml, string description)
         {
-            sb.AppendLine($"<tr><td class=\"ft-cb\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{id}\">{labelHtml}</label></td><td class=\"ft-desc\">{description}</td></tr>");
+            writer.WriteLine($"<tr><td class=\"ft-cb\"><input type=\"checkbox\" id=\"{id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{id}\">{labelHtml}</label></td><td class=\"ft-desc\">{description}</td></tr>");
         }
 
         /// <summary>
         /// Appends filter table cells (cb + label + desc) without <c>tr</c> wrapping, for 2-column layouts.
         /// 2段組みレイアウト用に、<c>tr</c> なしでフィルターテーブルセル（cb + label + desc）を追加します。
         /// </summary>
-        private static void AppendFilterTableCells(StringBuilder sb, (string Id, string Display, string Description) entry)
+        private static void AppendFilterTableCells(TextWriter writer, (string Id, string Display, string Description) entry)
         {
-            sb.Append($"<td class=\"ft-cb\"><input type=\"checkbox\" id=\"{entry.Id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{entry.Id}\">{entry.Display}</label></td><td class=\"ft-desc\">{HtmlEncode(entry.Description)}</td>");
+            writer.Write($"<td class=\"ft-cb\"><input type=\"checkbox\" id=\"{entry.Id}\" checked onchange=\"applyFilters()\"></td><td class=\"ft-label\"><label for=\"{entry.Id}\">{entry.Display}</label></td><td class=\"ft-desc\">{HtmlEncode(entry.Description)}</td>");
         }
 
         /// <summary>

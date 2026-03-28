@@ -1,4 +1,4 @@
-using System.Text;
+using System.IO;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -14,7 +14,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string JS_PLACEHOLDER_TOTAL_FILES = "{{TOTAL_FILES}}";
         private const string JS_PLACEHOLDER_TOTAL_FILES_DETAIL = "{{TOTAL_FILES_DETAIL}}";
 
-        private static void AppendJs(StringBuilder sb, string storageKey, string reportDate, int totalFiles, string totalFilesDetail)
+        private static void AppendJs(TextWriter writer, string storageKey, string reportDate, int totalFiles, string totalFilesDetail)
         {
             var jsTemplate = LoadEmbeddedResource(JS_RESOURCE_NAME);
             var js = jsTemplate
@@ -22,9 +22,9 @@ namespace FolderDiffIL4DotNet.Services
                 .Replace(JS_PLACEHOLDER_REPORT_DATE, reportDate)
                 .Replace(JS_PLACEHOLDER_TOTAL_FILES, totalFiles.ToString(System.Globalization.CultureInfo.InvariantCulture))
                 .Replace(JS_PLACEHOLDER_TOTAL_FILES_DETAIL, totalFilesDetail);
-            sb.AppendLine("<script>");
-            sb.AppendLine(js);
-            sb.AppendLine("</script>");
+            writer.WriteLine("<script>");
+            writer.WriteLine(js);
+            writer.WriteLine("</script>");
         }
     }
 }
