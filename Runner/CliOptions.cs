@@ -7,6 +7,7 @@ namespace FolderDiffIL4DotNet.Runner
     internal sealed record CliOptions(
         bool ShowHelp,
         bool ShowVersion,
+        bool ShowBanner,
         bool NoPause,
         string? ConfigPath,
         int? ThreadsOverride,

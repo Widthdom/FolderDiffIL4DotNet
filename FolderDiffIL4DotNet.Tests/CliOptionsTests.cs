@@ -16,6 +16,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
@@ -43,6 +44,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
@@ -83,6 +85,21 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { arg });
 
             Assert.True(opts.ShowVersion);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --banner
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--banner")]
+        [InlineData("--BANNER")]
+        public void ParseCliOptions_BannerFlag_SetsShowBanner(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.ShowBanner);
             Assert.Null(opts.ParseError);
         }
 
@@ -295,6 +312,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.True(opts.NoPause);
             Assert.Equal("/etc/my.json", opts.ConfigPath);
             Assert.Equal(4, opts.ThreadsOverride);

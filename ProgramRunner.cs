@@ -65,6 +65,12 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            if (opts.ShowBanner)
+            {
+                ConsoleBanner.Print();
+                return 0;
+            }
+
             if (opts.PrintConfig)
             {
                 return await PrintConfigAsync(opts.ConfigPath);

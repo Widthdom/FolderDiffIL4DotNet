@@ -254,6 +254,40 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --banner early-exit test
+        // --banner 早期終了テスト
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_BannerFlag_ExitsZeroWithBannerOutput()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--banner" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                // The banner contains the ASCII art "FOLDER" text
+                // バナーには ASCII アートの "FOLDER" テキストが含まれる
+                Assert.Contains("FOLDER", output, StringComparison.Ordinal);
+                Assert.Contains("DIFF", output, StringComparison.Ordinal);
+                // Logger should NOT have been initialized
+                // ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // Unknown flag -> exit code 2 (InvalidArguments)
         // 不明フラグ -> 終了コード 2（InvalidArguments）
         // -----------------------------------------------------------------------
