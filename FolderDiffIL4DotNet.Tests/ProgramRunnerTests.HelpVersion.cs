@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
