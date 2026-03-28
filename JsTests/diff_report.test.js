@@ -779,3 +779,526 @@ describe('corrupted localStorage', () => {
     expect(document.getElementById('note-type').value).toBe('12345');
   });
 });
+
+// ─── esc (HTML escaping) ────────────────────────────────────────────────────
+// HTML エスケープユーティリティのテスト
+describe('esc', () => {
+  beforeEach(() => loadScript());
+
+  test('escapes &, <, >, "', () => {
+    expect(window.esc('a & b < c > d "e"')).toBe('a &amp; b &lt; c &gt; d &quot;e&quot;');
+  });
+
+  test('returns empty string for null/undefined/empty', () => {
+    expect(window.esc(null)).toBe('');
+    expect(window.esc(undefined)).toBe('');
+    expect(window.esc('')).toBe('');
+  });
+
+  test('leaves plain text unchanged', () => {
+    expect(window.esc('hello world 123')).toBe('hello world 123');
+  });
+
+  test('handles Japanese text without escaping', () => {
+    expect(window.esc('日本語テスト')).toBe('日本語テスト');
+  });
+});
+
+// ─── readSavedStateFromStorage ──────────────────────────────────────────────
+// localStorage から保存状態を読み取るテスト
+describe('readSavedStateFromStorage', () => {
+  beforeEach(() => loadScript());
+
+  test('returns object from localStorage', () => {
+    localStorage.setItem('test-key', JSON.stringify({ chk: true }));
+    const result = window.readSavedStateFromStorage('null');
+    expect(result).toEqual({ chk: true });
+  });
+
+  test('returns null for invalid JSON', () => {
+    localStorage.setItem('test-key', 'not json');
+    const result = window.readSavedStateFromStorage('null');
+    expect(result).toBeNull();
+  });
+
+  test('falls back to fallbackJson when key missing', () => {
+    const result = window.readSavedStateFromStorage('{"a":1}');
+    expect(result).toEqual({ a: 1 });
+  });
+
+  test('returns null when fallbackJson is "null" and key missing', () => {
+    const result = window.readSavedStateFromStorage('null');
+    expect(result).toBeNull();
+  });
+
+  test('returns array for array JSON (typeof array is "object")', () => {
+    // Arrays pass the typeof === 'object' check in readSavedStateFromStorage
+    // 配列は typeof === 'object' チェックを通過する
+    localStorage.setItem('test-key', '[1,2,3]');
+    const result = window.readSavedStateFromStorage('null');
+    expect(result).toEqual([1, 2, 3]);
+  });
+});
+
+// ──�� Diff Detail filter (SHA256/IL/Text) ────────────────────────────────────
+// Diff Detail フィルタ（SHA256/IL/Text）のテスト
+describe('applyFilters — diff detail filter', () => {
+  function loadDiffFilterEnv(rows) {
+    const filterBar = `
+      <input type="checkbox" id="filter-imp-high" checked>
+      <input type="checkbox" id="filter-imp-medium" checked>
+      <input type="checkbox" id="filter-imp-low" checked>
+      <input type="checkbox" id="filter-diff-sha256match" checked>
+      <input type="checkbox" id="filter-diff-sha256mismatch" checked>
+      <input type="checkbox" id="filter-diff-ilmatch" checked>
+      <input type="checkbox" id="filter-diff-ilmismatch" checked>
+      <input type="checkbox" id="filter-diff-textmatch" checked>
+      <input type="checkbox" id="filter-diff-textmismatch" checked>
+      <input type="checkbox" id="filter-unchecked">
+      <input type="text" id="filter-search" value="">
+      <span id="save-status"></span>
+    `;
+    const tableRows = rows.map(r =>
+      `<tr data-section="${r.section}" ${r.diff ? 'data-diff="' + r.diff + '"' : ''}>
+        <td><span class="path-text">${r.path}</span></td>
+      </tr>`
+    ).join('\n');
+    loadScript({
+      bodyHtml: `${filterBar}<table><tbody>${tableRows}</tbody></table>`,
+    });
+    fireDOMContentLoaded();
+  }
+
+  test('hides SHA256Match rows when filter unchecked', () => {
+    loadDiffFilterEnv([
+      { section: 'modified', diff: 'SHA256Match', path: 'a.dll' },
+      { section: 'modified', diff: 'ILMismatch', path: 'b.dll' },
+    ]);
+    document.getElementById('filter-diff-sha256match').checked = false;
+    window.applyFilters();
+
+    const rows = document.querySelectorAll('tr[data-section]');
+    expect(rows[0].classList.contains('filter-hidden')).toBe(true);
+    expect(rows[1].classList.contains('filter-hidden')).toBe(false);
+  });
+
+  test('hides ILMatch rows when filter unchecked', () => {
+    loadDiffFilterEnv([
+      { section: 'modified', diff: 'ILMatch', path: 'a.dll' },
+      { section: 'modified', diff: 'TextMismatch', path: 'b.txt' },
+    ]);
+    document.getElementById('filter-diff-ilmatch').checked = false;
+    window.applyFilters();
+
+    const rows = document.querySelectorAll('tr[data-section]');
+    expect(rows[0].classList.contains('filter-hidden')).toBe(true);
+    expect(rows[1].classList.contains('filter-hidden')).toBe(false);
+  });
+
+  test('hides TextMismatch rows when filter unchecked', () => {
+    loadDiffFilterEnv([
+      { section: 'modified', diff: 'TextMatch', path: 'a.config' },
+      { section: 'modified', diff: 'TextMismatch', path: 'b.config' },
+    ]);
+    document.getElementById('filter-diff-textmismatch').checked = false;
+    window.applyFilters();
+
+    const rows = document.querySelectorAll('tr[data-section]');
+    expect(rows[0].classList.contains('filter-hidden')).toBe(false);
+    expect(rows[1].classList.contains('filter-hidden')).toBe(true);
+  });
+
+  test('rows without data-diff are not affected by diff filter', () => {
+    loadDiffFilterEnv([
+      { section: 'added', path: 'new.dll' },
+    ]);
+    // Uncheck all diff filters
+    document.getElementById('filter-diff-sha256match').checked = false;
+    document.getElementById('filter-diff-sha256mismatch').checked = false;
+    document.getElementById('filter-diff-ilmatch').checked = false;
+    document.getElementById('filter-diff-ilmismatch').checked = false;
+    document.getElementById('filter-diff-textmatch').checked = false;
+    document.getElementById('filter-diff-textmismatch').checked = false;
+    window.applyFilters();
+
+    const rows = document.querySelectorAll('tr[data-section]');
+    expect(rows[0].classList.contains('filter-hidden')).toBe(false);
+  });
+
+  test('combined diff + importance filter hides correctly', () => {
+    loadScript({
+      bodyHtml: `
+        <input type="checkbox" id="filter-imp-high" checked>
+        <input type="checkbox" id="filter-imp-medium" checked>
+        <input type="checkbox" id="filter-imp-low" checked>
+        <input type="checkbox" id="filter-diff-sha256match" checked>
+        <input type="checkbox" id="filter-diff-sha256mismatch" checked>
+        <input type="checkbox" id="filter-diff-ilmatch">
+        <input type="checkbox" id="filter-diff-ilmismatch" checked>
+        <input type="checkbox" id="filter-diff-textmatch" checked>
+        <input type="checkbox" id="filter-diff-textmismatch" checked>
+        <input type="checkbox" id="filter-unchecked">
+        <input type="text" id="filter-search" value="">
+        <span id="save-status"></span>
+        <table><tbody>
+          <tr data-section="modified" data-diff="ILMatch" data-importance="High">
+            <td><span class="path-text">matched.dll</span></td>
+          </tr>
+          <tr data-section="modified" data-diff="ILMismatch" data-importance="Low">
+            <td><span class="path-text">changed.dll</span></td>
+          </tr>
+        </tbody></table>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    // ILMatch filter unchecked, importance filter all checked
+    window.applyFilters();
+
+    const rows = document.querySelectorAll('tr[data-section]');
+    // ILMatch row should be hidden (diff filter blocks it)
+    expect(rows[0].classList.contains('filter-hidden')).toBe(true);
+    // ILMismatch + Low row should be visible
+    expect(rows[1].classList.contains('filter-hidden')).toBe(false);
+  });
+});
+
+// ─── copyPath ───────────────────────────────────────────────────────────────
+// クリップボードコピーのテスト
+describe('copyPath', () => {
+  test('copies path text from .path-text span', async () => {
+    loadScript({
+      bodyHtml: `
+        <table><tr><td>
+          <span class="path-text">src/MyApp.dll</span>
+          <button id="copy-btn"><svg>icon</svg></button>
+        </td></tr></table>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    let clipboardText = '';
+    navigator.clipboard = {
+      writeText: (text) => { clipboardText = text; return Promise.resolve(); },
+    };
+
+    const btn = document.getElementById('copy-btn');
+    window.copyPath(btn);
+    await new Promise(r => setTimeout(r, 10));
+    expect(clipboardText).toBe('src/MyApp.dll');
+  });
+});
+
+// ─── setupLazySection ───────────────────────────────────────────────────────
+// 遅延セクションレンダリングのテスト
+describe('setupLazySection', () => {
+  test('decodes and inserts HTML on first toggle', () => {
+    const sectionHtml = '<table><tr><td>lazy section content</td></tr></table>';
+    const b64 = Buffer.from(sectionHtml, 'utf-8').toString('base64');
+    loadScript({
+      bodyHtml: `
+        <details data-lazy-section="${b64}">
+          <summary>Unchanged Files</summary>
+        </details>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    const details = document.querySelector('details');
+    details.setAttribute('open', '');
+    details.dispatchEvent(new Event('toggle'));
+
+    expect(details.hasAttribute('data-lazy-section')).toBe(false);
+    expect(details.querySelector('table')).not.toBeNull();
+  });
+
+  test('wires save events for new inputs in non-reviewed mode', () => {
+    const sectionHtml = '<input type="checkbox" id="cb_unch_0"><span id="save-status"></span>';
+    const b64 = Buffer.from(sectionHtml, 'utf-8').toString('base64');
+    loadScript({
+      bodyHtml: `
+        <details data-lazy-section="${b64}">
+          <summary>Unchanged Files</summary>
+        </details>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    const details = document.querySelector('details');
+    details.setAttribute('open', '');
+    details.dispatchEvent(new Event('toggle'));
+
+    const cb = document.getElementById('cb_unch_0');
+    expect(cb).not.toBeNull();
+    // Trigger change event — autoSave should fire
+    cb.checked = true;
+    cb.dispatchEvent(new Event('change'));
+    const stored = JSON.parse(localStorage.getItem('test-key') || '{}');
+    expect(stored['cb_unch_0']).toBe(true);
+  });
+});
+
+// ─── forceDecodeLazySections ────────────────────────────────────────────────
+// 全 lazy セクション強制デコードのテスト
+describe('forceDecodeLazySections', () => {
+  test('decodes all lazy sections without requiring toggle', () => {
+    const html1 = '<div class="sect-a">A</div>';
+    const html2 = '<div class="sect-b">B</div>';
+    const b64a = Buffer.from(html1, 'utf-8').toString('base64');
+    const b64b = Buffer.from(html2, 'utf-8').toString('base64');
+    loadScript({
+      bodyHtml: `
+        <details data-lazy-section="${b64a}"><summary>A</summary></details>
+        <details data-lazy-section="${b64b}"><summary>B</summary></details>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    window.forceDecodeLazySections();
+
+    expect(document.querySelectorAll('details[data-lazy-section]').length).toBe(0);
+    expect(document.querySelector('.sect-a')).not.toBeNull();
+    expect(document.querySelector('.sect-b')).not.toBeNull();
+  });
+});
+
+// ─── toggleDiffView (side-by-side) ──────────────────────────────────────────
+// サイドバイサイド差分切替のテスト
+describe('toggleDiffView', () => {
+  function buildDiffDetails(rows) {
+    const trs = rows.map(r => {
+      if (r.type === 'del') {
+        return `<tr class="diff-del-tr"><td class="diff-ln">${r.oldLn || ''}</td><td class="diff-ln">${r.newLn || ''}</td><td class="diff-del-td">${r.text}</td></tr>`;
+      }
+      if (r.type === 'add') {
+        return `<tr class="diff-add-tr"><td class="diff-ln">${r.oldLn || ''}</td><td class="diff-ln">${r.newLn || ''}</td><td class="diff-add-td">${r.text}</td></tr>`;
+      }
+      if (r.type === 'ctx') {
+        return `<tr class="diff-ctx-tr"><td class="diff-ln">${r.ln || ''}</td><td class="diff-ctx-td">${r.text}</td></tr>`;
+      }
+      if (r.type === 'hunk') {
+        return `<tr class="diff-hunk-tr"><td class="diff-ln"></td><td class="diff-hunk-td">${r.text}</td></tr>`;
+      }
+      return '';
+    }).join('');
+
+    return `
+      <details id="test-detail">
+        <summary>Diff</summary>
+        <button class="sbs-toggle">Side-by-side</button>
+        <table class="diff-table"><tbody>${trs}</tbody></table>
+      </details>
+      <span id="save-status"></span>
+    `;
+  }
+
+  test('switches to sbs-mode and back to unified', () => {
+    loadScript({
+      bodyHtml: buildDiffDetails([
+        { type: 'del', oldLn: '1', text: 'old line' },
+        { type: 'add', newLn: '1', text: 'new line' },
+      ]),
+    });
+    fireDOMContentLoaded();
+
+    const details = document.getElementById('test-detail');
+    const table = details.querySelector('.diff-table');
+    const btn = details.querySelector('.sbs-toggle');
+
+    // Switch to side-by-side
+    window.toggleDiffView(details);
+    expect(table.classList.contains('sbs-mode')).toBe(true);
+    expect(btn.textContent).toBe('Unified');
+    // Should have 3-column layout with colgroup
+    expect(table.querySelector('.sbs-colgroup')).not.toBeNull();
+
+    // Switch back to unified
+    window.toggleDiffView(details);
+    expect(table.classList.contains('sbs-mode')).toBe(false);
+    expect(btn.textContent).toBe('Side-by-side');
+    expect(table.querySelector('.sbs-colgroup')).toBeNull();
+  });
+
+  test('pairs consecutive del+add rows into 3-column rows', () => {
+    loadScript({
+      bodyHtml: buildDiffDetails([
+        { type: 'del', oldLn: '5', text: 'removed' },
+        { type: 'add', newLn: '5', text: 'added' },
+      ]),
+    });
+    fireDOMContentLoaded();
+
+    window.toggleDiffView(document.getElementById('test-detail'));
+
+    const tbody = document.querySelector('.diff-table tbody');
+    const row = tbody.querySelector('tr');
+    const cells = row.querySelectorAll('td');
+    // 3 cells: line num, old (sbs-old), new (sbs-new)
+    expect(cells.length).toBe(3);
+    expect(cells[1].classList.contains('sbs-old')).toBe(true);
+    expect(cells[2].classList.contains('sbs-new')).toBe(true);
+  });
+
+  test('standalone deletion gets sbs-old + sbs-empty', () => {
+    loadScript({
+      bodyHtml: buildDiffDetails([
+        { type: 'del', oldLn: '10', text: 'deleted line' },
+        { type: 'ctx', ln: '11', text: 'context' },
+      ]),
+    });
+    fireDOMContentLoaded();
+
+    window.toggleDiffView(document.getElementById('test-detail'));
+
+    const rows = document.querySelectorAll('.diff-table tbody tr');
+    // First row: standalone del
+    const delCells = rows[0].querySelectorAll('td');
+    expect(delCells[1].classList.contains('sbs-old')).toBe(true);
+    expect(delCells[2].classList.contains('sbs-empty')).toBe(true);
+  });
+
+  test('standalone addition gets sbs-empty + sbs-new', () => {
+    loadScript({
+      bodyHtml: buildDiffDetails([
+        { type: 'ctx', ln: '1', text: 'context' },
+        { type: 'add', newLn: '2', text: 'added line' },
+      ]),
+    });
+    fireDOMContentLoaded();
+
+    window.toggleDiffView(document.getElementById('test-detail'));
+
+    const rows = document.querySelectorAll('.diff-table tbody tr');
+    // Second row: standalone add
+    const addCells = rows[1].querySelectorAll('td');
+    expect(addCells[1].classList.contains('sbs-empty')).toBe(true);
+    expect(addCells[2].classList.contains('sbs-new')).toBe(true);
+  });
+
+  test('hunk header spans 2 columns', () => {
+    loadScript({
+      bodyHtml: buildDiffDetails([
+        { type: 'hunk', text: '@@ -1,5 +1,6 @@' },
+      ]),
+    });
+    fireDOMContentLoaded();
+
+    window.toggleDiffView(document.getElementById('test-detail'));
+
+    const row = document.querySelector('.diff-table tbody tr.diff-hunk-tr');
+    const hunkTd = row.querySelector('.diff-hunk-td');
+    expect(hunkTd.colSpan).toBe(2);
+  });
+});
+
+// ─── buildExcelRow ──────────────────────────────────────────────────────────
+// Excel 行構築のテスト
+describe('buildExcelRow', () => {
+  beforeEach(() => loadScript());
+
+  test('extracts cells from a standard 10-cell row', () => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>1</td>
+      <td><input type="checkbox" checked></td>
+      <td><input type="text" value="OK"></td>
+      <td><input type="text" value="note"></td>
+      <td>Modified</td>
+      <td><span class="path-text">src/App.dll</span></td>
+      <td>2026-01-01 12:00:00</td>
+      <td>ILMismatch</td>
+      <td>BodyEdit</td>
+      <td>dotnet-ildasm</td>
+    `;
+
+    const html = window.buildExcelRow(tr);
+    expect(html).toContain('src/App.dll');
+    expect(html).toContain('\u2713'); // checkmark
+    expect(html).toContain('OK');
+    expect(html).toContain('note');
+    expect(html).toContain('Modified');
+    expect(html).toContain('ILMismatch');
+    expect(html).toContain('BodyEdit');
+    expect(html).toContain('dotnet-ildasm');
+  });
+
+  test('returns empty string for rows with fewer than 10 cells', () => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>1</td><td>2</td><td>3</td>';
+    expect(window.buildExcelRow(tr)).toBe('');
+  });
+
+  test('unchecked checkbox produces empty string', () => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>1</td>
+      <td><input type="checkbox"></td>
+      <td><input type="text" value=""></td>
+      <td><input type="text" value=""></td>
+      <td>Added</td>
+      <td><span class="path-text">new.dll</span></td>
+      <td>2026-01-01</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    `;
+
+    const html = window.buildExcelRow(tr);
+    // Should not contain checkmark
+    expect(html).not.toContain('\u2713');
+    expect(html).toContain('new.dll');
+  });
+});
+
+// ─── Keyboard navigation (Escape) ──────────────────────────────────────────
+// キーボードナビゲーション（Escape キー）のテスト
+describe('keyboard navigation', () => {
+  test('Escape closes nearest open details and focuses summary', () => {
+    loadScript({
+      bodyHtml: `
+        <details id="det" open>
+          <summary id="sum">Summary</summary>
+          <button id="inner-btn">Click</button>
+        </details>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    const btn = document.getElementById('inner-btn');
+    btn.focus();
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    document.dispatchEvent(event);
+
+    const details = document.getElementById('det');
+    expect(details.hasAttribute('open')).toBe(false);
+  });
+
+  test('Escape does nothing when no details is focused', () => {
+    loadScript({
+      bodyHtml: `
+        <details id="det" open>
+          <summary>Summary</summary>
+          <p>content</p>
+        </details>
+        <button id="outside-btn">Outside</button>
+        <span id="save-status"></span>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    // Focus is not inside a details element
+    document.getElementById('outside-btn').focus();
+
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+    document.dispatchEvent(event);
+
+    // Details should remain open since focus was outside
+    expect(document.getElementById('det').hasAttribute('open')).toBe(true);
+  });
+});
