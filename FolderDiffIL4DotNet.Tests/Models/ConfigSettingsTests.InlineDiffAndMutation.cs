@@ -98,6 +98,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             AssertJsonBool(root, "ShouldIncludeILCacheStatsInReport", ConfigSettings.DefaultShouldIncludeILCacheStatsInReport);
             AssertJsonBool(root, "ShouldGenerateHtmlReport", ConfigSettings.DefaultShouldGenerateHtmlReport);
             AssertJsonBool(root, "ShouldGenerateAuditLog", ConfigSettings.DefaultShouldGenerateAuditLog);
+            AssertJsonBool(root, "ShouldGenerateSbom", ConfigSettings.DefaultShouldGenerateSbom);
             AssertJsonBool(root, "ShouldOutputILText", ConfigSettings.DefaultShouldOutputILText);
             AssertJsonBool(root, "ShouldOutputFileTimestamps", ConfigSettings.DefaultShouldOutputFileTimestamps);
             AssertJsonBool(root, "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp", ConfigSettings.DefaultShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
@@ -126,6 +127,11 @@ namespace FolderDiffIL4DotNet.Tests.Models
             AssertJsonInt(root, "InlineDiffMaxDiffLines", ConfigSettings.DefaultInlineDiffMaxDiffLines);
             AssertJsonInt(root, "InlineDiffMaxOutputLines", ConfigSettings.DefaultInlineDiffMaxOutputLines);
             AssertJsonInt(root, "MaxLogGenerations", ConfigSettings.DefaultMaxLogGenerations);
+
+            // String settings / 文字列設定
+            Assert.True(root.TryGetProperty("SbomFormat", out var sbomFormatEl),
+                "config.sample.jsonc is missing property 'SbomFormat'");
+            Assert.Equal(ConfigSettings.DefaultSbomFormat, sbomFormatEl.GetString());
 
             // List defaults: IgnoredExtensions / リストデフォルト: IgnoredExtensions
             if (root.TryGetProperty("IgnoredExtensions", out var ignoredEl))

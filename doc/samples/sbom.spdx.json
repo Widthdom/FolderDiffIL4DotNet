@@ -1,0 +1,117 @@
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "spdxid": "SPDXRef-DOCUMENT",
+  "name": "FolderDiffIL4DotNet-SBOM",
+  "documentNamespace": "https://folderdiff.local/sbom/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "creationInfo": {
+    "created": "2026-03-28T10:30:00Z",
+    "creators": [
+      "Tool: FolderDiffIL4DotNet-1.10.0"
+    ]
+  },
+  "packages": [
+    {
+      "spdxid": "SPDXRef-Package-0",
+      "name": "App.Core.dll",
+      "versionInfo": "",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        }
+      ],
+      "comment": "Status: Added"
+    },
+    {
+      "spdxid": "SPDXRef-Package-1",
+      "name": "Lib.Utils.dll",
+      "versionInfo": "",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3"
+        }
+      ],
+      "comment": "Status: Modified, DiffDetail: ILMismatch"
+    },
+    {
+      "spdxid": "SPDXRef-Package-2",
+      "name": "Legacy.Module.dll",
+      "versionInfo": "",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"
+        }
+      ],
+      "comment": "Status: Removed"
+    },
+    {
+      "spdxid": "SPDXRef-Package-3",
+      "name": "appsettings.json",
+      "versionInfo": "",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5"
+        }
+      ],
+      "comment": "Status: Modified, DiffDetail: TextMismatch"
+    },
+    {
+      "spdxid": "SPDXRef-Package-4",
+      "name": "App.Core.exe",
+      "versionInfo": "",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6"
+        }
+      ],
+      "comment": "Status: Unchanged, DiffDetail: ILMatch"
+    },
+    {
+      "spdxid": "SPDXRef-Package-5",
+      "name": "web.config",
+      "versionInfo": "",
+      "downloadLocation": "NOASSERTION",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "NOASSERTION",
+      "copyrightText": "NOASSERTION",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1"
+        }
+      ],
+      "comment": "Status: Unchanged, DiffDetail: SHA256Match"
+    }
+  ]
+}

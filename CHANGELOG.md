@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **SBOM (Software Bill of Materials) generation (`ShouldGenerateSbom`, `SbomFormat`)** — New opt-in config settings that generate an SBOM listing all components found in the compared folders, for supply-chain security compliance (Executive Order 14028, EU CRA, etc.). Supports two industry-standard formats: CycloneDX 1.5 JSON (`sbom.cdx.json`) and SPDX 2.3 JSON (`sbom.spdx.json`). Each component entry includes file path, diff status (Added/Removed/Modified/Unchanged), SHA256 hash, and diff detail. Disabled by default. New files: [`Models/SbomModels.cs`](Models/SbomModels.cs) (CycloneDX + SPDX model classes, `SbomFormat` enum), [`Services/SbomGenerateService.cs`](Services/SbomGenerateService.cs) (generation service with `BuildComponentList`, `SerializeCycloneDx`, `SerializeSpdx`). Config: [`Models/ConfigSettings.ReportSettings.cs`](Models/ConfigSettings.ReportSettings.cs), [`Models/ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs), [`Models/IReadOnlyConfigSettings.cs`](Models/IReadOnlyConfigSettings.cs). Pipeline: [`Runner/RunScopeBuilder.cs`](Runner/RunScopeBuilder.cs), [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs). Tests: [`SbomGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs) (25 tests). Updated [`doc/config.sample.jsonc`](doc/config.sample.jsonc), [`README.md`](README.md) (EN+JA config tables, output lists), [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md), [`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md). Test count: 981 (+25).
+
 #### Performance
 
 - **Streaming HTML report generation** — Replaced in-memory `StringBuilder`-based HTML report construction with streaming `TextWriter`/`StreamWriter` output in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs) and all its partial files ([`Sections`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`DetailRows`](Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs), [`Helpers`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`Js`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)). The report is now written chunk-by-chunk to disk via a 64 KB buffered `StreamWriter` instead of accumulating the entire HTML string in memory before a single `File.WriteAllText()` call. This reduces peak memory usage for large comparison reports (thousands of files with inline diffs) and avoids potential OOM on very large reports. No behavioral or output format changes. Test count: 956 (unchanged).
@@ -751,6 +755,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **SBOM（ソフトウェア部品表）生成（`ShouldGenerateSbom`、`SbomFormat`）** — 比較対象フォルダ内の全コンポーネントを一覧化する SBOM を生成する新しいオプトイン設定。サプライチェーンセキュリティ規制対応（大統領令 14028、EU CRA 等）向け。2 つの業界標準形式をサポート: CycloneDX 1.5 JSON（`sbom.cdx.json`）および SPDX 2.3 JSON（`sbom.spdx.json`）。各コンポーネントエントリにはファイルパス、差分ステータス（Added/Removed/Modified/Unchanged）、SHA256 ハッシュ、差分詳細を含む。デフォルトは無効。新規ファイル: [`Models/SbomModels.cs`](Models/SbomModels.cs)（CycloneDX + SPDX モデルクラス、`SbomFormat` 列挙型）、[`Services/SbomGenerateService.cs`](Services/SbomGenerateService.cs)（生成サービス）。設定: [`Models/ConfigSettings.ReportSettings.cs`](Models/ConfigSettings.ReportSettings.cs)、[`Models/ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs)、[`Models/IReadOnlyConfigSettings.cs`](Models/IReadOnlyConfigSettings.cs)。パイプライン: [`Runner/RunScopeBuilder.cs`](Runner/RunScopeBuilder.cs)、[`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs)。テスト: [`SbomGenerateServiceTests`](FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs)（25 件）。[`doc/config.sample.jsonc`](doc/config.sample.jsonc)、[`README.md`](README.md)（EN+JA 設定表・出力一覧）、[`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)、[`TESTING_GUIDE.md`](doc/TESTING_GUIDE.md) を更新。テスト件数: 981（+25）。
 
 #### Performance
 

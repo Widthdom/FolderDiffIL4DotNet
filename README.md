@@ -154,6 +154,7 @@ Main output:
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
 - `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json))
 - `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) — structured audit log with SHA256 integrity hashes for tamper detection (disable with `"ShouldGenerateAuditLog": false`)
+- `Reports/<label>/sbom.cdx.json` or `sbom.spdx.json` — SBOM (Software Bill of Materials) in CycloneDX or SPDX format (enable with `"ShouldGenerateSbom": true`)
 - Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#config-en-shouldoutputiltext) is `true`
 
 Process exit codes:
@@ -572,6 +573,16 @@ Override only the settings you want to change. For example:
       <td><code>true</code></td>
       <td>When <code>true</code>, generates <a href="doc/samples/audit_log.json"><code>audit_log.json</code></a> alongside the diff reports. The JSON file records per-file comparison results, run metadata (app version, computer name, timestamps), summary statistics, and SHA256 integrity hashes of <code>diff_report.md</code> and <code>diff_report.html</code> for tamper detection. Set to <code>false</code> to skip audit log generation.</td>
     </tr>
+    <tr id="config-en-shouldgeneratesbom">
+      <td><code>ShouldGenerateSbom</code></td>
+      <td><code>false</code></td>
+      <td>When <code>true</code>, generates an SBOM (Software Bill of Materials) listing all components found in the compared folders. Output file name depends on <code>SbomFormat</code>: <code>sbom.cdx.json</code> (CycloneDX) or <code>sbom.spdx.json</code> (SPDX). Useful for supply-chain security compliance (Executive Order 14028, EU CRA, etc.).</td>
+    </tr>
+    <tr id="config-en-sbomformat">
+      <td><code>SbomFormat</code></td>
+      <td><code>"CycloneDX"</code></td>
+      <td>SBOM output format. <code>"CycloneDX"</code> produces CycloneDX 1.5 JSON; <code>"SPDX"</code> produces SPDX 2.3 JSON. Only used when <code>ShouldGenerateSbom</code> is <code>true</code>.</td>
+    </tr>
   </tbody>
 </table>
 
@@ -617,6 +628,7 @@ Notes:
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
 - `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (unless [`ShouldGenerateHtmlReport`](#config-en-shouldgeneratehtmlreport) is `false`)
 - `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) (unless [`ShouldGenerateAuditLog`](#config-en-shouldgenerateauditlog) is `false`)
+- `Reports/<label>/sbom.cdx.json` or `sbom.spdx.json` (when [`ShouldGenerateSbom`](#config-en-shouldgeneratesbom) is `true`)
 - `Logs/log_YYYYMMDD.log`
 - Optional: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
@@ -788,6 +800,7 @@ dotnet run -- --config /etc/my-config.json --print-config
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
 - `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化可）
 - `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) — 改竄検知用 SHA256 インテグリティハッシュを含む構造化監査ログ（`"ShouldGenerateAuditLog": false` で無効化可）
+- `Reports/<label>/sbom.cdx.json` または `sbom.spdx.json` — CycloneDX または SPDX 形式の SBOM（ソフトウェア部品表）（`"ShouldGenerateSbom": true` で有効化）
 - [`ShouldOutputILText`](#config-ja-shouldoutputiltext) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
 
 プロセス終了コード:
@@ -1205,6 +1218,16 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
       <td><code>true</code></td>
       <td><code>true</code> の場合、差分レポートと合わせて <a href="doc/samples/audit_log.json"><code>audit_log.json</code></a> を生成します。JSON ファイルにはファイルごとの比較結果、実行メタデータ（アプリバージョン、マシン名、タイムスタンプ）、サマリー統計、および改竄検知用の <code>diff_report.md</code> / <code>diff_report.html</code> の SHA256 インテグリティハッシュが含まれます。<code>false</code> にすると監査ログ生成をスキップします。</td>
     </tr>
+    <tr id="config-ja-shouldgeneratesbom">
+      <td><code>ShouldGenerateSbom</code></td>
+      <td><code>false</code></td>
+      <td><code>true</code> の場合、比較対象���ォルダ内の全コンポーネントを一覧化する SBOM（ソフトウェア部品表）を生成します。出力ファイル名は <code>SbomFormat</code> に依存: <code>sbom.cdx.json</code>（CycloneDX）または <code>sbom.spdx.json</code>（SPDX）。サプライチェーンセキュリティ規制対応（大統領令 14028、EU CRA 等）に有用です。</td>
+    </tr>
+    <tr id="config-ja-sbomformat">
+      <td><code>SbomFormat</code></td>
+      <td><code>"CycloneDX"</code></td>
+      <td>SBOM 出力形式。<code>"CycloneDX"</code> は CycloneDX 1.5 JSON を出力、<code>"SPDX"</code> は SPDX 2.3 JSON を出力します。<code>ShouldGenerateSbom</code> が <code>true</code> の場合のみ使用されます。</td>
+    </tr>
   </tbody>
 </table>
 
@@ -1250,6 +1273,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 - `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
 - `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`ShouldGenerateHtmlReport`](#config-ja-shouldgeneratehtmlreport) が `false` の場合は生成されません）
 - `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json)（[`ShouldGenerateAuditLog`](#config-ja-shouldgenerateauditlog) が `false` の場合は生成されません）
+- `Reports/<label>/sbom.cdx.json` または `sbom.spdx.json`（[`ShouldGenerateSbom`](#config-ja-shouldgeneratesbom) が `true` の場合に生成）
 - `Logs/log_YYYYMMDD.log`
 - 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 

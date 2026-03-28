@@ -56,6 +56,12 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Whether to generate a structured JSON audit log. / 構造化 JSON 監査ログを生成するかどうか。</summary>
         bool ShouldGenerateAuditLog { get; }
 
+        /// <summary>Whether to generate an SBOM (Software Bill of Materials). / SBOM（ソフトウェア部品表）を生成するかどうか。</summary>
+        bool ShouldGenerateSbom { get; }
+
+        /// <summary>SBOM output format: "CycloneDX" or "SPDX". / SBOM 出力形式: "CycloneDX" または "SPDX"。</summary>
+        string SbomFormat { get; }
+
         /// <summary>Whether to include per-file timestamps in the report. / ファイルごとの更新日時をレポートに出力するか否か。</summary>
         bool ShouldOutputFileTimestamps { get; }
 

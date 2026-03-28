@@ -60,6 +60,12 @@ namespace FolderDiffIL4DotNet.Models
         /// <inheritdoc cref="ConfigSettings.ShouldGenerateAuditLog"/>
         public bool ShouldGenerateAuditLog { get; set; } = ConfigSettings.DefaultShouldGenerateAuditLog;
 
+        /// <inheritdoc cref="ConfigSettings.ShouldGenerateSbom"/>
+        public bool ShouldGenerateSbom { get; set; } = ConfigSettings.DefaultShouldGenerateSbom;
+
+        /// <inheritdoc cref="ConfigSettings.SbomFormat"/>
+        public string SbomFormat { get; set; } = ConfigSettings.DefaultSbomFormat;
+
         /// <inheritdoc cref="ConfigSettings.ShouldOutputILText"/>
         public bool ShouldOutputILText { get; set; } = ConfigSettings.DefaultShouldOutputILText;
 

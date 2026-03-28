@@ -5,10 +5,11 @@ namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// Immutable context object aggregating all parameters required by report generation services
-    /// (<see cref="ReportGenerateService"/>, <see cref="HtmlReportGenerateService"/>, <see cref="AuditLogGenerateService"/>).
+    /// (<see cref="ReportGenerateService"/>, <see cref="HtmlReportGenerateService"/>,
+    /// <see cref="AuditLogGenerateService"/>, <see cref="SbomGenerateService"/>).
     /// Eliminates parameter duplication at the <see cref="ProgramRunner"/> boundary.
     /// レポート生成サービス (<see cref="ReportGenerateService"/>, <see cref="HtmlReportGenerateService"/>,
-    /// <see cref="AuditLogGenerateService"/>) が必要とする全パラメータを集約した不変コンテキスト。
+    /// <see cref="AuditLogGenerateService"/>, <see cref="SbomGenerateService"/>) が必要とする全パラメータを集約した不変コンテキスト。
     /// <see cref="ProgramRunner"/> 境界での引数重複を排除します。
     /// </summary>
     public sealed class ReportGenerationContext

@@ -371,6 +371,8 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ConfigSettings.DefaultShouldIncludeAssemblySemanticChangesInReport, config.ShouldIncludeAssemblySemanticChangesInReport);
             Assert.Equal(ConfigSettings.DefaultShouldGenerateHtmlReport, config.ShouldGenerateHtmlReport);
             Assert.Equal(ConfigSettings.DefaultShouldGenerateAuditLog, config.ShouldGenerateAuditLog);
+            Assert.Equal(ConfigSettings.DefaultShouldGenerateSbom, config.ShouldGenerateSbom);
+            Assert.Equal(ConfigSettings.DefaultSbomFormat, config.SbomFormat);
         }
 
         private static void AssertJsonBool(JsonElement root, string propertyName, bool expected)

@@ -92,6 +92,8 @@ namespace FolderDiffIL4DotNet.Models
             ShouldIncludeILCacheStatsInReport = builder.ShouldIncludeILCacheStatsInReport;
             ShouldGenerateHtmlReport = builder.ShouldGenerateHtmlReport;
             ShouldGenerateAuditLog = builder.ShouldGenerateAuditLog;
+            ShouldGenerateSbom = builder.ShouldGenerateSbom;
+            SbomFormat = builder.SbomFormat;
             ShouldOutputFileTimestamps = builder.ShouldOutputFileTimestamps;
             ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp;
 
