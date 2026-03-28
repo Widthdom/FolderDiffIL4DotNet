@@ -150,12 +150,7 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 > **Tip:** When a configuration error occurs (exit code `3`), a hint is printed to stderr suggesting `--print-config` for diagnosis.
 
-Main output:
-- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
-- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json))
-- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) — structured audit log with SHA256 integrity hashes for tamper detection (disable with `"ShouldGenerateAuditLog": false`)
-- `Reports/<label>/sbom.cdx.json` or `sbom.spdx.json` — SBOM (Software Bill of Materials) in CycloneDX or SPDX format (enable with `"ShouldGenerateSbom": true`)
-- Optional IL dumps under `Reports/<label>/IL/old` and `Reports/<label>/IL/new` when [`ShouldOutputILText`](#config-en-shouldoutputiltext) is `true`
+Main output is written to `Reports/<label>/`. See [Generated Artifacts](#readme-en-generated-artifacts) for the full list.
 
 Process exit codes:
 
@@ -193,9 +188,10 @@ Every file entry is displayed in a table with interactive columns for sign-off:
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
 | Diff Reason | Diff type only: `SHA256Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. For `ILMismatch` entries with assembly semantic changes, the file-level max importance is appended (e.g. `ILMismatch` `High`). (Unchanged/Modified/Warnings only; not shown for Added/Removed) |
+| Estimated Change | Pattern-based classification tags for .NET assembly changes detected via IL semantic analysis. Possible tags: `+Method`, `-Method`, `+Type`, `-Type`, `Extract`, `Inline`, `Move`, `Rename`, `Signature`, `Access`, `BodyEdit`, `DepUpdate`. Multiple tags may appear for a single file. Shown only for Unchanged and Modified sections |
 | Disassembler | Disassembler label and version used for IL comparison (e.g. [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm <version>)`); shown only for Unchanged and Modified sections |
 
-Not all columns appear in every table. Added and Removed tables show only ✓, Justification, Notes, File Path, and Timestamp. Ignored tables additionally show Diff Reason (as "Location"). Unchanged and Modified tables show all columns including Disassembler. Warning tables (SHA256Mismatch, Timestamps Regressed) show Diff Reason but not Disassembler. Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
+Not all columns appear in every table. Added and Removed tables show only ✓, Justification, Notes, File Path, and Timestamp. Ignored tables additionally show Diff Reason (as "Location"). Unchanged and Modified tables show all columns including Estimated Change and Disassembler. Warning tables (SHA256Mismatch, Timestamps Regressed) show Diff Reason but not Estimated Change or Disassembler. Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
 **Table sort order:** Unchanged Files rows are sorted by diff-detail result (`SHA256Match` → `ILMatch` → `TextMatch`), then by File Path ascending. Modified Files rows (and the Timestamps Regressed warning table) are sorted by diff-detail result (`TextMismatch` → `ILMismatch` → `SHA256Mismatch`), then by Change Importance (`High` → `Medium` → `Low`), then by File Path ascending. The SHA256Mismatch warning table in the Warnings section lists files alphabetically by path.
 
@@ -796,12 +792,7 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 > **ヒント:** 設定エラー（終了コード `3`）が発生した場合、診断用に `--print-config` を提案するヒントが stderr に出力されます。
 
-主な出力:
-- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
-- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化可）
-- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) — 改竄検知用 SHA256 インテグリティハッシュを含む構造化監査ログ（`"ShouldGenerateAuditLog": false` で無効化可）
-- `Reports/<label>/sbom.cdx.json` または `sbom.spdx.json` — CycloneDX または SPDX 形式の SBOM（ソフトウェア部品表）（`"ShouldGenerateSbom": true` で有効化）
-- [`ShouldOutputILText`](#config-ja-shouldoutputiltext) が `true` の場合は `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に IL テキスト
+主な出力は `Reports/<label>/` に書き込まれます。完全なリストは[生成物](#readme-ja-generated-artifacts)を参照してください。
 
 プロセス終了コード:
 
@@ -839,9 +830,10 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
 | Diff Reason | 差分タイプのみ: `SHA256Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など。`ILMismatch` でアセンブリ セマンティック変更がある場合、ファイルレベルの最大重要度が追記される（例: `ILMismatch` `High`）。（Unchanged/Modified/Warnings のみ。Added/Removed には表示されない） |
+| Estimated Change | IL セマンティック分析で検出された .NET アセンブリ変更のパターン分類タグ。タグ種別: `+Method`・`-Method`・`+Type`・`-Type`・`Extract`・`Inline`・`Move`・`Rename`・`Signature`・`Access`・`BodyEdit`・`DepUpdate`。1 ファイルに複数タグが表示される場合あり。Unchanged と Modified セクションのみに表示 |
 | Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm <version>)`）。Unchanged と Modified セクションのみに表示 |
 
-すべてのテーブルに全列が表示されるわけではありません。Added・Removed テーブルには ✓・Justification・Notes・File Path・Timestamp のみが表示されます。Ignored テーブルにはさらに Diff Reason（「Location」として表示）が追加されます。Unchanged・Modified テーブルには Disassembler を含むすべての列が表示されます。警告テーブル（SHA256Mismatch、Timestamps Regressed）には Diff Reason が表示されますが Disassembler は表示されません。Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
+すべてのテーブルに全列が表示されるわけではありません。Added・Removed テーブルには ✓・Justification・Notes・File Path・Timestamp のみが表示されます。Ignored テーブルにはさらに Diff Reason（「Location」として表示）が追加されます。Unchanged・Modified テーブルには Estimated Change・Disassembler を含むすべての列が表示されます。警告テーブル（SHA256Mismatch、Timestamps Regressed）には Diff Reason が表示されますが Estimated Change・Disassembler は表示されません。Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 
 **テーブルのソート順:** Unchanged Files の行は diff-detail 結果（`SHA256Match` → `ILMatch` → `TextMatch`）の順でソートされ、次にファイルパスの昇順でソートされます。Modified Files の行（および Timestamps Regressed 警告テーブル）は diff-detail 結果（`TextMismatch` → `ILMismatch` → `SHA256Mismatch`）の順、次に変更の重要度（`High` → `Medium` → `Low`）の順、次にファイルパスの昇順でソートされます。警告セクション内の SHA256Mismatch 警告テーブルはファイルパスのアルファベット順でソートされます。
 

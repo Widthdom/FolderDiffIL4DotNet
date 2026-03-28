@@ -68,13 +68,7 @@ dotnet run -- --print-config --config /etc/cfg.json
 dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
 
-Generated during a run:
-- `Reports/<label>/[`diff_report.md`](samples/diff_report.md)`
-- `Reports/<label>/[`diff_report.html`](samples/diff_report.html)` when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `true` (default)
-- `Reports/<label>/IL/old/*.txt` and `Reports/<label>/IL/new/*.txt` when [`ShouldOutputILText`](../Models/ConfigSettings.cs) is `true`
-- `Logs/log_YYYYMMDD.log`
-- `Reports/<label>/[`audit_log.json`](samples/audit_log.json)` when [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) is `true` (default) — structured JSON audit log with per-file results, run metadata, and SHA256 integrity hashes of generated reports for tamper detection
-- `ILCache/` under the OS-standard user-local data directory (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache` on Windows, `~/.local/share/FolderDiffIL4DotNet/ILCache` on macOS/Linux) when [`EnableILCache`](../Models/ConfigSettings.cs) is `true` and [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) is not configured
+Generated during a run — see [README § Generated Artifacts](../README.md#readme-en-generated-artifacts) for the full list. In addition to those report files, an `ILCache/` directory is created under the OS-standard user-local data directory (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache` on Windows, `~/.local/share/FolderDiffIL4DotNet/ILCache` on macOS/Linux) when [`EnableILCache`](../Models/ConfigSettings.cs) is `true` and [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) is not configured.
 
 ## Partial Class File Layout
 
@@ -933,13 +927,7 @@ dotnet run -- --print-config --config /etc/cfg.json
 dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
 
-実行時に生成される主な成果物:
-- `Reports/<label>/[`diff_report.md`](samples/diff_report.md)`
-- [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `true`（既定）のとき `Reports/<label>/[`diff_report.html`](samples/diff_report.html)`
-- [`ShouldOutputILText`](../Models/ConfigSettings.cs) が `true` のとき `Reports/<label>/IL/old/*.txt` と `Reports/<label>/IL/new/*.txt`
-- `Logs/log_YYYYMMDD.log`
-- [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `true`（既定）のとき `Reports/<label>/[`audit_log.json`](samples/audit_log.json)` — ファイルごとの比較結果・実行メタデータ・レポートの SHA256 インテグリティハッシュを含む構造化 JSON 監査ログ（改竄検知用）
-- [`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は OS 標準のユーザーローカルデータディレクトリ配下の `ILCache/`（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux: `~/.local/share/FolderDiffIL4DotNet/ILCache`）
+実行時に生成される主な成果物は [README § 生成物](../README.md#readme-ja-generated-artifacts) を参照してください。上記レポートファイルに加え、[`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は OS 標準のユーザーローカルデータディレクトリ配下に `ILCache/` ディレクトリが作成されます（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux: `~/.local/share/FolderDiffIL4DotNet/ILCache`）。
 
 ## Partial Class ファイル構成
 
