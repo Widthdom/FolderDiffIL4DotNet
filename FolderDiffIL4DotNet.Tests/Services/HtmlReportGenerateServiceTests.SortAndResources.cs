@@ -47,7 +47,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("border: 1px solid #ddd", html);
+            Assert.Contains("border: 1px solid var(--color-border-light)", html);
         }
 
         // ── Req4: InlineDiffMaxEditDistance code tag / code タグ ──────────────
@@ -89,8 +89,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // diff-row background should be #edf0f4, not the old #f6f8fa
-            Assert.Contains("tr.diff-row { background: #edf0f4; }", html);
+            // diff-row background should use CSS variable, not hardcoded hex / diff-row の背景は CSS 変数を使用すること
+            Assert.Contains("tr.diff-row { background: var(--color-diff-row-bg); }", html);
             Assert.DoesNotContain("tr.diff-row { background: #f6f8fa; }", html);
         }
 
@@ -130,8 +130,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains(":not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }", html);
-            Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }", html);
+            Assert.Contains(":not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: var(--color-surface-hover); }", html);
+            Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: var(--color-surface-hover) !important; }", html);
         }
 
         // ── Sort order: Unchanged files / Unchanged ファイルのソート順 ─────────

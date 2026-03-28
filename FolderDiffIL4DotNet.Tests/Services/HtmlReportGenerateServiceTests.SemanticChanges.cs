@@ -208,9 +208,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Semantic changes table header must use lighter gray (#98989d), not the old dark gray (#6b6b6e)
-            // semantic-changes テーブルヘッダは旧暗灰色(#6b6b6e)ではなく薄灰色(#98989d)であること
-            Assert.Contains("background: #98989d", html);
+            // Semantic changes table header must use CSS variable, not hardcoded hex
+            // semantic-changes テーブルヘッダは CSS 変数を使用すること
+            Assert.Contains("background: var(--color-sc-header-bg)", html);
             Assert.DoesNotContain("background: #6b6b6e", html);
         }
 
@@ -360,9 +360,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // td cells in the semantic-changes-table must have white background
-            // semantic-changes-table の td セルは白背景であること
-            Assert.Contains("background: #fff", html);
+            // td cells in the semantic-changes-table must use CSS variable for background
+            // semantic-changes-table の td セルは CSS 変数で背景を指定すること
+            Assert.Contains("background: var(--color-sc-cell-bg)", html);
         }
 
     }
