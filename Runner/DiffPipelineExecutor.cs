@@ -13,9 +13,9 @@ namespace FolderDiffIL4DotNet.Runner
 {
     /// <summary>
     /// Executes the diff pipeline: builds the scoped DI container, runs the folder diff,
-    /// and generates all reports (Markdown, HTML, audit log).
+    /// and generates all reports (Markdown, HTML, audit log, SBOM).
     /// 差分パイプラインを実行する: スコープ付き DI コンテナを構築し、フォルダ差分を実行し、
-    /// すべてのレポート（Markdown、HTML、監査ログ）を生成する。
+    /// すべてのレポート（Markdown、HTML、監査ログ、SBOM）を生成する。
     /// </summary>
     internal sealed class DiffPipelineExecutor
     {
@@ -121,6 +121,7 @@ namespace FolderDiffIL4DotNet.Runner
             scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(reportContext);
             scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(reportContext);
             scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(reportContext);
+            scopedProvider.GetRequiredService<SbomGenerateService>().GenerateSbom(reportContext);
         }
 
         /// <summary>

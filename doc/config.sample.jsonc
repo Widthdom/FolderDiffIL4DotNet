@@ -51,6 +51,14 @@
   // SHA256 整合性ハッシュ付き構造化 JSON 監査ログを生成する（デフォルト: true）
   "ShouldGenerateAuditLog": true,
 
+  // Generate an SBOM (Software Bill of Materials) listing all components in the compared folders (default: false)
+  // 比較対象フォルダ内の全コンポーネントを一覧化する SBOM（ソフトウェア部品表）を生成する（デフォルト: false）
+  "ShouldGenerateSbom": false,
+
+  // SBOM output format: "CycloneDX" (CycloneDX 1.5 JSON) or "SPDX" (SPDX 2.3 JSON) (default: "CycloneDX")
+  // SBOM 出力形式: "CycloneDX"（CycloneDX 1.5 JSON）または "SPDX"（SPDX 2.3 JSON）（デフォルト: "CycloneDX"）
+  "SbomFormat": "CycloneDX",
+
   // Output full IL disassembly text to Reports/<label>/IL/ (default: true)
   // IL 逆アセンブルテキスト全文を Reports/<label>/IL/ に出力する（デフォルト: true）
   "ShouldOutputILText": true,
