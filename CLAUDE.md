@@ -98,6 +98,10 @@ The application uses a two-tier dependency injection pattern:
 
 When adding a new service, register it in `RunScopeBuilder.Build()` unless it is needed before the diff run starts.
 
+#### Railway pattern in ProgramRunner
+
+`ProgramRunner` uses a `StepResult<T>` type (`Runner/ProgramRunner.Types.cs`) with `Bind()` and `BindAsync()` methods for railway-oriented error handling. Each step in the main pipeline (config loading → validation → directory preparation → diff execution) either passes its value to the next step or short-circuits on failure with a typed `ProgramRunResult`. When adding new pipeline steps to `ProgramRunner`, use this pattern rather than try/catch.
+
 #### Report section writer pattern
 
 Markdown report generation uses the `IReportSectionWriter` interface (`Services/IReportSectionWriter.cs`) as an extension point. Each section (header, summary, added/removed/modified/unchanged files, warnings, legend, IL cache stats, ignored files) is a separate implementation in `Services/SectionWriters/`. When adding a new report section, create a new `IReportSectionWriter` implementation and wire it in `ReportGenerateService`.
@@ -307,6 +311,10 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 2. **実行スコープ層**（`Runner/RunScopeBuilder.cs`）：差分実行ごとに構築。すべての差分関連サービスを Scoped で登録（例: `IFileDiffService`、`IFolderDiffService`、`ReportGenerateService`、`ILCache`）。設定（`IReadOnlyConfigSettings`）と `DiffExecutionContext` はこのスコープ内で Singleton として登録。
 
 新サービスを追加する場合、差分実行開始前に必要でない限り `RunScopeBuilder.Build()` に登録すること。
+
+#### ProgramRunner の Railway パターン
+
+`ProgramRunner` は `StepResult<T>` 型（`Runner/ProgramRunner.Types.cs`）と `Bind()` / `BindAsync()` メソッドによる Railway 指向エラーハンドリングを使用。メインパイプラインの各ステップ（設定読み込み→検証→ディレクトリ準備→差分実行）は値を次のステップに渡すか、失敗時に型付き `ProgramRunResult` でショートサーキットする。`ProgramRunner` に新しいパイプラインステップを追加する際は、try/catch ではなくこのパターンを使うこと。
 
 #### レポートセクションライターパターン
 
