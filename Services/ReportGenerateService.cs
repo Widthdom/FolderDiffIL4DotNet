@@ -436,5 +436,36 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine($"| {probe.ToolName} | {available} | {version} | {inUseCol} |");
             }
         }
+
+        /// <summary>
+        /// Writes warning banners for disassembler issues: no disassembler available, or mixed tool usage.
+        /// 逆アセンブラの問題に関する警告バナーを出力: 逆アセンブラ未検出、または複数ツール混在使用。
+        /// </summary>
+        private static void WriteDisassemblerWarnings(StreamWriter writer, FileDiffResultLists fileDiffResultLists)
+        {
+            // Warning: no disassembler available / 警告: 逆アセンブラが利用不可
+            var probeResults = fileDiffResultLists.DisassemblerAvailability;
+            if (probeResults != null && probeResults.Count > 0 && !probeResults.Any(p => p.Available))
+            {
+                writer.WriteLine();
+                writer.WriteLine("> **⚠ Warning**: No disassembler tool is available. .NET assembly comparison will fail if any .dll/.exe files with differing SHA256 hashes are detected. Install `dotnet-ildasm` or `ilspycmd` to enable IL-level comparison.");
+                writer.WriteLine();
+            }
+
+            // Warning: multiple different disassembler tools used / 警告: 異なる逆アセンブラツールが混在
+            var distinctToolNames = fileDiffResultLists.DisassemblerToolVersions.Keys
+                .Concat(fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
+                .Where(label => !string.IsNullOrWhiteSpace(label))
+                .Select(label => ExtractToolName(label))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (distinctToolNames.Count > 1)
+            {
+                writer.WriteLine();
+                writer.WriteLine($"> **⚠ Warning**: Multiple disassembler tools were used in this run ({string.Join(", ", distinctToolNames)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. For consistent results, ensure only one disassembler tool is installed.");
+                writer.WriteLine();
+            }
+        }
     }
 }

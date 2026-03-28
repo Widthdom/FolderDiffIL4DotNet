@@ -65,6 +65,12 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            if (opts.ShowBanner)
+            {
+                ConsoleBanner.Print();
+                return 0;
+            }
+
             if (opts.PrintConfig)
             {
                 return await PrintConfigAsync(opts.ConfigPath);
@@ -95,9 +101,15 @@ namespace FolderDiffIL4DotNet
 
                 // Railway-oriented pipeline: each step short-circuits on failure.
                 // Railway 指向パイプライン: 各ステップは失敗時にショートサーキットします。
-                var argsResult = TryValidateAndBuildRunArguments(args, opts)
-                    .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath)
-                        .Bind(_ => StepResult<RunArguments>.FromValue(runArgs)));
+                var argsResult = TryValidateAndBuildRunArguments(args, opts);
+
+                // Dry-run does not need the Reports directory / ドライランでは Reports ディレクトリ不要
+                if (!opts.DryRun)
+                {
+                    argsResult = argsResult
+                        .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath)
+                            .Bind(_ => StepResult<RunArguments>.FromValue(runArgs)));
+                }
 
                 var pipelineResult = await argsResult
                     .BindAsync(async runArgs =>
@@ -110,6 +122,20 @@ namespace FolderDiffIL4DotNet
                         }).Bind(config => StepResult<(RunArguments RunArgs, ConfigSettings Config)>.FromValue((runArgs, config)));
                     });
 
+                // Dry-run: enumerate and show statistics, then exit / ドライラン: 列挙と統計表示のみで終了
+                if (opts.DryRun)
+                {
+                    if (!pipelineResult.IsSuccess)
+                    {
+                        return pipelineResult.Failure!;
+                    }
+
+                    var ctx = pipelineResult.Value!;
+                    var dryRunExecutor = new Runner.DryRunExecutor(_logger);
+                    dryRunExecutor.Execute(ctx.RunArgs.OldFolderAbsolutePath, ctx.RunArgs.NewFolderAbsolutePath, ctx.Config);
+                    return ProgramRunResult.Success(new RunCompletionState(false, false));
+                }
+
                 var completionStateResult = await pipelineResult
                     .BindAsync(ctx => TryExecuteRunAsync(ctx.RunArgs, ctx.Config, appVersion, computerName));
 
@@ -118,8 +144,10 @@ namespace FolderDiffIL4DotNet
                     return completionStateResult.Failure!;
                 }
 
+                var completionState = completionStateResult.Value!;
+                OutputCompletionSummaryChart(completionState);
                 _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
-                return ProgramRunResult.Success(completionStateResult.Value!);
+                return ProgramRunResult.Success(completionState);
             }
             catch (Exception ex)
             {
@@ -137,6 +165,40 @@ namespace FolderDiffIL4DotNet
             var appVersion = SystemInfo.GetAppVersion(typeof(Program));
             _logger.LogMessage(AppLogLevel.Info, $"Application version: {appVersion}", shouldOutputMessageToConsole: true);
             return appVersion;
+        }
+
+        private static void OutputCompletionSummaryChart(RunCompletionState state)
+        {
+            int total = state.UnchangedCount + state.AddedCount + state.RemovedCount + state.ModifiedCount;
+            if (total == 0)
+            {
+                return;
+            }
+
+            Console.WriteLine();
+            OutputSummaryBar("Unchanged", state.UnchangedCount, total, ConsoleColor.DarkGray);
+            OutputSummaryBar("Added",     state.AddedCount,     total, ConsoleColor.Green);
+            OutputSummaryBar("Removed",   state.RemovedCount,   total, ConsoleColor.Red);
+            OutputSummaryBar("Modified",  state.ModifiedCount,  total, ConsoleColor.Cyan);
+            Console.WriteLine();
+        }
+
+        private static void OutputSummaryBar(string label, int count, int total, ConsoleColor color)
+        {
+            const int BAR_WIDTH = 30;
+            const int LABEL_WIDTH = 10;
+            int filled = (int)Math.Round((double)count / total * BAR_WIDTH);
+            if (filled > BAR_WIDTH) filled = BAR_WIDTH;
+
+            var bar = new string('█', filled) + new string('░', BAR_WIDTH - filled);
+            var pct = (100.0 * count / total).ToString("F1");
+
+            Console.Write($"  {label.PadRight(LABEL_WIDTH)} ");
+            var prevColor = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+            Console.Write(bar);
+            Console.ForegroundColor = prevColor;
+            Console.WriteLine($" {count,5} ({pct}%)");
         }
 
         private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings)
@@ -228,7 +290,11 @@ namespace FolderDiffIL4DotNet
                     computerName);
                 var completionState = new RunCompletionState(
                     pipelineResult.HasSha256MismatchWarnings,
-                    pipelineResult.HasTimestampRegressionWarnings);
+                    pipelineResult.HasTimestampRegressionWarnings,
+                    pipelineResult.UnchangedCount,
+                    pipelineResult.AddedCount,
+                    pipelineResult.RemovedCount,
+                    pipelineResult.ModifiedCount);
                 return StepResult<RunCompletionState>.FromValue(completionState);
             }
             catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException

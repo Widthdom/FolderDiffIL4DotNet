@@ -79,7 +79,14 @@ namespace FolderDiffIL4DotNet.Runner
                 await EnrichDependencyVulnerabilitiesAsync(resultLists, _logger);
 
             GenerateReports(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config);
-            return new DiffPipelineResult(resultLists.HasAnySha256Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);
+            var stats = resultLists.SummaryStatistics;
+            return new DiffPipelineResult(
+                resultLists.HasAnySha256Mismatch,
+                resultLists.HasAnyNewFileTimestampOlderThanOldWarning,
+                stats.UnchangedCount,
+                stats.AddedCount,
+                stats.RemovedCount,
+                stats.ModifiedCount);
         }
 
         private async Task<string> ExecuteDiffAsync(IServiceProvider scopedProvider)
@@ -207,5 +214,11 @@ namespace FolderDiffIL4DotNet.Runner
     /// Result of a completed diff pipeline execution, carrying warning flags.
     /// 完了した差分パイプライン実行の結果。警告フラグを保持する。
     /// </summary>
-    internal sealed record DiffPipelineResult(bool HasSha256MismatchWarnings, bool HasTimestampRegressionWarnings);
+    internal sealed record DiffPipelineResult(
+        bool HasSha256MismatchWarnings,
+        bool HasTimestampRegressionWarnings,
+        int UnchangedCount,
+        int AddedCount,
+        int RemovedCount,
+        int ModifiedCount);
 }

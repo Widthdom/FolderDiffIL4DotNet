@@ -223,5 +223,94 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Enabled, but no non-empty strings are configured.", reportText);
         }
 
+        // -----------------------------------------------------------------------
+        // Disassembler warning banners
+        // 逆アセンブラ警告バナー
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void GenerateDiffReport_WarnsWhenNoDisassemblerAvailable()
+        {
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", false, null, null),
+                new("ilspycmd", false, null, null),
+            };
+
+            var oldDir = Path.Combine(_rootDir, "old-no-disasm");
+            var newDir = Path.Combine(_rootDir, "new-no-disasm");
+            var reportDir = Path.Combine(_rootDir, "report-no-disasm");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("No disassembler tool is available", reportText);
+            Assert.Contains("Install", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_NoDisassemblerWarning_WhenOneIsAvailable()
+        {
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", true, "0.12.0", "/usr/bin/dotnet-ildasm"),
+                new("ilspycmd", false, null, null),
+            };
+
+            var oldDir = Path.Combine(_rootDir, "old-one-avail");
+            var newDir = Path.Combine(_rootDir, "new-one-avail");
+            var reportDir = Path.Combine(_rootDir, "report-one-avail");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.DoesNotContain("No disassembler tool is available", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_WarnsWhenMultipleDisassemblersUsed()
+        {
+            _resultLists.DisassemblerToolVersions["dotnet-ildasm (version: 0.12.0)"] = 0;
+            _resultLists.DisassemblerToolVersions["ilspycmd (version: 8.2.0)"] = 0;
+
+            var oldDir = Path.Combine(_rootDir, "old-mixed");
+            var newDir = Path.Combine(_rootDir, "new-mixed");
+            var reportDir = Path.Combine(_rootDir, "report-mixed");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.Contains("Multiple disassembler tools were used", reportText);
+            Assert.Contains("dotnet-ildasm", reportText);
+            Assert.Contains("ilspycmd", reportText);
+        }
+
+        [Fact]
+        public void GenerateDiffReport_NoMixedWarning_WhenSingleDisassemblerUsed()
+        {
+            _resultLists.DisassemblerToolVersions["dotnet-ildasm (version: 0.12.0)"] = 0;
+
+            var oldDir = Path.Combine(_rootDir, "old-single");
+            var newDir = Path.Combine(_rootDir, "new-single");
+            var reportDir = Path.Combine(_rootDir, "report-single");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            Assert.DoesNotContain("Multiple disassembler tools were used", reportText);
+        }
     }
 }
+

@@ -35,6 +35,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine();
                 var inUseText = BuildDisassemblerHeaderText(ctx.FileDiffResultLists);
                 WriteDisassemblerAvailabilityTable(writer, ctx.FileDiffResultLists.DisassemblerAvailability, inUseText);
+                WriteDisassemblerWarnings(writer, ctx.FileDiffResultLists);
 
                 // Configuration details / 設定詳細
                 writer.WriteLine("### Configuration Details");

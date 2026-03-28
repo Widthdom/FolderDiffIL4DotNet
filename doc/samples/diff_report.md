@@ -152,7 +152,7 @@
 | Expired | 0 |
 
 ## Warnings
-### [ ! ] Modified Files — SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable (1)
+### [ ! ] Modified Files — SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file (1)
 
 | Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |
 |:------:|-----------|:---------:|:-----------:|:----------------:|--------------|

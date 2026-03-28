@@ -142,7 +142,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 false);
 
             Assert.Contains("[", result);
-            Assert.DoesNotContain("=", result); // no filled portion
+            Assert.DoesNotContain("█", result); // no filled portion / 塗りつぶし部分なし
         }
 
         [Fact]
@@ -158,7 +158,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 false);
 
             Assert.Contains("[", result);
-            Assert.DoesNotContain("-", result); // fully filled
+            Assert.DoesNotContain("░", result); // fully filled / 完全に塗りつぶし
         }
 
         [Fact]

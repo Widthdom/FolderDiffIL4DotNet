@@ -190,7 +190,7 @@ namespace FolderDiffIL4DotNet.Services
             var barChars = new char[barWidth];
             for (int i = 0; i < barWidth; i++)
             {
-                barChars[i] = i < filled ? '=' : '-';
+                barChars[i] = i < filled ? '█' : '░';
             }
 
             var bar = new string(barChars);

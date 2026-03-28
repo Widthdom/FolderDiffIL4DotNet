@@ -15,6 +15,7 @@ namespace FolderDiffIL4DotNet
             "Options:\n" +
             "  --help, -h                  Show this help message and exit.\n" +
             "  --version                   Show the application version and exit.\n" +
+            "  --banner                    Show the ASCII-art banner and exit.\n" +
             "  --print-config              Print the effective configuration as indented JSON and exit.\n" +
             "  --validate-config           Validate the configuration file and exit (0=valid, 3=invalid).\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +
@@ -22,7 +23,8 @@ namespace FolderDiffIL4DotNet
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
             "  --no-il-cache               Disable the IL cache for this run.\n" +
             "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
-            "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n\n" +
+            "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n" +
+            "  --dry-run                   Enumerate files and show statistics without running comparison.\n\n" +
             "Environment variables (override config.json values):\n" +
             "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +
             "  FOLDERDIFF_ENABLEILCACHE=<true|false>       Enable/disable the IL cache.\n" +

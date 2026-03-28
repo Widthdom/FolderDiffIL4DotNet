@@ -16,6 +16,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
@@ -23,6 +24,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
+            Assert.False(opts.DryRun);
             Assert.Null(opts.ParseError);
         }
 
@@ -42,6 +44,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
@@ -49,6 +52,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
+            Assert.False(opts.DryRun);
             Assert.Null(opts.ParseError);
         }
 
@@ -81,6 +85,21 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { arg });
 
             Assert.True(opts.ShowVersion);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --banner
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--banner")]
+        [InlineData("--BANNER")]
+        public void ParseCliOptions_BannerFlag_SetsShowBanner(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.ShowBanner);
             Assert.Null(opts.ParseError);
         }
 
@@ -217,6 +236,19 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --dry-run
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_DryRunFlag_SetsDryRun()
+        {
+            var opts = CliParser.Parse(new[] { "--dry-run" });
+
+            Assert.True(opts.DryRun);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // Unknown / invalid flags
         // -----------------------------------------------------------------------
 
@@ -274,11 +306,13 @@ namespace FolderDiffIL4DotNet.Tests
                 "--no-il-cache",
                 "--skip-il",
                 "--no-timestamp-warnings",
-                "--print-config"
+                "--print-config",
+                "--dry-run"
             });
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.True(opts.NoPause);
             Assert.Equal("/etc/my.json", opts.ConfigPath);
             Assert.Equal(4, opts.ThreadsOverride);
@@ -286,6 +320,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.SkipIL);
             Assert.True(opts.NoTimestampWarnings);
             Assert.True(opts.PrintConfig);
+            Assert.True(opts.DryRun);
             Assert.Null(opts.ParseError);
         }
     }

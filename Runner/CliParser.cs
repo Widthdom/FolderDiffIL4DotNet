@@ -10,6 +10,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_HELP_LONG = "--help";
         private const string OPT_HELP_SHORT = "-h";
         private const string OPT_VERSION = "--version";
+        private const string OPT_BANNER = "--banner";
         private const string OPT_CONFIG = "--config";
         private const string OPT_THREADS = "--threads";
         private const string OPT_NO_IL_CACHE = "--no-il-cache";
@@ -17,6 +18,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_NO_TIMESTAMP_WARNINGS = "--no-timestamp-warnings";
         private const string OPT_PRINT_CONFIG = "--print-config";
         private const string OPT_VALIDATE_CONFIG = "--validate-config";
+        private const string OPT_DRY_RUN = "--dry-run";
 
         /// <summary>
         /// Scans command-line arguments and returns parsed CLI options.
@@ -26,15 +28,15 @@ namespace FolderDiffIL4DotNet.Runner
         /// </summary>
         internal static CliOptions Parse(string[] args)
         {
-            bool showHelp = false, showVersion = false, noPause = false;
-            bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false;
+            bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
+            bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
             string? configPath = null;
             int? threadsOverride = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, null, null, false, false, false, false, false, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -53,6 +55,9 @@ namespace FolderDiffIL4DotNet.Runner
                         break;
                     case OPT_VERSION:
                         showVersion = true;
+                        break;
+                    case OPT_BANNER:
+                        showBanner = true;
                         break;
                     case NO_PAUSE:
                         noPause = true;
@@ -100,6 +105,9 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_VALIDATE_CONFIG:
                         validateConfig = true;
                         break;
+                    case OPT_DRY_RUN:
+                        dryRun = true;
+                        break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
                         // 位置引数ではなく認識されないフラグ（-- で始まるもの）を検出する。
@@ -112,7 +120,7 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
 
-            return new CliOptions(showHelp, showVersion, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, parseError);
         }
     }
 }

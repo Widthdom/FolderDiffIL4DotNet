@@ -47,7 +47,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("border: 1px solid #ddd", html);
+            Assert.Contains("border: 1px solid var(--color-border-light)", html);
         }
 
         // ── Req4: InlineDiffMaxEditDistance code tag / code タグ ──────────────
@@ -89,8 +89,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // diff-row background should be #edf0f4, not the old #f6f8fa
-            Assert.Contains("tr.diff-row { background: #edf0f4; }", html);
+            // diff-row background should use CSS variable, not hardcoded hex / diff-row の背景は CSS 変数を使用すること
+            Assert.Contains("tr.diff-row { background: var(--color-diff-row-bg); }", html);
             Assert.DoesNotContain("tr.diff-row { background: #f6f8fa; }", html);
         }
 
@@ -130,8 +130,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains(":not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }", html);
-            Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }", html);
+            Assert.Contains(":not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: var(--color-surface-hover); }", html);
+            Assert.Contains("table.semantic-changes-table tbody tr:hover td { background: var(--color-surface-hover) !important; }", html);
         }
 
         // ── Sort order: Unchanged files / Unchanged ファイルのソート順 ─────────
@@ -277,19 +277,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void LoadEmbeddedResource_JsResource_ReturnsNonEmptyString()
+        public void LoadEmbeddedResource_JsStateModule_ReturnsNonEmptyString()
         {
-            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js");
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
             Assert.False(string.IsNullOrWhiteSpace(js));
             Assert.Contains("function", js);
         }
 
         [Fact]
-        public void LoadEmbeddedResource_JsResource_ContainsPlaceholders()
+        public void LoadEmbeddedResource_JsStateModule_ContainsPlaceholders()
         {
-            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js");
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
             Assert.Contains("{{STORAGE_KEY}}", js);
             Assert.Contains("{{REPORT_DATE}}", js);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_AllJsModules_ReturnNonEmptyString()
+        {
+            // Verify all JS module embedded resources are loadable
+            // 全 JS モジュール埋め込みリソースがロード可能なことを検証
+            var moduleNames = new[]
+            {
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_export.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_diffview.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_lazy.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_layout.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js",
+            };
+            foreach (var name in moduleNames)
+            {
+                var js = HtmlReportGenerateService.LoadEmbeddedResource(name);
+                Assert.False(string.IsNullOrWhiteSpace(js), $"Module {name} should not be empty");
+            }
         }
 
         [Fact]

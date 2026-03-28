@@ -6,7 +6,13 @@ namespace FolderDiffIL4DotNet
     {
         private sealed record RunArguments(string OldFolderAbsolutePath, string NewFolderAbsolutePath, string ReportsFolderAbsolutePath);
 
-        private sealed record RunCompletionState(bool HasSha256MismatchWarnings, bool HasTimestampRegressionWarnings);
+        private sealed record RunCompletionState(
+            bool HasSha256MismatchWarnings,
+            bool HasTimestampRegressionWarnings,
+            int UnchangedCount = 0,
+            int AddedCount = 0,
+            int RemovedCount = 0,
+            int ModifiedCount = 0);
 
         /// <summary>
         /// Defines the public exit codes for the console application.
@@ -51,6 +57,10 @@ namespace FolderDiffIL4DotNet
             public ProgramExitCode ExitCode { get; }
             public bool HasSha256MismatchWarnings { get; }
             public bool HasTimestampRegressionWarnings { get; }
+            public int UnchangedCount { get; }
+            public int AddedCount { get; }
+            public int RemovedCount { get; }
+            public int ModifiedCount { get; }
 
             public static ProgramRunResult Success(RunCompletionState completionState)
                 => new(ProgramExitCode.Success, completionState);
@@ -63,6 +73,10 @@ namespace FolderDiffIL4DotNet
                 ExitCode = exitCode;
                 HasSha256MismatchWarnings = completionState.HasSha256MismatchWarnings;
                 HasTimestampRegressionWarnings = completionState.HasTimestampRegressionWarnings;
+                UnchangedCount = completionState.UnchangedCount;
+                AddedCount = completionState.AddedCount;
+                RemovedCount = completionState.RemovedCount;
+                ModifiedCount = completionState.ModifiedCount;
             }
         }
 

@@ -124,6 +124,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 |---|---|
 | `--help`, `-h` | Show help and exit (code `0`). |
 | `--version` | Show the application version and exit (code `0`). |
+| `--banner` | Show the ASCII-art banner and exit (code `0`). |
 | `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects `config.json` + all `FOLDERDIFF_*` env var overrides. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
 | `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. |
 | `--no-pause` | Skip key-wait at process end. |
@@ -132,6 +133,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--no-il-cache` | Disable the IL cache for this run. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
+| `--dry-run` | Enumerate files and show statistics without running comparison. |
 
 ```bash
 dotnet build
@@ -156,7 +158,7 @@ Process exit codes:
 
 | Code | Meaning | Typical Causes |
 | --- | --- | --- |
-| `0` | Success | Normal completion, `--help`, `--version`, `--print-config`, `--validate-config` (valid) |
+| `0` | Success | Normal completion, `--help`, `--version`, `--banner`, `--print-config`, `--validate-config` (valid) |
 | `1` | Unexpected internal error | Unclassifiable exception at application boundary |
 | `2` | Invalid arguments or input paths | Missing positional args, non-existent directories, illegal report label, preflight failures (see below) |
 | `3` | Configuration error | JSON syntax error, missing config file, semantic validation failure (`--validate-config` invalid) |
@@ -176,7 +178,7 @@ See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample o
 
 Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** alongside [`diff_report.md`](doc/samples/diff_report.md) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json)).
 
-The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
+The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. It automatically switches between light and dark themes based on the browser/OS colour scheme preference (`prefers-color-scheme`). All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
 
 Every file entry is displayed in a table with interactive columns for sign-off:
 
@@ -766,6 +768,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 |---|---|
 | `--help`, `-h` | 使い方を表示してコード `0` で終了します。 |
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
+| `--banner` | ASCII アートバナーを表示してコード `0` で終了します。 |
 | `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。`config.json` のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
 | `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
@@ -774,6 +777,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
+| `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
 
 ```bash
 dotnet build
@@ -798,7 +802,7 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 | コード | 意味 | 主な発生条件 |
 | --- | --- | --- |
-| `0` | 正常終了 | 通常完了、`--help`、`--version`、`--print-config`、`--validate-config`（有効時） |
+| `0` | 正常終了 | 通常完了、`--help`、`--version`、`--banner`、`--print-config`、`--validate-config`（有効時） |
 | `1` | 想定外の内部エラー | アプリケーション境界での分類不能な例外 |
 | `2` | 引数または入力パス不正 | 位置引数の不足、存在しないディレクトリ、不正なレポートラベル、プリフライト失敗（下記参照） |
 | `3` | 設定エラー | JSON 構文エラー、設定ファイル不在、セマンティック検証失敗（`--validate-config` 無効時） |
@@ -818,7 +822,7 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 
 実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
-HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
+HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ブラウザ/OS のカラースキーム設定（`prefers-color-scheme`）に応じてライト/ダークテーマを自動切替します。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
 
 全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 
