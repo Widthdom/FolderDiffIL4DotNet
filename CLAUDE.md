@@ -84,7 +84,57 @@ This is the single most important rule in this repository.
 | New test class added | TESTING_GUIDE.md scope map table (EN+JA), test count (EN+JA) |
 | Service/class added or renamed | DEVELOPER_GUIDE.md architecture/file table (EN+JA) |
 | Any significant feature or fix | CHANGELOG.md `[Unreleased]` section (EN+JA) |
-| HTML report JS/CSS | Both the generator `.cs` files AND `doc/samples/diff_report.html` |
+| HTML report JS/CSS | Embedded resource files (`Services/HtmlReport/diff_report.css`, `diff_report.js`), generator `.cs` files, AND `doc/samples/diff_report.html` |
+| New service/interface added | `Runner/RunScopeBuilder.cs` (DI registration) |
+
+### Architecture
+
+#### Two-tier DI structure
+
+The application uses a two-tier dependency injection pattern:
+
+1. **Bootstrap tier** (`Program.cs`): Registers only `ILoggerService` (Singleton), `ConfigService` (Transient), and `ProgramRunner` (Transient). This is the application's entry point.
+2. **Run-scope tier** (`Runner/RunScopeBuilder.cs`): Built per diff execution. Registers all diff-related services as Scoped (e.g. `IFileDiffService`, `IFolderDiffService`, `ReportGenerateService`, `ILCache`). Configuration (`IReadOnlyConfigSettings`) and `DiffExecutionContext` are registered as Singleton within this scope.
+
+When adding a new service, register it in `RunScopeBuilder.Build()` unless it is needed before the diff run starts.
+
+#### Report section writer pattern
+
+Markdown report generation uses the `IReportSectionWriter` interface (`Services/IReportSectionWriter.cs`) as an extension point. Each section (header, summary, added/removed/modified/unchanged files, warnings, legend, IL cache stats, ignored files) is a separate implementation in `Services/SectionWriters/`. When adding a new report section, create a new `IReportSectionWriter` implementation and wire it in `ReportGenerateService`.
+
+#### HTML report embedded resources
+
+The HTML report's CSS and JS are **embedded resources**, not inline strings:
+- `Services/HtmlReport/diff_report.css`
+- `Services/HtmlReport/diff_report.js`
+
+These are declared in `FolderDiffIL4DotNet.csproj` as `<EmbeddedResource>` and loaded at runtime by `HtmlReportGenerateService`. When modifying HTML report behavior, edit these files directly — not C# string literals.
+
+#### Environment variable overrides
+
+Configuration supports `FOLDERDIFF_*` environment variable overrides (e.g. `FOLDERDIFF_MAXPARALLELISM`, `FOLDERDIFF_SHOULDINCLUDEUNCHANGEDFILES`). These are applied in `ConfigService` after loading `config.json`. Boolean values accept `true`/`false`/`1`/`0` (case-insensitive).
+
+### Test Infrastructure
+
+#### No external mocking library
+
+Tests use **hand-crafted fakes** (e.g. `FakeFileComparisonService`, `FakeDisassemblerProgram`), not Moq, NSubstitute, or similar. When writing new tests, follow this pattern: implement the interface directly with configurable return values via properties and call-tracking lists for verification.
+
+#### Assertions
+
+Tests use **xUnit built-in assertions only** (`Assert.Equal`, `Assert.Contains`, `Assert.True`, etc.). Do not introduce third-party assertion libraries (FluentAssertions, Shouldly, etc.).
+
+#### FakeDisassembler test helper
+
+`FolderDiffIL4DotNet.Tests/Helpers/FakeDisassembler/` is a standalone .NET 8 console app that simulates disassembler tools for E2E tests. It is built separately and copied to the test output directory. Environment variables with `FD_FAKE_` prefix control its behavior.
+
+#### Non-parallel test collections
+
+Some test classes require non-parallel execution via `[Collection(...)]`:
+- `LoggerServiceTests` — uses static console output redirection
+- `FileDiffResultListsTests` — shared state
+
+When a test class manipulates global/static state, add a `[Collection]` attribute to prevent parallel execution conflicts.
 
 ### Code Style
 
@@ -136,6 +186,9 @@ This is the single most important rule in this repository.
 - Workflows: `.github/workflows/dotnet.yml` (build+test), `release.yml` (tag-based), `codeql.yml` (security)
 - `CiAutomationConfigurationTests` asserts on workflow file existence — update tests when changing CI config
 - Versioning: Nerdbank.GitVersioning via `version.json`
+- **Windows test job**: `dotnet.yml` includes a separate Windows runner job for cross-platform validation (test only, no coverage)
+- **Mutation testing**: Stryker.NET (`stryker-config.json`) runs on `workflow_dispatch` or PR. Thresholds: high=80%, low=60%, break=40%. UI/logging/CLI code is excluded from mutation
+- **DocFX**: API documentation is generated in CI from both main and Core projects (`docfx.json`). Output goes to `_site/`
 
 ### Git & Release Rules
 
@@ -241,7 +294,57 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 | 新テストクラス追加 | TESTING_GUIDE.md 範囲マップ表（EN+JA）、テスト件数（EN+JA） |
 | サービス/クラスの追加・リネーム | DEVELOPER_GUIDE.md アーキテクチャ/ファイル表（EN+JA） |
 | 重要な機能追加・修正 | CHANGELOG.md `[Unreleased]` セクション（EN+JA） |
-| HTML レポート JS/CSS | ジェネレータ `.cs` ファイルと `doc/samples/diff_report.html` の両方 |
+| HTML レポート JS/CSS | 埋め込みリソースファイル（`Services/HtmlReport/diff_report.css`、`diff_report.js`）、ジェネレータ `.cs` ファイル、`doc/samples/diff_report.html` |
+| 新サービス/インターフェース追加 | `Runner/RunScopeBuilder.cs`（DI 登録） |
+
+### アーキテクチャ
+
+#### 2 層 DI 構造
+
+アプリケーションは 2 層の依存性注入パターンを使用する：
+
+1. **ブートストラップ層**（`Program.cs`）：`ILoggerService`（Singleton）、`ConfigService`（Transient）、`ProgramRunner`（Transient）のみを登録。アプリケーションのエントリーポイント。
+2. **実行スコープ層**（`Runner/RunScopeBuilder.cs`）：差分実行ごとに構築。すべての差分関連サービスを Scoped で登録（例: `IFileDiffService`、`IFolderDiffService`、`ReportGenerateService`、`ILCache`）。設定（`IReadOnlyConfigSettings`）と `DiffExecutionContext` はこのスコープ内で Singleton として登録。
+
+新サービスを追加する場合、差分実行開始前に必要でない限り `RunScopeBuilder.Build()` に登録すること。
+
+#### レポートセクションライターパターン
+
+Markdown レポート生成は `IReportSectionWriter` インターフェース（`Services/IReportSectionWriter.cs`）を拡張点として使用。各セクション（ヘッダー、サマリー、追加/削除/変更/未変更ファイル、警告、凡例、IL キャッシュ統計、無視ファイル）は `Services/SectionWriters/` 内の個別実装。新しいレポートセクションを追加する場合は、新しい `IReportSectionWriter` 実装を作成し `ReportGenerateService` で組み込むこと。
+
+#### HTML レポート埋め込みリソース
+
+HTML レポートの CSS と JS は**埋め込みリソース**であり、インライン文字列ではない：
+- `Services/HtmlReport/diff_report.css`
+- `Services/HtmlReport/diff_report.js`
+
+これらは `FolderDiffIL4DotNet.csproj` で `<EmbeddedResource>` として宣言され、`HtmlReportGenerateService` が実行時にロードする。HTML レポートの動作を変更する場合は、C# 文字列リテラルではなくこれらのファイルを直接編集すること。
+
+#### 環境変数オーバーライド
+
+設定は `FOLDERDIFF_*` 環境変数オーバーライドをサポート（例: `FOLDERDIFF_MAXPARALLELISM`、`FOLDERDIFF_SHOULDINCLUDEUNCHANGEDFILES`）。`config.json` 読み込み後に `ConfigService` で適用される。ブール値は `true`/`false`/`1`/`0`（大文字小文字不問）。
+
+### テストインフラ
+
+#### 外部モックライブラリなし
+
+テストは Moq や NSubstitute 等ではなく**手書きのフェイク**（例: `FakeFileComparisonService`、`FakeDisassemblerProgram`）を使用。新規テスト作成時はこのパターンに従うこと：インターフェースを直接実装し、プロパティで戻り値を設定可能にし、呼び出し追跡リストで検証する。
+
+#### アサーション
+
+テストは **xUnit 組み込みアサーションのみ**使用（`Assert.Equal`、`Assert.Contains`、`Assert.True` 等）。サードパーティアサーションライブラリ（FluentAssertions、Shouldly 等）は導入しないこと。
+
+#### FakeDisassembler テストヘルパー
+
+`FolderDiffIL4DotNet.Tests/Helpers/FakeDisassembler/` は E2E テスト用の独立した .NET 8 コンソールアプリで、逆アセンブラツールをシミュレートする。ビルド時に別途ビルドされテスト出力ディレクトリにコピーされる。`FD_FAKE_` プレフィックスの環境変数で動作を制御する。
+
+#### 非並列テストコレクション
+
+一部のテストクラスは `[Collection(...)]` による非並列実行が必要：
+- `LoggerServiceTests` — 静的コンソール出力リダイレクションを使用
+- `FileDiffResultListsTests` — 共有ステート
+
+テストクラスがグローバル/静的ステートを操作する場合は、並列実行の競合を防ぐため `[Collection]` 属性を追加すること。
 
 ### コードスタイル
 
@@ -293,6 +396,9 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 - ワークフロー: `.github/workflows/dotnet.yml`（ビルド+テスト）、`release.yml`（タグベース）、`codeql.yml`（セキュリティ）
 - `CiAutomationConfigurationTests` がワークフローファイルの存在をアサート — CI 設定変更時はテストも更新すること
 - バージョニング: `version.json` による Nerdbank.GitVersioning
+- **Windows テストジョブ**: `dotnet.yml` にはクロスプラットフォーム検証用の Windows ランナージョブを含む（テストのみ、カバレッジなし）
+- **ミューテーションテスト**: Stryker.NET（`stryker-config.json`）が `workflow_dispatch` または PR で実行。閾値: high=80%、low=60%、break=40%。UI/ロギング/CLI コードはミューテーション対象外
+- **DocFX**: メインプロジェクトと Core プロジェクトの両方から API ドキュメントを CI で生成（`docfx.json`）。出力先は `_site/`
 
 ### Git・リリースルール
 
