@@ -254,6 +254,119 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // Completion summary chart
+        // 完了サマリーチャート
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void OutputCompletionSummaryChart_WritesBarForEachCategory()
+        {
+            var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
+            Assert.NotNull(stateType);
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, 100, 20, 5, 30 });
+
+            var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            try
+            {
+                method.Invoke(null, new[] { state });
+                var output = sw.ToString();
+
+                // Verify order: Unchanged, Added, Removed, Modified
+                // 順序確認: Unchanged, Added, Removed, Modified
+                int idxUnchanged = output.IndexOf("Unchanged", StringComparison.Ordinal);
+                int idxAdded = output.IndexOf("Added", StringComparison.Ordinal);
+                int idxRemoved = output.IndexOf("Removed", StringComparison.Ordinal);
+                int idxModified = output.IndexOf("Modified", StringComparison.Ordinal);
+                Assert.True(idxUnchanged < idxAdded, "Unchanged should appear before Added");
+                Assert.True(idxAdded < idxRemoved, "Added should appear before Removed");
+                Assert.True(idxRemoved < idxModified, "Removed should appear before Modified");
+
+                // Verify counts appear / 件数が出力されること
+                Assert.Contains("100", output, StringComparison.Ordinal);
+                Assert.Contains("20", output, StringComparison.Ordinal);
+                Assert.Contains("5", output, StringComparison.Ordinal);
+                Assert.Contains("30", output, StringComparison.Ordinal);
+
+                // Verify bar characters / バー文字が含まれること
+                Assert.Contains("█", output, StringComparison.Ordinal);
+                Assert.Contains("░", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public void OutputCompletionSummaryChart_ZeroTotal_WritesNothing()
+        {
+            var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
+            Assert.NotNull(stateType);
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, 0, 0, 0, 0 });
+
+            var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            try
+            {
+                method.Invoke(null, new[] { state });
+                Assert.Equal(string.Empty, sw.ToString());
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public void OutputCompletionSummaryChart_BarsAreLeftAligned()
+        {
+            var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
+            Assert.NotNull(stateType);
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, 50, 10, 5, 35 });
+
+            var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            try
+            {
+                method.Invoke(null, new[] { state });
+                var lines = sw.ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                // All bar lines should start at the same column (bar character position)
+                // すべてのバー行のバー文字開始位置が揃っていること
+                int? firstBarPos = null;
+                foreach (var line in lines)
+                {
+                    int barPos = line.IndexOf('█');
+                    if (barPos < 0) barPos = line.IndexOf('░');
+                    if (barPos < 0) continue;
+
+                    if (firstBarPos == null)
+                        firstBarPos = barPos;
+                    else
+                        Assert.Equal(firstBarPos.Value, barPos);
+                }
+                Assert.NotNull(firstBarPos);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // --banner early-exit test
         // --banner 早期終了テスト
         // -----------------------------------------------------------------------
