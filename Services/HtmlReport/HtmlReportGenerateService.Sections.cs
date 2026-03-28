@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Models;
@@ -17,7 +16,7 @@ namespace FolderDiffIL4DotNet.Services
         // ── Report sections ──────────────────────────────────────────────────
 
         private void AppendHeaderSection(
-            StringBuilder sb,
+            TextWriter writer,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string appVersion,
@@ -25,31 +24,31 @@ namespace FolderDiffIL4DotNet.Services
             string computerName,
             IReadOnlyConfigSettings config)
         {
-            sb.AppendLine($"<h1>{HtmlEncode("Folder Diff Report")}</h1>");
-            sb.AppendLine("<div class=\"report-header\">");
+            writer.WriteLine($"<h1>{HtmlEncode("Folder Diff Report")}</h1>");
+            writer.WriteLine("<div class=\"report-header\">");
 
             // Metadata cards row / メタデータカード行
-            sb.AppendLine("<div class=\"header-cards\">");
-            AppendHeaderCard(sb, "App Version", $"FolderDiffIL4DotNet {HtmlEncode(appVersion)}");
-            AppendHeaderCard(sb, "Computer", HtmlEncode(computerName));
+            writer.WriteLine("<div class=\"header-cards\">");
+            AppendHeaderCard(writer, "App Version", $"FolderDiffIL4DotNet {HtmlEncode(appVersion)}");
+            AppendHeaderCard(writer, "Computer", HtmlEncode(computerName));
             if (config.ShouldOutputFileTimestamps)
-                AppendHeaderCard(sb, "Timezone", HtmlEncode(DateTimeOffset.Now.ToString("zzz")));
+                AppendHeaderCard(writer, "Timezone", HtmlEncode(DateTimeOffset.Now.ToString("zzz")));
             if (!string.IsNullOrWhiteSpace(elapsedTimeString))
-                AppendHeaderCard(sb, "Elapsed Time", HtmlEncode(elapsedTimeString));
-            sb.AppendLine("</div>");
+                AppendHeaderCard(writer, "Elapsed Time", HtmlEncode(elapsedTimeString));
+            writer.WriteLine("</div>");
 
             // Folder paths (always full width, fixed order) / フォルダパス（常に全幅、順序固定）
-            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
-            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">New Folder</div><div class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</div></div>");
+            writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">Old Folder</div><div class=\"header-path-value\">{HtmlEncode(oldFolderAbsolutePath)}</div></div>");
+            writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">New Folder</div><div class=\"header-path-value\">{HtmlEncode(newFolderAbsolutePath)}</div></div>");
 
             // Disassembler availability with in-use marker / 逆アセンブラ可用性（使用中マーカー付き）
-            AppendDisassemblerAvailabilitySection(sb, _fileDiffResultLists.DisassemblerAvailability, BuildDisassemblerHeaderText());
+            AppendDisassemblerAvailabilitySection(writer, _fileDiffResultLists.DisassemblerAvailability, BuildDisassemblerHeaderText());
 
             // Ignored Extensions (standalone rounded section) / 無視する拡張子（独立した角丸セクション）
-            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Ignored Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</div></div>");
+            writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">Ignored Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.IgnoredExtensions))}</div></div>");
 
             // Text File Extensions (standalone rounded section) / テキストファイル拡張子（独立した角丸セクション）
-            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">Text File Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.TextFileExtensions))}</div></div>");
+            writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">Text File Extensions</div><div class=\"header-path-value\">{HtmlEncode(string.Join(", ", config.TextFileExtensions))}</div></div>");
 
             // IL Ignored Strings (standalone rounded section, comma-separated) / IL 無視文字列（独立した角丸セクション、カンマ区切り）
             if (config.ShouldIgnoreILLinesContainingConfiguredStrings)
@@ -57,33 +56,33 @@ namespace FolderDiffIL4DotNet.Services
                 var ilIgnoreStrings = GetNormalizedIlIgnoreStrings(config);
                 if (ilIgnoreStrings.Count == 0)
                 {
-                    sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">{HtmlEncode("Enabled, but no non-empty strings are configured.")}</div></div>");
+                    writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">{HtmlEncode("Enabled, but no non-empty strings are configured.")}</div></div>");
                 }
                 else
                 {
-                    sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">");
+                    writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Ignored Strings")}</div><div class=\"header-path-value\">");
                     foreach (var s in ilIgnoreStrings)
                     {
-                        sb.AppendLine($"<div>{HtmlEncode($"\"{s}\"")}</div>");
+                        writer.WriteLine($"<div>{HtmlEncode($"\"{s}\"")}</div>");
                     }
-                    sb.AppendLine("</div></div>");
+                    writer.WriteLine("</div></div>");
                 }
             }
 
             // MVID note (standalone rounded section) / MVID ノート（独立した角丸セクション）
-            sb.AppendLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Diff Note")}</div><div class=\"header-path-value\">{HtmlEncode("Lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("are auto-ignored (Module Version ID metadata).")}</div></div>");
-            sb.AppendLine("</div>"); // report-header
+            writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Diff Note")}</div><div class=\"header-path-value\">{HtmlEncode("Lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("are auto-ignored (Module Version ID metadata).")}</div></div>");
+            writer.WriteLine("</div>"); // report-header
         }
 
         /// <summary>Appends a single header card element. / ヘッダーカード要素を1つ追加します。</summary>
-        private static void AppendHeaderCard(StringBuilder sb, string label, string value, string? cssClass = null)
+        private static void AppendHeaderCard(TextWriter writer, string label, string value, string? cssClass = null)
         {
             var cls = cssClass != null ? $"header-card {cssClass}" : "header-card";
-            sb.AppendLine($"  <div class=\"{cls}\"><div class=\"header-card-label\">{HtmlEncode(label)}</div><div class=\"header-card-value\">{value}</div></div>");
+            writer.WriteLine($"  <div class=\"{cls}\"><div class=\"header-card-label\">{HtmlEncode(label)}</div><div class=\"header-card-value\">{value}</div></div>");
         }
 
         private void AppendIgnoredSection(
-            StringBuilder sb,
+            TextWriter writer,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             IReadOnlyConfigSettings config)
@@ -92,16 +91,16 @@ namespace FolderDiffIL4DotNet.Services
                 .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase).ToList();
             if (items.Count == 0)
             {
-                sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} (0)</h2>");
-                sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>");
+                writer.WriteLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} (0)</h2>");
+                writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>");
                 return;
             }
 
-            sb.AppendLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
-            sb.AppendLine("<details class=\"lazy-section\">");
-            sb.AppendLine("<summary></summary>");
-            AppendTableStart(sb, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm hide-tag");
-            sb.AppendLine("<tbody>");
+            writer.WriteLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
+            writer.WriteLine("<details class=\"lazy-section\">");
+            writer.WriteLine("<summary></summary>");
+            AppendTableStart(writer, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm hide-tag");
+            writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var entry in items)
             {
@@ -117,15 +116,15 @@ namespace FolderDiffIL4DotNet.Services
                 string ts = BuildIgnoredTimestamp(entry.Key, hasOld, hasNew,
                     oldFolderAbsolutePath, newFolderAbsolutePath, config.ShouldOutputFileTimestamps);
                 string location = (hasOld && hasNew) ? "old/new" : hasOld ? "old" : "new";
-                AppendFileRow(sb, "ign", idx, displayPath, ts, location);
+                AppendFileRow(writer, "ign", idx, displayPath, ts, location);
                 idx++;
             }
-            sb.AppendLine("</tbody></table></div>");
-            sb.AppendLine("</details>");
+            writer.WriteLine("</tbody></table></div>");
+            writer.WriteLine("</details>");
         }
 
         private void AppendUnchangedSection(
-            StringBuilder sb,
+            TextWriter writer,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             IReadOnlyConfigSettings config)
@@ -135,16 +134,16 @@ namespace FolderDiffIL4DotNet.Services
                 .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
             if (items.Count == 0)
             {
-                sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} (0)</h2>");
-                sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>");
+                writer.WriteLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} (0)</h2>");
+                writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>");
                 return;
             }
 
-            sb.AppendLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
-            sb.AppendLine("<details class=\"lazy-section\">");
-            sb.AppendLine("<summary></summary>");
-            AppendTableStart(sb, TH_BG_DEFAULT, "Diff Reason");
-            sb.AppendLine("<tbody>");
+            writer.WriteLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
+            writer.WriteLine("<details class=\"lazy-section\">");
+            writer.WriteLine("<summary></summary>");
+            AppendTableStart(writer, TH_BG_DEFAULT, "Diff Reason");
+            writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
             {
@@ -158,55 +157,55 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 string col6 = BuildDiffDetailDisplay(diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
-                AppendFileRow(sb, "unch", idx, path, ts, col6, asm ?? "");
+                AppendFileRow(writer, "unch", idx, path, ts, col6, asm ?? "");
                 idx++;
             }
-            sb.AppendLine("</tbody></table></div>");
-            sb.AppendLine("</details>");
+            writer.WriteLine("</tbody></table></div>");
+            writer.WriteLine("</details>");
         }
 
-        private void AppendAddedSection(StringBuilder sb, IReadOnlyConfigSettings config)
+        private void AppendAddedSection(TextWriter writer, IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.AddedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] {HtmlEncode("Added Files")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
+            writer.WriteLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] {HtmlEncode("Added Files")} ({items.Count})</h2>");
+            if (items.Count == 0) { writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
-            AppendTableStart(sb, TH_BG_ADDED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag");
-            sb.AppendLine("<tbody>");
+            AppendTableStart(writer, TH_BG_ADDED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag");
+            writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
             {
                 string ts = config.ShouldOutputFileTimestamps
                     ? Caching.TimestampCache.GetOrAdd(absPath) : "";
-                AppendFileRow(sb, "add", idx, absPath, ts, "");
+                AppendFileRow(writer, "add", idx, absPath, ts, "");
                 idx++;
             }
-            sb.AppendLine("</tbody></table></div>");
+            writer.WriteLine("</tbody></table></div>");
         }
 
-        private void AppendRemovedSection(StringBuilder sb, IReadOnlyConfigSettings config)
+        private void AppendRemovedSection(TextWriter writer, IReadOnlyConfigSettings config)
         {
             var items = _fileDiffResultLists.RemovedFilesAbsolutePath
                 .OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] {HtmlEncode("Removed Files")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
+            writer.WriteLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] {HtmlEncode("Removed Files")} ({items.Count})</h2>");
+            if (items.Count == 0) { writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
-            AppendTableStart(sb, TH_BG_REMOVED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag");
-            sb.AppendLine("<tbody>");
+            AppendTableStart(writer, TH_BG_REMOVED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag");
+            writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
             {
                 string ts = config.ShouldOutputFileTimestamps
                     ? Caching.TimestampCache.GetOrAdd(absPath) : "";
-                AppendFileRow(sb, "rem", idx, absPath, ts, "");
+                AppendFileRow(writer, "rem", idx, absPath, ts, "");
                 idx++;
             }
-            sb.AppendLine("</tbody></table></div>");
+            writer.WriteLine("</tbody></table></div>");
         }
 
         private void AppendModifiedSection(
-            StringBuilder sb,
+            TextWriter writer,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
@@ -217,11 +216,11 @@ namespace FolderDiffIL4DotNet.Services
                 .OrderBy(p => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetModifiedSortOrder(d) : 3)
                 .ThenBy(p => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(p)))
                 .ThenBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
-            sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] {HtmlEncode("Modified Files")} ({items.Count})</h2>");
-            if (items.Count == 0) { sb.AppendLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
+            writer.WriteLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] {HtmlEncode("Modified Files")} ({items.Count})</h2>");
+            if (items.Count == 0) { writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
-            AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
-            sb.AppendLine("<tbody>");
+            AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason");
+            writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
             {
@@ -238,14 +237,14 @@ namespace FolderDiffIL4DotNet.Services
                 string imp = GetImportanceLabel(path);
                 string impLevels = GetImportanceLevelsLabel(path);
                 string tag = GetChangeTagDisplay(path);
-                AppendFileRow(sb, "mod", idx, path, ts, col6, asm ?? "", imp, impLevels, tag);
+                AppendFileRow(writer, "mod", idx, path, ts, col6, asm ?? "", imp, impLevels, tag);
 
                 // Method-level changes row (above IL diff)
                 if (config.ShouldIncludeAssemblySemanticChangesInReport &&
                     diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch &&
                     _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges.TryGetValue(path, out var semanticChanges))
                 {
-                    AppendAssemblySemanticChangesRow(sb, idx, path, semanticChanges, config);
+                    AppendAssemblySemanticChangesRow(writer, idx, path, semanticChanges, config);
                 }
 
                 // Dependency changes row for .deps.json files
@@ -253,61 +252,61 @@ namespace FolderDiffIL4DotNet.Services
                 if (config.ShouldIncludeDependencyChangesInReport &&
                     _fileDiffResultLists.FileRelativePathToDependencyChanges.TryGetValue(path, out var depChanges))
                 {
-                    AppendDependencyChangesRow(sb, idx, depChanges, config);
+                    AppendDependencyChangesRow(writer, idx, depChanges, config);
                 }
 
                 if (config.EnableInlineDiff &&
                     (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||
                      diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch))
                 {
-                    AppendInlineDiffRow(sb, idx, path, oldFolderAbsolutePath, newFolderAbsolutePath,
+                    AppendInlineDiffRow(writer, idx, path, oldFolderAbsolutePath, newFolderAbsolutePath,
                         reportsFolderAbsolutePath, config, diffDetail, asm ?? "", ilCache);
                 }
 
                 idx++;
             }
-            sb.AppendLine("</tbody></table></div>");
+            writer.WriteLine("</tbody></table></div>");
         }
 
-        private void AppendSummarySection(StringBuilder sb, IReadOnlyConfigSettings config)
+        private void AppendSummarySection(TextWriter writer, IReadOnlyConfigSettings config)
         {
-            sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("Summary")}</h2>");
-            sb.AppendLine("<table class=\"stat-table\">");
-            sb.AppendLine("<colgroup><col class=\"stat-col1\"><col class=\"stat-col2\"></colgroup>");
-            sb.AppendLine($"  <thead><tr><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Category</th><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Count</th></tr></thead>");
-            sb.AppendLine("  <tbody>");
+            writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("Summary")}</h2>");
+            writer.WriteLine("<table class=\"stat-table\">");
+            writer.WriteLine("<colgroup><col class=\"stat-col1\"><col class=\"stat-col2\"></colgroup>");
+            writer.WriteLine($"  <thead><tr><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Category</th><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Count</th></tr></thead>");
+            writer.WriteLine("  <tbody>");
             var stats = _fileDiffResultLists.SummaryStatistics;
             if (config.ShouldIncludeIgnoredFiles)
-                sb.AppendLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Ignored")}</td><td class=\"stat-value\">{stats.IgnoredCount}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Unchanged")}</td><td class=\"stat-value\">{stats.UnchangedCount}</td></tr>");
-            sb.AppendLine($"    <tr style=\"background:{TH_BG_ADDED}\"><td class=\"stat-label\">{HtmlEncode("Added")}</td><td class=\"stat-value\">{stats.AddedCount}</td></tr>");
-            sb.AppendLine($"    <tr style=\"background:{TH_BG_REMOVED}\"><td class=\"stat-label\">{HtmlEncode("Removed")}</td><td class=\"stat-value\">{stats.RemovedCount}</td></tr>");
-            sb.AppendLine($"    <tr style=\"background:{TH_BG_MODIFIED}\"><td class=\"stat-label\">{HtmlEncode("Modified")}</td><td class=\"stat-value\">{stats.ModifiedCount}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Compared")}</td><td class=\"stat-value\">{_fileDiffResultLists.OldFilesAbsolutePath.Count} ({HtmlEncode("Old")}) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} ({HtmlEncode("New")})</td></tr>");
-            sb.AppendLine("  </tbody>");
-            sb.AppendLine("</table>");
+                writer.WriteLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Ignored")}</td><td class=\"stat-value\">{stats.IgnoredCount}</td></tr>");
+            writer.WriteLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Unchanged")}</td><td class=\"stat-value\">{stats.UnchangedCount}</td></tr>");
+            writer.WriteLine($"    <tr style=\"background:{TH_BG_ADDED}\"><td class=\"stat-label\">{HtmlEncode("Added")}</td><td class=\"stat-value\">{stats.AddedCount}</td></tr>");
+            writer.WriteLine($"    <tr style=\"background:{TH_BG_REMOVED}\"><td class=\"stat-label\">{HtmlEncode("Removed")}</td><td class=\"stat-value\">{stats.RemovedCount}</td></tr>");
+            writer.WriteLine($"    <tr style=\"background:{TH_BG_MODIFIED}\"><td class=\"stat-label\">{HtmlEncode("Modified")}</td><td class=\"stat-value\">{stats.ModifiedCount}</td></tr>");
+            writer.WriteLine($"    <tr><td class=\"stat-label\">{HtmlEncode("Compared")}</td><td class=\"stat-value\">{_fileDiffResultLists.OldFilesAbsolutePath.Count} ({HtmlEncode("Old")}) vs {_fileDiffResultLists.NewFilesAbsolutePath.Count} ({HtmlEncode("New")})</td></tr>");
+            writer.WriteLine("  </tbody>");
+            writer.WriteLine("</table>");
         }
 
-        private static void AppendILCacheStatsSection(StringBuilder sb, ILCache ilCache)
+        private static void AppendILCacheStatsSection(TextWriter writer, ILCache ilCache)
         {
             var stats = ilCache.GetReportStats();
-            sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("IL Cache Stats")}</h2>");
-            sb.AppendLine("<table class=\"stat-table\">");
-            sb.AppendLine("<colgroup><col class=\"stat-col1\"><col class=\"stat-col2\"></colgroup>");
-            sb.AppendLine($"  <thead><tr><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Metric</th><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Value</th></tr></thead>");
-            sb.AppendLine("  <tbody>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">Hits</td><td class=\"stat-value\">{stats.Hits}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">Misses</td><td class=\"stat-value\">{stats.Misses}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">Hit Rate</td><td class=\"stat-value\">{stats.HitRatePct:F1}%</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">Stores</td><td class=\"stat-value\">{stats.Stores}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">Evicted</td><td class=\"stat-value\">{stats.Evicted}</td></tr>");
-            sb.AppendLine($"    <tr><td class=\"stat-label\">Expired</td><td class=\"stat-value\">{stats.Expired}</td></tr>");
-            sb.AppendLine("  </tbody>");
-            sb.AppendLine("</table>");
+            writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("IL Cache Stats")}</h2>");
+            writer.WriteLine("<table class=\"stat-table\">");
+            writer.WriteLine("<colgroup><col class=\"stat-col1\"><col class=\"stat-col2\"></colgroup>");
+            writer.WriteLine($"  <thead><tr><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Metric</th><th scope=\"col\" style=\"background:{TH_BG_DEFAULT}\">Value</th></tr></thead>");
+            writer.WriteLine("  <tbody>");
+            writer.WriteLine($"    <tr><td class=\"stat-label\">Hits</td><td class=\"stat-value\">{stats.Hits}</td></tr>");
+            writer.WriteLine($"    <tr><td class=\"stat-label\">Misses</td><td class=\"stat-value\">{stats.Misses}</td></tr>");
+            writer.WriteLine($"    <tr><td class=\"stat-label\">Hit Rate</td><td class=\"stat-value\">{stats.HitRatePct:F1}%</td></tr>");
+            writer.WriteLine($"    <tr><td class=\"stat-label\">Stores</td><td class=\"stat-value\">{stats.Stores}</td></tr>");
+            writer.WriteLine($"    <tr><td class=\"stat-label\">Evicted</td><td class=\"stat-value\">{stats.Evicted}</td></tr>");
+            writer.WriteLine($"    <tr><td class=\"stat-label\">Expired</td><td class=\"stat-value\">{stats.Expired}</td></tr>");
+            writer.WriteLine("  </tbody>");
+            writer.WriteLine("</table>");
         }
 
         private void AppendWarningsSection(
-            StringBuilder sb,
+            TextWriter writer,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
@@ -318,7 +317,7 @@ namespace FolderDiffIL4DotNet.Services
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
             if (!hasSha256 && !hasTs) return;
 
-            sb.AppendLine($"<h2 class=\"section-heading\">{HtmlEncode("Warnings")}</h2>");
+            writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("Warnings")}</h2>");
 
             // SHA256Mismatch warning + detail table (grouped together)
             // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
@@ -331,9 +330,9 @@ namespace FolderDiffIL4DotNet.Services
                     .ToList();
                 if (sha256Files.Count > 0)
                 {
-                    sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable")} ({sha256Files.Count})</h2>");
-                    AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
-                    sb.AppendLine("<tbody>");
+                    writer.WriteLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable")} ({sha256Files.Count})</h2>");
+                    AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason");
+                    writer.WriteLine("<tbody>");
                     int idx = 0;
                     foreach (var kv in sha256Files)
                     {
@@ -347,10 +346,10 @@ namespace FolderDiffIL4DotNet.Services
                         string col6 = BuildDiffDetailDisplay(kv.Value);
                         string imp = GetImportanceLabel(kv.Key);
                         string impLevels = GetImportanceLevelsLabel(kv.Key);
-                        AppendFileRow(sb, "sha256w", idx, kv.Key, ts, col6, importance: imp, importanceLevels: impLevels);
+                        AppendFileRow(writer, "sha256w", idx, kv.Key, ts, col6, importance: imp, importanceLevels: impLevels);
                         idx++;
                     }
-                    sb.AppendLine("</tbody></table></div>");
+                    writer.WriteLine("</tbody></table></div>");
                 }
             }
 
@@ -362,9 +361,9 @@ namespace FolderDiffIL4DotNet.Services
                     .OrderBy(w => _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(w => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(w.FileRelativePath)))
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
-                sb.AppendLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("new file timestamps older than old")} ({warnings.Count})</h2>");
-                AppendTableStart(sb, TH_BG_MODIFIED, "Diff Reason");
-                sb.AppendLine("<tbody>");
+                writer.WriteLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("new file timestamps older than old")} ({warnings.Count})</h2>");
+                AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason");
+                writer.WriteLine("<tbody>");
                 int idx = 0;
                 foreach (var w in warnings)
                 {
@@ -375,19 +374,19 @@ namespace FolderDiffIL4DotNet.Services
                     string imp = GetImportanceLabel(w.FileRelativePath);
                     string impLevels = GetImportanceLevelsLabel(w.FileRelativePath);
                     string tag = GetChangeTagDisplay(w.FileRelativePath);
-                    AppendFileRow(sb, "tsw", idx, w.FileRelativePath, ts, col6, asm ?? "", imp, impLevels, tag);
+                    AppendFileRow(writer, "tsw", idx, w.FileRelativePath, ts, col6, asm ?? "", imp, impLevels, tag);
 
                     if (config.EnableInlineDiff &&
                         (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||
                          diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch))
                     {
-                        AppendInlineDiffRow(sb, idx, w.FileRelativePath, oldFolderAbsolutePath, newFolderAbsolutePath,
+                        AppendInlineDiffRow(writer, idx, w.FileRelativePath, oldFolderAbsolutePath, newFolderAbsolutePath,
                             reportsFolderAbsolutePath, config, diffDetail, asm ?? "", ilCache, sectionPrefix: "tsw");
                     }
 
                     idx++;
                 }
-                sb.AppendLine("</tbody></table></div>");
+                writer.WriteLine("</tbody></table></div>");
             }
         }
     }

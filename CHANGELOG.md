@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Performance
+
+- **Streaming HTML report generation** — Replaced in-memory `StringBuilder`-based HTML report construction with streaming `TextWriter`/`StreamWriter` output in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs) and all its partial files ([`Sections`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`DetailRows`](Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs), [`Helpers`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`Js`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)). The report is now written chunk-by-chunk to disk via a 64 KB buffered `StreamWriter` instead of accumulating the entire HTML string in memory before a single `File.WriteAllText()` call. This reduces peak memory usage for large comparison reports (thousands of files with inline diffs) and avoids potential OOM on very large reports. No behavioral or output format changes. Test count: 956 (unchanged).
+
 #### Changed
 
 - **Extract `DiffPipelineExecutor` from `ProgramRunner`** — Moved diff execution pipeline (scoped DI container construction, folder diff execution, and Markdown/HTML/audit-log report generation) from `ProgramRunner` into a dedicated [`Runner/DiffPipelineExecutor.cs`](Runner/DiffPipelineExecutor.cs). `ProgramRunner` now focuses on CLI dispatch, argument validation, config loading, and exit-code mapping, delegating the heavy pipeline work to `DiffPipelineExecutor`. No behavioral changes. Updated [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA architecture diagrams, file tables, design intent). Test count: 899 (unchanged).
@@ -747,6 +751,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Performance
+
+- **HTML レポートのストリーミング生成** — [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs) および全パーシャルファイル（[`Sections`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs)、[`DetailRows`](Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs)、[`Helpers`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs)、[`Js`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)）のメモリ内 `StringBuilder` 方式を `TextWriter`/`StreamWriter` によるストリーミング出力に置換。HTML 文字列全体をメモリに蓄積してから `File.WriteAllText()` で一括書き出す方式から、64 KB バッファの `StreamWriter` でチャンク単位にディスクへ書き出す方式に変更。大規模比較レポート（インライン差分を含む数千ファイル）のピークメモリ使用量を削減し、超大規模レポートでの OOM を回避する。動作変更・出力フォーマット変更なし。テスト件数: 956（変更なし）。
 
 #### Changed
 

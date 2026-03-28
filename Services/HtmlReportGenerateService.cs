@@ -62,12 +62,14 @@ namespace FolderDiffIL4DotNet.Services
             if (!context.Config.ShouldGenerateHtmlReport) return;
 
             string htmlPath = Path.Combine(context.ReportsFolderAbsolutePath, DIFF_REPORT_HTML_FILE_NAME);
-            string html = BuildHtml(
-                context.OldFolderAbsolutePath, context.NewFolderAbsolutePath, context.ReportsFolderAbsolutePath,
-                context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache);
             try
             {
-                File.WriteAllText(htmlPath, html, Encoding.UTF8);
+                // Stream HTML chunks directly to disk to reduce peak memory usage for large reports.
+                // 大規模レポートのピークメモリ使用量を削減するため、HTML チャンクを直接ディスクにストリーム書き出しする。
+                using var writer = new StreamWriter(htmlPath, append: false, Encoding.UTF8, bufferSize: 65536);
+                WriteHtml(writer,
+                    context.OldFolderAbsolutePath, context.NewFolderAbsolutePath, context.ReportsFolderAbsolutePath,
+                    context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -79,7 +81,8 @@ namespace FolderDiffIL4DotNet.Services
 
         // ── Build ────────────────────────────────────────────────────────────
 
-        private string BuildHtml(
+        private void WriteHtml(
+            TextWriter writer,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
@@ -95,49 +98,47 @@ namespace FolderDiffIL4DotNet.Services
                 .Replace("'", "-").Replace("\"", "-").Replace("\\", "-").Replace("`", "-");
             string reportDate = DateTime.Now.ToString("yyyyMMdd");
 
-            var sb = new StringBuilder(capacity: 131072);
-            AppendHtmlHead(sb);
-            sb.AppendLine("<body>");
+            AppendHtmlHead(writer);
+            writer.WriteLine("<body>");
             // Skip link for keyboard navigation / キーボードナビゲーション用スキップリンク
-            sb.AppendLine("<a href=\"#main-content\" class=\"skip-link\">Skip to main content</a>");
+            writer.WriteLine("<a href=\"#main-content\" class=\"skip-link\">Skip to main content</a>");
 
-            AppendControlsBar(sb);
-            AppendFilterZone(sb);
-            sb.AppendLine("</div>");  // end .controls
+            AppendControlsBar(writer);
+            AppendFilterZone(writer);
+            writer.WriteLine("</div>");  // end .controls
 
-            AppendMainSections(sb, oldFolderAbsolutePath, newFolderAbsolutePath,
+            AppendMainSections(writer, oldFolderAbsolutePath, newFolderAbsolutePath,
                 reportsFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config, ilCache);
 
-            AppendProgressAndJs(sb, storageKey, reportDate);
-            sb.AppendLine("</body>");
-            sb.AppendLine("</html>");
-            return sb.ToString();
+            AppendProgressAndJs(writer, storageKey, reportDate);
+            writer.WriteLine("</body>");
+            writer.WriteLine("</html>");
         }
 
         // ── Controls bar (button row stripped in downloadReviewed) ─────────────
         // コントロールバー（ボタン行は downloadReviewed で除去）
 
-        private static void AppendControlsBar(StringBuilder sb)
+        private static void AppendControlsBar(TextWriter writer)
         {
-            sb.AppendLine("<div class=\"controls\" role=\"toolbar\" aria-label=\"Report controls\">");
-            sb.AppendLine("<!--CTRL-->");
-            sb.AppendLine("<div class=\"ctrl-buttons\">");
-            sb.AppendLine("  <div class=\"ctrl-progress\">");
-            sb.AppendLine("    <div class=\"progress-wrap\">");
-            sb.AppendLine("      <div class=\"progress-bar\"><div id=\"progress-bar-fill\" class=\"progress-bar-fill\"></div></div>");
-            sb.AppendLine("      <span id=\"progress-text\" class=\"progress-text\"></span>");
-            sb.AppendLine("      <span id=\"progress-detail\" class=\"progress-detail\"></span>");
-            sb.AppendLine("    </div>");
-            sb.AppendLine("  </div>");
-            sb.AppendLine("  <div class=\"ctrl-actions\">");
-            sb.AppendLine("    <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
-            sb.AppendLine("    <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
-            sb.AppendLine("    <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
-            sb.AppendLine("    <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
-            sb.AppendLine("    <span id=\"save-status\" class=\"save-status\" role=\"status\" aria-live=\"polite\"></span>");
-            sb.AppendLine("  </div>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("<!--/CTRL-->");
+            writer.WriteLine("<div class=\"controls\" role=\"toolbar\" aria-label=\"Report controls\">");
+            writer.WriteLine("<!--CTRL-->");
+            writer.WriteLine("<div class=\"ctrl-buttons\">");
+            writer.WriteLine("  <div class=\"ctrl-progress\">");
+            writer.WriteLine("    <div class=\"progress-wrap\">");
+            writer.WriteLine("      <div class=\"progress-bar\"><div id=\"progress-bar-fill\" class=\"progress-bar-fill\"></div></div>");
+            writer.WriteLine("      <span id=\"progress-text\" class=\"progress-text\"></span>");
+            writer.WriteLine("      <span id=\"progress-detail\" class=\"progress-detail\"></span>");
+            writer.WriteLine("    </div>");
+            writer.WriteLine("  </div>");
+            writer.WriteLine("  <div class=\"ctrl-actions\">");
+            writer.WriteLine("    <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
+            writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
+            writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
+            writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
+            writer.WriteLine("    <span id=\"save-status\" class=\"save-status\" role=\"status\" aria-live=\"polite\"></span>");
+            writer.WriteLine("  </div>");
+            writer.WriteLine("</div>");
+            writer.WriteLine("<!--/CTRL-->");
         }
 
         // ── Filter zone (kept in reviewed HTML for read-only filtering) ───────
@@ -168,78 +169,78 @@ namespace FolderDiffIL4DotNet.Services
             ("filter-imp-low",    "Low",                                                           "Low-impact change: body-only modification, internal/private member addition"),
         };
 
-        private static void AppendFilterZone(StringBuilder sb)
+        private static void AppendFilterZone(TextWriter writer)
         {
-            sb.AppendLine("<div class=\"filter-zone\" role=\"search\" aria-label=\"Report filters\">");
+            writer.WriteLine("<div class=\"filter-zone\" role=\"search\" aria-label=\"Report filters\">");
 
             // Search + Unchecked only row / 検索 + 未チェックのみ行
-            sb.AppendLine("<div class=\"ctrl-filter-row\">");
-            sb.AppendLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
-            sb.AppendLine("  <span class=\"filter-sep\"></span>");
-            sb.AppendLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\" aria-label=\"" + HtmlEncode("Search file path") + "\">");
-            sb.AppendLine("</div>");
+            writer.WriteLine("<div class=\"ctrl-filter-row\">");
+            writer.WriteLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
+            writer.WriteLine("  <span class=\"filter-sep\"></span>");
+            writer.WriteLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\" aria-label=\"" + HtmlEncode("Search file path") + "\">");
+            writer.WriteLine("</div>");
 
             // Filter tables row / フィルターテーブル行
-            sb.AppendLine("<div class=\"filter-tables\">");
+            writer.WriteLine("<div class=\"filter-tables\">");
 
             // Diff Detail filter table (2 items per row) / Diff Detail フィルターテーブル（1行2項目）
-            sb.AppendLine("<div class=\"filter-table-wrap\">");
-            sb.AppendLine("<table class=\"filter-table\" aria-label=\"Diff Detail filters\">");
-            sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"6\">Diff Detail</th></tr></thead>");
-            sb.AppendLine("<tbody>");
+            writer.WriteLine("<div class=\"filter-table-wrap\">");
+            writer.WriteLine("<table class=\"filter-table\" aria-label=\"Diff Detail filters\">");
+            writer.WriteLine("<thead><tr><th scope=\"col\" colspan=\"6\">Diff Detail</th></tr></thead>");
+            writer.WriteLine("<tbody>");
             for (int i = 0; i < s_diffDetailFilters.Length; i += 2)
             {
-                sb.Append("<tr>");
-                AppendFilterTableCells(sb, s_diffDetailFilters[i]);
+                writer.Write("<tr>");
+                AppendFilterTableCells(writer, s_diffDetailFilters[i]);
                 if (i + 1 < s_diffDetailFilters.Length)
-                    AppendFilterTableCells(sb, s_diffDetailFilters[i + 1]);
+                    AppendFilterTableCells(writer, s_diffDetailFilters[i + 1]);
                 else
-                    sb.Append("<td></td><td></td><td></td>");
-                sb.AppendLine("</tr>");
+                    writer.Write("<td></td><td></td><td></td>");
+                writer.WriteLine("</tr>");
             }
-            sb.AppendLine("</tbody></table>");
-            sb.AppendLine("</div>");
+            writer.WriteLine("</tbody></table>");
+            writer.WriteLine("</div>");
 
             // Change Importance filter table / Change Importance フィルターテーブル
-            sb.AppendLine("<div class=\"filter-table-wrap\">");
-            sb.AppendLine("<table class=\"filter-table\" aria-label=\"Change Importance filters\">");
-            sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"3\">Change Importance</th></tr></thead>");
-            sb.AppendLine("<tbody>");
+            writer.WriteLine("<div class=\"filter-table-wrap\">");
+            writer.WriteLine("<table class=\"filter-table\" aria-label=\"Change Importance filters\">");
+            writer.WriteLine("<thead><tr><th scope=\"col\" colspan=\"3\">Change Importance</th></tr></thead>");
+            writer.WriteLine("<tbody>");
             foreach (var (id, display, desc) in s_importanceFilters)
             {
-                AppendFilterTableRow(sb, id, display, HtmlEncode(desc));
+                AppendFilterTableRow(writer, id, display, HtmlEncode(desc));
             }
-            sb.AppendLine("</tbody></table>");
-            sb.AppendLine("</div>");
+            writer.WriteLine("</tbody></table>");
+            writer.WriteLine("</div>");
             // Estimated Change legend table (2 items per row, read-only, no filter checkboxes)
             // 推定変更凡例テーブル（1行2項目、読み取り専用、フィルターチェックボックスなし）
-            sb.AppendLine("<div class=\"filter-table-wrap\">");
-            sb.AppendLine("<table class=\"filter-table\" aria-label=\"Estimated Change legend\">");
-            sb.AppendLine("<thead><tr><th scope=\"col\" colspan=\"4\">Legend — Estimated Change</th></tr></thead>");
-            sb.AppendLine("<tbody>");
+            writer.WriteLine("<div class=\"filter-table-wrap\">");
+            writer.WriteLine("<table class=\"filter-table\" aria-label=\"Estimated Change legend\">");
+            writer.WriteLine("<thead><tr><th scope=\"col\" colspan=\"4\">Legend — Estimated Change</th></tr></thead>");
+            writer.WriteLine("<tbody>");
             var allLabels = ChangeTagClassifier.AllLabels.ToArray();
             for (int i = 0; i < allLabels.Length; i += 2)
             {
-                sb.Append("<tr>");
-                sb.Append($"<td class=\"ft-label\"><code>{HtmlEncode(allLabels[i].Value)}</code></td><td class=\"ft-desc\">{HtmlEncode(GetChangeTagDescription(allLabels[i].Key))}</td>");
+                writer.Write("<tr>");
+                writer.Write($"<td class=\"ft-label\"><code>{HtmlEncode(allLabels[i].Value)}</code></td><td class=\"ft-desc\">{HtmlEncode(GetChangeTagDescription(allLabels[i].Key))}</td>");
                 if (i + 1 < allLabels.Length)
-                    sb.Append($"<td class=\"ft-label\"><code>{HtmlEncode(allLabels[i + 1].Value)}</code></td><td class=\"ft-desc\">{HtmlEncode(GetChangeTagDescription(allLabels[i + 1].Key))}</td>");
+                    writer.Write($"<td class=\"ft-label\"><code>{HtmlEncode(allLabels[i + 1].Value)}</code></td><td class=\"ft-desc\">{HtmlEncode(GetChangeTagDescription(allLabels[i + 1].Key))}</td>");
                 else
-                    sb.Append("<td></td><td></td>");
-                sb.AppendLine("</tr>");
+                    writer.Write("<td></td><td></td>");
+                writer.WriteLine("</tr>");
             }
-            sb.AppendLine("</tbody></table>");
-            sb.AppendLine("</div>");
-            sb.AppendLine("</div>"); // end .filter-tables
+            writer.WriteLine("</tbody></table>");
+            writer.WriteLine("</div>");
+            writer.WriteLine("</div>"); // end .filter-tables
 
-            sb.AppendLine("</div>");  // end .filter-zone
+            writer.WriteLine("</div>");  // end .filter-zone
         }
 
         // ── Main content sections ─────────────────────────────────────────────
         // メインコンテンツセクション
 
         private void AppendMainSections(
-            StringBuilder sb,
+            TextWriter writer,
             string oldFolderAbsolutePath,
             string newFolderAbsolutePath,
             string reportsFolderAbsolutePath,
@@ -249,33 +250,33 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyConfigSettings config,
             ILCache? ilCache)
         {
-            sb.AppendLine("<main id=\"main-content\">");
-            AppendHeaderSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath,
+            writer.WriteLine("<main id=\"main-content\">");
+            AppendHeaderSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath,
                 appVersion, elapsedTimeString, computerName, config);
 
             if (config.ShouldIncludeIgnoredFiles)
-                AppendIgnoredSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, config);
+                AppendIgnoredSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath, config);
 
             if (config.ShouldIncludeUnchangedFiles)
-                AppendUnchangedSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, config);
+                AppendUnchangedSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath, config);
 
-            AppendAddedSection(sb, config);
-            AppendRemovedSection(sb, config);
-            AppendModifiedSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
-            AppendSummarySection(sb, config);
+            AppendAddedSection(writer, config);
+            AppendRemovedSection(writer, config);
+            AppendModifiedSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
+            AppendSummarySection(writer, config);
 
             if (config.ShouldIncludeILCacheStatsInReport && ilCache != null)
-                AppendILCacheStatsSection(sb, ilCache);
+                AppendILCacheStatsSection(writer, ilCache);
 
-            AppendWarningsSection(sb, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
+            AppendWarningsSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
 
-            sb.AppendLine("</main>");
+            writer.WriteLine("</main>");
         }
 
         // ── Progress bar calculation and JS injection ─────────────────────────
         // プログレスバー計算と JS 注入
 
-        private void AppendProgressAndJs(StringBuilder sb, string storageKey, string reportDate)
+        private void AppendProgressAndJs(TextWriter writer, string storageKey, string reportDate)
         {
             int addedCount = _fileDiffResultLists.AddedFilesAbsolutePath.Count;
             int removedCount = _fileDiffResultLists.RemovedFilesAbsolutePath.Count;
@@ -285,7 +286,7 @@ namespace FolderDiffIL4DotNet.Services
             int tsWarnCount = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Count;
             int totalFiles = addedCount + removedCount + modifiedCount + sha256WarnCount + tsWarnCount;
             string totalFilesDetail = BuildTotalFilesDetail(addedCount, removedCount, modifiedCount, sha256WarnCount, tsWarnCount);
-            AppendJs(sb, storageKey, reportDate, totalFiles, totalFilesDetail);
+            AppendJs(writer, storageKey, reportDate, totalFiles, totalFilesDetail);
         }
 
         // ── Progress detail ──────────────────────────────────────────────────
@@ -309,19 +310,19 @@ namespace FolderDiffIL4DotNet.Services
 
         // ── Head ─────────────────────────────────────────────────────────────
 
-        private static void AppendHtmlHead(StringBuilder sb)
+        private static void AppendHtmlHead(TextWriter writer)
         {
-            sb.AppendLine("<!DOCTYPE html>");
-            sb.AppendLine("<html lang=\"en\">");
-            sb.AppendLine("<head>");
-            sb.AppendLine("  <meta charset=\"UTF-8\">");
-            sb.AppendLine("  <meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'\">");
-            sb.AppendLine("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-            sb.AppendLine("  <title>diff_report</title>");
-            sb.AppendLine("  <style>");
-            sb.AppendLine(GetCss());
-            sb.AppendLine("  </style>");
-            sb.AppendLine("</head>");
+            writer.WriteLine("<!DOCTYPE html>");
+            writer.WriteLine("<html lang=\"en\">");
+            writer.WriteLine("<head>");
+            writer.WriteLine("  <meta charset=\"UTF-8\">");
+            writer.WriteLine("  <meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self'\">");
+            writer.WriteLine("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
+            writer.WriteLine("  <title>diff_report</title>");
+            writer.WriteLine("  <style>");
+            writer.WriteLine(GetCss());
+            writer.WriteLine("  </style>");
+            writer.WriteLine("</head>");
         }
     }
 }
