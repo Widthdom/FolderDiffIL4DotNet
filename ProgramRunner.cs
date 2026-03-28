@@ -179,7 +179,7 @@ namespace FolderDiffIL4DotNet
             OutputSummaryBar("Unchanged", state.UnchangedCount, total, ConsoleColor.DarkGray);
             OutputSummaryBar("Added",     state.AddedCount,     total, ConsoleColor.Green);
             OutputSummaryBar("Removed",   state.RemovedCount,   total, ConsoleColor.Red);
-            OutputSummaryBar("Modified",  state.ModifiedCount,  total, ConsoleColor.Yellow);
+            OutputSummaryBar("Modified",  state.ModifiedCount,  total, ConsoleColor.Cyan);
             Console.WriteLine();
         }
 
