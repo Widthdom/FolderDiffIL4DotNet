@@ -61,6 +61,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Documentation
 
+- **Add Estimated Change column description to README** — Added the missing "Estimated Change" column to the Interactive HTML Review Report column tables in [`README.md`](README.md) (EN+JA). Documents the 12 pattern-based classification tags (`+Method`, `-Method`, `+Type`, `-Type`, `Extract`, `Inline`, `Move`, `Rename`, `Signature`, `Access`, `BodyEdit`, `DepUpdate`) and clarifies that the column is shown only in Unchanged and Modified sections. Also updated the column-visibility summary paragraph in both EN and JA sections.
+
 - **CI/CD workflow overview diagram in DEVELOPER_GUIDE.md** — Added a visual text-based workflow diagram showing which CI jobs run on which triggers (PR, push to main, tag push), along with descriptions of `mutation-testing` and `benchmark` jobs that were previously undocumented. Both English and Japanese sections updated in [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md). Quality axes summary (correctness, coverage, detection strength, performance, security, compatibility) included for quick comprehension.
 
 - **Performance guide with memory architecture and benchmark baselines** — Created [`doc/PERFORMANCE_GUIDE.md`](doc/PERFORMANCE_GUIDE.md) (bilingual EN+JA) documenting: memory management architecture (IL memory cache LRU/TTL eviction, disk cache quotas, text diff memory budgets), overall memory profile estimates by project scale (1K vs 10K files), parallelism tuning, benchmark baseline metrics (folder enumeration, SHA256 hashing, Myers diff algorithm), CI regression detection workflow, and tuning recommendations by scenario (small/medium/large projects, network shares, CI, memory-constrained). Referenced from [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md).
@@ -801,6 +803,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **ミューテーションテスト CI 統合** — [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) の `mutation-testing` ジョブを、既存の手動 `workflow_dispatch` トリガーに加えて、プルリクエスト時に自動実行されるよう変更。ミューテーションスコアサマリーを GitHub Actions ステップサマリーに投稿するステップを追加。
 
 #### Documentation
+
+- **README に Estimated Change 列の説明を追加** — インタラクティブ HTML レビューレポートの列テーブル（[`README.md`](README.md) EN+JA）に未記載だった「Estimated Change」列を追加。12 種のパターン分類タグ（`+Method`・`-Method`・`+Type`・`-Type`・`Extract`・`Inline`・`Move`・`Rename`・`Signature`・`Access`・`BodyEdit`・`DepUpdate`）を記載し、Unchanged・Modified セクションのみに表示される旨を明記。列の表示範囲に関する説明パラグラフも EN+JA 両方で更新。
 
 - **DEVELOPER_GUIDE.md に CI/CD ワークフロー概観図を追加** — どのトリガー（PR、main push、タグ push）でどの CI ジョブが実行されるかを示すテキストベースのワークフロー図を追加。これまでドキュメント化されていなかった `mutation-testing` ジョブと `benchmark` ジョブの説明も追記。英語・日本語の両セクションを更新（[`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)）。品質を守る 6 軸（正しさ、網羅性、検出力、速度、安全性、互換性）のサマリも記載。
 
