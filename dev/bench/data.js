@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774666959227,
+  "lastUpdate": 1774669680158,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -858,6 +858,72 @@ window.BENCHMARK_DATA = {
             "value": 27463497.93125,
             "unit": "ns",
             "range": "± 109857.56149763874"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "66a1b74c0ddae318af53e9354bfe2d2ccf1602ff",
+          "message": "Add SBOM (Software Bill of Materials) generation in CycloneDX/SPDX format (#104)\n\nImplement SBOM generation service for supply-chain security compliance\n(Executive Order 14028, EU CRA). Two industry-standard formats supported:\nCycloneDX 1.5 JSON (sbom.cdx.json) and SPDX 2.3 JSON (sbom.spdx.json).\n\nNew config settings: ShouldGenerateSbom (default: false), SbomFormat\n(default: \"CycloneDX\"). Each component entry includes file path, diff\nstatus, SHA256 hash, and diff detail.\n\nNew files:\n- Models/SbomModels.cs (CycloneDX + SPDX model classes, SbomFormat enum)\n- Services/SbomGenerateService.cs (generation service)\n- FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs (25 tests)\n- doc/samples/sbom.cdx.json, doc/samples/sbom.spdx.json\n\nUpdated: ConfigSettings, ConfigSettingsBuilder, IReadOnlyConfigSettings,\nRunScopeBuilder, DiffPipelineExecutor, ReportGenerationContext,\nconfig.sample.jsonc, README.md, CHANGELOG.md, DEVELOPER_GUIDE.md,\nTESTING_GUIDE.md, ConfigSettingsTests.\n\nhttps://claude.ai/code/session_01Y1THB8hA6H7moaUmAbT6c5\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-03-28T12:44:37+09:00",
+          "tree_id": "0eecc8552712dbbfb3ec208c29f7526e44eb5cef",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/66a1b74c0ddae318af53e9354bfe2d2ccf1602ff"
+        },
+        "date": 1774669679520,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61654.58072335379,
+            "unit": "ns",
+            "range": "± 219.97876142168644"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 583498.3292410715,
+            "unit": "ns",
+            "range": "± 1780.6131969251096"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5903997.870833334,
+            "unit": "ns",
+            "range": "± 30497.25605517323"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74324.40208082933,
+            "unit": "ns",
+            "range": "± 188.41369807810557"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2557.0285867963516,
+            "unit": "ns",
+            "range": "± 4.235132985945251"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 260692.7813546317,
+            "unit": "ns",
+            "range": "± 1197.5485176049137"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 28406467.90848214,
+            "unit": "ns",
+            "range": "± 210942.41980931524"
           }
         ]
       }
