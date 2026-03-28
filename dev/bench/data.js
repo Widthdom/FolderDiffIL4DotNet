@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774657598479,
+  "lastUpdate": 1774666959227,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -792,6 +792,72 @@ window.BENCHMARK_DATA = {
             "value": 38700744.840659335,
             "unit": "ns",
             "range": "± 582703.8213905187"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7d6c75d7bc38355d4732faa2030f65458fb460f8",
+          "message": "Stream HTML report to disk via TextWriter to reduce peak memory usage (#103)\n\nReplace in-memory StringBuilder-based HTML report construction with\nstreaming TextWriter/StreamWriter output. The report is now written\nchunk-by-chunk to a 64 KB buffered StreamWriter instead of accumulating\nthe entire HTML in memory before a single File.WriteAllText() call.\nThis avoids OOM on very large comparison reports.\n\nAffected files:\n- HtmlReportGenerateService.cs (entry point: StreamWriter creation)\n- HtmlReportGenerateService.Sections.cs\n- HtmlReportGenerateService.DetailRows.cs\n- HtmlReportGenerateService.Helpers.cs\n- HtmlReportGenerateService.Js.cs\n\nNo behavioral or output format changes.\n\nhttps://claude.ai/code/session_015xM9VdmUy22GHeUXrQBdAi\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-03-28T11:59:23+09:00",
+          "tree_id": "db9156430a5671baea544167655775874155bcb9",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/7d6c75d7bc38355d4732faa2030f65458fb460f8"
+        },
+        "date": 1774666959017,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61901.045973557695,
+            "unit": "ns",
+            "range": "± 184.23427314320165"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 580540.5457589285,
+            "unit": "ns",
+            "range": "± 1351.297996406918"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5911722.7421875,
+            "unit": "ns",
+            "range": "± 16096.976320605901"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74049.3496006557,
+            "unit": "ns",
+            "range": "± 149.4469131785839"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2654.4022254943848,
+            "unit": "ns",
+            "range": "± 15.872420583452996"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 258752.3940080915,
+            "unit": "ns",
+            "range": "± 716.2475094924242"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27463497.93125,
+            "unit": "ns",
+            "range": "± 109857.56149763874"
           }
         ]
       }
