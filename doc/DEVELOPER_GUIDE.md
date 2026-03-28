@@ -78,7 +78,7 @@ Large service classes are split into partial class files to keep each file focus
 | --- | --- | --- |
 | `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs) (nested types: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`), [`Runner/ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs) (CLI help message), [`Runner/ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) (config loading, validation, CLI overrides) |
 | `ConfigSettings` | [`Models/ConfigSettings.cs`](../Models/ConfigSettings.cs) | [`Models/ConfigSettings.ReportSettings.cs`](../Models/ConfigSettings.ReportSettings.cs) (report output control), [`Models/ConfigSettings.ILSettings.cs`](../Models/ConfigSettings.ILSettings.cs) (IL comparison, cache, disassembler), [`Models/ConfigSettings.DiffSettings.cs`](../Models/ConfigSettings.DiffSettings.cs) (parallelism, network, inline diff) |
-| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs) (report section builders), [`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs) (inline diff, semantic changes, dependency changes detail rows), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) (loads [`diff_report.css`](../Services/HtmlReport/diff_report.css) embedded resource), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) (loads [`diff_report.js`](../Services/HtmlReport/diff_report.js) template with `{{STORAGE_KEY}}`/`{{REPORT_DATE}}` placeholders) |
+| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs) (report section builders), [`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs) (inline diff, semantic changes, dependency changes detail rows), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) (loads [`diff_report.css`](../Services/HtmlReport/diff_report.css) embedded resource), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) (loads and concatenates 8 JS modules from [`Services/HtmlReport/js/`](../Services/HtmlReport/js/) with `{{STORAGE_KEY}}`/`{{REPORT_DATE}}` placeholders) |
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/SectionWriters/HeaderSectionWriter.cs`](../Services/SectionWriters/HeaderSectionWriter.cs), [`…LegendSectionWriter.cs`](../Services/SectionWriters/LegendSectionWriter.cs), [`…IgnoredFilesSectionWriter.cs`](../Services/SectionWriters/IgnoredFilesSectionWriter.cs), [`…UnchangedFilesSectionWriter.cs`](../Services/SectionWriters/UnchangedFilesSectionWriter.cs), [`…AddedFilesSectionWriter.cs`](../Services/SectionWriters/AddedFilesSectionWriter.cs), [`…RemovedFilesSectionWriter.cs`](../Services/SectionWriters/RemovedFilesSectionWriter.cs), [`…ModifiedFilesSectionWriter.cs`](../Services/SectionWriters/ModifiedFilesSectionWriter.cs), [`…SummarySectionWriter.cs`](../Services/SectionWriters/SummarySectionWriter.cs), [`…ILCacheStatsSectionWriter.cs`](../Services/SectionWriters/ILCacheStatsSectionWriter.cs), [`…WarningsSectionWriter.cs`](../Services/SectionWriters/WarningsSectionWriter.cs) |
 | `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs) (type/method/property/field comparison), [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs) (snapshot construction, signature building), [`…AccessHelpers.cs`](../Services/AssemblyMethodAnalyzer.AccessHelpers.cs) (access/modifier extraction, type kind detection, IL byte reading), [`…SignatureProvider.cs`](../Services/AssemblyMethodAnalyzer.SignatureProvider.cs) (generic context, signature type provider) |
@@ -155,7 +155,20 @@ The HTML report includes a client-side filter zone that allows users to narrow d
 - `.filter-table-dbl` — Change Importance table class; its `tbody td` height is set to `calc(var(--ft-row-h) * 2)` for row alignment with Diff Detail.
 - `.filter-search-wrap` — wrapper for the search input with visible border and clear button.
 
-### JavaScript ([`diff_report.js`](../Services/HtmlReport/diff_report.js))
+### JavaScript ([`Services/HtmlReport/js/`](../Services/HtmlReport/js/))
+
+The JavaScript is split into 8 module files under `Services/HtmlReport/js/`, concatenated at generation time by `HtmlReportGenerateService.Js.cs`:
+
+| Module | Responsibility |
+| --- | --- |
+| `diff_report_state.js` | Constants, template placeholders, `formatTs`, `readSavedStateFromStorage`, `collectState`, `autoSave`, `updateProgress` |
+| `diff_report_export.js` | `downloadReviewed`, `verifyIntegrity`, `collapseAll`, `clearAll` |
+| `diff_report_diffview.js` | `decodeDiffHtml`, `toggleDiffView` (side-by-side diff) |
+| `diff_report_lazy.js` | `setupLazyDiff`, `setupLazySection`, `forceDecodeLazySections` |
+| `diff_report_layout.js` | `syncTableWidths`, `syncScTableWidths`, `initColResizeSingle`, `syncFilterRowHeight`, `wrapInputWithClear`, `initClearButtons`, `initColResize` |
+| `diff_report_filter.js` | `applyFilters`, `resetFilters`, `copyPath` |
+| `diff_report_excel.js` | `downloadAsPdf`, `downloadExcelCompatibleHtml`, `buildExcelRow`, `esc` |
+| `diff_report_init.js` | `DOMContentLoaded` handler, keyboard navigation |
 
 - `applyFilters()` — reads all filter controls and applies `filter-hidden` / `filter-hidden-parent` CSS classes to rows.
 - `resetFilters()` — restores all checkboxes and clears the search box.
@@ -938,7 +951,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 | --- | --- | --- |
 | `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs)（ネスト型: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`）、[`Runner/ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)（CLI ヘルプメッセージ）、[`Runner/ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs)（設定読込・バリデーション・CLI オーバーライド） |
 | `ConfigSettings` | [`Models/ConfigSettings.cs`](../Models/ConfigSettings.cs) | [`Models/ConfigSettings.ReportSettings.cs`](../Models/ConfigSettings.ReportSettings.cs)（レポート出力制御）、[`Models/ConfigSettings.ILSettings.cs`](../Models/ConfigSettings.ILSettings.cs)（IL 比較・キャッシュ・逆アセンブラ）、[`Models/ConfigSettings.DiffSettings.cs`](../Models/ConfigSettings.DiffSettings.cs)（並列処理・ネットワーク・インライン差分） |
-| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs)（レポートセクション生成）、[`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs)（インライン差分、セマンティック変更、依存関係変更の詳細行）、[`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) ([`diff_report.css`](../Services/HtmlReport/diff_report.css) 埋め込みリソースを読み込み), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) ([`diff_report.js`](../Services/HtmlReport/diff_report.js) テンプレートをプレースホルダー置換して読み込み) |
+| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs)（レポートセクション生成）、[`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs)（インライン差分、セマンティック変更、依存関係変更の詳細行）、[`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) ([`diff_report.css`](../Services/HtmlReport/diff_report.css) 埋め込みリソースを読み込み), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) ([`Services/HtmlReport/js/`](../Services/HtmlReport/js/) の8つの JS モジュールを結合し、プレースホルダー置換して読み込み) |
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/SectionWriters/HeaderSectionWriter.cs`](../Services/SectionWriters/HeaderSectionWriter.cs), [`…LegendSectionWriter.cs`](../Services/SectionWriters/LegendSectionWriter.cs), [`…IgnoredFilesSectionWriter.cs`](../Services/SectionWriters/IgnoredFilesSectionWriter.cs), [`…UnchangedFilesSectionWriter.cs`](../Services/SectionWriters/UnchangedFilesSectionWriter.cs), [`…AddedFilesSectionWriter.cs`](../Services/SectionWriters/AddedFilesSectionWriter.cs), [`…RemovedFilesSectionWriter.cs`](../Services/SectionWriters/RemovedFilesSectionWriter.cs), [`…ModifiedFilesSectionWriter.cs`](../Services/SectionWriters/ModifiedFilesSectionWriter.cs), [`…SummarySectionWriter.cs`](../Services/SectionWriters/SummarySectionWriter.cs), [`…ILCacheStatsSectionWriter.cs`](../Services/SectionWriters/ILCacheStatsSectionWriter.cs), [`…WarningsSectionWriter.cs`](../Services/SectionWriters/WarningsSectionWriter.cs) |
 | `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs)（型/メソッド/プロパティ/フィールド比較）、[`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs)（スナップショット構築、シグネチャ構築）、[`…AccessHelpers.cs`](../Services/AssemblyMethodAnalyzer.AccessHelpers.cs)（アクセス修飾子抽出、型種別判定、IL バイト読み取り）、[`…SignatureProvider.cs`](../Services/AssemblyMethodAnalyzer.SignatureProvider.cs)（ジェネリックコンテキスト、シグネチャ型プロバイダ） |
@@ -1015,7 +1028,20 @@ HTML レポートには、複数の条件でファイル行を絞り込めるク
 - `.filter-table-dbl` — Change Importance テーブルクラス。`tbody td` の高さを `calc(var(--ft-row-h) * 2)` で Diff Detail と行揃え。
 - `.filter-search-wrap` — 検索入力のラッパー。ボーダーとクリアボタンを含む。
 
-### JavaScript（[`diff_report.js`](../Services/HtmlReport/diff_report.js)）
+### JavaScript（[`Services/HtmlReport/js/`](../Services/HtmlReport/js/)）
+
+JavaScript は `Services/HtmlReport/js/` 配下の8つのモジュールファイルに分割され、`HtmlReportGenerateService.Js.cs` が生成時に結合します：
+
+| モジュール | 責務 |
+| --- | --- |
+| `diff_report_state.js` | 定数、テンプレートプレースホルダー、`formatTs`、`readSavedStateFromStorage`、`collectState`、`autoSave`、`updateProgress` |
+| `diff_report_export.js` | `downloadReviewed`、`verifyIntegrity`、`collapseAll`、`clearAll` |
+| `diff_report_diffview.js` | `decodeDiffHtml`、`toggleDiffView`（サイドバイサイド差分） |
+| `diff_report_lazy.js` | `setupLazyDiff`、`setupLazySection`、`forceDecodeLazySections` |
+| `diff_report_layout.js` | `syncTableWidths`、`syncScTableWidths`、`initColResizeSingle`、`syncFilterRowHeight`、`wrapInputWithClear`、`initClearButtons`、`initColResize` |
+| `diff_report_filter.js` | `applyFilters`、`resetFilters`、`copyPath` |
+| `diff_report_excel.js` | `downloadAsPdf`、`downloadExcelCompatibleHtml`、`buildExcelRow`、`esc` |
+| `diff_report_init.js` | `DOMContentLoaded` ハンドラー、キーボードナビゲーション |
 
 - `applyFilters()` — すべてのフィルタコントロールを読み取り、行に `filter-hidden` / `filter-hidden-parent` CSS クラスを適用。
 - `resetFilters()` — すべてのチェックボックスを復元し、検索ボックスをクリア。

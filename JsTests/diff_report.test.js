@@ -1,6 +1,6 @@
 /**
- * Unit tests for diff_report.js — the client-side JavaScript embedded in the HTML report.
- * diff_report.js のユニットテスト — HTML レポートに埋め込まれるクライアントサイド JavaScript。
+ * Unit tests for diff_report JS modules — the client-side JavaScript embedded in the HTML report.
+ * diff_report JS モジュールのユニットテスト — HTML レポートに埋め込まれるクライアントサイド JavaScript。
  *
  * Strategy: The jest-environment-jsdom provides a global document/window.
  * Each test resets document.body, evaluates the script via eval() with
@@ -22,16 +22,30 @@ if (typeof globalThis.TextDecoder === 'undefined') {
 const fs = require('fs');
 const path = require('path');
 
-const JS_SOURCE = fs.readFileSync(
-  path.join(__dirname, '..', 'Services', 'HtmlReport', 'diff_report.js'),
-  'utf-8'
-);
+// Load all JS module files in order and concatenate them
+// 全 JS モジュールファイルを順序どおりに読み込み結合する
+const JS_MODULE_FILES = [
+  'diff_report_state.js',
+  'diff_report_export.js',
+  'diff_report_diffview.js',
+  'diff_report_lazy.js',
+  'diff_report_layout.js',
+  'diff_report_filter.js',
+  'diff_report_excel.js',
+  'diff_report_init.js',
+];
+const JS_SOURCE = JS_MODULE_FILES.map(function(f) {
+  return fs.readFileSync(
+    path.join(__dirname, '..', 'Services', 'HtmlReport', 'js', f),
+    'utf-8'
+  );
+}).join('\n');
 
 /**
- * Load diff_report.js into the current jsdom window with given options.
- * Replaces template placeholders and evaluates the script.
- * diff_report.js を指定オプションで現在の jsdom window にロードする。
- * テンプレートプレースホルダーを置換し、スクリプトを評価する。
+ * Load diff_report JS modules into the current jsdom window with given options.
+ * Replaces template placeholders and evaluates the concatenated script.
+ * diff_report JS モジュールを指定オプションで現在の jsdom window にロードする。
+ * テンプレートプレースホルダーを置換し、結合されたスクリプトを評価する。
  */
 function loadScript(options = {}) {
   const {

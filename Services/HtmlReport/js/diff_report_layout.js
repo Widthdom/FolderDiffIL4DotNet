@@ -1,0 +1,133 @@
+  function syncTableWidths() {
+    var root = document.documentElement;
+    var emPx = parseFloat(getComputedStyle(root).fontSize) || 16;
+    var px = function(v, fb) {
+      var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
+      return (parseFloat(s) || fb) * emPx;
+    };
+    var colW = {
+      'col-no-g': 3.2 * emPx,
+      'col-cb-g': 2.2 * emPx,
+      'col-reason-g': px('--col-reason-w', 10),
+      'col-notes-g': px('--col-notes-w', 10),
+      'col-status-g': 4.3 * emPx,
+      'col-path-g': px('--col-path-w', 22),
+      'col-ts-g': 28 * emPx,
+      'col-diff-g': px('--col-diff-w', 10.8),
+      'col-tag-g': px('--col-tag-w', 14),
+      'col-disasm-g': px('--col-disasm-w', 28)
+    };
+    document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
+      var cg = t.querySelector('colgroup');
+      if (!cg) return;
+      var hideDisasm = t.classList.contains('hide-disasm');
+      var hideCol6 = t.classList.contains('hide-col6');
+      var hideTag = t.classList.contains('hide-tag');
+      var w = 0;
+      cg.querySelectorAll('col').forEach(function(col) {
+        if (hideDisasm && col.classList.contains('col-disasm-g')) return;
+        if (hideCol6 && col.classList.contains('col-diff-g')) return;
+        if (hideTag && col.classList.contains('col-tag-g')) return;
+        if (colW[col.className] !== undefined) w += colW[col.className];
+      });
+      if (w > 0) t.style.width = w + 'px';
+    });
+  }
+
+  function syncScTableWidths() {
+    var scEmPx = 12;
+    var root = document.documentElement;
+    var px = function(v, fb) {
+      var s = root.style.getPropertyValue(v) || getComputedStyle(root).getPropertyValue(v);
+      return (parseFloat(s) || fb) * scEmPx;
+    };
+    var detW = 3.2 * scEmPx
+            + px('--sc-class-w', 14) + px('--sc-basetype-w', 16)
+            + 7 * scEmPx + 7 * scEmPx + 10 * scEmPx + 8 * scEmPx + 11 * scEmPx
+            + px('--sc-type-w', 12) + px('--sc-name-w', 10)
+            + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
+            + px('--sc-body-w', 5);
+    document.querySelectorAll('table.sc-detail').forEach(function(t) { t.style.width = detW + 'px'; });
+    // dc-detail (dependency changes): cb(3.2) + package(24) + status(7) + importance(7) + oldVer(12) + newVer(12) = 65.2em
+    // dc-detail のチェック列・Status列を sc-detail と同じ実幅にするため、列幅合計に一致する幅を設定
+    var dcW = (3.2 + 24 + 7 + 7 + 12 + 12) * scEmPx;
+    document.querySelectorAll('table.dc-detail').forEach(function(t) { t.style.width = dcW + 'px'; });
+  }
+
+  function initColResizeSingle(th) {
+    var label = document.createElement('span');
+    label.className = 'th-label';
+    while (th.childNodes.length) label.appendChild(th.childNodes[0]);
+    th.appendChild(label);
+    var handle = document.createElement('div');
+    handle.className = 'col-resize-handle';
+    th.appendChild(handle);
+    var varName = th.dataset.colVar;
+    var isSc = !!th.closest('.semantic-changes-table');
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      var startX = e.clientX;
+      var root   = document.documentElement;
+      var emPx   = isSc ? 12 : (parseFloat(getComputedStyle(root).fontSize) || 16);
+      var cur    = root.style.getPropertyValue(varName) || getComputedStyle(root).getPropertyValue(varName);
+      var startPx = (parseFloat(cur) || 10) * emPx;
+      function onMove(ev) {
+        var newPx = Math.max(48, startPx + (ev.clientX - startX));
+        root.style.setProperty(varName, (newPx / emPx).toFixed(2) + 'em');
+        syncTableWidths();
+        if (isSc) syncScTableWidths();
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // Measure a Diff Detail body row and set --ft-row-h so filter-table-dbl rows are exactly 2× / Diff Detail 行高さを計測し --ft-row-h を設定
+  function syncFilterRowHeight() {
+    var base = document.querySelector('table.filter-table:not(.filter-table-dbl) tbody tr');
+    if (!base) return;
+    var h = base.getBoundingClientRect().height;
+    if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
+  }
+
+  // Wrap td text inputs with clear button / td テキスト入力にクリアボタンを付与
+  function wrapInputWithClear(inp) {
+    if (inp.parentElement.classList.contains('input-wrap') || inp.parentElement.classList.contains('filter-search-wrap')) return;
+    var isSearch = inp.classList.contains('filter-search');
+    var wrap = document.createElement('div');
+    wrap.className = isSearch ? 'filter-search-wrap' : 'input-wrap';
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-input-clear';
+    btn.tabIndex = -1;
+    btn.title = 'Clear';
+    btn.setAttribute('aria-label', 'Clear');
+    btn.innerHTML = '<svg aria-hidden="true" width="8" height="8" viewBox="0 0 8 8" stroke="currentColor" stroke-width="1.5" fill="none"><line x1="1" y1="1" x2="7" y2="7"/><line x1="7" y1="1" x2="1" y2="7"/></svg>';
+    wrap.appendChild(btn);
+    function sync() { wrap.classList.toggle('has-text', inp.value.length > 0); }
+    inp.addEventListener('input', sync);
+    btn.addEventListener('click', function() {
+      inp.value = '';
+      sync();
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+      inp.focus();
+    });
+    sync();
+  }
+
+  function initClearButtons() {
+    document.querySelectorAll('input#filter-search').forEach(wrapInputWithClear);
+  }
+
+  function initColResize() {
+    document.querySelectorAll('th.th-resizable').forEach(function(th) {
+      initColResizeSingle(th);
+    });
+  }

@@ -277,19 +277,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void LoadEmbeddedResource_JsResource_ReturnsNonEmptyString()
+        public void LoadEmbeddedResource_JsStateModule_ReturnsNonEmptyString()
         {
-            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js");
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
             Assert.False(string.IsNullOrWhiteSpace(js));
             Assert.Contains("function", js);
         }
 
         [Fact]
-        public void LoadEmbeddedResource_JsResource_ContainsPlaceholders()
+        public void LoadEmbeddedResource_JsStateModule_ContainsPlaceholders()
         {
-            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js");
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
             Assert.Contains("{{STORAGE_KEY}}", js);
             Assert.Contains("{{REPORT_DATE}}", js);
+        }
+
+        [Fact]
+        public void LoadEmbeddedResource_AllJsModules_ReturnNonEmptyString()
+        {
+            // Verify all JS module embedded resources are loadable
+            // 全 JS モジュール埋め込みリソースがロード可能なことを検証
+            var moduleNames = new[]
+            {
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_export.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_diffview.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_lazy.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_layout.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js",
+            };
+            foreach (var name in moduleNames)
+            {
+                var js = HtmlReportGenerateService.LoadEmbeddedResource(name);
+                Assert.False(string.IsNullOrWhiteSpace(js), $"Module {name} should not be empty");
+            }
         }
 
         [Fact]
