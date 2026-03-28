@@ -273,6 +273,7 @@ namespace FolderDiffIL4DotNet.Services
             string sectionPrefix = "mod")
         {
             int recordNo = idx + 1;
+            bool hasAnyVuln = summary.Entries.Any(e => e.Vulnerabilities != null);
             var contentBuilder = new StringBuilder();
             contentBuilder.AppendLine("<div class=\"dependency-changes\">");
 
@@ -286,6 +287,8 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("  <col class=\"sc-col-importance-g\">");
                 contentBuilder.AppendLine("  <col class=\"dc-col-ver-g\">");
                 contentBuilder.AppendLine("  <col class=\"dc-col-ver-g\">");
+                if (hasAnyVuln)
+                    contentBuilder.AppendLine("  <col class=\"dc-col-vuln-g\">");
                 contentBuilder.AppendLine("</colgroup>");
                 contentBuilder.AppendLine("<thead><tr>");
                 contentBuilder.AppendLine($"  <th class=\"sc-col-cb\">&#x2713;</th>");
@@ -294,6 +297,8 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Importance")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Old Version")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("New Version")}</th>");
+                if (hasAnyVuln)
+                    contentBuilder.AppendLine($"  <th>{HtmlEncode("Vulnerabilities")}</th>");
                 contentBuilder.AppendLine("</tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 int dcRowIdx = 0;
@@ -309,7 +314,8 @@ namespace FolderDiffIL4DotNet.Services
                     string cbId = $"dc_{sectionPrefix}_{idx}_{dcRowIdx}";
                     string oldVer = e.OldVersion.Length > 0 ? HtmlEncode(e.OldVersion) : "&#x2014;";
                     string newVer = e.NewVersion.Length > 0 ? HtmlEncode(e.NewVersion) : "&#x2014;";
-                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td></tr>");
+                    string vulnCell = hasAnyVuln ? $"<td>{BuildVulnerabilityCell(e.Vulnerabilities)}</td>" : "";
+                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusStyle}>{changeMarker}</td><td{impStyle}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}</tr>");
                     dcRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -325,7 +331,8 @@ namespace FolderDiffIL4DotNet.Services
             string highSuffix = summary.HighImportanceCount > 0
                 ? $" ({summary.HighImportanceCount} High)"
                 : "";
-            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show dependency changes")}{highSuffix}</summary>";
+            string vulnSuffix = BuildVulnerabilitySummarySuffix(summary);
+            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show dependency changes")}{highSuffix}{vulnSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
 
             sb.AppendLine("<tr class=\"diff-row\">");
@@ -359,5 +366,103 @@ namespace FolderDiffIL4DotNet.Services
 
         private static string ChangeToStatusBg(string change)
             => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Modified" => TH_BG_MODIFIED, _ => "" };
+
+        /// <summary>
+        /// Builds the HTML content for a vulnerability cell in the dependency changes table.
+        /// Shows advisory links with severity badges for new-version vulns (red) and resolved old-version vulns (green strikethrough).
+        /// 依存関係変更テーブルの脆弱性セルの HTML を構築します。
+        /// 新バージョンの脆弱性は赤バッジ、旧バージョンで解消済みの脆弱性は緑取り消し線で表示します。
+        /// </summary>
+        private static string BuildVulnerabilityCell(VulnerabilityCheckResult? vuln)
+        {
+            if (vuln == null || !vuln.HasAnyVulnerabilities)
+                return "&#x2014;";
+
+            var sb = new StringBuilder();
+
+            // New version vulnerabilities (active risk) — always red to signal danger
+            // 新バージョンの脆弱性（現在のリスク）— 危険を示すため常に赤系
+            foreach (var v in vuln.NewVersionVulnerabilities)
+            {
+                string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
+                string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
+                sb.Append($"<span class=\"vuln-badge vuln-new\" style=\"{NEW_VULN_STYLE}\" title=\"{HtmlEncode(sevLabel)}: {HtmlEncode(v.AdvisoryUrl)}\">");
+                if (v.AdvisoryUrl.Length > 0)
+                    sb.Append($"<a href=\"{HtmlEncode(v.AdvisoryUrl)}\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline\">{HtmlEncode(advisoryId)}</a>");
+                else
+                    sb.Append(HtmlEncode(sevLabel));
+                sb.Append($" <small>({HtmlEncode(sevLabel)})</small></span> ");
+            }
+
+            // Old version vulnerabilities that are resolved / 旧バージョンの脆弱性（解消済み）
+            if (vuln.HasResolvedVulnerabilities)
+            {
+                foreach (var v in vuln.OldVersionVulnerabilities)
+                {
+                    // Skip if the same advisory also affects the new version / 新バージョンにも該当する場合はスキップ
+                    bool alsoAffectsNew = false;
+                    foreach (var nv in vuln.NewVersionVulnerabilities)
+                    {
+                        if (string.Equals(nv.AdvisoryUrl, v.AdvisoryUrl, StringComparison.Ordinal))
+                        {
+                            alsoAffectsNew = true;
+                            break;
+                        }
+                    }
+                    if (alsoAffectsNew) continue;
+
+                    string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
+                    string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
+                    sb.Append($"<span class=\"vuln-badge vuln-resolved\" style=\"{RESOLVED_VULN_STYLE}\" title=\"Resolved: ");
+                    sb.Append(HtmlEncode(v.AdvisoryUrl));
+                    sb.Append("\">");
+                    if (v.AdvisoryUrl.Length > 0)
+                        sb.Append($"<a href=\"{HtmlEncode(v.AdvisoryUrl)}\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">{HtmlEncode(advisoryId)}</a>");
+                    else
+                        sb.Append(HtmlEncode(sevLabel));
+                    sb.Append($" <small>({HtmlEncode(sevLabel)})</small></span> ");
+                }
+            }
+
+            return sb.Length > 0 ? sb.ToString().TrimEnd() : "&#x2014;";
+        }
+
+        /// <summary>
+        /// Builds a summary suffix for the details summary label showing vulnerability counts.
+        /// 脆弱性件数を示す details サマリラベルのサフィックスを構築します。
+        /// </summary>
+        private static string BuildVulnerabilitySummarySuffix(DependencyChangeSummary summary)
+        {
+            int vulnNew = summary.VulnerableNewVersionCount;
+            int resolved = summary.ResolvedVulnerabilityCount;
+            if (vulnNew == 0 && resolved == 0)
+                return "";
+
+            var parts = new System.Collections.Generic.List<string>();
+            if (resolved > 0)
+                parts.Add($"<span style=\"color:#16a34a\">{resolved} resolved</span>");
+            if (vulnNew > 0)
+                parts.Add($"<span style=\"color:#dc2626\">{vulnNew} vuln</span>");
+            return " " + string.Join(" ", parts);
+        }
+
+        /// <summary>
+        /// Extracts a short advisory ID from the advisory URL for display.
+        /// 表示用にアドバイザリ URL から短い ID を抽出します。
+        /// </summary>
+        private static string ExtractAdvisoryId(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+                return "Advisory";
+            // GitHub Advisory URLs end with "GHSA-xxxx-xxxx-xxxx"
+            int lastSlash = url.LastIndexOf('/');
+            if (lastSlash >= 0 && lastSlash < url.Length - 1)
+                return url.Substring(lastSlash + 1);
+            return "Advisory";
+        }
+
+        // Vulnerability style constants / 脆弱性スタイル定数
+        private const string NEW_VULN_STYLE = "background:#fecaca;color:#991b1b;font-weight:bold;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block";
+        private const string RESOLVED_VULN_STYLE = "background:#dcfce7;color:#166534;text-decoration:line-through;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block";
     }
 }

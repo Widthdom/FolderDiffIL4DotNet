@@ -323,11 +323,14 @@
     col.sc-col-body-g { width: var(--sc-body-w); }
     /* ── Dependency changes ──────────────────────────────────────────── */
     .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
-    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) */
+    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) [Vuln(7)] */
     col.dc-col-package-g { width: 24em; }
     col.dc-col-ver-g { width: 12em; }
+    col.dc-col-vuln-g { width: 18em; }
     table.semantic-changes-table.dc-detail td:nth-child(3),
     table.semantic-changes-table.dc-detail td:nth-child(4) { text-align: center; }
+    .vuln-badge { font-size: 11px; white-space: nowrap; }
+    .vuln-badge a { font-size: 11px; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
     .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; min-width: 7em; }
     .filter-chip { display: inline-flex; align-items: center; gap: 0.3em; white-space: nowrap; cursor: pointer; min-width: 5.5em; }
@@ -767,7 +770,7 @@
 <tr class="diff-row">
   <td colspan="10">
     <details id="deps_mod_0">
-      <summary class="diff-summary">#1 Show dependency changes (1 High)</summary>
+      <summary class="diff-summary">#1 Show dependency changes (2 High) <span style="color:#16a34a">1 resolved</span> <span style="color:#dc2626">1 vuln</span></summary>
 <div class="dependency-changes">
 <table class="semantic-changes-table dc-detail">
 <colgroup>
@@ -777,6 +780,7 @@
   <col class="sc-col-importance-g">
   <col class="dc-col-ver-g">
   <col class="dc-col-ver-g">
+  <col class="dc-col-vuln-g">
 </colgroup>
 <thead><tr>
   <th scope="col" class="sc-col-cb">&#x2713;</th>
@@ -785,13 +789,14 @@
   <th scope="col">Importance</th>
   <th scope="col">Old Version</th>
   <th scope="col">New Version</th>
+  <th scope="col">Vulnerabilities</th>
 </tr></thead>
 <tbody>
-<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_0"></td><td>System.Text.Json</td><td style="background:#ffeef0">[ - ]</td><td style="font-weight:700;color:#b31d28">High</td><td>7.0.0</td><td>&#x2014;</td></tr>
-<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_1"></td><td>Serilog</td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:700;color:#b31d28">High</td><td>3.0.0</td><td>4.1.0</td></tr>
-<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_2"></td><td>Newtonsoft.Json</td><td style="background:#e6ffed">[ + ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>&#x2014;</td><td>13.0.3</td></tr>
-<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_3"></td><td>Microsoft.Extensions.Logging</td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>8.0.0</td><td>9.0.0</td></tr>
-<tr data-sc-importance="Low"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_4"></td><td>Microsoft.Extensions.DependencyInjection</td><td style="background:#e3f2fd">[ * ]</td><td>Low</td><td>9.0.0</td><td>9.0.8</td></tr>
+<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_0"></td><td>System.Text.Json</td><td style="background:#ffeef0">[ - ]</td><td style="font-weight:700;color:#b31d28">High</td><td>7.0.0</td><td>&#x2014;</td><td>&#x2014;</td></tr>
+<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_1"></td><td>Serilog</td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:700;color:#b31d28">High</td><td>3.0.0</td><td>4.1.0</td><td><span class="vuln-badge vuln-resolved" style="background:#dcfce7;color:#166534;text-decoration:line-through;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block" title="Resolved: https://github.com/advisories/GHSA-example-seri"><a href="https://github.com/advisories/GHSA-example-seri" target="_blank" rel="noopener" style="color:inherit">GHSA-example-seri</a> <small>(High)</small></span></td></tr>
+<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_2"></td><td>Newtonsoft.Json</td><td style="background:#e6ffed">[ + ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>&#x2014;</td><td>13.0.3</td><td><span class="vuln-badge vuln-new" style="background:#fecaca;color:#991b1b;font-weight:bold;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block" title="Moderate: https://github.com/advisories/GHSA-example-json"><a href="https://github.com/advisories/GHSA-example-json" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">GHSA-example-json</a> <small>(Moderate)</small></span></td></tr>
+<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_3"></td><td>Microsoft.Extensions.Logging</td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>8.0.0</td><td>9.0.0</td><td>&#x2014;</td></tr>
+<tr data-sc-importance="Low"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_4"></td><td>Microsoft.Extensions.DependencyInjection</td><td style="background:#e3f2fd">[ * ]</td><td>Low</td><td>9.0.0</td><td>9.0.8</td><td>&#x2014;</td></tr>
 </tbody></table>
 </div>
     </details>

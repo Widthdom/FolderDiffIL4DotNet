@@ -44,6 +44,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Whether to include structured dependency changes for .deps.json files. / .deps.json ファイルの構造化された依存関係変更をレポートに出力するかどうか。</summary>
         bool ShouldIncludeDependencyChangesInReport { get; }
 
+        /// <summary>Whether to check NuGet packages against known vulnerabilities. Requires network. / NuGet パッケージの既知脆弱性チェックを行うか。ネットワーク必要。</summary>
+        bool EnableNuGetVulnerabilityCheck { get; }
+
         /// <summary>Whether to include IL cache statistics in the diff report. / IL キャッシュ統計情報を差分レポートに出力するかどうか。</summary>
         bool ShouldIncludeILCacheStatsInReport { get; }
 

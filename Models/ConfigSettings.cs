@@ -88,6 +88,7 @@ namespace FolderDiffIL4DotNet.Models
             ShouldIncludeIgnoredFiles = builder.ShouldIncludeIgnoredFiles;
             ShouldIncludeAssemblySemanticChangesInReport = builder.ShouldIncludeAssemblySemanticChangesInReport;
             ShouldIncludeDependencyChangesInReport = builder.ShouldIncludeDependencyChangesInReport;
+            EnableNuGetVulnerabilityCheck = builder.EnableNuGetVulnerabilityCheck;
             ShouldIncludeILCacheStatsInReport = builder.ShouldIncludeILCacheStatsInReport;
             ShouldGenerateHtmlReport = builder.ShouldGenerateHtmlReport;
             ShouldGenerateAuditLog = builder.ShouldGenerateAuditLog;

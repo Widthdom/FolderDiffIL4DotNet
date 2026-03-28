@@ -31,6 +31,14 @@
   // レポートに .deps.json ファイルの構造化された依存関係変更を含める（デフォルト: true）
   "ShouldIncludeDependencyChangesInReport": true,
 
+  // Check NuGet package versions against known vulnerabilities via the NuGet V3 vulnerability API (default: false)
+  // Requires network access. When enabled, the dependency changes table shows a "Vulnerabilities" column
+  // indicating advisories affecting old/new versions (resolved vs. newly introduced).
+  // NuGet V3 脆弱性 API を使って NuGet パッケージバージョンの既知脆弱性をチェックする（デフォルト: false）
+  // ネットワークアクセスが必要。有効時、依存関係変更テーブルに「Vulnerabilities」列が追加され、
+  // 旧/新バージョンに影響するアドバイザリ（解消済み vs. 新規導入）が表示されます。
+  "EnableNuGetVulnerabilityCheck": false,
+
   // Include IL cache hit/miss statistics in the report (default: false)
   // レポートに IL キャッシュのヒット/ミス統計を含める（デフォルト: false）
   "ShouldIncludeILCacheStatsInReport": false,

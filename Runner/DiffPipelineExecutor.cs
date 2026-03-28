@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
@@ -70,6 +72,12 @@ namespace FolderDiffIL4DotNet.Runner
             var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
             resultLists.DisassemblerAvailability = DisassemblerHelper.ProbeAllCandidates();
             var elapsedTimeString = await ExecuteDiffAsync(scopedProvider);
+
+            // Best-effort NuGet vulnerability enrichment (after all diffs complete)
+            // ベストエフォートの NuGet 脆弱性チェック（全差分完了後に実行）
+            if (config.EnableNuGetVulnerabilityCheck && config.ShouldIncludeDependencyChangesInReport)
+                await EnrichDependencyVulnerabilitiesAsync(resultLists, _logger);
+
             GenerateReports(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config);
             return new DiffPipelineResult(resultLists.HasAnySha256Mismatch, resultLists.HasAnyNewFileTimestampOlderThanOldWarning);
         }
@@ -113,6 +121,69 @@ namespace FolderDiffIL4DotNet.Runner
             scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(reportContext);
             scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(reportContext);
             scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(reportContext);
+        }
+
+        /// <summary>
+        /// Enriches all dependency change summaries with NuGet vulnerability data.
+        /// Best-effort: failures are logged but do not block report generation.
+        /// すべての依存関係変更サマリを NuGet 脆弱性データで拡充します。
+        /// ベストエフォート: 失敗はログ出力のみでレポート生成をブロックしません。
+        /// </summary>
+        private static async Task EnrichDependencyVulnerabilitiesAsync(FileDiffResultLists resultLists, ILoggerService logger)
+        {
+            try
+            {
+                // Collect all unique entries across all .deps.json files
+                // すべての .deps.json ファイルのエントリを収集
+                var allEntries = resultLists.FileRelativePathToDependencyChanges.Values
+                    .SelectMany(s => s.Entries)
+                    .ToList();
+
+                if (allEntries.Count == 0)
+                    return;
+
+                using var vulnService = new NuGetVulnerabilityService(logger);
+                var vulnResults = await vulnService.CheckVulnerabilitiesAsync(allEntries);
+
+                if (vulnResults.Count == 0)
+                    return;
+
+                // Enrich each DependencyChangeSummary with vulnerability data
+                // 各 DependencyChangeSummary を脆弱性データで拡充
+                foreach (var kvp in resultLists.FileRelativePathToDependencyChanges)
+                {
+                    var summary = kvp.Value;
+                    bool anyEnriched = false;
+                    var enrichedEntries = new List<DependencyChangeEntry>(summary.Entries.Count);
+
+                    foreach (var entry in summary.Entries)
+                    {
+                        if (vulnResults.TryGetValue(entry.PackageName, out var vulnResult))
+                        {
+                            enrichedEntries.Add(entry with { Vulnerabilities = vulnResult });
+                            anyEnriched = true;
+                        }
+                        else
+                        {
+                            enrichedEntries.Add(entry);
+                        }
+                    }
+
+                    if (anyEnriched)
+                    {
+                        resultLists.FileRelativePathToDependencyChanges[kvp.Key] =
+                            new DependencyChangeSummary { Entries = enrichedEntries };
+                    }
+                }
+            }
+#pragma warning disable CA1031 // Best-effort enrichment / ベストエフォートの拡充
+            catch (Exception ex)
+            {
+                logger.LogMessage(AppLogLevel.Warning,
+                    $"NuGet vulnerability enrichment failed: {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
+            }
+#pragma warning restore CA1031
         }
 
         /// <summary>
