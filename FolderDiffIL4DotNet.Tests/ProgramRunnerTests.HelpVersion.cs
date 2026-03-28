@@ -273,10 +273,10 @@ namespace FolderDiffIL4DotNet.Tests
 
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString();
-                // The banner contains the ASCII art "FOLDER" text
-                // バナーには ASCII アートの "FOLDER" テキストが含まれる
-                Assert.Contains("FOLDER", output, StringComparison.Ordinal);
-                Assert.Contains("DIFF", output, StringComparison.Ordinal);
+                // The banner contains block characters from the ASCII art
+                // バナーには ASCII アートのブロック文字が含まれる
+                Assert.Contains("███████", output, StringComparison.Ordinal);
+                Assert.Contains("██████╔╝", output, StringComparison.Ordinal);
                 // Logger should NOT have been initialized
                 // ロガーは初期化されていないはず
                 Assert.Empty(logger.Messages);
