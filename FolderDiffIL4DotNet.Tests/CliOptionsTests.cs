@@ -23,6 +23,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
+            Assert.False(opts.DryRun);
             Assert.Null(opts.ParseError);
         }
 
@@ -49,6 +50,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
+            Assert.False(opts.DryRun);
             Assert.Null(opts.ParseError);
         }
 
@@ -217,6 +219,19 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --dry-run
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_DryRunFlag_SetsDryRun()
+        {
+            var opts = CliParser.Parse(new[] { "--dry-run" });
+
+            Assert.True(opts.DryRun);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // Unknown / invalid flags
         // -----------------------------------------------------------------------
 
@@ -274,7 +289,8 @@ namespace FolderDiffIL4DotNet.Tests
                 "--no-il-cache",
                 "--skip-il",
                 "--no-timestamp-warnings",
-                "--print-config"
+                "--print-config",
+                "--dry-run"
             });
 
             Assert.False(opts.ShowHelp);
@@ -286,6 +302,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.SkipIL);
             Assert.True(opts.NoTimestampWarnings);
             Assert.True(opts.PrintConfig);
+            Assert.True(opts.DryRun);
             Assert.Null(opts.ParseError);
         }
     }

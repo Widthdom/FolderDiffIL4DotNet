@@ -22,7 +22,8 @@ namespace FolderDiffIL4DotNet
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
             "  --no-il-cache               Disable the IL cache for this run.\n" +
             "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
-            "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n\n" +
+            "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n" +
+            "  --dry-run                   Enumerate files and show statistics without running comparison.\n\n" +
             "Environment variables (override config.json values):\n" +
             "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +
             "  FOLDERDIFF_ENABLEILCACHE=<true|false>       Enable/disable the IL cache.\n" +

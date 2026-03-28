@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **`--dry-run` CLI option for pre-execution preview** — New CLI flag that enumerates files in old/new folders and displays comparison statistics (file counts per folder, union count, .NET assembly candidates, ignored files, top file extensions, network path detection, parallelism settings) without running actual comparisons or generating reports. This allows users to verify scope and estimate execution time before committing to a potentially long-running diff on large folder trees or network shares. The Reports directory is not created during dry run. New files: [`Runner/DryRunExecutor.cs`](Runner/DryRunExecutor.cs). Modified: [`Runner/CliParser.cs`](Runner/CliParser.cs), [`Runner/CliOptions.cs`](Runner/CliOptions.cs), [`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs), [`ProgramRunner.cs`](ProgramRunner.cs), [`README.md`](README.md) (EN+JA options table). Tests: `ParseCliOptions_DryRunFlag_SetsDryRun` in [`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.cs), `RunAsync_HelpFlag_OutputContainsDryRunOption`, `RunAsync_DryRunFlag_ExitsZeroWithPreviewOutput`, `RunAsync_DryRunFlag_DoesNotCreateReportsDirectory` in [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.HelpVersion.cs). Test count: 998 (+4).
+
 #### Changed
 
 - **Block-aware IL comparison for order-independent method matching** — IL comparison now falls back to block-aware (order-independent) comparison when line-by-line comparison detects a mismatch. IL output is parsed into logical blocks (methods, classes, properties, etc.) by the new [`Services/ILOutput/ILBlockParser.cs`](Services/ILOutput/ILBlockParser.cs), and each block is hashed and compared as a multiset. This eliminates false positives caused by compiler-induced method/class reordering across different compiler versions or rebuild configurations. The fast streaming line-by-line comparison remains the primary path; block parsing only activates on mismatch. Modified: [`Services/ILOutputService.cs`](Services/ILOutputService.cs) (added `BlockAwareSequenceEqual`, `BuildBlockHashBag`, `ComputeBlockHash`). Tests: [`ILBlockParserTests`](FolderDiffIL4DotNet.Tests/Services/ILBlockParserTests.cs) (6 tests), [`ILOutputServiceTests`](FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs) (6 new `BlockAwareSequenceEqual_*` tests). Test count: 993 (+12).
@@ -769,6 +773,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **`--dry-run` CLI オプションによる実行前プレビュー** — 新しい CLI フラグ。old/new フォルダのファイルを列挙し、比較統計情報（フォルダ別ファイル数、和集合数、.NET アセンブリ候補数、無視ファイル数、拡張子別上位、ネットワークパス検出、並列度設定）を表示するのみで、実際の比較やレポート生成は行わない。大規模フォルダツリーやネットワーク共有上での長時間実行にコミットする前に、スコープの確認と実行時間の見積もりが可能になる。ドライラン時は Reports ディレクトリを作成しない。新規ファイル: [`Runner/DryRunExecutor.cs`](Runner/DryRunExecutor.cs)。変更: [`Runner/CliParser.cs`](Runner/CliParser.cs)、[`Runner/CliOptions.cs`](Runner/CliOptions.cs)、[`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs)、[`ProgramRunner.cs`](ProgramRunner.cs)、[`README.md`](README.md)（EN+JA オプション表）。テスト: `ParseCliOptions_DryRunFlag_SetsDryRun`（[`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.cs)）、`RunAsync_HelpFlag_OutputContainsDryRunOption`、`RunAsync_DryRunFlag_ExitsZeroWithPreviewOutput`、`RunAsync_DryRunFlag_DoesNotCreateReportsDirectory`（[`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.HelpVersion.cs)）。テスト件数: 998（+4）。
 
 #### Changed
 

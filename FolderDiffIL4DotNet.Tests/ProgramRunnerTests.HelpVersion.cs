@@ -47,6 +47,104 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_HelpFlag_OutputContainsDryRunOption()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("--dry-run", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_DryRunFlag_ExitsZeroWithPreviewOutput()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-dryrun-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            // Create sample files / テスト用ファイルを作成
+            File.WriteAllText(Path.Combine(oldDir, "file1.dll"), "old-dll-content");
+            File.WriteAllText(Path.Combine(oldDir, "file2.txt"), "old-txt-content");
+            File.WriteAllText(Path.Combine(newDir, "file1.dll"), "new-dll-content");
+            File.WriteAllText(Path.Combine(newDir, "file3.xml"), "new-xml-content");
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "dryrun_" + Guid.NewGuid().ToString("N"), "--dry-run", "--no-pause" });
+
+                    Assert.Equal(0, exitCode);
+                    var output = sw.ToString();
+                    Assert.Contains("Dry Run Preview", output, StringComparison.Ordinal);
+                    Assert.Contains("Old folder", output, StringComparison.Ordinal);
+                    Assert.Contains("New folder", output, StringComparison.Ordinal);
+                    Assert.Contains("Files in old folder", output, StringComparison.Ordinal);
+                    Assert.Contains("Union", output, StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_DryRunFlag_DoesNotCreateReportsDirectory()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-dryrun-noreport-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var reportLabel = "dryrun_noreport_" + Guid.NewGuid().ToString("N");
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, reportLabel, "--dry-run", "--no-pause" });
+
+                    Assert.Equal(0, exitCode);
+                    // Reports directory must NOT have been created / Reports ディレクトリが作成されていないこと
+                    var reportsDir = Path.Combine(AppContext.BaseDirectory, "Reports", reportLabel);
+                    Assert.False(Directory.Exists(reportsDir), "Dry run should not create the Reports directory.");
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_HelpFlag_OutputContainsPrintConfigTipSection()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");

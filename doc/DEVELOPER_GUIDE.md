@@ -254,6 +254,7 @@ Design intent:
 - [`Program.cs`](../Program.cs) stays minimal and owns only application-root service registration.
 - [`ProgramRunner`](../ProgramRunner.cs) is the orchestration boundary for one console execution: CLI dispatch, argument validation, config loading, and exit-code mapping.
 - [`DiffPipelineExecutor`](../Runner/DiffPipelineExecutor.cs) owns the diff execution pipeline: builds the scoped DI container, runs the folder diff, and generates all reports.
+- [`DryRunExecutor`](../Runner/DryRunExecutor.cs) handles the `--dry-run` preview: enumerates files and displays statistics without running comparisons or generating reports.
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) carries immutable run-specific paths and mode decisions.
 - [`FolderDiffIL4DotNet.Core`](../FolderDiffIL4DotNet.Core/) is the reusable helper-library boundary for console rendering, diagnostics, filesystem helpers, and text sanitization with no folder-diff domain policy.
 - Core pipeline services use constructor injection and interfaces instead of static mutable state or ad hoc object creation.
@@ -1127,6 +1128,7 @@ flowchart TD
 - [`Program.cs`](../Program.cs) は最小限に保ち、アプリ全体の起点だけを担います。
 - [`ProgramRunner`](../ProgramRunner.cs) は 1 回のコンソール実行における CLI 分岐・引数検証・設定読込・終了コード写像の境界です。
 - [`DiffPipelineExecutor`](../Runner/DiffPipelineExecutor.cs) は差分実行パイプラインを担当し、スコープ付き DI コンテナ構築・差分実行・全レポート生成を行います。
+- [`DryRunExecutor`](../Runner/DryRunExecutor.cs) は `--dry-run` プレビューを担当し、ファイル列挙と統計表示のみを行い比較やレポート生成は行いません。
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) は実行固有のパスとモード判定を不変オブジェクトとして保持します。
 - [`FolderDiffIL4DotNet.Core`](../FolderDiffIL4DotNet.Core/) は、フォルダ差分ドメインに依存しない console / diagnostics / I/O / text helper を収める再利用境界です。
 - コアサービスは、静的可変状態や場当たり的な `new` ではなく、コンストラクタ注入とインターフェースで接続されます。

@@ -95,9 +95,15 @@ namespace FolderDiffIL4DotNet
 
                 // Railway-oriented pipeline: each step short-circuits on failure.
                 // Railway 指向パイプライン: 各ステップは失敗時にショートサーキットします。
-                var argsResult = TryValidateAndBuildRunArguments(args, opts)
-                    .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath)
-                        .Bind(_ => StepResult<RunArguments>.FromValue(runArgs)));
+                var argsResult = TryValidateAndBuildRunArguments(args, opts);
+
+                // Dry-run does not need the Reports directory / ドライランでは Reports ディレクトリ不要
+                if (!opts.DryRun)
+                {
+                    argsResult = argsResult
+                        .Bind(runArgs => TryPrepareReportsDirectory(runArgs.ReportsFolderAbsolutePath)
+                            .Bind(_ => StepResult<RunArguments>.FromValue(runArgs)));
+                }
 
                 var pipelineResult = await argsResult
                     .BindAsync(async runArgs =>
@@ -109,6 +115,20 @@ namespace FolderDiffIL4DotNet
                             return TryBuildConfig(builder);
                         }).Bind(config => StepResult<(RunArguments RunArgs, ConfigSettings Config)>.FromValue((runArgs, config)));
                     });
+
+                // Dry-run: enumerate and show statistics, then exit / ドライラン: 列挙と統計表示のみで終了
+                if (opts.DryRun)
+                {
+                    if (!pipelineResult.IsSuccess)
+                    {
+                        return pipelineResult.Failure!;
+                    }
+
+                    var ctx = pipelineResult.Value!;
+                    var dryRunExecutor = new Runner.DryRunExecutor(_logger);
+                    dryRunExecutor.Execute(ctx.RunArgs.OldFolderAbsolutePath, ctx.RunArgs.NewFolderAbsolutePath, ctx.Config);
+                    return ProgramRunResult.Success(new RunCompletionState(false, false));
+                }
 
                 var completionStateResult = await pipelineResult
                     .BindAsync(ctx => TryExecuteRunAsync(ctx.RunArgs, ctx.Config, appVersion, computerName));
