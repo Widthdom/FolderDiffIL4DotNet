@@ -178,7 +178,7 @@ See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample o
 
 Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** alongside [`diff_report.md`](doc/samples/diff_report.md) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json)).
 
-The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
+The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. It automatically switches between light and dark themes based on the browser/OS colour scheme preference (`prefers-color-scheme`). All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
 
 Every file entry is displayed in a table with interactive columns for sign-off:
 
@@ -822,7 +822,7 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 
 実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
-HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
+HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ブラウザ/OS のカラースキーム設定（`prefers-color-scheme`）に応じてライト/ダークテーマを自動切替します。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
 
 全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 

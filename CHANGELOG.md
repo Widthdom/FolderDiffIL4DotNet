@@ -51,6 +51,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   5. **Loop-based filter table rows** — Replaced 9 sequential `AppendFilterTableRow()` calls in `HtmlReportGenerateService` with data-driven loops over `s_diffDetailFilters` and `s_importanceFilters` arrays.
   Updated [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA partial class tables, network path detection references). Test count: 900 (unchanged).
 
+#### Documentation
+
+- **Update documentation for dark mode and completion summary chart** — Updated [`README.md`](README.md) (EN+JA HTML report sections: dark mode auto-switching via `prefers-color-scheme`), [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA: CSS section with custom properties/dark mode/utility classes architecture, HtmlReportGenerateService description, execution lifecycle sequence diagrams with completion summary chart step), [`doc/TESTING_GUIDE.md`](doc/TESTING_GUIDE.md) (EN+JA: scope map entry-point row with completion summary chart tests, reporting row with dark mode CSS utility class assertions), [`doc/samples/diff_report.html`](doc/samples/diff_report.html) (replaced remaining hardcoded hex colors in CSS body with `var()` references to match the actual `diff_report.css`).
+
 #### Performance
 
 - **Streaming HTML report generation** — Replaced in-memory `StringBuilder`-based HTML report construction with streaming `TextWriter`/`StreamWriter` output in [`HtmlReportGenerateService`](Services/HtmlReportGenerateService.cs) and all its partial files ([`Sections`](Services/HtmlReport/HtmlReportGenerateService.Sections.cs), [`DetailRows`](Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs), [`Helpers`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`Js`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)). The report is now written chunk-by-chunk to disk via a 64 KB buffered `StreamWriter` instead of accumulating the entire HTML string in memory before a single `File.WriteAllText()` call. This reduces peak memory usage for large comparison reports (thousands of files with inline diffs) and avoids potential OOM on very large reports. No behavioral or output format changes. Test count: 956 (unchanged).
@@ -819,6 +823,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   4. **`ExceptionFilters` ユーティリティ追加** — [`ExceptionFilters.cs`](FolderDiffIL4DotNet.Core/Common/ExceptionFilters.cs) を作成。名前付き述語（`IsFileIoRecoverable`、`IsFileIoOrOperationRecoverable`、`IsPathOrFileIoRecoverable`、`IsProcessExecutionRecoverable`）で、サービス全体の20箇所以上のインライン `catch (Exception ex) when (ex is ...)` パターンを置換。
   5. **フィルタテーブル行のループ化** — `HtmlReportGenerateService` の9回の連続 `AppendFilterTableRow()` 呼び出しを `s_diffDetailFilters` / `s_importanceFilters` 配列に基づくデータ駆動ループに置換。
   [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA partial class テーブル、ネットワークパス検出参照）を更新。テスト件数: 900（変更なし）。
+
+#### Documentation
+
+- **ダークモードと完了サマリーチャートのドキュメント更新** — [`README.md`](README.md)（EN+JA HTML レポートセクション: `prefers-color-scheme` によるダークモード自動切替の記述追加）、[`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA: CSS セクションにカスタムプロパティ/ダークモード/ユーティリティクラスのアーキテクチャ説明追加、HtmlReportGenerateService の説明更新、実行ライフサイクルシーケンス図に完了サマリーチャートのステップ追加）、[`doc/TESTING_GUIDE.md`](doc/TESTING_GUIDE.md)（EN+JA: スコープマップのエントリーポイント行に完了サマリーチャートテスト追加、レポート行にダークモード CSS ユーティリティクラスアサーション追加）、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)（CSS 本体の残存ハードコード hex カラーを実際の `diff_report.css` と一致するよう `var()` 参照に置換）を更新。
 
 #### Performance
 

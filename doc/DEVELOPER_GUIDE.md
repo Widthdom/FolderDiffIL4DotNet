@@ -151,6 +151,9 @@ The HTML report includes a client-side filter zone that allows users to narrow d
 
 ### CSS ([`diff_report.css`](../Services/HtmlReport/diff_report.css))
 
+- **CSS custom properties (`:root` variables)** — 60+ colour/surface/border tokens defined in `:root`. All colour references throughout the stylesheet use `var(--color-*)` instead of hardcoded hex values. This enables theming and keeps the palette in a single location.
+- **Dark mode** — `@media (prefers-color-scheme: dark)` overrides the `:root` variables with a GitHub-dark-inspired palette (`#0d1117` background, `#e6edf3` text, etc.). The report switches automatically based on the browser/OS colour scheme with no user toggle needed.
+- **Utility classes** — Theme-aware classes used by the C# generator instead of inline `style` attributes: `.imp-high`, `.imp-medium` (importance labels), `.status-available`, `.status-unavailable` (disassembler status), `.vuln-new`, `.vuln-resolved` (vulnerability badges), `.vuln-new-count`, `.vuln-resolved-count` (vulnerability counts), `.warn-danger`, `.warn-caution` (warning banners).
 - `tr.filter-hidden` / `tr.diff-row.filter-hidden-parent` — hide rows with `display: none !important`.
 - `.filter-table-dbl` — Change Importance table class; its `tbody td` height is set to `calc(var(--ft-row-h) * 2)` for row alignment with Diff Detail.
 - `.filter-search-wrap` — wrapper for the search input with visible border and clear button.
@@ -290,6 +293,7 @@ sequenceDiagram
     Diff-->>Runner: return aggregated diff results
     Runner->>Report: GenerateDiffReport(...)
     Runner->>Runner: output aggregated completion warnings
+    Runner->>Runner: output completion summary chart
     Runner-->>CLI: typed exit code (0/2/3/4/1)
 ```
 
@@ -402,7 +406,7 @@ Why this matters:
 | [`Services/ReportGenerationContext.cs`](../Services/ReportGenerationContext.cs) | Immutable parameter bag for report generation services | Eliminates parameter duplication at `ProgramRunner` boundary |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; iterates `_sectionWriters` via [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside [`ReportGenerateService`](../Services/ReportGenerateService.cs) |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; "Download as reviewed" computes SHA256 of the reviewed HTML via Web Crypto API, embeds the hash for self-verification, downloads a companion `.sha256` verification file, and adds a "Verify integrity" button to the reviewed banner; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; uses CSS custom properties (`var(--color-*)`) and utility classes instead of inline styles for theme-aware rendering; supports automatic dark mode via `prefers-color-scheme`; "Download as reviewed" computes SHA256 of the reviewed HTML via Web Crypto API, embeds the hash for self-verification, downloads a companion `.sha256` verification file, and adds a "Verify integrity" button to the reviewed banner; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
 | [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | Structured JSON audit log generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) and computes SHA256 integrity hashes of `diff_report.md` / `diff_report.html`; produces [`audit_log.json`](samples/audit_log.json); skipped when [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) is `false` |
 | [`Services/SbomGenerateService.cs`](../Services/SbomGenerateService.cs) | SBOM (Software Bill of Materials) generation | Extracts component list from [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) with SHA256 hashes and diff status; outputs CycloneDX 1.5 JSON (`sbom.cdx.json`) or SPDX 2.3 JSON (`sbom.spdx.json`); skipped when [`ShouldGenerateSbom`](../Models/ConfigSettings.cs) is `false` |
 | [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | Audit log data models | [`AuditLogRecord`](../Models/AuditLogEntry.cs) (top-level), [`AuditLogFileEntry`](../Models/AuditLogEntry.cs) (per-file), [`AuditLogSummary`](../Models/AuditLogEntry.cs) (counts) |
@@ -1026,6 +1030,9 @@ HTML レポートには、複数の条件でファイル行を絞り込めるク
 
 ### CSS（[`diff_report.css`](../Services/HtmlReport/diff_report.css)）
 
+- **CSS カスタムプロパティ（`:root` 変数）** — 60 以上のカラー/サーフェス/ボーダートークンを `:root` に定義。スタイルシート全体でハードコード hex 値の代わりに `var(--color-*)` を使用。テーマ切替を可能にし、パレットを一箇所に集約。
+- **ダークモード** — `@media (prefers-color-scheme: dark)` で `:root` 変数を GitHub ダークテーマ風パレット（`#0d1117` 背景、`#e6edf3` テキスト等）に上書き。ブラウザ/OS のカラースキームに応じて自動で切り替わり、ユーザー操作不要。
+- **ユーティリティクラス** — C# ジェネレータがインライン `style` 属性の代わりに使うテーマ対応クラス: `.imp-high`、`.imp-medium`（重要度ラベル）、`.status-available`、`.status-unavailable`（逆アセンブラ状態）、`.vuln-new`、`.vuln-resolved`（脆弱性バッジ）、`.vuln-new-count`、`.vuln-resolved-count`（脆弱性カウント）、`.warn-danger`、`.warn-caution`（警告バナー）。
 - `tr.filter-hidden` / `tr.diff-row.filter-hidden-parent` — `display: none !important` で行を非表示。
 - `.filter-table-dbl` — Change Importance テーブルクラス。`tbody td` の高さを `calc(var(--ft-row-h) * 2)` で Diff Detail と行揃え。
 - `.filter-search-wrap` — 検索入力のラッパー。ボーダーとクリアボタンを含む。
@@ -1164,6 +1171,8 @@ sequenceDiagram
     Runner->>Diff: ExecuteFolderDiffAsync()
     Diff-->>Runner: 集約済みの差分結果を返す
     Runner->>Report: GenerateDiffReport(...)
+    Runner->>Runner: 完了時警告の集約出力
+    Runner->>Runner: 完了サマリーチャートの出力
     Runner-->>CLI: 型付き終了コード (0/2/3/4/1)
 ```
 
@@ -1276,7 +1285,7 @@ sequenceDiagram
 | [`Services/ReportGenerationContext.cs`](../Services/ReportGenerationContext.cs) | レポート生成サービス用の不変パラメータバッグ | `ProgramRunner` 境界での引数重複を排除 |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；`_sectionWriters` を [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) 経由で反復 |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | [`ReportGenerateService`](../Services/ReportGenerateService.cs) 内に 10 個のプライベートネストクラスで実装 |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；「Download as reviewed」は Web Crypto API でレビュー済み HTML の SHA256 を計算・埋め込み（自己検証用）、コンパニオン `.sha256` 検証ファイルもダウンロードし、レビュー済みバナーに「Verify integrity」ボタンを追加；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；インラインスタイルの代わりに CSS カスタムプロパティ（`var(--color-*)`）とユーティリティクラスを使用しテーマ対応レンダリングを実現；`prefers-color-scheme` による自動ダークモード対応；「Download as reviewed」は Web Crypto API でレビュー済み HTML の SHA256 を計算・埋め込み（自己検証用）、コンパニオン `.sha256` 検証ファイルもダウンロードし、レビュー済みバナーに「Verify integrity」ボタンを追加；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | 構造化 JSON 監査ログ生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読み、`diff_report.md` / `diff_report.html` の SHA256 インテグリティハッシュを計算；[`audit_log.json`](samples/audit_log.json) を生成；[`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Services/SbomGenerateService.cs`](../Services/SbomGenerateService.cs) | SBOM（ソフトウェア部品表）生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) からコンポーネント一覧を SHA256 ハッシュと差分ステータス付きで抽出；CycloneDX 1.5 JSON（`sbom.cdx.json`）または SPDX 2.3 JSON（`sbom.spdx.json`）を出力；[`ShouldGenerateSbom`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | 監査ログデータモデル | [`AuditLogRecord`](../Models/AuditLogEntry.cs)（トップレベル）、[`AuditLogFileEntry`](../Models/AuditLogEntry.cs)（ファイル単位）、[`AuditLogSummary`](../Models/AuditLogEntry.cs)（件数集計） |
