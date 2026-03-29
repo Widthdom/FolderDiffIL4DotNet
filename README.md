@@ -140,6 +140,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--whisky` | Use whisky distilling spinner animation during execution (easter egg). |
 | `--wine` | Use wine making spinner animation during execution (easter egg). |
 | `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
+| `--log-format <text\|json>` | Log file output format (default: `text`). `json` emits NDJSON (one JSON object per line) for SIEM and log aggregation tool integration. Console output remains plain text regardless. |
 
 > **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the last one listed wins. They also override any custom `SpinnerFrames` set in `config.json`.
 
@@ -804,6 +805,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--whisky` | 実行中にウイスキー蒸留テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--wine` | 実行中にワイン醸造テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
+| `--log-format <text\|json>` | ログファイルの出力形式（既定: `text`）。`json` を指定すると NDJSON（1行1 JSON オブジェクト）で出力し、SIEM やログ集約ツールとの連携が容易になります。コンソール出力は形式に関わらずプレーンテキストのままです。 |
 
 > **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は最後に記述したものが優先されます。`config.json` で設定したカスタム `SpinnerFrames` も上書きされます。
 

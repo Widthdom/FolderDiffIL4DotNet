@@ -30,7 +30,9 @@ namespace FolderDiffIL4DotNet
             "  --matcha                    Use matcha tea ceremony spinner animation during execution.\n" +
             "  --whisky                    Use whisky distilling spinner animation during execution.\n" +
             "  --wine                      Use wine making spinner animation during execution.\n" +
-            "  --bell                      Ring terminal bell when execution completes.\n\n" +
+            "  --bell                      Ring terminal bell when execution completes.\n" +
+            "  --log-format <text|json>    Log file output format (default: text).\n" +
+            "                              'json' emits NDJSON lines for SIEM/log aggregation.\n\n" +
             "Environment variables (override config.json values):\n" +
             "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +
             "  FOLDERDIFF_ENABLEILCACHE=<true|false>       Enable/disable the IL cache.\n" +

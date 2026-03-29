@@ -25,6 +25,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_WHISKY = "--whisky";
         private const string OPT_WINE = "--wine";
         private const string OPT_BELL = "--bell";
+        private const string OPT_LOG_FORMAT = "--log-format";
 
         /// <summary>
         /// Scans command-line arguments and returns parsed CLI options.
@@ -39,11 +40,12 @@ namespace FolderDiffIL4DotNet.Runner
             bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, bell = false;
             string? configPath = null;
             int? threadsOverride = null;
+            string? logFormatOverride = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -135,6 +137,24 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_BELL:
                         bell = true;
                         break;
+                    case OPT_LOG_FORMAT:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            string fmt = args[++i].ToLowerInvariant();
+                            if (fmt == "text" || fmt == "json")
+                            {
+                                logFormatOverride = fmt;
+                            }
+                            else
+                            {
+                                parseError ??= $"'{OPT_LOG_FORMAT}' must be 'text' or 'json'. Got: '{args[i]}'.";
+                            }
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_LOG_FORMAT}' requires a format argument (text or json).";
+                        }
+                        break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
                         // 位置引数ではなく認識されないフラグ（-- で始まるもの）を検出する。
@@ -147,7 +167,7 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, bell, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, bell, logFormatOverride, parseError);
         }
     }
 }

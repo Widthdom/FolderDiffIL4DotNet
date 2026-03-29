@@ -23,5 +23,6 @@ namespace FolderDiffIL4DotNet.Runner
         bool Whisky,
         bool Wine,
         bool Bell,
+        string? LogFormatOverride,
         string? ParseError);
 }

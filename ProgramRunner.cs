@@ -117,6 +117,14 @@ namespace FolderDiffIL4DotNet
             #pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
             try
             {
+                // Apply log format before logger initialization / ロガー初期化前にログ形式を適用
+                if (opts.LogFormatOverride != null)
+                {
+                    _logger.Format = opts.LogFormatOverride.Equals("json", System.StringComparison.OrdinalIgnoreCase)
+                        ? Services.LogFormat.Json
+                        : Services.LogFormat.Text;
+                }
+
                 var appVersion = InitializeLoggerAndGetAppVersion();
                 var computerName = SystemInfo.GetComputerName();
 

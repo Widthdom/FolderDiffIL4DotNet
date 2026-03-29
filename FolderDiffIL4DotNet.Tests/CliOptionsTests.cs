@@ -31,6 +31,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
             Assert.False(opts.Bell);
+            Assert.Null(opts.LogFormatOverride);
             Assert.Null(opts.ParseError);
         }
 
@@ -453,6 +454,70 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.True(opts.Coffee);
             Assert.False(opts.Wine);
+        }
+
+        // -----------------------------------------------------------------------
+        // --log-format / ログフォーマット
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_LogFormatJson_SetsLogFormatOverride()
+        {
+            var opts = CliParser.Parse(new[] { "--log-format", "json" });
+
+            Assert.Equal("json", opts.LogFormatOverride);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_LogFormatText_SetsLogFormatOverride()
+        {
+            var opts = CliParser.Parse(new[] { "--log-format", "text" });
+
+            Assert.Equal("text", opts.LogFormatOverride);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_LogFormatJson_CaseInsensitive()
+        {
+            var opts = CliParser.Parse(new[] { "--log-format", "JSON" });
+
+            Assert.Equal("json", opts.LogFormatOverride);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_LogFormatInvalid_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--log-format", "xml" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("text", opts.ParseError, System.StringComparison.Ordinal);
+            Assert.Contains("json", opts.ParseError, System.StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_LogFormatMissingValue_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--log-format" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("--log-format", opts.ParseError, System.StringComparison.Ordinal);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_NoLogFormat_DefaultsToNull()
+        {
+            var opts = CliParser.Parse(new[] { "/old", "/new", "label" });
+
+            Assert.Null(opts.LogFormatOverride);
         }
     }
 }

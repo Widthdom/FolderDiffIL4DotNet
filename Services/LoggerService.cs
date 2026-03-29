@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
@@ -35,6 +36,9 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <inheritdoc />
         public string? LogFileAbsolutePath => _logFileAbsolutePath;
+
+        /// <inheritdoc />
+        public LogFormat Format { get; set; } = LogFormat.Text;
 
         /// <summary>
         /// Creates the log directory and computes today's log file path (does not create the file itself).
@@ -118,11 +122,18 @@ namespace FolderDiffIL4DotNet.Services
             {
                 using (var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true))
                 {
-                    streamWriter.WriteLine(
-                        $"[{DateTime.Now.ToString(Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture)}] {formattedMessage}");
-                    if (exception != null)
+                    if (Format == LogFormat.Json)
                     {
-                        streamWriter.WriteLine(exception.StackTrace);
+                        WriteJsonLogEntry(streamWriter, logLevel, message, exception);
+                    }
+                    else
+                    {
+                        streamWriter.WriteLine(
+                            $"[{DateTime.Now.ToString(Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture)}] {formattedMessage}");
+                        if (exception != null)
+                        {
+                            streamWriter.WriteLine(exception.StackTrace);
+                        }
                     }
                 }
             }
@@ -162,6 +173,41 @@ namespace FolderDiffIL4DotNet.Services
                 LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
             }
         }
+
+        /// <summary>
+        /// Writes a single log entry as a JSON object (one line per entry, NDJSON).
+        /// 1つのログエントリを JSON オブジェクトとして書き込みます（1行1エントリ、NDJSON 形式）。
+        /// </summary>
+        private static void WriteJsonLogEntry(StreamWriter writer, AppLogLevel logLevel, string message, Exception? exception)
+        {
+            using var stream = new MemoryStream();
+            using (var jsonWriter = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false }))
+            {
+                jsonWriter.WriteStartObject();
+                jsonWriter.WriteString("timestamp", DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
+                jsonWriter.WriteString("level", GetLogLevelString(logLevel));
+                jsonWriter.WriteString("message", message ?? string.Empty);
+                if (exception != null)
+                {
+                    jsonWriter.WriteString("exceptionType", exception.GetType().FullName);
+                    jsonWriter.WriteString("exceptionMessage", exception.Message);
+                    if (exception.StackTrace != null)
+                    {
+                        jsonWriter.WriteString("stackTrace", exception.StackTrace);
+                    }
+                }
+                jsonWriter.WriteEndObject();
+            }
+
+            writer.WriteLine(System.Text.Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        private static string GetLogLevelString(AppLogLevel logLevel) => logLevel switch
+        {
+            AppLogLevel.Warning => "WARNING",
+            AppLogLevel.Error => "ERROR",
+            _ => "INFO"
+        };
 
         private static string FormatMessage(string message, AppLogLevel logLevel)
         {
