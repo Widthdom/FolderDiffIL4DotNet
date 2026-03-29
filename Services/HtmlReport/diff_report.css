@@ -389,7 +389,7 @@
         --color-warn-danger-bg: #3d1a1e;
         --color-warn-caution-border: #e3b341;
         --color-warn-caution-bg: #3d3518;
-        --color-controls-bg: rgba(22,27,34,0.88);
+        --color-controls-bg: rgba(22,27,34,0.72);
         --color-resize-handle-hover: rgba(255,255,255,0.22);
         --color-print-text: #9ca3af;
         --color-print-border: #3d444d;
@@ -472,7 +472,7 @@
       --color-vuln-resolved-count: #3fb950; --color-vuln-new-count: #f85149;
       --color-warn-danger-border: #f85149; --color-warn-danger-bg: #3d1a1e;
       --color-warn-caution-border: #e3b341; --color-warn-caution-bg: #3d3518;
-      --color-controls-bg: rgba(22,27,34,0.88);
+      --color-controls-bg: rgba(22,27,34,0.72);
       --color-resize-handle-hover: rgba(255,255,255,0.22);
       --color-print-text: #9ca3af; --color-print-border: #3d444d; --color-print-bg: #0d1117;
       --color-lazy-summary: #9ca3af; --color-reviewed-banner-text: #e6edf3;
