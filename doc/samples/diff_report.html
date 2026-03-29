@@ -413,8 +413,7 @@
     td.col-diff  { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                    font-size: 12px; white-space: nowrap; min-width: 10.8em; text-align: center; }
     td.col-tag   { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-                   font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-                   text-align: center; }
+                   font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
@@ -584,7 +583,7 @@
     table.diff-table.sbs-mode td.sbs-empty { background: var(--color-sbs-empty-bg); }
     .sbs-inner { overflow: hidden; white-space: pre; padding: 1px 6px; }
     .sbs-scroll-tr td { position: sticky; bottom: 0; z-index: 2;
-                        background: var(--color-diff-ln-bg); padding: 0 !important;
+                        background: var(--color-sbs-empty-bg); padding: 0 !important;
                         border-top: 1px solid var(--color-border); }
     .sbs-scroll-proxy { overflow-x: auto; overflow-y: hidden; }
     .sbs-scroll-proxy > div { height: 1px; }
@@ -605,6 +604,48 @@
     }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
+    @media print {
+      .controls, .controls-bar, .reviewed-banner, .filter-zone,
+      .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
+      .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
+      button, .filter-search-wrap, .btn-input-clear { display: none !important; }
+      input[type="checkbox"] { pointer-events: none; }
+      input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
+      .controls, .reviewed-banner { position: static !important; }
+      details { display: block !important; }
+      details > summary { display: none !important; }
+      details[open] > summary { display: none !important; }
+      @page { margin: 1.5cm; }
+      body { padding: 0; font-size: 12px; max-width: 100%; }
+      tr, .diff-view, details { page-break-inside: avoid; break-inside: avoid; }
+      table { page-break-inside: auto; }
+      code, table.diff-table, td.col-diff, td.col-tag, td.col-disasm {
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 10px !important;
+      }
+      td.col-path, td.col-path .path-text {
+        white-space: normal !important; word-break: break-all;
+        overflow: visible !important; text-overflow: unset !important;
+      }
+      tr.diff-del-tr, td.diff-del-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr.diff-add-tr, td.diff-add-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr.diff-hunk-tr, td.diff-hunk-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      td.col-status { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body.pdf-print-mode { padding-top: 1.4cm; padding-bottom: 1.2cm; }
+      body.pdf-print-mode .pdf-print-header {
+        display: block !important; position: fixed; top: 0; left: 0; right: 0;
+        padding: 0.3cm 1.5cm; font-size: 8px; color: var(--color-print-text); border-bottom: 0.5px solid var(--color-print-border);
+        background: var(--color-print-bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; z-index: 9999;
+      }
+      body.pdf-print-mode .pdf-print-footer {
+        display: block !important; position: fixed; bottom: 0; left: 0; right: 0;
+        padding: 0.3cm 1.5cm; font-size: 8px; color: var(--color-print-text); border-top: 0.5px solid var(--color-print-border);
+        background: var(--color-print-bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; z-index: 9999;
+      }
+      body.pdf-print-mode .pdf-print-header { display: flex !important; justify-content: space-between; align-items: center; }
+      body.pdf-print-mode .pdf-print-footer { display: flex !important; justify-content: space-between; align-items: center; }
+      body.pdf-print-mode .reviewed-banner { display: none !important; }
+    }
   </style>
 </head>
 <body>
