@@ -670,7 +670,7 @@
     .vuln-badge a { font-size: 11px; }
     /* ── Side-by-side diff mode / サイドバイサイド差分モード ────────────── */
     .sbs-toggle { font-size: 11px; color: var(--color-accent); background: none; border: 1px solid var(--color-accent);
-                  border-radius: 4px; padding: 2px 8px; cursor: pointer; margin: 4px 0 4px 3.2em; }
+                  border-radius: 980px; padding: 2px 10px; cursor: pointer; margin: 4px 0 4px 3.2em; }
     .sbs-toggle:hover { background: var(--color-accent-hover-bg); }
     table.diff-table.sbs-mode { table-layout: fixed; }
     table.diff-table.sbs-mode td.sbs-old,
