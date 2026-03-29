@@ -202,18 +202,19 @@ namespace FolderDiffIL4DotNet
 
             if (color.HasValue)
             {
-                // Color both label and bar for status categories / ステータスカテゴリはラベルとバーの両方に色を適用
+                // Color label, bar, and count for status categories / ステータスカテゴリはラベル・バー・件数に色を適用
                 var prevColor = Console.ForegroundColor;
                 Console.ForegroundColor = color.Value;
-                Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar}");
+                Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar} {count,5}");
                 Console.ForegroundColor = prevColor;
+                Console.WriteLine($"/{total} ({pct}%)");
             }
             else
             {
                 // Default color for Unchanged / Unchanged はデフォルト色
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar}");
+                Console.WriteLine($" {count,5}/{total} ({pct}%)");
             }
-            Console.WriteLine($" {count,5}/{total} ({pct}%)");
         }
 
         private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings)
