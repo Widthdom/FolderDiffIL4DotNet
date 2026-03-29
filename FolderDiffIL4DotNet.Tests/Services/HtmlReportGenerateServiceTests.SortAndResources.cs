@@ -308,6 +308,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_theme.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_celebrate.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_highlight.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js",
             };
             foreach (var name in moduleNames)
@@ -322,6 +323,49 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             Assert.Throws<FileNotFoundException>(() =>
                 HtmlReportGenerateService.LoadEmbeddedResource("NonExistent.Resource.Name"));
+        }
+
+        // ── IL syntax highlighting CSS/JS presence / IL シンタックスハイライト CSS/JS 存在確認 ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Css_ContainsILSyntaxHighlightClasses()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+
+            Assert.Contains(".hl-directive", css);
+            Assert.Contains(".hl-keyword", css);
+            Assert.Contains(".hl-type", css);
+            Assert.Contains(".hl-string", css);
+            Assert.Contains(".hl-comment", css);
+            Assert.Contains(".hl-label", css);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Css_ContainsILHighlightColorVariables_LightAndDark()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+
+            // Light theme variables / ライトテーマ変数
+            Assert.Contains("--color-hl-directive", css);
+            Assert.Contains("--color-hl-keyword", css);
+            Assert.Contains("--color-hl-type", css);
+            Assert.Contains("--color-hl-string", css);
+            Assert.Contains("--color-hl-comment", css);
+            Assert.Contains("--color-hl-label", css);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_HighlightModule_ContainsRequiredFunctions()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_highlight.js");
+
+            Assert.Contains("highlightILCell", js);
+            Assert.Contains("highlightILDiff", js);
+            Assert.Contains("highlightAllILDiffs", js);
+            Assert.Contains("__ilPatterns__", js);
         }
 
     }

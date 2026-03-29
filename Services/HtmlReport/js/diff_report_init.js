@@ -34,6 +34,7 @@
     initClearButtons();
     setupLazyDiff();
     setupLazySection();
+    highlightAllILDiffs();
     updateProgress();
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept

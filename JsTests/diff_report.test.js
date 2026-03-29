@@ -32,6 +32,7 @@ const JS_MODULE_FILES = [
   'diff_report_layout.js',
   'diff_report_filter.js',
   'diff_report_excel.js',
+  'diff_report_highlight.js',
   'diff_report_init.js',
 ];
 const JS_SOURCE = JS_MODULE_FILES.map(function(f) {
@@ -1300,5 +1301,120 @@ describe('keyboard navigation', () => {
 
     // Details should remain open since focus was outside
     expect(document.getElementById('det').hasAttribute('open')).toBe(true);
+  });
+});
+
+// ── IL syntax highlighting / IL シンタックスハイライト ────────────────────
+describe('highlightILCell', () => {
+  beforeEach(() => {
+    loadScript({ bodyHtml: '<span id="save-status"></span>' });
+    fireDOMContentLoaded();
+  });
+
+  test('highlights IL directives', () => {
+    const td = document.createElement('td');
+    td.className = 'diff-ctx-td';
+    td.innerHTML = ' .method public hidebysig';
+    window.highlightILCell(td);
+    expect(td.innerHTML).toContain('<span class="hl-directive">.method</span>');
+  });
+
+  test('highlights IL labels', () => {
+    const td = document.createElement('td');
+    td.className = 'diff-add-td';
+    td.innerHTML = '+  IL_0000: nop';
+    window.highlightILCell(td);
+    expect(td.innerHTML).toContain('<span class="hl-label">IL_0000:</span>');
+  });
+
+  test('highlights builtin types', () => {
+    const td = document.createElement('td');
+    td.className = 'diff-ctx-td';
+    td.innerHTML = ' .locals init (int32 V_0, string V_1)';
+    window.highlightILCell(td);
+    expect(td.innerHTML).toContain('<span class="hl-type">int32</span>');
+    expect(td.innerHTML).toContain('<span class="hl-type">string</span>');
+  });
+
+  test('highlights keywords', () => {
+    const td = document.createElement('td');
+    td.className = 'diff-del-td';
+    td.innerHTML = '-.method public static void Main()';
+    window.highlightILCell(td);
+    expect(td.innerHTML).toContain('<span class="hl-keyword">public</span>');
+    expect(td.innerHTML).toContain('<span class="hl-keyword">static</span>');
+  });
+
+  test('preserves prefix character', () => {
+    const td = document.createElement('td');
+    td.className = 'diff-add-td';
+    td.innerHTML = '+.class public';
+    window.highlightILCell(td);
+    expect(td.innerHTML.charAt(0)).toBe('+');
+  });
+
+  test('skips already-highlighted cells', () => {
+    const td = document.createElement('td');
+    td.className = 'diff-ctx-td';
+    td.innerHTML = ' <span class="hl-directive">.method</span>';
+    window.highlightILCell(td);
+    // Should not double-wrap
+    expect(td.innerHTML).not.toContain('hl-directive"><span');
+  });
+
+  test('skips empty cells', () => {
+    const td = document.createElement('td');
+    td.className = 'diff-ctx-td';
+    td.innerHTML = '';
+    window.highlightILCell(td);
+    expect(td.innerHTML).toBe('');
+  });
+});
+
+describe('highlightILDiff', () => {
+  beforeEach(() => {
+    loadScript({ bodyHtml: '<span id="save-status"></span>' });
+    fireDOMContentLoaded();
+  });
+
+  test('applies highlighting to IL diff tables', () => {
+    const html = `
+      <table><tbody>
+        <tr data-section="mod" data-diff="ILMismatch"><td>file.dll</td></tr>
+        <tr class="diff-row"><td colspan="10">
+          <details id="d1">
+            <summary class="diff-summary">Show diff</summary>
+            <table class="diff-table"><tbody>
+              <tr class="diff-ctx-tr"><td class="diff-ln">1</td><td class="diff-ln">1</td><td class="diff-ctx-td"> .method public void Test()</td></tr>
+            </tbody></table>
+          </details>
+        </td></tr>
+      </tbody></table>
+    `;
+    document.body.innerHTML = html + '<span id="save-status"></span>';
+    const tbl = document.querySelector('.diff-table');
+    window.highlightILDiff(tbl);
+    expect(tbl.querySelector('.diff-ctx-td').innerHTML).toContain('hl-directive');
+  });
+
+  test('skips text diff tables', () => {
+    const html = `
+      <table><tbody>
+        <tr data-section="mod" data-diff="TextMismatch"><td>file.config</td></tr>
+        <tr class="diff-row"><td colspan="10">
+          <details id="d2">
+            <summary class="diff-summary">Show diff</summary>
+            <table class="diff-table"><tbody>
+              <tr class="diff-ctx-tr"><td class="diff-ln">1</td><td class="diff-ln">1</td><td class="diff-ctx-td"> .method public void Test()</td></tr>
+            </tbody></table>
+          </details>
+        </td></tr>
+      </tbody></table>
+    `;
+    document.body.innerHTML = html + '<span id="save-status"></span>';
+    const tbl = document.querySelector('.diff-table');
+    window.highlightILDiff(tbl);
+    // Should NOT highlight because data-diff is TextMismatch
+    expect(tbl.querySelector('.diff-ctx-td').innerHTML).not.toContain('hl-directive');
   });
 });
