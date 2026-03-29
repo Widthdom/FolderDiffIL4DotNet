@@ -14,6 +14,18 @@
     } else {
       root.removeAttribute('data-theme');
     }
+    // Belt-and-suspenders: force body color/background for reviewed HTML
+    // reviewed HTML 用にbodyの色・背景を直接設定（フォールバック）
+    if (mode === 'light') {
+      document.body.style.color = '#1d1d1f';
+      document.body.style.backgroundColor = '#fff';
+    } else if (mode === 'dark') {
+      document.body.style.color = '#e6edf3';
+      document.body.style.backgroundColor = '#0d1117';
+    } else {
+      document.body.style.removeProperty('color');
+      document.body.style.removeProperty('background-color');
+    }
     var btn = document.getElementById('theme-toggle');
     if (btn) btn.textContent = __themeLabels__[mode] || __themeLabels__.system;
   }

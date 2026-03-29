@@ -61,7 +61,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void GenerateDiffReportHtml_ThemeToggleIsOutsideCtrlMarkers()
+        public void GenerateDiffReportHtml_ThemeToggleInsideCtrlAndReviewedBanner()
         {
             // Arrange / テスト準備
             var (oldDir, newDir, reportDir) = MakeDirs("theme-toggle");
@@ -70,15 +70,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: theme toggle button exists and is outside CTRL markers
-            // テーマ切替ボタンが存在し CTRL マーカーの外にあることを検証
+            // Assert: theme toggle button exists inside CTRL markers (replaced by reviewed banner which includes it)
+            // テーマ切替ボタンが CTRL マーカー内に存在し、reviewed バナー置換時にも含まれることを検証
             Assert.Contains("id=\"theme-toggle\"", html);
             Assert.Contains("cycleTheme()", html);
             Assert.Contains("initTheme()", html);
             int themeBtn = html.IndexOf("id=\"theme-toggle\"", StringComparison.Ordinal);
+            int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
             int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
-            Assert.True(themeBtn > ctrlEnd,
-                "theme toggle should be AFTER <!--/CTRL--> marker so it persists in reviewed HTML");
+            Assert.True(themeBtn > ctrlStart && themeBtn < ctrlEnd,
+                "theme toggle should be inside CTRL markers (reviewed banner replacement includes it)");
+
+            // Assert: CTRL markers wrap entire ctrl-buttons div cleanly (no orphaned closing tags)
+            // CTRL マーカーが ctrl-buttons div 全体を正しく囲んでいることを検証（孤立した閉じタグなし）
+            string ctrlContent = html.Substring(ctrlStart, ctrlEnd - ctrlStart + "<!--/CTRL-->".Length);
+            Assert.Contains("class=\"ctrl-buttons\"", ctrlContent);
+            Assert.Contains("class=\"ctrl-actions\"", ctrlContent);
         }
 
         [Fact]

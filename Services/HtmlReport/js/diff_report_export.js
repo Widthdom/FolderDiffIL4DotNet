@@ -19,8 +19,16 @@
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
+    // Clear body inline theme styles before capture so reviewed HTML starts clean
+    // キャプチャ前にbodyのインラインテーマスタイルをクリアし、reviewed HTMLを初期状態にする
+    var savedBodyColor = document.body.style.color;
+    var savedBodyBg = document.body.style.backgroundColor;
+    document.body.style.removeProperty('color');
+    document.body.style.removeProperty('background-color');
     var html    = document.documentElement.outerHTML;
     // Restore live page state / ライブページの状態を復元
+    document.body.style.color = savedBodyColor;
+    document.body.style.backgroundColor = savedBodyBg;
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
     applyFilters();
     syncTableWidths();
@@ -60,6 +68,7 @@
       + '<button class="btn" onclick="downloadAsPdf()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M4 1h6l4 4v10H2V1h2z"/><polyline points="10,1 10,5 14,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="10.5" x2="11" y2="10.5"/><line x1="5" y1="13" x2="9" y2="13"/></svg> Download as PDF</button>'
       + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
       + '<button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
+      + '<button id="theme-toggle" class="btn btn-clear theme-toggle" onclick="cycleTheme()" title="Toggle theme (Light / Dark / System)" style="font-size:12px">&#x2699; System</button>'
       + '</div></div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
