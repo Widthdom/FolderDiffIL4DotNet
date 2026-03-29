@@ -209,7 +209,7 @@ namespace FolderDiffIL4DotNet
                 Console.ForegroundColor = prevColor;
                 Console.Write($"/{total} (");
                 Console.ForegroundColor = color.Value;
-                Console.Write($"{pct}%");
+                Console.Write($"{pct,5}%");
                 Console.ForegroundColor = prevColor;
                 Console.WriteLine(")");
             }
@@ -217,7 +217,7 @@ namespace FolderDiffIL4DotNet
             {
                 // Default color for Unchanged / Unchanged はデフォルト色
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar}");
-                Console.WriteLine($" {count,5}/{total} ({pct}%)");
+                Console.WriteLine($" {count,5}/{total} ({pct,5}%)");
             }
         }
 
