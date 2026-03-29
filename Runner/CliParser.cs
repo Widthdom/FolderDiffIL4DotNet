@@ -27,6 +27,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_RAMEN = "--ramen";
         private const string OPT_SUSHI = "--sushi";
         private const string OPT_BELL = "--bell";
+        private const string OPT_WIZARD = "--wizard";
         private const string OPT_LOG_FORMAT = "--log-format";
 
         /// <summary>
@@ -39,7 +40,7 @@ namespace FolderDiffIL4DotNet.Runner
         {
             bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
             bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
-            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false;
+            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false;
             string? configPath = null;
             int? threadsOverride = null;
             string? logFormatOverride = null;
@@ -47,7 +48,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -145,6 +146,9 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_BELL:
                         bell = true;
                         break;
+                    case OPT_WIZARD:
+                        wizard = true;
+                        break;
                     case OPT_LOG_FORMAT:
                         if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
                         {
@@ -175,7 +179,7 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, logFormatOverride, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, logFormatOverride, parseError);
         }
     }
 }

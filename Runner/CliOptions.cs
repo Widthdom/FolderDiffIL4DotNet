@@ -25,6 +25,7 @@ namespace FolderDiffIL4DotNet.Runner
         bool Ramen,
         bool Sushi,
         bool Bell,
+        bool Wizard,
         string? LogFormatOverride,
         string? ParseError);
 }

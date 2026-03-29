@@ -81,6 +81,11 @@ namespace FolderDiffIL4DotNet
                 return await ValidateConfigAsync(opts.ConfigPath);
             }
 
+            if (opts.Wizard)
+            {
+                return await RunWizardAsync(opts);
+            }
+
             var result = await RunWithResultAsync(args, opts);
             OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings);
 

@@ -353,6 +353,19 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --wizard
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_WizardFlag_SetsWizard()
+        {
+            var opts = CliParser.Parse(new[] { "--wizard" });
+
+            Assert.True(opts.Wizard);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // --bell
         // -----------------------------------------------------------------------
 
@@ -432,7 +445,8 @@ namespace FolderDiffIL4DotNet.Tests
                 "--wine",
                 "--ramen",
                 "--sushi",
-                "--bell"
+                "--bell",
+                "--wizard"
             });
 
             Assert.False(opts.ShowHelp);
@@ -456,6 +470,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Ramen);
             Assert.True(opts.Sushi);
             Assert.True(opts.Bell);
+            Assert.True(opts.Wizard);
             Assert.Null(opts.ParseError);
         }
 

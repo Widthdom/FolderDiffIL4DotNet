@@ -133,6 +133,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--no-il-cache` | Disable the IL cache for this run. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
+| `--wizard` | Interactive mode: prompts for old folder, new folder, and report label. |
 | `--dry-run` | Enumerate files and show statistics without running comparison. |
 | `--coffee` | Use coffee-themed spinner animation during execution (easter egg). |
 | `--beer` | Use beer-themed spinner animation during execution (easter egg). |
@@ -800,6 +801,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
+| `--wizard` | 対話モード: 旧フォルダ、新フォルダ、レポートラベルを対話入力で指定します。 |
 | `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
 | `--coffee` | 実行中にコーヒーテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--beer` | 実行中にビールテーマのスピナーアニメーションを使用します（イースターエッグ）。 |

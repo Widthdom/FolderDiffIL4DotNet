@@ -24,6 +24,7 @@ namespace FolderDiffIL4DotNet
             "  --no-il-cache               Disable the IL cache for this run.\n" +
             "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
             "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n" +
+            "  --wizard                    Interactive mode: prompts for old/new folders and report label.\n" +
             "  --dry-run                   Enumerate files and show statistics without running comparison.\n" +
             "  --coffee                    Use coffee-themed spinner animation during execution.\n" +
             "  --beer                      Use beer-themed spinner animation during execution.\n" +

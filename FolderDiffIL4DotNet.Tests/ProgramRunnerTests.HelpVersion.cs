@@ -402,6 +402,40 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --wizard with redirected stdin -> exit code 2
+        // --wizard でリダイレクト stdin → 終了コード 2
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_WizardFlag_WithRedirectedStdin_ExitsWithInvalidArguments()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            var origErr = Console.Error;
+            using var swOut = new System.IO.StringWriter();
+            using var swErr = new System.IO.StringWriter();
+            Console.SetOut(swOut);
+            Console.SetError(swErr);
+
+            try
+            {
+                // In test environment, stdin is always redirected, so wizard should refuse to run.
+                // テスト環境では stdin は常にリダイレクトされているため、ウィザードは実行を拒否する。
+                var exitCode = await runner.RunAsync(new[] { "--wizard" });
+
+                Assert.Equal(2, exitCode);
+                var errOutput = swErr.ToString();
+                Assert.Contains("--wizard requires an interactive terminal", errOutput, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                Console.SetError(origErr);
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // Unknown flag -> exit code 2 (InvalidArguments)
         // 不明フラグ -> 終了コード 2（InvalidArguments）
         // -----------------------------------------------------------------------
