@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774676272283,
+  "lastUpdate": 1774794107444,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -1056,6 +1056,72 @@ window.BENCHMARK_DATA = {
             "value": 39166898.938461535,
             "unit": "ns",
             "range": "± 271321.93337041134"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7398d95dfee40a864aee4875d77c0bf3ef57ca81",
+          "message": "Merge pull request #108 from Widthdom/claude/add-banner-option-vbUW3\n\nv1.10.0 feature batch: IL/encoding, CLI options, dark mode, SBOM, estimated change tags",
+          "timestamp": "2026-03-29T23:18:23+09:00",
+          "tree_id": "51b0b23641e46f6034dc912d5b165453f9e15c4b",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/7398d95dfee40a864aee4875d77c0bf3ef57ca81"
+        },
+        "date": 1774794107223,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61203.70962289663,
+            "unit": "ns",
+            "range": "± 88.75666874830823"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 588953.26171875,
+            "unit": "ns",
+            "range": "± 1547.6559147621224"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5986248.123325893,
+            "unit": "ns",
+            "range": "± 15129.308478409277"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74620.51724008414,
+            "unit": "ns",
+            "range": "± 48.083677147926025"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 3031.827045440674,
+            "unit": "ns",
+            "range": "± 23.39872262791748"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 270163.3303222656,
+            "unit": "ns",
+            "range": "± 1577.3600508334523"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 28457378.035416666,
+            "unit": "ns",
+            "range": "± 176587.88916388113"
           }
         ]
       }
