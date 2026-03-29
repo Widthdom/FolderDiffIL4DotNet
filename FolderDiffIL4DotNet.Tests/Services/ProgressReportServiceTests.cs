@@ -91,8 +91,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Contains("Scan", result);
             Assert.Contains("25.00%", result);
-            Assert.Contains("[", result);
-            Assert.Contains("]", result);
+            Assert.Contains("█", result);
+            Assert.Contains("░", result);
         }
 
         [Fact]
