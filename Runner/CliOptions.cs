@@ -18,6 +18,8 @@ namespace FolderDiffIL4DotNet.Runner
         bool ValidateConfig,
         bool DryRun,
         bool Coffee,
+        bool Beer,
+        bool Matcha,
         bool Bell,
         string? ParseError);
 }

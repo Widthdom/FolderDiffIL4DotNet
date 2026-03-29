@@ -26,6 +26,8 @@ namespace FolderDiffIL4DotNet
             "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n" +
             "  --dry-run                   Enumerate files and show statistics without running comparison.\n" +
             "  --coffee                    Use coffee-themed spinner animation during execution.\n" +
+            "  --beer                      Use beer-themed spinner animation during execution.\n" +
+            "  --matcha                    Use matcha tea ceremony spinner animation during execution.\n" +
             "  --bell                      Ring terminal bell when execution completes.\n\n" +
             "Environment variables (override config.json values):\n" +
             "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +

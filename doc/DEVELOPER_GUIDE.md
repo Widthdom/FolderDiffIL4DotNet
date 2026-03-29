@@ -302,7 +302,7 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 
 ### What happens inside `RunAsync`
 
-1. Parse CLI options (`--help`, `--version`, `--print-config`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--coffee`, `--bell`).
+1. Parse CLI options (`--help`, `--version`, `--print-config`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--coffee`, `--beer`, `--matcha`, `--bell`).
 2. If `--help` or `--version` is present, print and exit immediately with code `0` — no logger initialization occurs.
 2a. If `--print-config` is present (optionally combined with `--config <path>`), load the effective configuration — [`config.json`](../config.json) deserialized and all `FOLDERDIFF_*` environment variable overrides applied — serialize it as indented JSON to standard output, and exit with code `0`. Config load errors exit with code `3`.
 3. Initialize logging and print application version.
@@ -1182,7 +1182,7 @@ sequenceDiagram
 
 ### `RunAsync` の中で起きること
 
-1. CLI オプション（`--help`、`--version`、`--print-config`、`--no-pause`、`--config`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`、`--coffee`、`--bell`）を解析します。
+1. CLI オプション（`--help`、`--version`、`--print-config`、`--no-pause`、`--config`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`、`--coffee`、`--beer`、`--matcha`、`--bell`）を解析します。
 2. `--help` または `--version` がある場合は、ロガー初期化を一切行わずに即座に出力してコード `0` で終了します。
 2a. `--print-config` がある場合（`--config <path>` との併用可）、有効な設定 — [`config.json`](../config.json) のデシリアライズ結果にすべての `FOLDERDIFF_*` 環境変数オーバーライドを適用したもの — をインデント付き JSON として標準出力に書き出し、終了コード `0` で終了します。設定読込エラーは終了コード `3` です。
 3. ログを初期化し、アプリのバージョンを表示します。

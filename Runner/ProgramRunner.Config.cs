@@ -164,6 +164,40 @@ namespace FolderDiffIL4DotNet
                     "☕ Brewing...",
                 };
             }
+
+            if (opts.Beer)
+            {
+                // Easter egg: replace spinner with beer pouring animation / イースターエッグ: スピナーをビール注ぎアニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🍺 Tapping  ",
+                    "🍺 Tapping..",
+                    "🍺 Pouring  ",
+                    "🍺 Pouring..",
+                    "🍺 Foaming  ",
+                    "🍺 Foaming. ",
+                    "🍺 Foaming..",
+                    "🍺 Cheers!  ",
+                };
+            }
+
+            if (opts.Matcha)
+            {
+                // Easter egg: replace spinner with matcha tea ceremony animation / イースターエッグ: スピナーを抹茶点前アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🍵 Sifting  ",
+                    "🍵 Sifting..",
+                    "🍵 Pouring  ",
+                    "🍵 Pouring..",
+                    "🍵 Whisking ",
+                    "🍵 Whisking.",
+                    "🍵 Whisking.",
+                    "🍵 Douzo!   ",
+                };
+            }
         }
     }
 }

@@ -26,6 +26,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
             Assert.False(opts.Coffee);
+            Assert.False(opts.Beer);
+            Assert.False(opts.Matcha);
             Assert.False(opts.Bell);
             Assert.Null(opts.ParseError);
         }
@@ -56,6 +58,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
             Assert.False(opts.Coffee);
+            Assert.False(opts.Beer);
+            Assert.False(opts.Matcha);
             Assert.False(opts.Bell);
             Assert.Null(opts.ParseError);
         }
@@ -266,6 +270,32 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --beer
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_BeerFlag_SetsBeer()
+        {
+            var opts = CliParser.Parse(new[] { "--beer" });
+
+            Assert.True(opts.Beer);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --matcha
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_MatchaFlag_SetsMatcha()
+        {
+            var opts = CliParser.Parse(new[] { "--matcha" });
+
+            Assert.True(opts.Matcha);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // --bell
         // -----------------------------------------------------------------------
 
@@ -339,6 +369,8 @@ namespace FolderDiffIL4DotNet.Tests
                 "--print-config",
                 "--dry-run",
                 "--coffee",
+                "--beer",
+                "--matcha",
                 "--bell"
             });
 
@@ -354,6 +386,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.PrintConfig);
             Assert.True(opts.DryRun);
             Assert.True(opts.Coffee);
+            Assert.True(opts.Beer);
+            Assert.True(opts.Matcha);
             Assert.True(opts.Bell);
             Assert.Null(opts.ParseError);
         }
