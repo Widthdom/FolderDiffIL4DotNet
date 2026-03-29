@@ -16,6 +16,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
@@ -23,6 +24,13 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
+            Assert.False(opts.DryRun);
+            Assert.False(opts.Coffee);
+            Assert.False(opts.Beer);
+            Assert.False(opts.Matcha);
+            Assert.False(opts.Whisky);
+            Assert.False(opts.Wine);
+            Assert.False(opts.Bell);
             Assert.Null(opts.ParseError);
         }
 
@@ -42,6 +50,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
@@ -49,6 +58,13 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
+            Assert.False(opts.DryRun);
+            Assert.False(opts.Coffee);
+            Assert.False(opts.Beer);
+            Assert.False(opts.Matcha);
+            Assert.False(opts.Whisky);
+            Assert.False(opts.Wine);
+            Assert.False(opts.Bell);
             Assert.Null(opts.ParseError);
         }
 
@@ -81,6 +97,21 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { arg });
 
             Assert.True(opts.ShowVersion);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --banner
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--banner")]
+        [InlineData("--BANNER")]
+        public void ParseCliOptions_BannerFlag_SetsShowBanner(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.ShowBanner);
             Assert.Null(opts.ParseError);
         }
 
@@ -217,6 +248,97 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --dry-run
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_DryRunFlag_SetsDryRun()
+        {
+            var opts = CliParser.Parse(new[] { "--dry-run" });
+
+            Assert.True(opts.DryRun);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --coffee
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_CoffeeFlag_SetsCoffee()
+        {
+            var opts = CliParser.Parse(new[] { "--coffee" });
+
+            Assert.True(opts.Coffee);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --beer
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_BeerFlag_SetsBeer()
+        {
+            var opts = CliParser.Parse(new[] { "--beer" });
+
+            Assert.True(opts.Beer);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --matcha
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_MatchaFlag_SetsMatcha()
+        {
+            var opts = CliParser.Parse(new[] { "--matcha" });
+
+            Assert.True(opts.Matcha);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --whisky
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_WhiskyFlag_SetsWhisky()
+        {
+            var opts = CliParser.Parse(new[] { "--whisky" });
+
+            Assert.True(opts.Whisky);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --wine
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_WineFlag_SetsWine()
+        {
+            var opts = CliParser.Parse(new[] { "--wine" });
+
+            Assert.True(opts.Wine);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --bell
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_BellFlag_SetsBell()
+        {
+            var opts = CliParser.Parse(new[] { "--bell" });
+
+            Assert.True(opts.Bell);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // Unknown / invalid flags
         // -----------------------------------------------------------------------
 
@@ -274,11 +396,19 @@ namespace FolderDiffIL4DotNet.Tests
                 "--no-il-cache",
                 "--skip-il",
                 "--no-timestamp-warnings",
-                "--print-config"
+                "--print-config",
+                "--dry-run",
+                "--coffee",
+                "--beer",
+                "--matcha",
+                "--whisky",
+                "--wine",
+                "--bell"
             });
 
             Assert.False(opts.ShowHelp);
             Assert.False(opts.ShowVersion);
+            Assert.False(opts.ShowBanner);
             Assert.True(opts.NoPause);
             Assert.Equal("/etc/my.json", opts.ConfigPath);
             Assert.Equal(4, opts.ThreadsOverride);
@@ -286,7 +416,43 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.SkipIL);
             Assert.True(opts.NoTimestampWarnings);
             Assert.True(opts.PrintConfig);
+            Assert.True(opts.DryRun);
+            // Last-wins: --wine is last spinner flag, so only Wine is true
+            // 最後勝ち: --wine が最後のスピナーフラグなので Wine のみ true
+            Assert.False(opts.Coffee);
+            Assert.False(opts.Beer);
+            Assert.False(opts.Matcha);
+            Assert.False(opts.Whisky);
+            Assert.True(opts.Wine);
+            Assert.True(opts.Bell);
             Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // Spinner last-wins behavior / スピナー最後勝ち動作
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_MultipleSpinnerFlags_LastOneWins()
+        {
+            var opts = CliParser.Parse(new[] { "--matcha", "--beer" });
+
+            Assert.False(opts.Coffee);
+            Assert.True(opts.Beer);
+            Assert.False(opts.Matcha);
+            Assert.False(opts.Whisky);
+            Assert.False(opts.Wine);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_CoffeeAfterWine_CoffeeWins()
+        {
+            var opts = CliParser.Parse(new[] { "--wine", "--coffee" });
+
+            Assert.True(opts.Coffee);
+            Assert.False(opts.Wine);
         }
     }
 }

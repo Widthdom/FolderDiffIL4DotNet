@@ -528,10 +528,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Available probe should show green and version / 利用可能プローブが緑とバージョンで表示されること
             Assert.Contains("Available (0.14.0)", html);
-            Assert.Contains("color:#22863a", html);
+            Assert.Contains("class=\"status-available\"", html);
             // Not-available probe should show red / 利用不可プローブが赤で表示されること
             Assert.Contains("Not Available", html);
-            Assert.Contains("color:#b31d28", html);
+            Assert.Contains("class=\"status-unavailable\"", html);
             // In-use marker should appear for the tool in use / 使用中のツールに In Use マーカーが表示されること
             Assert.Contains("In Use", html);
         }

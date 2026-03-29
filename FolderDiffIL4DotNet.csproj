@@ -25,7 +25,16 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Services\HtmlReport\diff_report.css" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css" />
-    <EmbeddedResource Include="Services\HtmlReport\diff_report.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.diff_report.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_state.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_export.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_export.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_diffview.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_diffview.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_lazy.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_lazy.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_layout.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_layout.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_filter.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_excel.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_theme.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_theme.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_celebrate.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_celebrate.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_init.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js" />
   </ItemGroup>
 
   <ItemGroup>

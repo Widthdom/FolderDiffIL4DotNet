@@ -78,7 +78,7 @@ Large service classes are split into partial class files to keep each file focus
 | --- | --- | --- |
 | `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs) (nested types: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`), [`Runner/ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs) (CLI help message), [`Runner/ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) (config loading, validation, CLI overrides) |
 | `ConfigSettings` | [`Models/ConfigSettings.cs`](../Models/ConfigSettings.cs) | [`Models/ConfigSettings.ReportSettings.cs`](../Models/ConfigSettings.ReportSettings.cs) (report output control), [`Models/ConfigSettings.ILSettings.cs`](../Models/ConfigSettings.ILSettings.cs) (IL comparison, cache, disassembler), [`Models/ConfigSettings.DiffSettings.cs`](../Models/ConfigSettings.DiffSettings.cs) (parallelism, network, inline diff) |
-| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs) (report section builders), [`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs) (inline diff, semantic changes, dependency changes detail rows), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) (loads [`diff_report.css`](../Services/HtmlReport/diff_report.css) embedded resource), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) (loads [`diff_report.js`](../Services/HtmlReport/diff_report.js) template with `{{STORAGE_KEY}}`/`{{REPORT_DATE}}` placeholders) |
+| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs) (report section builders), [`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs) (inline diff, semantic changes, dependency changes detail rows), [`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) (loads [`diff_report.css`](../Services/HtmlReport/diff_report.css) embedded resource), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) (loads and concatenates 10 JS modules from [`Services/HtmlReport/js/`](../Services/HtmlReport/js/) with `{{STORAGE_KEY}}`/`{{REPORT_DATE}}` placeholders) |
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/SectionWriters/HeaderSectionWriter.cs`](../Services/SectionWriters/HeaderSectionWriter.cs), [`…LegendSectionWriter.cs`](../Services/SectionWriters/LegendSectionWriter.cs), [`…IgnoredFilesSectionWriter.cs`](../Services/SectionWriters/IgnoredFilesSectionWriter.cs), [`…UnchangedFilesSectionWriter.cs`](../Services/SectionWriters/UnchangedFilesSectionWriter.cs), [`…AddedFilesSectionWriter.cs`](../Services/SectionWriters/AddedFilesSectionWriter.cs), [`…RemovedFilesSectionWriter.cs`](../Services/SectionWriters/RemovedFilesSectionWriter.cs), [`…ModifiedFilesSectionWriter.cs`](../Services/SectionWriters/ModifiedFilesSectionWriter.cs), [`…SummarySectionWriter.cs`](../Services/SectionWriters/SummarySectionWriter.cs), [`…ILCacheStatsSectionWriter.cs`](../Services/SectionWriters/ILCacheStatsSectionWriter.cs), [`…WarningsSectionWriter.cs`](../Services/SectionWriters/WarningsSectionWriter.cs) |
 | `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs) (type/method/property/field comparison), [`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs) (snapshot construction, signature building), [`…AccessHelpers.cs`](../Services/AssemblyMethodAnalyzer.AccessHelpers.cs) (access/modifier extraction, type kind detection, IL byte reading), [`…SignatureProvider.cs`](../Services/AssemblyMethodAnalyzer.SignatureProvider.cs) (generic context, signature type provider) |
@@ -151,17 +151,36 @@ The HTML report includes a client-side filter zone that allows users to narrow d
 
 ### CSS ([`diff_report.css`](../Services/HtmlReport/diff_report.css))
 
+- **CSS custom properties (`:root` variables)** — 60+ colour/surface/border tokens defined in `:root`. All colour references throughout the stylesheet use `var(--color-*)` instead of hardcoded hex values. This enables theming and keeps the palette in a single location.
+- **Dark mode** — `@media (prefers-color-scheme: dark)` overrides the `:root` variables with a GitHub-dark-inspired palette (`#0d1117` background, `#e6edf3` text, etc.). The report switches automatically based on the browser/OS colour scheme. A manual toggle button (Light / Dark / System) in the controls bar applies `html[data-theme="light"]` or `html[data-theme="dark"]` attribute selectors that take precedence over `@media`. The preference is stored in localStorage with a per-report key (`{storageKey}-theme`).
+- **Utility classes** — Theme-aware classes used by the C# generator instead of inline `style` attributes: `.imp-high`, `.imp-medium` (importance labels), `.status-available`, `.status-unavailable` (disassembler status), `.vuln-new`, `.vuln-resolved` (vulnerability badges), `.vuln-new-count`, `.vuln-resolved-count` (vulnerability counts), `.warn-danger`, `.warn-caution` (warning banners).
 - `tr.filter-hidden` / `tr.diff-row.filter-hidden-parent` — hide rows with `display: none !important`.
 - `.filter-table-dbl` — Change Importance table class; its `tbody td` height is set to `calc(var(--ft-row-h) * 2)` for row alignment with Diff Detail.
 - `.filter-search-wrap` — wrapper for the search input with visible border and clear button.
 
-### JavaScript ([`diff_report.js`](../Services/HtmlReport/diff_report.js))
+### JavaScript ([`Services/HtmlReport/js/`](../Services/HtmlReport/js/))
+
+The JavaScript is split into 9 module files under `Services/HtmlReport/js/`, concatenated at generation time by `HtmlReportGenerateService.Js.cs`:
+
+| Module | Responsibility |
+| --- | --- |
+| `diff_report_state.js` | Constants, template placeholders, `formatTs`, `readSavedStateFromStorage`, `collectState`, `autoSave`, `updateProgress` |
+| `diff_report_export.js` | `downloadReviewed`, `verifyIntegrity`, `collapseAll`, `clearAll` |
+| `diff_report_diffview.js` | `decodeDiffHtml`, `toggleDiffView` (side-by-side diff) |
+| `diff_report_lazy.js` | `setupLazyDiff`, `setupLazySection`, `forceDecodeLazySections` |
+| `diff_report_layout.js` | `syncTableWidths`, `syncScTableWidths`, `initColResizeSingle`, `syncFilterRowHeight`, `wrapInputWithClear`, `initClearButtons`, `initColResize` |
+| `diff_report_filter.js` | `applyFilters`, `resetFilters`, `copyPath` |
+| `diff_report_excel.js` | `downloadAsPdf`, `downloadExcelCompatibleHtml`, `buildExcelRow`, `esc` |
+| `diff_report_theme.js` | `initTheme`, `cycleTheme`, `applyTheme`, `getStoredTheme` (Light/Dark/System toggle) |
+| `diff_report_celebrate.js` | `celebrateCompletion` (particle animation on 100% review completion) |
+| `diff_report_init.js` | `DOMContentLoaded` handler, keyboard navigation |
 
 - `applyFilters()` — reads all filter controls and applies `filter-hidden` / `filter-hidden-parent` CSS classes to rows.
 - `resetFilters()` — restores all checkboxes and clears the search box.
 - `__filterIds__` — array of filter input IDs excluded from `collectState()` / localStorage auto-save.
 - `syncFilterRowHeight()` — measures a Diff Detail row height and sets `--ft-row-h` CSS variable so Change Importance rows are exactly 2× height.
 - `wrapInputWithClear(inp)` — wraps the search input with a clear button (⊗) that dispatches both `input` and `change` events.
+- `celebrateCompletion()` — spawns a subtle particle animation from the progress bar when all reviewable files are checked. Fires once per session; suppressed in reviewed copies and when `prefers-reduced-motion` is active.
 - `downloadReviewed()` — clears all `filter-hidden` / `filter-hidden-parent` classes and inline table widths before capturing `outerHTML`, then restores live page state via `syncTableWidths()`.
 - `downloadExcelCompatibleHtml()` — generates a simplified HTML `<table>` with Excel XML namespace declarations and downloads it as `diff_report_YYYYMMDD_reviewed_Excel-compatible.html`. The table includes header metadata, all file sections with color-coded titles, per-file review state, legend, and summary. Available only in reviewed HTML.
 - `buildExcelRow(tr)` — extracts cell data from a file `<tr>` row and builds an 11-column Excel-compatible table row.
@@ -241,6 +260,7 @@ Design intent:
 - [`Program.cs`](../Program.cs) stays minimal and owns only application-root service registration.
 - [`ProgramRunner`](../ProgramRunner.cs) is the orchestration boundary for one console execution: CLI dispatch, argument validation, config loading, and exit-code mapping.
 - [`DiffPipelineExecutor`](../Runner/DiffPipelineExecutor.cs) owns the diff execution pipeline: builds the scoped DI container, runs the folder diff, and generates all reports.
+- [`DryRunExecutor`](../Runner/DryRunExecutor.cs) handles the `--dry-run` preview: enumerates files and displays statistics without running comparisons or generating reports.
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) carries immutable run-specific paths and mode decisions.
 - [`FolderDiffIL4DotNet.Core`](../FolderDiffIL4DotNet.Core/) is the reusable helper-library boundary for console rendering, diagnostics, filesystem helpers, and text sanitization with no folder-diff domain policy.
 - Core pipeline services use constructor injection and interfaces instead of static mutable state or ad hoc object creation.
@@ -276,6 +296,7 @@ sequenceDiagram
     Diff-->>Runner: return aggregated diff results
     Runner->>Report: GenerateDiffReport(...)
     Runner->>Runner: output aggregated completion warnings
+    Runner->>Runner: output completion summary chart
     Runner-->>CLI: typed exit code (0/2/3/4/1)
 ```
 
@@ -283,7 +304,7 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 
 ### What happens inside `RunAsync`
 
-1. Parse CLI options (`--help`, `--version`, `--print-config`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`).
+1. Parse CLI options (`--help`, `--version`, `--print-config`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--bell`).
 2. If `--help` or `--version` is present, print and exit immediately with code `0` — no logger initialization occurs.
 2a. If `--print-config` is present (optionally combined with `--config <path>`), load the effective configuration — [`config.json`](../config.json) deserialized and all `FOLDERDIFF_*` environment variable overrides applied — serialize it as indented JSON to standard output, and exit with code `0`. Config load errors exit with code `3`.
 3. Initialize logging and print application version.
@@ -359,6 +380,7 @@ Why this matters:
 | [`Program.cs`](../Program.cs) | Application entry point | Must remain thin |
 | [`ProgramRunner.cs`](../ProgramRunner.cs) | CLI dispatch, argument validation, config loading, exit-code mapping | Help text in [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs), config loading/validation in [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) |
 | [`Runner/DiffPipelineExecutor.cs`](../Runner/DiffPipelineExecutor.cs) | Diff execution pipeline and report generation | Builds scoped DI container, runs diff, generates Markdown/HTML/audit-log reports |
+| [`Runner/DryRunExecutor.cs`](../Runner/DryRunExecutor.cs) | `--dry-run` pre-execution preview | Enumerates files, counts union/assembly candidates, shows extension breakdown without running comparison |
 | [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) | Reusable console/diagnostics/IO/text helpers | No folder-diff domain logic |
 | [`FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs`](../FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs) | File encoding auto-detection (BOM, UTF-8 validation, ANSI fallback) | Used by inline diff to correctly read non-UTF-8 files (e.g. Shift_JIS); requires `System.Text.Encoding.CodePages` |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | Immutable run paths and network-mode decisions | No mutable state |
@@ -367,7 +389,8 @@ Why this matters:
 | [`Services/IFileSystemService.cs`](../Services/IFileSystemService.cs) + [`Services/FileSystemService.cs`](../Services/FileSystemService.cs) | Discovery/output filesystem abstraction | Enables folder-level unit tests and lazy file discovery |
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | Per-file decision tree | SHA256 -> IL -> text -> fallback |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | Per-file compare/detect I/O abstraction | Enables file-level unit tests |
-| [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL compare flow, line filtering, optional IL dump writing | Enforces same disassembler identity |
+| [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL compare flow, line filtering, block-aware order-independent comparison, optional IL dump writing | Enforces same disassembler identity; falls back to block-level multiset comparison when line order differs |
+| [`Services/ILOutput/ILBlockParser.cs`](../Services/ILOutput/ILBlockParser.cs) | Parses IL disassembly output into logical blocks (methods, classes, properties) | Used by `ILOutputService.BlockAwareSequenceEqual` for order-independent comparison |
 | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | Method-level change detection via `System.Reflection.Metadata` | Best-effort; returns `null` on failure. Detects type/method/property/field additions, removals, and modifications (access modifier changes, modifier changes, type changes, IL body changes). Each entry is auto-classified by [`ChangeImportanceClassifier`](../Services/ChangeImportanceClassifier.cs) |
 | [`Services/ChangeImportanceClassifier.cs`](../Services/ChangeImportanceClassifier.cs) | Rule-based importance classifier for `MemberChangeEntry` | Assigns `High` / `Medium` / `Low` [`ChangeImportance`](../Models/ChangeImportance.cs) based on change type, access modifiers, and arrow-notation field changes |
 | [`Models/ChangeImportance.cs`](../Models/ChangeImportance.cs) | Change importance enum | `Low=0`, `Medium=1`, `High=2`; used by `MemberChangeEntry.Importance` and report display |
@@ -386,7 +409,7 @@ Why this matters:
 | [`Services/ReportGenerationContext.cs`](../Services/ReportGenerationContext.cs) | Immutable parameter bag for report generation services | Eliminates parameter duplication at `ProgramRunner` boundary |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; iterates `_sectionWriters` via [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside [`ReportGenerateService`](../Services/ReportGenerateService.cs) |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; "Download as reviewed" computes SHA256 of the reviewed HTML via Web Crypto API, embeds the hash for self-verification, downloads a companion `.sha256` verification file, and adds a "Verify integrity" button to the reviewed banner; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; uses CSS custom properties (`var(--color-*)`) and utility classes instead of inline styles for theme-aware rendering; supports automatic dark mode via `prefers-color-scheme`; "Download as reviewed" computes SHA256 of the reviewed HTML via Web Crypto API, embeds the hash for self-verification, downloads a companion `.sha256` verification file, and adds a "Verify integrity" button to the reviewed banner; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
 | [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | Structured JSON audit log generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) and computes SHA256 integrity hashes of `diff_report.md` / `diff_report.html`; produces [`audit_log.json`](samples/audit_log.json); skipped when [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) is `false` |
 | [`Services/SbomGenerateService.cs`](../Services/SbomGenerateService.cs) | SBOM (Software Bill of Materials) generation | Extracts component list from [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) with SHA256 hashes and diff status; outputs CycloneDX 1.5 JSON (`sbom.cdx.json`) or SPDX 2.3 JSON (`sbom.spdx.json`); skipped when [`ShouldGenerateSbom`](../Models/ConfigSettings.cs) is `false` |
 | [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | Audit log data models | [`AuditLogRecord`](../Models/AuditLogEntry.cs) (top-level), [`AuditLogFileEntry`](../Models/AuditLogEntry.cs) (per-file), [`AuditLogSummary`](../Models/AuditLogEntry.cs) (counts) |
@@ -937,7 +960,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 | --- | --- | --- |
 | `ProgramRunner` | [`ProgramRunner.cs`](../ProgramRunner.cs) | [`Runner/ProgramRunner.Types.cs`](../Runner/ProgramRunner.Types.cs)（ネスト型: `RunArguments`, `RunCompletionState`, `ProgramExitCode`, `ProgramRunResult`, `StepResult<T>`）、[`Runner/ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)（CLI ヘルプメッセージ）、[`Runner/ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs)（設定読込・バリデーション・CLI オーバーライド） |
 | `ConfigSettings` | [`Models/ConfigSettings.cs`](../Models/ConfigSettings.cs) | [`Models/ConfigSettings.ReportSettings.cs`](../Models/ConfigSettings.ReportSettings.cs)（レポート出力制御）、[`Models/ConfigSettings.ILSettings.cs`](../Models/ConfigSettings.ILSettings.cs)（IL 比較・キャッシュ・逆アセンブラ）、[`Models/ConfigSettings.DiffSettings.cs`](../Models/ConfigSettings.DiffSettings.cs)（並列処理・ネットワーク・インライン差分） |
-| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs)（レポートセクション生成）、[`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs)（インライン差分、セマンティック変更、依存関係変更の詳細行）、[`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) ([`diff_report.css`](../Services/HtmlReport/diff_report.css) 埋め込みリソースを読み込み), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) ([`diff_report.js`](../Services/HtmlReport/diff_report.js) テンプレートをプレースホルダー置換して読み込み) |
+| `HtmlReportGenerateService` | [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | [`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`](../Services/HtmlReport/HtmlReportGenerateService.Sections.cs)（レポートセクション生成）、[`…DetailRows.cs`](../Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs)（インライン差分、セマンティック変更、依存関係変更の詳細行）、[`…Helpers.cs`](../Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`…Css.cs`](../Services/HtmlReport/HtmlReportGenerateService.Css.cs) ([`diff_report.css`](../Services/HtmlReport/diff_report.css) 埋め込みリソースを読み込み), [`…Js.cs`](../Services/HtmlReport/HtmlReportGenerateService.Js.cs) ([`Services/HtmlReport/js/`](../Services/HtmlReport/js/) の8つの JS モジュールを結合し、プレースホルダー置換して読み込み) |
 | `FolderDiffService` | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | [`Services/FolderDiffService.ILPrecompute.cs`](../Services/FolderDiffService.ILPrecompute.cs), [`…DiffClassification.cs`](../Services/FolderDiffService.DiffClassification.cs) |
 | `ReportGenerateService` | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | [`Services/SectionWriters/HeaderSectionWriter.cs`](../Services/SectionWriters/HeaderSectionWriter.cs), [`…LegendSectionWriter.cs`](../Services/SectionWriters/LegendSectionWriter.cs), [`…IgnoredFilesSectionWriter.cs`](../Services/SectionWriters/IgnoredFilesSectionWriter.cs), [`…UnchangedFilesSectionWriter.cs`](../Services/SectionWriters/UnchangedFilesSectionWriter.cs), [`…AddedFilesSectionWriter.cs`](../Services/SectionWriters/AddedFilesSectionWriter.cs), [`…RemovedFilesSectionWriter.cs`](../Services/SectionWriters/RemovedFilesSectionWriter.cs), [`…ModifiedFilesSectionWriter.cs`](../Services/SectionWriters/ModifiedFilesSectionWriter.cs), [`…SummarySectionWriter.cs`](../Services/SectionWriters/SummarySectionWriter.cs), [`…ILCacheStatsSectionWriter.cs`](../Services/SectionWriters/ILCacheStatsSectionWriter.cs), [`…WarningsSectionWriter.cs`](../Services/SectionWriters/WarningsSectionWriter.cs) |
 | `AssemblyMethodAnalyzer` | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | [`Services/AssemblyMethodAnalyzer.Comparers.cs`](../Services/AssemblyMethodAnalyzer.Comparers.cs)（型/メソッド/プロパティ/フィールド比較）、[`…MetadataHelpers.cs`](../Services/AssemblyMethodAnalyzer.MetadataHelpers.cs)（スナップショット構築、シグネチャ構築）、[`…AccessHelpers.cs`](../Services/AssemblyMethodAnalyzer.AccessHelpers.cs)（アクセス修飾子抽出、型種別判定、IL バイト読み取り）、[`…SignatureProvider.cs`](../Services/AssemblyMethodAnalyzer.SignatureProvider.cs)（ジェネリックコンテキスト、シグネチャ型プロバイダ） |
@@ -1010,11 +1033,29 @@ HTML レポートには、複数の条件でファイル行を絞り込めるク
 
 ### CSS（[`diff_report.css`](../Services/HtmlReport/diff_report.css)）
 
+- **CSS カスタムプロパティ（`:root` 変数）** — 60 以上のカラー/サーフェス/ボーダートークンを `:root` に定義。スタイルシート全体でハードコード hex 値の代わりに `var(--color-*)` を使用。テーマ切替を可能にし、パレットを一箇所に集約。
+- **ダークモード** — `@media (prefers-color-scheme: dark)` で `:root` 変数を GitHub ダークテーマ風パレット（`#0d1117` 背景、`#e6edf3` テキスト等）に上書き。ブラウザ/OS のカラースキームに応じて自動で切り替わる。コントロールバーの手動トグルボタン（Light / Dark / System）で `html[data-theme="light"]` または `html[data-theme="dark"]` 属性セレクタを適用し `@media` より優先させることも可能。設定はレポートごとの localStorage キー（`{storageKey}-theme`）に保存される。
+- **ユーティリティクラス** — C# ジェネレータがインライン `style` 属性の代わりに使うテーマ対応クラス: `.imp-high`、`.imp-medium`（重要度ラベル）、`.status-available`、`.status-unavailable`（逆アセンブラ状態）、`.vuln-new`、`.vuln-resolved`（脆弱性バッジ）、`.vuln-new-count`、`.vuln-resolved-count`（脆弱性カウント）、`.warn-danger`、`.warn-caution`（警告バナー）。
 - `tr.filter-hidden` / `tr.diff-row.filter-hidden-parent` — `display: none !important` で行を非表示。
 - `.filter-table-dbl` — Change Importance テーブルクラス。`tbody td` の高さを `calc(var(--ft-row-h) * 2)` で Diff Detail と行揃え。
 - `.filter-search-wrap` — 検索入力のラッパー。ボーダーとクリアボタンを含む。
 
-### JavaScript（[`diff_report.js`](../Services/HtmlReport/diff_report.js)）
+### JavaScript（[`Services/HtmlReport/js/`](../Services/HtmlReport/js/)）
+
+JavaScript は `Services/HtmlReport/js/` 配下の10個のモジュールファイルに分割され、`HtmlReportGenerateService.Js.cs` が生成時に結合します：
+
+| モジュール | 責務 |
+| --- | --- |
+| `diff_report_state.js` | 定数、テンプレートプレースホルダー、`formatTs`、`readSavedStateFromStorage`、`collectState`、`autoSave`、`updateProgress` |
+| `diff_report_export.js` | `downloadReviewed`、`verifyIntegrity`、`collapseAll`、`clearAll` |
+| `diff_report_diffview.js` | `decodeDiffHtml`、`toggleDiffView`（サイドバイサイド差分） |
+| `diff_report_lazy.js` | `setupLazyDiff`、`setupLazySection`、`forceDecodeLazySections` |
+| `diff_report_layout.js` | `syncTableWidths`、`syncScTableWidths`、`initColResizeSingle`、`syncFilterRowHeight`、`wrapInputWithClear`、`initClearButtons`、`initColResize` |
+| `diff_report_filter.js` | `applyFilters`、`resetFilters`、`copyPath` |
+| `diff_report_excel.js` | `downloadAsPdf`、`downloadExcelCompatibleHtml`、`buildExcelRow`、`esc` |
+| `diff_report_theme.js` | `initTheme`、`cycleTheme`、`applyTheme`、`getStoredTheme`（Light/Dark/System トグル） |
+| `diff_report_celebrate.js` | `celebrateCompletion`（レビュー完了100%時のパーティクルアニメーション） |
+| `diff_report_init.js` | `DOMContentLoaded` ハンドラー、キーボードナビゲーション |
 
 - `applyFilters()` — すべてのフィルタコントロールを読み取り、行に `filter-hidden` / `filter-hidden-parent` CSS クラスを適用。
 - `resetFilters()` — すべてのチェックボックスを復元し、検索ボックスをクリア。
@@ -1100,6 +1141,7 @@ flowchart TD
 - [`Program.cs`](../Program.cs) は最小限に保ち、アプリ全体の起点だけを担います。
 - [`ProgramRunner`](../ProgramRunner.cs) は 1 回のコンソール実行における CLI 分岐・引数検証・設定読込・終了コード写像の境界です。
 - [`DiffPipelineExecutor`](../Runner/DiffPipelineExecutor.cs) は差分実行パイプラインを担当し、スコープ付き DI コンテナ構築・差分実行・全レポート生成を行います。
+- [`DryRunExecutor`](../Runner/DryRunExecutor.cs) は `--dry-run` プレビューを担当し、ファイル列挙と統計表示のみを行い比較やレポート生成は行いません。
 - [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) は実行固有のパスとモード判定を不変オブジェクトとして保持します。
 - [`FolderDiffIL4DotNet.Core`](../FolderDiffIL4DotNet.Core/) は、フォルダ差分ドメインに依存しない console / diagnostics / I/O / text helper を収める再利用境界です。
 - コアサービスは、静的可変状態や場当たり的な `new` ではなく、コンストラクタ注入とインターフェースで接続されます。
@@ -1134,6 +1176,8 @@ sequenceDiagram
     Runner->>Diff: ExecuteFolderDiffAsync()
     Diff-->>Runner: 集約済みの差分結果を返す
     Runner->>Report: GenerateDiffReport(...)
+    Runner->>Runner: 完了時警告の集約出力
+    Runner->>Runner: 完了サマリーチャートの出力
     Runner-->>CLI: 型付き終了コード (0/2/3/4/1)
 ```
 
@@ -1141,7 +1185,7 @@ sequenceDiagram
 
 ### `RunAsync` の中で起きること
 
-1. CLI オプション（`--help`、`--version`、`--print-config`、`--no-pause`、`--config`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`）を解析します。
+1. CLI オプション（`--help`、`--version`、`--print-config`、`--no-pause`、`--config`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`、`--coffee`、`--beer`、`--matcha`、`--bell`）を解析します。
 2. `--help` または `--version` がある場合は、ロガー初期化を一切行わずに即座に出力してコード `0` で終了します。
 2a. `--print-config` がある場合（`--config <path>` との併用可）、有効な設定 — [`config.json`](../config.json) のデシリアライズ結果にすべての `FOLDERDIFF_*` 環境変数オーバーライドを適用したもの — をインデント付き JSON として標準出力に書き出し、終了コード `0` で終了します。設定読込エラーは終了コード `3` です。
 3. ログを初期化し、アプリのバージョンを表示します。
@@ -1217,6 +1261,7 @@ sequenceDiagram
 | [`Program.cs`](../Program.cs) | アプリ起動点 | 薄いまま維持する |
 | [`ProgramRunner.cs`](../ProgramRunner.cs) | CLI 分岐、引数検証、設定読込、終了コード写像 | ヘルプテキストは [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)、設定読込/バリデーションは [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs) |
 | [`Runner/DiffPipelineExecutor.cs`](../Runner/DiffPipelineExecutor.cs) | 差分実行パイプラインとレポート生成 | スコープ付き DI コンテナ構築・差分実行・Markdown/HTML/監査ログの全レポート生成 |
+| [`Runner/DryRunExecutor.cs`](../Runner/DryRunExecutor.cs) | `--dry-run` 事前プレビュー | ファイル列挙・ユニオン数/アセンブリ候補数算出・拡張子内訳表示を比較実行なしで行う |
 | [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) | 再利用可能な console / diagnostics / I/O / text helper | フォルダ差分ドメインのポリシーを持たない |
 | [`FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs`](../FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs) | ファイルエンコーディング自動検出（BOM・UTF-8 検証・ANSI フォールバック） | インライン差分で非 UTF-8 ファイル（Shift_JIS 等）を正しく読むために使用；`System.Text.Encoding.CodePages` が必要 |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | 実行固有パスとネットワークモードの保持 | 可変状態を持たない |
@@ -1225,7 +1270,8 @@ sequenceDiagram
 | [`Services/IFileSystemService.cs`](../Services/IFileSystemService.cs) + [`Services/FileSystemService.cs`](../Services/FileSystemService.cs) | 列挙/出力系ファイルシステム抽象 | フォルダ単位ユニットテスト向け。遅延列挙もここで扱う |
 | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | ファイル単位の判定木 | `SHA256 -> IL -> text -> fallback` |
 | [`Services/IFileComparisonService.cs`](../Services/IFileComparisonService.cs) + [`Services/FileComparisonService.cs`](../Services/FileComparisonService.cs) | ファイル単位の比較/判定 I/O 抽象 | ファイル単位ユニットテスト向け |
-| [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL 比較、行除外、任意 IL 出力 | 同一逆アセンブラ制約を保証 |
+| [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL 比較、行除外、ブロック単位順序非依存比較、任意 IL 出力 | 同一逆アセンブラ制約を保証；行順序が異なる場合はブロック単位マルチセット比較にフォールバック |
+| [`Services/ILOutput/ILBlockParser.cs`](../Services/ILOutput/ILBlockParser.cs) | IL 逆アセンブリ出力を論理ブロック（メソッド、クラス、プロパティ）に分割 | `ILOutputService.BlockAwareSequenceEqual` で順序非依存比較に使用 |
 | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | `System.Reflection.Metadata` によるメソッドレベル変更検出 | ベストエフォート；失敗時は `null` を返す。型・メソッド・プロパティ・フィールドの追加・削除・変更（アクセス修飾子変更、修飾子変更、型変更、IL ボディ変更）を検出。各エントリは [`ChangeImportanceClassifier`](../Services/ChangeImportanceClassifier.cs) により自動分類 |
 | [`Services/ChangeImportanceClassifier.cs`](../Services/ChangeImportanceClassifier.cs) | `MemberChangeEntry` のルールベース重要度分類器 | 変更種別・アクセス修飾子・アロー表記フィールド変更に基づき `High` / `Medium` / `Low` の [`ChangeImportance`](../Models/ChangeImportance.cs) を付与 |
 | [`Models/ChangeImportance.cs`](../Models/ChangeImportance.cs) | 変更の重要度列挙型 | `Low=0`, `Medium=1`, `High=2`；`MemberChangeEntry.Importance` およびレポート表示に使用 |
@@ -1244,7 +1290,7 @@ sequenceDiagram
 | [`Services/ReportGenerationContext.cs`](../Services/ReportGenerationContext.cs) | レポート生成サービス用の不変パラメータバッグ | `ProgramRunner` 境界での引数重複を排除 |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；`_sectionWriters` を [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) 経由で反復 |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | [`ReportGenerateService`](../Services/ReportGenerateService.cs) 内に 10 個のプライベートネストクラスで実装 |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；「Download as reviewed」は Web Crypto API でレビュー済み HTML の SHA256 を計算・埋め込み（自己検証用）、コンパニオン `.sha256` 検証ファイルもダウンロードし、レビュー済みバナーに「Verify integrity」ボタンを追加；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；インラインスタイルの代わりに CSS カスタムプロパティ（`var(--color-*)`）とユーティリティクラスを使用しテーマ対応レンダリングを実現；`prefers-color-scheme` による自動ダークモード対応；「Download as reviewed」は Web Crypto API でレビュー済み HTML の SHA256 を計算・埋め込み（自己検証用）、コンパニオン `.sha256` 検証ファイルもダウンロードし、レビュー済みバナーに「Verify integrity」ボタンを追加；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | 構造化 JSON 監査ログ生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読み、`diff_report.md` / `diff_report.html` の SHA256 インテグリティハッシュを計算；[`audit_log.json`](samples/audit_log.json) を生成；[`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Services/SbomGenerateService.cs`](../Services/SbomGenerateService.cs) | SBOM（ソフトウェア部品表）生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) からコンポーネント一覧を SHA256 ハッシュと差分ステータス付きで抽出；CycloneDX 1.5 JSON（`sbom.cdx.json`）または SPDX 2.3 JSON（`sbom.spdx.json`）を出力；[`ShouldGenerateSbom`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | 監査ログデータモデル | [`AuditLogRecord`](../Models/AuditLogEntry.cs)（トップレベル）、[`AuditLogFileEntry`](../Models/AuditLogEntry.cs)（ファイル単位）、[`AuditLogSummary`](../Models/AuditLogEntry.cs)（件数集計） |

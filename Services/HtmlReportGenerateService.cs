@@ -23,13 +23,14 @@ namespace FolderDiffIL4DotNet.Services
         internal const string DIFF_REPORT_HTML_FILE_NAME = "diff_report.html";
 
         private const string TIMESTAMP_ARROW = " → ";
-        private const string COLOR_ADDED    = "#22863a";
-        private const string COLOR_REMOVED  = "#b31d28";
-        private const string COLOR_MODIFIED = "#0051c3";
-        private const string TH_BG_ADDED    = "#e6ffed";
-        private const string TH_BG_REMOVED  = "#ffeef0";
-        private const string TH_BG_MODIFIED = "#e3f2fd";
-        private const string TH_BG_DEFAULT  = "#f0f0f2";
+        // CSS variable references for dark mode support / ダークモード対応の CSS 変数参照
+        private const string COLOR_ADDED    = "var(--color-added)";
+        private const string COLOR_REMOVED  = "var(--color-removed)";
+        private const string COLOR_MODIFIED = "var(--color-modified)";
+        private const string TH_BG_ADDED    = "var(--color-added-bg)";
+        private const string TH_BG_REMOVED  = "var(--color-removed-bg)";
+        private const string TH_BG_MODIFIED = "var(--color-modified-bg)";
+        private const string TH_BG_DEFAULT  = "var(--color-default-bg)";
 
         /// <summary>
         /// Initializes a new instance of <see cref="HtmlReportGenerateService"/>.
@@ -135,6 +136,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
             writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
             writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
+            writer.WriteLine("    <button id=\"theme-toggle\" class=\"btn btn-clear theme-toggle\" onclick=\"cycleTheme()\" title=\"Toggle theme (Light / Dark / System)\">\u2699 System</button>");
             writer.WriteLine("    <span id=\"save-status\" class=\"save-status\" role=\"status\" aria-live=\"polite\"></span>");
             writer.WriteLine("  </div>");
             writer.WriteLine("</div>");
@@ -164,8 +166,8 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static readonly (string Id, string Display, string Description)[] s_importanceFilters =
         {
-            ("filter-imp-high",   "<span style=\"color:#d1242f;font-weight:bold\">High</span>",   "Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"),
-            ("filter-imp-medium", "<span style=\"color:#d97706;font-weight:bold\">Medium</span>", "Notable change: public/protected member addition, modifier change, access widening, internal removal"),
+            ("filter-imp-high",   "<span class=\"imp-high\">High</span>",   "Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change"),
+            ("filter-imp-medium", "<span class=\"imp-medium\">Medium</span>", "Notable change: public/protected member addition, modifier change, access widening, internal removal"),
             ("filter-imp-low",    "Low",                                                           "Low-impact change: body-only modification, internal/private member addition"),
         };
 

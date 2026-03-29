@@ -369,7 +369,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
             // Table heading should exist with count
-            Assert.Contains("SHA256Mismatch: binary diff only \u2014 not a .NET assembly or disassembler unavailable (2)</h2>", html);
+            Assert.Contains("SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file (2)</h2>", html);
 
             // Extract the SHA256Mismatch table section
             int sha256TableStart = html.IndexOf("SHA256Mismatch: binary diff only", StringComparison.Ordinal);

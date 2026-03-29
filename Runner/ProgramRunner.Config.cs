@@ -147,6 +147,91 @@ namespace FolderDiffIL4DotNet
             {
                 builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
             }
+
+            if (opts.Coffee)
+            {
+                // Easter egg: replace spinner with coffee brewing animation / イースターエッグ: スピナーをコーヒー抽出アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "☕ Grinding  ",
+                    "☕ Grinding..",
+                    "☕ Heating   ",
+                    "☕ Heating...",
+                    "☕ Brewing   ",
+                    "☕ Brewing.  ",
+                    "☕ Brewing.. ",
+                    "☕ Brewing...",
+                };
+            }
+
+            if (opts.Beer)
+            {
+                // Easter egg: replace spinner with beer pouring animation / イースターエッグ: スピナーをビール注ぎアニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🍺 Tapping  ",
+                    "🍺 Tapping..",
+                    "🍺 Pouring  ",
+                    "🍺 Pouring..",
+                    "🍺 Foaming  ",
+                    "🍺 Foaming. ",
+                    "🍺 Foaming..",
+                    "🍺 Cheers!  ",
+                };
+            }
+
+            if (opts.Matcha)
+            {
+                // Easter egg: replace spinner with matcha tea ceremony animation / イースターエッグ: スピナーを抹茶点前アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🍵 Sifting  ",
+                    "🍵 Sifting..",
+                    "🍵 Pouring  ",
+                    "🍵 Pouring..",
+                    "🍵 Whisking ",
+                    "🍵 Whisking.",
+                    "🍵 Whisking.",
+                    "🍵 Douzo!   ",
+                };
+            }
+
+            if (opts.Whisky)
+            {
+                // Easter egg: replace spinner with whisky distilling animation / イースターエッグ: スピナーをウイスキー蒸留アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🥃 Malting  ",
+                    "🥃 Malting..",
+                    "🥃 Mashing  ",
+                    "🥃 Mashing..",
+                    "🥃 Distill  ",
+                    "🥃 Distill..",
+                    "🥃 Aging    ",
+                    "🥃 Slainte! ",
+                };
+            }
+
+            if (opts.Wine)
+            {
+                // Easter egg: replace spinner with wine making animation / イースターエッグ: スピナーをワイン醸造アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🍷 Picking  ",
+                    "🍷 Picking..",
+                    "🍷 Crushing ",
+                    "🍷 Crushing.",
+                    "🍷 Aging    ",
+                    "🍷 Aging..  ",
+                    "🍷 Pouring  ",
+                    "🍷 Sante!   ",
+                };
+            }
         }
     }
 }

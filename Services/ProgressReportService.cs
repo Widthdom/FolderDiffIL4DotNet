@@ -190,7 +190,7 @@ namespace FolderDiffIL4DotNet.Services
             var barChars = new char[barWidth];
             for (int i = 0; i < barWidth; i++)
             {
-                barChars[i] = i < filled ? '=' : '-';
+                barChars[i] = i < filled ? '█' : '░';
             }
 
             var bar = new string(barChars);
@@ -201,14 +201,14 @@ namespace FolderDiffIL4DotNet.Services
             if (!string.IsNullOrEmpty(_labelPrefix))
             {
                 var spinnerSegment = $"{_keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length]} ";
-                return $"{prefix}{spinnerSegment}[{bar}] {percentText}";
+                return $"{prefix}{spinnerSegment}{bar} {percentText}";
             }
             if (showKeepAlive)
             {
                 string frame = _keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length];
-                return $"[{bar}] {percentText} {frame}";
+                return $"{bar} {percentText} {frame}";
             }
-            return $"[{bar}] {percentText}";
+            return $"{bar} {percentText}";
         }
 
         private string BuildRedirectedProgressLine(string formattedPercentage, bool showKeepAlive)

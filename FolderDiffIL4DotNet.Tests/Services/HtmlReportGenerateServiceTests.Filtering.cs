@@ -61,6 +61,53 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_ThemeToggleInsideCtrlAndReviewedBanner()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("theme-toggle");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: theme toggle button exists inside CTRL markers (replaced by reviewed banner which includes it)
+            // テーマ切替ボタンが CTRL マーカー内に存在し、reviewed バナー置換時にも含まれることを検証
+            Assert.Contains("id=\"theme-toggle\"", html);
+            Assert.Contains("cycleTheme()", html);
+            Assert.Contains("initTheme()", html);
+            int themeBtn = html.IndexOf("id=\"theme-toggle\"", StringComparison.Ordinal);
+            int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
+            int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
+            Assert.True(themeBtn > ctrlStart && themeBtn < ctrlEnd,
+                "theme toggle should be inside CTRL markers (reviewed banner replacement includes it)");
+
+            // Assert: CTRL markers wrap entire ctrl-buttons div cleanly (no orphaned closing tags)
+            // CTRL マーカーが ctrl-buttons div 全体を正しく囲んでいることを検証（孤立した閉じタグなし）
+            string ctrlContent = html.Substring(ctrlStart, ctrlEnd - ctrlStart + "<!--/CTRL-->".Length);
+            Assert.Contains("class=\"ctrl-buttons\"", ctrlContent);
+            Assert.Contains("class=\"ctrl-actions\"", ctrlContent);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_CelebrationAnimationIncludedInOutput()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("celebrate");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: celebration CSS and JS are present in generated HTML
+            // セレブレーション CSS と JS が生成 HTML に含まれることを検証
+            Assert.Contains("celebrate-container", html);
+            Assert.Contains("celebrate-rise", html);
+            Assert.Contains("celebrateCompletion", html);
+            Assert.Contains("__celebrationFired__", html);
+            Assert.Contains("prefers-reduced-motion", html);
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_FileRowsHaveDataSectionAttribute()
         {
             // Arrange: add some files to generate rows
@@ -224,8 +271,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // テーブルの構造と内容が HTML に含まれていることを検証
             Assert.Contains("dotnet-ildasm", html);
             Assert.Contains("ilspycmd", html);
-            Assert.Contains("color:#22863a", html); // green for Yes / Yes 用の緑
-            Assert.Contains("color:#b31d28", html); // red for No / No 用の赤
+            Assert.Contains("class=\"status-available\"", html); // green for Available / Available 用の緑
+            Assert.Contains("class=\"status-unavailable\"", html); // red for Not Available / Not Available 用の赤
             Assert.Contains("0.12.2", html);
         }
 
@@ -317,6 +364,58 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // totalFiles = 1 modified + 1 SHA256Mismatch warning = 2 (Unchanged/Ignored excluded)
             // totalFiles = 変更1 + SHA256Mismatch警告1 = 2（Unchanged/Ignoredは除外）
             Assert.Contains("const __totalFiles__      = 2;", html);
+        }
+
+        // -----------------------------------------------------------------------
+        // Disassembler warning banners (HTML)
+        // 逆アセンブラ警告バナー（HTML）
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void GenerateDiffReportHtml_WarnsWhenNoDisassemblerAvailable()
+        {
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", false, null, null),
+                new("ilspycmd", false, null, null),
+            };
+
+            var (oldDir, newDir, reportDir) = MakeDirs("no-disasm-html");
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("No disassembler tool is available", html);
+            Assert.Contains("warn-danger", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_NoDisassemblerWarning_WhenOneAvailable()
+        {
+            _resultLists.DisassemblerAvailability = new List<DisassemblerProbeResult>
+            {
+                new("dotnet-ildasm", true, "0.12.0", "/usr/bin/dotnet-ildasm"),
+                new("ilspycmd", false, null, null),
+            };
+
+            var (oldDir, newDir, reportDir) = MakeDirs("one-disasm-html");
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.DoesNotContain("No disassembler tool is available", html);
+        }
+
+        [Fact]
+        public void GenerateDiffReportHtml_WarnsWhenMultipleDisassemblersUsed()
+        {
+            _resultLists.DisassemblerToolVersions["dotnet-ildasm (version: 0.12.0)"] = 0;
+            _resultLists.DisassemblerToolVersions["ilspycmd (version: 8.2.0)"] = 0;
+
+            var (oldDir, newDir, reportDir) = MakeDirs("mixed-disasm-html");
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("Multiple disassembler tools were used", html);
+            Assert.Contains("warn-caution", html);
         }
 
     }

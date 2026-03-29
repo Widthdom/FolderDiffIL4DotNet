@@ -7,6 +7,7 @@ namespace FolderDiffIL4DotNet.Runner
     internal sealed record CliOptions(
         bool ShowHelp,
         bool ShowVersion,
+        bool ShowBanner,
         bool NoPause,
         string? ConfigPath,
         int? ThreadsOverride,
@@ -15,5 +16,12 @@ namespace FolderDiffIL4DotNet.Runner
         bool NoTimestampWarnings,
         bool PrintConfig,
         bool ValidateConfig,
+        bool DryRun,
+        bool Coffee,
+        bool Beer,
+        bool Matcha,
+        bool Whisky,
+        bool Wine,
+        bool Bell,
         string? ParseError);
 }

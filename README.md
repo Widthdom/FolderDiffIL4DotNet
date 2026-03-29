@@ -124,6 +124,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 |---|---|
 | `--help`, `-h` | Show help and exit (code `0`). |
 | `--version` | Show the application version and exit (code `0`). |
+| `--banner` | Show the ASCII-art banner and exit (code `0`). |
 | `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects `config.json` + all `FOLDERDIFF_*` env var overrides. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
 | `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. |
 | `--no-pause` | Skip key-wait at process end. |
@@ -132,6 +133,15 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--no-il-cache` | Disable the IL cache for this run. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
+| `--dry-run` | Enumerate files and show statistics without running comparison. |
+| `--coffee` | Use coffee-themed spinner animation during execution (easter egg). |
+| `--beer` | Use beer-themed spinner animation during execution (easter egg). |
+| `--matcha` | Use matcha tea ceremony spinner animation during execution (easter egg). |
+| `--whisky` | Use whisky distilling spinner animation during execution (easter egg). |
+| `--wine` | Use wine making spinner animation during execution (easter egg). |
+| `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
+
+> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the last one listed wins. They also override any custom `SpinnerFrames` set in `config.json`.
 
 ```bash
 dotnet build
@@ -156,7 +166,7 @@ Process exit codes:
 
 | Code | Meaning | Typical Causes |
 | --- | --- | --- |
-| `0` | Success | Normal completion, `--help`, `--version`, `--print-config`, `--validate-config` (valid) |
+| `0` | Success | Normal completion, `--help`, `--version`, `--banner`, `--print-config`, `--validate-config` (valid) |
 | `1` | Unexpected internal error | Unclassifiable exception at application boundary |
 | `2` | Invalid arguments or input paths | Missing positional args, non-existent directories, illegal report label, preflight failures (see below) |
 | `3` | Configuration error | JSON syntax error, missing config file, semantic validation failure (`--validate-config` invalid) |
@@ -176,7 +186,7 @@ See [doc/samples/diff_report.md](doc/samples/diff_report.md) for a full sample o
 
 Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** alongside [`diff_report.md`](doc/samples/diff_report.md) (disable with `"ShouldGenerateHtmlReport": false` in [`config.json`](config.json)).
 
-The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
+The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. It automatically switches between light and dark themes based on the browser/OS colour scheme preference (`prefers-color-scheme`), and includes a manual toggle button (Light / Dark / System) in the controls bar for overriding the system default. The theme preference is saved per report via localStorage. All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
 
 Every file entry is displayed in a table with interactive columns for sign-off:
 
@@ -557,7 +567,7 @@ Override only the settings you want to change. For example:
     <tr>
       <td id="config-en-spinnerframes"><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\"]</code></td>
-      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default.</td>
+      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default. The CLI options <code>--coffee</code>, <code>--beer</code>, <code>--matcha</code>, <code>--whisky</code>, and <code>--wine</code> override this value.</td>
     </tr>
     <tr id="config-en-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
@@ -766,6 +776,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 |---|---|
 | `--help`, `-h` | 使い方を表示してコード `0` で終了します。 |
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
+| `--banner` | ASCII アートバナーを表示してコード `0` で終了します。 |
 | `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。`config.json` のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
 | `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
@@ -774,12 +785,21 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
+| `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
+| `--coffee` | 実行中にコーヒーテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--beer` | 実行中にビールテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--matcha` | 実行中に抹茶点前テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--whisky` | 実行中にウイスキー蒸留テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--wine` | 実行中にワイン醸造テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
+
+> **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は最後に記述したものが優先されます。`config.json` で設定したカスタム `SpinnerFrames` も上書きされます。
 
 ```bash
 dotnet build
 dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" --no-pause
 
-# スレッド数指定・IL スキップで高速差分
+# スレッド数���定・IL スキップで高速差分
 dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # カスタム設定ファイルを指定
@@ -798,7 +818,7 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 | コード | 意味 | 主な発生条件 |
 | --- | --- | --- |
-| `0` | 正常終了 | 通常完了、`--help`、`--version`、`--print-config`、`--validate-config`（有効時） |
+| `0` | 正常終了 | 通常完了、`--help`、`--version`、`--banner`、`--print-config`、`--validate-config`（有効時） |
 | `1` | 想定外の内部エラー | アプリケーション境界での分類不能な例外 |
 | `2` | 引数または入力パス不正 | 位置引数の不足、存在しないディレクトリ、不正なレポートラベル、プリフライト失敗（下記参照） |
 | `3` | 設定エラー | JSON 構文エラー、設定ファイル不在、セマンティック検証失敗（`--validate-config` 無効時） |
@@ -818,7 +838,7 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 
 実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
-HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
+HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ブラウザ/OS のカラースキーム設定（`prefers-color-scheme`）に応じてライト/ダークテーマを自動切替し、コントロールバーの手動トグルボタン（Light / Dark / System）でシステム設定を上書きすることもできます。テーマ設定はレポートごとに localStorage で保存されます。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
 
 全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 
@@ -1198,7 +1218,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
     <tr id="config-ja-spinnerframes">
       <td><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\"]</code></td>
-      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。</td>
+      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。CLI オプション <code>--coffee</code>、<code>--beer</code>、<code>--matcha</code>、<code>--whisky</code>、<code>--wine</code> を指定するとこの値は上書きされます。</td>
     </tr>
     <tr id="config-ja-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>

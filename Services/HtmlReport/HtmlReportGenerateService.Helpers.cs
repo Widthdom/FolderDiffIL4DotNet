@@ -264,11 +264,11 @@ namespace FolderDiffIL4DotNet.Services
         /// Returns the inline style for an importance level (text color + bold, no background).
         /// 重要度レベルのインラインスタイル（文字色＋太字、背景なし）を返します。
         /// </summary>
-        private static string ImportanceToStyle(ChangeImportance importance)
+        private static string ImportanceToClass(ChangeImportance importance)
             => importance switch
             {
-                ChangeImportance.High => "color:#d1242f;font-weight:bold",
-                ChangeImportance.Medium => "color:#d97706;font-weight:bold",
+                ChangeImportance.High => "imp-high",
+                ChangeImportance.Medium => "imp-medium",
                 _ => ""
             };
 
@@ -369,14 +369,51 @@ namespace FolderDiffIL4DotNet.Services
                     && inUseHeaderText.IndexOf(probe.ToolName, StringComparison.OrdinalIgnoreCase) >= 0;
                 var status = probe.Available
                     ? (string.IsNullOrWhiteSpace(probe.Version)
-                        ? "<span style=\"color:#22863a\">Available</span>"
-                        : $"<span style=\"color:#22863a\">Available ({HtmlEncode(probe.Version)})</span>")
-                    : "<span style=\"color:#b31d28\">Not Available</span>";
+                        ? "<span class=\"status-available\">Available</span>"
+                        : $"<span class=\"status-available\">Available ({HtmlEncode(probe.Version)})</span>")
+                    : "<span class=\"status-unavailable\">Not Available</span>";
                 var inUseLabel = isInUse ? " — In Use" : "";
                 writer.WriteLine($"    <div>{HtmlEncode(probe.ToolName)}: {status}{inUseLabel}</div>");
             }
             writer.WriteLine("  </div>");
             writer.WriteLine("</div>");
+        }
+
+        /// <summary>
+        /// Appends warning banners for disassembler issues (no tool available, mixed tool usage).
+        /// 逆アセンブラの問題に関する警告バナーを追加（ツール未検出、複数ツール混在）。
+        /// </summary>
+        private void AppendDisassemblerWarnings(TextWriter writer)
+        {
+            // Warning: no disassembler available / 警告: 逆アセンブラが利用不可
+            var probeResults = _fileDiffResultLists.DisassemblerAvailability;
+            if (probeResults != null && probeResults.Count > 0 && !probeResults.Any(p => p.Available))
+            {
+                writer.WriteLine("<div class=\"header-path warn-danger\">");
+                writer.WriteLine($"  <div class=\"header-path-label\">{HtmlEncode("⚠ Warning")}</div>");
+                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode("No disassembler tool is available. .NET assembly comparison will fail if any .dll/.exe files with differing SHA256 hashes are detected. Install dotnet-ildasm or ilspycmd to enable IL-level comparison.")}</div>");
+                writer.WriteLine("</div>");
+            }
+
+            // Warning: multiple different disassembler tools used / 警告: 異なる逆アセンブラツールが混在
+            var distinctToolNames = _fileDiffResultLists.DisassemblerToolVersions.Keys
+                .Concat(_fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
+                .Where(label => !string.IsNullOrWhiteSpace(label))
+                .Select(label =>
+                {
+                    var vIdx = label.IndexOf(" (version:", StringComparison.OrdinalIgnoreCase);
+                    return vIdx >= 0 ? label.Substring(0, vIdx).Trim() : label.Trim();
+                })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (distinctToolNames.Count > 1)
+            {
+                writer.WriteLine("<div class=\"header-path warn-caution\">");
+                writer.WriteLine($"  <div class=\"header-path-label\">{HtmlEncode("⚠ Warning")}</div>");
+                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode($"Multiple disassembler tools were used in this run ({string.Join(", ", distinctToolNames)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. For consistent results, ensure only one disassembler tool is installed.")}</div>");
+                writer.WriteLine("</div>");
+            }
         }
 
         /// <summary>Appends a filter table row with checkbox, label, and description. / チェックボックス、ラベル、説明を含むフィルターテーブル行を追加します。</summary>

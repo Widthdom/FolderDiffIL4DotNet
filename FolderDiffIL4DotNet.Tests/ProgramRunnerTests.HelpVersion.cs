@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
@@ -43,6 +44,104 @@ namespace FolderDiffIL4DotNet.Tests
             finally
             {
                 Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_HelpFlag_OutputContainsDryRunOption()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("--dry-run", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_DryRunFlag_ExitsZeroWithPreviewOutput()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-dryrun-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            // Create sample files / テスト用ファイルを作成
+            File.WriteAllText(Path.Combine(oldDir, "file1.dll"), "old-dll-content");
+            File.WriteAllText(Path.Combine(oldDir, "file2.txt"), "old-txt-content");
+            File.WriteAllText(Path.Combine(newDir, "file1.dll"), "new-dll-content");
+            File.WriteAllText(Path.Combine(newDir, "file3.xml"), "new-xml-content");
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "dryrun_" + Guid.NewGuid().ToString("N"), "--dry-run", "--no-pause" });
+
+                    Assert.Equal(0, exitCode);
+                    var output = sw.ToString();
+                    Assert.Contains("Dry Run Preview", output, StringComparison.Ordinal);
+                    Assert.Contains("Old folder", output, StringComparison.Ordinal);
+                    Assert.Contains("New folder", output, StringComparison.Ordinal);
+                    Assert.Contains("Files in old folder", output, StringComparison.Ordinal);
+                    Assert.Contains("Union", output, StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_DryRunFlag_DoesNotCreateReportsDirectory()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-dryrun-noreport-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            var reportLabel = "dryrun_noreport_" + Guid.NewGuid().ToString("N");
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, reportLabel, "--dry-run", "--no-pause" });
+
+                    Assert.Equal(0, exitCode);
+                    // Reports directory must NOT have been created / Reports ディレクトリが作成されていないこと
+                    var reportsDir = Path.Combine(AppContext.BaseDirectory, "Reports", reportLabel);
+                    Assert.False(Directory.Exists(reportsDir), "Dry run should not create the Reports directory.");
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                TryDeleteDirectory(tempRoot);
             }
         }
 
@@ -145,6 +244,153 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString().Trim();
                 Assert.False(string.IsNullOrWhiteSpace(output), "Version output should not be empty.");
+                // Logger should NOT have been initialized
+                // ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Completion summary chart
+        // 完了サマリーチャート
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void OutputCompletionSummaryChart_WritesBarForEachCategory()
+        {
+            var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
+            Assert.NotNull(stateType);
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, 100, 20, 5, 30 });
+
+            var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            try
+            {
+                method.Invoke(null, new[] { state });
+                var output = sw.ToString();
+
+                // Verify order: Unchanged, Added, Removed, Modified
+                // 順序確認: Unchanged, Added, Removed, Modified
+                int idxUnchanged = output.IndexOf("Unchanged", StringComparison.Ordinal);
+                int idxAdded = output.IndexOf("Added", StringComparison.Ordinal);
+                int idxRemoved = output.IndexOf("Removed", StringComparison.Ordinal);
+                int idxModified = output.IndexOf("Modified", StringComparison.Ordinal);
+                Assert.True(idxUnchanged < idxAdded, "Unchanged should appear before Added");
+                Assert.True(idxAdded < idxRemoved, "Added should appear before Removed");
+                Assert.True(idxRemoved < idxModified, "Removed should appear before Modified");
+
+                // Verify counts appear / 件数が出力されること
+                Assert.Contains("100", output, StringComparison.Ordinal);
+                Assert.Contains("20", output, StringComparison.Ordinal);
+                Assert.Contains("5", output, StringComparison.Ordinal);
+                Assert.Contains("30", output, StringComparison.Ordinal);
+
+                // Verify bar characters / バー文字が含まれること
+                Assert.Contains("█", output, StringComparison.Ordinal);
+                Assert.Contains("░", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public void OutputCompletionSummaryChart_ZeroTotal_WritesNothing()
+        {
+            var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
+            Assert.NotNull(stateType);
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, 0, 0, 0, 0 });
+
+            var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            try
+            {
+                method.Invoke(null, new[] { state });
+                Assert.Equal(string.Empty, sw.ToString());
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public void OutputCompletionSummaryChart_BarsAreLeftAligned()
+        {
+            var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
+            Assert.NotNull(stateType);
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, 50, 10, 5, 35 });
+
+            var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
+            Assert.NotNull(method);
+
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            try
+            {
+                method.Invoke(null, new[] { state });
+                var lines = sw.ToString().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+                // All bar lines should start at the same column (bar character position)
+                // すべてのバー行のバー文字開始位置が揃っていること
+                int? firstBarPos = null;
+                foreach (var line in lines)
+                {
+                    int barPos = line.IndexOf('█');
+                    if (barPos < 0) barPos = line.IndexOf('░');
+                    if (barPos < 0) continue;
+
+                    if (firstBarPos == null)
+                        firstBarPos = barPos;
+                    else
+                        Assert.Equal(firstBarPos.Value, barPos);
+                }
+                Assert.NotNull(firstBarPos);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // --banner early-exit test
+        // --banner 早期終了テスト
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_BannerFlag_ExitsZeroWithBannerOutput()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--banner" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                // The banner contains block characters from the ASCII art
+                // バナーには ASCII アートのブロック文字が含まれる
+                Assert.Contains("███████", output, StringComparison.Ordinal);
+                Assert.Contains("██████╔╝", output, StringComparison.Ordinal);
                 // Logger should NOT have been initialized
                 // ロガーは初期化されていないはず
                 Assert.Empty(logger.Messages);

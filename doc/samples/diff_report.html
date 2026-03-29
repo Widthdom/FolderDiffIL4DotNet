@@ -8,13 +8,14 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-           font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto; }
+           font-size: 14px; padding: 0 2rem 3rem; max-width: 2200px; margin: 0 auto;
+           background: var(--color-bg); color: var(--color-text); }
     /* ── Skip link for keyboard navigation / キーボードナビゲーション用スキップリンク ── */
     .skip-link {
       position: absolute; left: -9999px; top: auto;
       width: 1px; height: 1px; overflow: hidden;
       z-index: 200; padding: 0.5rem 1rem;
-      background: #1d1d1f; color: #fff; font-size: 14px;
+      background: var(--color-btn-bg); color: var(--color-btn-text); font-size: 14px;
       text-decoration: none; border-radius: 0 0 8px 0;
     }
     .skip-link:focus {
@@ -23,54 +24,54 @@
     }
     /* ── Focus-visible styles (WCAG 2.1 AA) / フォーカス可視スタイル ────── */
     :focus-visible {
-      outline: 2px solid #0051c3;
+      outline: 2px solid var(--color-accent);
       outline-offset: 2px;
     }
     input[type="text"]:focus-visible {
-      outline: 2px solid #0051c3;
+      outline: 2px solid var(--color-accent);
       outline-offset: -1px;
     }
     h1 { font-size: 2.0rem; padding: 1.2rem 0 0.6rem; }
     h2 { font-size: 1rem; margin: 1.4rem 0 0.35rem; }
     h2.section-heading { font-size: 1.55rem; margin: 1.6rem 0 0.4rem; }
     code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-           font-size: 12px; background: #f0f0f0; padding: 0 3px; border-radius: 2px; }
+           font-size: 12px; background: var(--color-surface-code); padding: 0 3px; border-radius: 2px; }
     /* ── Report header (card grid layout) ─────────────────────────────── */
     .report-header { margin: 0.6rem 0 2.2rem; display: flex; flex-direction: column; gap: 0.8rem; }
     .header-cards { display: flex; flex-wrap: wrap; gap: 0.8rem; }
     .header-card {
-      background: #f5f5f7; border-radius: 12px; padding: 1rem 1.2rem;
+      background: var(--color-surface-card); border-radius: 12px; padding: 1rem 1.2rem;
       flex: 1 1 auto; min-width: 10rem;
     }
     .header-card-label {
-      font-size: 11px; font-weight: 600; color: #86868b;
+      font-size: 11px; font-weight: 600; color: var(--color-text-secondary);
       text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem;
     }
     .header-card-value {
-      font-size: 13px; color: #1d1d1f; word-break: break-all; line-height: 1.5;
+      font-size: 13px; color: var(--color-text); word-break: break-all; line-height: 1.5;
     }
     .header-path {
-      background: #f5f5f7; border-radius: 12px; padding: 1rem 1.2rem;
+      background: var(--color-surface-card); border-radius: 12px; padding: 1rem 1.2rem;
     }
     .header-path-label {
-      font-size: 11px; font-weight: 700; color: #86868b;
+      font-size: 11px; font-weight: 700; color: var(--color-text-secondary);
       text-transform: uppercase; letter-spacing: 0.04em;
       margin-bottom: 0.35rem;
     }
     .header-path-value {
-      font-size: 13px; color: #1d1d1f;
+      font-size: 13px; color: var(--color-text);
       word-break: break-all; line-height: 1.5;
     }
     /* ── Legend table ─────────────────────────────────────────────────── */
     table.legend-table { width: auto; margin: 4px 0 2px; border-collapse: collapse; }
-    table.legend-table th { border: 1px solid #bbb; font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
-    table.legend-table td { border: 1px solid #ddd; font-size: 13px; padding: 3px 10px; white-space: nowrap; }
+    table.legend-table th { border: 1px solid var(--color-border-strong); font-size: 13px; padding: 3px 10px; text-align: left; white-space: nowrap; }
+    table.legend-table td { border: 1px solid var(--color-border-light); font-size: 13px; padding: 3px 10px; white-space: nowrap; }
     /* ── Controls bar (frosted glass, fills full width) ─────────────────── */
     .controls {
       position: sticky; top: 0;
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
-      background: rgba(255,255,255,0.1);
+      background: var(--color-controls-bg);
       margin-left: calc(-50vw + 50%); margin-right: calc(-50vw + 50%);
       padding: 0.7rem max(2rem, calc(50vw - 50%));
       display: flex; flex-direction: column; gap: 0.55rem; z-index: 100;
@@ -91,17 +92,17 @@
     .filter-table-wrap { flex: 0 0 auto; display: flex; }
     table.filter-table { border-collapse: collapse; font-size: 12px; width: auto; table-layout: auto; }
     table.filter-table th {
-      padding: 0.3rem 0.5rem; background: #f5f5f7; color: #6e6e73;
+      padding: 0.3rem 0.5rem; background: var(--color-surface-card); color: var(--color-text-tertiary);
       font-weight: 600; font-size: 11px; text-align: left;
-      border: 1px solid #e0e0e0;
+      border: 1px solid var(--color-border);
     }
-    table.filter-table td { padding: 0.2rem 0.5rem; vertical-align: middle; background: #fff; border: 1px solid #e0e0e0; border-left: none; border-right: none; }
-    table.filter-table td:first-child { border-left: 1px solid #e0e0e0; }
-    table.filter-table td:last-child { border-right: 1px solid #e0e0e0; }
+    table.filter-table td { padding: 0.2rem 0.5rem; vertical-align: middle; background: var(--color-surface); border: 1px solid var(--color-border); border-left: none; border-right: none; }
+    table.filter-table td:first-child { border-left: 1px solid var(--color-border); }
+    table.filter-table td:last-child { border-right: 1px solid var(--color-border); }
     table.filter-table td.ft-cb { text-align: center; width: 1.8em; }
     table.filter-table td.ft-cb input[type="checkbox"] { cursor: pointer; }
     table.filter-table td.ft-label { white-space: nowrap; }
-    table.filter-table td.ft-desc { color: #86868b; font-size: 11px; font-weight: normal; max-width: 440px; }
+    table.filter-table td.ft-desc { color: var(--color-text-secondary); font-size: 11px; font-weight: normal; max-width: 440px; }
     table.filter-table-dbl tbody td { height: calc(var(--ft-row-h) * 2); vertical-align: middle; }
     .ctrl-filter-row { display: flex; gap: 0.7rem; align-items: center; flex-wrap: wrap; font-size: 12px; }
     .reviewed-banner {
@@ -109,9 +110,9 @@
       display: flex; align-items: center; flex-wrap: wrap; gap: 0.5em;
       backdrop-filter: blur(20px) saturate(180%);
       -webkit-backdrop-filter: blur(20px) saturate(180%);
-      background: rgba(255,255,255,0.1);
+      background: var(--color-controls-bg);
       padding: 0.5rem 2rem; margin: 0 -2rem;
-      font-size: 13px; color: #1f2328; font-weight: 500; z-index: 100;
+      font-size: 13px; color: var(--color-reviewed-banner-text); font-weight: 500; z-index: 100;
     }
     .reviewed-banner-actions {
       display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center;
@@ -121,40 +122,254 @@
     .btn {
       display: inline-flex; align-items: center; gap: 0.35em;
       padding: 0.45rem 1.1rem; cursor: pointer;
-      background: #1d1d1f; color: #fff;
-      border: 1.5px solid #1d1d1f; font-size: 13px; border-radius: 980px;
+      background: var(--color-btn-bg); color: var(--color-btn-text);
+      border: 1.5px solid var(--color-btn-bg); font-size: 13px; border-radius: 980px;
       font-family: inherit; letter-spacing: -0.01em;
       transition: background 0.12s, color 0.12s; white-space: nowrap; line-height: 1;
     }
-    .btn:hover { background: #424245; border-color: #424245; }
+    .btn:hover { background: var(--color-btn-hover); border-color: var(--color-btn-hover); }
     .btn-clear {
-      background: transparent; color: #1d1d1f;
+      background: transparent; color: var(--color-btn-clear-text);
     }
-    .btn-clear:hover { background: #f5f5f7; }
-    .save-status { font-size: 12px; color: #86868b; }
+    .btn-clear:hover { background: var(--color-btn-clear-hover); }
+    .theme-toggle { width: 6.5em; justify-content: center; }
+    .save-status { font-size: 12px; color: var(--color-text-secondary); }
     /* ── Review progress bar ───────────────────────────────────────────── */
     .progress-wrap {
       display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem;
-      font-size: 12px; color: #86868b; padding: 0.15rem 0; min-width: 0;
+      font-size: 12px; color: var(--color-text-secondary); padding: 0.15rem 0; min-width: 0;
     }
     .progress-bar {
-      width: 160px; height: 4px; background: #e5e5ea; border-radius: 2px; overflow: hidden;
+      width: 160px; height: 4px; background: var(--color-progress-bg); border-radius: 2px; overflow: hidden;
       flex: 0 0 160px; max-width: 100%;
     }
     .progress-bar-fill {
-      height: 100%; width: 0%; background: #0051c3; border-radius: 2px;
+      height: 100%; width: 0%; background: var(--color-progress-fill); border-radius: 2px;
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .progress-bar-fill.complete { background: #0051c3; }
+    .progress-bar-fill.complete { background: var(--color-progress-fill); }
+    /* ── Completion celebration ─────────────────────────────────────── */
+    .celebrate-container {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; overflow: visible; z-index: 100;
+    }
+    .celebrate-particle {
+      position: absolute; border-radius: 50%;
+      opacity: 0; will-change: transform, opacity;
+      animation: celebrate-rise 2.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    }
+    @keyframes celebrate-rise {
+      0%   { opacity: 0; transform: translateY(0) scale(0.3); }
+      15%  { opacity: 1; }
+      70%  { opacity: 0.6; }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.1); }
+    }
+    .celebrate-glow {
+      animation: celebrate-bar-glow 2.5s ease-out forwards;
+    }
+    @keyframes celebrate-bar-glow {
+      0%   { box-shadow: 0 0 0 0 transparent; }
+      20%  { box-shadow: 0 0 8px 2px var(--color-progress-fill); }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    .celebrate-msg {
+      position: absolute; left: 0; top: -1.6rem;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+      color: var(--color-progress-fill); white-space: nowrap;
+      opacity: 0; animation: celebrate-fade-msg 3.5s ease-out 0.4s forwards;
+    }
+    @keyframes celebrate-fade-msg {
+      0%   { opacity: 0; transform: translateY(4px); }
+      20%  { opacity: 1; transform: translateY(0); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .celebrate-particle, .celebrate-glow, .celebrate-msg { animation: none; opacity: 0; }
+    }
     .progress-text {
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }
     .progress-detail {
-      font-size: 11px; color: #a1a1a6;
+      font-size: 11px; color: var(--color-text-quaternary);
       white-space: normal; overflow-wrap: anywhere;
       flex: 1 1 16rem; min-width: 12rem;
     }
-    .empty { color: #999; font-size: 12px; margin-bottom: 0.8rem; }
+    .empty { color: var(--color-empty); font-size: 12px; margin-bottom: 0.8rem; }
+    /* ── Color CSS variables (light mode) / カラー CSS 変数（ライトモード） ── */
+    :root {
+      color-scheme: light dark;
+      --color-bg: #fff; --color-text: #1d1d1f; --color-text-secondary: #86868b;
+      --color-text-tertiary: #6e6e73; --color-text-quaternary: #a1a1a6;
+      --color-text-muted: #999; --color-text-faint: #aaa; --color-text-stat: #444;
+      --color-border: #e0e0e0; --color-border-strong: #bbb; --color-border-light: #ddd;
+      --color-border-separator: #ccc;
+      --color-surface: #fff; --color-surface-card: #f5f5f7; --color-surface-code: #f0f0f0;
+      --color-surface-hover: #f3eef8; --color-surface-input-focus: #fffff8;
+      --color-btn-bg: #1d1d1f; --color-btn-text: #fff; --color-btn-hover: #424245;
+      --color-btn-clear-hover: #f5f5f7; --color-btn-clear-text: #1d1d1f;
+      --color-btn-copy-text: #bbb; --color-btn-copy-hover-bg: #e8e8ed; --color-btn-copy-hover-text: #333;
+      --color-accent: #0051c3; --color-accent-hover-bg: #e8f0fe;
+      --color-accent-focus-shadow: rgba(0,81,195,0.15);
+      --color-added: #22863a; --color-added-bg: #e6ffed;
+      --color-removed: #b31d28; --color-removed-bg: #ffeef0;
+      --color-modified: #0051c3; --color-modified-bg: #e3f2fd;
+      --color-default-bg: #f0f0f2;
+      --color-diff-row-bg: #edf0f4; --color-diff-ln-bg: #f6f8fa;
+      --color-diff-hunk-text: #0057ae; --color-diff-ctx-text: #24292e; --color-diff-ctx-bg: #fff;
+      --color-diff-trunc-bg: #fffbdd; --color-diff-trunc-text: #735c0f;
+      --color-diff-summary-text: #0051c3;
+      --color-sc-header-bg: #98989d; --color-sc-header-text: #fff; --color-sc-cell-bg: #fff;
+      --color-sc-caveat: #6b6b6e;
+      --color-progress-bg: #e5e5ea; --color-progress-fill: #0051c3;
+      --color-importance-high: #d1242f; --color-importance-medium: #d97706;
+      --color-vuln-new-bg: #fecaca; --color-vuln-new-text: #991b1b;
+      --color-vuln-resolved-bg: #dcfce7; --color-vuln-resolved-text: #166534;
+      --color-vuln-resolved-count: #16a34a; --color-vuln-new-count: #dc2626;
+      --color-warn-danger-border: #d73a49; --color-warn-danger-bg: #ffeef0;
+      --color-warn-caution-border: #e36209; --color-warn-caution-bg: #fff8e1;
+      --color-controls-bg: rgba(255,255,255,0.1);
+      --color-resize-handle-hover: rgba(0,0,0,0.18);
+      --color-print-text: #555; --color-print-border: #ccc; --color-print-bg: #fff;
+      --color-lazy-summary: #6e6e73; --color-reviewed-banner-text: #1f2328;
+      --color-empty: #999; --color-sbs-empty-bg: #f6f8fa;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --color-bg: #0d1117; --color-text: #e6edf3; --color-text-secondary: #9ca3af;
+        --color-text-tertiary: #9ca3af; --color-text-quaternary: #7d8590;
+        --color-text-muted: #7d8590; --color-text-faint: #6e7681; --color-text-stat: #d0d7de;
+        --color-border: #3d444d; --color-border-strong: #545d68; --color-border-light: #30363d;
+        --color-border-separator: #3d444d;
+        --color-surface: #0d1117; --color-surface-card: #1c2128; --color-surface-code: #272e38;
+        --color-surface-hover: #3d2d5c; --color-surface-input-focus: #1c2128;
+        --color-btn-bg: #e6edf3; --color-btn-text: #0d1117; --color-btn-hover: #c9d1d9;
+        --color-btn-clear-hover: #272e38; --color-btn-clear-text: #e6edf3;
+        --color-btn-copy-text: #6e7681; --color-btn-copy-hover-bg: #3d444d; --color-btn-copy-hover-text: #e6edf3;
+        --color-accent: #58a6ff; --color-accent-hover-bg: #1c2d4a;
+        --color-accent-focus-shadow: rgba(88,166,255,0.25);
+        --color-added: #3fb950; --color-added-bg: #1a3a2a;
+        --color-removed: #f85149; --color-removed-bg: #3d1a1e;
+        --color-modified: #58a6ff; --color-modified-bg: #1a2d4d;
+        --color-default-bg: #1c2128;
+        --color-diff-row-bg: #1c2128; --color-diff-ln-bg: #272e38;
+        --color-diff-hunk-text: #79c0ff; --color-diff-ctx-text: #e6edf3; --color-diff-ctx-bg: #0d1117;
+        --color-diff-trunc-bg: #3d3518; --color-diff-trunc-text: #e3b341;
+        --color-diff-summary-text: #58a6ff;
+        --color-sc-header-bg: #3d444d; --color-sc-header-text: #e6edf3; --color-sc-cell-bg: #161b22;
+        --color-sc-caveat: #9ca3af;
+        --color-progress-bg: #272e38; --color-progress-fill: #58a6ff;
+        --color-importance-high: #f85149; --color-importance-medium: #e3b341;
+        --color-vuln-new-bg: #3d1a1e; --color-vuln-new-text: #f85149;
+        --color-vuln-resolved-bg: #1a3a2a; --color-vuln-resolved-text: #3fb950;
+        --color-vuln-resolved-count: #3fb950; --color-vuln-new-count: #f85149;
+        --color-warn-danger-border: #f85149; --color-warn-danger-bg: #3d1a1e;
+        --color-warn-caution-border: #e3b341; --color-warn-caution-bg: #3d3518;
+        --color-controls-bg: rgba(22,27,34,0.1);
+        --color-resize-handle-hover: rgba(255,255,255,0.22);
+        --color-print-text: #9ca3af; --color-print-border: #3d444d; --color-print-bg: #0d1117;
+        --color-lazy-summary: #9ca3af; --color-reviewed-banner-text: #e6edf3;
+        --color-empty: #7d8590; --color-sbs-empty-bg: #1c2128;
+      }
+    }
+    /* ── Manual theme overrides via data-theme attribute ── */
+    html[data-theme="light"], html[data-theme="light"] body {
+      color-scheme: light;
+      --color-bg: #fff; --color-text: #1d1d1f; --color-text-secondary: #86868b;
+      --color-text-tertiary: #6e6e73; --color-text-quaternary: #a1a1a6;
+      --color-text-muted: #999; --color-text-faint: #aaa; --color-text-stat: #444;
+      --color-border: #e0e0e0; --color-border-strong: #bbb;
+      --color-border-light: #ddd; --color-border-separator: #ccc;
+      --color-surface: #fff; --color-surface-card: #f5f5f7;
+      --color-surface-code: #f0f0f0; --color-surface-hover: #f3eef8;
+      --color-surface-input-focus: #fffff8;
+      --color-btn-bg: #1d1d1f; --color-btn-text: #fff; --color-btn-hover: #424245;
+      --color-btn-clear-hover: #f5f5f7; --color-btn-clear-text: #1d1d1f;
+      --color-btn-copy-text: #bbb; --color-btn-copy-hover-bg: #e8e8ed; --color-btn-copy-hover-text: #333;
+      --color-accent: #0051c3; --color-accent-hover-bg: #e8f0fe;
+      --color-accent-focus-shadow: rgba(0,81,195,0.15);
+      --color-added: #22863a; --color-added-bg: #e6ffed;
+      --color-removed: #b31d28; --color-removed-bg: #ffeef0;
+      --color-modified: #0051c3; --color-modified-bg: #e3f2fd;
+      --color-default-bg: #f0f0f2;
+      --color-diff-row-bg: #edf0f4; --color-diff-ln-bg: #f6f8fa;
+      --color-diff-hunk-text: #0057ae; --color-diff-ctx-text: #24292e;
+      --color-diff-ctx-bg: #fff; --color-diff-trunc-bg: #fffbdd; --color-diff-trunc-text: #735c0f;
+      --color-diff-summary-text: #0051c3;
+      --color-sc-header-bg: #98989d; --color-sc-header-text: #fff;
+      --color-sc-cell-bg: #fff; --color-sc-caveat: #6b6b6e;
+      --color-progress-bg: #e5e5ea; --color-progress-fill: #0051c3;
+      --color-importance-high: #d1242f; --color-importance-medium: #d97706;
+      --color-vuln-new-bg: #fecaca; --color-vuln-new-text: #991b1b;
+      --color-vuln-resolved-bg: #dcfce7; --color-vuln-resolved-text: #166534;
+      --color-vuln-resolved-count: #16a34a; --color-vuln-new-count: #dc2626;
+      --color-warn-danger-border: #d73a49; --color-warn-danger-bg: #ffeef0;
+      --color-warn-caution-border: #e36209; --color-warn-caution-bg: #fff8e1;
+      --color-controls-bg: rgba(255,255,255,0.1);
+      --color-resize-handle-hover: rgba(0,0,0,0.18);
+      --color-print-text: #555; --color-print-border: #ccc; --color-print-bg: #fff;
+      --color-lazy-summary: #6e6e73; --color-reviewed-banner-text: #1f2328;
+      --color-empty: #999; --color-sbs-empty-bg: #f6f8fa;
+      color: #1d1d1f; background-color: #fff;
+    }
+    html[data-theme="dark"], html[data-theme="dark"] body {
+      color-scheme: dark;
+      --color-bg: #0d1117; --color-text: #e6edf3; --color-text-secondary: #9ca3af;
+      --color-text-tertiary: #9ca3af; --color-text-quaternary: #7d8590;
+      --color-text-muted: #7d8590; --color-text-faint: #6e7681; --color-text-stat: #d0d7de;
+      --color-border: #3d444d; --color-border-strong: #545d68;
+      --color-border-light: #30363d; --color-border-separator: #3d444d;
+      --color-surface: #0d1117; --color-surface-card: #1c2128;
+      --color-surface-code: #272e38; --color-surface-hover: #3d2d5c;
+      --color-surface-input-focus: #1c2128;
+      --color-btn-bg: #e6edf3; --color-btn-text: #0d1117; --color-btn-hover: #c9d1d9;
+      --color-btn-clear-hover: #272e38; --color-btn-clear-text: #e6edf3;
+      --color-btn-copy-text: #6e7681; --color-btn-copy-hover-bg: #3d444d; --color-btn-copy-hover-text: #e6edf3;
+      --color-accent: #58a6ff; --color-accent-hover-bg: #1c2d4a;
+      --color-accent-focus-shadow: rgba(88,166,255,0.25);
+      --color-added: #3fb950; --color-added-bg: #1a3a2a;
+      --color-removed: #f85149; --color-removed-bg: #3d1a1e;
+      --color-modified: #58a6ff; --color-modified-bg: #1a2d4d;
+      --color-default-bg: #1c2128;
+      --color-diff-row-bg: #1c2128; --color-diff-ln-bg: #272e38;
+      --color-diff-hunk-text: #79c0ff; --color-diff-ctx-text: #e6edf3;
+      --color-diff-ctx-bg: #0d1117; --color-diff-trunc-bg: #3d3518; --color-diff-trunc-text: #e3b341;
+      --color-diff-summary-text: #58a6ff;
+      --color-sc-header-bg: #3d444d; --color-sc-header-text: #e6edf3;
+      --color-sc-cell-bg: #161b22; --color-sc-caveat: #9ca3af;
+      --color-progress-bg: #272e38; --color-progress-fill: #58a6ff;
+      --color-importance-high: #f85149; --color-importance-medium: #e3b341;
+      --color-vuln-new-bg: #3d1a1e; --color-vuln-new-text: #f85149;
+      --color-vuln-resolved-bg: #1a3a2a; --color-vuln-resolved-text: #3fb950;
+      --color-vuln-resolved-count: #3fb950; --color-vuln-new-count: #f85149;
+      --color-warn-danger-border: #f85149; --color-warn-danger-bg: #3d1a1e;
+      --color-warn-caution-border: #e3b341; --color-warn-caution-bg: #3d3518;
+      --color-controls-bg: rgba(22,27,34,0.1);
+      --color-resize-handle-hover: rgba(255,255,255,0.22);
+      --color-print-text: #9ca3af; --color-print-border: #3d444d; --color-print-bg: #0d1117;
+      --color-lazy-summary: #9ca3af; --color-reviewed-banner-text: #e6edf3;
+      --color-empty: #7d8590; --color-sbs-empty-bg: #1c2128;
+      color: #e6edf3; background-color: #0d1117;
+    }
+    /* ── Theme-aware utility classes ── */
+    .imp-high { color: var(--color-importance-high); font-weight: bold; }
+    .imp-medium { color: var(--color-importance-medium); font-weight: bold; }
+    .status-available { color: var(--color-added); }
+    .status-unavailable { color: var(--color-removed); }
+    .vuln-new { background: var(--color-vuln-new-bg); color: var(--color-vuln-new-text); font-weight: bold;
+                padding: 1px 5px; border-radius: 3px; margin: 1px; display: inline-block; }
+    .vuln-resolved { background: var(--color-vuln-resolved-bg); color: var(--color-vuln-resolved-text);
+                     text-decoration: line-through; padding: 1px 5px; border-radius: 3px; margin: 1px; display: inline-block; }
+    .vuln-resolved-count { color: var(--color-vuln-resolved-count); }
+    .vuln-new-count { color: var(--color-vuln-new-count); }
+    .warn-danger { border-left: 4px solid var(--color-warn-danger-border); background: var(--color-warn-danger-bg); }
+    .warn-danger .header-path-label { color: var(--color-warn-danger-border); }
+    .warn-caution { border-left: 4px solid var(--color-warn-caution-border); background: var(--color-warn-caution-bg); }
+    .warn-caution .header-path-label { color: var(--color-warn-caution-border); }
+    .color-added { color: var(--color-added); }
+    .color-removed { color: var(--color-removed); }
+    .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
@@ -175,16 +390,16 @@
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
     table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.filter-table) { table-layout: fixed; width: 1px; margin-bottom: 0; }
     th { padding: 4px 6px; font-size: 12px; white-space: nowrap; overflow: hidden; text-align: left;
-         border: 1px solid #bbb; color: #000; }
+         border: 1px solid var(--color-border-strong); color: var(--color-text); }
     th.th-resizable { position: relative; }
     .th-label { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
     .col-resize-handle {
       position: absolute; right: 0; top: 0; bottom: 0; width: 5px;
       cursor: col-resize; background: transparent;
     }
-    .col-resize-handle:hover, .col-resize-handle:active { background: rgba(0,0,0,0.18); }
-    td { padding: 2px 4px; border: 1px solid #e0e0e0; vertical-align: middle; font-size: 12px; }
-    td.col-no   { width: 3.2em; text-align: right; color: #aaa;
+    .col-resize-handle:hover, .col-resize-handle:active { background: var(--color-resize-handle-hover); }
+    td { padding: 2px 4px; border: 1px solid var(--color-border); vertical-align: middle; font-size: 12px; }
+    td.col-no   { width: 3.2em; text-align: right; color: var(--color-text-faint);
                   font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
@@ -198,8 +413,7 @@
     td.col-diff  { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
                    font-size: 12px; white-space: nowrap; min-width: 10.8em; text-align: center; }
     td.col-tag   { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-                   font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-                   text-align: center; }
+                   font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
@@ -219,19 +433,19 @@
       overflow: hidden; max-width: 0; visibility: hidden;
     }
     /* ── Row hover highlight ─────────────────────────────────────────────── */
-    :not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: #f3eef8; }
+    :not(.stat-table):not(.legend-table):not(.il-ignore-table) > tbody tr:not(.diff-row):not(.diff-hunk-tr):not(.diff-del-tr):not(.diff-add-tr):hover { background: var(--color-surface-hover); }
     td input[type="text"] {
       width: 100%; border: 0; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; box-shadow: none;
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
-      font-family: inherit; }
+      font-family: inherit; color: inherit; }
     td input[type="text"]:focus {
-      background: #fffff8; outline: 1px solid #aaa; }
+      background: var(--color-surface-input-focus); outline: 1px solid var(--color-text-faint); }
     .btn-input-clear {
       position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-      display: none; border: 1.2px solid #aaa; background: transparent;
+      display: none; border: 1.2px solid var(--color-text-faint); background: transparent;
       border-radius: 50%; width: 14px; height: 14px; padding: 0;
-      cursor: pointer; line-height: 1; color: #aaa;
+      cursor: pointer; line-height: 1; color: var(--color-text-faint);
     }
     .btn-input-clear svg { display: block; margin: auto; }
     .filter-search-wrap.has-text .btn-input-clear { display: flex; align-items: center; justify-content: center; }
@@ -243,29 +457,29 @@
       background: transparent; border: none; border-radius: 3px;
       cursor: pointer; font-size: 11px; vertical-align: middle;
       transition: background 0.12s; line-height: 1;
-      color: #bbb; flex-shrink: 0;
+      color: var(--color-btn-copy-text); flex-shrink: 0;
     }
-    .btn-copy-path:hover { background: #e8e8ed; color: #333; }
+    .btn-copy-path:hover { background: var(--color-btn-copy-hover-bg); color: var(--color-btn-copy-hover-text); }
     .btn-copy-path svg { pointer-events: none; }
     /* ── Summary / IL Cache Stats (stat table) ───────────────────────────── */
     table.stat-table { width: auto; margin-bottom: 1rem; border-collapse: collapse; table-layout: fixed; }
     table.stat-table col.stat-col1 { width: 10em; }
     table.stat-table col.stat-col2 { width: 14em; }
-    table.stat-table th { border: 1px solid #bbb; padding: 3px 14px; font-size: 13px; text-align: left; white-space: nowrap; }
-    table.stat-table td { border: 1px solid #ddd; padding: 3px 14px; font-size: 13px; }
-    table.stat-table td.stat-label { color: #444; white-space: nowrap; }
+    table.stat-table th { border: 1px solid var(--color-border-strong); padding: 3px 14px; font-size: 13px; text-align: left; white-space: nowrap; }
+    table.stat-table td { border: 1px solid var(--color-border-light); padding: 3px 14px; font-size: 13px; }
+    table.stat-table td.stat-label { color: var(--color-text-stat); white-space: nowrap; }
     table.stat-table td.stat-value { text-align: right; }
     ul.warnings { margin: 0.3rem 0 0 1.4rem; }
     ul.warnings li { margin-bottom: 0.4rem; line-height: 1.6; }
 
     /* ── Inline diff ─────────────────────────────────────────────────────── */
-    tr.diff-row { background: #edf0f4; }
+    tr.diff-row { background: var(--color-diff-row-bg); }
     tr.diff-row > td { padding: 0; border-top: none; }
-    .diff-added-cnt { color: #22863a; font-weight: 600; }
-    .diff-removed-cnt { color: #b31d28; font-weight: 600; }
+    .diff-added-cnt { color: var(--color-added); font-weight: 600; }
+    .diff-removed-cnt { color: var(--color-removed); font-weight: 600; }
     summary.diff-summary {
       display: inline-flex; align-items: center; gap: 0.4em;
-      cursor: pointer; font-size: 12px; color: #0051c3;
+      cursor: pointer; font-size: 12px; color: var(--color-diff-summary-text);
       padding: 3px 6px; padding-left: 3.2em; user-select: none; list-style: none; }
     summary.diff-summary::-webkit-details-marker { display: none; }
     summary.diff-summary::before { content: '▶'; font-size: 10px; transition: transform 0.15s; }
@@ -276,28 +490,28 @@
                        font-size: 12px; }
     table.diff-table td { padding: 1px 6px; border: none; white-space: pre; }
     td.diff-ln { width: 3.5em; min-width: 2.5em; text-align: right;
-                 color: #999; background: #f6f8fa; border-right: 1px solid #e0e0e0;
+                 color: var(--color-text-muted); background: var(--color-diff-ln-bg); border-right: 1px solid var(--color-border);
                  user-select: none; font-size: 11px; padding: 1px 4px; }
-    tr.diff-hunk-tr { background: #f6f8fa; }
-    td.diff-hunk-td { color: #0057ae; padding: 1px 8px; }
-    tr.diff-del-tr { background: #ffeef0; }
-    td.diff-del-td { color: #b31d28; background: #ffeef0; }
-    tr.diff-add-tr { background: #e6ffed; }
-    td.diff-add-td { color: #22863a; background: #e6ffed; }
-    tr.diff-ctx-tr { background: #fff; }
-    td.diff-ctx-td { color: #24292e; background: #fff; }
-    tr.diff-trunc-tr { background: #fffbdd; }
-    td.diff-trunc-td { color: #735c0f; padding: 2px 8px; font-style: italic; }
-    p.diff-skipped { color: #735c0f; font-size: 12px; padding: 4px 8px;
-                     padding-left: 3.2em; background: #fffbdd; margin: 0; }
+    tr.diff-hunk-tr { background: var(--color-diff-ln-bg); }
+    td.diff-hunk-td { color: var(--color-diff-hunk-text); padding: 1px 8px; }
+    tr.diff-del-tr { background: var(--color-removed-bg); }
+    td.diff-del-td { color: var(--color-removed); background: var(--color-removed-bg); }
+    tr.diff-add-tr { background: var(--color-added-bg); }
+    td.diff-add-td { color: var(--color-added); background: var(--color-added-bg); }
+    tr.diff-ctx-tr { background: var(--color-diff-ctx-bg); }
+    td.diff-ctx-td { color: var(--color-diff-ctx-text); background: var(--color-diff-ctx-bg); }
+    tr.diff-trunc-tr { background: var(--color-diff-trunc-bg); }
+    td.diff-trunc-td { color: var(--color-diff-trunc-text); padding: 2px 8px; font-style: italic; }
+    p.diff-skipped { color: var(--color-diff-trunc-text); font-size: 12px; padding: 4px 8px;
+                     padding-left: 3.2em; background: var(--color-diff-trunc-bg); margin: 0; }
     /* ── Assembly semantic changes ─────────────────────────────────────── */
     .semantic-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
     .semantic-changes p { margin: 4px 0 2px; }
-    .semantic-changes p.sc-caveat { color: #6b6b6e; font-style: italic; margin-bottom: 6px; }
+    .semantic-changes p.sc-caveat { color: var(--color-sc-caveat); font-style: italic; margin-bottom: 6px; }
     table.semantic-changes-table { border-collapse: collapse; margin: 4px 0; font-size: 12px; table-layout: fixed; }
-    table.semantic-changes-table th { padding: 3px 8px; border: 1px solid #bbb; background: #98989d; color: #fff; font-size: 11px; text-align: left; white-space: nowrap; }
+    table.semantic-changes-table th { padding: 3px 8px; border: 1px solid var(--color-border-strong); background: var(--color-sc-header-bg); color: var(--color-sc-header-text); font-size: 11px; text-align: left; white-space: nowrap; }
     table.semantic-changes-table th.th-resizable { position: relative; }
-    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid #e0e0e0; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #fff; }
+    table.semantic-changes-table td { padding: 2px 8px; border: 1px solid var(--color-border); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--color-sc-cell-bg); }
     table.semantic-changes-table th.sc-col-cb { width: 3.2em; text-align: center; }
     table.semantic-changes-table td.sc-col-cb { width: 3.2em; text-align: center; }
     /* sc-detail: checkbox(1) Class(2) BaseType(3) Change(4) Importance(5) Kind(6) Access(7) Modifiers(8) Type(9)… */
@@ -306,7 +520,7 @@
     table.semantic-changes-table.sc-detail td:nth-child(8) { text-align: center; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(2) { border-top: hidden; }
     table.semantic-changes-table.sc-detail tr.group-cont td:nth-child(3) { border-top: hidden; }
-    table.semantic-changes-table tbody tr:hover td { background: #f3eef8 !important; }
+    table.semantic-changes-table tbody tr:hover td { background: var(--color-surface-hover) !important; }
     /* sc colgroup widths */
     col.sc-col-cb-g { width: 3.2em; }
     col.sc-col-class-g { width: var(--sc-class-w); }
@@ -332,17 +546,17 @@
     .vuln-badge { font-size: 11px; white-space: nowrap; }
     .vuln-badge a { font-size: 11px; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
-    .filter-label { font-weight: 600; color: #1d1d1f; white-space: nowrap; min-width: 7em; }
+    .filter-label { font-weight: 600; color: var(--color-text); white-space: nowrap; min-width: 7em; }
     .filter-chip { display: inline-flex; align-items: center; gap: 0.3em; white-space: nowrap; cursor: pointer; min-width: 5.5em; }
     .filter-chip input[type="checkbox"] { cursor: pointer; }
-    .filter-sep { width: 1px; height: 1.2em; background: #ccc; margin: 0 0.35rem; }
+    .filter-sep { width: 1px; height: 1.2em; background: var(--color-border-separator); margin: 0 0.35rem; }
     .filter-search-wrap {
       position: relative; display: flex; align-items: center;
-      border: 1px solid #ccc; border-radius: 6px;
+      border: 1px solid var(--color-border-separator); border-radius: 6px;
       flex: 1 1 16rem; min-width: min(100%, 16rem); max-width: 100%;
       background: transparent;
     }
-    .filter-search-wrap:focus-within { border-color: #0051c3; box-shadow: 0 0 0 2px rgba(0,81,195,0.15); }
+    .filter-search-wrap:focus-within { border-color: var(--color-accent); box-shadow: 0 0 0 2px var(--color-accent-focus-shadow); }
     .filter-search-wrap .btn-input-clear { right: 6px; }
     .filter-search {
       width: 100%; padding: 0.25rem 1.4rem 0.25rem 0.6rem; border: none; border-radius: 6px;
@@ -355,22 +569,22 @@
     }
     tr.filter-hidden { display: none !important; }
     tr.diff-row.filter-hidden-parent { display: none !important; }
-    .lazy-section summary { cursor: pointer; font-size: 13px; color: #6e6e73; padding: 0.2rem 0; }
+    .lazy-section summary { cursor: pointer; font-size: 13px; color: var(--color-lazy-summary); padding: 0.2rem 0; }
     /* ── Side-by-side diff mode / サイドバイサイド差分モード ────────────── */
-    .sbs-toggle { font-size: 11px; color: #0051c3; background: none; border: 1px solid #0051c3;
-                  border-radius: 4px; padding: 2px 8px; cursor: pointer; margin: 4px 0 4px 3.2em; }
-    .sbs-toggle:hover { background: #e8f0fe; }
+    .sbs-toggle { font-size: 11px; color: var(--color-accent); background: none; border: 1px solid var(--color-accent);
+                  border-radius: 980px; padding: 2px 10px; cursor: pointer; margin: 4px 0 4px 3.2em; }
+    .sbs-toggle:hover { background: var(--color-accent-hover-bg); }
     table.diff-table.sbs-mode { table-layout: fixed; }
     table.diff-table.sbs-mode td.sbs-old,
     table.diff-table.sbs-mode td.sbs-new { overflow: hidden; padding: 0; }
-    table.diff-table.sbs-mode td.sbs-old { background: #ffeef0; color: #b31d28; }
-    table.diff-table.sbs-mode td.sbs-new { background: #e6ffed; color: #22863a; }
-    table.diff-table.sbs-mode td.sbs-ctx { background: #fff; color: #24292e; }
-    table.diff-table.sbs-mode td.sbs-empty { background: #f6f8fa; }
+    table.diff-table.sbs-mode td.sbs-old { background: var(--color-removed-bg); color: var(--color-removed); }
+    table.diff-table.sbs-mode td.sbs-new { background: var(--color-added-bg); color: var(--color-added); }
+    table.diff-table.sbs-mode td.sbs-ctx { background: var(--color-diff-ctx-bg); color: var(--color-diff-ctx-text); }
+    table.diff-table.sbs-mode td.sbs-empty { background: var(--color-sbs-empty-bg); }
     .sbs-inner { overflow: hidden; white-space: pre; padding: 1px 6px; }
     .sbs-scroll-tr td { position: sticky; bottom: 0; z-index: 2;
-                        background: #f6f8fa; padding: 0 !important;
-                        border-top: 1px solid #e0e0e0; }
+                        background: var(--color-sbs-empty-bg); padding: 0 !important;
+                        border-top: 1px solid var(--color-border); }
     .sbs-scroll-proxy { overflow-x: auto; overflow-y: hidden; }
     .sbs-scroll-proxy > div { height: 1px; }
     @media (max-width: 1100px) {
@@ -390,6 +604,48 @@
     }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
+    @media print {
+      .controls, .controls-bar, .reviewed-banner, .filter-zone,
+      .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
+      .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
+      button, .filter-search-wrap, .btn-input-clear { display: none !important; }
+      input[type="checkbox"] { pointer-events: none; }
+      input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
+      .controls, .reviewed-banner { position: static !important; }
+      details { display: block !important; }
+      details > summary { display: none !important; }
+      details[open] > summary { display: none !important; }
+      @page { margin: 1.5cm; }
+      body { padding: 0; font-size: 12px; max-width: 100%; }
+      tr, .diff-view, details { page-break-inside: avoid; break-inside: avoid; }
+      table { page-break-inside: auto; }
+      code, table.diff-table, td.col-diff, td.col-tag, td.col-disasm {
+        font-family: 'Courier New', Courier, monospace !important;
+        font-size: 10px !important;
+      }
+      td.col-path, td.col-path .path-text {
+        white-space: normal !important; word-break: break-all;
+        overflow: visible !important; text-overflow: unset !important;
+      }
+      tr.diff-del-tr, td.diff-del-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr.diff-add-tr, td.diff-add-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr.diff-hunk-tr, td.diff-hunk-td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      td.col-status { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body.pdf-print-mode { padding-top: 1.4cm; padding-bottom: 1.2cm; }
+      body.pdf-print-mode .pdf-print-header {
+        display: block !important; position: fixed; top: 0; left: 0; right: 0;
+        padding: 0.3cm 1.5cm; font-size: 8px; color: var(--color-print-text); border-bottom: 0.5px solid var(--color-print-border);
+        background: var(--color-print-bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; z-index: 9999;
+      }
+      body.pdf-print-mode .pdf-print-footer {
+        display: block !important; position: fixed; bottom: 0; left: 0; right: 0;
+        padding: 0.3cm 1.5cm; font-size: 8px; color: var(--color-print-text); border-top: 0.5px solid var(--color-print-border);
+        background: var(--color-print-bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; z-index: 9999;
+      }
+      body.pdf-print-mode .pdf-print-header { display: flex !important; justify-content: space-between; align-items: center; }
+      body.pdf-print-mode .pdf-print-footer { display: flex !important; justify-content: space-between; align-items: center; }
+      body.pdf-print-mode .reviewed-banner { display: none !important; }
+    }
   </style>
 </head>
 <body>
@@ -409,6 +665,7 @@
     <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
     <button class="btn btn-clear" onclick="resetFilters()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>
     <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
+    <button id="theme-toggle" class="btn btn-clear theme-toggle" onclick="cycleTheme()" title="Toggle theme (Light / Dark / System)">&#x2699; System</button>
     <span id="save-status" class="save-status" role="status" aria-live="polite"></span>
   </div>
 </div>
@@ -433,8 +690,8 @@
 <table class="filter-table" aria-label="Change Importance filters">
 <thead><tr><th scope="col" colspan="3">Change Importance</th></tr></thead>
 <tbody>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-high"><span style="color:#d1242f;font-weight:bold">High</span></label></td><td class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
-<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-medium"><span style="color:#d97706;font-weight:bold">Medium</span></label></td><td class="ft-desc">Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-high" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-high"><span class="imp-high">High</span></label></td><td class="ft-desc">Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change</td></tr>
+<tr><td class="ft-cb"><input type="checkbox" id="filter-imp-medium" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-medium"><span class="imp-medium">Medium</span></label></td><td class="ft-desc">Notable change: public/protected member addition, modifier change, access widening, internal removal</td></tr>
 <tr><td class="ft-cb"><input type="checkbox" id="filter-imp-low" checked onchange="applyFilters()"></td><td class="ft-label"><label for="filter-imp-low">Low</label></td><td class="ft-desc">Low-impact change: body-only modification, internal/private member addition</td></tr>
 </tbody></table>
 </div>
@@ -465,8 +722,8 @@
 <div class="header-path">
   <div class="header-path-label">Disassembler Availability</div>
   <div class="header-path-value">
-    <div>dotnet-ildasm: <span style="color:#22863a">Available (0.12.2)</span> — In Use</div>
-    <div>ilspycmd: <span style="color:#b31d28">Not Available</span></div>
+    <div>dotnet-ildasm: <span class="status-available">Available (0.12.2)</span> — In Use</div>
+    <div>ilspycmd: <span class="status-unavailable">Not Available</span></div>
   </div>
 </div>
 <div class="header-path"><div class="header-path-label">Ignored Extensions</div><div class="header-path-value">.cache, .DS_Store, .db, .ilcache, .log, .pdb</div></div>
@@ -498,7 +755,7 @@
   <col class="col-tag-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#f0f0f2">
+<thead><tr style="background:var(--color-default-bg)">
   <th scope="col" class="col-no">#</th>
   <th scope="col" class="col-cb">&#x2713;</th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -567,7 +824,7 @@
   <col class="col-tag-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#f0f0f2">
+<thead><tr style="background:var(--color-default-bg)">
   <th scope="col" class="col-no">#</th>
   <th scope="col" class="col-cb">&#x2713;</th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -643,7 +900,7 @@
 </tbody></table>
 </div>
 </details>
-<h2 style="color:#22863a">[ + ] Added Files (1)</h2>
+<h2 style="color:var(--color-added)">[ + ] Added Files (1)</h2>
 <div class="table-scroll">
 <table class="hide-col6 hide-disasm hide-tag">
 <colgroup>
@@ -658,7 +915,7 @@
   <col class="col-tag-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#e6ffed">
+<thead><tr style="background:var(--color-added-bg)">
   <th scope="col" class="col-no">#</th>
   <th scope="col" class="col-cb">&#x2713;</th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -685,7 +942,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#b31d28">[ - ] Removed Files (1)</h2>
+<h2 style="color:var(--color-removed)">[ - ] Removed Files (1)</h2>
 <div class="table-scroll">
 <table class="hide-col6 hide-disasm hide-tag">
 <colgroup>
@@ -700,7 +957,7 @@
   <col class="col-tag-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#ffeef0">
+<thead><tr style="background:var(--color-removed-bg)">
   <th scope="col" class="col-no">#</th>
   <th scope="col" class="col-cb">&#x2713;</th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -727,7 +984,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#0051c3">[ * ] Modified Files (15)</h2>
+<h2 style="color:var(--color-modified)">[ * ] Modified Files (15)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -742,7 +999,7 @@
   <col class="col-tag-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#e3f2fd">
+<thead><tr style="background:var(--color-modified-bg)">
   <th scope="col" class="col-no">#</th>
   <th scope="col" class="col-cb">&#x2713;</th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -763,14 +1020,14 @@
   <td class="col-status">[ * ]</td>
   <td class="col-path"><div class="path-wrap"><span class="path-text">bin/MyApp.deps.json</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
-  <td class="col-diff"><code>TextMismatch</code> <code class="imp-high">High</code></td>
+  <td class="col-diff"><code>TextMismatch</code> <code>High</code></td>
   <td class="col-tag"><code>DepUpdate</code></td>
   <td class="col-disasm"></td>
 </tr>
 <tr class="diff-row">
   <td colspan="10">
     <details id="deps_mod_0">
-      <summary class="diff-summary">#1 Show dependency changes (2 High) <span style="color:#16a34a">1 resolved</span> <span style="color:#dc2626">1 vuln</span></summary>
+      <summary class="diff-summary">#1 Show dependency changes (2 High) <span class="vuln-resolved-count">1 resolved</span> <span class="vuln-new-count">1 vuln</span></summary>
 <div class="dependency-changes">
 <table class="semantic-changes-table dc-detail">
 <colgroup>
@@ -792,11 +1049,11 @@
   <th scope="col">Vulnerabilities</th>
 </tr></thead>
 <tbody>
-<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_0"></td><td>System.Text.Json</td><td style="background:#ffeef0">[ - ]</td><td style="font-weight:700;color:#b31d28">High</td><td>7.0.0</td><td>&#x2014;</td><td>&#x2014;</td></tr>
-<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_1"></td><td>Serilog</td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:700;color:#b31d28">High</td><td>3.0.0</td><td>4.1.0</td><td><span class="vuln-badge vuln-resolved" style="background:#dcfce7;color:#166534;text-decoration:line-through;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block" title="Resolved: https://github.com/advisories/GHSA-example-seri"><a href="https://github.com/advisories/GHSA-example-seri" target="_blank" rel="noopener" style="color:inherit">GHSA-example-seri</a> <small>(High)</small></span></td></tr>
-<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_2"></td><td>Newtonsoft.Json</td><td style="background:#e6ffed">[ + ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>&#x2014;</td><td>13.0.3</td><td><span class="vuln-badge vuln-new" style="background:#fecaca;color:#991b1b;font-weight:bold;padding:1px 5px;border-radius:3px;margin:1px;display:inline-block" title="Moderate: https://github.com/advisories/GHSA-example-json"><a href="https://github.com/advisories/GHSA-example-json" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">GHSA-example-json</a> <small>(Moderate)</small></span></td></tr>
-<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_3"></td><td>Microsoft.Extensions.Logging</td><td style="background:#e3f2fd">[ * ]</td><td style="font-weight:600;color:#e36209">Medium</td><td>8.0.0</td><td>9.0.0</td><td>&#x2014;</td></tr>
-<tr data-sc-importance="Low"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_4"></td><td>Microsoft.Extensions.DependencyInjection</td><td style="background:#e3f2fd">[ * ]</td><td>Low</td><td>9.0.0</td><td>9.0.8</td><td>&#x2014;</td></tr>
+<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_0"></td><td>System.Text.Json</td><td style="background:var(--color-removed-bg)">[ - ]</td><td class="imp-high">High</td><td>7.0.0</td><td>&#x2014;</td><td>&#x2014;</td></tr>
+<tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_1"></td><td>Serilog</td><td style="background:var(--color-modified-bg)">[ * ]</td><td class="imp-high">High</td><td>3.0.0</td><td>4.1.0</td><td><span class="vuln-badge vuln-resolved" title="Resolved: https://github.com/advisories/GHSA-example-seri"><a href="https://github.com/advisories/GHSA-example-seri" target="_blank" rel="noopener" style="color:inherit">GHSA-example-seri</a> <small>(High)</small></span></td></tr>
+<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_2"></td><td>Newtonsoft.Json</td><td style="background:var(--color-added-bg)">[ + ]</td><td class="imp-medium">Medium</td><td>&#x2014;</td><td>13.0.3</td><td><span class="vuln-badge vuln-new" title="Moderate: https://github.com/advisories/GHSA-example-json"><a href="https://github.com/advisories/GHSA-example-json" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">GHSA-example-json</a> <small>(Moderate)</small></span></td></tr>
+<tr data-sc-importance="Medium"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_3"></td><td>Microsoft.Extensions.Logging</td><td style="background:var(--color-modified-bg)">[ * ]</td><td class="imp-medium">Medium</td><td>8.0.0</td><td>9.0.0</td><td>&#x2014;</td></tr>
+<tr data-sc-importance="Low"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_4"></td><td>Microsoft.Extensions.DependencyInjection</td><td style="background:var(--color-modified-bg)">[ * ]</td><td>Low</td><td>9.0.0</td><td>9.0.8</td><td>&#x2014;</td></tr>
 </tbody></table>
 </div>
     </details>
@@ -1096,20 +1353,20 @@
 <h2 class="section-heading">Summary</h2>
 <table class="stat-table">
 <colgroup><col class="stat-col1"><col class="stat-col2"></colgroup>
-  <thead><tr><th scope="col" style="background:#f5f5f7">Category</th><th scope="col" style="background:#f5f5f7">Count</th></tr></thead>
+  <thead><tr><th scope="col" style="background:var(--color-surface-card)">Category</th><th scope="col" style="background:var(--color-surface-card)">Count</th></tr></thead>
   <tbody>
     <tr><td class="stat-label">Ignored</td><td class="stat-value">3</td></tr>
     <tr><td class="stat-label">Unchanged</td><td class="stat-value">5</td></tr>
-    <tr style="background:#e6ffed"><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
-    <tr style="background:#ffeef0"><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
-    <tr style="background:#e3f2fd"><td class="stat-label">Modified</td><td class="stat-value">15</td></tr>
+    <tr style="background:var(--color-added-bg)"><td class="stat-label">Added</td><td class="stat-value">1</td></tr>
+    <tr style="background:var(--color-removed-bg)"><td class="stat-label">Removed</td><td class="stat-value">1</td></tr>
+    <tr style="background:var(--color-modified-bg)"><td class="stat-label">Modified</td><td class="stat-value">15</td></tr>
     <tr><td class="stat-label">Compared</td><td class="stat-value">23 (Old) vs 23 (New)</td></tr>
   </tbody>
 </table>
 <h2 class="section-heading">IL Cache Stats</h2>
 <table class="stat-table">
 <colgroup><col class="stat-col1"><col class="stat-col2"></colgroup>
-  <thead><tr><th scope="col" style="background:#f5f5f7">Metric</th><th scope="col" style="background:#f5f5f7">Value</th></tr></thead>
+  <thead><tr><th scope="col" style="background:var(--color-surface-card)">Metric</th><th scope="col" style="background:var(--color-surface-card)">Value</th></tr></thead>
   <tbody>
     <tr><td class="stat-label">Hits</td><td class="stat-value">42</td></tr>
     <tr><td class="stat-label">Misses</td><td class="stat-value">8</td></tr>
@@ -1120,7 +1377,7 @@
   </tbody>
 </table>
 <h2 class="section-heading">Warnings</h2>
-<h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; SHA256Mismatch: binary diff only — not a .NET assembly or disassembler unavailable (1)</h2>
+<h2 style="color:var(--color-modified)">[ ! ] Modified Files &#x2014; SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file (1)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -1135,7 +1392,7 @@
   <col class="col-tag-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#e3f2fd">
+<thead><tr style="background:var(--color-modified-bg)">
   <th scope="col" class="col-no">#</th>
   <th scope="col" class="col-cb">&#x2713;</th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -1162,7 +1419,7 @@
 </tr>
 </tbody></table>
 </div>
-<h2 style="color:#0051c3">[ ! ] Modified Files &#x2014; new file timestamps older than old (5)</h2>
+<h2 style="color:var(--color-modified)">[ ! ] Modified Files &#x2014; new file timestamps older than old (5)</h2>
 <div class="table-scroll">
 <table>
 <colgroup>
@@ -1177,7 +1434,7 @@
   <col class="col-tag-g">
   <col class="col-disasm-g">
 </colgroup>
-<thead><tr style="background:#e3f2fd">
+<thead><tr style="background:var(--color-modified-bg)">
   <th scope="col" class="col-no">#</th>
   <th scope="col" class="col-cb">&#x2713;</th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
@@ -1302,8 +1559,8 @@
   const __finalSha256__     = null;
   // Total number of reviewable files (injected at generation time). Do not change whitespace.
   // レビュー対象ファイルの総数（生成時に注入）。空白を変更しないこと。
-  const __totalFiles__      = 22;
-  const __totalFilesDetail__ = 'Added: 1 + Removed: 1 + Modified: 14 + SHA256Warn: 1 + TsWarn: 5';
+  const __totalFiles__      = 23;
+  const __totalFilesDetail__ = 'Added: 1 + Removed: 1 + Modified: 15 + SHA256Warn: 1 + TsWarn: 5';
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -1319,7 +1576,106 @@
     }
   }
 
+  // Completion celebration
+  var __celebrationFired__ = false;
+  function celebrateCompletion() {
+    if (__celebrationFired__) return;
+    if (__savedState__ !== null) return;
+    __celebrationFired__ = true;
+    var bar = document.getElementById('progress-bar-fill');
+    if (!bar) return;
+    var wrap = bar.closest('.progress-bar');
+    if (!wrap) return;
+    wrap.classList.add('celebrate-glow');
+    var container = document.createElement('div');
+    container.className = 'celebrate-container';
+    container.setAttribute('aria-hidden', 'true');
+    wrap.style.position = 'relative';
+    wrap.style.overflow = 'visible';
+    wrap.appendChild(container);
+    var barWidth = wrap.offsetWidth || 160;
+    var count = 14;
+    var accentColor = getComputedStyle(document.documentElement).getPropertyValue('--color-progress-fill').trim() || '#0051c3';
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement('div');
+      p.className = 'celebrate-particle';
+      var size = 3 + Math.random() * 4;
+      var left = (i / count) * barWidth + (Math.random() - 0.5) * (barWidth / count);
+      var delay = i * 0.08 + Math.random() * 0.3;
+      var hueShift = Math.round((Math.random() - 0.5) * 30);
+      p.style.cssText =
+        'width:' + size + 'px;height:' + size + 'px;' +
+        'left:' + Math.max(0, left) + 'px;bottom:0;' +
+        'background:' + accentColor + ';' +
+        'filter:hue-rotate(' + hueShift + 'deg) brightness(1.3);' +
+        'animation-delay:' + delay.toFixed(2) + 's;';
+      container.appendChild(p);
+    }
+    var msg = document.createElement('div');
+    msg.className = 'celebrate-msg';
+    msg.textContent = '\u2714 All files reviewed';
+    container.appendChild(msg);
+    setTimeout(function() {
+      if (container.parentNode) container.parentNode.removeChild(container);
+      wrap.classList.remove('celebrate-glow');
+      wrap.style.position = '';
+      wrap.style.overflow = '';
+    }, 4000);
+  }
+
+  // ── Theme toggle (Light / Dark / System) ──────────────────────────────
+  // テーマ切替（ライト / ダーク / システム）
+  var __themeStorageKey__ = __storageKey__ + '-theme';
+  var __themeLabels__ = { light: '\u2600 Light', dark: '\u263E Dark', system: '\u2699 System' };
+
+  function getStoredTheme() {
+    try { return localStorage.getItem(__themeStorageKey__); } catch(e) { return null; }
+  }
+
+  function applyTheme(mode) {
+    var root = document.documentElement;
+    if (mode === 'light' || mode === 'dark') {
+      root.setAttribute('data-theme', mode);
+      // Override browser UA color-scheme to match manual toggle
+      root.style.colorScheme = mode;
+    } else {
+      root.removeAttribute('data-theme');
+      root.style.removeProperty('color-scheme');
+    }
+    // Belt-and-suspenders: force body color/background for reviewed HTML
+    if (mode === 'light') {
+      document.body.style.color = '#1d1d1f';
+      document.body.style.backgroundColor = '#fff';
+    } else if (mode === 'dark') {
+      document.body.style.color = '#e6edf3';
+      document.body.style.backgroundColor = '#0d1117';
+    } else {
+      document.body.style.removeProperty('color');
+      document.body.style.removeProperty('background-color');
+    }
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = __themeLabels__[mode] || __themeLabels__.system;
+  }
+
+  function initTheme() {
+    var stored = getStoredTheme();
+    var mode = (stored === 'light' || stored === 'dark') ? stored : 'system';
+    applyTheme(mode);
+  }
+
+  function cycleTheme() {
+    var stored = getStoredTheme();
+    var current = (stored === 'light' || stored === 'dark') ? stored : 'system';
+    var next = current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system';
+    try {
+      if (next === 'system') localStorage.removeItem(__themeStorageKey__);
+      else localStorage.setItem(__themeStorageKey__, next);
+    } catch(e) { /* quota exceeded / 容量超過 */ }
+    applyTheme(next);
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
+    initTheme();
     var toRestore = __savedState__;
     if (!toRestore) {
       toRestore = readSavedStateFromStorage('null');
@@ -1410,7 +1766,10 @@
     var txt = document.getElementById('progress-text');
     if (bar) {
       bar.style.width = pct + '%';
-      if (checked >= __totalFiles__) bar.classList.add('complete');
+      if (checked >= __totalFiles__) {
+        bar.classList.add('complete');
+        celebrateCompletion();
+      }
       else bar.classList.remove('complete');
     }
     if (txt) txt.textContent = checked + ' / ' + __totalFiles__ + ' reviewed';
@@ -1436,8 +1795,18 @@
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
+    // Clear body/root inline theme styles before capture so reviewed HTML starts clean
+    var savedBodyColor = document.body.style.color;
+    var savedBodyBg = document.body.style.backgroundColor;
+    var savedColorScheme = root.style.colorScheme;
+    document.body.style.removeProperty('color');
+    document.body.style.removeProperty('background-color');
+    root.style.removeProperty('color-scheme');
     var html    = document.documentElement.outerHTML;
     // Restore live page state
+    document.body.style.color = savedBodyColor;
+    document.body.style.backgroundColor = savedBodyBg;
+    if (savedColorScheme) root.style.colorScheme = savedColorScheme;
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
     applyFilters();
     syncTableWidths();
@@ -1473,6 +1842,7 @@
       + '<button class="btn" onclick="downloadAsPdf()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M4 1h6l4 4v10H2V1h2z"/><polyline points="10,1 10,5 14,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="10.5" x2="11" y2="10.5"/><line x1="5" y1="13" x2="9" y2="13"/></svg> Download as PDF</button>'
       + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
       + '<button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
+      + '<button id="theme-toggle" class="btn btn-clear theme-toggle" onclick="cycleTheme()" title="Toggle theme (Light / Dark / System)" style="font-size:12px">&#x2699; System</button>'
       + '</div></div>');
     // 3. Embed SHA256 integrity hash for self-verification (placeholder approach)
     var placeholder = '0000000000000000000000000000000000000000000000000000000000000000';
@@ -2252,7 +2622,7 @@
     var sectionNames = {
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
       'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
-      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly or disassembler unavailable',
+      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
       'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
     };
     // Section background colors for column header rows / 列ヘッダー行のセクション背景色
