@@ -417,13 +417,42 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.NoTimestampWarnings);
             Assert.True(opts.PrintConfig);
             Assert.True(opts.DryRun);
-            Assert.True(opts.Coffee);
-            Assert.True(opts.Beer);
-            Assert.True(opts.Matcha);
-            Assert.True(opts.Whisky);
+            // Last-wins: --wine is last spinner flag, so only Wine is true
+            // 最後勝ち: --wine が最後のスピナーフラグなので Wine のみ true
+            Assert.False(opts.Coffee);
+            Assert.False(opts.Beer);
+            Assert.False(opts.Matcha);
+            Assert.False(opts.Whisky);
             Assert.True(opts.Wine);
             Assert.True(opts.Bell);
             Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // Spinner last-wins behavior / スピナー最後勝ち動作
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_MultipleSpinnerFlags_LastOneWins()
+        {
+            var opts = CliParser.Parse(new[] { "--matcha", "--beer" });
+
+            Assert.False(opts.Coffee);
+            Assert.True(opts.Beer);
+            Assert.False(opts.Matcha);
+            Assert.False(opts.Whisky);
+            Assert.False(opts.Wine);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_CoffeeAfterWine_CoffeeWins()
+        {
+            var opts = CliParser.Parse(new[] { "--wine", "--coffee" });
+
+            Assert.True(opts.Coffee);
+            Assert.False(opts.Wine);
         }
     }
 }

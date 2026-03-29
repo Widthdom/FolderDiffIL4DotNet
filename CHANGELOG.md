@@ -67,6 +67,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   5. **Loop-based filter table rows** — Replaced 9 sequential `AppendFilterTableRow()` calls in `HtmlReportGenerateService` with data-driven loops over `s_diffDetailFilters` and `s_importanceFilters` arrays.
   Updated [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA partial class tables, network path detection references). Test count: 900 (unchanged).
 
+- **Improve dark mode color visibility in HTML report** — Brightened dark mode CSS custom properties for better readability: secondary text (#8b949e → #9ca3af), borders (#30363d → #3d444d), card surfaces (#161b22 → #1c2128), code backgrounds (#1c2128 → #272e38), status backgrounds (added/removed/modified all brightened), controls bar opacity (0.7 → 0.88), importance medium (#d29922 → #e3b341), and hover color (#1c1430 → #2d2240). Updated both `@media (prefers-color-scheme: dark)` and `html[data-theme="dark"]` blocks. Modified: [`Services/HtmlReport/diff_report.css`](Services/HtmlReport/diff_report.css), [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Test count: 1022 (unchanged).
+
+- **Fix spinner CLI last-wins behavior** — When multiple spinner flags (e.g. `--matcha --beer`) were specified, the last one in CLI order should win. Previously, `ApplyCliOverrides` evaluated spinner flags in code order (coffee → beer → matcha → whisky → wine), causing the code-order-last flag to always win regardless of CLI argument order. Fixed by making each spinner case in `CliParser` clear all other spinner booleans, so CLI argument order determines the winner. Modified: [`Runner/CliParser.cs`](Runner/CliParser.cs). Tests: `ParseCliOptions_MultipleSpinnerFlags_LastOneWins`, `ParseCliOptions_CoffeeAfterWine_CoffeeWins`, updated `ParseCliOptions_AllFlagsCombined_ParsedCorrectly` in [`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.cs). Test count: 1022 (+2).
+
+- **Console summary shows count/total format** — The completion summary chart now displays each category as `count/total (pct%)` instead of `count (pct%)`, making it easier to see the denominator at a glance (e.g. `23/43 (53.5%)`). Modified: [`ProgramRunner.cs`](ProgramRunner.cs). Test count: 1022 (unchanged).
+
+- **Console summary uses default color for Unchanged and colored labels** — The Unchanged category in the completion summary chart now uses the terminal's default foreground color instead of DarkGray for better visibility. Added, Removed, and Modified labels are now colored the same as their progress bars (Green, Red, Cyan respectively). Modified: [`ProgramRunner.cs`](ProgramRunner.cs). Test count: 1022 (unchanged).
+
+#### Fixed
+
+- **Fix sample HTML theme toggle and Modified count** — The sample HTML (`doc/samples/diff_report.html`) was missing all theme JS functions (`getStoredTheme`, `applyTheme`, `initTheme`, `cycleTheme`) and the `initTheme()` call, causing Light/Dark/System buttons to be non-functional. Also fixed `__totalFilesDetail__` showing "Modified: 14" instead of 15, and `__totalFiles__` showing 22 instead of 23 to match the actual file entries. Modified: [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Test count: 1022 (unchanged).
+
 #### Documentation
 
 - **Update documentation for dark mode and completion summary chart** — Updated [`README.md`](README.md) (EN+JA HTML report sections: dark mode auto-switching via `prefers-color-scheme`), [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA: CSS section with custom properties/dark mode/utility classes architecture, HtmlReportGenerateService description, execution lifecycle sequence diagrams with completion summary chart step), [`doc/TESTING_GUIDE.md`](doc/TESTING_GUIDE.md) (EN+JA: scope map entry-point row with completion summary chart tests, reporting row with dark mode CSS utility class assertions), [`doc/samples/diff_report.html`](doc/samples/diff_report.html) (replaced remaining hardcoded hex colors in CSS body with `var()` references to match the actual `diff_report.css`).
@@ -855,6 +867,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   4. **`ExceptionFilters` ユーティリティ追加** — [`ExceptionFilters.cs`](FolderDiffIL4DotNet.Core/Common/ExceptionFilters.cs) を作成。名前付き述語（`IsFileIoRecoverable`、`IsFileIoOrOperationRecoverable`、`IsPathOrFileIoRecoverable`、`IsProcessExecutionRecoverable`）で、サービス全体の20箇所以上のインライン `catch (Exception ex) when (ex is ...)` パターンを置換。
   5. **フィルタテーブル行のループ化** — `HtmlReportGenerateService` の9回の連続 `AppendFilterTableRow()` 呼び出しを `s_diffDetailFilters` / `s_importanceFilters` 配列に基づくデータ駆動ループに置換。
   [`DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md)（EN+JA partial class テーブル、ネットワークパス検出参照）を更新。テスト件数: 900（変更なし）。
+
+- **HTML レポートのダークモード色の視認性改善** — ダークモードの CSS カスタムプロパティを明るく調整し可読性を向上: セカンダリテキスト（#8b949e → #9ca3af）、ボーダー（#30363d → #3d444d）、カードサーフェス（#161b22 → #1c2128）、コード背景（#1c2128 → #272e38）、ステータス背景（added/removed/modified すべて明るく）、コントロールバー不透明度（0.7 → 0.88）、importance medium（#d29922 → #e3b341）、ホバー色（#1c1430 → #2d2240）。`@media (prefers-color-scheme: dark)` と `html[data-theme="dark"]` の両ブロックを更新。変更: [`Services/HtmlReport/diff_report.css`](Services/HtmlReport/diff_report.css)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。テスト件数: 1022（変更なし）。
+
+- **スピナー CLI 最後勝ち動作の修正** — 複数のスピナーフラグ（例: `--matcha --beer`）を指定した場合、CLI 引数順で最後のものが勝つべきだが、従来は `ApplyCliOverrides` がコード順（coffee → beer → matcha → whisky → wine）で評価していたため、コード順で後のフラグが常に勝っていた。`CliParser` の各スピナー case で他のスピナーブール値をすべてクリアするよう修正し、CLI 引数順で勝者を決定。変更: [`Runner/CliParser.cs`](Runner/CliParser.cs)。テスト: `ParseCliOptions_MultipleSpinnerFlags_LastOneWins`、`ParseCliOptions_CoffeeAfterWine_CoffeeWins`、`ParseCliOptions_AllFlagsCombined_ParsedCorrectly` 更新（[`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.cs)）。テスト件数: 1022（+2）。
+
+- **コンソールサマリーを count/total 形式で表示** — 完了サマリーチャートの各カテゴリを `count (pct%)` から `count/total (pct%)` 形式に変更し、母数が一目で分かるようにした（例: `23/43 (53.5%)`）。変更: [`ProgramRunner.cs`](ProgramRunner.cs)。テスト件数: 1022（変更なし）。
+
+- **コンソールサマリーの Unchanged をデフォルト色に、ラベルに色を適用** — 完了サマリーチャートの Unchanged カテゴリを DarkGray からターミナルのデフォルト前景色に変更し視認性を向上。Added・Removed・Modified のラベルをプログレスバーと同色（Green・Red・Cyan）で表示するよう変更。変更: [`ProgramRunner.cs`](ProgramRunner.cs)。テスト件数: 1022（変更なし）。
+
+#### Fixed
+
+- **サンプル HTML のテーマトグルと Modified 件数を修正** — サンプル HTML（`doc/samples/diff_report.html`）にテーマ JS 関数群（`getStoredTheme`、`applyTheme`、`initTheme`、`cycleTheme`）と `initTheme()` 呼び出しが欠落しており、Light/Dark/System ボタンが動作しなかった問題を修正。また `__totalFilesDetail__` の "Modified: 14" を 15 に、`__totalFiles__` の 22 を 23 に修正し、実際のファイルエントリ数と一致させた。変更: [`doc/samples/diff_report.html`](doc/samples/diff_report.html)。テスト件数: 1022（変更なし）。
 
 #### Documentation
 

@@ -183,14 +183,14 @@ namespace FolderDiffIL4DotNet
             }
 
             Console.WriteLine();
-            OutputSummaryBar("Unchanged", state.UnchangedCount, total, ConsoleColor.DarkGray);
+            OutputSummaryBar("Unchanged", state.UnchangedCount, total, null);
             OutputSummaryBar("Added",     state.AddedCount,     total, ConsoleColor.Green);
             OutputSummaryBar("Removed",   state.RemovedCount,   total, ConsoleColor.Red);
             OutputSummaryBar("Modified",  state.ModifiedCount,  total, ConsoleColor.Cyan);
             Console.WriteLine();
         }
 
-        private static void OutputSummaryBar(string label, int count, int total, ConsoleColor color)
+        private static void OutputSummaryBar(string label, int count, int total, ConsoleColor? color)
         {
             const int BAR_WIDTH = 30;
             const int LABEL_WIDTH = 10;
@@ -200,12 +200,20 @@ namespace FolderDiffIL4DotNet
             var bar = new string('█', filled) + new string('░', BAR_WIDTH - filled);
             var pct = (100.0 * count / total).ToString("F1");
 
-            Console.Write($"  {label.PadRight(LABEL_WIDTH)} ");
-            var prevColor = Console.ForegroundColor;
-            Console.ForegroundColor = color;
-            Console.Write(bar);
-            Console.ForegroundColor = prevColor;
-            Console.WriteLine($" {count,5} ({pct}%)");
+            if (color.HasValue)
+            {
+                // Color both label and bar for status categories / ステータスカテゴリはラベルとバーの両方に色を適用
+                var prevColor = Console.ForegroundColor;
+                Console.ForegroundColor = color.Value;
+                Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar}");
+                Console.ForegroundColor = prevColor;
+            }
+            else
+            {
+                // Default color for Unchanged / Unchanged はデフォルト色
+                Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar}");
+            }
+            Console.WriteLine($" {count,5}/{total} ({pct}%)");
         }
 
         private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings)

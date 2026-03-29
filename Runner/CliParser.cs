@@ -116,19 +116,21 @@ namespace FolderDiffIL4DotNet.Runner
                         dryRun = true;
                         break;
                     case OPT_COFFEE:
-                        coffee = true;
+                        // Last-wins: clear other spinner flags so CLI order determines winner
+                        // 最後勝ち: 他のスピナーフラグをクリアしてCLI引数順で決定
+                        coffee = true; beer = false; matcha = false; whisky = false; wine = false;
                         break;
                     case OPT_BEER:
-                        beer = true;
+                        coffee = false; beer = true; matcha = false; whisky = false; wine = false;
                         break;
                     case OPT_MATCHA:
-                        matcha = true;
+                        coffee = false; beer = false; matcha = true; whisky = false; wine = false;
                         break;
                     case OPT_WHISKY:
-                        whisky = true;
+                        coffee = false; beer = false; matcha = false; whisky = true; wine = false;
                         break;
                     case OPT_WINE:
-                        wine = true;
+                        coffee = false; beer = false; matcha = false; whisky = false; wine = true;
                         break;
                     case OPT_BELL:
                         bell = true;
