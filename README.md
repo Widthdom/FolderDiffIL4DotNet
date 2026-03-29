@@ -137,9 +137,11 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--coffee` | Use coffee-themed spinner animation during execution (easter egg). |
 | `--beer` | Use beer-themed spinner animation during execution (easter egg). |
 | `--matcha` | Use matcha tea ceremony spinner animation during execution (easter egg). |
+| `--whisky` | Use whisky distilling spinner animation during execution (easter egg). |
+| `--wine` | Use wine making spinner animation during execution (easter egg). |
 | `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
 
-> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the last one listed wins. They also override any custom `SpinnerFrames` set in `config.json`.
+> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the last one listed wins. They also override any custom `SpinnerFrames` set in `config.json`.
 
 ```bash
 dotnet build
@@ -565,7 +567,7 @@ Override only the settings you want to change. For example:
     <tr>
       <td id="config-en-spinnerframes"><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\"]</code></td>
-      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default. The CLI options <code>--coffee</code>, <code>--beer</code>, and <code>--matcha</code> override this value.</td>
+      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default. The CLI options <code>--coffee</code>, <code>--beer</code>, <code>--matcha</code>, <code>--whisky</code>, and <code>--wine</code> override this value.</td>
     </tr>
     <tr id="config-en-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
@@ -787,9 +789,11 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--coffee` | 実行中にコーヒーテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--beer` | 実行中にビールテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--matcha` | 実行中に抹茶点前テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--whisky` | 実行中にウイスキー蒸留テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--wine` | 実行中にワイン醸造テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
 
-> **補足:** スピナーオプショ��（`--coffee`、`--beer`、`--matcha`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を���書きします。複数同時に指定した場合は最後に記述したものが優先されます。`config.json` で設定したカスタム `SpinnerFrames` も上書きされます。
+> **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は最後に記述したものが優先されます。`config.json` で設定したカスタム `SpinnerFrames` も上書きされます。
 
 ```bash
 dotnet build
@@ -1214,7 +1218,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
     <tr id="config-ja-spinnerframes">
       <td><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\"]</code></td>
-      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。CLI オプション <code>--coffee</code>、<code>--beer</code>、<code>--matcha</code> を指定するとこの値は上書きされます。</td>
+      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。CLI オプション <code>--coffee</code>、<code>--beer</code>、<code>--matcha</code>、<code>--whisky</code>、<code>--wine</code> を指定するとこの値は上書きされます。</td>
     </tr>
     <tr id="config-ja-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>

@@ -20,6 +20,8 @@ namespace FolderDiffIL4DotNet.Runner
         bool Coffee,
         bool Beer,
         bool Matcha,
+        bool Whisky,
+        bool Wine,
         bool Bell,
         string? ParseError);
 }

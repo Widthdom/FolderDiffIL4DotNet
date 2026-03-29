@@ -198,6 +198,40 @@ namespace FolderDiffIL4DotNet
                     "🍵 Douzo!   ",
                 };
             }
+
+            if (opts.Whisky)
+            {
+                // Easter egg: replace spinner with whisky distilling animation / イースターエッグ: スピナーをウイスキー蒸留アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🥃 Malting  ",
+                    "🥃 Malting..",
+                    "🥃 Mashing  ",
+                    "🥃 Mashing..",
+                    "🥃 Distill  ",
+                    "🥃 Distill..",
+                    "🥃 Aging    ",
+                    "🥃 Slainte! ",
+                };
+            }
+
+            if (opts.Wine)
+            {
+                // Easter egg: replace spinner with wine making animation / イースターエッグ: スピナーをワイン醸造アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🍷 Picking  ",
+                    "🍷 Picking..",
+                    "🍷 Crushing ",
+                    "🍷 Crushing.",
+                    "🍷 Aging    ",
+                    "🍷 Aging..  ",
+                    "🍷 Pouring  ",
+                    "🍷 Sante!   ",
+                };
+            }
         }
     }
 }

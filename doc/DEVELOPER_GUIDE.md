@@ -304,7 +304,7 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 
 ### What happens inside `RunAsync`
 
-1. Parse CLI options (`--help`, `--version`, `--print-config`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--coffee`, `--beer`, `--matcha`, `--bell`).
+1. Parse CLI options (`--help`, `--version`, `--print-config`, `--no-pause`, `--config`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--bell`).
 2. If `--help` or `--version` is present, print and exit immediately with code `0` — no logger initialization occurs.
 2a. If `--print-config` is present (optionally combined with `--config <path>`), load the effective configuration — [`config.json`](../config.json) deserialized and all `FOLDERDIFF_*` environment variable overrides applied — serialize it as indented JSON to standard output, and exit with code `0`. Config load errors exit with code `3`.
 3. Initialize logging and print application version.

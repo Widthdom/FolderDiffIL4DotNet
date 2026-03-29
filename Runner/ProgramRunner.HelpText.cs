@@ -28,6 +28,8 @@ namespace FolderDiffIL4DotNet
             "  --coffee                    Use coffee-themed spinner animation during execution.\n" +
             "  --beer                      Use beer-themed spinner animation during execution.\n" +
             "  --matcha                    Use matcha tea ceremony spinner animation during execution.\n" +
+            "  --whisky                    Use whisky distilling spinner animation during execution.\n" +
+            "  --wine                      Use wine making spinner animation during execution.\n" +
             "  --bell                      Ring terminal bell when execution completes.\n\n" +
             "Environment variables (override config.json values):\n" +
             "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +

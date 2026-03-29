@@ -22,6 +22,8 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_COFFEE = "--coffee";
         private const string OPT_BEER = "--beer";
         private const string OPT_MATCHA = "--matcha";
+        private const string OPT_WHISKY = "--whisky";
+        private const string OPT_WINE = "--wine";
         private const string OPT_BELL = "--bell";
 
         /// <summary>
@@ -34,14 +36,14 @@ namespace FolderDiffIL4DotNet.Runner
         {
             bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
             bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
-            bool coffee = false, beer = false, matcha = false, bell = false;
+            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, bell = false;
             string? configPath = null;
             int? threadsOverride = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -122,6 +124,12 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_MATCHA:
                         matcha = true;
                         break;
+                    case OPT_WHISKY:
+                        whisky = true;
+                        break;
+                    case OPT_WINE:
+                        wine = true;
+                        break;
                     case OPT_BELL:
                         bell = true;
                         break;
@@ -137,7 +145,7 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, bell, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, bell, parseError);
         }
     }
 }

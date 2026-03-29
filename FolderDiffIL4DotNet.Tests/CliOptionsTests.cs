@@ -28,6 +28,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Coffee);
             Assert.False(opts.Beer);
             Assert.False(opts.Matcha);
+            Assert.False(opts.Whisky);
+            Assert.False(opts.Wine);
             Assert.False(opts.Bell);
             Assert.Null(opts.ParseError);
         }
@@ -60,6 +62,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Coffee);
             Assert.False(opts.Beer);
             Assert.False(opts.Matcha);
+            Assert.False(opts.Whisky);
+            Assert.False(opts.Wine);
             Assert.False(opts.Bell);
             Assert.Null(opts.ParseError);
         }
@@ -296,6 +300,32 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --whisky
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_WhiskyFlag_SetsWhisky()
+        {
+            var opts = CliParser.Parse(new[] { "--whisky" });
+
+            Assert.True(opts.Whisky);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --wine
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_WineFlag_SetsWine()
+        {
+            var opts = CliParser.Parse(new[] { "--wine" });
+
+            Assert.True(opts.Wine);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // --bell
         // -----------------------------------------------------------------------
 
@@ -371,6 +401,8 @@ namespace FolderDiffIL4DotNet.Tests
                 "--coffee",
                 "--beer",
                 "--matcha",
+                "--whisky",
+                "--wine",
                 "--bell"
             });
 
@@ -388,6 +420,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.Coffee);
             Assert.True(opts.Beer);
             Assert.True(opts.Matcha);
+            Assert.True(opts.Whisky);
+            Assert.True(opts.Wine);
             Assert.True(opts.Bell);
             Assert.Null(opts.ParseError);
         }
