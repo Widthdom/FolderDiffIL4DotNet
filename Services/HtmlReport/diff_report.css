@@ -308,7 +308,7 @@
       --color-warn-caution-border: #e36209;
       --color-warn-caution-bg: #fff8e1;
       /* Controls bar glass / コントロールバーグラス */
-      --color-controls-bg: rgba(255,255,255,0.75);
+      --color-controls-bg: rgba(255,255,255,0.1);
       /* Resize handle / リサイズハンドル */
       --color-resize-handle-hover: rgba(0,0,0,0.18);
       /* Print / 印刷 */
@@ -389,7 +389,7 @@
         --color-warn-danger-bg: #3d1a1e;
         --color-warn-caution-border: #e3b341;
         --color-warn-caution-bg: #3d3518;
-        --color-controls-bg: rgba(22,27,34,0.72);
+        --color-controls-bg: rgba(22,27,34,0.1);
         --color-resize-handle-hover: rgba(255,255,255,0.22);
         --color-print-text: #9ca3af;
         --color-print-border: #3d444d;
@@ -433,7 +433,7 @@
       --color-vuln-resolved-count: #16a34a; --color-vuln-new-count: #dc2626;
       --color-warn-danger-border: #d73a49; --color-warn-danger-bg: #ffeef0;
       --color-warn-caution-border: #e36209; --color-warn-caution-bg: #fff8e1;
-      --color-controls-bg: rgba(255,255,255,0.75);
+      --color-controls-bg: rgba(255,255,255,0.1);
       --color-resize-handle-hover: rgba(0,0,0,0.18);
       --color-print-text: #555; --color-print-border: #ccc; --color-print-bg: #fff;
       --color-lazy-summary: #6e6e73; --color-reviewed-banner-text: #1f2328;
@@ -472,7 +472,7 @@
       --color-vuln-resolved-count: #3fb950; --color-vuln-new-count: #f85149;
       --color-warn-danger-border: #f85149; --color-warn-danger-bg: #3d1a1e;
       --color-warn-caution-border: #e3b341; --color-warn-caution-bg: #3d3518;
-      --color-controls-bg: rgba(22,27,34,0.72);
+      --color-controls-bg: rgba(22,27,34,0.1);
       --color-resize-handle-hover: rgba(255,255,255,0.22);
       --color-print-text: #9ca3af; --color-print-border: #3d444d; --color-print-bg: #0d1117;
       --color-lazy-summary: #9ca3af; --color-reviewed-banner-text: #e6edf3;
