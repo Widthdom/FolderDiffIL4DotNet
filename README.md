@@ -139,6 +139,8 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--matcha` | Use matcha tea ceremony spinner animation during execution (easter egg). |
 | `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
 
+> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the last one listed wins. They also override any custom `SpinnerFrames` set in `config.json`.
+
 ```bash
 dotnet build
 dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" --no-pause
@@ -563,7 +565,7 @@ Override only the settings you want to change. For example:
     <tr>
       <td id="config-en-spinnerframes"><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\"]</code></td>
-      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default.</td>
+      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default. The CLI options <code>--coffee</code>, <code>--beer</code>, and <code>--matcha</code> override this value.</td>
     </tr>
     <tr id="config-en-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
@@ -787,11 +789,13 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--matcha` | 実行中に抹茶点前テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
 
+> **補足:** スピナーオプショ��（`--coffee`、`--beer`、`--matcha`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を���書きします。複数同時に指定した場合は最後に記述したものが優先されます。`config.json` で設定したカスタム `SpinnerFrames` も上書きされます。
+
 ```bash
 dotnet build
 dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" --no-pause
 
-# スレッド数指定・IL スキップで高速差分
+# スレッド数���定・IL スキップで高速差分
 dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # カスタム設定ファイルを指定
@@ -1210,7 +1214,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
     <tr id="config-ja-spinnerframes">
       <td><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\"]</code></td>
-      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。</td>
+      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。CLI オプション <code>--coffee</code>、<code>--beer</code>、<code>--matcha</code> を指定するとこの値は上書きされます。</td>
     </tr>
     <tr id="config-ja-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
