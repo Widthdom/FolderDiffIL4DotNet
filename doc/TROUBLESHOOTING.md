@@ -253,6 +253,24 @@ Or limit the text diff memory budget:
 }
 ```
 
+### `--bell` flag does not ring the terminal bell
+
+**Symptom:** The `--bell` option is specified but no sound is heard when execution completes.
+
+**Cause:** The `--bell` option outputs the BEL character (ASCII 0x07) to the terminal. Whether this produces an audible sound depends on the terminal emulator's configuration.
+
+**Solution:**
+
+- **VS Code integrated terminal:** The bell is disabled by default. Add the following to your VS Code `settings.json`:
+  ```json
+  {
+    "terminal.integrated.enableBell": true
+  }
+  ```
+- **macOS Terminal.app:** Go to Settings → Profiles → Advanced → check "Audible bell".
+- **iTerm2:** Go to Preferences → Profiles → Terminal → uncheck "Silence bell".
+- **Windows Terminal:** The bell is enabled by default. If muted, check Settings → Profiles → Advanced → "Bell notification style" is set to "Audible".
+
 ---
 
 ## 日本語
@@ -501,3 +519,21 @@ dotnet run -- /path/old /path/new label --threads 2 --no-pause
   "TextDiffParallelMemoryLimitMegabytes": 256
 }
 ```
+
+### `--bell` フラグでターミナルベルが鳴らない
+
+**症状:** `--bell` オプションを指定しているが、実行完了時に音が鳴らない。
+
+**原因:** `--bell` オプションは BEL 文字（ASCII 0x07）をターミナルに出力します。音が鳴るかどうかはターミナルエミュレータの設定に依存します。
+
+**解決策:**
+
+- **VS Code 統合ターミナル:** デフォルトでベルが無効です。VS Code の `settings.json` に以下を追加してください:
+  ```json
+  {
+    "terminal.integrated.enableBell": true
+  }
+  ```
+- **macOS Terminal.app:** 設定 → プロファイル → 詳細 → 「Audible bell」にチェック。
+- **iTerm2:** Preferences → Profiles → Terminal → 「Silence bell」のチェックを外す。
+- **Windows Terminal:** デフォルトで有効です。無音の場合は 設定 → プロファイル → 詳細 → 「ベル通知スタイル」を「Audible」に設定。
