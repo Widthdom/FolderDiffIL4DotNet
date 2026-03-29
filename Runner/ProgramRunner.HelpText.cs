@@ -30,6 +30,8 @@ namespace FolderDiffIL4DotNet
             "  --matcha                    Use matcha tea ceremony spinner animation during execution.\n" +
             "  --whisky                    Use whisky distilling spinner animation during execution.\n" +
             "  --wine                      Use wine making spinner animation during execution.\n" +
+            "  --ramen                     Use ramen steaming spinner animation during execution.\n" +
+            "  --sushi                     Use conveyor-belt sushi spinner animation during execution.\n" +
             "  --bell                      Ring terminal bell when execution completes.\n" +
             "  --log-format <text|json>    Log file output format (default: text).\n" +
             "                              'json' emits NDJSON lines for SIEM/log aggregation.\n\n" +

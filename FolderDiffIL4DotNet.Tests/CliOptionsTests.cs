@@ -327,6 +327,32 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --ramen
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_RamenFlag_SetsRamen()
+        {
+            var opts = CliParser.Parse(new[] { "--ramen" });
+
+            Assert.True(opts.Ramen);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --sushi
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_SushiFlag_SetsSushi()
+        {
+            var opts = CliParser.Parse(new[] { "--sushi" });
+
+            Assert.True(opts.Sushi);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // --bell
         // -----------------------------------------------------------------------
 
@@ -404,6 +430,8 @@ namespace FolderDiffIL4DotNet.Tests
                 "--matcha",
                 "--whisky",
                 "--wine",
+                "--ramen",
+                "--sushi",
                 "--bell"
             });
 
@@ -418,13 +446,15 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.NoTimestampWarnings);
             Assert.True(opts.PrintConfig);
             Assert.True(opts.DryRun);
-            // Last-wins: --wine is last spinner flag, so only Wine is true
-            // 最後勝ち: --wine が最後のスピナーフラグなので Wine のみ true
+            // Last-wins: --sushi is last spinner flag, so only Sushi is true
+            // 最後勝ち: --sushi が最後のスピナーフラグなので Sushi のみ true
             Assert.False(opts.Coffee);
             Assert.False(opts.Beer);
             Assert.False(opts.Matcha);
             Assert.False(opts.Whisky);
-            Assert.True(opts.Wine);
+            Assert.False(opts.Wine);
+            Assert.False(opts.Ramen);
+            Assert.True(opts.Sushi);
             Assert.True(opts.Bell);
             Assert.Null(opts.ParseError);
         }
@@ -444,6 +474,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Matcha);
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
+            Assert.False(opts.Ramen);
+            Assert.False(opts.Sushi);
         }
 
         [Fact]
@@ -454,6 +486,8 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.True(opts.Coffee);
             Assert.False(opts.Wine);
+            Assert.False(opts.Ramen);
+            Assert.False(opts.Sushi);
         }
 
         // -----------------------------------------------------------------------

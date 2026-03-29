@@ -232,6 +232,40 @@ namespace FolderDiffIL4DotNet
                     "🍷 Sante!   ",
                 };
             }
+
+            if (opts.Ramen)
+            {
+                // Easter egg: replace spinner with ramen steaming animation / イースターエッグ: スピナーをラーメン湯気アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🍜 Boiling  ",
+                    "🍜 Boiling..",
+                    "🍜 Noodles  ",
+                    "🍜 Noodles..",
+                    "🍜 Steaming ",
+                    "🍜 Steaming.",
+                    "🍜 ~湯気~   ",
+                    "🍜 Itadaki! ",
+                };
+            }
+
+            if (opts.Sushi)
+            {
+                // Easter egg: replace spinner with conveyor-belt sushi animation / イースターエッグ: スピナーを回転寿司アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "🍣 Maguro   ",
+                    "🍣 Salmon   ",
+                    "🍣 Ebi      ",
+                    "🍣 Tamago   ",
+                    "🍣 Ika      ",
+                    "🍣 Uni      ",
+                    "🍣 Anago    ",
+                    "🍣 Omakase! ",
+                };
+            }
         }
     }
 }
