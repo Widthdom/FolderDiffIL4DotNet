@@ -147,6 +147,23 @@ namespace FolderDiffIL4DotNet
             {
                 builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
             }
+
+            if (opts.Coffee)
+            {
+                // Easter egg: replace spinner with coffee brewing animation / イースターエッグ: スピナーをコーヒー抽出アニメーションに差替
+                builder.SpinnerFrames = new System.Collections.Generic.List<string>
+                {
+                    "☕",
+                    "☕ .",
+                    "☕ ..",
+                    "☕ ...",
+                    "☕ ....",
+                    "☕ Brewing",
+                    "☕ Brewing.",
+                    "☕ Brewing..",
+                    "☕ Brewing...",
+                };
+            }
         }
     }
 }

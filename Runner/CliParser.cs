@@ -19,6 +19,8 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_PRINT_CONFIG = "--print-config";
         private const string OPT_VALIDATE_CONFIG = "--validate-config";
         private const string OPT_DRY_RUN = "--dry-run";
+        private const string OPT_COFFEE = "--coffee";
+        private const string OPT_BELL = "--bell";
 
         /// <summary>
         /// Scans command-line arguments and returns parsed CLI options.
@@ -30,13 +32,14 @@ namespace FolderDiffIL4DotNet.Runner
         {
             bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
             bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
+            bool coffee = false, bell = false;
             string? configPath = null;
             int? threadsOverride = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -108,6 +111,12 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_DRY_RUN:
                         dryRun = true;
                         break;
+                    case OPT_COFFEE:
+                        coffee = true;
+                        break;
+                    case OPT_BELL:
+                        bell = true;
+                        break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
                         // 位置引数ではなく認識されないフラグ（-- で始まるもの）を検出する。
@@ -120,7 +129,7 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, bell, parseError);
         }
     }
 }

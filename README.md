@@ -134,6 +134,8 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
 | `--dry-run` | Enumerate files and show statistics without running comparison. |
+| `--coffee` | Use coffee-themed spinner animation during execution (easter egg). |
+| `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
 
 ```bash
 dotnet build
@@ -778,6 +780,8 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
 | `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
+| `--coffee` | 実行中にコーヒーテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
 
 ```bash
 dotnet build

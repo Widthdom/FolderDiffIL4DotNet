@@ -25,6 +25,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
+            Assert.False(opts.Coffee);
+            Assert.False(opts.Bell);
             Assert.Null(opts.ParseError);
         }
 
@@ -53,6 +55,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
+            Assert.False(opts.Coffee);
+            Assert.False(opts.Bell);
             Assert.Null(opts.ParseError);
         }
 
@@ -249,6 +253,32 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --coffee
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_CoffeeFlag_SetsCoffee()
+        {
+            var opts = CliParser.Parse(new[] { "--coffee" });
+
+            Assert.True(opts.Coffee);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --bell
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_BellFlag_SetsBell()
+        {
+            var opts = CliParser.Parse(new[] { "--bell" });
+
+            Assert.True(opts.Bell);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // Unknown / invalid flags
         // -----------------------------------------------------------------------
 
@@ -307,7 +337,9 @@ namespace FolderDiffIL4DotNet.Tests
                 "--skip-il",
                 "--no-timestamp-warnings",
                 "--print-config",
-                "--dry-run"
+                "--dry-run",
+                "--coffee",
+                "--bell"
             });
 
             Assert.False(opts.ShowHelp);
@@ -321,6 +353,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.NoTimestampWarnings);
             Assert.True(opts.PrintConfig);
             Assert.True(opts.DryRun);
+            Assert.True(opts.Coffee);
+            Assert.True(opts.Bell);
             Assert.Null(opts.ParseError);
         }
     }

@@ -17,5 +17,7 @@ namespace FolderDiffIL4DotNet.Runner
         bool PrintConfig,
         bool ValidateConfig,
         bool DryRun,
+        bool Coffee,
+        bool Bell,
         string? ParseError);
 }

@@ -83,6 +83,13 @@ namespace FolderDiffIL4DotNet
 
             var result = await RunWithResultAsync(args, opts);
             OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings);
+
+            // Ring terminal bell on completion if requested / 要求された場合、完了時にターミナルベルを鳴らす
+            if (opts.Bell)
+            {
+                Console.Write("\a");
+            }
+
             PromptForExitKeyIfNeeded(opts);
             return (int)result.ExitCode;
         }
