@@ -81,6 +81,16 @@ namespace FolderDiffIL4DotNet.Runner
         {
             var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
             resultLists.DisassemblerAvailability = DisassemblerHelper.ProbeAllCandidates();
+
+            // When no disassembler is available and IL comparison is enabled, write install suggestions to stderr.
+            // 逆アセンブラ未検出かつ IL 比較が有効な場合、インストール提案を stderr に出力。
+            if (!config.SkipIL && resultLists.DisassemblerAvailability.All(p => !p.Available))
+            {
+                var suggestion = DisassemblerHelper.BuildInstallSuggestion();
+                Console.Error.Write(suggestion);
+                _logger.LogMessage(AppLogLevel.Warning, "No disassembler tool detected. IL comparison will not be available.");
+            }
+
             var progressReporter = scopedProvider.GetRequiredService<ProgressReportService>();
             progressReporter.TotalPhases = TOTAL_PHASES;
 
