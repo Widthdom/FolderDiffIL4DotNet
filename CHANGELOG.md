@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.11.0] - 2026-03-29
+
 #### Added
 
 - **`--banner` CLI option to display ASCII-art banner** — New CLI flag that prints the ASCII-art startup banner and exits with code `0`. Useful for verifying the tool is installed and accessible without running a full comparison. Modified: [`Runner/CliParser.cs`](Runner/CliParser.cs), [`Runner/CliOptions.cs`](Runner/CliOptions.cs), [`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs), [`ProgramRunner.cs`](ProgramRunner.cs), [`README.md`](README.md) (EN+JA options table, exit codes table). Tests: `ParseCliOptions_BannerFlag_SetsShowBanner` in [`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.cs), `RunAsync_BannerFlag_ExitsZeroWithBannerOutput` in [`ProgramRunnerTests`](FolderDiffIL4DotNet.Tests/ProgramRunnerTests.HelpVersion.cs). Test count: 1008 (+3).
@@ -825,6 +827,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.11.0] - 2026-03-29
 
 #### Added
 
@@ -1643,7 +1647,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.0...v1.8.1
