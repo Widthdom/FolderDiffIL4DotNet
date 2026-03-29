@@ -230,6 +230,7 @@
     }
     /* ── Color CSS variables (light mode) / カラー CSS 変数（ライトモード） ── */
     :root {
+      color-scheme: light dark;
       /* Primary / プライマリ */
       --color-bg: #fff;
       --color-text: #1d1d1f;
@@ -326,6 +327,7 @@
     /* ── Dark mode overrides / ダークモード上書き ─────────────────────────── */
     @media (prefers-color-scheme: dark) {
       :root {
+        color-scheme: dark;
         --color-bg: #0d1117;
         --color-text: #e6edf3;
         --color-text-secondary: #9ca3af;
@@ -400,6 +402,7 @@
     }
     /* ── Manual theme overrides via data-theme attribute / data-theme 属性による手動テーマ切替 ── */
     html[data-theme="light"], html[data-theme="light"] body {
+      color-scheme: light;
       --color-bg: #fff; --color-text: #1d1d1f; --color-text-secondary: #86868b;
       --color-text-tertiary: #6e6e73; --color-text-quaternary: #a1a1a6;
       --color-text-muted: #999; --color-text-faint: #aaa; --color-text-stat: #444;
@@ -438,6 +441,7 @@
       color: #1d1d1f; background-color: #fff;
     }
     html[data-theme="dark"], html[data-theme="dark"] body {
+      color-scheme: dark;
       --color-bg: #0d1117; --color-text: #e6edf3; --color-text-secondary: #9ca3af;
       --color-text-tertiary: #9ca3af; --color-text-quaternary: #7d8590;
       --color-text-muted: #7d8590; --color-text-faint: #6e7681; --color-text-stat: #d0d7de;
@@ -558,7 +562,7 @@
       width: 100%; border: 0; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; box-shadow: none;
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
-      font-family: inherit; }
+      font-family: inherit; color: inherit; }
     td input[type="text"]:focus {
       background: var(--color-surface-input-focus); outline: 1px solid var(--color-text-faint); }
     .btn-input-clear {

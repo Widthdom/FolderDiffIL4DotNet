@@ -19,16 +19,19 @@
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
-    // Clear body inline theme styles before capture so reviewed HTML starts clean
-    // キャプチャ前にbodyのインラインテーマスタイルをクリアし、reviewed HTMLを初期状態にする
+    // Clear body/root inline theme styles before capture so reviewed HTML starts clean
+    // キャプチャ前にbody/rootのインラインテーマスタイルをクリアし、reviewed HTMLを初期状態にする
     var savedBodyColor = document.body.style.color;
     var savedBodyBg = document.body.style.backgroundColor;
+    var savedColorScheme = root.style.colorScheme;
     document.body.style.removeProperty('color');
     document.body.style.removeProperty('background-color');
+    root.style.removeProperty('color-scheme');
     var html    = document.documentElement.outerHTML;
     // Restore live page state / ライブページの状態を復元
     document.body.style.color = savedBodyColor;
     document.body.style.backgroundColor = savedBodyBg;
+    if (savedColorScheme) root.style.colorScheme = savedColorScheme;
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
     applyFilters();
     syncTableWidths();

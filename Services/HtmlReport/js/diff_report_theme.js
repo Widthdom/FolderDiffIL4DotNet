@@ -11,8 +11,12 @@
     var root = document.documentElement;
     if (mode === 'light' || mode === 'dark') {
       root.setAttribute('data-theme', mode);
+      // Override browser UA color-scheme to match manual toggle
+      // ブラウザ UA の color-scheme を手動切替に合わせて上書き
+      root.style.colorScheme = mode;
     } else {
       root.removeAttribute('data-theme');
+      root.style.removeProperty('color-scheme');
     }
     // Belt-and-suspenders: force body color/background for reviewed HTML
     // reviewed HTML 用にbodyの色・背景を直接設定（フォールバック）

@@ -198,6 +198,7 @@
     .empty { color: var(--color-empty); font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Color CSS variables (light mode) / カラー CSS 変数（ライトモード） ── */
     :root {
+      color-scheme: light dark;
       --color-bg: #fff; --color-text: #1d1d1f; --color-text-secondary: #86868b;
       --color-text-tertiary: #6e6e73; --color-text-quaternary: #a1a1a6;
       --color-text-muted: #999; --color-text-faint: #aaa; --color-text-stat: #444;
@@ -235,6 +236,7 @@
     }
     @media (prefers-color-scheme: dark) {
       :root {
+        color-scheme: dark;
         --color-bg: #0d1117; --color-text: #e6edf3; --color-text-secondary: #9ca3af;
         --color-text-tertiary: #9ca3af; --color-text-quaternary: #7d8590;
         --color-text-muted: #7d8590; --color-text-faint: #6e7681; --color-text-stat: #d0d7de;
@@ -273,6 +275,7 @@
     }
     /* ── Manual theme overrides via data-theme attribute ── */
     html[data-theme="light"], html[data-theme="light"] body {
+      color-scheme: light;
       --color-bg: #fff; --color-text: #1d1d1f; --color-text-secondary: #86868b;
       --color-text-tertiary: #6e6e73; --color-text-quaternary: #a1a1a6;
       --color-text-muted: #999; --color-text-faint: #aaa; --color-text-stat: #444;
@@ -311,6 +314,7 @@
       color: #1d1d1f; background-color: #fff;
     }
     html[data-theme="dark"], html[data-theme="dark"] body {
+      color-scheme: dark;
       --color-bg: #0d1117; --color-text: #e6edf3; --color-text-secondary: #9ca3af;
       --color-text-tertiary: #9ca3af; --color-text-quaternary: #7d8590;
       --color-text-muted: #7d8590; --color-text-faint: #6e7681; --color-text-stat: #d0d7de;
@@ -435,7 +439,7 @@
       width: 100%; border: 0; padding: 2px 4px; font-size: 12px;
       background: transparent; outline: none; box-shadow: none;
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
-      font-family: inherit; }
+      font-family: inherit; color: inherit; }
     td input[type="text"]:focus {
       background: var(--color-surface-input-focus); outline: 1px solid var(--color-text-faint); }
     .btn-input-clear {
@@ -1591,8 +1595,11 @@
     var root = document.documentElement;
     if (mode === 'light' || mode === 'dark') {
       root.setAttribute('data-theme', mode);
+      // Override browser UA color-scheme to match manual toggle
+      root.style.colorScheme = mode;
     } else {
       root.removeAttribute('data-theme');
+      root.style.removeProperty('color-scheme');
     }
     // Belt-and-suspenders: force body color/background for reviewed HTML
     if (mode === 'light') {
@@ -1747,15 +1754,18 @@
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
-    // Clear body inline theme styles before capture so reviewed HTML starts clean
+    // Clear body/root inline theme styles before capture so reviewed HTML starts clean
     var savedBodyColor = document.body.style.color;
     var savedBodyBg = document.body.style.backgroundColor;
+    var savedColorScheme = root.style.colorScheme;
     document.body.style.removeProperty('color');
     document.body.style.removeProperty('background-color');
+    root.style.removeProperty('color-scheme');
     var html    = document.documentElement.outerHTML;
     // Restore live page state
     document.body.style.color = savedBodyColor;
     document.body.style.backgroundColor = savedBodyBg;
+    if (savedColorScheme) root.style.colorScheme = savedColorScheme;
     openDetails.forEach(function(d){ d.setAttribute('open', ''); });
     applyFilters();
     syncTableWidths();
