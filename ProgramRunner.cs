@@ -87,7 +87,21 @@ namespace FolderDiffIL4DotNet
             // Ring terminal bell on completion if requested / 要求された場合、完了時にターミナルベルを鳴らす
             if (opts.Bell)
             {
+                // Use both BEL character and Console.Beep for maximum compatibility
+                // BEL 文字と Console.Beep の両方を使用し、最大限の互換性を確保
                 Console.Write("\a");
+                Console.Out.Flush();
+                try
+                {
+                    Console.Beep();
+                }
+                #pragma warning disable CA1031 // Beep may throw on platforms without audio support
+                catch (PlatformNotSupportedException)
+                {
+                    // Console.Beep() is not supported on some platforms (e.g. macOS, some Linux)
+                    // BEL character fallback above should still work
+                }
+                #pragma warning restore CA1031
             }
 
             PromptForExitKeyIfNeeded(opts);

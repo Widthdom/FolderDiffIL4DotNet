@@ -93,6 +93,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Round side-by-side / unified toggle buttons to pill shape** — Changed `.sbs-toggle` `border-radius` from `4px` to `980px` to match the header `.btn` pill-button style, providing consistent rounded appearance across all report buttons. Modified: [`Services/HtmlReport/diff_report.css`](Services/HtmlReport/diff_report.css), [`doc/samples/diff_report.html`](doc/samples/diff_report.html). Test count: 1022 (unchanged).
 
+- **Fix `--bell` not ringing on some platforms** — Added explicit `Console.Out.Flush()` after BEL character output and a `Console.Beep()` fallback for maximum cross-platform compatibility. The BEL character (`\a`) requires the terminal to have audible bell enabled; `Console.Beep()` provides an additional system-level notification on platforms that support it (Windows). Modified: [`ProgramRunner.cs`](ProgramRunner.cs). Test count: 1022 (unchanged).
+
 #### Documentation
 
 - **Update documentation for dark mode and completion summary chart** — Updated [`README.md`](README.md) (EN+JA HTML report sections: dark mode auto-switching via `prefers-color-scheme`), [`doc/DEVELOPER_GUIDE.md`](doc/DEVELOPER_GUIDE.md) (EN+JA: CSS section with custom properties/dark mode/utility classes architecture, HtmlReportGenerateService description, execution lifecycle sequence diagrams with completion summary chart step), [`doc/TESTING_GUIDE.md`](doc/TESTING_GUIDE.md) (EN+JA: scope map entry-point row with completion summary chart tests, reporting row with dark mode CSS utility class assertions), [`doc/samples/diff_report.html`](doc/samples/diff_report.html) (replaced remaining hardcoded hex colors in CSS body with `var()` references to match the actual `diff_report.css`).
@@ -907,6 +909,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **サンプル HTML の印刷スタイル欠落と CSS プロパティ不一致を修正** — サンプル HTML に `@media print` ブロック全体（PDF エクスポート、ページ設定、color-adjust、コントロール非表示等 40+ ルール）が欠落していた。また `td.col-tag` にソース CSS にない余分な `text-align: center` があり、`.sbs-scroll-tr td` の background が `var(--color-sbs-empty-bg)` ではなく `var(--color-diff-ln-bg)` になっていた。全てソース [`diff_report.css`](Services/HtmlReport/diff_report.css) と一致するよう修正。変更: [`doc/samples/diff_report.html`](doc/samples/diff_report.html)。テスト件数: 1022（変更なし）。
 
 - **Side-by-side / Unified トグルボタンをピル型に変更** — `.sbs-toggle` の `border-radius` を `4px` から `980px` に変更し、ヘッダの `.btn` ピルボタンスタイルと統一。レポート内の全ボタンで一貫した丸みのある外観を提供。変更: [`Services/HtmlReport/diff_report.css`](Services/HtmlReport/diff_report.css)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。テスト件数: 1022（変更なし）。
+
+- **`--bell` が一部環境で鳴らない問題を修正** — BEL 文字出力後に明示的な `Console.Out.Flush()` を追加し、`Console.Beep()` フォールバックも追加してクロスプラットフォーム互換性を最大化。BEL 文字（`\a`）はターミナルの Audible bell 設定が有効である必要がある。`Console.Beep()` はサポートされるプラットフォーム（Windows）で追加のシステムレベル通知を提供する。変更: [`ProgramRunner.cs`](ProgramRunner.cs)。テスト件数: 1022（変更なし）。
 
 #### Documentation
 
