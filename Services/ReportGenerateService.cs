@@ -25,7 +25,6 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="fileDiffResultLists">Comparison results to include in the report. / レポートに含める比較結果。</param>
         /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
-        /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
         public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
