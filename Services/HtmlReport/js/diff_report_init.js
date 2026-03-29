@@ -1,4 +1,5 @@
   document.addEventListener('DOMContentLoaded', function() {
+    initTheme();
     var toRestore = __savedState__;
     if (!toRestore) {
       toRestore = readSavedStateFromStorage('null');

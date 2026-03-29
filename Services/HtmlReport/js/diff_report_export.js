@@ -47,6 +47,9 @@
       + '; --sc-body-w: '     + curWidths['--sc-body-w'] + '; }');
     // Remove inline col-var overrides from <html> element (now baked into :root)
     html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
+    // Remove data-theme attribute so reviewed HTML uses system default
+    // data-theme 属性を除去し reviewed HTML はシステム設定をデフォルトにする
+    html = html.replace(/(<html\b[^>]*?) data-theme="[^"]*"/, '$1');
     // Replace button row with reviewed banner (filter zone is preserved outside CTRL markers)
     // ボタン行を reviewed バナーに置換（フィルターゾーンは CTRL マーカー外なので維持）
     html = html.replace(/<!--CTRL-->[\s\S]*?<!--\/CTRL-->/g,

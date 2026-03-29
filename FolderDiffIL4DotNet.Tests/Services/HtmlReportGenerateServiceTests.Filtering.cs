@@ -61,6 +61,27 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_ThemeToggleIsOutsideCtrlMarkers()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("theme-toggle");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: theme toggle button exists and is outside CTRL markers
+            // テーマ切替ボタンが存在し CTRL マーカーの外にあることを検証
+            Assert.Contains("id=\"theme-toggle\"", html);
+            Assert.Contains("cycleTheme()", html);
+            Assert.Contains("initTheme()", html);
+            int themeBtn = html.IndexOf("id=\"theme-toggle\"", StringComparison.Ordinal);
+            int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
+            Assert.True(themeBtn < ctrlStart,
+                "theme toggle should be OUTSIDE <!--CTRL--> markers so it persists in reviewed HTML");
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_FileRowsHaveDataSectionAttribute()
         {
             // Arrange: add some files to generate rows

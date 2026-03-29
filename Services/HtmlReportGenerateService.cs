@@ -122,6 +122,9 @@ namespace FolderDiffIL4DotNet.Services
         private static void AppendControlsBar(TextWriter writer)
         {
             writer.WriteLine("<div class=\"controls\" role=\"toolbar\" aria-label=\"Report controls\">");
+            // Theme toggle is outside CTRL markers so it persists in reviewed HTML
+            // テーマ切替は CTRL マーカー外に配置し reviewed HTML にも残す
+            writer.WriteLine("<button id=\"theme-toggle\" class=\"btn btn-clear theme-toggle\" onclick=\"cycleTheme()\" title=\"Toggle theme (Light / Dark / System)\">\u2699 System</button>");
             writer.WriteLine("<!--CTRL-->");
             writer.WriteLine("<div class=\"ctrl-buttons\">");
             writer.WriteLine("  <div class=\"ctrl-progress\">");

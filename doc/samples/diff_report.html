@@ -131,8 +131,9 @@
     .btn-clear {
       background: transparent; color: #1d1d1f;
     }
-    .btn-clear:hover { background: #f5f5f7; }
-    .save-status { font-size: 12px; color: #86868b; }
+    .btn-clear:hover { background: var(--color-btn-clear-hover); }
+    .theme-toggle { position: absolute; top: 0.5rem; right: max(1rem, calc(50vw - 50%)); font-size: 12px; padding: 0.3rem 0.8rem; z-index: 101; }
+    .save-status { font-size: 12px; color: var(--color-text-secondary); }
     /* ── Review progress bar ───────────────────────────────────────────── */
     .progress-wrap {
       display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem;
@@ -230,6 +231,81 @@
         --color-lazy-summary: #8b949e; --color-reviewed-banner-text: #e6edf3;
         --color-empty: #6e7681; --color-sbs-empty-bg: #1c2128;
       }
+    }
+    /* ── Manual theme overrides via data-theme attribute ── */
+    html[data-theme="light"] {
+      --color-bg: #fff; --color-text: #1d1d1f; --color-text-secondary: #86868b;
+      --color-text-tertiary: #6e6e73; --color-text-quaternary: #a1a1a6;
+      --color-text-muted: #999; --color-text-faint: #aaa; --color-text-stat: #444;
+      --color-border: #e0e0e0; --color-border-strong: #bbb;
+      --color-border-light: #ddd; --color-border-separator: #ccc;
+      --color-surface: #fff; --color-surface-card: #f5f5f7;
+      --color-surface-code: #f0f0f0; --color-surface-hover: #f3eef8;
+      --color-surface-input-focus: #fffff8;
+      --color-btn-bg: #1d1d1f; --color-btn-text: #fff; --color-btn-hover: #424245;
+      --color-btn-clear-hover: #f5f5f7; --color-btn-clear-text: #1d1d1f;
+      --color-btn-copy-text: #bbb; --color-btn-copy-hover-bg: #e8e8ed; --color-btn-copy-hover-text: #333;
+      --color-accent: #0051c3; --color-accent-hover-bg: #e8f0fe;
+      --color-accent-focus-shadow: rgba(0,81,195,0.15);
+      --color-added: #22863a; --color-added-bg: #e6ffed;
+      --color-removed: #b31d28; --color-removed-bg: #ffeef0;
+      --color-modified: #0051c3; --color-modified-bg: #e3f2fd;
+      --color-default-bg: #f0f0f2;
+      --color-diff-row-bg: #edf0f4; --color-diff-ln-bg: #f6f8fa;
+      --color-diff-hunk-text: #0057ae; --color-diff-ctx-text: #24292e;
+      --color-diff-ctx-bg: #fff; --color-diff-trunc-bg: #fffbdd; --color-diff-trunc-text: #735c0f;
+      --color-diff-summary-text: #0051c3;
+      --color-sc-header-bg: #98989d; --color-sc-header-text: #fff;
+      --color-sc-cell-bg: #fff; --color-sc-caveat: #6b6b6e;
+      --color-progress-bg: #e5e5ea; --color-progress-fill: #0051c3;
+      --color-importance-high: #d1242f; --color-importance-medium: #d97706;
+      --color-vuln-new-bg: #fecaca; --color-vuln-new-text: #991b1b;
+      --color-vuln-resolved-bg: #dcfce7; --color-vuln-resolved-text: #166534;
+      --color-vuln-resolved-count: #16a34a; --color-vuln-new-count: #dc2626;
+      --color-warn-danger-border: #d73a49; --color-warn-danger-bg: #ffeef0;
+      --color-warn-caution-border: #e36209; --color-warn-caution-bg: #fff8e1;
+      --color-controls-bg: rgba(255,255,255,0.1);
+      --color-resize-handle-hover: rgba(0,0,0,0.18);
+      --color-print-text: #555; --color-print-border: #ccc; --color-print-bg: #fff;
+      --color-lazy-summary: #6e6e73; --color-reviewed-banner-text: #1f2328;
+      --color-empty: #999; --color-sbs-empty-bg: #f6f8fa;
+    }
+    html[data-theme="dark"] {
+      --color-bg: #0d1117; --color-text: #e6edf3; --color-text-secondary: #8b949e;
+      --color-text-tertiary: #8b949e; --color-text-quaternary: #6e7681;
+      --color-text-muted: #6e7681; --color-text-faint: #484f58; --color-text-stat: #c9d1d9;
+      --color-border: #30363d; --color-border-strong: #484f58;
+      --color-border-light: #21262d; --color-border-separator: #30363d;
+      --color-surface: #0d1117; --color-surface-card: #161b22;
+      --color-surface-code: #1c2128; --color-surface-hover: #1c1430;
+      --color-surface-input-focus: #161b22;
+      --color-btn-bg: #e6edf3; --color-btn-text: #0d1117; --color-btn-hover: #c9d1d9;
+      --color-btn-clear-hover: #21262d; --color-btn-clear-text: #e6edf3;
+      --color-btn-copy-text: #484f58; --color-btn-copy-hover-bg: #30363d; --color-btn-copy-hover-text: #e6edf3;
+      --color-accent: #58a6ff; --color-accent-hover-bg: #1c2d4a;
+      --color-accent-focus-shadow: rgba(88,166,255,0.2);
+      --color-added: #3fb950; --color-added-bg: #12261e;
+      --color-removed: #f85149; --color-removed-bg: #2d1214;
+      --color-modified: #58a6ff; --color-modified-bg: #12233d;
+      --color-default-bg: #161b22;
+      --color-diff-row-bg: #161b22; --color-diff-ln-bg: #1c2128;
+      --color-diff-hunk-text: #79c0ff; --color-diff-ctx-text: #e6edf3;
+      --color-diff-ctx-bg: #0d1117; --color-diff-trunc-bg: #2d2a0f; --color-diff-trunc-text: #d29922;
+      --color-diff-summary-text: #58a6ff;
+      --color-sc-header-bg: #30363d; --color-sc-header-text: #e6edf3;
+      --color-sc-cell-bg: #0d1117; --color-sc-caveat: #8b949e;
+      --color-progress-bg: #21262d; --color-progress-fill: #58a6ff;
+      --color-importance-high: #f85149; --color-importance-medium: #d29922;
+      --color-vuln-new-bg: #3d1214; --color-vuln-new-text: #f85149;
+      --color-vuln-resolved-bg: #0f2d1a; --color-vuln-resolved-text: #3fb950;
+      --color-vuln-resolved-count: #3fb950; --color-vuln-new-count: #f85149;
+      --color-warn-danger-border: #f85149; --color-warn-danger-bg: #2d1214;
+      --color-warn-caution-border: #d29922; --color-warn-caution-bg: #2d2a0f;
+      --color-controls-bg: rgba(13,17,23,0.7);
+      --color-resize-handle-hover: rgba(255,255,255,0.18);
+      --color-print-text: #8b949e; --color-print-border: #30363d; --color-print-bg: #0d1117;
+      --color-lazy-summary: #8b949e; --color-reviewed-banner-text: #e6edf3;
+      --color-empty: #6e7681; --color-sbs-empty-bg: #1c2128;
     }
     /* ── Theme-aware utility classes ── */
     .imp-high { color: var(--color-importance-high); font-weight: bold; }
@@ -489,6 +565,7 @@
 <body>
 <a href="#main-content" class="skip-link">Skip to main content</a>
 <div class="controls" role="toolbar" aria-label="Report controls">
+<button id="theme-toggle" class="btn btn-clear theme-toggle" onclick="cycleTheme()" title="Toggle theme (Light / Dark / System)">&#x2699; System</button>
 <!--CTRL-->
 <div class="ctrl-buttons">
   <div class="ctrl-progress">
