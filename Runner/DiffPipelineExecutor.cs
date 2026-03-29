@@ -62,6 +62,16 @@ namespace FolderDiffIL4DotNet.Runner
             return await ExecuteScopedRunAsync(scope.ServiceProvider, executionContext, appVersion, computerName, config);
         }
 
+        /// <summary>
+        /// Total number of progress phases across the entire pipeline
+        /// (discovery, scanning, IL precompute, diff classification, report generation).
+        /// パイプライン全体のフェーズ総数
+        /// （ファイル列挙、アセンブリスキャン、IL プリコンピュート、差分分類、レポート生成）。
+        /// </summary>
+        private const int TOTAL_PHASES = 5;
+
+        private const string PHASE_LABEL_GENERATING_REPORTS = "Generating reports";
+
         private async Task<DiffPipelineResult> ExecuteScopedRunAsync(
             IServiceProvider scopedProvider,
             DiffExecutionContext executionContext,
@@ -71,40 +81,42 @@ namespace FolderDiffIL4DotNet.Runner
         {
             var resultLists = scopedProvider.GetRequiredService<FileDiffResultLists>();
             resultLists.DisassemblerAvailability = DisassemblerHelper.ProbeAllCandidates();
-            var elapsedTimeString = await ExecuteDiffAsync(scopedProvider);
-
-            // Best-effort NuGet vulnerability enrichment (after all diffs complete)
-            // ベストエフォートの NuGet 脆弱性チェック（全差分完了後に実行）
-            if (config.EnableNuGetVulnerabilityCheck && config.ShouldIncludeDependencyChangesInReport)
-                await EnrichDependencyVulnerabilitiesAsync(resultLists, _logger);
-
-            GenerateReports(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config);
-            var stats = resultLists.SummaryStatistics;
-            return new DiffPipelineResult(
-                resultLists.HasAnySha256Mismatch,
-                resultLists.HasAnyNewFileTimestampOlderThanOldWarning,
-                stats.UnchangedCount,
-                stats.AddedCount,
-                stats.RemovedCount,
-                stats.ModifiedCount);
-        }
-
-        private async Task<string> ExecuteDiffAsync(IServiceProvider scopedProvider)
-        {
             var progressReporter = scopedProvider.GetRequiredService<ProgressReportService>();
+            progressReporter.TotalPhases = TOTAL_PHASES;
+
             try
             {
-                var stopwatch = Stopwatch.StartNew();
-                await scopedProvider.GetRequiredService<IFolderDiffService>().ExecuteFolderDiffAsync();
-                stopwatch.Stop();
-                var elapsedTimeString = FormatElapsedTime(stopwatch.Elapsed);
-                _logger.LogMessage(AppLogLevel.Info, $"Elapsed Time: {elapsedTimeString}", shouldOutputMessageToConsole: true);
-                return elapsedTimeString;
+                var elapsedTimeString = await ExecuteDiffAsync(scopedProvider, progressReporter);
+
+                // Best-effort NuGet vulnerability enrichment (after all diffs complete)
+                // ベストエフォートの NuGet 脆弱性チェック（全差分完了後に実行）
+                if (config.EnableNuGetVulnerabilityCheck && config.ShouldIncludeDependencyChangesInReport)
+                    await EnrichDependencyVulnerabilitiesAsync(resultLists, _logger);
+
+                GenerateReports(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config, progressReporter);
+                var stats = resultLists.SummaryStatistics;
+                return new DiffPipelineResult(
+                    resultLists.HasAnySha256Mismatch,
+                    resultLists.HasAnyNewFileTimestampOlderThanOldWarning,
+                    stats.UnchangedCount,
+                    stats.AddedCount,
+                    stats.RemovedCount,
+                    stats.ModifiedCount);
             }
             finally
             {
                 progressReporter.Dispose();
             }
+        }
+
+        private async Task<string> ExecuteDiffAsync(IServiceProvider scopedProvider, ProgressReportService progressReporter)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            await scopedProvider.GetRequiredService<IFolderDiffService>().ExecuteFolderDiffAsync();
+            stopwatch.Stop();
+            var elapsedTimeString = FormatElapsedTime(stopwatch.Elapsed);
+            _logger.LogMessage(AppLogLevel.Info, $"Elapsed Time: {elapsedTimeString}", shouldOutputMessageToConsole: true);
+            return elapsedTimeString;
         }
 
         private static void GenerateReports(
@@ -113,8 +125,13 @@ namespace FolderDiffIL4DotNet.Runner
             string appVersion,
             string elapsedTimeString,
             string computerName,
-            ConfigSettings config)
+            ConfigSettings config,
+            ProgressReportService progressReporter)
         {
+            // Begin report generation as the final phase with sub-step progress.
+            // レポート生成を最終フェーズとしてサブステップ進捗付きで開始する。
+            progressReporter.BeginPhase(PHASE_LABEL_GENERATING_REPORTS);
+
             var ilCache = scopedProvider.GetService<ILCache>();
             var reportContext = new ReportGenerationContext(
                 executionContext.OldFolderAbsolutePath,
@@ -125,10 +142,18 @@ namespace FolderDiffIL4DotNet.Runner
                 computerName,
                 config,
                 ilCache);
+
             scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(reportContext);
+            progressReporter.ReportProgress(25.0);
+
             scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(reportContext);
+            progressReporter.ReportProgress(50.0);
+
             scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(reportContext);
+            progressReporter.ReportProgress(75.0);
+
             scopedProvider.GetRequiredService<SbomGenerateService>().GenerateSbom(reportContext);
+            progressReporter.ReportProgress(100.0);
         }
 
         /// <summary>

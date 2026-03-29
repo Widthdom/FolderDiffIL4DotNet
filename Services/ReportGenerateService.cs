@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
-using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -19,7 +18,6 @@ namespace FolderDiffIL4DotNet.Services
     {
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly ILoggerService _logger;
-        private readonly string[] _spinnerFrames;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ReportGenerateService"/>.
@@ -28,17 +26,14 @@ namespace FolderDiffIL4DotNet.Services
         /// <param name="fileDiffResultLists">Comparison results to include in the report. / レポートに含める比較結果。</param>
         /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
         /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
-        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IReadOnlyConfigSettings config)
+        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
-            ArgumentNullException.ThrowIfNull(config);
-            _spinnerFrames = config.SpinnerFrames.ToArray();
         }
         private const string DIFF_REPORT_FILE_NAME = "diff_report.md";
-        private const string SPINNER_LABEL_GENERATING_REPORT = "Generating report";
         private const string REPORT_TITLE = "# Folder Diff Report";
         private const string REPORT_DISASSEMBLER_NOT_USED = "N/A";
         private const string REPORT_LIST_SEPARATOR = ", ";
@@ -85,7 +80,6 @@ namespace FolderDiffIL4DotNet.Services
             string diffReportAbsolutePath = GetDiffReportAbsolutePath(context.ReportsFolderAbsolutePath);
             bool hasSha256Mismatch = _fileDiffResultLists.HasAnySha256Mismatch;
             bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
-            using var spinner = new ConsoleSpinner(SPINNER_LABEL_GENERATING_REPORT, frames: _spinnerFrames);
             var reportGenerated = false;
             try
             {
@@ -125,7 +119,10 @@ namespace FolderDiffIL4DotNet.Services
             finally
             {
                 TrySetReportReadOnly(diffReportAbsolutePath);
-                spinner.Complete(reportGenerated ? LOG_REPORT_GENERATION_COMPLETED : null);
+                if (reportGenerated)
+                {
+                    _logger.LogMessage(AppLogLevel.Info, LOG_REPORT_GENERATION_COMPLETED, shouldOutputMessageToConsole: false);
+                }
             }
         }
 

@@ -24,20 +24,19 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private async Task PrecomputeIlCachesAsync(int maxParallel, CancellationToken cancellationToken = default)
         {
-            // In network-optimised mode, skip SHA256/IL cache warm-up and only reset progress to zero.
-            // ネットワーク最適化モードでは SHA256/IL キャッシュのウォームアップをスキップし、進捗のみゼロリセット。
+            // Begin the IL precompute phase with numbered label.
+            // 番号付きラベルで IL プリコンピュートフェーズを開始する。
+            _progressReporter.BeginPhase(SPINNER_LABEL_IL_PRECOMPUTE);
+
+            // In network-optimised mode, skip SHA256/IL cache warm-up.
+            // ネットワーク最適化モードでは SHA256/IL キャッシュのウォームアップをスキップ。
             if (_optimizeForNetworkShares)
             {
                 _logger.LogMessage(AppLogLevel.Info, LOG_NETWORK_OPTIMIZED_SKIP_IL, shouldOutputMessageToConsole: true);
-                _progressReporter.ReportProgress(0.0);
+                _progressReporter.ReportProgress(100.0);
                 return;
             }
             int precomputeBatchSize = GetEffectiveIlPrecomputeBatchSize();
-
-            // Switch to a dedicated label for the precompute phase so users can distinguish it from the diff phase.
-            // プリコンピュートフェーズ専用のラベルに切り替え、差分フェーズと区別できるようにする。
-            _progressReporter.SetLabel(SPINNER_LABEL_IL_PRECOMPUTE);
-            _progressReporter.ReportProgress(0.0);
 
             try
             {
