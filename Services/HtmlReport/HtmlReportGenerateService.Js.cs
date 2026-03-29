@@ -22,6 +22,7 @@ namespace FolderDiffIL4DotNet.Services
             "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_theme.js",
             "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_celebrate.js",
             "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_highlight.js",
+            "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_keyboard.js",
             "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js",
         ];
 

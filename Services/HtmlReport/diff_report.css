@@ -710,6 +710,46 @@
                         border-top: 1px solid var(--color-border); }
     .sbs-scroll-proxy { overflow-x: auto; overflow-y: hidden; }
     .sbs-scroll-proxy > div { height: 1px; }
+    /* ── Keyboard navigation focus / キーボードナビゲーションフォーカス ──── */
+    tr.kb-focus {
+      border-left: 3px solid var(--color-accent);
+      background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    }
+    /* ── Keyboard shortcut help overlay / キーボードショートカットヘルプ ── */
+    .kb-help {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 300;
+      padding: 1rem 1.4rem; border-radius: 12px;
+      background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      font-size: 13px; line-height: 1.7;
+      color: var(--color-text);
+      pointer-events: none;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .kb-help-visible {
+      opacity: 1; transform: translateY(0); pointer-events: auto;
+    }
+    .kb-help-hidden {
+      opacity: 0; transform: translateY(8px); pointer-events: none;
+    }
+    .kb-help-title {
+      font-weight: 600; margin-bottom: 0.4rem; font-size: 12px;
+      color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .kb-help kbd {
+      display: inline-block; min-width: 1.6em; text-align: center;
+      padding: 1px 6px; border-radius: 4px; font-family: inherit; font-size: 12px;
+      background: color-mix(in srgb, var(--color-text) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+      box-shadow: 0 1px 0 color-mix(in srgb, var(--color-text) 6%, transparent);
+    }
+    .kb-help-row { display: flex; gap: 0.6em; align-items: baseline; }
+    .kb-help-keys { min-width: 4.5em; text-align: right; white-space: nowrap; }
+    .kb-help-desc { color: var(--color-text-secondary); }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
     /* ── Print styles / 印刷スタイル ───────────────────────────────────── */
@@ -718,7 +758,8 @@
       .controls, .controls-bar, .reviewed-banner, .filter-zone,
       .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
       .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
-      button, .filter-search-wrap, .btn-input-clear { display: none !important; }
+      button, .filter-search-wrap, .btn-input-clear,
+      .kb-help { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }
       input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
       /* Remove sticky positioning / スティッキー配置を解除 */

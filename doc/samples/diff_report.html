@@ -602,13 +602,54 @@
       }
       .save-status { flex-basis: 100%; }
     }
+    /* ── Keyboard navigation focus / キーボードナビゲーションフォーカス ──── */
+    tr.kb-focus {
+      border-left: 3px solid var(--color-accent);
+      background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    }
+    /* ── Keyboard shortcut help overlay / キーボードショートカットヘルプ ── */
+    .kb-help {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 300;
+      padding: 1rem 1.4rem; border-radius: 12px;
+      background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      font-size: 13px; line-height: 1.7;
+      color: var(--color-text);
+      pointer-events: none;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .kb-help-visible {
+      opacity: 1; transform: translateY(0); pointer-events: auto;
+    }
+    .kb-help-hidden {
+      opacity: 0; transform: translateY(8px); pointer-events: none;
+    }
+    .kb-help-title {
+      font-weight: 600; margin-bottom: 0.4rem; font-size: 12px;
+      color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .kb-help kbd {
+      display: inline-block; min-width: 1.6em; text-align: center;
+      padding: 1px 6px; border-radius: 4px; font-family: inherit; font-size: 12px;
+      background: color-mix(in srgb, var(--color-text) 8%, transparent);
+      border: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+      box-shadow: 0 1px 0 color-mix(in srgb, var(--color-text) 6%, transparent);
+    }
+    .kb-help-row { display: flex; gap: 0.6em; align-items: baseline; }
+    .kb-help-keys { min-width: 4.5em; text-align: right; white-space: nowrap; }
+    .kb-help-desc { color: var(--color-text-secondary); }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
     @media print {
       .controls, .controls-bar, .reviewed-banner, .filter-zone,
       .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
       .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
-      button, .filter-search-wrap, .btn-input-clear { display: none !important; }
+      button, .filter-search-wrap, .btn-input-clear,
+      .kb-help { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }
       input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
       .controls, .reviewed-banner { position: static !important; }
@@ -2878,11 +2919,120 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // ── Keyboard shortcuts (j/k/x/?) ───────────────────────────────────────
+  // キーボードショートカット（j/k/x/?）
+  (function() {
+    var _kbIndex = -1;
+    var _kbRows  = [];
+
+    function refreshRows() {
+      _kbRows = Array.prototype.slice.call(
+        document.querySelectorAll('tbody > tr[data-section]:not(.filter-hidden)')
+      );
+    }
+
+    function applyFocus() {
+      document.querySelectorAll('tr.kb-focus').forEach(function(el) {
+        el.classList.remove('kb-focus');
+      });
+      if (_kbIndex < 0 || _kbIndex >= _kbRows.length) return;
+      var row = _kbRows[_kbIndex];
+      row.classList.add('kb-focus');
+      row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      var summary = null;
+      var next = row.nextElementSibling;
+      if (next && !next.hasAttribute('data-section')) {
+        summary = next.querySelector('summary');
+      }
+      if (summary) {
+        summary.focus({ preventScroll: true });
+      } else {
+        if (!row.getAttribute('tabindex')) row.setAttribute('tabindex', '-1');
+        row.focus({ preventScroll: true });
+      }
+    }
+
+    function moveBy(delta) {
+      refreshRows();
+      if (_kbRows.length === 0) return;
+      if (_kbIndex < 0) {
+        _kbIndex = delta > 0 ? 0 : _kbRows.length - 1;
+      } else {
+        _kbIndex = Math.max(0, Math.min(_kbRows.length - 1, _kbIndex + delta));
+      }
+      applyFocus();
+    }
+
+    function toggleCheck() {
+      if (__savedState__ !== null) return;
+      if (_kbIndex < 0 || _kbIndex >= _kbRows.length) return;
+      var cb = _kbRows[_kbIndex].querySelector('input[type="checkbox"]');
+      if (cb) {
+        cb.checked = !cb.checked;
+        autoSave();
+      }
+    }
+
+    function toggleHelp() {
+      var overlay = document.getElementById('kb-help');
+      if (!overlay) return;
+      var isVisible = overlay.classList.contains('kb-help-visible');
+      if (isVisible) {
+        overlay.classList.remove('kb-help-visible');
+        overlay.classList.add('kb-help-hidden');
+      } else {
+        overlay.classList.remove('kb-help-hidden');
+        overlay.classList.add('kb-help-visible');
+      }
+    }
+
+    function isTyping() {
+      var el = document.activeElement;
+      if (!el) return false;
+      var tag = el.tagName;
+      if (tag === 'TEXTAREA') return true;
+      if (tag === 'INPUT' && (el.type === 'text' || el.type === 'search')) return true;
+      if (el.isContentEditable) return true;
+      return false;
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && !e.isComposing) {
+        if (isTyping()) {
+          document.activeElement.blur();
+          applyFocus();
+          e.preventDefault();
+          window.__kbEscHandled__ = true;
+          return;
+        }
+      }
+      if (isTyping()) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      switch (e.key) {
+        case 'j':
+          moveBy(1);
+          e.preventDefault();
+          break;
+        case 'k':
+          moveBy(-1);
+          e.preventDefault();
+          break;
+        case 'x':
+          toggleCheck();
+          e.preventDefault();
+          break;
+        case '?':
+          toggleHelp();
+          e.preventDefault();
+          break;
+      }
+    });
+  })();
+
   // ── Keyboard navigation (WCAG 2.1 AA) ────────────────────────────────
-  // Escape closes the nearest open detail element when focus is inside it.
-  // Escapeキーでフォーカス中のdetail要素を閉じる。
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
+      if (window.__kbEscHandled__) { window.__kbEscHandled__ = false; return; }
       var details = document.activeElement ? document.activeElement.closest('details[open]') : null;
       if (details) {
         details.removeAttribute('open');
@@ -2893,5 +3043,13 @@
     }
   });
 </script>
+<div id="kb-help" class="kb-help" aria-label="Keyboard shortcuts">
+  <div class="kb-help-title">Keyboard Shortcuts</div>
+  <div class="kb-help-row"><span class="kb-help-keys"><kbd>j</kbd> / <kbd>k</kbd></span> <span class="kb-help-desc">Next / Previous file</span></div>
+  <div class="kb-help-row"><span class="kb-help-keys"><kbd>x</kbd></span> <span class="kb-help-desc">Toggle review check</span></div>
+  <div class="kb-help-row"><span class="kb-help-keys"><kbd>Enter</kbd></span> <span class="kb-help-desc">Expand / collapse diff</span></div>
+  <div class="kb-help-row"><span class="kb-help-keys"><kbd>Esc</kbd></span> <span class="kb-help-desc">Close diff or exit input</span></div>
+  <div class="kb-help-row"><span class="kb-help-keys"><kbd>?</kbd></span> <span class="kb-help-desc">Toggle this help</span></div>
+</div>
 </body>
 </html>

@@ -244,6 +244,37 @@ See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live samp
      (diff_report_YYYYMMDD_reviewed_Excel-compatible.html).
 ```
 
+### Keyboard shortcuts
+
+The HTML report supports keyboard-driven navigation for efficient review of large file lists:
+
+| Key | Action |
+|---|---|
+| `j` | Move focus to the next file row |
+| `k` | Move focus to the previous file row |
+| `x` | Toggle the review checkbox on the focused row |
+| `Enter` | Expand / collapse the diff detail (standard `<summary>` behaviour) |
+| `Esc` | Close an open diff detail, or exit a text input field |
+| `?` | Show / hide the shortcut help overlay |
+
+All single-key shortcuts are disabled while typing in Justification, Notes, or the search box.
+In reviewed (read-only) mode, `x` is disabled; `j` / `k` navigation remains available.
+
+**Typical keyboard-only flow:**
+
+```
+j/k        → Navigate to a file row (highlighted with accent border)
+Enter      → Expand the diff to review changes
+Esc        → Close the diff
+x          → Mark the file as reviewed
+Tab        → Move cursor to the Justification field
+(type)     → Enter the review reason
+Tab        → Move cursor to the Notes field (optional)
+(type)     → Enter notes
+Esc        → Exit the text field, return focus to the file row
+j          → Move to the next file
+```
+
 ### Integrity verification flow
 
 ```mermaid
@@ -910,6 +941,37 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 6. （任意）reviewed HTML 内で「Download as Excel-compatible HTML」をクリックし、
      レビューデータを Excel で開ける HTML テーブルとしてエクスポート
      （diff_report_YYYYMMDD_reviewed_Excel-compatible.html）。
+```
+
+### キーボードショートカット
+
+HTML レポートは、大量ファイルの効率的なレビューのためにキーボード操作をサポートしています。
+
+| キー | 動作 |
+|---|---|
+| `j` | 次のファイル行にフォーカスを移動 |
+| `k` | 前のファイル行にフォーカスを移動 |
+| `x` | フォーカス中の行のレビューチェックボックスをトグル |
+| `Enter` | 差分詳細の展開/折りたたみ（標準の `<summary>` 動作） |
+| `Esc` | 差分詳細を閉じる、またはテキスト入力欄から抜ける |
+| `?` | ショートカットヘルプオーバーレイの表示/非表示 |
+
+すべてのシングルキーショートカットは、Justification・Notes・検索ボックスへの入力中は無効になります。
+レビュー済み（読み取り専用）モードでは `x` は無効、`j` / `k` のナビゲーションは使用可能です。
+
+**キーボードのみの操作フロー：**
+
+```
+j/k        → ファイル行に移動（アクセントボーダーでハイライト）
+Enter      → 差分を展開してレビュー
+Esc        → 差分を閉じる
+x          → ファイルをレビュー済みとしてマーク
+Tab        → Justification 欄にカーソル移動
+(入力)     → レビュー理由を入力
+Tab        → Notes 欄にカーソル移動（任意）
+(入力)     → メモを入力
+Esc        → テキスト欄から抜け、ファイル行にフォーカスを戻す
+j          → 次のファイルへ移動
 ```
 
 ### 整合性検証フロー

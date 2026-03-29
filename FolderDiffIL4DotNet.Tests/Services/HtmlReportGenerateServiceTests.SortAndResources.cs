@@ -309,6 +309,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_theme.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_celebrate.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_highlight.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_keyboard.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js",
             };
             foreach (var name in moduleNames)
@@ -366,6 +367,55 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("highlightILDiff", js);
             Assert.Contains("highlightAllILDiffs", js);
             Assert.Contains("__ilPatterns__", js);
+        }
+
+        // ── Keyboard shortcut CSS/JS/HTML presence / キーボードショートカット CSS/JS/HTML 存在確認 ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_KeyboardModule_ContainsRequiredFunctions()
+        {
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_keyboard.js");
+
+            Assert.Contains("moveBy", js);
+            Assert.Contains("toggleCheck", js);
+            Assert.Contains("toggleHelp", js);
+            Assert.Contains("isTyping", js);
+            Assert.Contains("__kbEscHandled__", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Css_ContainsKeyboardFocusAndHelpOverlayStyles()
+        {
+            var css = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.diff_report.css");
+
+            Assert.Contains("tr.kb-focus", css);
+            Assert.Contains(".kb-help", css);
+            Assert.Contains(".kb-help-visible", css);
+            Assert.Contains(".kb-help-hidden", css);
+            Assert.Contains("backdrop-filter", css);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_KeyboardHelpOverlayIsPresent()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("kb-help");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(
+                new ReportGenerationContext(oldDir, newDir, reportDir,
+                    appVersion: "1.0", elapsedTimeString: null,
+                    computerName: "test-host", config, ilCache: null));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("id=\"kb-help\"", html);
+            Assert.Contains("Keyboard Shortcuts", html);
+            Assert.Contains("<kbd>j</kbd>", html);
+            Assert.Contains("<kbd>k</kbd>", html);
+            Assert.Contains("<kbd>x</kbd>", html);
+            Assert.Contains("<kbd>?</kbd>", html);
         }
 
     }
