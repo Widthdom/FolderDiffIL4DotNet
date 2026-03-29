@@ -12,7 +12,16 @@
 // CLI オーバーライド: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings。
 // Use --print-config to display the effective configuration after all overrides.
 // --print-config ですべてのオーバーライド適用後の有効設定を表示できます。
+//
+// JSON Schema is available for IDE autocompletion and real-time validation.
+// IDE 補完とリアルタイムバリデーション用の JSON Schema が利用可能です。
+// Add "$schema": "./doc/config.schema.json" (or adjust the relative path) to your config.json.
+// config.json に "$schema": "./doc/config.schema.json"（相対パスは適宜調整）を追加してください。
 {
+  // JSON Schema reference for IDE autocompletion (adjust path as needed)
+  // IDE 補完用の JSON Schema 参照（パスは必要に応じて調整してください）
+  "$schema": "./config.schema.json",
+
   // --- Report Content / レポート内容 ---
 
   // Include unchanged files in the report (default: true)

@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **JSON Schema for `config.json` IDE autocompletion and validation** — Added [`doc/config.schema.json`](doc/config.schema.json) providing JSON Schema 2020-12 for `config.json`. IDEs (VS Code, Visual Studio, JetBrains Rider, Vim/Neovim via LSP) now offer property name autocompletion, type checking, value range validation (`minimum`, `enum`), and bilingual (EN+JA) hover descriptions. The schema enforces `additionalProperties: false` to catch typos immediately. `ConfigSettingsBuilder` now accepts `$schema` via `[JsonExtensionData]` so config files with a schema reference deserialize without error. New file: [`doc/config.schema.json`](doc/config.schema.json). Modified: [`Models/ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs) (`[JsonExtensionData]`), [`doc/config.sample.jsonc`](doc/config.sample.jsonc) (`$schema` reference + instructions), [`README.md`](README.md) (EN+JA schema usage guide). Tests: `Schema_Properties_MatchConfigSettingsBuilder_Properties`, `Schema_DisallowsAdditionalProperties`, `Schema_AllProperties_HaveBilingualDescriptions`, `JsonDeserialize_WithSchemaProperty_Succeeds`, `Schema_IsValidJsonWithRequiredTopLevelKeys` in [`ConfigSettingsTests.Schema`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.Schema.cs). Test count: 1025 (+5).
+
 ### [1.11.0] - 2026-03-29
 
 #### Added
@@ -827,6 +831,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **`config.json` の IDE 補完・バリデーション用 JSON Schema** — JSON Schema 2020-12 に準拠した [`doc/config.schema.json`](doc/config.schema.json) を追加。IDE（VS Code、Visual Studio、JetBrains Rider、Vim/Neovim（LSP 経由））でプロパティ名の補完、型チェック、値の範囲検証（`minimum`、`enum`）、英日バイリンガルのホバー説明が利用可能に。`additionalProperties: false` によりタイポを即座に検出。`ConfigSettingsBuilder` に `[JsonExtensionData]` を追加し、`$schema` 参照を含む設定ファイルもエラーなくデシリアライズ可能に。新規: [`doc/config.schema.json`](doc/config.schema.json)。変更: [`Models/ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs)（`[JsonExtensionData]`）、[`doc/config.sample.jsonc`](doc/config.sample.jsonc)（`$schema` 参照+説明）、[`README.md`](README.md)（EN+JA スキーマ利用ガイド）。テスト: `Schema_Properties_MatchConfigSettingsBuilder_Properties`、`Schema_DisallowsAdditionalProperties`、`Schema_AllProperties_HaveBilingualDescriptions`、`JsonDeserialize_WithSchemaProperty_Succeeds`、`Schema_IsValidJsonWithRequiredTopLevelKeys`（[`ConfigSettingsTests.Schema`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.Schema.cs)）。テスト件数: 1025（+5）。
 
 ### [1.11.0] - 2026-03-29
 

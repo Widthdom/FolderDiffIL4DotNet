@@ -360,6 +360,18 @@ Place [`config.json`](config.json) next to the executable. All keys are optional
 {}
 ```
 
+#### JSON Schema for IDE Autocompletion
+
+A JSON Schema file ([`doc/config.schema.json`](doc/config.schema.json)) is provided for IDE autocompletion and real-time validation. Add a `$schema` property to your `config.json` to enable it:
+
+```json
+{
+  "$schema": "./doc/config.schema.json"
+}
+```
+
+> **Tip:** Adjust the `$schema` path based on where your `config.json` is relative to `config.schema.json`. Supported in VS Code, Visual Studio, JetBrains Rider, Vim/Neovim (via LSP), and other JSON-aware editors. Benefits include property name autocompletion, type checking, value range validation, and bilingual hover descriptions.
+
 Override only the settings you want to change. For example:
 
 ```json
@@ -1010,6 +1022,18 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
 ```json
 {}
 ```
+
+#### IDE 補完用 JSON Schema
+
+JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）を提供しています。`config.json` に `$schema` プロパティを追加すると、IDE の補完とリアルタイムバリデーションが有効になります。
+
+```json
+{
+  "$schema": "./doc/config.schema.json"
+}
+```
+
+> **ヒント:** `$schema` のパスは `config.json` から `config.schema.json` への相対パスに合わせて調整してください。VS Code、Visual Studio、JetBrains Rider、Vim/Neovim（LSP 経由）など JSON 対応エディタで利用可能です。プロパティ名の補完、型チェック、値の範囲検証、英日バイリンガルのホバー説明が得られます。
 
 変更したい項目だけを書けば十分です。例:
 

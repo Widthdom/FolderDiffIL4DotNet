@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using FolderDiffIL4DotNet.Common;
 
 namespace FolderDiffIL4DotNet.Models
@@ -13,6 +15,15 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed class ConfigSettingsBuilder
     {
+        /// <summary>
+        /// Captures unmapped JSON properties (e.g. <c>$schema</c>) so that deserialization
+        /// does not fail when the config file contains a schema reference.
+        /// マップされない JSON プロパティ（例: <c>$schema</c>）を保持し、設定ファイルに
+        /// スキーマ参照が含まれていてもデシリアライズが失敗しないようにします。
+        /// </summary>
+        [JsonExtensionData]
+        public Dictionary<string, JsonElement>? ExtensionData { get; set; }
+
         private List<string> _ignoredExtensions = ConfigSettings.CreateDefaultIgnoredExtensions();
         private List<string> _textFileExtensions = ConfigSettings.CreateDefaultTextFileExtensions();
         private List<string> _ilIgnoreLineContainingStrings = new();

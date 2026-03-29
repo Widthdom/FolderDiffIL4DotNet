@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/widthdom/FolderDiffIL4DotNet/blob/main/doc/config.schema.json",
+  "title": "FolderDiffIL4DotNet Configuration / FolderDiffIL4DotNet 設定",
+  "description": "Configuration file for FolderDiffIL4DotNet folder comparison tool.\nFolderDiffIL4DotNet フォルダ比較ツールの設定ファイル。",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for IDE autocompletion.\nIDE 補完用の JSON Schema 参照。"
+    },
+
+    "MaxLogGenerations": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 5,
+      "description": "Maximum number of log file generations to retain.\n保持するログファイル世代数の上限。"
+    },
+    "SpinnerFrames": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "default": ["|", "/", "-", "\\"],
+      "description": "Console spinner animation frames.\nコンソールスピナーのアニメーションフレーム。"
+    },
+    "IgnoredExtensions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [".cache", ".DS_Store", ".db", ".ilcache", ".log", ".pdb"],
+      "description": "File extensions to skip entirely (not compared, listed as Ignored).\n比較対象外とするファイル拡張子（比較されず Ignored としてリスト）。"
+    },
+    "TextFileExtensions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Extensions treated as text files for line-by-line comparison.\n行単位テキスト比較の対象とする拡張子。"
+    },
+
+    "ShouldIncludeUnchangedFiles": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include unchanged files in report output.\n未変更ファイルをレポートに含める。"
+    },
+    "ShouldIncludeIgnoredFiles": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include ignored files (by extension) in report.\n無視されたファイル（拡張子による）をレポートに含める。"
+    },
+    "ShouldIncludeAssemblySemanticChangesInReport": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include member-level semantic diffs for IL mismatches.\nIL不一致時にメンバーレベルのセマンティック差分を含める。"
+    },
+    "ShouldIncludeDependencyChangesInReport": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include structured dependency changes for .deps.json files.\n.deps.json の構造化された依存関係変更を含める。"
+    },
+    "EnableNuGetVulnerabilityCheck": {
+      "type": "boolean",
+      "default": false,
+      "description": "Check NuGet packages against known vulnerability databases. Requires network access.\nNuGet パッケージを既知の脆弱性DBと照合する。ネットワークアクセスが必要。"
+    },
+    "ShouldIncludeILCacheStatsInReport": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include IL cache hit/miss statistics in the report.\nILキャッシュのヒット/ミス統計をレポートに含める。"
+    },
+    "ShouldGenerateHtmlReport": {
+      "type": "boolean",
+      "default": true,
+      "description": "Generate interactive HTML report (diff_report.html).\nインタラクティブ HTML レポートを生成する。"
+    },
+    "ShouldGenerateAuditLog": {
+      "type": "boolean",
+      "default": true,
+      "description": "Generate structured JSON audit log (audit_log.json).\n構造化 JSON 監査ログを生成する。"
+    },
+    "ShouldGenerateSbom": {
+      "type": "boolean",
+      "default": false,
+      "description": "Generate Software Bill of Materials.\nソフトウェア部品表 (SBOM) を生成する。"
+    },
+    "SbomFormat": {
+      "type": "string",
+      "enum": ["CycloneDX", "SPDX"],
+      "default": "CycloneDX",
+      "description": "SBOM output format: CycloneDX 1.5 JSON or SPDX 2.3 JSON.\nSBOM 出力形式: CycloneDX 1.5 JSON または SPDX 2.3 JSON。"
+    },
+    "ShouldOutputFileTimestamps": {
+      "type": "boolean",
+      "default": true,
+      "description": "Include file modification timestamps in report.\nファイルの更新日時をレポートに含める。"
+    },
+    "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": {
+      "type": "boolean",
+      "default": true,
+      "description": "Warn when new files have older timestamps than old files.\n新ファイルのタイムスタンプが旧ファイルより古い場合に警告する。"
+    },
+
+    "SkipIL": {
+      "type": "boolean",
+      "default": false,
+      "description": "Skip IL disassembly comparison entirely (SHA256 + text only). CLI override: --skip-il.\nIL逆アセンブリ比較を完全にスキップする（SHA256+テキストのみ）。CLI: --skip-il。"
+    },
+    "ShouldOutputILText": {
+      "type": "boolean",
+      "default": true,
+      "description": "Output full IL disassembly text to Reports/<label>/IL/ folder.\nIL逆アセンブリテキストをReports/<label>/IL/フォルダに出力する。"
+    },
+    "ShouldIgnoreILLinesContainingConfiguredStrings": {
+      "type": "boolean",
+      "default": false,
+      "description": "Ignore IL lines containing strings specified in ILIgnoreLineContainingStrings.\nILIgnoreLineContainingStrings で指定した文字列を含むIL行を無視する。"
+    },
+    "ILIgnoreLineContainingStrings": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Strings to filter from IL comparison. Only used when ShouldIgnoreILLinesContainingConfiguredStrings is true.\nIL比較から除外する文字列。ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ有効。"
+    },
+
+    "EnableILCache": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable two-level (memory + disk) IL disassembly cache. CLI override: --no-il-cache.\n2層（メモリ＋ディスク）ILキャッシュを有効にする。CLI: --no-il-cache。"
+    },
+    "ILCacheDirectoryAbsolutePath": {
+      "type": "string",
+      "default": "",
+      "description": "Absolute path to IL cache directory. Empty uses platform default.\nILキャッシュディレクトリの絶対パス。空の場合はプラットフォーム既定。"
+    },
+    "ILCacheStatsLogIntervalSeconds": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 60,
+      "description": "Interval (seconds) for logging cache statistics.\nキャッシュ統計のログ出力間隔（秒）。"
+    },
+    "ILCacheMaxDiskFileCount": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 1000,
+      "description": "Maximum disk cache file count. 0 = unlimited.\nディスクキャッシュの最大ファイル数。0=無制限。"
+    },
+    "ILCacheMaxDiskMegabytes": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 512,
+      "description": "Maximum disk cache size in MB. 0 = unlimited.\nディスクキャッシュの最大サイズ（MB）。0=無制限。"
+    },
+    "ILCacheMaxMemoryMegabytes": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Memory budget (MB) for in-memory IL cache. 0 = entry-count limit only.\nメモリ内ILキャッシュのメモリ予算（MB）。0=エントリ数制限のみ。"
+    },
+    "ILPrecomputeBatchSize": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 2048,
+      "description": "Batch size for parallel SHA256 precomputation.\n並列SHA256事前計算のバッチサイズ。"
+    },
+
+    "DisassemblerBlacklistTtlMinutes": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 10,
+      "description": "Minutes to blacklist a failing disassembler before retrying.\n失敗した逆アセンブラをブラックリストに載せる時間（分）。"
+    },
+    "DisassemblerTimeoutSeconds": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 300,
+      "description": "Timeout (seconds) for each disassembler invocation. 0 = no timeout.\n逆アセンブラ呼び出しごとのタイムアウト（秒）。0=タイムアウトなし。"
+    },
+
+    "MaxParallelism": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Max threads for file comparison. 0 = auto-detect (CPU core count). CLI override: --threads <N>.\nファイル比較の最大スレッド数。0=自動検出（CPUコア数）。CLI: --threads <N>。"
+    },
+    "TextDiffParallelThresholdKilobytes": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 512,
+      "description": "File size threshold (KiB) above which text diff uses parallel chunking.\n並列チャンクテキスト差分を使用するファイルサイズ閾値（KiB）。"
+    },
+    "TextDiffChunkSizeKilobytes": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 64,
+      "description": "Chunk size (KiB) for parallel text diff. Must be strictly less than TextDiffParallelThresholdKilobytes.\n並列テキスト差分のチャンクサイズ（KiB）。TextDiffParallelThresholdKilobytes 未満であること。"
+    },
+    "TextDiffParallelMemoryLimitMegabytes": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Memory budget (MB) for parallel text diff buffers. 0 = unlimited.\n並列テキスト差分バッファのメモリ予算（MB）。0=無制限。"
+    },
+
+    "OptimizeForNetworkShares": {
+      "type": "boolean",
+      "default": false,
+      "description": "Optimize I/O for network shares (skip precompute, sequential I/O).\nネットワーク共有向けにI/Oを最適化する（事前計算スキップ、逐次I/O）。"
+    },
+    "AutoDetectNetworkShares": {
+      "type": "boolean",
+      "default": true,
+      "description": "Auto-detect if folders are on network shares and apply optimizations.\nフォルダがネットワーク共有上にあるか自動検出し最適化を適用する。"
+    },
+
+    "EnableInlineDiff": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable inline diff display in HTML report.\nHTMLレポートでインライン差分表示を有効にする。"
+    },
+    "InlineDiffContextLines": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "description": "Number of context lines around each diff hunk. 0 = show only changed lines.\n各差分ハンクの前後に表示するコンテキスト行数。0=変更行のみ。"
+    },
+    "InlineDiffMaxEditDistance": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 4000,
+      "description": "Max edit distance; files exceeding this skip inline diff.\n最大編集距離。超過するファイルはインライン差分をスキップ。"
+    },
+    "InlineDiffMaxDiffLines": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 10000,
+      "description": "Max diff lines to process for inline display.\nインライン表示で処理する最大差分行数。"
+    },
+    "InlineDiffMaxOutputLines": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 10000,
+      "description": "Max output lines in rendered inline diff.\nレンダリングされたインライン差分の最大出力行数。"
+    },
+    "InlineDiffLazyRender": {
+      "type": "boolean",
+      "default": true,
+      "description": "Lazy-render inline diffs on demand when user expands a row.\nユーザーが行を展開したときにインライン差分をオンデマンドで遅延レンダリングする。"
+    }
+  }
+}
