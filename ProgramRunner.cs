@@ -202,12 +202,16 @@ namespace FolderDiffIL4DotNet
 
             if (color.HasValue)
             {
-                // Color label, bar, and count for status categories / ステータスカテゴリはラベル・バー・件数に色を適用
+                // Color label, bar, count, and percentage / ステータスカテゴリはラベル・バー・件数・割合に色を適用
                 var prevColor = Console.ForegroundColor;
                 Console.ForegroundColor = color.Value;
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar} {count,5}");
                 Console.ForegroundColor = prevColor;
-                Console.WriteLine($"/{total} ({pct}%)");
+                Console.Write($"/{total} (");
+                Console.ForegroundColor = color.Value;
+                Console.Write($"{pct}%");
+                Console.ForegroundColor = prevColor;
+                Console.WriteLine(")");
             }
             else
             {
