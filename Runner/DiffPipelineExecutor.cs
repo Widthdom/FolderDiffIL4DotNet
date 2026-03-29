@@ -88,7 +88,7 @@ namespace FolderDiffIL4DotNet.Runner
             {
                 var suggestion = DisassemblerHelper.BuildInstallSuggestion();
                 Console.Error.Write(suggestion);
-                _logger.LogMessage(AppLogLevel.Warning, "No disassembler tool detected. IL comparison will not be available.");
+                _logger.LogMessage(AppLogLevel.Warning, "No disassembler tool detected. IL comparison will not be available.", shouldOutputMessageToConsole: true);
             }
 
             var progressReporter = scopedProvider.GetRequiredService<ProgressReportService>();
