@@ -82,6 +82,25 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReportHtml_CelebrationAnimationIncludedInOutput()
+        {
+            // Arrange / テスト準備
+            var (oldDir, newDir, reportDir) = MakeDirs("celebrate");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            // Assert: celebration CSS and JS are present in generated HTML
+            // セレブレーション CSS と JS が生成 HTML に含まれることを検証
+            Assert.Contains("celebrate-container", html);
+            Assert.Contains("celebrate-rise", html);
+            Assert.Contains("celebrateCompletion", html);
+            Assert.Contains("__celebrationFired__", html);
+            Assert.Contains("prefers-reduced-motion", html);
+        }
+
+        [Fact]
         public void GenerateDiffReportHtml_FileRowsHaveDataSectionAttribute()
         {
             // Arrange: add some files to generate rows

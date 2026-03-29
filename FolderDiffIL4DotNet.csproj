@@ -33,6 +33,7 @@
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_filter.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_excel.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_theme.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_theme.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_celebrate.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_celebrate.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_init.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js" />
   </ItemGroup>
 

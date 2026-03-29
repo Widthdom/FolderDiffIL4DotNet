@@ -307,6 +307,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_theme.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_celebrate.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js",
             };
             foreach (var name in moduleNames)

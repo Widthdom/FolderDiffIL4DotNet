@@ -140,6 +140,45 @@
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .progress-bar-fill.complete { background: var(--color-progress-fill); }
+    /* ── Completion celebration / 完了セレブレーション ─────────────────── */
+    .celebrate-container {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; overflow: visible; z-index: 100;
+    }
+    .celebrate-particle {
+      position: absolute; border-radius: 50%;
+      opacity: 0; will-change: transform, opacity;
+      animation: celebrate-rise 2.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    }
+    @keyframes celebrate-rise {
+      0%   { opacity: 0; transform: translateY(0) scale(0.3); }
+      15%  { opacity: 1; }
+      70%  { opacity: 0.6; }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.1); }
+    }
+    .celebrate-glow {
+      animation: celebrate-bar-glow 2.5s ease-out forwards;
+    }
+    @keyframes celebrate-bar-glow {
+      0%   { box-shadow: 0 0 0 0 transparent; }
+      20%  { box-shadow: 0 0 8px 2px var(--color-progress-fill); }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    .celebrate-msg {
+      position: absolute; left: 0; top: -1.6rem;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+      color: var(--color-progress-fill); white-space: nowrap;
+      opacity: 0; animation: celebrate-fade-msg 3.5s ease-out 0.4s forwards;
+    }
+    @keyframes celebrate-fade-msg {
+      0%   { opacity: 0; transform: translateY(4px); }
+      20%  { opacity: 1; transform: translateY(0); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .celebrate-particle, .celebrate-glow, .celebrate-msg { animation: none; opacity: 0; }
+    }
     .progress-text {
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }

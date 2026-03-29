@@ -68,7 +68,10 @@
     var txt = document.getElementById('progress-text');
     if (bar) {
       bar.style.width = pct + '%';
-      if (checked >= __totalFiles__) bar.classList.add('complete');
+      if (checked >= __totalFiles__) {
+        bar.classList.add('complete');
+        celebrateCompletion();
+      }
       else bar.classList.remove('complete');
     }
     if (txt) txt.textContent = checked + ' / ' + __totalFiles__ + ' reviewed';
