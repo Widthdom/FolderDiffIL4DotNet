@@ -122,9 +122,6 @@ namespace FolderDiffIL4DotNet.Services
         private static void AppendControlsBar(TextWriter writer)
         {
             writer.WriteLine("<div class=\"controls\" role=\"toolbar\" aria-label=\"Report controls\">");
-            // Theme toggle is outside CTRL markers so it persists in reviewed HTML
-            // テーマ切替は CTRL マーカー外に配置し reviewed HTML にも残す
-            writer.WriteLine("<button id=\"theme-toggle\" class=\"btn btn-clear theme-toggle\" onclick=\"cycleTheme()\" title=\"Toggle theme (Light / Dark / System)\">\u2699 System</button>");
             writer.WriteLine("<!--CTRL-->");
             writer.WriteLine("<div class=\"ctrl-buttons\">");
             writer.WriteLine("  <div class=\"ctrl-progress\">");
@@ -140,9 +137,12 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");
             writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"clearAll()\">&#x2715; " + HtmlEncode("Clear all") + "</button>");
             writer.WriteLine("    <span id=\"save-status\" class=\"save-status\" role=\"status\" aria-live=\"polite\"></span>");
+            writer.WriteLine("<!--/CTRL-->");
+            // Theme toggle is outside CTRL markers so it persists in reviewed HTML
+            // テーマ切替は CTRL マーカー外に配置し reviewed HTML にも残す
+            writer.WriteLine("    <button id=\"theme-toggle\" class=\"btn btn-clear theme-toggle\" onclick=\"cycleTheme()\" title=\"Toggle theme (Light / Dark / System)\">\u2699 System</button>");
             writer.WriteLine("  </div>");
             writer.WriteLine("</div>");
-            writer.WriteLine("<!--/CTRL-->");
         }
 
         // ── Filter zone (kept in reviewed HTML for read-only filtering) ───────

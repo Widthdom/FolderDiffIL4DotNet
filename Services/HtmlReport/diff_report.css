@@ -124,7 +124,7 @@
       background: transparent; color: var(--color-btn-clear-text);
     }
     .btn-clear:hover { background: var(--color-btn-clear-hover); }
-    .theme-toggle { position: absolute; top: 0.5rem; right: max(1rem, calc(50vw - 50%)); font-size: 12px; padding: 0.3rem 0.8rem; z-index: 101; }
+    .theme-toggle { width: 6.5em; justify-content: center; }
     .save-status { font-size: 12px; color: var(--color-text-secondary); }
     /* ── Review progress bar ───────────────────────────────────────────── */
     .progress-wrap {

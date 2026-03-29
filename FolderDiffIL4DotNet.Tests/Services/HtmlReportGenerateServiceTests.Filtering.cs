@@ -76,9 +76,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("cycleTheme()", html);
             Assert.Contains("initTheme()", html);
             int themeBtn = html.IndexOf("id=\"theme-toggle\"", StringComparison.Ordinal);
-            int ctrlStart = html.IndexOf("<!--CTRL-->", StringComparison.Ordinal);
-            Assert.True(themeBtn < ctrlStart,
-                "theme toggle should be OUTSIDE <!--CTRL--> markers so it persists in reviewed HTML");
+            int ctrlEnd = html.IndexOf("<!--/CTRL-->", StringComparison.Ordinal);
+            Assert.True(themeBtn > ctrlEnd,
+                "theme toggle should be AFTER <!--/CTRL--> marker so it persists in reviewed HTML");
         }
 
         [Fact]
