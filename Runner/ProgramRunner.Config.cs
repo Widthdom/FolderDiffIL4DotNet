@@ -151,16 +151,12 @@ namespace FolderDiffIL4DotNet
             if (opts.Coffee)
             {
                 // Easter egg: replace spinner with coffee brewing animation / イースターエッグ: スピナーをコーヒー抽出アニメーションに差替
+                // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
                 builder.SpinnerFrames = new System.Collections.Generic.List<string>
                 {
-                    "☕",
-                    "☕ .",
-                    "☕ ..",
-                    "☕ ...",
-                    "☕ ....",
-                    "☕ Brewing",
-                    "☕ Brewing.",
-                    "☕ Brewing..",
+                    "☕ Brewing   ",
+                    "☕ Brewing.  ",
+                    "☕ Brewing.. ",
                     "☕ Brewing...",
                 };
             }
