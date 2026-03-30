@@ -245,7 +245,7 @@ namespace FolderDiffIL4DotNet
                     "🍜 Noodles..",
                     "🍜 Steaming ",
                     "🍜 Steaming.",
-                    "🍜 ~Steam~  ",
+                    "🍜 Slurrrp..",
                     "🍜 Itadaki! ",
                 };
             }
