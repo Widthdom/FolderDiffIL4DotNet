@@ -239,14 +239,14 @@ namespace FolderDiffIL4DotNet
                 // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
                 builder.SpinnerFrames = new System.Collections.Generic.List<string>
                 {
-                    "🍜 Boiling  ",
-                    "🍜 Boiling..",
-                    "🍜 Noodles  ",
-                    "🍜 Noodles..",
-                    "🍜 Steaming ",
-                    "🍜 Steaming.",
-                    "🍜 Slurrrp..",
-                    "🍜 Itadaki! ",
+                    "🍜 Boiling      ",
+                    "🍜 Boiling..    ",
+                    "🍜 Noodles      ",
+                    "🍜 Noodles..    ",
+                    "🍜 Steaming     ",
+                    "🍜 Steaming.    ",
+                    "🍜 Slurrrp..    ",
+                    "🍜 Itadakimasu! ",
                 };
             }
 
@@ -256,14 +256,14 @@ namespace FolderDiffIL4DotNet
                 // All frames are padded to equal width to prevent progress bar jitter / 全フレームを同じ幅に揃えてプログレスバーのガタつきを防止
                 builder.SpinnerFrames = new System.Collections.Generic.List<string>
                 {
-                    "🍣 Maguro   ",
-                    "🍣 Salmon   ",
-                    "🍣 Ebi      ",
-                    "🍣 Tamago   ",
-                    "🍣 Ika      ",
-                    "🍣 Uni      ",
-                    "🍣 Anago    ",
-                    "🍣 Omakase! ",
+                    "🍣 Maguro       ",
+                    "🍣 Salmon       ",
+                    "🍣 Ebi          ",
+                    "🍣 Tamago       ",
+                    "🍣 Ika          ",
+                    "🍣 Uni          ",
+                    "🍣 Anago        ",
+                    "🍣 Itadakimasu! ",
                 };
             }
         }
