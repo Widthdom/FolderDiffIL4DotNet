@@ -26,6 +26,8 @@ namespace FolderDiffIL4DotNet.Runner
         bool Sushi,
         bool Bell,
         bool Wizard,
+        bool RandomSpinner,
+        bool MultipleSpinnersDetected,
         string? LogFormatOverride,
         string? ParseError);
 }

@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **I/O-bound parallelism auto-tuning** — When `MaxParallelism` is set to `0` (auto) and paths are local (non-network), the default parallelism is now `Environment.ProcessorCount × 2` instead of `ProcessorCount`, better matching I/O-bound file comparison workloads. Network share paths remain capped at `min(ProcessorCount, 8)`. Modified: [`Services/FolderDiffExecutionStrategy.cs`](Services/FolderDiffExecutionStrategy.cs) (`IO_BOUND_MULTIPLIER`, `DetermineMaxParallel`). Tests: `DetermineMaxParallel_WhenAutoAndLocal_UsesProcessorCountTimesTwo` in [`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs).
+
+- **`ConfigSettingsBuilder` partial class split** — Split the 500+ line `ConfigSettingsBuilder` into 4 category-based partial files mirroring the existing `ConfigSettings` split: general (main file), report output control, IL comparison/cache/disassembler, and parallelism/network/inline diff. New files: [`Models/ConfigSettingsBuilder.ReportSettings.cs`](Models/ConfigSettingsBuilder.ReportSettings.cs), [`Models/ConfigSettingsBuilder.ILSettings.cs`](Models/ConfigSettingsBuilder.ILSettings.cs), [`Models/ConfigSettingsBuilder.DiffSettings.cs`](Models/ConfigSettingsBuilder.DiffSettings.cs). Modified: [`Models/ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs).
+
+- **W3C Trace Context fields in structured JSON logs** — JSON log format (`--log-format json`) now includes `traceId` (W3C 32-hex-char trace ID, generated once per run via `ActivityTraceId.CreateRandom()`) and `spanId` (W3C 16-hex-char span ID, generated per log entry via `ActivitySpanId.CreateRandom()`) for OpenTelemetry and SIEM correlation. Modified: [`Services/ILoggerService.cs`](Services/ILoggerService.cs) (`TraceId` property), [`Services/LoggerService.cs`](Services/LoggerService.cs) (`_traceId` field, `Initialize()`, `WriteJsonLogEntry`). Tests: `TraceId_BeforeInitialization_IsNull`, `TraceId_AfterInitialization_Is32HexChars`, `LogMessage_JsonFormat_IncludesTraceIdAndSpanId` in [`LoggerServiceTests`](FolderDiffIL4DotNet.Tests/Services/LoggerServiceTests.cs).
+
+- **`--random-spinner` CLI option** — Randomly selects a spinner theme (coffee, beer, matcha, whisky, wine, ramen, sushi) for each run. Modified: [`Runner/CliParser.cs`](Runner/CliParser.cs), [`Runner/CliOptions.cs`](Runner/CliOptions.cs) (`RandomSpinner`), [`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs), [`Runner/ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs) (`ApplyRandomSpinner`). Tests: `ParseCliOptions_RandomSpinnerFlag_SetsRandomSpinner`, `ParseCliOptions_NoRandomSpinnerFlag_DefaultsToFalse` in [`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.Combined.cs).
+
+- **Multiple-spinner matcha fallback easter egg** — When two or more spinner flags (e.g. `--coffee --beer`) are specified simultaneously, the tool displays a humorous bilingual message suggesting matcha instead, and applies the matcha theme. The `MultipleSpinnersDetected` flag tracks this condition. Modified: [`Runner/CliParser.cs`](Runner/CliParser.cs) (`spinnerFlagCount`), [`Runner/CliOptions.cs`](Runner/CliOptions.cs) (`MultipleSpinnersDetected`), [`Runner/ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs) (`MULTIPLE_SPINNERS_MESSAGE`, `ApplyMatchaSpinner`). Tests: `ParseCliOptions_SingleSpinnerFlag_MultipleSpinnersNotDetected`, `ParseCliOptions_TwoSpinnerFlags_MultipleSpinnersDetected`, `ParseCliOptions_ThreeSpinnerFlags_MultipleSpinnersDetected` in [`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.Combined.cs).
+
 ### [1.12.0] - 2026-03-30
 
 #### Added
@@ -863,6 +875,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **I/O バウンド並列度の自動チューニング** — `MaxParallelism` が `0`（自動）でパスがローカル（非ネットワーク）の場合、デフォルト並列度が `ProcessorCount` から `Environment.ProcessorCount × 2` に変更され、I/O バウンドのファイル比較ワークロードにより適した値になった。ネットワーク共有パスは従来通り `min(ProcessorCount, 8)` で上限キャップ。変更: [`Services/FolderDiffExecutionStrategy.cs`](Services/FolderDiffExecutionStrategy.cs)（`IO_BOUND_MULTIPLIER`、`DetermineMaxParallel`）。テスト: `DetermineMaxParallel_WhenAutoAndLocal_UsesProcessorCountTimesTwo`（[`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs)）。
+
+- **`ConfigSettingsBuilder` の partial class 分割** — 500 行超の `ConfigSettingsBuilder` を既存の `ConfigSettings` 分割と対応する 4 つのカテゴリ別 partial ファイルに分離：汎用（メインファイル）、レポート出力制御、IL 比較・キャッシュ・逆アセンブラ、並列処理・ネットワーク・インライン差分。新規: [`Models/ConfigSettingsBuilder.ReportSettings.cs`](Models/ConfigSettingsBuilder.ReportSettings.cs)、[`Models/ConfigSettingsBuilder.ILSettings.cs`](Models/ConfigSettingsBuilder.ILSettings.cs)、[`Models/ConfigSettingsBuilder.DiffSettings.cs`](Models/ConfigSettingsBuilder.DiffSettings.cs)。変更: [`Models/ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs)。
+
+- **構造化 JSON ログへの W3C Trace Context フィールド追加** — JSON ログ形式（`--log-format json`）に `traceId`（W3C 32 桁 16 進トレース ID、`ActivityTraceId.CreateRandom()` で実行ごとに 1 回生成）と `spanId`（W3C 16 桁 16 進スパン ID、`ActivitySpanId.CreateRandom()` でログエントリごとに生成）を追加。OpenTelemetry および SIEM での相関分析に対応。変更: [`Services/ILoggerService.cs`](Services/ILoggerService.cs)（`TraceId` プロパティ）、[`Services/LoggerService.cs`](Services/LoggerService.cs)（`_traceId` フィールド、`Initialize()`、`WriteJsonLogEntry`）。テスト: `TraceId_BeforeInitialization_IsNull`、`TraceId_AfterInitialization_Is32HexChars`、`LogMessage_JsonFormat_IncludesTraceIdAndSpanId`（[`LoggerServiceTests`](FolderDiffIL4DotNet.Tests/Services/LoggerServiceTests.cs)）。
+
+- **`--random-spinner` CLI オプション** — 実行ごとにスピナーテーマ（coffee、beer、matcha、whisky、wine、ramen、sushi）をランダムに選択。変更: [`Runner/CliParser.cs`](Runner/CliParser.cs)、[`Runner/CliOptions.cs`](Runner/CliOptions.cs)（`RandomSpinner`）、[`Runner/ProgramRunner.HelpText.cs`](Runner/ProgramRunner.HelpText.cs)、[`Runner/ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs)（`ApplyRandomSpinner`）。テスト: `ParseCliOptions_RandomSpinnerFlag_SetsRandomSpinner`、`ParseCliOptions_NoRandomSpinnerFlag_DefaultsToFalse`（[`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.Combined.cs)）。
+
+- **複数スピナー指定時の抹茶フォールバック（イースターエッグ）** — 2 つ以上のスピナーフラグ（例: `--coffee --beer`）を同時指定すると、ユーモラスな英日バイリンガルメッセージで抹茶を提案し、抹茶テーマを適用。`MultipleSpinnersDetected` フラグでこの状態を追跡。変更: [`Runner/CliParser.cs`](Runner/CliParser.cs)（`spinnerFlagCount`）、[`Runner/CliOptions.cs`](Runner/CliOptions.cs)（`MultipleSpinnersDetected`）、[`Runner/ProgramRunner.Config.cs`](Runner/ProgramRunner.Config.cs)（`MULTIPLE_SPINNERS_MESSAGE`、`ApplyMatchaSpinner`）。テスト: `ParseCliOptions_SingleSpinnerFlag_MultipleSpinnersNotDetected`、`ParseCliOptions_TwoSpinnerFlags_MultipleSpinnersDetected`、`ParseCliOptions_ThreeSpinnerFlags_MultipleSpinnersDetected`（[`CliOptionsTests`](FolderDiffIL4DotNet.Tests/CliOptionsTests.Combined.cs)）。
 
 ### [1.12.0] - 2026-03-30
 

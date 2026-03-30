@@ -87,6 +87,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void DetermineMaxParallel_WhenAutoAndLocal_UsesProcessorCountTimesTwo()
+        {
+            // I/O-bound file comparison benefits from higher parallelism than CPU core count
+            // I/O バウンドのファイル比較は CPU コア数より高い並列度で効率が上がる
+            var strategy = CreateStrategy(
+                CreateConfig(maxParallelism: 0),
+                CreateExecutionContext("/virtual/old", "/virtual/new", "/virtual/report", optimizeForNetworkShares: false),
+                new FileDiffResultLists(),
+                new FakeFileSystemService());
+
+            Assert.Equal(Environment.ProcessorCount * 2, strategy.DetermineMaxParallel());
+        }
+
+        [Fact]
         public void DetermineMaxParallel_WhenConfiguredPositive_ReturnsConfiguredValue()
         {
             var strategy = CreateStrategy(

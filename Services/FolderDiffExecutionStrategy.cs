@@ -22,6 +22,16 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private const int MAX_PARALLEL_NETWORK_LIMIT = 8;
 
+        /// <summary>
+        /// Multiplier applied to <see cref="Environment.ProcessorCount"/> for local I/O-bound
+        /// workloads. File hashing and IL comparison are I/O-dominant, so using twice the core
+        /// count keeps the CPU busy while other threads wait on disk reads.
+        /// ローカル I/O バウンドワークロード用の <see cref="Environment.ProcessorCount"/> 倍率。
+        /// ファイルハッシュや IL 比較はディスク I/O が支配的なため、コア数の2倍を使用して
+        /// 他スレッドのディスク読み取り待ち中も CPU を稼働させます。
+        /// </summary>
+        private const int IO_BOUND_MULTIPLIER = 2;
+
         private readonly IReadOnlyConfigSettings _config;
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly IFileSystemService _fileSystem;
@@ -95,9 +105,16 @@ namespace FolderDiffIL4DotNet.Services
         {
             if (_config.MaxParallelism <= 0)
             {
-                return _optimizeForNetworkShares
-                    ? Math.Min(Environment.ProcessorCount, MAX_PARALLEL_NETWORK_LIMIT)
-                    : Environment.ProcessorCount;
+                if (_optimizeForNetworkShares)
+                {
+                    return Math.Min(Environment.ProcessorCount, MAX_PARALLEL_NETWORK_LIMIT);
+                }
+
+                // File comparison is I/O-bound: use ProcessorCount × 2 so threads that
+                // block on disk I/O leave room for others to keep the CPU busy.
+                // ファイル比較は I/O バウンド: ディスク I/O 待ちスレッドの隙間を
+                // 他スレッドで埋めるため、ProcessorCount × 2 を使用。
+                return Environment.ProcessorCount * IO_BOUND_MULTIPLIER;
             }
 
             return _config.MaxParallelism;

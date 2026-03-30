@@ -31,6 +31,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
             Assert.False(opts.Bell);
+            Assert.False(opts.RandomSpinner);
+            Assert.False(opts.MultipleSpinnersDetected);
             Assert.Null(opts.LogFormatOverride);
             Assert.Null(opts.ParseError);
         }
@@ -66,6 +68,8 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
             Assert.False(opts.Bell);
+            Assert.False(opts.RandomSpinner);
+            Assert.False(opts.MultipleSpinnersDetected);
             Assert.Null(opts.ParseError);
         }
 

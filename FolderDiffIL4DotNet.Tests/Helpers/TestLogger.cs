@@ -40,6 +40,9 @@ namespace FolderDiffIL4DotNet.Tests.Helpers
         /// <inheritdoc />
         public LogFormat Format { get; set; } = LogFormat.Text;
 
+        /// <inheritdoc />
+        public string? TraceId => null;
+
         /// <summary>
         /// All captured log entries.
         /// キャプチャされた全ログエントリ。

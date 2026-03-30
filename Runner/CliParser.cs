@@ -28,6 +28,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_SUSHI = "--sushi";
         private const string OPT_BELL = "--bell";
         private const string OPT_WIZARD = "--wizard";
+        private const string OPT_RANDOM_SPINNER = "--random-spinner";
         private const string OPT_LOG_FORMAT = "--log-format";
 
         /// <summary>
@@ -41,6 +42,9 @@ namespace FolderDiffIL4DotNet.Runner
             bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
             bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
             bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false;
+            bool randomSpinner = false;
+            // Track how many distinct spinner theme flags have been seen / 何種類のスピナーテーマフラグが指定されたかを追跡
+            int spinnerFlagCount = 0;
             string? configPath = null;
             int? threadsOverride = null;
             string? logFormatOverride = null;
@@ -48,7 +52,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -124,30 +128,40 @@ namespace FolderDiffIL4DotNet.Runner
                         // Last-wins: clear other spinner flags so CLI order determines winner
                         // 最後勝ち: 他のスピナーフラグをクリアしてCLI引数順で決定
                         coffee = true; beer = false; matcha = false; whisky = false; wine = false; ramen = false; sushi = false;
+                        spinnerFlagCount++;
                         break;
                     case OPT_BEER:
                         coffee = false; beer = true; matcha = false; whisky = false; wine = false; ramen = false; sushi = false;
+                        spinnerFlagCount++;
                         break;
                     case OPT_MATCHA:
                         coffee = false; beer = false; matcha = true; whisky = false; wine = false; ramen = false; sushi = false;
+                        spinnerFlagCount++;
                         break;
                     case OPT_WHISKY:
                         coffee = false; beer = false; matcha = false; whisky = true; wine = false; ramen = false; sushi = false;
+                        spinnerFlagCount++;
                         break;
                     case OPT_WINE:
                         coffee = false; beer = false; matcha = false; whisky = false; wine = true; ramen = false; sushi = false;
+                        spinnerFlagCount++;
                         break;
                     case OPT_RAMEN:
                         coffee = false; beer = false; matcha = false; whisky = false; wine = false; ramen = true; sushi = false;
+                        spinnerFlagCount++;
                         break;
                     case OPT_SUSHI:
                         coffee = false; beer = false; matcha = false; whisky = false; wine = false; ramen = false; sushi = true;
+                        spinnerFlagCount++;
                         break;
                     case OPT_BELL:
                         bell = true;
                         break;
                     case OPT_WIZARD:
                         wizard = true;
+                        break;
+                    case OPT_RANDOM_SPINNER:
+                        randomSpinner = true;
                         break;
                     case OPT_LOG_FORMAT:
                         if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
@@ -179,7 +193,9 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, logFormatOverride, parseError);
+            bool multipleSpinnersDetected = spinnerFlagCount > 1;
+
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, parseError);
         }
     }
 }
