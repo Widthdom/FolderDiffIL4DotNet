@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774844744449,
+  "lastUpdate": 1774874061393,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -1320,6 +1320,72 @@ window.BENCHMARK_DATA = {
             "value": 28532584.454166666,
             "unit": "ns",
             "range": "± 257657.1872909227"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c7b17b3ec1bd05747eb807516ffdb864e6599026",
+          "message": "Merge pull request #111 from Widthdom/claude/review-folderdiff-enhancements-On6yb\n\nRefactor ConfigSettingsBuilder into partial classes and add spinner/logging features",
+          "timestamp": "2026-03-30T21:30:54+09:00",
+          "tree_id": "cd02a2d2b24c8431b1e289e1950df8f8ff3fb1e5",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/c7b17b3ec1bd05747eb807516ffdb864e6599026"
+        },
+        "date": 1774874061147,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 65392.955251840445,
+            "unit": "ns",
+            "range": "± 298.20505213001303"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 623882.1781529018,
+            "unit": "ns",
+            "range": "± 5951.943919348102"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 6395374.189583333,
+            "unit": "ns",
+            "range": "± 73940.01498595424"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 79045.47248535157,
+            "unit": "ns",
+            "range": "± 1138.5753218274172"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2803.7711736043293,
+            "unit": "ns",
+            "range": "± 45.546242807035284"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 297776.20567103795,
+            "unit": "ns",
+            "range": "± 4974.739369983529"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 32767717.096354168,
+            "unit": "ns",
+            "range": "± 836715.0156060361"
           }
         ]
       }
