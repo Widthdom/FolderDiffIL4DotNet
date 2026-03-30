@@ -16,7 +16,7 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// Fixed display width for status labels so that spinners and progress bars align vertically.
         /// スピナーや進捗バーの左端を揃えるためのステータスラベル固定表示幅。
         /// </summary>
-        public const int STATUS_LABEL_WIDTH = 22;
+        public const int STATUS_LABEL_WIDTH = 30;
 
         /// <summary>
         /// Synchronization lock for console rendering.
