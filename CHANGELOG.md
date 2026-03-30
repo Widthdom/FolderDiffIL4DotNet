@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.12.2] - 2026-03-30
+
 #### Added
 
 - **NuGet package publishing for FolderDiffIL4DotNet.Core** — The Core library is now packaged and published to nuget.org, enabling other tools to consume file comparison, Myers diff, .NET assembly detection, encoding detection, and path validation utilities. Package metadata (PackageId, Authors, Description, tags, license, symbols) added to [`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj). Package README created at [`FolderDiffIL4DotNet.Core/PACKAGE_README.md`](FolderDiffIL4DotNet.Core/PACKAGE_README.md). Release workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)) now includes a `nuget-publish` job that packs and pushes to nuget.org after a successful GitHub release. Requires `NUGET_API_KEY` repository secret.
@@ -881,6 +883,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.12.2] - 2026-03-30
 
 #### Added
 
@@ -1755,7 +1759,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.2...HEAD
+[1.12.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.1...v1.12.2
 [1.12.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.10.0...v1.11.0
