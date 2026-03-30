@@ -12,6 +12,30 @@
       );
     }
 
+    // Find the first visible row by section priority (add > rem > mod > ign > unch).
+    // セクション優先順位（add > rem > mod > ign > unch）で最初の可視行を見つける。
+    function findFirstRowByPriority() {
+      var priorities = ['add', 'rem', 'mod', 'ign', 'unch'];
+      for (var p = 0; p < priorities.length; p++) {
+        for (var r = 0; r < _kbRows.length; r++) {
+          if (_kbRows[r].getAttribute('data-section') === priorities[p]) return r;
+        }
+      }
+      return 0;
+    }
+
+    // Ensure the row is visible by opening any collapsed parent <details>.
+    // 折りたたまれた親 <details> を開いて行を可視にする。
+    function ensureVisible(row) {
+      var el = row.parentElement;
+      while (el) {
+        if (el.tagName === 'DETAILS' && !el.open) {
+          el.open = true;
+        }
+        el = el.parentElement;
+      }
+    }
+
     // Apply keyboard focus highlight to the row at _kbIndex.
     // _kbIndex の行にキーボードフォーカスハイライトを適用する。
     function applyFocus() {
@@ -20,6 +44,7 @@
       });
       if (_kbIndex < 0 || _kbIndex >= _kbRows.length) return;
       var row = _kbRows[_kbIndex];
+      ensureVisible(row);
       row.classList.add('kb-focus');
       row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       // Move DOM focus to the summary (if exists) or the row itself for Enter support
@@ -44,7 +69,7 @@
       refreshRows();
       if (_kbRows.length === 0) return;
       if (_kbIndex < 0) {
-        _kbIndex = delta > 0 ? 0 : _kbRows.length - 1;
+        _kbIndex = delta > 0 ? findFirstRowByPriority() : _kbRows.length - 1;
       } else {
         _kbIndex = Math.max(0, Math.min(_kbRows.length - 1, _kbIndex + delta));
       }

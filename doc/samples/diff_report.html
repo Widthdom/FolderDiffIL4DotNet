@@ -2931,12 +2931,33 @@
       );
     }
 
+    function findFirstRowByPriority() {
+      var priorities = ['add', 'rem', 'mod', 'ign', 'unch'];
+      for (var p = 0; p < priorities.length; p++) {
+        for (var r = 0; r < _kbRows.length; r++) {
+          if (_kbRows[r].getAttribute('data-section') === priorities[p]) return r;
+        }
+      }
+      return 0;
+    }
+
+    function ensureVisible(row) {
+      var el = row.parentElement;
+      while (el) {
+        if (el.tagName === 'DETAILS' && !el.open) {
+          el.open = true;
+        }
+        el = el.parentElement;
+      }
+    }
+
     function applyFocus() {
       document.querySelectorAll('tr.kb-focus').forEach(function(el) {
         el.classList.remove('kb-focus');
       });
       if (_kbIndex < 0 || _kbIndex >= _kbRows.length) return;
       var row = _kbRows[_kbIndex];
+      ensureVisible(row);
       row.classList.add('kb-focus');
       row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       var summary = null;
@@ -2956,7 +2977,7 @@
       refreshRows();
       if (_kbRows.length === 0) return;
       if (_kbIndex < 0) {
-        _kbIndex = delta > 0 ? 0 : _kbRows.length - 1;
+        _kbIndex = delta > 0 ? findFirstRowByPriority() : _kbRows.length - 1;
       } else {
         _kbIndex = Math.max(0, Math.min(_kbRows.length - 1, _kbIndex + delta));
       }
