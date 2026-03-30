@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.12.1] - 2026-03-30
+
 #### Added
 
 - **I/O-bound parallelism auto-tuning** — When `MaxParallelism` is set to `0` (auto) and paths are local (non-network), the default parallelism is now `Environment.ProcessorCount × 2` instead of `ProcessorCount`, better matching I/O-bound file comparison workloads. Network share paths remain capped at `min(ProcessorCount, 8)`. Modified: [`Services/FolderDiffExecutionStrategy.cs`](Services/FolderDiffExecutionStrategy.cs) (`IO_BOUND_MULTIPLIER`, `DetermineMaxParallel`). Tests: `DetermineMaxParallel_WhenAutoAndLocal_UsesProcessorCountTimesTwo` in [`FolderDiffExecutionStrategyTests`](FolderDiffIL4DotNet.Tests/Services/FolderDiffExecutionStrategyTests.cs).
@@ -875,6 +877,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.12.1] - 2026-03-30
 
 #### Added
 
@@ -1743,7 +1747,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.1...HEAD
+[1.12.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.9.0...v1.10.0
