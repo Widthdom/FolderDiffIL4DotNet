@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1774875982695,
+  "lastUpdate": 1774876742240,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -1518,6 +1518,72 @@ window.BENCHMARK_DATA = {
             "value": 26489447.775,
             "unit": "ns",
             "range": "± 212513.89458259987"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "distinct": true,
+          "id": "8942fdca9760f2e2bad2e71ff1c1c6c18d147f9b",
+          "message": "Fix NuGet package version by adding Nerdbank.GitVersioning to Core\n\nThe Core package was published as 1.0.0 because it lacked a\nNerdbank.GitVersioning reference. Add it so dotnet pack derives\nthe correct version from version.json.\n\nBump version to v1.12.3.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+          "timestamp": "2026-03-30T22:15:31+09:00",
+          "tree_id": "051bd866570cda45600502ab7c4c5ad47d251fd6",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/8942fdca9760f2e2bad2e71ff1c1c6c18d147f9b"
+        },
+        "date": 1774876741657,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62251.32406850962,
+            "unit": "ns",
+            "range": "± 185.26797277969894"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 591329.7173227164,
+            "unit": "ns",
+            "range": "± 1627.8937915067345"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 6004565.278245192,
+            "unit": "ns",
+            "range": "± 18725.664893512523"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74938.46275838216,
+            "unit": "ns",
+            "range": "± 78.35616619764039"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 3068.361076227824,
+            "unit": "ns",
+            "range": "± 54.76146846387175"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 278116.20839146205,
+            "unit": "ns",
+            "range": "± 4468.479934551543"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 29203042.33482143,
+            "unit": "ns",
+            "range": "± 421040.6751675819"
           }
         ]
       }
