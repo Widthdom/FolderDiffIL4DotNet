@@ -3008,7 +3008,13 @@
       }
       if (isTyping()) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      switch (e.key) {
+      var key = e.key;
+      if (key === 'Process' || key === 'Unidentified') {
+        var codeMap = { 'KeyJ': 'j', 'KeyK': 'k', 'KeyX': 'x', 'Slash': '?' };
+        key = codeMap[e.code] || '';
+        if (e.code === 'Slash' && !e.shiftKey) key = '';
+      }
+      switch (key) {
         case 'j':
           moveBy(1);
           e.preventDefault();

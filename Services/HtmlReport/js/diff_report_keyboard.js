@@ -111,7 +111,20 @@
       // 修飾キーが押されていたらスキップ（ブラウザショートカットを許可）
       if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-      switch (e.key) {
+      // Resolve the effective key: when IME is active (e.g. Japanese input on Windows),
+      // browsers report e.key === 'Process' instead of the actual character.
+      // Fall back to the physical key code so shortcuts work regardless of IME state.
+      // 有効キーの解決: IME が有効な場合（例: Windows の日本語入力）、
+      // ブラウザは e.key === 'Process' を返すため、物理キーコードにフォールバックする。
+      var key = e.key;
+      if (key === 'Process' || key === 'Unidentified') {
+        var codeMap = { 'KeyJ': 'j', 'KeyK': 'k', 'KeyX': 'x', 'Slash': '?' };
+        key = codeMap[e.code] || '';
+        // '?' requires Shift on most layouts / '?' は多くの配列で Shift が必要
+        if (e.code === 'Slash' && !e.shiftKey) key = '';
+      }
+
+      switch (key) {
         case 'j':
           moveBy(1);
           e.preventDefault();
