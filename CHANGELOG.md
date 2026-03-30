@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.12.0] - 2026-03-30
+
 #### Added
 
 - **JSON Schema for `config.json` IDE autocompletion and validation** — Added [`doc/config.schema.json`](doc/config.schema.json) providing JSON Schema 2020-12 for `config.json`. IDEs (VS Code, Visual Studio, JetBrains Rider, Vim/Neovim via LSP) now offer property name autocompletion, type checking, value range validation (`minimum`, `enum`), and bilingual (EN+JA) hover descriptions. The schema enforces `additionalProperties: false` to catch typos immediately. `ConfigSettingsBuilder` now accepts `$schema` via `[JsonExtensionData]` so config files with a schema reference deserialize without error. New file: [`doc/config.schema.json`](doc/config.schema.json). Modified: [`Models/ConfigSettingsBuilder.cs`](Models/ConfigSettingsBuilder.cs) (`[JsonExtensionData]`), [`doc/config.sample.jsonc`](doc/config.sample.jsonc) (`$schema` reference + instructions), [`README.md`](README.md) (EN+JA schema usage guide). Tests: `Schema_Properties_MatchConfigSettingsBuilder_Properties`, `Schema_DisallowsAdditionalProperties`, `Schema_AllProperties_HaveBilingualDescriptions`, `JsonDeserialize_WithSchemaProperty_Succeeds`, `Schema_IsValidJsonWithRequiredTopLevelKeys` in [`ConfigSettingsTests.Schema`](FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.Schema.cs). Test count: 1025 (+5).
@@ -861,6 +863,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.12.0] - 2026-03-30
 
 #### Added
 
@@ -1715,7 +1719,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.8.1...v1.9.0
