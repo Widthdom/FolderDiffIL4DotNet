@@ -484,6 +484,65 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(LogFormat.Text, logger.Format);
         }
 
+        // -----------------------------------------------------------------------
+        // TraceId / JSON traceId and spanId fields
+        // トレース ID / JSON traceId・spanId フィールド
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void TraceId_BeforeInitialization_IsNull()
+        {
+            var logger = new LoggerService();
+            Assert.Null(logger.TraceId);
+        }
+
+        [Fact]
+        public void TraceId_AfterInitialization_Is32HexChars()
+        {
+            var logger = new LoggerService();
+            logger.Initialize();
+
+            Assert.NotNull(logger.TraceId);
+            Assert.Matches(new Regex(@"^[0-9a-f]{32}$", RegexOptions.CultureInvariant), logger.TraceId);
+        }
+
+        [Fact]
+        public void LogMessage_JsonFormat_IncludesTraceIdAndSpanId()
+        {
+            var logger = new LoggerService { Format = LogFormat.Json };
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_json_trace.log");
+
+            logger.Initialize();
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                logger.LogMessage(AppLogLevel.Info, "trace-test", shouldOutputMessageToConsole: false);
+
+                var content = File.ReadAllText(tempLogPath).Trim();
+                var doc = System.Text.Json.JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                // traceId should be a 32-char hex string matching the logger's TraceId
+                // traceId はロガーの TraceId と一致する 32 桁の 16 進文字列であること
+                var traceId = root.GetProperty("traceId").GetString();
+                Assert.Equal(logger.TraceId, traceId);
+
+                // spanId should be a 16-char hex string (W3C Trace Context format)
+                // spanId は 16 桁の 16 進文字列（W3C Trace Context 形式）であること
+                var spanId = root.GetProperty("spanId").GetString();
+                Assert.NotNull(spanId);
+                Assert.Matches(new Regex(@"^[0-9a-f]{16}$", RegexOptions.CultureInvariant), spanId);
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
         private static void SetPrivateField(object target, string fieldName, string value)
         {
             var fieldInfo = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);

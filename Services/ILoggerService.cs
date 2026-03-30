@@ -25,6 +25,16 @@ namespace FolderDiffIL4DotNet.Services
         LogFormat Format { get; set; }
 
         /// <summary>
+        /// W3C Trace Context trace ID for the current run.
+        /// Assigned once at <see cref="Initialize"/> and included in every JSON log entry
+        /// for SIEM / OpenTelemetry correlation.
+        /// 現在の実行の W3C Trace Context トレース ID。
+        /// <see cref="Initialize"/> 時に一度だけ生成され、SIEM / OpenTelemetry 連携用に
+        /// すべての JSON ログエントリに付与されます。
+        /// </summary>
+        string? TraceId { get; }
+
+        /// <summary>
         /// Initializes the logging infrastructure (output directory and file path).
         /// ログ基盤（出力先ディレクトリ/ファイルパス）を初期化します。
         /// </summary>

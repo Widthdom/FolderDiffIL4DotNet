@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -33,12 +34,16 @@ namespace FolderDiffIL4DotNet.Services
 
         private string? _logDirectoryAbsolutePath;
         private string? _logFileAbsolutePath;
+        private string? _traceId;
 
         /// <inheritdoc />
         public string? LogFileAbsolutePath => _logFileAbsolutePath;
 
         /// <inheritdoc />
         public LogFormat Format { get; set; } = LogFormat.Text;
+
+        /// <inheritdoc />
+        public string? TraceId => _traceId;
 
         /// <summary>
         /// Creates the log directory and computes today's log file path (does not create the file itself).
@@ -58,6 +63,12 @@ namespace FolderDiffIL4DotNet.Services
                 $"{LOG_FILE_PREFIX}{DateTime.Now.ToString(Constants.LOG_FILE_DATE_FORMAT, CultureInfo.InvariantCulture)}.log");
 
             PathValidator.ValidateAbsolutePathLengthOrThrow(_logFileAbsolutePath);
+
+            // Generate a W3C Trace Context compatible trace ID (32 hex chars) for the run.
+            // This allows correlating all log entries from a single run in SIEM / OpenTelemetry.
+            // 実行単位の W3C Trace Context 互換トレース ID (32桁16進数) を生成。
+            // SIEM / OpenTelemetry で同一実行のログを相関付けるために使用。
+            _traceId = ActivityTraceId.CreateRandom().ToHexString();
         }
 
         /// <inheritdoc />
@@ -176,9 +187,11 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Writes a single log entry as a JSON object (one line per entry, NDJSON).
+        /// Includes W3C Trace Context fields (<c>traceId</c>, <c>spanId</c>) for SIEM / OpenTelemetry correlation.
         /// 1つのログエントリを JSON オブジェクトとして書き込みます（1行1エントリ、NDJSON 形式）。
+        /// SIEM / OpenTelemetry 連携用に W3C Trace Context フィールド（<c>traceId</c>、<c>spanId</c>）を含みます。
         /// </summary>
-        private static void WriteJsonLogEntry(StreamWriter writer, AppLogLevel logLevel, string message, Exception? exception)
+        private void WriteJsonLogEntry(StreamWriter writer, AppLogLevel logLevel, string message, Exception? exception)
         {
             using var stream = new MemoryStream();
             using (var jsonWriter = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = false }))
@@ -187,6 +200,15 @@ namespace FolderDiffIL4DotNet.Services
                 jsonWriter.WriteString("timestamp", DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
                 jsonWriter.WriteString("level", GetLogLevelString(logLevel));
                 jsonWriter.WriteString("message", message ?? string.Empty);
+
+                // W3C Trace Context fields for SIEM / OpenTelemetry correlation
+                // SIEM / OpenTelemetry 相関付け用 W3C Trace Context フィールド
+                if (_traceId != null)
+                {
+                    jsonWriter.WriteString("traceId", _traceId);
+                }
+                jsonWriter.WriteString("spanId", ActivitySpanId.CreateRandom().ToHexString());
+
                 if (exception != null)
                 {
                     jsonWriter.WriteString("exceptionType", exception.GetType().FullName);

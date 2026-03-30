@@ -135,5 +135,59 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.Null(opts.LogFormatOverride);
         }
+
+        // -----------------------------------------------------------------------
+        // --random-spinner
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_RandomSpinnerFlag_SetsRandomSpinner()
+        {
+            var opts = CliParser.Parse(new[] { "--random-spinner" });
+
+            Assert.True(opts.RandomSpinner);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_NoRandomSpinnerFlag_DefaultsToFalse()
+        {
+            var opts = CliParser.Parse(new[] { "--no-pause" });
+
+            Assert.False(opts.RandomSpinner);
+        }
+
+        // -----------------------------------------------------------------------
+        // MultipleSpinnersDetected
+        // 複数スピナー検出
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_SingleSpinnerFlag_MultipleSpinnersNotDetected()
+        {
+            var opts = CliParser.Parse(new[] { "--coffee" });
+
+            Assert.False(opts.MultipleSpinnersDetected);
+        }
+
+        [Fact]
+        public void ParseCliOptions_TwoSpinnerFlags_MultipleSpinnersDetected()
+        {
+            var opts = CliParser.Parse(new[] { "--coffee", "--beer" });
+
+            Assert.True(opts.MultipleSpinnersDetected);
+            // Last-wins still applies for the actual theme flag / 実際のテーマフラグには最後勝ちが適用される
+            Assert.True(opts.Beer);
+            Assert.False(opts.Coffee);
+        }
+
+        [Fact]
+        public void ParseCliOptions_ThreeSpinnerFlags_MultipleSpinnersDetected()
+        {
+            var opts = CliParser.Parse(new[] { "--coffee", "--beer", "--matcha" });
+
+            Assert.True(opts.MultipleSpinnersDetected);
+            Assert.True(opts.Matcha);
+        }
     }
 }
