@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.12.3] - 2026-03-30
+
+#### Fixed
+
+- **Fix NuGet package version fallback to 1.0.0** — Added `Nerdbank.GitVersioning` package reference to `FolderDiffIL4DotNet.Core.csproj` so that `dotnet pack` correctly derives the version from `version.json` instead of falling back to `1.0.0`.
+
 ### [1.12.2] - 2026-03-30
 
 #### Added
@@ -883,6 +889,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.12.3] - 2026-03-30
+
+#### Fixed
+
+- **NuGet パッケージバージョンが 1.0.0 にフォールバックする問題を修正** — `FolderDiffIL4DotNet.Core.csproj` に `Nerdbank.GitVersioning` パッケージ参照を追加し、`dotnet pack` が `version.json` から正しいバージョンを算出するようにした。
 
 ### [1.12.2] - 2026-03-30
 
@@ -1759,7 +1771,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.2...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.3...HEAD
+[1.12.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.2...v1.12.3
 [1.12.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.1...v1.12.2
 [1.12.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.11.0...v1.12.0
