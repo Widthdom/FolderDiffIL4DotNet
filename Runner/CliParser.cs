@@ -24,7 +24,11 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_MATCHA = "--matcha";
         private const string OPT_WHISKY = "--whisky";
         private const string OPT_WINE = "--wine";
+        private const string OPT_RAMEN = "--ramen";
+        private const string OPT_SUSHI = "--sushi";
         private const string OPT_BELL = "--bell";
+        private const string OPT_WIZARD = "--wizard";
+        private const string OPT_LOG_FORMAT = "--log-format";
 
         /// <summary>
         /// Scans command-line arguments and returns parsed CLI options.
@@ -36,14 +40,15 @@ namespace FolderDiffIL4DotNet.Runner
         {
             bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
             bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
-            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, bell = false;
+            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false;
             string? configPath = null;
             int? threadsOverride = null;
+            string? logFormatOverride = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -118,22 +123,49 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_COFFEE:
                         // Last-wins: clear other spinner flags so CLI order determines winner
                         // 最後勝ち: 他のスピナーフラグをクリアしてCLI引数順で決定
-                        coffee = true; beer = false; matcha = false; whisky = false; wine = false;
+                        coffee = true; beer = false; matcha = false; whisky = false; wine = false; ramen = false; sushi = false;
                         break;
                     case OPT_BEER:
-                        coffee = false; beer = true; matcha = false; whisky = false; wine = false;
+                        coffee = false; beer = true; matcha = false; whisky = false; wine = false; ramen = false; sushi = false;
                         break;
                     case OPT_MATCHA:
-                        coffee = false; beer = false; matcha = true; whisky = false; wine = false;
+                        coffee = false; beer = false; matcha = true; whisky = false; wine = false; ramen = false; sushi = false;
                         break;
                     case OPT_WHISKY:
-                        coffee = false; beer = false; matcha = false; whisky = true; wine = false;
+                        coffee = false; beer = false; matcha = false; whisky = true; wine = false; ramen = false; sushi = false;
                         break;
                     case OPT_WINE:
-                        coffee = false; beer = false; matcha = false; whisky = false; wine = true;
+                        coffee = false; beer = false; matcha = false; whisky = false; wine = true; ramen = false; sushi = false;
+                        break;
+                    case OPT_RAMEN:
+                        coffee = false; beer = false; matcha = false; whisky = false; wine = false; ramen = true; sushi = false;
+                        break;
+                    case OPT_SUSHI:
+                        coffee = false; beer = false; matcha = false; whisky = false; wine = false; ramen = false; sushi = true;
                         break;
                     case OPT_BELL:
                         bell = true;
+                        break;
+                    case OPT_WIZARD:
+                        wizard = true;
+                        break;
+                    case OPT_LOG_FORMAT:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            string fmt = args[++i].ToLowerInvariant();
+                            if (fmt == "text" || fmt == "json")
+                            {
+                                logFormatOverride = fmt;
+                            }
+                            else
+                            {
+                                parseError ??= $"'{OPT_LOG_FORMAT}' must be 'text' or 'json'. Got: '{args[i]}'.";
+                            }
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_LOG_FORMAT}' requires a format argument (text or json).";
+                        }
                         break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
@@ -147,7 +179,7 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, bell, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, logFormatOverride, parseError);
         }
     }
 }

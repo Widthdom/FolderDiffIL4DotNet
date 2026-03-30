@@ -34,6 +34,7 @@
     initClearButtons();
     setupLazyDiff();
     setupLazySection();
+    highlightAllILDiffs();
     updateProgress();
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept
@@ -49,8 +50,13 @@
   // ── Keyboard navigation (WCAG 2.1 AA) ────────────────────────────────
   // Escape closes the nearest open detail element when focus is inside it.
   // Escapeキーでフォーカス中のdetail要素を閉じる。
+  // Note: when focus is on a text input, diff_report_keyboard.js handles
+  // Escape (blur) first and sets __kbEscHandled__ to skip this handler.
+  // テキスト入力にフォーカスがある場合、diff_report_keyboard.js が先に
+  // Escape（blur）を処理し __kbEscHandled__ でこのハンドラをスキップする。
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
+      if (window.__kbEscHandled__) { window.__kbEscHandled__ = false; return; }
       var details = document.activeElement ? document.activeElement.closest('details[open]') : null;
       if (details) {
         details.removeAttribute('open');

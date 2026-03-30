@@ -379,6 +379,111 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        // -----------------------------------------------------------------------
+        // JSON log format / JSON ログ形式
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void LogMessage_JsonFormat_WritesNdjsonToFile()
+        {
+            var logger = new LoggerService { Format = LogFormat.Json };
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_json_test.log");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                logger.LogMessage(AppLogLevel.Info, "hello json", shouldOutputMessageToConsole: false);
+
+                Assert.True(File.Exists(tempLogPath));
+                var content = File.ReadAllText(tempLogPath).Trim();
+                var doc = System.Text.Json.JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                Assert.True(root.TryGetProperty("timestamp", out _));
+                Assert.Equal("INFO", root.GetProperty("level").GetString());
+                Assert.Equal("hello json", root.GetProperty("message").GetString());
+                Assert.False(root.TryGetProperty("exceptionType", out _));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_JsonFormat_IncludesExceptionFields()
+        {
+            var logger = new LoggerService { Format = LogFormat.Json };
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_json_exc.log");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                Exception captured;
+                try { throw new InvalidOperationException("test-error"); }
+                catch (Exception ex) { captured = ex; }
+
+                logger.LogMessage(AppLogLevel.Error, "failure", shouldOutputMessageToConsole: false, captured);
+
+                var content = File.ReadAllText(tempLogPath).Trim();
+                var doc = System.Text.Json.JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                Assert.Equal("ERROR", root.GetProperty("level").GetString());
+                Assert.Equal("failure", root.GetProperty("message").GetString());
+                Assert.Equal("System.InvalidOperationException", root.GetProperty("exceptionType").GetString());
+                Assert.Equal("test-error", root.GetProperty("exceptionMessage").GetString());
+                Assert.True(root.TryGetProperty("stackTrace", out _));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_JsonFormat_TimestampIsIso8601()
+        {
+            var logger = new LoggerService { Format = LogFormat.Json };
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_json_ts.log");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                logger.LogMessage(AppLogLevel.Warning, "ts-check", shouldOutputMessageToConsole: false);
+
+                var content = File.ReadAllText(tempLogPath).Trim();
+                var doc = System.Text.Json.JsonDocument.Parse(content);
+                var tsStr = doc.RootElement.GetProperty("timestamp").GetString();
+
+                // ISO 8601 round-trip format / ISO 8601 ラウンドトリップ形式
+                Assert.True(
+                    DateTimeOffset.TryParse(tsStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _),
+                    $"Timestamp '{tsStr}' is not a valid ISO 8601 format");
+                Assert.Equal("WARNING", doc.RootElement.GetProperty("level").GetString());
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void Format_DefaultIsText()
+        {
+            var logger = new LoggerService();
+            Assert.Equal(LogFormat.Text, logger.Format);
+        }
+
         private static void SetPrivateField(object target, string fieldName, string value)
         {
             var fieldInfo = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);

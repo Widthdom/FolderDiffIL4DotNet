@@ -37,6 +37,9 @@ namespace FolderDiffIL4DotNet.Tests.Helpers
         /// <inheritdoc />
         public string? LogFileAbsolutePath { get; }
 
+        /// <inheritdoc />
+        public LogFormat Format { get; set; } = LogFormat.Text;
+
         /// <summary>
         /// All captured log entries.
         /// キャプチャされた全ログエントリ。

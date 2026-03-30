@@ -22,6 +22,10 @@ namespace FolderDiffIL4DotNet.Runner
         bool Matcha,
         bool Whisky,
         bool Wine,
+        bool Ramen,
+        bool Sushi,
         bool Bell,
+        bool Wizard,
+        string? LogFormatOverride,
         string? ParseError);
 }

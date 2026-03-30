@@ -24,13 +24,18 @@ namespace FolderDiffIL4DotNet
             "  --no-il-cache               Disable the IL cache for this run.\n" +
             "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
             "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n" +
+            "  --wizard                    Interactive mode: prompts for old/new folders and report label.\n" +
             "  --dry-run                   Enumerate files and show statistics without running comparison.\n" +
             "  --coffee                    Use coffee-themed spinner animation during execution.\n" +
             "  --beer                      Use beer-themed spinner animation during execution.\n" +
             "  --matcha                    Use matcha tea ceremony spinner animation during execution.\n" +
             "  --whisky                    Use whisky distilling spinner animation during execution.\n" +
             "  --wine                      Use wine making spinner animation during execution.\n" +
-            "  --bell                      Ring terminal bell when execution completes.\n\n" +
+            "  --ramen                     Use ramen steaming spinner animation during execution.\n" +
+            "  --sushi                     Use conveyor-belt sushi spinner animation during execution.\n" +
+            "  --bell                      Ring terminal bell when execution completes.\n" +
+            "  --log-format <text|json>    Log file output format (default: text).\n" +
+            "                              'json' emits NDJSON lines for SIEM/log aggregation.\n\n" +
             "Environment variables (override config.json values):\n" +
             "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +
             "  FOLDERDIFF_ENABLEILCACHE=<true|false>       Enable/disable the IL cache.\n" +

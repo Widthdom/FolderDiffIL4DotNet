@@ -79,7 +79,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 appVersion: "1.0.0-e2e", elapsedTimeString: "0h 0m 2.5s",
                 computerName: "e2e-host", config, ilCache: null);
 
-            var mdService = new ReportGenerateService(_resultLists, _logger, config);
+            var mdService = new ReportGenerateService(_resultLists, _logger);
             mdService.GenerateDiffReport(reportContext);
 
             var htmlService = new HtmlReportGenerateService(_resultLists, _logger, config);
@@ -151,7 +151,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 appVersion: "2.0.0", elapsedTimeString: "0h 0m 0.5s",
                 computerName: "no-change-host", config, ilCache: null);
 
-            var mdService = new ReportGenerateService(_resultLists, _logger, config);
+            var mdService = new ReportGenerateService(_resultLists, _logger);
             mdService.GenerateDiffReport(reportContext);
 
             var htmlService = new HtmlReportGenerateService(_resultLists, _logger, config);
@@ -199,7 +199,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
                 computerName: "test-host", config, ilCache: null);
 
-            var mdService = new ReportGenerateService(_resultLists, _logger, config);
+            var mdService = new ReportGenerateService(_resultLists, _logger);
             mdService.GenerateDiffReport(reportContext);
 
             var htmlService = new HtmlReportGenerateService(_resultLists, _logger, config);
@@ -260,7 +260,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 appVersion: "1.0.0", elapsedTimeString: "0h 0m 1.0s",
                 computerName: "parallel-host", config, ilCache: null);
 
-            new ReportGenerateService(_resultLists, _logger, config).GenerateDiffReport(reportContext);
+            new ReportGenerateService(_resultLists, _logger).GenerateDiffReport(reportContext);
             new HtmlReportGenerateService(_resultLists, _logger, config).GenerateDiffReportHtml(reportContext);
             new AuditLogGenerateService(_resultLists, _logger).GenerateAuditLog(reportContext);
 
@@ -298,7 +298,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Generate Markdown and HTML first (audit log reads their hashes)
             // 先に Markdown と HTML を生成（監査ログがそれらのハッシュを読み取る）
-            new ReportGenerateService(_resultLists, _logger, config).GenerateDiffReport(reportContext);
+            new ReportGenerateService(_resultLists, _logger).GenerateDiffReport(reportContext);
             new HtmlReportGenerateService(_resultLists, _logger, config).GenerateDiffReportHtml(reportContext);
             new AuditLogGenerateService(_resultLists, _logger).GenerateAuditLog(reportContext);
 

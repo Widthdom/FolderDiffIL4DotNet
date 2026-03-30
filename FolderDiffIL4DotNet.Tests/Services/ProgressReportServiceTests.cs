@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -283,6 +285,145 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // _lastPercentage should not have been updated after dispose
             // Dispose 後に _lastPercentage は更新されないこと
             Assert.Equal(double.NegativeInfinity, lastPercentage);
+        }
+
+        // ── BeginPhase tests / BeginPhase テスト ──────────────────────────
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BeginPhase_WithTotalPhases_FormatsLabelWithNumberPrefix()
+        {
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            service.TotalPhases = 5;
+
+            service.BeginPhase("Discovering files");
+
+            var label = GetPrivateField<string>(service, "_labelPrefix");
+            Assert.Equal("[1/5] Discovering files", label);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BeginPhase_CalledMultipleTimes_IncrementsPhaseNumber()
+        {
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            service.TotalPhases = 4;
+
+            service.BeginPhase("Phase A");
+            Assert.Equal("[1/4] Phase A", GetPrivateField<string>(service, "_labelPrefix"));
+
+            service.BeginPhase("Phase B");
+            Assert.Equal("[2/4] Phase B", GetPrivateField<string>(service, "_labelPrefix"));
+
+            service.BeginPhase("Phase C");
+            Assert.Equal("[3/4] Phase C", GetPrivateField<string>(service, "_labelPrefix"));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BeginPhase_ResetsProgressToZero()
+        {
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            service.TotalPhases = 3;
+
+            service.ReportProgress(80.0);
+            service.BeginPhase("Next phase");
+
+            // After BeginPhase, progress should have been reset and re-reported at 0.0
+            // BeginPhase 後は進捗がリセットされ 0.0 で再報告される
+            var lastPercentage = GetPrivateField<double>(service, "_lastPercentage");
+            Assert.Equal(0.0, lastPercentage);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BeginPhase_WithoutTotalPhases_UsesPlainLabel()
+        {
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            // TotalPhases defaults to 0 (no numbering)
+            // TotalPhases のデフォルトは 0（番号付けなし）
+
+            service.BeginPhase("Scanning");
+
+            var label = GetPrivateField<string>(service, "_labelPrefix");
+            Assert.Equal("Scanning", label);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BeginPhase_AfterDispose_IsIgnored()
+        {
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            service.TotalPhases = 3;
+            service.Dispose();
+
+            var ex = Record.Exception(() => service.BeginPhase("Should not crash"));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BeginPhase_LogsPreviousPhaseElapsedTime()
+        {
+            var logger = new TestLogger();
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build(), logger);
+            service.TotalPhases = 3;
+
+            service.BeginPhase("Phase A");
+            service.ReportProgress(100.0);
+
+            // Begin Phase B — should log Phase A's elapsed time
+            // Phase B 開始 — Phase A の経過時間がログ出力される
+            service.BeginPhase("Phase B");
+
+            var phaseLog = logger.Entries.FirstOrDefault(e =>
+                e.Message.Contains("Phase completed:") && e.Message.Contains("[1/3] Phase A"));
+            Assert.NotNull(phaseLog);
+            Assert.Equal(AppLogLevel.Info, phaseLog.LogLevel);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void TotalPhases_NegativeValue_Throws()
+        {
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => service.TotalPhases = -1);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatPhaseElapsed_UnderOneMinute_ReturnsSeconds()
+        {
+            var result = ProgressReportService.FormatPhaseElapsed(TimeSpan.FromSeconds(45.3));
+
+            Assert.Equal("45.3s", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatPhaseElapsed_OverOneMinute_ReturnsMinutesAndSeconds()
+        {
+            var result = ProgressReportService.FormatPhaseElapsed(TimeSpan.FromSeconds(125.7));
+
+            Assert.Equal("2m 5.7s", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Dispose_LogsFinalPhaseElapsed()
+        {
+            var logger = new TestLogger();
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build(), logger);
+            service.TotalPhases = 2;
+
+            service.BeginPhase("Only phase");
+            service.ReportProgress(100.0);
+            service.Dispose();
+
+            var phaseLog = logger.Entries.FirstOrDefault(e =>
+                e.Message.Contains("Phase completed:") && e.Message.Contains("[1/2] Only phase"));
+            Assert.NotNull(phaseLog);
         }
 
         private static T GetPrivateField<T>(object target, string fieldName)

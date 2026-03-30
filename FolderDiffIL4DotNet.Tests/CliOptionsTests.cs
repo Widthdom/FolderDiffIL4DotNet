@@ -3,7 +3,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests
 {
-    public sealed class CliOptionsTests
+    public sealed partial class CliOptionsTests
     {
         // -----------------------------------------------------------------------
         // ParseCliOptions – positional-only (no flags)
@@ -31,6 +31,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
             Assert.False(opts.Bell);
+            Assert.Null(opts.LogFormatOverride);
             Assert.Null(opts.ParseError);
         }
 
@@ -326,6 +327,45 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --ramen
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_RamenFlag_SetsRamen()
+        {
+            var opts = CliParser.Parse(new[] { "--ramen" });
+
+            Assert.True(opts.Ramen);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --sushi
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_SushiFlag_SetsSushi()
+        {
+            var opts = CliParser.Parse(new[] { "--sushi" });
+
+            Assert.True(opts.Sushi);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --wizard
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_WizardFlag_SetsWizard()
+        {
+            var opts = CliParser.Parse(new[] { "--wizard" });
+
+            Assert.True(opts.Wizard);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
         // --bell
         // -----------------------------------------------------------------------
 
@@ -380,79 +420,5 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(opts.ParseError);
         }
 
-        // -----------------------------------------------------------------------
-        // Combined flags
-        // -----------------------------------------------------------------------
-
-        [Fact]
-        public void ParseCliOptions_AllFlagsCombined_ParsedCorrectly()
-        {
-            var opts = CliParser.Parse(new[]
-            {
-                "/old", "/new", "label",
-                "--no-pause",
-                "--config", "/etc/my.json",
-                "--threads", "4",
-                "--no-il-cache",
-                "--skip-il",
-                "--no-timestamp-warnings",
-                "--print-config",
-                "--dry-run",
-                "--coffee",
-                "--beer",
-                "--matcha",
-                "--whisky",
-                "--wine",
-                "--bell"
-            });
-
-            Assert.False(opts.ShowHelp);
-            Assert.False(opts.ShowVersion);
-            Assert.False(opts.ShowBanner);
-            Assert.True(opts.NoPause);
-            Assert.Equal("/etc/my.json", opts.ConfigPath);
-            Assert.Equal(4, opts.ThreadsOverride);
-            Assert.True(opts.NoIlCache);
-            Assert.True(opts.SkipIL);
-            Assert.True(opts.NoTimestampWarnings);
-            Assert.True(opts.PrintConfig);
-            Assert.True(opts.DryRun);
-            // Last-wins: --wine is last spinner flag, so only Wine is true
-            // 最後勝ち: --wine が最後のスピナーフラグなので Wine のみ true
-            Assert.False(opts.Coffee);
-            Assert.False(opts.Beer);
-            Assert.False(opts.Matcha);
-            Assert.False(opts.Whisky);
-            Assert.True(opts.Wine);
-            Assert.True(opts.Bell);
-            Assert.Null(opts.ParseError);
-        }
-
-        // -----------------------------------------------------------------------
-        // Spinner last-wins behavior / スピナー最後勝ち動作
-        // -----------------------------------------------------------------------
-
-        [Fact]
-        [Trait("Category", "Unit")]
-        public void ParseCliOptions_MultipleSpinnerFlags_LastOneWins()
-        {
-            var opts = CliParser.Parse(new[] { "--matcha", "--beer" });
-
-            Assert.False(opts.Coffee);
-            Assert.True(opts.Beer);
-            Assert.False(opts.Matcha);
-            Assert.False(opts.Whisky);
-            Assert.False(opts.Wine);
-        }
-
-        [Fact]
-        [Trait("Category", "Unit")]
-        public void ParseCliOptions_CoffeeAfterWine_CoffeeWins()
-        {
-            var opts = CliParser.Parse(new[] { "--wine", "--coffee" });
-
-            Assert.True(opts.Coffee);
-            Assert.False(opts.Wine);
-        }
     }
 }

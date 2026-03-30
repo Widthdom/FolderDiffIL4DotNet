@@ -133,15 +133,19 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--no-il-cache` | Disable the IL cache for this run. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
+| `--wizard` | Interactive mode: prompts for old folder, new folder, and report label. |
 | `--dry-run` | Enumerate files and show statistics without running comparison. |
 | `--coffee` | Use coffee-themed spinner animation during execution (easter egg). |
 | `--beer` | Use beer-themed spinner animation during execution (easter egg). |
 | `--matcha` | Use matcha tea ceremony spinner animation during execution (easter egg). |
 | `--whisky` | Use whisky distilling spinner animation during execution (easter egg). |
 | `--wine` | Use wine making spinner animation during execution (easter egg). |
+| `--ramen` | Use ramen steaming spinner animation during execution (easter egg). |
+| `--sushi` | Use conveyor-belt sushi spinner animation during execution (easter egg). |
 | `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
+| `--log-format <text\|json>` | Log file output format (default: `text`). `json` emits NDJSON (one JSON object per line) for SIEM and log aggregation tool integration. Console output remains plain text regardless. |
 
-> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the last one listed wins. They also override any custom `SpinnerFrames` set in `config.json`.
+> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the last one listed wins. They also override any custom `SpinnerFrames` set in `config.json`.
 
 ```bash
 dotnet build
@@ -238,6 +242,37 @@ See [doc/samples/diff_report.html](doc/samples/diff_report.html) for a live samp
 6. (Optional) In the reviewed HTML, click "Download as Excel-compatible HTML"
      to export the review data as an Excel-openable HTML table
      (diff_report_YYYYMMDD_reviewed_Excel-compatible.html).
+```
+
+### Keyboard shortcuts
+
+The HTML report supports keyboard-driven navigation for efficient review of large file lists:
+
+| Key | Action |
+|---|---|
+| `j` | Move focus to the next file row |
+| `k` | Move focus to the previous file row |
+| `x` | Toggle the review checkbox on the focused row |
+| `Enter` | Expand / collapse the diff detail (standard `<summary>` behaviour) |
+| `Esc` | Close an open diff detail, or exit a text input field |
+| `?` | Show / hide the shortcut help overlay |
+
+All single-key shortcuts are disabled while typing in Justification, Notes, or the search box.
+In reviewed (read-only) mode, `x` is disabled; `j` / `k` navigation remains available.
+
+**Typical keyboard-only flow:**
+
+```
+j/k        → Navigate to a file row (highlighted with accent border)
+Enter      → Expand the diff to review changes
+Esc        → Close the diff
+x          → Mark the file as reviewed
+Tab        → Move cursor to the Justification field
+(type)     → Enter the review reason
+Tab        → Move cursor to the Notes field (optional)
+(type)     → Enter notes
+Esc        → Exit the text field, return focus to the file row
+j          → Move to the next file
 ```
 
 ### Integrity verification flow
@@ -359,6 +394,18 @@ Place [`config.json`](config.json) next to the executable. All keys are optional
 ```json
 {}
 ```
+
+#### JSON Schema for IDE Autocompletion
+
+A JSON Schema file ([`doc/config.schema.json`](doc/config.schema.json)) is provided for IDE autocompletion and real-time validation. Add a `$schema` property to your `config.json` to enable it:
+
+```json
+{
+  "$schema": "./doc/config.schema.json"
+}
+```
+
+> **Tip:** Adjust the `$schema` path based on where your `config.json` is relative to `config.schema.json`. Supported in VS Code, Visual Studio, JetBrains Rider, Vim/Neovim (via LSP), and other JSON-aware editors. Benefits include property name autocompletion, type checking, value range validation, and bilingual hover descriptions.
 
 Override only the settings you want to change. For example:
 
@@ -567,7 +614,7 @@ Override only the settings you want to change. For example:
     <tr>
       <td id="config-en-spinnerframes"><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\"]</code></td>
-      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default. The CLI options <code>--coffee</code>, <code>--beer</code>, <code>--matcha</code>, <code>--whisky</code>, and <code>--wine</code> override this value.</td>
+      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default. The CLI options <code>--coffee</code>, <code>--beer</code>, <code>--matcha</code>, <code>--whisky</code>, <code>--wine</code>, <code>--ramen</code>, and <code>--sushi</code> override this value.</td>
     </tr>
     <tr id="config-en-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
@@ -785,13 +832,17 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
+| `--wizard` | 対話モード: 旧フォルダ、新フォルダ、レポートラベルを対話入力で指定します。 |
 | `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
 | `--coffee` | 実行中にコーヒーテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--beer` | 実行中にビールテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--matcha` | 実行中に抹茶点前テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--whisky` | 実行中にウイスキー蒸留テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--wine` | 実行中にワイン醸造テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--ramen` | 実行中にラーメン湯気テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
+| `--sushi` | 実行中に回転寿司テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
+| `--log-format <text\|json>` | ログファイルの出力形式（既定: `text`）。`json` を指定すると NDJSON（1行1 JSON オブジェクト）で出力し、SIEM やログ集約ツールとの連携が容易になります。コンソール出力は形式に関わらずプレーンテキストのままです。 |
 
 > **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は最後に記述したものが優先されます。`config.json` で設定したカスタム `SpinnerFrames` も上書きされます。
 
@@ -890,6 +941,37 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 6. （任意）reviewed HTML 内で「Download as Excel-compatible HTML」をクリックし、
      レビューデータを Excel で開ける HTML テーブルとしてエクスポート
      （diff_report_YYYYMMDD_reviewed_Excel-compatible.html）。
+```
+
+### キーボードショートカット
+
+HTML レポートは、大量ファイルの効率的なレビューのためにキーボード操作をサポートしています。
+
+| キー | 動作 |
+|---|---|
+| `j` | 次のファイル行にフォーカスを移動 |
+| `k` | 前のファイル行にフォーカスを移動 |
+| `x` | フォーカス中の行のレビューチェックボックスをトグル |
+| `Enter` | 差分詳細の展開/折りたたみ（標準の `<summary>` 動作） |
+| `Esc` | 差分詳細を閉じる、またはテキスト入力欄から抜ける |
+| `?` | ショートカットヘルプオーバーレイの表示/非表示 |
+
+すべてのシングルキーショートカットは、Justification・Notes・検索ボックスへの入力中は無効になります。
+レビュー済み（読み取り専用）モードでは `x` は無効、`j` / `k` のナビゲーションは使用可能です。
+
+**キーボードのみの操作フロー：**
+
+```
+j/k        → ファイル行に移動（アクセントボーダーでハイライト）
+Enter      → 差分を展開してレビュー
+Esc        → 差分を閉じる
+x          → ファイルをレビュー済みとしてマーク
+Tab        → Justification 欄にカーソル移動
+(入力)     → レビュー理由を入力
+Tab        → Notes 欄にカーソル移動（任意）
+(入力)     → メモを入力
+Esc        → テキスト欄から抜け、ファイル行にフォーカスを戻す
+j          → 次のファイルへ移動
 ```
 
 ### 整合性検証フロー
@@ -1010,6 +1092,18 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
 ```json
 {}
 ```
+
+#### IDE 補完用 JSON Schema
+
+JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）を提供しています。`config.json` に `$schema` プロパティを追加すると、IDE の補完とリアルタイムバリデーションが有効になります。
+
+```json
+{
+  "$schema": "./doc/config.schema.json"
+}
+```
+
+> **ヒント:** `$schema` のパスは `config.json` から `config.schema.json` への相対パスに合わせて調整してください。VS Code、Visual Studio、JetBrains Rider、Vim/Neovim（LSP 経由）など JSON 対応エディタで利用可能です。プロパティ名の補完、型チェック、値の範囲検証、英日バイリンガルのホバー説明が得られます。
 
 変更したい項目だけを書けば十分です。例:
 
@@ -1218,7 +1312,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
     <tr id="config-ja-spinnerframes">
       <td><code>SpinnerFrames</code></td>
       <td><code>["|", "/", "-", "\"]</code></td>
-      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。CLI オプション <code>--coffee</code>、<code>--beer</code>、<code>--matcha</code>、<code>--whisky</code>、<code>--wine</code> を指定するとこの値は上書きされます。</td>
+      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。CLI オプション <code>--coffee</code>、<code>--beer</code>、<code>--matcha</code>、<code>--whisky</code>、<code>--wine</code>、<code>--ramen</code>、<code>--sushi</code> を指定するとこの値は上書きされます。</td>
     </tr>
     <tr id="config-ja-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>

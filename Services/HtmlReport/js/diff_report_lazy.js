@@ -12,6 +12,7 @@
           d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
           // Insert side-by-side toggle button before each diff-table / 各diff-tableの前にサイドバイサイド切り替えボタンを挿入
           d.querySelectorAll('.diff-table').forEach(function(tbl) {
+            highlightILDiff(tbl);
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'sbs-toggle';

@@ -90,7 +90,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Equal("CycloneDX", root.GetProperty("bomFormat").GetString());
             Assert.Equal("1.5", root.GetProperty("specVersion").GetString());
-            Assert.True(root.GetProperty("serialNumber").GetString()!.StartsWith("urn:uuid:"));
+            Assert.StartsWith("urn:uuid:", root.GetProperty("serialNumber").GetString()!);
             Assert.Equal(1, root.GetProperty("version").GetInt32());
             Assert.True(root.TryGetProperty("metadata", out _));
             Assert.True(root.TryGetProperty("components", out _));

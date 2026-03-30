@@ -104,7 +104,6 @@ namespace FolderDiffIL4DotNet.Services
 
             _config = config;
             _progressReporter = progressReporter;
-            _progressReporter.SetLabel(SPINNER_LABEL_FOLDER_DIFF);
             _oldFolderAbsolutePath = executionContext.OldFolderAbsolutePath;
             _newFolderAbsolutePath = executionContext.NewFolderAbsolutePath;
             _ilOutputFolderAbsolutePath = executionContext.IlOutputFolderAbsolutePath;
@@ -156,11 +155,9 @@ namespace FolderDiffIL4DotNet.Services
 
                 await PrecomputeIlCachesAsync(maxParallel, cancellationToken);
 
-                // Reset progress and restore the diff-phase label so the bar restarts at 0%.
-                // 進捗をリセットし差分フェーズのラベルに戻すことで、バーが 0% から再スタートする。
-                _progressReporter.ResetProgress();
-                _progressReporter.SetLabel(SPINNER_LABEL_FOLDER_DIFF);
-                _progressReporter.ReportProgress(0.0);
+                // Begin the diff classification phase so the bar restarts at 0%.
+                // 差分分類フェーズを開始し、バーが 0% から再スタートする。
+                _progressReporter.BeginPhase(SPINNER_LABEL_FOLDER_DIFF);
 
                 CreateIlOutputDirectoriesIfNeeded();
 
@@ -245,9 +242,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             // Show a dedicated "Discovering files" phase so the user sees progress during file enumeration.
             // ファイル列挙中にユーザーへ進捗を示すため、専用の「Discovering files」フェーズを表示する。
-            _progressReporter.ResetProgress();
-            _progressReporter.SetLabel(SPINNER_LABEL_DISCOVERING_FILES);
-            _progressReporter.ReportProgress(0.0);
+            _progressReporter.BeginPhase(SPINNER_LABEL_DISCOVERING_FILES);
 
             _fileDiffResultLists.SetOldFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_oldFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.Old));
             _progressReporter.ReportProgress(50.0);
@@ -288,9 +283,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private void ScanAssemblyCandidatesAndLog()
         {
-            _progressReporter.ResetProgress();
-            _progressReporter.SetLabel(SPINNER_LABEL_SCANNING_ASSEMBLIES);
-            _progressReporter.ReportProgress(0.0);
+            _progressReporter.BeginPhase(SPINNER_LABEL_SCANNING_ASSEMBLIES);
 
             int dotNetAssemblyCandidates = _executionStrategy.CountDotNetAssemblyCandidates(
                 _fileDiffResultLists.OldFilesAbsolutePath,

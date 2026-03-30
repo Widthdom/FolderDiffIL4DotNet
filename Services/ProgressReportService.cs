@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -19,6 +20,7 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_PROGRESS_KEEPALIVE_LABELED = LOG_PROGRESS_LABELED + " (processing...)";
         private const int FIXED_BAR_WIDTH = 32;
         private readonly string[] _keepAliveFrames;
+        private readonly ILoggerService? _logger;
         private string? _lastFormattedPercentage = null;
         private string? _labelPrefix = string.Empty;
         private double _lastPercentage = double.NegativeInfinity;
@@ -33,6 +35,9 @@ namespace FolderDiffIL4DotNet.Services
         private Timer? _keepAliveTimer;
         private bool _keepAliveTimerStarted;
         private bool _disposed;
+        private int _totalPhases;
+        private int _currentPhase;
+        private Stopwatch? _phaseStopwatch;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ProgressReportService"/>.
@@ -40,9 +45,21 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
         public ProgressReportService(IReadOnlyConfigSettings config)
+            : this(config, logger: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ProgressReportService"/> with optional logger for phase timing.
+        /// フェーズタイミング用のオプションロガー付きで <see cref="ProgressReportService"/> を初期化します。
+        /// </summary>
+        /// <param name="config">Read-only configuration settings. / 読み取り専用の設定。</param>
+        /// <param name="logger">Optional logger for phase elapsed time output. / フェーズ経過時間出力用のオプションロガー。</param>
+        public ProgressReportService(IReadOnlyConfigSettings config, ILoggerService? logger)
         {
             ArgumentNullException.ThrowIfNull(config);
             _keepAliveFrames = config.SpinnerFrames.ToArray();
+            _logger = logger;
         }
 
         /// <summary>
@@ -127,6 +144,87 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _labelPrefix = string.IsNullOrWhiteSpace(label) ? null : label.Trim();
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the total number of phases. When greater than zero, <see cref="BeginPhase"/>
+        /// prefixes labels with <c>[current/total]</c> and logs per-phase elapsed time.
+        /// フェーズ総数を取得・設定します。0 より大きい場合、<see cref="BeginPhase"/> がラベルに
+        /// <c>[current/total]</c> プレフィックスを付与し、フェーズごとの経過時間をログ出力します。
+        /// </summary>
+        public int TotalPhases
+        {
+            get => _totalPhases;
+            set
+            {
+                if (value < 0) throw new ArgumentOutOfRangeException(nameof(value));
+                _totalPhases = value;
+            }
+        }
+
+        /// <summary>
+        /// Begins a new numbered phase: logs the previous phase's elapsed time, resets progress to 0%,
+        /// and sets the label with a <c>[current/total]</c> prefix (e.g. <c>[2/5] Diffing folders</c>).
+        /// 新しい番号付きフェーズを開始します。前フェーズの経過時間をログ出力し、進捗を 0% にリセットし、
+        /// ラベルに <c>[current/total]</c> プレフィックスを付与します（例: <c>[2/5] Diffing folders</c>）。
+        /// </summary>
+        /// <param name="label">Phase label text. / フェーズラベルテキスト。</param>
+        public void BeginPhase(string label)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            lock (_lock)
+            {
+                LogPreviousPhaseElapsed();
+                _currentPhase++;
+                _phaseStopwatch = Stopwatch.StartNew();
+
+                var formattedLabel = _totalPhases > 0
+                    ? $"[{_currentPhase}/{_totalPhases}] {label}"
+                    : label;
+
+                _lastPercentage = double.NegativeInfinity;
+                _lastFormattedPercentage = null;
+                _labelPrefix = formattedLabel;
+            }
+
+            ReportProgress(0.0);
+        }
+
+        /// <summary>
+        /// Logs the elapsed time of the previous phase (if any).
+        /// 前フェーズの経過時間をログ出力します（存在する場合）。
+        /// </summary>
+        private void LogPreviousPhaseElapsed()
+        {
+            if (_phaseStopwatch == null || _logger == null || string.IsNullOrEmpty(_labelPrefix))
+            {
+                return;
+            }
+
+            _phaseStopwatch.Stop();
+            var elapsed = _phaseStopwatch.Elapsed;
+            var elapsedText = FormatPhaseElapsed(elapsed);
+            _logger.LogMessage(
+                AppLogLevel.Info,
+                $"Phase completed: {_labelPrefix} ({elapsedText})",
+                shouldOutputMessageToConsole: false);
+        }
+
+        /// <summary>
+        /// Formats a phase elapsed time as a compact human-readable string.
+        /// フェーズ経過時間をコンパクトな人間可読文字列にフォーマットします。
+        /// </summary>
+        internal static string FormatPhaseElapsed(TimeSpan elapsed)
+        {
+            if (elapsed.TotalMinutes >= 1)
+            {
+                return $"{(int)elapsed.TotalMinutes}m {elapsed.Seconds}.{elapsed.Milliseconds / 100}s";
+            }
+            return $"{elapsed.TotalSeconds:F1}s";
         }
 
         private void RenderProgressBar(string formattedPercentage, double percentage, bool showKeepAlive)
@@ -279,6 +377,8 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     return;
                 }
+
+                LogPreviousPhaseElapsed();
                 _disposed = true;
                 _keepAliveTimer?.Dispose();
                 _keepAliveTimer = null;

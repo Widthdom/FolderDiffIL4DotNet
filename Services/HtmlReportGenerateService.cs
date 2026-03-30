@@ -112,6 +112,7 @@ namespace FolderDiffIL4DotNet.Services
                 reportsFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config, ilCache);
 
             AppendProgressAndJs(writer, storageKey, reportDate);
+            AppendKeyboardHelpOverlay(writer);
             writer.WriteLine("</body>");
             writer.WriteLine("</html>");
         }
@@ -308,6 +309,21 @@ namespace FolderDiffIL4DotNet.Services
             if (sha256Warn > 0) parts.Add($"SHA256Warn: {sha256Warn}");
             if (tsWarn > 0) parts.Add($"TsWarn: {tsWarn}");
             return string.Join(" + ", parts);
+        }
+
+        // ── Keyboard shortcut help overlay ────────────────────────────────────
+        // キーボードショートカットヘルプオーバーレイ
+
+        private static void AppendKeyboardHelpOverlay(TextWriter writer)
+        {
+            writer.WriteLine("<div id=\"kb-help\" class=\"kb-help\" aria-label=\"Keyboard shortcuts\">");
+            writer.WriteLine("  <div class=\"kb-help-title\">Keyboard Shortcuts</div>");
+            writer.WriteLine("  <div class=\"kb-help-row\"><span class=\"kb-help-keys\"><kbd>j</kbd> / <kbd>k</kbd></span> <span class=\"kb-help-desc\">Next / Previous file</span></div>");
+            writer.WriteLine("  <div class=\"kb-help-row\"><span class=\"kb-help-keys\"><kbd>x</kbd></span> <span class=\"kb-help-desc\">Toggle review check</span></div>");
+            writer.WriteLine("  <div class=\"kb-help-row\"><span class=\"kb-help-keys\"><kbd>Enter</kbd></span> <span class=\"kb-help-desc\">Expand / collapse diff</span></div>");
+            writer.WriteLine("  <div class=\"kb-help-row\"><span class=\"kb-help-keys\"><kbd>Esc</kbd></span> <span class=\"kb-help-desc\">Close diff or exit input</span></div>");
+            writer.WriteLine("  <div class=\"kb-help-row\"><span class=\"kb-help-keys\"><kbd>?</kbd></span> <span class=\"kb-help-desc\">Toggle this help</span></div>");
+            writer.WriteLine("</div>");
         }
 
         // ── Head ─────────────────────────────────────────────────────────────

@@ -25,7 +25,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             _rootDir = Path.Combine(Path.GetTempPath(), "fd-report-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_rootDir);
-            _service = new ReportGenerateService(_resultLists, _logger, new ConfigSettingsBuilder().Build());
+            _service = new ReportGenerateService(_resultLists, _logger);
             ClearResultLists();
         }
 

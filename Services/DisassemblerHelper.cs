@@ -208,6 +208,62 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Returns OS-specific install instructions for disassembler tools.
+        /// Called when no disassembler is detected so the user gets actionable guidance.
+        /// 逆アセンブラツールの OS 別インストール手順を返します。
+        /// 逆アセンブラ未検出時にユーザーへ具体的な対処方法を提示するために呼び出されます。
+        /// </summary>
+        internal static string BuildInstallSuggestion()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("No disassembler tool was detected. .NET assembly IL comparison will not be available.");
+            sb.AppendLine("逆アセンブラツールが検出されませんでした。.NET アセンブリの IL 比較は利用できません。");
+            sb.AppendLine();
+            sb.AppendLine("Install one of the following tools:");
+            sb.AppendLine("以下のいずれかのツールをインストールしてください:");
+            sb.AppendLine();
+
+            if (OperatingSystem.IsWindows())
+            {
+                sb.AppendLine("  [Windows]");
+                sb.AppendLine("  dotnet tool install -g dotnet-ildasm");
+                sb.AppendLine("  # Or alternatively / または:");
+                sb.AppendLine("  dotnet tool install -g ilspycmd");
+                sb.AppendLine();
+                sb.AppendLine("  Ensure %USERPROFILE%\\.dotnet\\tools is in your PATH.");
+                sb.AppendLine("  %USERPROFILE%\\.dotnet\\tools が PATH に含まれていることを確認してください。");
+            }
+            else if (OperatingSystem.IsMacOS())
+            {
+                sb.AppendLine("  [macOS]");
+                sb.AppendLine("  dotnet tool install -g dotnet-ildasm");
+                sb.AppendLine("  # Or alternatively / または:");
+                sb.AppendLine("  dotnet tool install -g ilspycmd");
+                sb.AppendLine();
+                sb.AppendLine("  Ensure ~/.dotnet/tools is in your PATH:");
+                sb.AppendLine("  ~/.dotnet/tools が PATH に含まれていることを確認してください:");
+                sb.AppendLine("  export PATH=\"$PATH:$HOME/.dotnet/tools\"  # add to ~/.zshrc or ~/.bash_profile");
+            }
+            else
+            {
+                // Linux and other Unix-like systems / Linux およびその他の Unix 系 OS
+                sb.AppendLine("  [Linux]");
+                sb.AppendLine("  dotnet tool install -g dotnet-ildasm");
+                sb.AppendLine("  # Or alternatively / または:");
+                sb.AppendLine("  dotnet tool install -g ilspycmd");
+                sb.AppendLine();
+                sb.AppendLine("  Ensure ~/.dotnet/tools is in your PATH:");
+                sb.AppendLine("  ~/.dotnet/tools が PATH に含まれていることを確認してください:");
+                sb.AppendLine("  export PATH=\"$PATH:$HOME/.dotnet/tools\"  # add to ~/.bashrc or ~/.profile");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("Tip: Use --skip-il to bypass IL comparison entirely.");
+            sb.AppendLine("ヒント: --skip-il オプションで IL 比較を完全にスキップできます。");
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Enumerates candidate executable names for the given command, adding OS-specific extensions on Windows (<c>.exe</c>, <c>.cmd</c>, <c>.bat</c>).
         /// OS に応じて実行可能ファイル名候補を列挙します。Windows では <c>.exe</c> / <c>.cmd</c> / <c>.bat</c> の各拡張子を補完します。
         /// </summary>
