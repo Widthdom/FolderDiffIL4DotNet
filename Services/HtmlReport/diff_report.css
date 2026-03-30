@@ -712,8 +712,8 @@
     .sbs-scroll-proxy > div { height: 1px; }
     /* ── Keyboard navigation focus / キーボードナビゲーションフォーカス ──── */
     tr.kb-focus {
-      border-left: 3px solid var(--color-accent);
-      background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+      border-left: 3px solid #e8a500;
+      background: rgba(232, 165, 0, 0.12);
     }
     /* ── Keyboard shortcut help overlay / キーボードショートカットヘルプ ── */
     .kb-help {

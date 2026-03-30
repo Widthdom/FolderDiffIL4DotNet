@@ -143,4 +143,21 @@
           break;
       }
     });
+
+    // Show help overlay briefly on first visit to make shortcuts discoverable.
+    // 初回訪問時にヘルプオーバーレイを短時間表示してショートカットの存在を周知する。
+    document.addEventListener('DOMContentLoaded', function() {
+      if (__savedState__ !== null) return; // Skip in reviewed mode / レビュー済みモードではスキップ
+      var helpKey = __storageKey__ + '_kb_help_shown';
+      try { if (localStorage.getItem(helpKey)) return; } catch(e) { /* ignore */ }
+      var overlay = document.getElementById('kb-help');
+      if (!overlay) return;
+      overlay.classList.add('kb-help-visible');
+      overlay.classList.remove('kb-help-hidden');
+      try { localStorage.setItem(helpKey, '1'); } catch(e) { /* ignore */ }
+      setTimeout(function() {
+        overlay.classList.remove('kb-help-visible');
+        overlay.classList.add('kb-help-hidden');
+      }, 4000);
+    });
   })();
