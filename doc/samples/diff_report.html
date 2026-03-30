@@ -607,6 +607,10 @@
       border-left: 3px solid #e8a500;
       background: rgba(232, 165, 0, 0.12);
     }
+    tr.kb-focus + tr summary:focus,
+    tr.kb-focus:focus {
+      outline: none;
+    }
     /* ── Keyboard shortcut help overlay / キーボードショートカットヘルプ ── */
     .kb-help {
       position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 300;
