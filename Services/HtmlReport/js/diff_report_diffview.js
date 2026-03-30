@@ -227,4 +227,7 @@
     proxyNew.addEventListener('scroll', function() { syncScroll(proxyNew, proxyOld); });
     table.classList.add('sbs-mode');
     if (btn) btn.textContent = 'Unified';
+    // Re-apply IL syntax highlighting after SBS conversion
+    // SBS 変換後に IL シンタックスハイライトを再適用
+    highlightILDiff(table);
   }

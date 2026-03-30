@@ -35,9 +35,13 @@
     // パターンを順に適用（後のパターンは先の span 内部にマッチしない）
     for (var i = 0; i < __ilPatterns__.length; i++) {
       var p = __ilPatterns__[i];
-      html = html.replace(p.re, function(match) {
-        // Don't highlight inside already-highlighted spans / 既にハイライト済みのspan内はハイライトしない
-        return '<span class="' + p.cls + '">' + match + '</span>';
+      // Apply pattern only to text segments, skipping HTML tags
+      // HTMLタグをスキップし、テキスト部分にのみパターンを適用
+      html = html.replace(/(<[^>]+>)|([^<]+)/g, function(m, tag, text) {
+        if (tag) return tag;
+        return text.replace(p.re, function(match) {
+          return '<span class="' + p.cls + '">' + match + '</span>';
+        });
       });
     }
     td.innerHTML = prefix + html;
@@ -62,7 +66,7 @@
     var diffType = fileRow ? fileRow.getAttribute('data-diff') : null;
     if (diffType !== 'ILMismatch' && diffType !== 'ILMatch') return;
     // Highlight all content cells / 全コンテンツセルをハイライト
-    container.querySelectorAll('td.diff-del-td, td.diff-add-td, td.diff-ctx-td').forEach(highlightILCell);
+    container.querySelectorAll('td.diff-del-td, td.diff-add-td, td.diff-ctx-td, td.sbs-old, td.sbs-new, td.sbs-ctx').forEach(highlightILCell);
   }
 
   // Apply highlighting to all currently-rendered diff tables on the page.

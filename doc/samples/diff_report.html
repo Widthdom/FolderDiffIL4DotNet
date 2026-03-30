@@ -233,6 +233,9 @@
       --color-print-text: #555; --color-print-border: #ccc; --color-print-bg: #fff;
       --color-lazy-summary: #6e6e73; --color-reviewed-banner-text: #1f2328;
       --color-empty: #999; --color-sbs-empty-bg: #f6f8fa;
+      --color-hl-directive: #0550ae; --color-hl-keyword: #1f6feb; --color-hl-type: #8250df;
+      --color-hl-string: #0a3069; --color-hl-comment: #6e7781; --color-hl-label: #953800;
+      --color-kb-focus: #e8a500; --color-kb-focus-bg: rgba(232, 165, 0, 0.12);
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -271,6 +274,9 @@
         --color-print-text: #9ca3af; --color-print-border: #3d444d; --color-print-bg: #0d1117;
         --color-lazy-summary: #9ca3af; --color-reviewed-banner-text: #e6edf3;
         --color-empty: #7d8590; --color-sbs-empty-bg: #1c2128;
+        --color-hl-directive: #79c0ff; --color-hl-keyword: #58a6ff; --color-hl-type: #d2a8ff;
+        --color-hl-string: #a5d6ff; --color-hl-comment: #8b949e; --color-hl-label: #ffa657;
+        --color-kb-focus: #fbbf24; --color-kb-focus-bg: rgba(251, 191, 36, 0.22);
       }
     }
     /* ── Manual theme overrides via data-theme attribute ── */
@@ -311,6 +317,9 @@
       --color-print-text: #555; --color-print-border: #ccc; --color-print-bg: #fff;
       --color-lazy-summary: #6e6e73; --color-reviewed-banner-text: #1f2328;
       --color-empty: #999; --color-sbs-empty-bg: #f6f8fa;
+      --color-hl-directive: #0550ae; --color-hl-keyword: #1f6feb; --color-hl-type: #8250df;
+      --color-hl-string: #0a3069; --color-hl-comment: #6e7781; --color-hl-label: #953800;
+      --color-kb-focus: #e8a500; --color-kb-focus-bg: rgba(232, 165, 0, 0.12);
       color: #1d1d1f; background-color: #fff;
     }
     html[data-theme="dark"], html[data-theme="dark"] body {
@@ -350,6 +359,9 @@
       --color-print-text: #9ca3af; --color-print-border: #3d444d; --color-print-bg: #0d1117;
       --color-lazy-summary: #9ca3af; --color-reviewed-banner-text: #e6edf3;
       --color-empty: #7d8590; --color-sbs-empty-bg: #1c2128;
+      --color-hl-directive: #79c0ff; --color-hl-keyword: #58a6ff; --color-hl-type: #d2a8ff;
+      --color-hl-string: #a5d6ff; --color-hl-comment: #8b949e; --color-hl-label: #ffa657;
+      --color-kb-focus: #fbbf24; --color-kb-focus-bg: rgba(251, 191, 36, 0.22);
       color: #e6edf3; background-color: #0d1117;
     }
     /* ── Theme-aware utility classes ── */
@@ -587,6 +599,13 @@
                         border-top: 1px solid var(--color-border); }
     .sbs-scroll-proxy { overflow-x: auto; overflow-y: hidden; }
     .sbs-scroll-proxy > div { height: 1px; }
+    /* ── IL syntax highlighting / IL シンタックスハイライト ──── */
+    .hl-directive { color: var(--color-hl-directive); font-weight: 600; }
+    .hl-keyword { color: var(--color-hl-keyword); }
+    .hl-type { color: var(--color-hl-type); }
+    .hl-string { color: var(--color-hl-string); }
+    .hl-comment { color: var(--color-hl-comment); font-style: italic; }
+    .hl-label { color: var(--color-hl-label); }
     @media (max-width: 1100px) {
       body { padding: 0 1rem 2rem; }
       .controls { padding: 0.7rem max(1rem, calc(50vw - 50%)); }
@@ -604,8 +623,8 @@
     }
     /* ── Keyboard navigation focus / キーボードナビゲーションフォーカス ──── */
     tr.kb-focus {
-      border-left: 3px solid #e8a500;
-      background: rgba(232, 165, 0, 0.12);
+      border-left: 3px solid var(--color-kb-focus);
+      background: var(--color-kb-focus-bg);
     }
     tr.kb-focus + tr summary:focus,
     tr.kb-focus:focus {
@@ -1993,6 +2012,52 @@
     if (status) status.textContent = 'Cleared.';
   }
 
+  // ── IL syntax highlighting ──────────────────────────────────────────
+  var __ilPatterns__ = [
+    { re: /(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, cls: 'hl-string' },
+    { re: /(\/\/.*)/g, cls: 'hl-comment' },
+    { re: /\b(IL_[0-9a-fA-F]{4}:?)\b/g, cls: 'hl-label' },
+    { re: /(\.[a-z][a-z0-9]*)\b/g, cls: 'hl-directive' },
+    { re: /\b(void|bool|char|int8|int16|int32|int64|uint8|uint16|uint32|uint64|float32|float64|string|object|native int|native uint|typedref)\b/g, cls: 'hl-type' },
+    { re: /\b(class|valuetype|interface|enum|extends|implements|public|private|family|assembly|static|virtual|abstract|sealed|specialname|rtspecialname|hidebysig|newslot|final|instance|cil managed|cil|managed|native|forwardref|pinvokeimpl)\b/g, cls: 'hl-keyword' }
+  ];
+  function highlightILCell(td) {
+    var html = td.innerHTML;
+    if (!html || html.indexOf('hl-') !== -1) return;
+    var prefix = '';
+    if (html.charAt(0) === '+' || html.charAt(0) === '-' || html.charAt(0) === ' ') {
+      prefix = html.charAt(0);
+      html = html.substring(1);
+    }
+    for (var i = 0; i < __ilPatterns__.length; i++) {
+      var p = __ilPatterns__[i];
+      html = html.replace(/(<[^>]+>)|([^<]+)/g, function(m, tag, text) {
+        if (tag) return tag;
+        return text.replace(p.re, function(match) {
+          return '<span class="' + p.cls + '">' + match + '</span>';
+        });
+      });
+    }
+    td.innerHTML = prefix + html;
+  }
+  function highlightILDiff(container) {
+    if (!container) return;
+    var detailsEl = container.closest ? container.closest('details') : null;
+    var diffRow = detailsEl ? detailsEl.closest('tr.diff-row') : null;
+    var fileRow = diffRow ? diffRow.previousElementSibling : null;
+    while (fileRow && !fileRow.getAttribute('data-diff')) {
+      fileRow = fileRow.previousElementSibling;
+    }
+    var diffType = fileRow ? fileRow.getAttribute('data-diff') : null;
+    if (diffType !== 'ILMismatch' && diffType !== 'ILMatch') return;
+    container.querySelectorAll('td.diff-del-td, td.diff-add-td, td.diff-ctx-td, td.sbs-old, td.sbs-new, td.sbs-ctx').forEach(highlightILCell);
+  }
+  function highlightAllILDiffs() {
+    document.querySelectorAll('table.diff-table').forEach(function(tbl) {
+      highlightILDiff(tbl);
+    });
+  }
+
   function decodeDiffHtml(b64) {
     var binary = atob(b64);
     var bytes = new Uint8Array(binary.length);
@@ -2222,6 +2287,7 @@
     proxyNew.addEventListener('scroll', function() { syncScroll(proxyNew, proxyOld); });
     table.classList.add('sbs-mode');
     if (btn) btn.textContent = 'Unified';
+    highlightILDiff(table);
   }
 
   // Lazy-render: diff table HTML is stored base64-encoded in data-diff-html.
