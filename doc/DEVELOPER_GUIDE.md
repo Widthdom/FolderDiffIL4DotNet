@@ -736,6 +736,7 @@ Release automation:
 - Rebuilds, reruns coverage-gated tests, regenerates DocFX output, publishes the app, and removes `*.pdb`
 - Creates zipped publish/docs artifacts plus SHA-256 checksum files
 - Creates a GitHub Release from the existing tag with generated release notes
+- After a successful release, the `nuget-publish` job packs `FolderDiffIL4DotNet.Core` and pushes to nuget.org (requires `NUGET_API_KEY` repository secret)
 
 Security automation:
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) analyzes both `csharp` and `actions` on `push`, `pull_request`, weekly schedule, and `workflow_dispatch`
@@ -1618,6 +1619,7 @@ v* タグ push 時:
 - 再ビルド、カバレッジゲート付き再テスト、DocFX 再生成、アプリ publish、`*.pdb` 除去まで行います
 - publish 出力 ZIP、ドキュメント ZIP、SHA-256 チェックサムを生成します
 - 既存タグから GitHub Release を作成し、自動生成リリースノートを付けます
+- リリース成功後、`nuget-publish` ジョブが `FolderDiffIL4DotNet.Core` を pack して nuget.org に push します（`NUGET_API_KEY` リポジトリシークレットが必要）
 
 セキュリティ自動化:
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) は `csharp` と `actions` を対象に、`push` / `pull_request` / 週次スケジュール / `workflow_dispatch` で解析します

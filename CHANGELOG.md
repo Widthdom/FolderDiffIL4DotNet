@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **NuGet package publishing for FolderDiffIL4DotNet.Core** — The Core library is now packaged and published to nuget.org, enabling other tools to consume file comparison, Myers diff, .NET assembly detection, encoding detection, and path validation utilities. Package metadata (PackageId, Authors, Description, tags, license, symbols) added to [`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj). Package README created at [`FolderDiffIL4DotNet.Core/PACKAGE_README.md`](FolderDiffIL4DotNet.Core/PACKAGE_README.md). Release workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)) now includes a `nuget-publish` job that packs and pushes to nuget.org after a successful GitHub release. Requires `NUGET_API_KEY` repository secret.
+
 ### [1.12.1] - 2026-03-30
 
 #### Added
@@ -877,6 +881,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **FolderDiffIL4DotNet.Core の NuGet パッケージ公開** — Core ライブラリを nuget.org にパッケージ公開し、ファイル比較、Myers diff、.NET アセンブリ検出、エンコーディング検出、パス検証などのユーティリティを他ツールから利用可能にした。[`FolderDiffIL4DotNet.Core.csproj`](FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj) にパッケージメタデータ（PackageId、Authors、Description、タグ、ライセンス、シンボル）を追加。パッケージ README を [`FolderDiffIL4DotNet.Core/PACKAGE_README.md`](FolderDiffIL4DotNet.Core/PACKAGE_README.md) に作成。リリースワークフロー（[`.github/workflows/release.yml`](.github/workflows/release.yml)）に `nuget-publish` ジョブを追加し、GitHub リリース成功後に nuget.org へ pack & push を実行。`NUGET_API_KEY` リポジトリシークレットが必要。
 
 ### [1.12.1] - 2026-03-30
 

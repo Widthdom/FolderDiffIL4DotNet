@@ -8,6 +8,27 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!-- NuGet package metadata / NuGet パッケージメタデータ -->
+  <PropertyGroup>
+    <PackageId>FolderDiffIL4DotNet.Core</PackageId>
+    <Authors>Widthdom</Authors>
+    <Description>Core utilities for FolderDiffIL4DotNet — file comparison (SHA256, line-by-line), .NET assembly detection (PE/CLR header parsing), Myers diff algorithm, encoding detection, path validation, and process helpers. Designed for build-diff and release-validation tooling.</Description>
+    <PackageTags>diff;file-comparison;dotnet;il;sha256;myers-diff;encoding-detection;release-validation</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Widthdom/FolderDiffIL4DotNet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Widthdom/FolderDiffIL4DotNet.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>PACKAGE_README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) 2025 Widthdom</Copyright>
+    <!-- Include XML documentation in the NuGet package / XML ドキュメントをパッケージに含める -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="PACKAGE_README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
   </ItemGroup>
