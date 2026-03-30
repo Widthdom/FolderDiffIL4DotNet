@@ -126,6 +126,16 @@
           window.__kbEscHandled__ = true; // Signal init.js to skip details close / init.jsにdetails閉じをスキップさせる
           return;
         }
+        // Clear keyboard focus if active / キーボードフォーカスが有効なら解除
+        if (_kbIndex >= 0) {
+          document.querySelectorAll('tr.kb-focus').forEach(function(el) {
+            el.classList.remove('kb-focus');
+          });
+          _kbIndex = -1;
+          e.preventDefault();
+          window.__kbEscHandled__ = true;
+          return;
+        }
       }
 
       // Skip shortcuts when typing in an input

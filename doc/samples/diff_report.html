@@ -3096,6 +3096,15 @@
           window.__kbEscHandled__ = true;
           return;
         }
+        if (_kbIndex >= 0) {
+          document.querySelectorAll('tr.kb-focus').forEach(function(el) {
+            el.classList.remove('kb-focus');
+          });
+          _kbIndex = -1;
+          e.preventDefault();
+          window.__kbEscHandled__ = true;
+          return;
+        }
       }
       if (isTyping()) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
