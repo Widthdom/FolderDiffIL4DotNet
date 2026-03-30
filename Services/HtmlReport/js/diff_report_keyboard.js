@@ -24,8 +24,8 @@
       return 0;
     }
 
-    // Ensure the row is visible by opening any collapsed parent <details>.
-    // 折りたたまれた親 <details> を開いて行を可視にする。
+    // Ensure the row is visible by opening any collapsed parent detail elements.
+    // 折りたたまれた親の detail 要素を開いて行を可視にする。
     function ensureVisible(row) {
       var el = row.parentElement;
       while (el) {
