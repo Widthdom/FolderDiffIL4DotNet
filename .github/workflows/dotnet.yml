@@ -180,6 +180,11 @@ jobs:
             sys.exit(1)
           PY
 
+      - name: Validate test scope map
+        if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
+        continue-on-error: true
+        run: python3 scripts/validate-test-scope-map.py
+
       - name: Upload test and coverage artifacts
         if: ${{ always() && hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         uses: actions/upload-artifact@v4

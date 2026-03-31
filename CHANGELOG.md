@@ -9,6 +9,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **ProgramRunner pipeline step extraction** — Extracted spinner theme data into [`Runner/SpinnerThemes.cs`](Runner/SpinnerThemes.cs) and CLI override logic into [`Runner/CliOverrideApplier.cs`](Runner/CliOverrideApplier.cs), reducing `ProgramRunner.Config.cs` from 417 to 144 lines. The `ProgramRunner` partial class total drops from 1,113 to 1,019 lines with clearer single-responsibility separation.
+
+#### Added
+
+- **HTML report JS/CSS comment stripping** — Added lightweight comment and blank-line stripping for embedded JavaScript (12 modules, ~85 KB) and CSS (~48 KB) in the HTML report. JS single-line comments (`//`) and CSS block comments (`/* */`, except `/*! */`) are removed while preserving all whitespace in code — this is critical because `downloadReviewed()` uses exact whitespace patterns in `string.replace()` calls. Stripped output is cached per-process. NUglify was originally used but removed because full minification breaks whitespace-sensitive `replace()` patterns. New files: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs). Modified: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs), [`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs).
+
+- **Automated test scope map validation in CI** — Added [`scripts/validate-test-scope-map.py`](scripts/validate-test-scope-map.py) script that compares test class files against the TESTING_GUIDE.md scope map table, warning when new test classes are added but not documented. Integrated as a non-blocking CI step in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml).
+
+- **Skip NuGet publish when Core is unchanged** — The `nuget-publish` job in [`release.yml`](.github/workflows/release.yml) now checks whether `FolderDiffIL4DotNet.Core/` has any changes since the previous tag. If Core is unchanged, the restore/pack/push steps are skipped entirely, preventing unnecessary NuGet version bumps when only the main application changes. Uses `git diff --quiet` between previous and current tags.
+
 ### [1.12.3] - 2026-03-30
 
 #### Fixed
@@ -889,6 +901,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **ProgramRunner パイプラインステップ分離** — スピナーテーマデータを [`Runner/SpinnerThemes.cs`](Runner/SpinnerThemes.cs) に、CLI オーバーライドロジックを [`Runner/CliOverrideApplier.cs`](Runner/CliOverrideApplier.cs) に抽出し、`ProgramRunner.Config.cs` を 417 行から 144 行に削減。`ProgramRunner` partial class 合計は 1,113 行から 1,019 行に減少し、単一責務の分離が明確化。
+
+#### Added
+
+- **HTML レポート JS/CSS コメント除去** — HTML レポートの埋め込み JavaScript（12モジュール、約85KB）と CSS（約48KB）に軽量なコメント・空行除去を追加。JS の単行コメント（`//`）と CSS のブロックコメント（`/* */`、`/*! */` は除く）を除去しつつ、コード内の空白はすべて維持。これは `downloadReviewed()` が `string.replace()` で正確な空白パターンを使用するため必須。除去結果はプロセスごとにキャッシュ。当初 NUglify を使用したが、完全ミニファイが空白依存の `replace()` パターンを破壊するため削除。新規ファイル: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs)。変更: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)、[`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs)。
+
+- **CI テスト範囲マップ自動検証** — [`scripts/validate-test-scope-map.py`](scripts/validate-test-scope-map.py) スクリプトを追加。テストクラスファイルと TESTING_GUIDE.md の範囲マップテーブルを突合し、新規テストクラスが追加されたが文書化されていない場合に警告。[`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) に非ブロッキング CI ステップとして統合。
+
+- **Core 未変更時の NuGet publish スキップ** — [`release.yml`](.github/workflows/release.yml) の `nuget-publish` ジョブに、前回タグからの `FolderDiffIL4DotNet.Core/` の変更有無チェックを追加。Core に変更がなければ restore/pack/push ステップを完全にスキップし、メインアプリケーションのみの変更時に不要な NuGet バージョンアップを防止。`git diff --quiet` による前回タグとの差分比較を使用。
 
 ### [1.12.3] - 2026-03-30
 
