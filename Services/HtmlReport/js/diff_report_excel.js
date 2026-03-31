@@ -126,6 +126,8 @@
    * Immediate (non-chunked) Excel export for small reports.
    */
   function downloadExcelImmediate() {
+    /* Force-decode all lazy sections to capture all data / 全 lazy セクションを強制デコード */
+    forceDecodeLazySections();
 
     var sectionNames = {
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
