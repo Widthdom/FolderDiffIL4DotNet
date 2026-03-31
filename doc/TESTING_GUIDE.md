@@ -171,6 +171,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) runs CodeQL for both `csharp` and `actions` on code changes plus a weekly schedule; uses `fetch-depth: 0` on checkout for [Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) and `continue-on-error: true` on the Analyze step to tolerate the Default Setup conflict.
 - [`.github/dependabot.yml`](../.github/dependabot.yml) enables weekly update PRs for NuGet and GitHub Actions.
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) keeps those repository-automation files under automated regression coverage.
+- A "Validate test scope map" step runs [`scripts/validate-test-scope-map.py`](../scripts/validate-test-scope-map.py) to verify that all test class files are listed in this guide's scope map table. This step is non-blocking (`continue-on-error: true`) but warns when new test classes are not yet documented.
 
 <a id="testing-en-isolation"></a>
 ## Test Isolation and Environment Notes
@@ -372,6 +373,7 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) は `csharp` と `actions` に対する CodeQL をコード変更時と週次で実行します。[Nerdbank.GitVersioning](https://github.com/dotnet/Nerdbank.GitVersioning) 向けに Checkout で `fetch-depth: 0` を指定し、Default Setup との競合を吸収するため Analyze ステップに `continue-on-error: true` を設定しています。
 - [`.github/dependabot.yml`](../.github/dependabot.yml) は NuGet と GitHub Actions の更新 PR を週次で有効化します。
 - [`CiAutomationConfigurationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs) が、これらの設定ファイルも回帰テスト対象に含めます。
+- "Validate test scope map" ステップが [`scripts/validate-test-scope-map.py`](../scripts/validate-test-scope-map.py) を実行し、すべてのテストクラスファイルがこのガイドの範囲マップテーブルにリストされていることを検証します。このステップは非ブロッキング（`continue-on-error: true`）ですが、新規テストクラスが文書化されていない場合に警告を出力します。
 
 <a id="testing-ja-isolation"></a>
 ## テスト分離と実行環境の注意

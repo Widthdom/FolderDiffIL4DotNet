@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **ProgramRunner pipeline step extraction** — Extracted spinner theme data into [`Runner/SpinnerThemes.cs`](Runner/SpinnerThemes.cs) and CLI override logic into [`Runner/CliOverrideApplier.cs`](Runner/CliOverrideApplier.cs), reducing `ProgramRunner.Config.cs` from 417 to 144 lines. The `ProgramRunner` partial class total drops from 1,113 to 1,019 lines with clearer single-responsibility separation.
+
+#### Added
+
+- **HTML report JS/CSS minification** — Added NUglify-based runtime minification for embedded JavaScript (12 modules, ~85 KB) and CSS (~48 KB) in the HTML report. Minified output is cached per-process so the cost is paid only once. New files: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs). Modified: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs), [`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs), [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) (NUglify package reference).
+
+- **Automated test scope map validation in CI** — Added [`scripts/validate-test-scope-map.py`](scripts/validate-test-scope-map.py) script that compares test class files against the TESTING_GUIDE.md scope map table, warning when new test classes are added but not documented. Integrated as a non-blocking CI step in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml).
+
 ### [1.12.3] - 2026-03-30
 
 #### Fixed
@@ -889,6 +899,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **ProgramRunner パイプラインステップ分離** — スピナーテーマデータを [`Runner/SpinnerThemes.cs`](Runner/SpinnerThemes.cs) に、CLI オーバーライドロジックを [`Runner/CliOverrideApplier.cs`](Runner/CliOverrideApplier.cs) に抽出し、`ProgramRunner.Config.cs` を 417 行から 144 行に削減。`ProgramRunner` partial class 合計は 1,113 行から 1,019 行に減少し、単一責務の分離が明確化。
+
+#### Added
+
+- **HTML レポート JS/CSS ミニファイ** — NUglify ベースのランタイムミニファイを HTML レポートの埋め込み JavaScript（12モジュール、約85KB）と CSS（約48KB）に追加。ミニファイ結果はプロセスごとにキャッシュされ、コストは1回のみ。新規ファイル: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs)。変更: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)、[`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs)、[`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj)（NUglify パッケージ参照追加）。
+
+- **CI テスト範囲マップ自動検証** — [`scripts/validate-test-scope-map.py`](scripts/validate-test-scope-map.py) スクリプトを追加。テストクラスファイルと TESTING_GUIDE.md の範囲マップテーブルを突合し、新規テストクラスが追加されたが文書化されていない場合に警告。[`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) に非ブロッキング CI ステップとして統合。
 
 ### [1.12.3] - 2026-03-30
 

@@ -1,11 +1,12 @@
 using System.IO;
+using FolderDiffIL4DotNet.Services.HtmlReport;
 
 namespace FolderDiffIL4DotNet.Services
 {
     // JavaScript for localStorage auto-save, download-as-reviewed, lazy diff rendering, and column resizing.
-    // Loaded from embedded resource modules with placeholder substitution.
+    // Loaded from embedded resource modules with placeholder substitution and minification.
     // localStorage 自動保存・レビュー済みダウンロード・遅延差分描画・カラムリサイズ用 JavaScript。
-    // 埋め込みリソースモジュールからプレースホルダーを置換して読み込みます。
+    // 埋め込みリソースモジュールからプレースホルダーを置換しミニファイして読み込みます。
     public sealed partial class HtmlReportGenerateService
     {
         // Module load order matters: state (constants) must come first, init must come last.
@@ -31,9 +32,14 @@ namespace FolderDiffIL4DotNet.Services
         private const string JS_PLACEHOLDER_TOTAL_FILES = "{{TOTAL_FILES}}";
         private const string JS_PLACEHOLDER_TOTAL_FILES_DETAIL = "{{TOTAL_FILES_DETAIL}}";
 
+        // Cached minified JS template (computed once per process).
+        // キャッシュ済みミニファイ JS テンプレート（プロセスあたり1回だけ計算）。
+        private static string? _cachedMinifiedJs;
+        private static readonly object _jsLock = new();
+
         private static void AppendJs(TextWriter writer, string storageKey, string reportDate, int totalFiles, string totalFilesDetail)
         {
-            var jsTemplate = LoadJsModules();
+            var jsTemplate = LoadAndMinifyJsModules();
             var js = jsTemplate
                 .Replace(JS_PLACEHOLDER_STORAGE_KEY, storageKey)
                 .Replace(JS_PLACEHOLDER_REPORT_DATE, reportDate)
@@ -44,20 +50,49 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("</script>");
         }
 
-        // Concatenate all JS module embedded resources in order.
-        // 全 JS モジュール埋め込みリソースを順序どおりに結合します。
-        private static string LoadJsModules()
+        // Concatenate all JS module embedded resources in order and minify the result.
+        // Minification is cached so it only runs once per process lifetime.
+        // 全 JS モジュール埋め込みリソースを順序どおりに結合しミニファイします。
+        // ミニファイ結果はキャッシュされ、プロセス存続期間中1回だけ実行されます。
+        private static string LoadAndMinifyJsModules()
         {
-            var sb = new System.Text.StringBuilder();
-            foreach (var resourceName in JS_MODULE_RESOURCE_NAMES)
+            if (_cachedMinifiedJs != null)
             {
-                if (sb.Length > 0)
-                {
-                    sb.AppendLine();
-                }
-                sb.Append(LoadEmbeddedResource(resourceName));
+                return _cachedMinifiedJs;
             }
-            return sb.ToString();
+
+            lock (_jsLock)
+            {
+                if (_cachedMinifiedJs != null)
+                {
+                    return _cachedMinifiedJs;
+                }
+
+                var sb = new System.Text.StringBuilder();
+                foreach (var resourceName in JS_MODULE_RESOURCE_NAMES)
+                {
+                    if (sb.Length > 0)
+                    {
+                        sb.AppendLine();
+                    }
+                    sb.Append(LoadEmbeddedResource(resourceName));
+                }
+
+                _cachedMinifiedJs = JsMinifier.Minify(sb.ToString());
+                return _cachedMinifiedJs;
+            }
+        }
+
+        /// <summary>
+        /// Clears the cached minified JS (for testing purposes only).
+        /// キャッシュ済みミニファイ JS をクリアします（テスト専用）。
+        /// </summary>
+        internal static void ClearJsCache()
+        {
+            lock (_jsLock)
+            {
+                _cachedMinifiedJs = null;
+            }
         }
     }
 }
