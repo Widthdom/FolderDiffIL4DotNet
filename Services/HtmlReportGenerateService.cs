@@ -130,15 +130,13 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("      <div class=\"progress-bar\"><div id=\"progress-bar-fill\" class=\"progress-bar-fill\"></div></div>");
             writer.WriteLine("      <span id=\"progress-text\" class=\"progress-text\"></span>");
             writer.WriteLine("      <span id=\"progress-detail\" class=\"progress-detail\"></span>");
-            writer.WriteLine("    </div>");
-            writer.WriteLine("    <div class=\"storage-wrap\">");
             writer.WriteLine("      <span class=\"storage-label\">Storage:</span>");
             writer.WriteLine("      <div class=\"storage-bar\"><div id=\"storage-bar-fill\" class=\"storage-bar-fill\"></div></div>");
             writer.WriteLine("      <span id=\"storage-text\" class=\"storage-text\"></span>");
-            writer.WriteLine("      <button class=\"btn btn-clear\" onclick=\"clearOldReviewStates()\" style=\"font-size:11px;padding:0.2rem 0.6rem\" title=\"Remove saved review state from other reports\">Clear old reviews</button>");
             writer.WriteLine("    </div>");
             writer.WriteLine("  </div>");
             writer.WriteLine("  <div class=\"ctrl-actions\">");
+            writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"clearOldReviewStates()\" title=\"Each report auto-saves review state to browser storage. Old reports accumulate \u2014 free space here.\">" + HtmlEncode("Free up review storage") + "</button>");
             writer.WriteLine("    <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");
             writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"collapseAll()\">" + HtmlEncode("Fold all details") + "</button>");
             writer.WriteLine("    <button class=\"btn btn-clear\" onclick=\"resetFilters()\"><svg aria-hidden=\"true\" width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" style=\"vertical-align:-1px\"><path d=\"M2 3h12l-4 5v3l-4 2V8z\"/><line x1=\"10\" y1=\"10\" x2=\"15\" y2=\"15\"/><line x1=\"15\" y1=\"10\" x2=\"10\" y2=\"15\"/></svg> " + HtmlEncode("Reset filters") + "</button>");

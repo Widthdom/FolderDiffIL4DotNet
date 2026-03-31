@@ -123,7 +123,7 @@
     updateStorageUsage();
     var status = document.getElementById('save-status');
     if (status) {
-      status.textContent = 'Cleared ' + removed + ' old report state' + (removed !== 1 ? 's' : '');
+      status.textContent = 'Freed ' + removed + ' old report state' + (removed !== 1 ? 's' : '') + ' from storage';
       status.style.color = '';
     }
     return removed;

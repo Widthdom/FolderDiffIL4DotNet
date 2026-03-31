@@ -148,11 +148,7 @@
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .progress-bar-fill.complete { background: var(--color-progress-fill); }
-    /* ── localStorage usage bar ── */
-    .storage-wrap {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem;
-      font-size: 12px; color: var(--color-text-secondary); padding: 0.15rem 0; min-width: 0;
-    }
+    /* ── localStorage usage bar (inline with progress) ── */
     .storage-bar {
       width: 100px; height: 4px; background: var(--color-progress-bg); border-radius: 2px; overflow: hidden;
       flex: 0 0 100px; max-width: 100%;
@@ -166,6 +162,7 @@
     }
     .storage-label {
       font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap;
+      margin-left: 0.4rem;
     }
     /* ── Completion celebration ─────────────────────────────────────── */
     .celebrate-container {
@@ -741,15 +738,13 @@
       <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
       <span id="progress-text" class="progress-text"></span>
       <span id="progress-detail" class="progress-detail"></span>
-    </div>
-    <div class="storage-wrap">
       <span class="storage-label">Storage:</span>
       <div class="storage-bar"><div id="storage-bar-fill" class="storage-bar-fill"></div></div>
       <span id="storage-text" class="storage-text"></span>
-      <button class="btn btn-clear" onclick="clearOldReviewStates()" style="font-size:11px;padding:0.2rem 0.6rem" title="Remove saved review state from other reports">Clear old reviews</button>
     </div>
   </div>
   <div class="ctrl-actions">
+    <button class="btn btn-clear" onclick="clearOldReviewStates()" title="Each report auto-saves review state to browser storage. Old reports accumulate — free space here.">Free up review storage</button>
     <button class="btn" onclick="downloadReviewed()">&#x2913; Download as reviewed</button>
     <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
     <button class="btn btn-clear" onclick="resetFilters()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>
