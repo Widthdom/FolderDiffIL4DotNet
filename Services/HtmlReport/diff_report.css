@@ -784,13 +784,13 @@
     /* ── Custom tooltip (frosted glass, matches kb-help) / カスタムツールチップ ── */
     .btn-tooltip-wrap { position: relative; }
     .btn-tooltip {
-      position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+      position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(-4px);
       z-index: 310; padding: 0.5rem 0.8rem; border-radius: 8px;
       background: color-mix(in srgb, var(--color-surface) 72%, transparent);
       backdrop-filter: blur(16px) saturate(1.4);
       -webkit-backdrop-filter: blur(16px) saturate(1.4);
       border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
-      box-shadow: 0 4px 24px color-mix(in srgb, var(--color-shadow) 12%, transparent);
+      box-shadow: 0 4px 24px color-mix(in srgb, var(--color-text) 12%, transparent);
       font-size: 11px; line-height: 1.5; color: var(--color-text-secondary);
       white-space: normal; width: max-content; max-width: 280px; text-align: center;
       pointer-events: none;
