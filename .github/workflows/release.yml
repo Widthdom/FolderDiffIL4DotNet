@@ -157,11 +157,35 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: Check if Core has changes since previous tag
+        id: core-diff
+        run: |
+          # Find the previous tag (second newest v* tag by version sort)
+          # 前回タグを検索（バージョンソートで2番目に新しい v* タグ）
+          PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | head -2 | tail -1)
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found — treating Core as changed"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "${PREV_TAG}..HEAD" -- FolderDiffIL4DotNet.Core/; then
+            echo "No changes in FolderDiffIL4DotNet.Core/ since ${PREV_TAG} — skipping NuGet publish"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Core has changes since ${PREV_TAG}"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Restore dependencies
+        if: steps.core-diff.outputs.changed == 'true'
         run: dotnet restore FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj
 
       - name: Pack NuGet package
+        if: steps.core-diff.outputs.changed == 'true'
         run: dotnet pack FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj --configuration Release --no-restore --output nupkgs
 
       - name: Publish to nuget.org
+        if: steps.core-diff.outputs.changed == 'true'
         run: dotnet nuget push "nupkgs/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Skip NuGet publish (no Core changes)
+        if: steps.core-diff.outputs.changed != 'true'
+        run: echo "NuGet publish skipped — FolderDiffIL4DotNet.Core/ has no changes since the previous tag"

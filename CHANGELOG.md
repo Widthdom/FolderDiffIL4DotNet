@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Automated test scope map validation in CI** — Added [`scripts/validate-test-scope-map.py`](scripts/validate-test-scope-map.py) script that compares test class files against the TESTING_GUIDE.md scope map table, warning when new test classes are added but not documented. Integrated as a non-blocking CI step in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml).
 
+- **Skip NuGet publish when Core is unchanged** — The `nuget-publish` job in [`release.yml`](.github/workflows/release.yml) now checks whether `FolderDiffIL4DotNet.Core/` has any changes since the previous tag. If Core is unchanged, the restore/pack/push steps are skipped entirely, preventing unnecessary NuGet version bumps when only the main application changes. Uses `git diff --quiet` between previous and current tags.
+
 ### [1.12.3] - 2026-03-30
 
 #### Fixed
@@ -909,6 +911,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **HTML レポート JS/CSS ミニファイ** — NUglify ベースのランタイムミニファイを HTML レポートの埋め込み JavaScript（12モジュール、約85KB）と CSS（約48KB）に追加。ミニファイ結果はプロセスごとにキャッシュされ、コストは1回のみ。新規ファイル: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs)。変更: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)、[`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs)、[`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj)（NUglify パッケージ参照追加）。
 
 - **CI テスト範囲マップ自動検証** — [`scripts/validate-test-scope-map.py`](scripts/validate-test-scope-map.py) スクリプトを追加。テストクラスファイルと TESTING_GUIDE.md の範囲マップテーブルを突合し、新規テストクラスが追加されたが文書化されていない場合に警告。[`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) に非ブロッキング CI ステップとして統合。
+
+- **Core 未変更時の NuGet publish スキップ** — [`release.yml`](.github/workflows/release.yml) の `nuget-publish` ジョブに、前回タグからの `FolderDiffIL4DotNet.Core/` の変更有無チェックを追加。Core に変更がなければ restore/pack/push ステップを完全にスキップし、メインアプリケーションのみの変更時に不要な NuGet バージョンアップを防止。`git diff --quiet` による前回タグとの差分比較を使用。
 
 ### [1.12.3] - 2026-03-30
 
