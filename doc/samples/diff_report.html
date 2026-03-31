@@ -149,20 +149,24 @@
     }
     .progress-bar-fill.complete { background: var(--color-progress-fill); }
     /* ── localStorage usage bar (inline with progress) ── */
+    .storage-group {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      white-space: nowrap;
+    }
     .storage-bar {
-      width: 100px; height: 4px; background: var(--color-progress-bg); border-radius: 2px; overflow: hidden;
-      flex: 0 0 100px; max-width: 100%;
+      display: inline-block; width: 100px; height: 4px;
+      background: var(--color-progress-bg); border-radius: 2px; overflow: hidden;
+      vertical-align: middle;
     }
     .storage-bar-fill {
-      height: 100%; width: 0%; background: var(--color-progress-fill); border-radius: 2px;
+      display: block; height: 100%; width: 0%; background: var(--color-progress-fill); border-radius: 2px;
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .storage-text {
-      white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 11px;
+      font-variant-numeric: tabular-nums; font-size: 11px;
     }
     .storage-label {
-      font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap;
-      margin-left: 0.4rem;
+      font-size: 11px; color: var(--color-text-tertiary);
     }
     /* ── Completion celebration ─────────────────────────────────────── */
     .celebrate-container {
@@ -209,7 +213,6 @@
     .progress-detail {
       font-size: 11px; color: var(--color-text-quaternary);
       white-space: normal; overflow-wrap: anywhere;
-      flex: 1 1 16rem; min-width: 12rem;
     }
     .empty { color: var(--color-empty); font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Color CSS variables (light mode) / カラー CSS 変数（ライトモード） ── */
@@ -632,6 +635,7 @@
       .progress-wrap { align-items: flex-start; }
       .progress-bar { width: 100%; flex-basis: 100%; }
       .progress-detail { flex-basis: 100%; min-width: 0; }
+      .storage-group { flex-basis: 100%; }
       .ctrl-actions .btn {
         white-space: normal; text-align: center; justify-content: center;
       }
@@ -681,6 +685,24 @@
     .kb-help-row { display: flex; gap: 0.6em; align-items: baseline; }
     .kb-help-keys { min-width: 4.5em; text-align: right; white-space: nowrap; }
     .kb-help-desc { color: var(--color-text-secondary); }
+    /* ── Custom tooltip (frosted glass, matches kb-help) ── */
+    .btn-tooltip-wrap { position: relative; }
+    .btn-tooltip {
+      position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+      z-index: 310; padding: 0.5rem 0.8rem; border-radius: 8px;
+      background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+      box-shadow: 0 4px 24px color-mix(in srgb, var(--color-shadow) 12%, transparent);
+      font-size: 11px; line-height: 1.5; color: var(--color-text-secondary);
+      white-space: normal; width: max-content; max-width: 280px; text-align: center;
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .btn-tooltip-visible {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
     @media print {
@@ -688,7 +710,7 @@
       .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
       .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
       button, .filter-search-wrap, .btn-input-clear,
-      .kb-help { display: none !important; }
+      .kb-help, .btn-tooltip { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }
       input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
       .controls, .reviewed-banner { position: static !important; }
@@ -738,13 +760,11 @@
       <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
       <span id="progress-text" class="progress-text"></span>
       <span id="progress-detail" class="progress-detail"></span>
-      <span class="storage-label">Storage:</span>
-      <div class="storage-bar"><div id="storage-bar-fill" class="storage-bar-fill"></div></div>
-      <span id="storage-text" class="storage-text"></span>
+      <span class="storage-group"><span class="storage-label">Storage:</span><span class="storage-bar"><span id="storage-bar-fill" class="storage-bar-fill"></span></span><span id="storage-text" class="storage-text"></span></span>
     </div>
   </div>
   <div class="ctrl-actions">
-    <button class="btn btn-clear" onclick="clearOldReviewStates()" title="Each report auto-saves review state to browser storage. Old reports accumulate — free space here.">Free up review storage</button>
+    <span class="btn-tooltip-wrap"><button class="btn btn-clear" onclick="clearOldReviewStates()">Free up review storage</button><span class="btn-tooltip">Each report auto-saves review state to browser storage. Old reports accumulate — free space here.</span></span>
     <button class="btn" onclick="downloadReviewed()">&#x2913; Download as reviewed</button>
     <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
     <button class="btn btn-clear" onclick="resetFilters()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>

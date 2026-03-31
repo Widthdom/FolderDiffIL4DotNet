@@ -38,6 +38,18 @@
     highlightAllILDiffs();
     updateProgress();
     updateStorageUsage();
+    // Custom tooltip hover/focus handling / カスタムツールチップのホバー・フォーカス処理
+    document.querySelectorAll('.btn-tooltip-wrap').forEach(function(wrap) {
+      var tip = wrap.querySelector('.btn-tooltip');
+      var btn = wrap.querySelector('.btn');
+      if (!tip || !btn) return;
+      function show() { tip.classList.add('btn-tooltip-visible'); }
+      function hide() { tip.classList.remove('btn-tooltip-visible'); }
+      btn.addEventListener('mouseenter', show);
+      btn.addEventListener('mouseleave', hide);
+      btn.addEventListener('focus', show);
+      btn.addEventListener('blur', hide);
+    });
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept
     // on dynamically created inputs that are clicked immediately)
