@@ -2435,6 +2435,70 @@
     });
   }
 
+  function setupLazyIntersectionObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var d = entry.target;
+        if (d.hasAttribute('data-lazy-section') && !d.open) {
+          d.open = true;
+        }
+        observer.unobserve(d);
+      });
+    }, { rootMargin: '200px 0px' });
+    document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
+      observer.observe(d);
+    });
+  }
+
+  function updateStorageUsage() {
+    var bar = document.getElementById('storage-bar-fill');
+    var txt = document.getElementById('storage-text');
+    if (!bar || !txt) return;
+    try {
+      var usedBytes = 0;
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        usedBytes += key.length + localStorage.getItem(key).length;
+      }
+      var usedMB = (usedBytes * 2 / 1024 / 1024);
+      var estimatedMaxMB = 5;
+      var pct = Math.min(100, usedMB / estimatedMaxMB * 100);
+      bar.style.width = pct + '%';
+      if (pct > 80) { bar.style.background = 'var(--color-removed)'; }
+      else if (pct > 60) { bar.style.background = 'var(--color-importance-medium)'; }
+      else { bar.style.background = 'var(--color-progress-fill)'; }
+      txt.textContent = usedMB.toFixed(2) + ' MB / ~' + estimatedMaxMB + ' MB';
+    } catch(e) {
+      txt.textContent = 'unavailable';
+    }
+  }
+
+  function clearOldReviewStates() {
+    var currentKey = __storageKey__;
+    var themeKey = __storageKey__ + '-theme';
+    var removed = 0;
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var key = localStorage.key(i);
+        if (key === currentKey || key === themeKey) continue;
+        if (key.indexOf('folderdiff-') === 0) {
+          localStorage.removeItem(key);
+          removed++;
+          i = localStorage.length;
+        }
+      }
+    } catch(e) { /* ignore */ }
+    updateStorageUsage();
+    var status = document.getElementById('save-status');
+    if (status) {
+      status.textContent = 'Freed ' + removed + ' old report state' + (removed !== 1 ? 's' : '') + ' from storage';
+      status.style.color = '';
+    }
+    return removed;
+  }
+
   function forceDecodeLazySections() {
     document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
       var b64 = d.getAttribute('data-lazy-section');
