@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Chunked Excel export with requestAnimationFrame for large reports** — Excel export now uses `requestAnimationFrame`-based chunk processing (200 rows per frame) for reports with more than 500 file rows, preventing UI freezes during export of large diff reports. A progress indicator (`Building Excel... N%`) is shown in the status area during processing. Small reports (<= 500 rows) continue to use the original synchronous path for instant results. New functions: `downloadExcelChunked(allRows)`, `finalizeExcelDownload(builtRows)`, `buildExcelFramework(builtRows)`, `downloadExcelImmediate()` in [`Services/HtmlReport/js/diff_report_excel.js`](Services/HtmlReport/js/diff_report_excel.js). Modified: `downloadExcelCompatibleHtml()` (branching logic based on row count).
 
+#### Changed
+
+- **SVG icons for control bar buttons** — Replaced Unicode text icons with inline SVG icons on three buttons: "Free up review storage" (sparkle, `fill: currentColor`), "Fold all details" (double chevron up, `stroke: currentColor`), "Clear all" (trash can, `stroke: currentColor`). All SVGs use `currentColor` for automatic light/dark theme adaptation, matching the existing "Reset filters" SVG pattern. Modified: [`Services/HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 #### Fixed
 
 - **Tooltip on "Free up review storage" button not visible** — The frosted-glass tooltip used `bottom: calc(100% + 8px)` to position above the button, but since the button is inside the sticky controls bar (`position: sticky; top: 0`), the tooltip rendered above the viewport edge and was invisible. Changed to `top: calc(100% + 8px)` to show below the button. Also fixed undefined `--color-shadow` CSS variable in the tooltip box-shadow (replaced with `--color-text`). Modified: [`Services/HtmlReport/diff_report.css`](Services/HtmlReport/diff_report.css), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
@@ -927,6 +931,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **IntersectionObserver ベースの段階的セクションレンダリング** — 既存の遅延レンダリングシステムを `IntersectionObserver` で拡張し、ユーザーがスクロールで近づくと（200px 手前で）`<details data-lazy-section>` 要素を自動展開。大規模レポートでの手動クリックを不要に。`IntersectionObserver` の利用可否を検出し、未対応ブラウザでは従来動作にフォールバック。新規関数: `setupLazyIntersectionObserver()`（[`Services/HtmlReport/js/diff_report_lazy.js`](Services/HtmlReport/js/diff_report_lazy.js)）。変更: [`Services/HtmlReport/js/diff_report_init.js`](Services/HtmlReport/js/diff_report_init.js)（ロード時 `setupLazyIntersectionObserver()` 呼び出し）。
 
 - **大規模レポート向け requestAnimationFrame チャンク Excel エクスポート** — 500行超のファイル行を持つレポートで、Excel エクスポートが `requestAnimationFrame` ベースのチャンク処理（フレームあたり200行）を使用するよう変更。大規模差分レポートのエクスポート時の UI フリーズを防止。処理中はステータスエリアに進捗表示（`Building Excel... N%`）。500行以下の小規模レポートは即時結果のため従来の同期処理パスを継続。新規関数: `downloadExcelChunked(allRows)`、`finalizeExcelDownload(builtRows)`、`buildExcelFramework(builtRows)`、`downloadExcelImmediate()`（[`Services/HtmlReport/js/diff_report_excel.js`](Services/HtmlReport/js/diff_report_excel.js)）。変更: `downloadExcelCompatibleHtml()`（行数に基づく分岐ロジック）。
+
+#### Changed
+
+- **コントロールバーボタンの SVG アイコン化** — 3つのボタンの Unicode テキストアイコンをインライン SVG アイコンに置換：「Free up review storage」（スパークル、`fill: currentColor`）、「Fold all details」（上向き二重シェブロン、`stroke: currentColor`）、「Clear all」（ゴミ箱、`stroke: currentColor`）。すべての SVG が `currentColor` を使用しライト/ダークテーマに自動対応、既存の「Reset filters」SVG パターンと統一。変更: [`Services/HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。
 
 #### Fixed
 
