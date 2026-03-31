@@ -1,4 +1,7 @@
-  // ── Filtering ──────────────────────────────────────────────────────────
+  /**
+   * Apply all active filters (diff detail, importance, unchecked-only, search) to file rows.
+   * Hides non-matching rows and manages semantic change row visibility.
+   */
   function applyFilters() {
     var impHigh    = document.getElementById('filter-imp-high');
     // If any element is missing (e.g. reviewed mode), skip / 要素がない場合（レビュー済みモード等）スキップ
@@ -127,6 +130,7 @@
 
     autoSave();
   }
+  /** Reset all filter checkboxes and search input to defaults and re-apply. */
   function resetFilters() {
     __filterIds__.forEach(function(id) {
       if (id === 'filter-unchecked' || id === 'filter-search') return;
@@ -140,6 +144,10 @@
     applyFilters();
   }
 
+  /**
+   * Copy the file path text from the row containing the clicked button to clipboard.
+   * @param {HTMLButtonElement} btn - The copy button element
+   */
   function copyPath(btn) {
     var td = btn.closest('td');
     if (!td) return;

@@ -131,6 +131,12 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("      <span id=\"progress-text\" class=\"progress-text\"></span>");
             writer.WriteLine("      <span id=\"progress-detail\" class=\"progress-detail\"></span>");
             writer.WriteLine("    </div>");
+            writer.WriteLine("    <div class=\"storage-wrap\">");
+            writer.WriteLine("      <span class=\"storage-label\">Storage:</span>");
+            writer.WriteLine("      <div class=\"storage-bar\"><div id=\"storage-bar-fill\" class=\"storage-bar-fill\"></div></div>");
+            writer.WriteLine("      <span id=\"storage-text\" class=\"storage-text\"></span>");
+            writer.WriteLine("      <button class=\"btn btn-clear\" onclick=\"clearOldReviewStates()\" style=\"font-size:11px;padding:0.2rem 0.6rem\" title=\"Remove saved review state from other reports\">Clear old reviews</button>");
+            writer.WriteLine("    </div>");
             writer.WriteLine("  </div>");
             writer.WriteLine("  <div class=\"ctrl-actions\">");
             writer.WriteLine("    <button class=\"btn\" onclick=\"downloadReviewed()\">&#x2913; " + HtmlEncode("Download as reviewed") + "</button>");

@@ -1,9 +1,4 @@
-  // IL syntax highlighting for diff table cells.
-  // Applies lightweight regex-based highlighting to IL disassembly output in diff views.
-  // IL 逆アセンブリ出力の差分ビューに軽量な正規表現ベースのシンタックスハイライトを適用。
-
-  // Regex patterns for IL syntax elements (compiled once).
-  // IL 構文要素の正規表現パターン（1回だけコンパイル）。
+  /** @type {Array<{re: RegExp, cls: string}>} Regex patterns for IL syntax highlighting (compiled once) */
   var __ilPatterns__ = [
     // String literals (double-quoted) / 文字列リテラル（二重引用符）
     { re: /(&quot;(?:[^&]|&(?!quot;))*&quot;)/g, cls: 'hl-string' },
@@ -19,8 +14,10 @@
     { re: /\b(class|valuetype|interface|enum|extends|implements|public|private|family|assembly|static|virtual|abstract|sealed|specialname|rtspecialname|hidebysig|newslot|final|instance|cil managed|cil|managed|native|forwardref|pinvokeimpl)\b/g, cls: 'hl-keyword' }
   ];
 
-  // Apply IL syntax highlighting to a single cell's innerHTML.
-  // 単一セルの innerHTML に IL シンタックスハイライトを適用。
+  /**
+   * Apply IL syntax highlighting to a single table cell's innerHTML.
+   * @param {HTMLTableCellElement} td
+   */
   function highlightILCell(td) {
     var html = td.innerHTML;
     // Skip if already highlighted or empty / ハイライト済みまたは空の場合スキップ
@@ -47,10 +44,11 @@
     td.innerHTML = prefix + html;
   }
 
-  // Apply IL syntax highlighting to all diff cells in a container.
-  // Only applies to diffs with data-diff="ILMismatch" on the parent file row.
-  // コンテナ内の全差分セルに IL シンタックスハイライトを適用。
-  // 親ファイル行の data-diff="ILMismatch" の差分にのみ適用。
+  /**
+   * Apply IL syntax highlighting to all diff cells in a container.
+   * Only applies to diffs with data-diff="ILMismatch" or "ILMatch" on the parent file row.
+   * @param {HTMLElement|null} container
+   */
   function highlightILDiff(container) {
     if (!container) return;
     // Find the parent file row to check if this is an IL diff
@@ -69,8 +67,7 @@
     container.querySelectorAll('td.diff-del-td, td.diff-add-td, td.diff-ctx-td, td.sbs-old, td.sbs-new, td.sbs-ctx').forEach(highlightILCell);
   }
 
-  // Apply highlighting to all currently-rendered diff tables on the page.
-  // ページ上の現在レンダリング済みの全差分テーブルにハイライトを適用。
+  /** Apply IL syntax highlighting to all currently-rendered diff tables on the page. */
   function highlightAllILDiffs() {
     document.querySelectorAll('table.diff-table').forEach(function(tbl) {
       highlightILDiff(tbl);

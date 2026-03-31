@@ -1,7 +1,10 @@
-  // Completion celebration — subtle particle animation when all files are reviewed
-  // 完了セレブレーション — 全ファイルレビュー完了時の控えめなパーティクルアニメーション
+  /** @type {boolean} Whether the celebration animation has already been triggered */
   var __celebrationFired__ = false;
 
+  /**
+   * Fire a subtle particle animation when all reviewable files are checked.
+   * Only triggers once per session; skipped in reviewed (read-only) mode.
+   */
   function celebrateCompletion() {
     if (__celebrationFired__) return;
     if (__savedState__ !== null) return; // Do not celebrate in reviewed (read-only) copies / レビュー済み（読み取り専用）コピーでは祝わない

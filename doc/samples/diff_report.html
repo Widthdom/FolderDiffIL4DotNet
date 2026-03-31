@@ -148,6 +148,25 @@
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .progress-bar-fill.complete { background: var(--color-progress-fill); }
+    /* ── localStorage usage bar ── */
+    .storage-wrap {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.6rem;
+      font-size: 12px; color: var(--color-text-secondary); padding: 0.15rem 0; min-width: 0;
+    }
+    .storage-bar {
+      width: 100px; height: 4px; background: var(--color-progress-bg); border-radius: 2px; overflow: hidden;
+      flex: 0 0 100px; max-width: 100%;
+    }
+    .storage-bar-fill {
+      height: 100%; width: 0%; background: var(--color-progress-fill); border-radius: 2px;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .storage-text {
+      white-space: nowrap; font-variant-numeric: tabular-nums; font-size: 11px;
+    }
+    .storage-label {
+      font-size: 11px; color: var(--color-text-tertiary); white-space: nowrap;
+    }
     /* ── Completion celebration ─────────────────────────────────────── */
     .celebrate-container {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -722,6 +741,12 @@
       <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
       <span id="progress-text" class="progress-text"></span>
       <span id="progress-detail" class="progress-detail"></span>
+    </div>
+    <div class="storage-wrap">
+      <span class="storage-label">Storage:</span>
+      <div class="storage-bar"><div id="storage-bar-fill" class="storage-bar-fill"></div></div>
+      <span id="storage-text" class="storage-text"></span>
+      <button class="btn btn-clear" onclick="clearOldReviewStates()" style="font-size:11px;padding:0.2rem 0.6rem" title="Remove saved review state from other reports">Clear old reviews</button>
     </div>
   </div>
   <div class="ctrl-actions">

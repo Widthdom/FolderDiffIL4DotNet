@@ -1,3 +1,7 @@
+  /**
+   * Generate and download a self-contained "reviewed" HTML copy with embedded state and SHA256 integrity.
+   * @returns {Promise<void>}
+   */
   async function downloadReviewed() {
     // 0. Force-decode all lazy sections so their inputs are captured in state
     // 全lazyセクションを強制デコードし、inputが状態に含まれるようにする
@@ -120,6 +124,7 @@
     if (status) status.textContent = 'SHA256: ' + hashHex;
   }
 
+  /** Prompt user to select a .sha256 file and verify it matches the embedded hash. */
   function verifyIntegrity() {
     if (__finalSha256__ === null) {
       alert('This report has not been downloaded as reviewed yet.');
@@ -152,11 +157,13 @@
     input.click();
   }
 
+  /** Collapse all open detail elements and auto-save. */
   function collapseAll() {
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
     autoSave();
   }
 
+  /** Clear all checkboxes, text inputs, column widths, and localStorage state after confirmation. */
   function clearAll() {
     if (!confirm('Clear all checkboxes and text inputs?')) return;
     document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
