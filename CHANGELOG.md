@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **HTML report JS/CSS minification** — Added NUglify-based runtime minification for embedded JavaScript (12 modules, ~85 KB) and CSS (~48 KB) in the HTML report. Minified output is cached per-process so the cost is paid only once. New files: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs). Modified: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs), [`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs), [`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj) (NUglify package reference).
+- **HTML report JS/CSS comment stripping** — Added lightweight comment and blank-line stripping for embedded JavaScript (12 modules, ~85 KB) and CSS (~48 KB) in the HTML report. JS single-line comments (`//`) and CSS block comments (`/* */`, except `/*! */`) are removed while preserving all whitespace in code — this is critical because `downloadReviewed()` uses exact whitespace patterns in `string.replace()` calls. Stripped output is cached per-process. NUglify was originally used but removed because full minification breaks whitespace-sensitive `replace()` patterns. New files: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs). Modified: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs), [`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs).
 
 - **Automated test scope map validation in CI** — Added [`scripts/validate-test-scope-map.py`](scripts/validate-test-scope-map.py) script that compares test class files against the TESTING_GUIDE.md scope map table, warning when new test classes are added but not documented. Integrated as a non-blocking CI step in [`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml).
 
@@ -908,7 +908,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **HTML レポート JS/CSS ミニファイ** — NUglify ベースのランタイムミニファイを HTML レポートの埋め込み JavaScript（12モジュール、約85KB）と CSS（約48KB）に追加。ミニファイ結果はプロセスごとにキャッシュされ、コストは1回のみ。新規ファイル: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs)。変更: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)、[`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs)、[`FolderDiffIL4DotNet.csproj`](FolderDiffIL4DotNet.csproj)（NUglify パッケージ参照追加）。
+- **HTML レポート JS/CSS コメント除去** — HTML レポートの埋め込み JavaScript（12モジュール、約85KB）と CSS（約48KB）に軽量なコメント・空行除去を追加。JS の単行コメント（`//`）と CSS のブロックコメント（`/* */`、`/*! */` は除く）を除去しつつ、コード内の空白はすべて維持。これは `downloadReviewed()` が `string.replace()` で正確な空白パターンを使用するため必須。除去結果はプロセスごとにキャッシュ。当初 NUglify を使用したが、完全ミニファイが空白依存の `replace()` パターンを破壊するため削除。新規ファイル: [`Services/HtmlReport/JsMinifier.cs`](Services/HtmlReport/JsMinifier.cs)。変更: [`Services/HtmlReport/HtmlReportGenerateService.Js.cs`](Services/HtmlReport/HtmlReportGenerateService.Js.cs)、[`Services/HtmlReport/HtmlReportGenerateService.Css.cs`](Services/HtmlReport/HtmlReportGenerateService.Css.cs)。
 
 - **CI テスト範囲マップ自動検証** — [`scripts/validate-test-scope-map.py`](scripts/validate-test-scope-map.py) スクリプトを追加。テストクラスファイルと TESTING_GUIDE.md の範囲マップテーブルを突合し、新規テストクラスが追加されたが文書化されていない場合に警告。[`.github/workflows/dotnet.yml`](.github/workflows/dotnet.yml) に非ブロッキング CI ステップとして統合。
 

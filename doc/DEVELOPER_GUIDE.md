@@ -161,7 +161,7 @@ The HTML report includes a client-side filter zone that allows users to narrow d
 
 ### JavaScript ([`Services/HtmlReport/js/`](../Services/HtmlReport/js/))
 
-The JavaScript is split into 12 module files under `Services/HtmlReport/js/`, concatenated and minified at generation time by `HtmlReportGenerateService.Js.cs` using [`JsMinifier`](../Services/HtmlReport/JsMinifier.cs) (NUglify). CSS is similarly minified. Minified output is cached per-process so the cost is paid only once:
+The JavaScript is split into 12 module files under `Services/HtmlReport/js/`, concatenated with comment/blank-line stripping at generation time by `HtmlReportGenerateService.Js.cs` using [`JsMinifier`](../Services/HtmlReport/JsMinifier.cs). CSS block comments are similarly stripped. Full minification is intentionally avoided because `downloadReviewed()` relies on exact whitespace patterns in `string.replace()` calls. Stripped output is cached per-process so the cost is paid only once:
 
 | Module | Responsibility |
 | --- | --- |
@@ -1049,7 +1049,7 @@ HTML レポートには、複数の条件でファイル行を絞り込めるク
 
 ### JavaScript（[`Services/HtmlReport/js/`](../Services/HtmlReport/js/)）
 
-JavaScript は `Services/HtmlReport/js/` 配下の12個のモジュールファイルに分割され、`HtmlReportGenerateService.Js.cs` が生成時に結合・ミニファイします（[`JsMinifier`](../Services/HtmlReport/JsMinifier.cs)、NUglify 使用）。CSS も同様にミニファイされます。ミニファイ結果はプロセスごとにキャッシュされ、コストは1回のみです：
+JavaScript は `Services/HtmlReport/js/` 配下の12個のモジュールファイルに分割され、`HtmlReportGenerateService.Js.cs` が生成時に結合・コメント/空行除去します（[`JsMinifier`](../Services/HtmlReport/JsMinifier.cs)）。CSS のブロックコメントも同様に除去されます。`downloadReviewed()` が `string.replace()` で正確な空白パターンに依存するため、完全ミニファイは意図的に回避しています。除去結果はプロセスごとにキャッシュされ、コストは1回のみです：
 
 | モジュール | 責務 |
 | --- | --- |
