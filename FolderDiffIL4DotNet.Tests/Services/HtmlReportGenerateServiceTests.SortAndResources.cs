@@ -437,7 +437,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Storage bar structure / ストレージバー構造
             Assert.Contains("class=\"storage-group\"", html);
             Assert.Contains("class=\"storage-bar\"", html);
-            Assert.Contains("id=\"storage-fill\"", html);
+            Assert.Contains("id=\"storage-bar-fill\"", html);
             Assert.Contains("id=\"storage-text\"", html);
         }
 
