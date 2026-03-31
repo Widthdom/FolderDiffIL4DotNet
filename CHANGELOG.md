@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.12.4] - 2026-03-31
+
 #### Changed
 
 - **ProgramRunner pipeline step extraction** — Extracted spinner theme data into [`Runner/SpinnerThemes.cs`](Runner/SpinnerThemes.cs) and CLI override logic into [`Runner/CliOverrideApplier.cs`](Runner/CliOverrideApplier.cs), reducing `ProgramRunner.Config.cs` from 417 to 144 lines. The `ProgramRunner` partial class total drops from 1,113 to 1,019 lines with clearer single-responsibility separation.
@@ -901,6 +903,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.12.4] - 2026-03-31
 
 #### Changed
 
@@ -1795,7 +1799,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.3...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.4...HEAD
+[1.12.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.3...v1.12.4
 [1.12.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.2...v1.12.3
 [1.12.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.1...v1.12.2
 [1.12.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.0...v1.12.1
