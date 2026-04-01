@@ -28,6 +28,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Plugin.Abstractions NuGet publishing in release workflow** — The `nuget-publish` job in `release.yml` now packs and publishes `FolderDiffIL4DotNet.Plugin.Abstractions` alongside `FolderDiffIL4DotNet.Core`. Each package has independent change detection — only packages with changes since the previous tag are published. Affected: `.github/workflows/release.yml`.
 
+- **Plugin settings in config.schema.json** — Added `PluginSearchPaths`, `PluginEnabledIds`, and `PluginConfig` to the JSON Schema, keeping it in sync with `ConfigSettingsBuilder` public properties. Affected: `doc/config.schema.json`.
+
+#### Fixed
+
+- **ConfigSettings plugin collections shared reference with builder** — `ConfigSettings` constructor used `AsReadOnly()` on the builder's `PluginSearchPaths` and `PluginEnabledIds` lists, which wraps the original list without copying. Mutating the builder after `Build()` would affect the built config. Now creates defensive copies via `new List<string>(...)` before wrapping. Same fix applied to `PluginConfig` dictionary. Affected: `Models/ConfigSettings.cs`. Tests: `Build_PluginSearchPaths_AreReadOnly` in `PluginConfigSettingsTests`.
+
 ### [1.13.0] - 2026-04-01
 
 #### Added
@@ -979,6 +985,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **パフォーマンスリグレッション閾値厳格化（#11）** — `benchmark-regression.yml` のアラート閾値を 200% から 150% に引き下げ。`ILComparisonBenchmarks`（サニタイズ、同一/異なるファイル差分）を追加。`PerformanceBudgetTests`（4件）に明示的なタイムバジェットを設定: TextDiffer 5万同一行 < 500ms、1万行変更あり < 2s、TextSanitizer 10万回反復 < 500ms、FileDiffResultLists 1万件統計 < 100ms。影響: `.github/workflows/benchmark-regression.yml`、`FolderDiffIL4DotNet.Benchmarks/ILComparisonBenchmarks.cs`、`FolderDiffIL4DotNet.Tests/Services/PerformanceBudgetTests.cs`。
 
 - **Plugin.Abstractions NuGet 公開をリリースワークフローに追加** — `release.yml` の `nuget-publish` ジョブで `FolderDiffIL4DotNet.Plugin.Abstractions` を `FolderDiffIL4DotNet.Core` と並行してパック・公開。各パッケージは独立した変更検知を持ち、前回タグからの変更があるパッケージのみ公開。影響: `.github/workflows/release.yml`。
+
+- **config.schema.json にプラグイン設定を追加** — `PluginSearchPaths`、`PluginEnabledIds`、`PluginConfig` を JSON Schema に追加し、`ConfigSettingsBuilder` の公開プロパティとの同期を維持。影響: `doc/config.schema.json`。
+
+#### Fixed
+
+- **ConfigSettings のプラグインコレクションがビルダーと参照を共有していた問題を修正** — `ConfigSettings` コンストラクタがビルダーの `PluginSearchPaths` および `PluginEnabledIds` リストに対して `AsReadOnly()` を使用していたが、これは元のリストをコピーせずラップするだけであり、`Build()` 後にビルダーを変更するとビルド済みの config にも影響していた。`new List<string>(...)` で防御的コピーを作成してからラップするよう修正。`PluginConfig` ディクショナリにも同様の修正を適用。影響: `Models/ConfigSettings.cs`。テスト: `PluginConfigSettingsTests` の `Build_PluginSearchPaths_AreReadOnly`。
 
 ### [1.13.0] - 2026-04-01
 
