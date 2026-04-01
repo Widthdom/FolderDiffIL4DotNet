@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.1] - 2026-04-02
+
 #### Added
 
 - **Plugin system (Phases 1-6)** — Full plugin architecture enabling third-party extensions for report formatting, file comparison, post-processing, and disassembly. Key components:
@@ -966,6 +968,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.13.1] - 2026-04-02
 
 #### Added
 
@@ -1925,7 +1929,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.1...HEAD
+[1.13.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.4...v1.13.0
 [1.12.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.3...v1.12.4
 [1.12.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.2...v1.12.3
