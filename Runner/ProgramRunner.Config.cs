@@ -238,9 +238,9 @@ namespace FolderDiffIL4DotNet
         /// <summary>
         /// Extracts distinct tool version labels from cache filenames for interactive selection.
         /// E.g. ["dotnet-ildasm (version: 0.12.0)", "ilspycmd (version: 8.2.0)"].
-        /// The label is reconstructed by reversing the sanitization (underscores → colons/parentheses).
+        /// The label is reconstructed by reversing the colon sanitization ('_' → ':' in version pattern).
         /// キャッシュファイル名から一意なツールバージョンラベルを抽出し、対話的選択用に返します。
-        /// ラベルはサニタイズの逆変換（アンダースコア→コロン/括弧）で復元されます。
+        /// ラベルはコロンサニタイズの逆変換（バージョンパターン内の '_' → ':'）で復元されます。
         /// </summary>
         internal static string[] ExtractDistinctToolLabels(string[] cacheFiles)
         {
@@ -250,8 +250,8 @@ namespace FolderDiffIL4DotNet
                 var name = Path.GetFileNameWithoutExtension(f);
                 if (name.Length <= CACHE_KEY_HASH_LENGTH + 1) continue;
                 var toolPart = name[(CACHE_KEY_HASH_LENGTH + 1)..];
-                // Reverse sanitization: "_version_ X.Y.Z_" → "(version: X.Y.Z)"
-                // サニタイズの逆変換: "_version_ X.Y.Z_" → "(version: X.Y.Z)"
+                // Reverse sanitization: "(version_ X.Y.Z)" → "(version: X.Y.Z)"
+                // サニタイズの逆変換: "(version_ X.Y.Z)" → "(version: X.Y.Z)"
                 var label = UnsanitizeToolLabel(toolPart);
                 labels.Add(label);
             }
@@ -263,20 +263,20 @@ namespace FolderDiffIL4DotNet
 
         /// <summary>
         /// Reverses the filename sanitization to reconstruct a human-readable tool label.
-        /// Converts patterns like "dotnet-ildasm _version_ 0.12.0_" back to "dotnet-ildasm (version: 0.12.0)".
+        /// Converts patterns like "dotnet-ildasm (version_ 0.12.0)" back to "dotnet-ildasm (version: 0.12.0)".
+        /// Only ':' is sanitized to '_' by TextSanitizer.ToSafeFileName; parentheses are preserved.
         /// ファイル名サニタイズを逆変換し、人間が読めるツールラベルを復元します。
+        /// TextSanitizer.ToSafeFileName では ':' のみ '_' に変換され、括弧はそのまま保持されます。
         /// </summary>
         internal static string UnsanitizeToolLabel(string sanitized)
         {
-            // Common pattern: "toolname _version_ X.Y.Z_"
+            // Common pattern: "toolname (version_ X.Y.Z)"
             // → "toolname (version: X.Y.Z)"
-            // 共通パターン: "toolname _version_ X.Y.Z_"
+            // 共通パターン: "toolname (version_ X.Y.Z)"
             // → "toolname (version: X.Y.Z)"
-            if (sanitized.Contains(" _version_ "))
+            if (sanitized.Contains("(version_ "))
             {
-                return sanitized
-                    .Replace(" _version_ ", " (version: ")
-                    .TrimEnd('_') + ")";
+                return sanitized.Replace("(version_ ", "(version: ");
             }
             // Fallback: return as-is if no version pattern found
             // フォールバック: バージョンパターンがない場合はそのまま返す

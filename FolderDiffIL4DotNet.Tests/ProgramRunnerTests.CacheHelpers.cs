@@ -13,15 +13,23 @@ namespace FolderDiffIL4DotNet.Tests
         // キャッシュヘルパーメソッドテスト
         // -----------------------------------------------------------------------
 
+        // Actual cache filename format (after TextSanitizer.ToSafeFileName):
+        // <64-char SHA256 hex>_<toolLabel with ':' replaced by '_'>.ilcache
+        // e.g. "abcdef...64_dotnet-ildasm (version_ 0.12.0).ilcache"
+        // Note: parentheses are NOT replaced — only ':' and invalid filename chars become '_'.
+        // 実際のキャッシュファイル名形式（TextSanitizer.ToSafeFileName 適用後）:
+        // <64文字SHA256 16進>_<':' を '_' に置換したツールラベル>.ilcache
+        // 注意: 括弧は置換されない — ':' とファイル名無効文字のみ '_' に変換。
+
         [Fact]
         [Trait("Category", "Unit")]
         public void FilterCacheFilesByTool_MatchesIldasmFiles()
         {
             var files = new[]
             {
-                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.12.0_.ilcache",
-                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd _version_ 8.2.0_.ilcache",
-                "/cache/2222220123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.13.0_.ilcache",
+                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.12.0).ilcache",
+                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd (version_ 8.2.0).ilcache",
+                "/cache/2222220123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.13.0).ilcache",
             };
 
             var result = ProgramRunner.FilterCacheFilesByTool(files, "dotnet-ildasm");
@@ -35,8 +43,8 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var files = new[]
             {
-                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.12.0_.ilcache",
-                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd _version_ 8.2.0_.ilcache",
+                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.12.0).ilcache",
+                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd (version_ 8.2.0).ilcache",
             };
 
             var result = ProgramRunner.FilterCacheFilesByTool(files, "ilspycmd");
@@ -61,9 +69,9 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var files = new[]
             {
-                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.12.0_.ilcache",
-                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.13.0_.ilcache",
-                "/cache/2222220123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd _version_ 8.2.0_.ilcache",
+                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.12.0).ilcache",
+                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.13.0).ilcache",
+                "/cache/2222220123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd (version_ 8.2.0).ilcache",
             };
 
             var result = ProgramRunner.FilterCacheFilesByToolLabel(files, "dotnet-ildasm (version: 0.12.0)");
@@ -78,10 +86,10 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var files = new[]
             {
-                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.12.0_.ilcache",
-                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.12.0_.ilcache",
-                "/cache/2222220123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd _version_ 8.2.0_.ilcache",
-                "/cache/3333330123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.13.0_.ilcache",
+                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.12.0).ilcache",
+                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.12.0).ilcache",
+                "/cache/2222220123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd (version_ 8.2.0).ilcache",
+                "/cache/3333330123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.13.0).ilcache",
             };
 
             var result = ProgramRunner.ExtractDistinctToolLabels(files);
@@ -98,8 +106,8 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var files = new[]
             {
-                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd _version_ 8.2.0_.ilcache",
-                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm _version_ 0.12.0_.ilcache",
+                "/cache/abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789_ilspycmd (version_ 8.2.0).ilcache",
+                "/cache/1111110123456789abcdef0123456789abcdef0123456789abcdef0123456789_dotnet-ildasm (version_ 0.12.0).ilcache",
             };
 
             var result = ProgramRunner.ExtractDistinctToolLabels(files);
@@ -130,9 +138,11 @@ namespace FolderDiffIL4DotNet.Tests
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void UnsanitizeToolLabel_ReversesVersionPattern()
+        public void UnsanitizeToolLabel_ReversesColonSanitization()
         {
-            var result = ProgramRunner.UnsanitizeToolLabel("dotnet-ildasm _version_ 0.12.0_");
+            // Actual sanitized form: "dotnet-ildasm (version_ 0.12.0)" — only ':' → '_'
+            // 実際のサニタイズ形式: "dotnet-ildasm (version_ 0.12.0)" — ':' のみ '_' に変換
+            var result = ProgramRunner.UnsanitizeToolLabel("dotnet-ildasm (version_ 0.12.0)");
 
             Assert.Equal("dotnet-ildasm (version: 0.12.0)", result);
         }
@@ -148,11 +158,13 @@ namespace FolderDiffIL4DotNet.Tests
 
         [Fact]
         [Trait("Category", "Unit")]
-        public void SanitizeForCacheMatch_ReplacesColonsAndParentheses()
+        public void SanitizeForCacheMatch_ReplacesColonsOnly()
         {
+            // ':' is replaced with '_'; parentheses are preserved
+            // ':' は '_' に置換、括弧はそのまま保持
             var result = ProgramRunner.SanitizeForCacheMatch("dotnet-ildasm (version: 0.12.0)");
 
-            Assert.Equal("dotnet-ildasm _version_ 0.12.0_", result);
+            Assert.Equal("dotnet-ildasm (version_ 0.12.0)", result);
         }
 
         [Fact]
