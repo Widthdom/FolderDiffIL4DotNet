@@ -279,8 +279,8 @@ namespace FolderDiffIL4DotNet
 
                 RunPreflightValidator.ValidateRequiredArguments(args);
 
-                var oldFolderAbsolutePath = args[0];
-                var newFolderAbsolutePath = args[1];
+                var oldFolderAbsolutePath = Path.GetFullPath(args[0].Trim('"'));
+                var newFolderAbsolutePath = Path.GetFullPath(args[1].Trim('"'));
                 var reportLabel = args[2];
                 RunPreflightValidator.ValidateReportLabel(_logger, reportLabel);
                 string reportsFolderAbsolutePath = RunPreflightValidator.GetReportsFolderAbsolutePath(reportLabel);
