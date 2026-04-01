@@ -1,5 +1,7 @@
-  // Lazy-render: diff table HTML is stored base64-encoded in data-diff-html.
-  // On first open, decode and insert into DOM, then remove the attribute.
+  /**
+   * Set up lazy rendering for diff detail tables.
+   * HTML is stored base64-encoded in data-diff-html; decoded and inserted on first open.
+   */
   function setupLazyDiff() {
     document.querySelectorAll('details[data-diff-html]').forEach(function(d) {
       d.addEventListener('toggle', function onToggle() {
@@ -54,8 +56,10 @@
     });
   }
 
-  // Lazy-render: section tables (Ignored/Unchanged) stored Base64-encoded in data-lazy-section.
-  // On first open, decode and insert into DOM. / 遅延レンダリング: セクションテーブルをBase64で格納し初回展開時にデコード挿入。
+  /**
+   * Set up lazy rendering for section tables (Ignored/Unchanged).
+   * HTML is stored base64-encoded in data-lazy-section; decoded on first open.
+   */
   function setupLazySection() {
     document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
       d.addEventListener('toggle', function onToggle() {
@@ -98,8 +102,7 @@
     });
   }
 
-  // Force-decode all lazy sections (used before downloadReviewed captures HTML)
-  // 全lazyセクションを強制デコード（downloadReviewed前にHTML取得用）
+  /** Force-decode all lazy sections (used before downloadReviewed captures full HTML). */
   function forceDecodeLazySections() {
     document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
       var b64 = d.getAttribute('data-lazy-section');
@@ -109,5 +112,26 @@
         d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
         syncTableWidths();
       } catch(e) {}
+    });
+  }
+
+  /**
+   * Set up IntersectionObserver to auto-expand lazy sections when scrolled into view.
+   * Uses a 200px rootMargin so sections start decoding slightly before they become visible.
+   */
+  function setupLazyIntersectionObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var d = entry.target;
+        if (d.hasAttribute('data-lazy-section') && !d.open) {
+          d.open = true;
+        }
+        observer.unobserve(d);
+      });
+    }, { rootMargin: '200px 0px' });
+    document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
+      observer.observe(d);
     });
   }

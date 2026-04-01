@@ -1,19 +1,20 @@
-  // ── Keyboard shortcuts (j/k/x/?) ───────────────────────────────────────
-  // キーボードショートカット（j/k/x/?）
   (function() {
-    var _kbIndex = -1;        // Current focused row index / 現在フォーカス中の行インデックス
-    var _kbRows  = [];        // Cached visible file rows / キャッシュ済み可視ファイル行
+    /** @type {number} Current focused row index (-1 = none) */
+    var _kbIndex = -1;
+    /** @type {HTMLTableRowElement[]} Cached list of visible (non-hidden) file rows */
+    var _kbRows  = [];
 
-    // Refresh the list of visible (non-hidden) file rows.
-    // 表示中（非表示でない）のファイル行リストを更新する。
+    /** Refresh the cached list of visible (non-hidden) file rows from the DOM. */
     function refreshRows() {
       _kbRows = Array.prototype.slice.call(
         document.querySelectorAll('tbody > tr[data-section]:not(.filter-hidden)')
       );
     }
 
-    // Find the first visible row by section priority (add > rem > mod > ign > unch).
-    // セクション優先順位（add > rem > mod > ign > unch）で最初の可視行を見つける。
+    /**
+     * Find the first visible row by section priority (add > rem > mod > ign > unch).
+     * @returns {number} Row index in _kbRows
+     */
     function findFirstRowByPriority() {
       var priorities = ['add', 'rem', 'mod', 'ign', 'unch'];
       for (var p = 0; p < priorities.length; p++) {
@@ -24,8 +25,10 @@
       return 0;
     }
 
-    // Ensure the row is visible by opening any collapsed parent detail elements.
-    // 折りたたまれた親の detail 要素を開いて行を可視にする。
+    /**
+     * Ensure the row is visible by opening any collapsed parent detail elements.
+     * @param {HTMLTableRowElement} row
+     */
     function ensureVisible(row) {
       var el = row.parentElement;
       while (el) {
@@ -36,8 +39,7 @@
       }
     }
 
-    // Apply keyboard focus highlight to the row at _kbIndex.
-    // _kbIndex の行にキーボードフォーカスハイライトを適用する。
+    /** Apply keyboard focus highlight to the row at _kbIndex and scroll into view. */
     function applyFocus() {
       document.querySelectorAll('tr.kb-focus').forEach(function(el) {
         el.classList.remove('kb-focus');
@@ -63,8 +65,10 @@
       }
     }
 
-    // Move focus by delta (+1 or -1). Wraps at boundaries.
-    // delta（+1 または -1）だけフォーカスを移動する。端では止まる。
+    /**
+     * Move keyboard focus by delta (+1 or -1). Clamps at list boundaries.
+     * @param {number} delta - Direction to move: +1 for next, -1 for previous
+     */
     function moveBy(delta) {
       refreshRows();
       if (_kbRows.length === 0) return;
@@ -76,8 +80,7 @@
       applyFocus();
     }
 
-    // Toggle the review checkbox of the currently focused row.
-    // 現在フォーカス中の行のレビューチェックボックスをトグルする。
+    /** Toggle the review checkbox of the currently focused row (no-op in read-only mode). */
     function toggleCheck() {
       if (__savedState__ !== null) return; // Read-only mode / 読み取り専用モード
       if (_kbIndex < 0 || _kbIndex >= _kbRows.length) return;
@@ -88,8 +91,7 @@
       }
     }
 
-    // Show/hide the keyboard shortcut help overlay.
-    // キーボードショートカットヘルプオーバーレイの表示/非表示を切り替える。
+    /** Show or hide the keyboard shortcut help overlay. */
     function toggleHelp() {
       var overlay = document.getElementById('kb-help');
       if (!overlay) return;
@@ -103,8 +105,10 @@
       }
     }
 
-    // Check if the active element is a text input.
-    // アクティブ要素がテキスト入力かどうかを判定する。
+    /**
+     * Check if the active element is a text input, textarea, or contenteditable.
+     * @returns {boolean}
+     */
     function isTyping() {
       var el = document.activeElement;
       if (!el) return false;
@@ -116,6 +120,10 @@
     }
 
     document.addEventListener('keydown', function(e) {
+      // Disable all keyboard shortcuts in reviewed (read-only) mode
+      // reviewed（読み取り専用）モードではすべてのキーボードショートカットを無効化
+      if (__savedState__ !== null) return;
+
       // Escape: blur text input → return focus to file row
       // Escape: テキスト入力を blur → ファイル行にフォーカスを戻す
       if (e.key === 'Escape' && !e.isComposing) {

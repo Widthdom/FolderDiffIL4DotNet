@@ -14,6 +14,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_CONFIG = "--config";
         private const string OPT_THREADS = "--threads";
         private const string OPT_NO_IL_CACHE = "--no-il-cache";
+        private const string OPT_CLEAR_CACHE = "--clear-cache";
         private const string OPT_SKIP_IL = "--skip-il";
         private const string OPT_NO_TIMESTAMP_WARNINGS = "--no-timestamp-warnings";
         private const string OPT_PRINT_CONFIG = "--print-config";
@@ -40,7 +41,7 @@ namespace FolderDiffIL4DotNet.Runner
         internal static CliOptions Parse(string[] args)
         {
             bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
-            bool noIlCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
+            bool noIlCache = false, clearCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
             bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false;
             bool randomSpinner = false;
             // Track how many distinct spinner theme flags have been seen / 何種類のスピナーテーマフラグが指定されたかを追跡
@@ -52,7 +53,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -108,6 +109,9 @@ namespace FolderDiffIL4DotNet.Runner
                         break;
                     case OPT_NO_IL_CACHE:
                         noIlCache = true;
+                        break;
+                    case OPT_CLEAR_CACHE:
+                        clearCache = true;
                         break;
                     case OPT_SKIP_IL:
                         skipIl = true;
@@ -195,7 +199,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, parseError);
         }
     }
 }

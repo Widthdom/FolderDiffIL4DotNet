@@ -71,6 +71,11 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            if (opts.ClearCache)
+            {
+                return await ClearCacheAsync(opts.ConfigPath);
+            }
+
             if (opts.PrintConfig)
             {
                 return await PrintConfigAsync(opts.ConfigPath);
@@ -234,17 +239,17 @@ namespace FolderDiffIL4DotNet
                 Console.ForegroundColor = color.Value;
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar} {count,5}");
                 Console.ForegroundColor = prevColor;
-                Console.Write($"/{total} (");
+                Console.Write($"/{total} ");
                 Console.ForegroundColor = color.Value;
                 Console.Write($"{pct,5}%");
                 Console.ForegroundColor = prevColor;
-                Console.WriteLine(")");
+                Console.WriteLine();
             }
             else
             {
                 // Default color for Unchanged / Unchanged はデフォルト色
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar}");
-                Console.WriteLine($" {count,5}/{total} ({pct,5}%)");
+                Console.WriteLine($" {count,5}/{total} {pct,5}%");
             }
         }
 
@@ -279,8 +284,8 @@ namespace FolderDiffIL4DotNet
 
                 RunPreflightValidator.ValidateRequiredArguments(args);
 
-                var oldFolderAbsolutePath = args[0];
-                var newFolderAbsolutePath = args[1];
+                var oldFolderAbsolutePath = Path.GetFullPath(args[0].Trim('"'));
+                var newFolderAbsolutePath = Path.GetFullPath(args[1].Trim('"'));
                 var reportLabel = args[2];
                 RunPreflightValidator.ValidateReportLabel(_logger, reportLabel);
                 string reportsFolderAbsolutePath = RunPreflightValidator.GetReportsFolderAbsolutePath(reportLabel);

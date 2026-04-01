@@ -12,6 +12,7 @@ namespace FolderDiffIL4DotNet.Runner
         string? ConfigPath,
         int? ThreadsOverride,
         bool NoIlCache,
+        bool ClearCache,
         bool SkipIL,
         bool NoTimestampWarnings,
         bool PrintConfig,

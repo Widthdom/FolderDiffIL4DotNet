@@ -449,9 +449,12 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             // Warning: multiple different disassembler tools used / 警告: 異なる逆アセンブラツールが混在
-            var distinctToolNames = fileDiffResultLists.DisassemblerToolVersions.Keys
+            var allLabels = fileDiffResultLists.DisassemblerToolVersions.Keys
                 .Concat(fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
                 .Where(label => !string.IsNullOrWhiteSpace(label))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var distinctToolNames = allLabels
                 .Select(label => ExtractToolName(label))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -459,7 +462,7 @@ namespace FolderDiffIL4DotNet.Services
             if (distinctToolNames.Count > 1)
             {
                 writer.WriteLine();
-                writer.WriteLine($"> **⚠ Warning**: Multiple disassembler tools were used in this run ({string.Join(", ", distinctToolNames)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. For consistent results, ensure only one disassembler tool is installed.");
+                writer.WriteLine($"> **⚠ Warning**: Multiple disassembler tools were used across file comparisons in this run ({string.Join(", ", allLabels)}). Each file pair is compared using the same tool, but IL output format may differ between tools, reducing cross-file consistency. This typically occurs when the preferred tool fails on certain assemblies and the fallback is used. If caused by stale cache entries from a previous tool, use --clear-cache to resolve.");
                 writer.WriteLine();
             }
         }

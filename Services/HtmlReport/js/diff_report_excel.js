@@ -1,6 +1,7 @@
-  // ── PDF export via browser print / ブラウザ印刷による PDF エクスポート ──
-  // Injects fixed-position header/footer elements and triggers window.print().
-  // 固定位置のヘッダー/フッター要素を注入し、window.print() を呼び出します。
+  /**
+   * Export report as PDF via browser print dialog.
+   * Injects fixed-position header/footer elements and triggers window.print().
+   */
   function downloadAsPdf() {
     // Force-decode all lazy sections / 全 lazy セクションを強制デコード
     forceDecodeLazySections();
@@ -57,11 +58,75 @@
     window.print();
   }
 
-  // ── Excel export ────────────────────────────────────────────────────
-  // Generates an Excel-compatible HTML table file from the current report data.
-  // 現在のレポートデータから Excel 互換 HTML テーブルファイルを生成します。
+  /**
+   * Generate and download an Excel-compatible HTML table file from the current report data.
+   * Uses requestAnimationFrame chunking to avoid UI freezes on large reports.
+   */
   function downloadExcelCompatibleHtml() {
-    // Force-decode all lazy sections to capture all data / 全lazyセクションを強制デコードしデータを取得
+    forceDecodeLazySections();
+    var allRows = Array.prototype.slice.call(document.querySelectorAll('tbody > tr[data-section]'));
+    if (allRows.length > 500) {
+      downloadExcelChunked(allRows);
+      return;
+    }
+    downloadExcelImmediate();
+  }
+
+  /**
+   * Chunked Excel export: builds Excel rows in batches of 200 via requestAnimationFrame.
+   * Shows progress in save-status while processing.
+   * @param {HTMLTableRowElement[]} allRows - All data rows from the DOM
+   */
+  function downloadExcelChunked(allRows) {
+    var status = document.getElementById('save-status');
+    var builtRows = {};
+    var idx = 0;
+    var CHUNK = 200;
+    allRows.forEach(function(tr) {
+      var sec = tr.getAttribute('data-section');
+      if (!builtRows[sec]) builtRows[sec] = [];
+    });
+    function processChunk() {
+      var end = Math.min(idx + CHUNK, allRows.length);
+      for (; idx < end; idx++) {
+        var tr = allRows[idx];
+        var sec = tr.getAttribute('data-section');
+        if (!builtRows[sec]) builtRows[sec] = [];
+        builtRows[sec].push(buildExcelRow(tr));
+      }
+      if (status) status.textContent = 'Building Excel... ' + Math.round(idx / allRows.length * 100) + '%';
+      if (idx < allRows.length) {
+        requestAnimationFrame(processChunk);
+      } else {
+        finalizeExcelDownload(builtRows);
+        if (status) { status.textContent = 'Excel export complete.'; }
+      }
+    }
+    if (status) status.textContent = 'Building Excel... 0%';
+    requestAnimationFrame(processChunk);
+  }
+
+  /**
+   * Finalize the Excel download from pre-built row data.
+   * @param {Object<string, string[]>} builtRows - Section key to array of HTML row strings
+   */
+  function finalizeExcelDownload(builtRows) {
+    var excelParts = buildExcelFramework(builtRows);
+    var blob = new Blob([excelParts], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'diff_report_' + __reportDate__ + '_reviewed_Excel-compatible.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  /**
+   * Immediate (non-chunked) Excel export for small reports.
+   */
+  function downloadExcelImmediate() {
+    /* Force-decode all lazy sections to capture all data / 全 lazy セクションを強制デコード */
     forceDecodeLazySections();
 
     var sectionNames = {
@@ -286,6 +351,11 @@
     setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
   }
 
+  /**
+   * Build an Excel-compatible HTML table row from a DOM table row element.
+   * @param {HTMLTableRowElement} tr - A data row with data-section attribute
+   * @returns {string} HTML string for the Excel row, or empty string if insufficient cells
+   */
   function buildExcelRow(tr) {
     var cells = tr.querySelectorAll('td');
     if (cells.length < 10) return '';
@@ -328,6 +398,65 @@
       + '</tr>';
   }
 
+  /**
+   * Build the complete Excel HTML from pre-built section row arrays (used by chunked export).
+   * @param {Object<string, string[]>} builtRows - Section key to array of HTML row strings
+   * @returns {string} Complete Excel-compatible HTML document
+   */
+  function buildExcelFramework(builtRows) {
+    var sectionNames = {
+      'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
+      'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
+      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
+      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
+    };
+    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
+    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3' };
+    var COLS = 12;
+    function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
+    function bannerRow(text, color, style) {
+      var s = style || '';
+      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
+    }
+    function colHeaderRow(bg) {
+      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler'];
+      var r = '<tr><td></td><td></td>';
+      hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
+      return r + '</tr>';
+    }
+    var hasIgn = builtRows['ign'] && builtRows['ign'].length > 0;
+    var mainKeys = hasIgn ? ['ign', 'unch', 'add', 'rem', 'mod'] : ['unch', 'add', 'rem', 'mod'];
+    var sectionsHtml = '';
+    mainKeys.forEach(function(sec) {
+      var rows = builtRows[sec] || [];
+      var txtColor = sectionTextColors[sec] || '#000';
+      var name = sectionNames[sec] || sec;
+      sectionsHtml += bannerRow(name + ' (' + rows.length + ')', txtColor, 'font-weight:bold;padding:8px');
+      sectionsHtml += colHeaderRow(sectionColors[sec] || '#f0f0f2');
+      sectionsHtml += rows.join('');
+      sectionsHtml += emptyRow();
+    });
+    var warnKeys = ['sha256w', 'tsw'];
+    var warningsHtml = '';
+    warnKeys.forEach(function(sec) {
+      var rows = builtRows[sec];
+      if (!rows || rows.length === 0) return;
+      warningsHtml += bannerRow((sectionNames[sec] || sec) + ' (' + rows.length + ')', sectionTextColors[sec] || '#000', 'font-weight:bold;padding:8px');
+      warningsHtml += colHeaderRow(sectionColors[sec] || '#e3f2fd');
+      warningsHtml += rows.join('');
+      warningsHtml += emptyRow();
+    });
+    return '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
+      + '<head><meta charset="UTF-8">\n<style>\ntable { border-collapse: collapse; font-family: "Meiryo UI", sans-serif; font-size: 11px; }\ntd, th { border: none; padding: 4px 8px; white-space: nowrap; vertical-align: top; }\ntd.bd, th.bd { border: 1px solid #ccc; }\n</style>\n</head><body>\n<table>\n'
+      + emptyRow() + '\n' + sectionsHtml + warningsHtml + '</table>\n</body></html>';
+  }
+
+  /**
+   * Escape HTML special characters for safe embedding in HTML output.
+   * @param {string} s
+   * @returns {string}
+   */
   function esc(s) {
     if (!s) return '';
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

@@ -148,6 +148,26 @@
       transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .progress-bar-fill.complete { background: var(--color-progress-fill); }
+    /* ── localStorage usage bar (inline with progress) ── */
+    .storage-group {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .storage-bar {
+      display: inline-block; width: 100px; height: 4px;
+      background: var(--color-progress-bg); border-radius: 2px; overflow: hidden;
+      vertical-align: middle;
+    }
+    .storage-bar-fill {
+      display: block; height: 100%; width: 0%; background: var(--color-progress-fill); border-radius: 2px;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .storage-text {
+      font-variant-numeric: tabular-nums; font-size: 11px;
+    }
+    .storage-label {
+      font-size: 11px; color: var(--color-text-tertiary);
+    }
     /* ── Completion celebration ─────────────────────────────────────── */
     .celebrate-container {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -193,7 +213,6 @@
     .progress-detail {
       font-size: 11px; color: var(--color-text-quaternary);
       white-space: normal; overflow-wrap: anywhere;
-      flex: 1 1 16rem; min-width: 12rem;
     }
     .empty { color: var(--color-empty); font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Color CSS variables (light mode) / カラー CSS 変数（ライトモード） ── */
@@ -616,6 +635,7 @@
       .progress-wrap { align-items: flex-start; }
       .progress-bar { width: 100%; flex-basis: 100%; }
       .progress-detail { flex-basis: 100%; min-width: 0; }
+      .storage-group { flex-basis: 100%; }
       .ctrl-actions .btn {
         white-space: normal; text-align: center; justify-content: center;
       }
@@ -665,6 +685,24 @@
     .kb-help-row { display: flex; gap: 0.6em; align-items: baseline; }
     .kb-help-keys { min-width: 4.5em; text-align: right; white-space: nowrap; }
     .kb-help-desc { color: var(--color-text-secondary); }
+    /* ── Custom tooltip (frosted glass, matches kb-help) ── */
+    .btn-tooltip-wrap { position: relative; }
+    .btn-tooltip {
+      position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(-4px);
+      z-index: 310; padding: 0.5rem 0.8rem; border-radius: 8px;
+      background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+      box-shadow: 0 4px 24px color-mix(in srgb, var(--color-text) 12%, transparent);
+      font-size: 11px; line-height: 1.5; color: var(--color-text-secondary);
+      white-space: normal; width: max-content; max-width: 280px; text-align: center;
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .btn-tooltip-visible {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
     @media print {
@@ -672,7 +710,7 @@
       .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
       .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
       button, .filter-search-wrap, .btn-input-clear,
-      .kb-help { display: none !important; }
+      .kb-help, .btn-tooltip { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }
       input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
       .controls, .reviewed-banner { position: static !important; }
@@ -722,13 +760,15 @@
       <div class="progress-bar"><div id="progress-bar-fill" class="progress-bar-fill"></div></div>
       <span id="progress-text" class="progress-text"></span>
       <span id="progress-detail" class="progress-detail"></span>
+      <span class="storage-group"><span class="storage-label">Storage:</span><span class="storage-bar"><span id="storage-bar-fill" class="storage-bar-fill"></span></span><span id="storage-text" class="storage-text"></span></span>
     </div>
   </div>
   <div class="ctrl-actions">
+    <span class="btn-tooltip-wrap"><button class="btn btn-clear" onclick="clearOldReviewStates()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="vertical-align:-1px"><path d="M7 1l1.2 3.8L12 6l-3.8 1.2L7 11l-1.2-3.8L2 6l3.8-1.2z"/><path d="M13 0l.7 2.3L16 3l-2.3.7L13 6l-.7-2.3L10 3l2.3-.7z"/><path d="M13.5 10l.7 2.3L16.5 13l-2.3.7-.7 2.3-.7-2.3L10.5 13l2.3-.7z"/></svg> Free up review storage</button><span class="btn-tooltip">Each report auto-saves review state to browser storage. Old reports accumulate — free space here.</span></span>
     <button class="btn" onclick="downloadReviewed()">&#x2913; Download as reviewed</button>
-    <button class="btn btn-clear" onclick="collapseAll()">Fold all details</button>
+    <button class="btn btn-clear" onclick="collapseAll()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><polyline points="4 7 8 3 12 7"/><polyline points="4 13 8 9 12 13"/></svg> Fold all details</button>
     <button class="btn btn-clear" onclick="resetFilters()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>
-    <button class="btn btn-clear" onclick="clearAll()">&#x2715; Clear all</button>
+    <button class="btn btn-clear" onclick="clearAll()"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M3 4h10l-1 10H4z"/><line x1="1" y1="4" x2="15" y2="4"/><line x1="6" y1="2" x2="10" y2="2"/></svg> Reset review progress</button>
     <button id="theme-toggle" class="btn btn-clear theme-toggle" onclick="cycleTheme()" title="Toggle theme (Light / Dark / System)">&#x2699; System</button>
     <span id="save-status" class="save-status" role="status" aria-live="polite"></span>
   </div>
@@ -1774,7 +1814,22 @@
     initClearButtons();
     setupLazyDiff();
     setupLazySection();
+    setupLazyIntersectionObserver();
+    highlightAllILDiffs();
     updateProgress();
+    updateStorageUsage();
+    // Custom tooltip hover/focus handling
+    document.querySelectorAll('.btn-tooltip-wrap').forEach(function(wrap) {
+      var tip = wrap.querySelector('.btn-tooltip');
+      var btn = wrap.querySelector('.btn');
+      if (!tip || !btn) return;
+      function show() { tip.classList.add('btn-tooltip-visible'); }
+      function hide() { tip.classList.remove('btn-tooltip-visible'); }
+      btn.addEventListener('mouseenter', show);
+      btn.addEventListener('mouseleave', hide);
+      btn.addEventListener('focus', show);
+      btn.addEventListener('blur', hide);
+    });
     // Pre-create hidden file input for Verify integrity so the accept
     // filter is ready before the first click (some browsers ignore accept
     // on dynamically created inputs that are clicked immediately)
@@ -1849,16 +1904,16 @@
     // 1. Collapse all diff-detail elements so exported file starts with diffs closed
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
-    // 2. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
-    var cs = getComputedStyle(root);
-    var curWidths = {};
-    colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
     // 2. Clear all filter-hidden state so reviewed HTML shows all rows
     document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
+    // 3. Capture current effective column widths to bake into reviewed HTML as defaults
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
+    var cs = getComputedStyle(root);
+    var curWidths = {};
+    colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
     // Clear body/root inline theme styles before capture so reviewed HTML starts clean
     var savedBodyColor = document.body.style.color;
     var savedBodyBg = document.body.style.backgroundColor;
@@ -1866,7 +1921,10 @@
     document.body.style.removeProperty('color');
     document.body.style.removeProperty('background-color');
     root.style.removeProperty('color-scheme');
+    var kbFocused = document.querySelectorAll('tr.kb-focus');
+    kbFocused.forEach(function(tr) { tr.classList.remove('kb-focus'); });
     var html    = document.documentElement.outerHTML;
+    kbFocused.forEach(function(tr) { tr.classList.add('kb-focus'); });
     // Restore live page state
     document.body.style.color = savedBodyColor;
     document.body.style.backgroundColor = savedBodyBg;
@@ -1904,7 +1962,7 @@
       + '<button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
       + '<button class="btn" onclick="downloadExcelCompatibleHtml()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><rect x="1" y="1" width="14" height="14" rx="1.5"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="9" x2="15" y2="9"/><line x1="6" y1="1" x2="6" y2="15"/><line x1="11" y1="1" x2="11" y2="15"/></svg> Download as Excel-compatible HTML</button>'
       + '<button class="btn" onclick="downloadAsPdf()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M4 1h6l4 4v10H2V1h2z"/><polyline points="10,1 10,5 14,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="10.5" x2="11" y2="10.5"/><line x1="5" y1="13" x2="9" y2="13"/></svg> Download as PDF</button>'
-      + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
+      + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><polyline points="4 7 8 3 12 7"/><polyline points="4 13 8 9 12 13"/></svg> Fold all details</button>'
       + '<button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
       + '<button id="theme-toggle" class="btn btn-clear theme-toggle" onclick="cycleTheme()" title="Toggle theme (Light / Dark / System)" style="font-size:12px">&#x2699; System</button>'
       + '</div></div>');
@@ -1993,7 +2051,7 @@
   }
 
   function clearAll() {
-    if (!confirm('Clear all checkboxes and text inputs?')) return;
+    if (!confirm('Uncheck all review checkboxes and clear all notes/reasons to restore the pre-review state. Continue?')) return;
     document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
       // Filter checkboxes → checked (no filter); other checkboxes → unchecked
       // フィルターチェックボックス → checked（フィルターなし）、その他 → unchecked
@@ -2380,6 +2438,70 @@
     });
   }
 
+  function setupLazyIntersectionObserver() {
+    if (typeof IntersectionObserver === 'undefined') return;
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (!entry.isIntersecting) return;
+        var d = entry.target;
+        if (d.hasAttribute('data-lazy-section') && !d.open) {
+          d.open = true;
+        }
+        observer.unobserve(d);
+      });
+    }, { rootMargin: '200px 0px' });
+    document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
+      observer.observe(d);
+    });
+  }
+
+  function updateStorageUsage() {
+    var bar = document.getElementById('storage-bar-fill');
+    var txt = document.getElementById('storage-text');
+    if (!bar || !txt) return;
+    try {
+      var usedBytes = 0;
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        usedBytes += key.length + localStorage.getItem(key).length;
+      }
+      var usedMB = (usedBytes * 2 / 1024 / 1024);
+      var estimatedMaxMB = 5;
+      var pct = Math.min(100, usedMB / estimatedMaxMB * 100);
+      bar.style.width = pct + '%';
+      if (pct > 80) { bar.style.background = 'var(--color-removed)'; }
+      else if (pct > 60) { bar.style.background = 'var(--color-importance-medium)'; }
+      else { bar.style.background = 'var(--color-progress-fill)'; }
+      txt.textContent = usedMB.toFixed(2) + ' MB / ~' + estimatedMaxMB + ' MB';
+    } catch(e) {
+      txt.textContent = 'unavailable';
+    }
+  }
+
+  function clearOldReviewStates() {
+    var currentKey = __storageKey__;
+    var themeKey = __storageKey__ + '-theme';
+    var removed = 0;
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var key = localStorage.key(i);
+        if (key === currentKey || key === themeKey) continue;
+        if (key.indexOf('folderdiff-') === 0) {
+          localStorage.removeItem(key);
+          removed++;
+          i = localStorage.length;
+        }
+      }
+    } catch(e) { /* ignore */ }
+    updateStorageUsage();
+    var status = document.getElementById('save-status');
+    if (status) {
+      status.textContent = 'Freed ' + removed + ' old report state' + (removed !== 1 ? 's' : '') + ' from storage';
+      status.style.color = '';
+    }
+    return removed;
+  }
+
   function forceDecodeLazySections() {
     document.querySelectorAll('details[data-lazy-section]').forEach(function(d) {
       var b64 = d.getAttribute('data-lazy-section');
@@ -2727,6 +2849,57 @@
   // Generates an Excel-compatible HTML table file from the current report data.
   // 現在のレポートデータから Excel 互換 HTML テーブルファイルを生成します。
   function downloadExcelCompatibleHtml() {
+    forceDecodeLazySections();
+    var allRows = Array.prototype.slice.call(document.querySelectorAll('tbody > tr[data-section]'));
+    if (allRows.length > 500) {
+      downloadExcelChunked(allRows);
+      return;
+    }
+    downloadExcelImmediate();
+  }
+
+  function downloadExcelChunked(allRows) {
+    var status = document.getElementById('save-status');
+    var builtRows = {};
+    var idx = 0;
+    var CHUNK = 200;
+    allRows.forEach(function(tr) {
+      var sec = tr.getAttribute('data-section');
+      if (!builtRows[sec]) builtRows[sec] = [];
+    });
+    function processChunk() {
+      var end = Math.min(idx + CHUNK, allRows.length);
+      for (; idx < end; idx++) {
+        var tr = allRows[idx];
+        var sec = tr.getAttribute('data-section');
+        if (!builtRows[sec]) builtRows[sec] = [];
+        builtRows[sec].push(buildExcelRow(tr));
+      }
+      if (status) status.textContent = 'Building Excel... ' + Math.round(idx / allRows.length * 100) + '%';
+      if (idx < allRows.length) {
+        requestAnimationFrame(processChunk);
+      } else {
+        finalizeExcelDownload(builtRows);
+        if (status) { status.textContent = 'Excel export complete.'; }
+      }
+    }
+    if (status) status.textContent = 'Building Excel... 0%';
+    requestAnimationFrame(processChunk);
+  }
+
+  function finalizeExcelDownload(builtRows) {
+    var excelParts = buildExcelFramework(builtRows);
+    var blob = new Blob([excelParts], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'diff_report_' + __reportDate__ + '_reviewed_Excel-compatible.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function downloadExcelImmediate() {
     // Force-decode all lazy sections to capture all data / 全lazyセクションを強制デコードしデータを取得
     forceDecodeLazySections();
 
@@ -2989,6 +3162,55 @@
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  function buildExcelFramework(builtRows) {
+    var sectionNames = {
+      'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
+      'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
+      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
+      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
+    };
+    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
+    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3' };
+    var COLS = 12;
+    function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
+    function bannerRow(text, color, style) {
+      var s = style || '';
+      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
+    }
+    function colHeaderRow(bg) {
+      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler'];
+      var r = '<tr><td></td><td></td>';
+      hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
+      return r + '</tr>';
+    }
+    var hasIgn = builtRows['ign'] && builtRows['ign'].length > 0;
+    var mainKeys = hasIgn ? ['ign', 'unch', 'add', 'rem', 'mod'] : ['unch', 'add', 'rem', 'mod'];
+    var sectionsHtml = '';
+    mainKeys.forEach(function(sec) {
+      var rows = builtRows[sec] || [];
+      var txtColor = sectionTextColors[sec] || '#000';
+      var name = sectionNames[sec] || sec;
+      sectionsHtml += bannerRow(name + ' (' + rows.length + ')', txtColor, 'font-weight:bold;padding:8px');
+      sectionsHtml += colHeaderRow(sectionColors[sec] || '#f0f0f2');
+      sectionsHtml += rows.join('');
+      sectionsHtml += emptyRow();
+    });
+    var warnKeys = ['sha256w', 'tsw'];
+    var warningsHtml = '';
+    warnKeys.forEach(function(sec) {
+      var rows = builtRows[sec];
+      if (!rows || rows.length === 0) return;
+      warningsHtml += bannerRow((sectionNames[sec] || sec) + ' (' + rows.length + ')', sectionTextColors[sec] || '#000', 'font-weight:bold;padding:8px');
+      warningsHtml += colHeaderRow(sectionColors[sec] || '#e3f2fd');
+      warningsHtml += rows.join('');
+      warningsHtml += emptyRow();
+    });
+    return '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
+      + '<head><meta charset="UTF-8">\n<style>\ntable { border-collapse: collapse; font-family: "Meiryo UI", sans-serif; font-size: 11px; }\ntd, th { border: none; padding: 4px 8px; white-space: nowrap; vertical-align: top; }\ntd.bd, th.bd { border: 1px solid #ccc; }\n</style>\n</head><body>\n<table>\n'
+      + emptyRow() + '\n' + sectionsHtml + warningsHtml + '</table>\n</body></html>';
+  }
+
   // ── Keyboard shortcuts (j/k/x/?) ───────────────────────────────────────
   // キーボードショートカット（j/k/x/?）
   (function() {
@@ -3088,6 +3310,7 @@
     }
 
     document.addEventListener('keydown', function(e) {
+      if (__savedState__ !== null) return;
       if (e.key === 'Escape' && !e.isComposing) {
         if (isTyping()) {
           document.activeElement.blur();

@@ -22,6 +22,7 @@ namespace FolderDiffIL4DotNet
             "  --config <path>             Path to config.json (default: <exe>/config.json).\n" +
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
             "  --no-il-cache               Disable the IL cache for this run.\n" +
+            "  --clear-cache               Interactive wizard to selectively delete IL cache files.\n" +
             "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
             "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n" +
             "  --wizard                    Interactive mode: prompts for old/new folders and report label.\n" +

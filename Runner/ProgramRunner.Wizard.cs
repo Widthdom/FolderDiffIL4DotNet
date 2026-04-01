@@ -88,10 +88,12 @@ namespace FolderDiffIL4DotNet
                 {
                     return null; // EOF
                 }
-                input = input.Trim();
+                input = input.Trim().Trim('"');
                 if (input.Length > 0)
                 {
-                    return input;
+                    // Resolve to absolute path (handles relative paths and normalizes separators)
+                    // 絶対パスに解決（相対パスの処理とセパレータ正規化）
+                    return Path.GetFullPath(input);
                 }
                 Console.WriteLine(WIZARD_INPUT_EMPTY);
                 Console.WriteLine();

@@ -179,13 +179,32 @@
     @media (prefers-reduced-motion: reduce) {
       .celebrate-particle, .celebrate-glow, .celebrate-msg { animation: none; opacity: 0; }
     }
+    /* ── localStorage usage bar (inline with progress) / localStorage 使用量バー（進捗バーと同一行） ── */
+    .storage-group {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .storage-bar {
+      display: inline-block; width: 100px; height: 4px;
+      background: var(--color-progress-bg); border-radius: 2px; overflow: hidden;
+      vertical-align: middle;
+    }
+    .storage-bar-fill {
+      display: block; height: 100%; width: 0%; background: var(--color-progress-fill); border-radius: 2px;
+      transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .storage-text {
+      font-variant-numeric: tabular-nums; font-size: 11px;
+    }
+    .storage-label {
+      font-size: 11px; color: var(--color-text-tertiary);
+    }
     .progress-text {
       white-space: nowrap; font-variant-numeric: tabular-nums;
     }
     .progress-detail {
       font-size: 11px; color: var(--color-text-quaternary);
       white-space: normal; overflow-wrap: anywhere;
-      flex: 1 1 16rem; min-width: 12rem;
     }
     .empty { color: var(--color-empty); font-size: 12px; margin-bottom: 0.8rem; }
     /* ── Filter controls (second row within controls bar) ────────────────── */
@@ -223,6 +242,7 @@
       .progress-wrap { align-items: flex-start; }
       .progress-bar { width: 100%; flex-basis: 100%; }
       .progress-detail { flex-basis: 100%; min-width: 0; }
+      .storage-group { flex-basis: 100%; }
       .ctrl-actions .btn {
         white-space: normal; text-align: center; justify-content: center;
       }
@@ -761,6 +781,24 @@
     .kb-help-row { display: flex; gap: 0.6em; align-items: baseline; }
     .kb-help-keys { min-width: 4.5em; text-align: right; white-space: nowrap; }
     .kb-help-desc { color: var(--color-text-secondary); }
+    /* ── Custom tooltip (frosted glass, matches kb-help) / カスタムツールチップ ── */
+    .btn-tooltip-wrap { position: relative; }
+    .btn-tooltip {
+      position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(-4px);
+      z-index: 310; padding: 0.5rem 0.8rem; border-radius: 8px;
+      background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+      backdrop-filter: blur(16px) saturate(1.4);
+      -webkit-backdrop-filter: blur(16px) saturate(1.4);
+      border: 1px solid color-mix(in srgb, var(--color-border) 40%, transparent);
+      box-shadow: 0 4px 24px color-mix(in srgb, var(--color-text) 12%, transparent);
+      font-size: 11px; line-height: 1.5; color: var(--color-text-secondary);
+      white-space: normal; width: max-content; max-width: 280px; text-align: center;
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .btn-tooltip-visible {
+      opacity: 1; transform: translateX(-50%) translateY(0);
+    }
     /* ── PDF print header / footer (hidden on screen) / PDF 印刷ヘッダー・フッター（画面非表示） ── */
     .pdf-print-header, .pdf-print-footer { display: none; }
     /* ── Print styles / 印刷スタイル ───────────────────────────────────── */
@@ -770,7 +808,7 @@
       .btn, .btn-clear, .btn-copy-path, .sbs-toggle, .sbs-tfoot,
       .ctrl-buttons, .ctrl-actions, .ctrl-filter-row,
       button, .filter-search-wrap, .btn-input-clear,
-      .kb-help { display: none !important; }
+      .kb-help, .btn-tooltip { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }
       input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
       /* Remove sticky positioning / スティッキー配置を解除 */

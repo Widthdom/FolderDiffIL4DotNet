@@ -1,3 +1,4 @@
+  /** Synchronize main data table widths based on CSS variable column widths and font size. */
   function syncTableWidths() {
     var root = document.documentElement;
     var emPx = parseFloat(getComputedStyle(root).fontSize) || 16;
@@ -34,6 +35,7 @@
     });
   }
 
+  /** Synchronize semantic-changes and dependency-changes table widths. */
   function syncScTableWidths() {
     var scEmPx = 12;
     var root = document.documentElement;
@@ -54,6 +56,10 @@
     document.querySelectorAll('table.dc-detail').forEach(function(t) { t.style.width = dcW + 'px'; });
   }
 
+  /**
+   * Initialize column resize handle on a single resizable table header.
+   * @param {HTMLTableCellElement} th - A th element with class 'th-resizable'
+   */
   function initColResizeSingle(th) {
     var label = document.createElement('span');
     label.className = 'th-label';
@@ -86,7 +92,7 @@
     });
   }
 
-  // Measure a Diff Detail body row and set --ft-row-h so filter-table-dbl rows are exactly 2× / Diff Detail 行高さを計測し --ft-row-h を設定
+  /** Measure a Diff Detail body row height and set --ft-row-h for double-height filter rows. */
   function syncFilterRowHeight() {
     var base = document.querySelector('table.filter-table:not(.filter-table-dbl) tbody tr');
     if (!base) return;
@@ -94,7 +100,10 @@
     if (h > 0) document.documentElement.style.setProperty('--ft-row-h', h + 'px');
   }
 
-  // Wrap td text inputs with clear button / td テキスト入力にクリアボタンを付与
+  /**
+   * Wrap a text input with a container div and append a clear (×) button.
+   * @param {HTMLInputElement} inp
+   */
   function wrapInputWithClear(inp) {
     if (inp.parentElement.classList.contains('input-wrap') || inp.parentElement.classList.contains('filter-search-wrap')) return;
     var isSearch = inp.classList.contains('filter-search');
@@ -122,10 +131,12 @@
     sync();
   }
 
+  /** Initialize clear buttons for the search input field. */
   function initClearButtons() {
     document.querySelectorAll('input#filter-search').forEach(wrapInputWithClear);
   }
 
+  /** Initialize column resize handles on all resizable table headers. */
   function initColResize() {
     document.querySelectorAll('th.th-resizable').forEach(function(th) {
       initColResizeSingle(th);

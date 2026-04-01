@@ -131,6 +131,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
 | `--threads <N>` | Override [`MaxParallelism`](#config-en-maxparallelism) for this run (`0` = auto). |
 | `--no-il-cache` | Disable the IL cache for this run. |
+| `--clear-cache` | Interactive wizard to selectively delete IL cache files (by tool, version, or all). |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
 | `--wizard` | Interactive mode: prompts for old folder, new folder, and report label. |
@@ -259,7 +260,7 @@ The HTML report supports keyboard-driven navigation for efficient review of larg
 | `?` | Show / hide the shortcut help overlay |
 
 All single-key shortcuts are disabled while typing in Justification, Notes, or the search box.
-In reviewed (read-only) mode, `x` is disabled; `j` / `k` navigation remains available.
+In reviewed (read-only) mode, all keyboard shortcuts are disabled to prevent accidental highlights in PDF exports.
 
 **Typical keyboard-only flow:**
 
@@ -831,6 +832,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り [`MaxParallelism`](#config-ja-maxparallelism) を上書きします（`0` = 自動）。 |
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
+| `--clear-cache` | IL キャッシュファイルを選択的に削除する対話ウィザードを起動します（ツール別、バージョン別、全削除）。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
 | `--wizard` | 対話モード: 旧フォルダ、新フォルダ、レポートラベルを対話入力で指定します。 |
@@ -959,7 +961,7 @@ HTML レポートは、大量ファイルの効率的なレビューのために
 | `?` | ショートカットヘルプオーバーレイの表示/非表示 |
 
 すべてのシングルキーショートカットは、Justification・Notes・検索ボックスへの入力中は無効になります。
-レビュー済み（読み取り専用）モードでは `x` は無効、`j` / `k` のナビゲーションは使用可能です。
+レビュー済み（読み取り専用）モードでは、PDF エクスポート時にハイライトが残ることを防ぐため、すべてのキーボードショートカットが無効になります。
 
 **キーボードのみの操作フロー：**
 

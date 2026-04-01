@@ -1,3 +1,8 @@
+  /**
+   * Decode a base64-encoded UTF-8 HTML string.
+   * @param {string} b64 - Base64-encoded string
+   * @returns {string} Decoded HTML
+   */
   function decodeDiffHtml(b64) {
     var binary = atob(b64);
     var bytes = new Uint8Array(binary.length);
@@ -5,10 +10,11 @@
     return new TextDecoder('utf-8').decode(bytes);
   }
 
-  // Toggle between unified and side-by-side diff view / 統合ビューとサイドバイサイドビューを切り替え
-  // 3-column layout: [LineNum] [Old/Red] [New/Green]
-  // Red and green columns each get exactly (table_width - line_number_width) / 2
-  // 3列レイアウト: [行番号] [旧/赤] [新/緑] — 赤と緑は (テーブル幅 - 行番号列幅) / 2 で等幅、隙間なし
+  /**
+   * Toggle between unified and side-by-side diff view.
+   * Side-by-side uses 3-column layout: [LineNum] [Old/Red] [New/Green].
+   * @param {HTMLDetailsElement} detailsEl - The details element containing the diff table
+   */
   function toggleDiffView(detailsEl) {
     var table = detailsEl.querySelector('.diff-table');
     if (!table) return;
