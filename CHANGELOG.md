@@ -9,6 +9,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Plugin system (Phases 1-6)** — Full plugin architecture enabling third-party extensions for report formatting, file comparison, post-processing, and disassembly. Key components:
+  - **Phase 1: DI-ified IReportSectionWriter** — Section writers now have `Order` and `IsEnabled` properties, resolved via DI. Built-in writers exposed through `ReportGenerateService.CreateBuiltInSectionWriters()`. Affected: `Services/IReportSectionWriter.cs`, `Services/ReportGenerateService.cs`, all 10 files in `Services/SectionWriters/`, `Runner/RunScopeBuilder.cs`.
+  - **Phase 2: IReportFormatter abstraction** — Report output formats (Markdown, HTML, Audit Log, SBOM) abstracted behind `IReportFormatter` interface with adapter pattern. Affected: `Services/IReportFormatter.cs`, `Services/ReportFormatters/` (4 files), `Runner/DiffPipelineExecutor.cs`.
+  - **Phase 3: Plugin.Abstractions NuGet package** — New project `FolderDiffIL4DotNet.Plugin.Abstractions` containing plugin contracts: `IPlugin`, `PluginMetadata`, `IFileComparisonHook`, `IPostProcessAction`, `IDisassemblerProvider`, context/result types. Affected: `FolderDiffIL4DotNet.Plugin.Abstractions/` (7 files), `FolderDiffIL4DotNet.sln`, `FolderDiffIL4DotNet.csproj`.
+  - **Phase 4: PluginLoader + AssemblyLoadContext** — Isolated plugin loading with `PluginAssemblyLoadContext` (collectible for unloading). Discovery from `PluginSearchPaths`, version compatibility check, enabled-list filtering. Plugin config settings (`PluginSearchPaths`, `PluginEnabledIds`, `PluginConfig`). Affected: `Runner/PluginLoader.cs`, `Runner/PluginAssemblyLoadContext.cs`, `Models/ConfigSettings.PluginSettings.cs`, `Models/ConfigSettingsBuilder.PluginSettings.cs`, `Models/ConfigSettings.cs`, `Models/IReadOnlyConfigSettings.cs`, `ProgramRunner.cs`.
+  - **Phase 5: IFileComparisonHook + IPostProcessAction** — Comparison hooks allow plugins to override or enrich file comparison results. Post-process actions run after all reports. Both are best-effort (failures logged, don't block pipeline). Affected: `Services/FileDiffService.cs`, `Runner/DiffPipelineExecutor.cs`.
+  - **Phase 6: IDisassemblerProvider** — Built-in `DotNetDisassemblerProvider` wraps existing `IDotNetDisassembleService`. Plugin authors can provide disassemblers for non-.NET file types (Java, Rust, etc.). Affected: `Services/DotNetDisassemblerProvider.cs`, `Runner/RunScopeBuilder.cs`.
+  - **Tests**: `PluginLoaderTests` (5 tests), `FileDiffServiceUnitTests.Hooks` (7 tests), `DotNetDisassemblerProviderTests` (8 tests), `PluginConfigSettingsTests` (7 tests), `ReportFormatterTests` (7 tests), `ReportSectionWriterOrderTests` (5 tests). Total: 39 new tests.
+
+- **Property-based testing with FsCheck (#9)** — Added `FsCheck.Xunit` package and `PropertyBasedTests` class with 10 property-based tests covering: `TextDiffer` (context line bounds, identity diff, patch reconstruction, output line limit), `TextSanitizer` (idempotence, path separator elimination), `FileDiffResultLists` (statistics sum invariant), `ConfigSettings` (MaxParallelism clamping, default positivity). Affected: `FolderDiffIL4DotNet.Tests.csproj`, `FolderDiffIL4DotNet.Tests/PropertyBased/PropertyBasedTests.cs`.
+
+- **Visual regression testing (#10)** — Added `HtmlReportVisualRegressionTests` (22 tests) verifying structural invariants of generated HTML reports: DOCTYPE, CSP, self-contained output (no external dependencies), interactive elements (checkboxes, text inputs, filter controls), JS/CSS features (dark mode, keyboard shortcuts, localStorage, SHA256 integrity, celebration animation, Excel export, theme toggle), data attributes, seeded file path rendering, deterministic output. Affected: `FolderDiffIL4DotNet.Tests/Services/HtmlReportVisualRegressionTests.cs`.
+
+- **Performance regression threshold strictification (#11)** — Reduced `benchmark-regression.yml` alert threshold from 200% to 150%. Added `ILComparisonBenchmarks` (sanitization, identical/different file diffs). Added `PerformanceBudgetTests` (4 tests) with explicit time budgets: TextDiffer 50K identical lines < 500ms, 10K lines with changes < 2s, TextSanitizer 100K iterations < 500ms, FileDiffResultLists 10K statistics < 100ms. Affected: `.github/workflows/benchmark-regression.yml`, `FolderDiffIL4DotNet.Benchmarks/ILComparisonBenchmarks.cs`, `FolderDiffIL4DotNet.Tests/Services/PerformanceBudgetTests.cs`.
+
+- **Plugin.Abstractions NuGet publishing in release workflow** — The `nuget-publish` job in `release.yml` now packs and publishes `FolderDiffIL4DotNet.Plugin.Abstractions` alongside `FolderDiffIL4DotNet.Core`. Each package has independent change detection — only packages with changes since the previous tag are published. Affected: `.github/workflows/release.yml`.
+
+- **Plugin settings in config.schema.json** — Added `PluginSearchPaths`, `PluginEnabledIds`, and `PluginConfig` to the JSON Schema, keeping it in sync with `ConfigSettingsBuilder` public properties. Affected: `doc/config.schema.json`.
+
+#### Fixed
+
+- **ConfigSettings plugin collections shared reference with builder** — `ConfigSettings` constructor used `AsReadOnly()` on the builder's `PluginSearchPaths` and `PluginEnabledIds` lists, which wraps the original list without copying. Mutating the builder after `Build()` would affect the built config. Now creates defensive copies via `new List<string>(...)` before wrapping. Same fix applied to `PluginConfig` dictionary. Affected: `Models/ConfigSettings.cs`. Tests: `Build_PluginSearchPaths_AreReadOnly` in `PluginConfigSettingsTests`.
+
 ### [1.13.0] - 2026-04-01
 
 #### Added
@@ -941,6 +966,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **プラグインシステム（Phase 1-6）** — レポートフォーマット、ファイル比較、ポストプロセス、逆アセンブリに対するサードパーティ拡張を可能にする完全なプラグインアーキテクチャ。主要コンポーネント：
+  - **Phase 1: IReportSectionWriter の DI 化** — セクションライターに `Order` と `IsEnabled` プロパティを追加し、DI 経由で解決。組み込みライターは `ReportGenerateService.CreateBuiltInSectionWriters()` で公開。影響: `Services/IReportSectionWriter.cs`、`Services/ReportGenerateService.cs`、`Services/SectionWriters/` 全10ファイル、`Runner/RunScopeBuilder.cs`。
+  - **Phase 2: IReportFormatter 抽象化** — レポート出力形式（Markdown、HTML、監査ログ、SBOM）をアダプターパターンで `IReportFormatter` インターフェース経由に抽象化。影響: `Services/IReportFormatter.cs`、`Services/ReportFormatters/`（4ファイル）、`Runner/DiffPipelineExecutor.cs`。
+  - **Phase 3: Plugin.Abstractions NuGet パッケージ** — プラグイン契約を含む新プロジェクト `FolderDiffIL4DotNet.Plugin.Abstractions`: `IPlugin`、`PluginMetadata`、`IFileComparisonHook`、`IPostProcessAction`、`IDisassemblerProvider`、コンテキスト/結果型。影響: `FolderDiffIL4DotNet.Plugin.Abstractions/`（7ファイル）、`FolderDiffIL4DotNet.sln`、`FolderDiffIL4DotNet.csproj`。
+  - **Phase 4: PluginLoader + AssemblyLoadContext** — `PluginAssemblyLoadContext`（アンロード対応）による分離プラグイン読み込み。`PluginSearchPaths` からの検出、バージョン互換性チェック、有効リストフィルタリング。プラグイン設定（`PluginSearchPaths`、`PluginEnabledIds`、`PluginConfig`）。影響: `Runner/PluginLoader.cs`、`Runner/PluginAssemblyLoadContext.cs`、`Models/ConfigSettings.PluginSettings.cs`、`Models/ConfigSettingsBuilder.PluginSettings.cs`、`Models/ConfigSettings.cs`、`Models/IReadOnlyConfigSettings.cs`、`ProgramRunner.cs`。
+  - **Phase 5: IFileComparisonHook + IPostProcessAction** — 比較フックによりプラグインがファイル比較結果をオーバーライド・拡充可能。ポストプロセスアクションは全レポート完了後に実行。いずれもベストエフォート（失敗はログのみ、パイプラインは中断しない）。影響: `Services/FileDiffService.cs`、`Runner/DiffPipelineExecutor.cs`。
+  - **Phase 6: IDisassemblerProvider** — 組み込み `DotNetDisassemblerProvider` が既存の `IDotNetDisassembleService` をラップ。プラグイン作者は .NET 以外のファイル種別（Java、Rust 等）用の逆アセンブラを提供可能。影響: `Services/DotNetDisassemblerProvider.cs`、`Runner/RunScopeBuilder.cs`。
+  - **テスト**: `PluginLoaderTests`（5件）、`FileDiffServiceUnitTests.Hooks`（7件）、`DotNetDisassemblerProviderTests`（8件）、`PluginConfigSettingsTests`（7件）、`ReportFormatterTests`（7件）、`ReportSectionWriterOrderTests`（5件）。合計: 39件の新規テスト。
+
+- **FsCheck プロパティベーステスト（#9）** — `FsCheck.Xunit` パッケージと `PropertyBasedTests` クラス（10件のプロパティベーステスト）を追加。対象: `TextDiffer`（コンテキスト行境界、同一性差分、パッチ再構成、出力行制限）、`TextSanitizer`（冪等性、パス区切り除去）、`FileDiffResultLists`（統計合計不変条件）、`ConfigSettings`（MaxParallelism クランプ、デフォルト正値）。影響: `FolderDiffIL4DotNet.Tests.csproj`、`FolderDiffIL4DotNet.Tests/PropertyBased/PropertyBasedTests.cs`。
+
+- **ビジュアルリグレッションテスト（#10）** — `HtmlReportVisualRegressionTests`（22件）を追加。生成 HTML レポートの構造的不変条件を検証: DOCTYPE、CSP、自己完結出力（外部依存なし）、インタラクティブ要素（チェックボックス、テキスト入力、フィルタコントロール）、JS/CSS 機能（ダークモード、キーボードショートカット、localStorage、SHA256 整合性、祝賀アニメーション、Excel エクスポート、テーマ切替）、データ属性、投入ファイルパス描画、決定的出力。影響: `FolderDiffIL4DotNet.Tests/Services/HtmlReportVisualRegressionTests.cs`。
+
+- **パフォーマンスリグレッション閾値厳格化（#11）** — `benchmark-regression.yml` のアラート閾値を 200% から 150% に引き下げ。`ILComparisonBenchmarks`（サニタイズ、同一/異なるファイル差分）を追加。`PerformanceBudgetTests`（4件）に明示的なタイムバジェットを設定: TextDiffer 5万同一行 < 500ms、1万行変更あり < 2s、TextSanitizer 10万回反復 < 500ms、FileDiffResultLists 1万件統計 < 100ms。影響: `.github/workflows/benchmark-regression.yml`、`FolderDiffIL4DotNet.Benchmarks/ILComparisonBenchmarks.cs`、`FolderDiffIL4DotNet.Tests/Services/PerformanceBudgetTests.cs`。
+
+- **Plugin.Abstractions NuGet 公開をリリースワークフローに追加** — `release.yml` の `nuget-publish` ジョブで `FolderDiffIL4DotNet.Plugin.Abstractions` を `FolderDiffIL4DotNet.Core` と並行してパック・公開。各パッケージは独立した変更検知を持ち、前回タグからの変更があるパッケージのみ公開。影響: `.github/workflows/release.yml`。
+
+- **config.schema.json にプラグイン設定を追加** — `PluginSearchPaths`、`PluginEnabledIds`、`PluginConfig` を JSON Schema に追加し、`ConfigSettingsBuilder` の公開プロパティとの同期を維持。影響: `doc/config.schema.json`。
+
+#### Fixed
+
+- **ConfigSettings のプラグインコレクションがビルダーと参照を共有していた問題を修正** — `ConfigSettings` コンストラクタがビルダーの `PluginSearchPaths` および `PluginEnabledIds` リストに対して `AsReadOnly()` を使用していたが、これは元のリストをコピーせずラップするだけであり、`Build()` 後にビルダーを変更するとビルド済みの config にも影響していた。`new List<string>(...)` で防御的コピーを作成してからラップするよう修正。`PluginConfig` ディクショナリにも同様の修正を適用。影響: `Models/ConfigSettings.cs`。テスト: `PluginConfigSettingsTests` の `Build_PluginSearchPaths_AreReadOnly`。
 
 ### [1.13.0] - 2026-04-01
 

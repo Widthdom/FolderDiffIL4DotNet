@@ -174,18 +174,49 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Restore dependencies
+      - name: Check if Plugin.Abstractions has changes since previous tag
+        id: plugin-diff
+        run: |
+          PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | head -2 | tail -1)
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found — treating Plugin.Abstractions as changed"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif git diff --quiet "${PREV_TAG}..HEAD" -- FolderDiffIL4DotNet.Plugin.Abstractions/; then
+            echo "No changes in FolderDiffIL4DotNet.Plugin.Abstractions/ since ${PREV_TAG} — skipping NuGet publish"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Plugin.Abstractions has changes since ${PREV_TAG}"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore Core dependencies
         if: steps.core-diff.outputs.changed == 'true'
         run: dotnet restore FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj
 
-      - name: Pack NuGet package
+      - name: Pack Core NuGet package
         if: steps.core-diff.outputs.changed == 'true'
         run: dotnet pack FolderDiffIL4DotNet.Core/FolderDiffIL4DotNet.Core.csproj --configuration Release --no-restore --output nupkgs
 
-      - name: Publish to nuget.org
+      - name: Publish Core to nuget.org
         if: steps.core-diff.outputs.changed == 'true'
-        run: dotnet nuget push "nupkgs/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Core.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Skip NuGet publish (no Core changes)
+      - name: Skip Core NuGet publish (no changes)
         if: steps.core-diff.outputs.changed != 'true'
         run: echo "NuGet publish skipped — FolderDiffIL4DotNet.Core/ has no changes since the previous tag"
+
+      - name: Restore Plugin.Abstractions dependencies
+        if: steps.plugin-diff.outputs.changed == 'true'
+        run: dotnet restore FolderDiffIL4DotNet.Plugin.Abstractions/FolderDiffIL4DotNet.Plugin.Abstractions.csproj
+
+      - name: Pack Plugin.Abstractions NuGet package
+        if: steps.plugin-diff.outputs.changed == 'true'
+        run: dotnet pack FolderDiffIL4DotNet.Plugin.Abstractions/FolderDiffIL4DotNet.Plugin.Abstractions.csproj --configuration Release --no-restore --output nupkgs
+
+      - name: Publish Plugin.Abstractions to nuget.org
+        if: steps.plugin-diff.outputs.changed == 'true'
+        run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Plugin.Abstractions.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Skip Plugin.Abstractions NuGet publish (no changes)
+        if: steps.plugin-diff.outputs.changed != 'true'
+        run: echo "NuGet publish skipped — FolderDiffIL4DotNet.Plugin.Abstractions/ has no changes since the previous tag"

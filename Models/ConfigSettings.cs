@@ -133,6 +133,11 @@ namespace FolderDiffIL4DotNet.Models
             InlineDiffMaxDiffLines = builder.InlineDiffMaxDiffLines;
             InlineDiffMaxOutputLines = builder.InlineDiffMaxOutputLines;
             InlineDiffLazyRender = builder.InlineDiffLazyRender;
+
+            // Plugin / プラグイン
+            PluginSearchPaths = new List<string>(builder.PluginSearchPaths).AsReadOnly();
+            PluginEnabledIds = new List<string>(builder.PluginEnabledIds).AsReadOnly();
+            PluginConfig = new Dictionary<string, System.Text.Json.JsonElement>(builder.PluginConfig);
         }
 
         // ── General properties / 一般プロパティ ─────────────────────────────

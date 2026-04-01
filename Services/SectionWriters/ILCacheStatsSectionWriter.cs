@@ -9,11 +9,13 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the IL Cache Stats section (only when enabled and ilCache is non-null). / IL Cache Stats セクションを書き込みます。</summary>
         private sealed class ILCacheStatsSectionWriter : IReportSectionWriter
         {
+            public int Order => 900;
+
+            public bool IsEnabled(ReportWriteContext context) => context.Config.ShouldIncludeILCacheStatsInReport && context.IlCache != null;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                if (!ctx.Config.ShouldIncludeILCacheStatsInReport || ctx.IlCache == null) return;
-
-                var stats = ctx.IlCache.GetReportStats();
+                var stats = ctx.IlCache!.GetReportStats();
                 writer.WriteLine(REPORT_SECTION_IL_CACHE_STATS);
                 writer.WriteLine();
                 writer.WriteLine("| Metric | Value |");

@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
@@ -42,6 +44,7 @@ namespace FolderDiffIL4DotNet.Runner
         /// <param name="config">Immutable configuration for this run. / この実行の不変設定。</param>
         /// <param name="appVersion">Application version string. / アプリケーションバージョン文字列。</param>
         /// <param name="computerName">Name of the computer executing the run. / 実行マシン名。</param>
+        /// <param name="plugins">Optional loaded plugins to register in the DI scope. / DI スコープに登録する読み込み済みプラグイン（任意）。</param>
         /// <returns>
         /// A <see cref="DiffPipelineResult"/> containing warning flags from the completed run.
         /// 完了した実行の警告フラグを含む <see cref="DiffPipelineResult"/>。
@@ -52,12 +55,13 @@ namespace FolderDiffIL4DotNet.Runner
             string reportsFolderAbsolutePath,
             ConfigSettings config,
             string appVersion,
-            string computerName)
+            string computerName,
+            IReadOnlyList<IPlugin>? plugins = null)
         {
             var executionContext = RunScopeBuilder.BuildExecutionContext(
                 oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config);
 
-            using var runProvider = RunScopeBuilder.Build(config, executionContext, _logger);
+            using var runProvider = RunScopeBuilder.Build(config, executionContext, _logger, plugins);
             using var scope = runProvider.CreateScope();
             return await ExecuteScopedRunAsync(scope.ServiceProvider, executionContext, appVersion, computerName, config);
         }
@@ -105,13 +109,19 @@ namespace FolderDiffIL4DotNet.Runner
 
                 GenerateReports(scopedProvider, executionContext, appVersion, elapsedTimeString, computerName, config, progressReporter);
                 var stats = resultLists.SummaryStatistics;
-                return new DiffPipelineResult(
+                var pipelineResult = new DiffPipelineResult(
                     resultLists.HasAnySha256Mismatch,
                     resultLists.HasAnyNewFileTimestampOlderThanOldWarning,
                     stats.UnchangedCount,
                     stats.AddedCount,
                     stats.RemovedCount,
                     stats.ModifiedCount);
+
+                // Run plugin post-process actions (best-effort, after all reports complete)
+                // プラグインのポストプロセスアクションを実行（ベストエフォート、全レポート完了後）
+                await RunPostProcessActionsAsync(scopedProvider, executionContext, appVersion, pipelineResult);
+
+                return pipelineResult;
             }
             finally
             {
@@ -153,17 +163,69 @@ namespace FolderDiffIL4DotNet.Runner
                 config,
                 ilCache);
 
-            scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(reportContext);
-            progressReporter.ReportProgress(25.0);
+            // Execute all registered report formatters in order.
+            // 登録済みの全レポートフォーマッターを順序通りに実行する。
+            var formatters = scopedProvider.GetServices<IReportFormatter>()
+                .OrderBy(f => f.Order)
+                .ToList();
+            int formatterCount = formatters.Count;
+            for (int i = 0; i < formatterCount; i++)
+            {
+                var formatter = formatters[i];
+                if (formatter.IsEnabled(reportContext))
+                {
+                    formatter.Generate(reportContext);
+                }
+                progressReporter.ReportProgress((i + 1) * 100.0 / formatterCount);
+            }
+        }
 
-            scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(reportContext);
-            progressReporter.ReportProgress(50.0);
+        /// <summary>
+        /// Runs all registered <see cref="IPostProcessAction"/> implementations after report generation.
+        /// Best-effort: failures are logged but do not affect the pipeline result.
+        /// 全レポート生成後に登録済みの <see cref="IPostProcessAction"/> を実行します。
+        /// ベストエフォート: 失敗はログ出力のみでパイプライン結果には影響しません。
+        /// </summary>
+        private async Task RunPostProcessActionsAsync(
+            IServiceProvider scopedProvider,
+            DiffExecutionContext executionContext,
+            string appVersion,
+            DiffPipelineResult pipelineResult)
+        {
+            var actions = scopedProvider.GetServices<IPostProcessAction>()
+                .OrderBy(a => a.Order)
+                .ToList();
 
-            scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(reportContext);
-            progressReporter.ReportProgress(75.0);
+            if (actions.Count == 0) return;
 
-            scopedProvider.GetRequiredService<SbomGenerateService>().GenerateSbom(reportContext);
-            progressReporter.ReportProgress(100.0);
+            var context = new PostProcessContext
+            {
+                ReportsFolderAbsolutePath = executionContext.ReportsFolderAbsolutePath,
+                OldFolderAbsolutePath = executionContext.OldFolderAbsolutePath,
+                NewFolderAbsolutePath = executionContext.NewFolderAbsolutePath,
+                AppVersion = appVersion,
+                AddedCount = pipelineResult.AddedCount,
+                RemovedCount = pipelineResult.RemovedCount,
+                ModifiedCount = pipelineResult.ModifiedCount,
+                UnchangedCount = pipelineResult.UnchangedCount,
+                HasSha256MismatchWarnings = pipelineResult.HasSha256MismatchWarnings
+            };
+
+            foreach (var action in actions)
+            {
+                try
+                {
+                    await action.ExecuteAsync(context, CancellationToken.None);
+                }
+#pragma warning disable CA1031 // Post-process actions are best-effort / ポストプロセスアクションはベストエフォート
+                catch (Exception ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        $"Post-process action failed: {ex.Message}",
+                        shouldOutputMessageToConsole: true, ex);
+                }
+#pragma warning restore CA1031
+            }
         }
 
         /// <summary>

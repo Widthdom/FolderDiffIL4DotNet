@@ -12,10 +12,12 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the Unchanged Files section. / Unchanged Files セクションを書き込みます。</summary>
         private sealed class UnchangedFilesSectionWriter : IReportSectionWriter
         {
+            public int Order => 400;
+
+            public bool IsEnabled(ReportWriteContext context) => context.Config.ShouldIncludeUnchangedFiles;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                if (!ctx.Config.ShouldIncludeUnchangedFiles) return;
-
                 int count = ctx.FileDiffResultLists.UnchangedFilesRelativePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_UNCHANGED} {REPORT_LABEL_UNCHANGED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();

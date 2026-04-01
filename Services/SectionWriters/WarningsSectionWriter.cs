@@ -15,10 +15,12 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private sealed class WarningsSectionWriter : IReportSectionWriter
         {
+            public int Order => 1000;
+
+            public bool IsEnabled(ReportWriteContext context) => context.HasSha256Mismatch || context.HasTimestampRegressionWarning;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                if (!ctx.HasSha256Mismatch && !ctx.HasTimestampRegressionWarning) return;
-
                 writer.WriteLine(REPORT_SECTION_WARNINGS);
 
                 // SHA256Mismatch warning + detail table (grouped together)

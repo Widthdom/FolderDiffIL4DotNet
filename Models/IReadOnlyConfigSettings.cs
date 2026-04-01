@@ -154,5 +154,16 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>Whether to lazy-render inline diffs. / インライン差分を遅延レンダリングするかどうか。</summary>
         bool InlineDiffLazyRender { get; }
+
+        // ── Plugin / プラグイン ──────────────────────────────────────────────
+
+        /// <summary>Directories to scan for plugin subdirectories. / プラグインサブディレクトリをスキャンするディレクトリ。</summary>
+        IReadOnlyList<string> PluginSearchPaths { get; }
+
+        /// <summary>Plugin IDs to load. Empty = all found. / 読み込むプラグイン ID。空 = 全て。</summary>
+        IReadOnlyList<string> PluginEnabledIds { get; }
+
+        /// <summary>Per-plugin configuration as raw JSON. / プラグインごとの設定（生JSON）。</summary>
+        System.Collections.Generic.IReadOnlyDictionary<string, System.Text.Json.JsonElement> PluginConfig { get; }
     }
 }

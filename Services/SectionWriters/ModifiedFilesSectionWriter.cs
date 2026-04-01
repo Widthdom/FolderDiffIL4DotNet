@@ -13,6 +13,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the Modified Files section. / Modified Files セクションを書き込みます。</summary>
         private sealed class ModifiedFilesSectionWriter : IReportSectionWriter
         {
+            public int Order => 700;
+
+            public bool IsEnabled(ReportWriteContext context) => true;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 int count = ctx.FileDiffResultLists.ModifiedFilesRelativePath.Count;
