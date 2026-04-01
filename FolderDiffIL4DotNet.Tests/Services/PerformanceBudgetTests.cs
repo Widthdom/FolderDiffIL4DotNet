@@ -35,7 +35,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.True(sw.ElapsedMilliseconds < 500,
                 $"TextDiffer on 50K identical lines took {sw.ElapsedMilliseconds}ms (budget: 500ms)");
-            Assert.Empty(result.Where(d => d.Kind == TextDiffer.Added || d.Kind == TextDiffer.Removed));
+            Assert.DoesNotContain(result, d => d.Kind == TextDiffer.Added || d.Kind == TextDiffer.Removed);
         }
 
         /// <summary>
