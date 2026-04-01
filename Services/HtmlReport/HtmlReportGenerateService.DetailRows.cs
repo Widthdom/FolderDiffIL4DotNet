@@ -242,7 +242,8 @@ namespace FolderDiffIL4DotNet.Services
             string highSuffix = summary.HighImportanceCount > 0
                 ? $" ({summary.HighImportanceCount} High)"
                 : "";
-            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show assembly semantic changes")}{highSuffix}</summary>";
+            string deltaSuffix = BuildChangeDeltaSuffix(summary);
+            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show assembly semantic changes")}{highSuffix}{deltaSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
 
             writer.WriteLine("<tr class=\"diff-row\">");
@@ -459,6 +460,33 @@ namespace FolderDiffIL4DotNet.Services
             if (lastSlash >= 0 && lastSlash < url.Length - 1)
                 return url.Substring(lastSlash + 1);
             return "Advisory";
+        }
+
+        /// <summary>
+        /// Builds the change delta suffix for the semantic changes summary label.
+        /// Returns HTML like " (<span class="color-added">+2 methods</span>, <span class="color-removed">-1 type</span>)".
+        /// セマンティック変更サマリーラベルの変更差分サフィックスを構築します。
+        /// </summary>
+        private static string BuildChangeDeltaSuffix(AssemblySemanticChangesSummary summary)
+        {
+            var parts = summary.GetChangeDeltaParts();
+            if (parts.Count == 0) return "";
+
+            var sb = new StringBuilder();
+            sb.Append(" (");
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var (prefix, count, kindLabel) = parts[i];
+                string cssClass = prefix switch { "+" => "color-added", "-" => "color-removed", _ => "" };
+                string text = $"{prefix}{count} {kindLabel}";
+                if (cssClass.Length > 0)
+                    sb.Append($"<span class=\"{cssClass}\">{HtmlEncode(text)}</span>");
+                else
+                    sb.Append(HtmlEncode(text));
+            }
+            sb.Append(')');
+            return sb.ToString();
         }
 
         // Vulnerability style constants / 脆弱性スタイル定数
