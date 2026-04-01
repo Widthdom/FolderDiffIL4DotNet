@@ -1921,7 +1921,10 @@
     document.body.style.removeProperty('color');
     document.body.style.removeProperty('background-color');
     root.style.removeProperty('color-scheme');
+    var kbFocused = document.querySelectorAll('tr.kb-focus');
+    kbFocused.forEach(function(tr) { tr.classList.remove('kb-focus'); });
     var html    = document.documentElement.outerHTML;
+    kbFocused.forEach(function(tr) { tr.classList.add('kb-focus'); });
     // Restore live page state
     document.body.style.color = savedBodyColor;
     document.body.style.backgroundColor = savedBodyBg;

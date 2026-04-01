@@ -31,7 +31,13 @@
     document.body.style.removeProperty('color');
     document.body.style.removeProperty('background-color');
     root.style.removeProperty('color-scheme');
+    /* Remove keyboard focus highlight so reviewed HTML has no yellow highlight row */
+    /* キーボードフォーカスのハイライトを除去し reviewed HTML に黄色ハイライト行を残さない */
+    var kbFocused = document.querySelectorAll('tr.kb-focus');
+    kbFocused.forEach(function(tr) { tr.classList.remove('kb-focus'); });
     var html    = document.documentElement.outerHTML;
+    /* Restore keyboard focus on live page / ライブページのキーボードフォーカスを復元 */
+    kbFocused.forEach(function(tr) { tr.classList.add('kb-focus'); });
     // Restore live page state / ライブページの状態を復元
     document.body.style.color = savedBodyColor;
     document.body.style.backgroundColor = savedBodyBg;

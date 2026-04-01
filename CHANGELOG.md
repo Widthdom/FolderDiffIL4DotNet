@@ -29,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Tooltip on "Free up review storage" button not visible** — The frosted-glass tooltip used `bottom: calc(100% + 8px)` to position above the button, but since the button is inside the sticky controls bar (`position: sticky; top: 0`), the tooltip rendered above the viewport edge and was invisible. Changed to `top: calc(100% + 8px)` to show below the button. Also fixed undefined `--color-shadow` CSS variable in the tooltip box-shadow (replaced with `--color-text`). Modified: [`Services/HtmlReport/diff_report.css`](Services/HtmlReport/diff_report.css), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
 
+- **Keyboard focus highlight leaking into reviewed HTML** — When `Download as reviewed` was clicked while a file row had keyboard focus (`kb-focus` class), the yellow highlight was captured in the `outerHTML` snapshot and persisted in the downloaded reviewed copy. Now `kb-focus` is removed before capture and restored on the live page afterward, matching the existing pattern for `filter-hidden` cleanup. Modified: [`Services/HtmlReport/js/diff_report_export.js`](Services/HtmlReport/js/diff_report_export.js), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
+
 ### [1.12.4] - 2026-03-31
 
 #### Changed
@@ -943,6 +945,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Fixed
 
 - **「Free up review storage」ボタンのツールチップが表示されない問題を修正** — フロストガラス風ツールチップが `bottom: calc(100% + 8px)` でボタンの上方向に配置されていたが、ボタンは sticky コントロールバー（`position: sticky; top: 0`）内にあるため、ツールチップがビューポートの上端より外側に描画されて見えなかった。`top: calc(100% + 8px)` に変更しボタンの下に表示。未定義だった `--color-shadow` CSS 変数も `--color-text` に修正。変更: [`Services/HtmlReport/diff_report.css`](Services/HtmlReport/diff_report.css)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。
+
+- **キーボードフォーカスのハイライトが reviewed HTML に残る問題を修正** — ファイル行にキーボードフォーカス（`kb-focus` クラス）がある状態で「Download as reviewed」を実行すると、黄色ハイライトが `outerHTML` スナップショットに含まれ、ダウンロードしたレビュー済みコピーに残留していた。キャプチャ前に `kb-focus` を除去し、キャプチャ後にライブページ上で復元するよう変更。既存の `filter-hidden` クリーンアップと同じパターン。変更: [`Services/HtmlReport/js/diff_report_export.js`](Services/HtmlReport/js/diff_report_export.js)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。
 
 ### [1.12.4] - 2026-03-31
 
