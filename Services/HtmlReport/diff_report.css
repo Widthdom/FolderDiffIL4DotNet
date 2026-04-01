@@ -725,10 +725,12 @@
     col.sc-col-body-g { width: var(--sc-body-w); }
     /* ── Dependency changes ──────────────────────────────────────────── */
     .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
-    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) [Vuln(7)] */
+    /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) [Vuln(7)] [Refs(8)] */
     col.dc-col-package-g { width: 24em; }
     col.dc-col-ver-g { width: 12em; }
     col.dc-col-vuln-g { width: 18em; }
+    col.dc-col-refs-g { width: auto; }
+    .dc-refs-cell { font-size: 11px; word-break: break-word; }
     table.semantic-changes-table.dc-detail td:nth-child(3),
     table.semantic-changes-table.dc-detail td:nth-child(4) { text-align: center; }
     .vuln-badge { font-size: 11px; white-space: nowrap; }
