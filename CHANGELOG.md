@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.0] - 2026-04-01
+
 #### Added
 
 - **JSDoc type annotations for all HTML report JS modules** — Added `/** @type */` and `/** @param / @returns */` JSDoc annotations to all 12 embedded JavaScript module files. This enables IDE autocompletion, hover documentation, and static analysis for contributors editing the report's client-side code. Critical `// NOTE:` comments were converted to `/* NOTE: */` block comments to survive `JsMinifier`'s single-line comment stripping. Modified: [`Services/HtmlReport/js/diff_report_state.js`](Services/HtmlReport/js/diff_report_state.js), [`Services/HtmlReport/js/diff_report_filter.js`](Services/HtmlReport/js/diff_report_filter.js), [`Services/HtmlReport/js/diff_report_theme.js`](Services/HtmlReport/js/diff_report_theme.js), [`Services/HtmlReport/js/diff_report_celebrate.js`](Services/HtmlReport/js/diff_report_celebrate.js), [`Services/HtmlReport/js/diff_report_highlight.js`](Services/HtmlReport/js/diff_report_highlight.js), [`Services/HtmlReport/js/diff_report_diffview.js`](Services/HtmlReport/js/diff_report_diffview.js), [`Services/HtmlReport/js/diff_report_lazy.js`](Services/HtmlReport/js/diff_report_lazy.js), [`Services/HtmlReport/js/diff_report_layout.js`](Services/HtmlReport/js/diff_report_layout.js), [`Services/HtmlReport/js/diff_report_export.js`](Services/HtmlReport/js/diff_report_export.js), [`Services/HtmlReport/js/diff_report_excel.js`](Services/HtmlReport/js/diff_report_excel.js), [`Services/HtmlReport/js/diff_report_keyboard.js`](Services/HtmlReport/js/diff_report_keyboard.js), [`Services/HtmlReport/js/diff_report_init.js`](Services/HtmlReport/js/diff_report_init.js).
@@ -939,6 +941,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.13.0] - 2026-04-01
 
 #### Added
 
@@ -1871,7 +1875,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.4...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.4...v1.13.0
 [1.12.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.3...v1.12.4
 [1.12.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.2...v1.12.3
 [1.12.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.1...v1.12.2
