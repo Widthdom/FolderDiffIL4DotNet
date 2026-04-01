@@ -79,7 +79,7 @@
       + '<button class="btn" onclick="verifyIntegrity()" style="font-size:12px">&#x2713; Verify integrity</button>'
       + '<button class="btn" onclick="downloadExcelCompatibleHtml()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><rect x="1" y="1" width="14" height="14" rx="1.5"/><line x1="1" y1="5" x2="15" y2="5"/><line x1="1" y1="9" x2="15" y2="9"/><line x1="6" y1="1" x2="6" y2="15"/><line x1="11" y1="1" x2="11" y2="15"/></svg> Download as Excel-compatible HTML</button>'
       + '<button class="btn" onclick="downloadAsPdf()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M4 1h6l4 4v10H2V1h2z"/><polyline points="10,1 10,5 14,5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="10.5" x2="11" y2="10.5"/><line x1="5" y1="13" x2="9" y2="13"/></svg> Download as PDF</button>'
-      + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px">Fold all details</button>'
+      + '<button class="btn btn-clear" onclick="collapseAll()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><polyline points="4 7 8 3 12 7"/><polyline points="4 13 8 9 12 13"/></svg> Fold all details</button>'
       + '<button class="btn btn-clear" onclick="resetFilters()" style="font-size:12px"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-1px"><path d="M2 3h12l-4 5v3l-4 2V8z"/><line x1="10" y1="10" x2="15" y2="15"/><line x1="15" y1="10" x2="10" y2="15"/></svg> Reset filters</button>'
       + '<button id="theme-toggle" class="btn btn-clear theme-toggle" onclick="cycleTheme()" title="Toggle theme (Light / Dark / System)" style="font-size:12px">&#x2699; System</button>'
       + '</div></div>');
@@ -169,9 +169,9 @@
     autoSave();
   }
 
-  /** Clear all checkboxes, text inputs, column widths, and localStorage state after confirmation. */
+  /** Uncheck all review checkboxes, clear text inputs, reset column widths, and remove localStorage state (restore to pre-review state). */
   function clearAll() {
-    if (!confirm('Clear all checkboxes and text inputs?')) return;
+    if (!confirm('Uncheck all review checkboxes and clear all notes/reasons to restore the pre-review state. Continue?')) return;
     document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
       // Filter checkboxes → checked (no filter); other checkboxes → unchecked
       // フィルターチェックボックス → checked（フィルターなし）、その他 → unchecked

@@ -120,6 +120,10 @@
     }
 
     document.addEventListener('keydown', function(e) {
+      // Disable all keyboard shortcuts in reviewed (read-only) mode
+      // reviewed（読み取り専用）モードではすべてのキーボードショートカットを無効化
+      if (__savedState__ !== null) return;
+
       // Escape: blur text input → return focus to file row
       // Escape: テキスト入力を blur → ファイル行にフォーカスを戻す
       if (e.key === 'Escape' && !e.isComposing) {
