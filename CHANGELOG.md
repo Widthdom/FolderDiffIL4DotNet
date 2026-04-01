@@ -23,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **SVG icons for control bar buttons** — Replaced Unicode text icons with inline SVG icons on three buttons: "Free up review storage" (sparkle, `fill: currentColor`), "Fold all details" (double chevron up, `stroke: currentColor`), "Clear all" (trash can, `stroke: currentColor`). All SVGs use `currentColor` for automatic light/dark theme adaptation, matching the existing "Reset filters" SVG pattern. Modified: [`Services/HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
 
+- **Multiple disassembler warning now includes version info** — The mixed-disassembler warning message now shows the full tool label with version (e.g. `dotnet-ildasm (version: 0.12.0), ilspycmd (version: 8.2.0)`) instead of just tool names. The remediation advice changed from "ensure only one disassembler tool is installed" to "consider clearing the IL cache to ensure a single tool is used consistently", which more accurately reflects the root cause (cache from a previous tool, not multiple simultaneous installations). Modified: [`Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs), [`Services/ReportGenerateService.cs`](Services/ReportGenerateService.cs). Tests: `GenerateDiffReport_WarnsWhenMultipleDisassemblersUsed`, `GenerateDiffReportHtml_WarnsWhenMultipleDisassemblersUsed`.
+
 #### Fixed
 
 - **Tooltip on "Free up review storage" button not visible** — The frosted-glass tooltip used `bottom: calc(100% + 8px)` to position above the button, but since the button is inside the sticky controls bar (`position: sticky; top: 0`), the tooltip rendered above the viewport edge and was invisible. Changed to `top: calc(100% + 8px)` to show below the button. Also fixed undefined `--color-shadow` CSS variable in the tooltip box-shadow (replaced with `--color-text`). Modified: [`Services/HtmlReport/diff_report.css`](Services/HtmlReport/diff_report.css), [`doc/samples/diff_report.html`](doc/samples/diff_report.html).
@@ -935,6 +937,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Changed
 
 - **コントロールバーボタンの SVG アイコン化** — 3つのボタンの Unicode テキストアイコンをインライン SVG アイコンに置換：「Free up review storage」（スパークル、`fill: currentColor`）、「Fold all details」（上向き二重シェブロン、`stroke: currentColor`）、「Clear all」（ゴミ箱、`stroke: currentColor`）。すべての SVG が `currentColor` を使用しライト/ダークテーマに自動対応、既存の「Reset filters」SVG パターンと統一。変更: [`Services/HtmlReportGenerateService.cs`](Services/HtmlReportGenerateService.cs)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。
+
+- **複数逆アセンブラ警告にバージョン情報を追加** — 混在警告メッセージにツール名だけでなくバージョン付きラベル（例: `dotnet-ildasm (version: 0.12.0), ilspycmd (version: 8.2.0)`）を表示するよう変更。修正アドバイスも「逆アセンブラを1つだけインストールしてください」から「IL キャッシュのクリアを検討してください」に変更し、根本原因（前回ツールのキャッシュ残留）をより正確に反映。変更: [`Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`](Services/HtmlReport/HtmlReportGenerateService.Helpers.cs)、[`Services/ReportGenerateService.cs`](Services/ReportGenerateService.cs)。テスト: `GenerateDiffReport_WarnsWhenMultipleDisassemblersUsed`、`GenerateDiffReportHtml_WarnsWhenMultipleDisassemblersUsed`。
 
 #### Fixed
 

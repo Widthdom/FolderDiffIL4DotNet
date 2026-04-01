@@ -290,8 +290,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("Multiple disassembler tools were used", reportText);
-            Assert.Contains("dotnet-ildasm", reportText);
-            Assert.Contains("ilspycmd", reportText);
+            // Version info must be included in the warning / 警告にバージョン情報が含まれること
+            Assert.Contains("dotnet-ildasm (version: 0.12.0)", reportText);
+            Assert.Contains("ilspycmd (version: 8.2.0)", reportText);
+            Assert.Contains("clearing the IL cache", reportText);
         }
 
         [Fact]

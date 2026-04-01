@@ -396,9 +396,12 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             // Warning: multiple different disassembler tools used / 警告: 異なる逆アセンブラツールが混在
-            var distinctToolNames = _fileDiffResultLists.DisassemblerToolVersions.Keys
+            var allLabels = _fileDiffResultLists.DisassemblerToolVersions.Keys
                 .Concat(_fileDiffResultLists.DisassemblerToolVersionsFromCache.Keys)
                 .Where(label => !string.IsNullOrWhiteSpace(label))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var distinctToolNames = allLabels
                 .Select(label =>
                 {
                     var vIdx = label.IndexOf(" (version:", StringComparison.OrdinalIgnoreCase);
@@ -411,7 +414,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 writer.WriteLine("<div class=\"header-path warn-caution\">");
                 writer.WriteLine($"  <div class=\"header-path-label\">{HtmlEncode("⚠ Warning")}</div>");
-                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode($"Multiple disassembler tools were used in this run ({string.Join(", ", distinctToolNames)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. For consistent results, ensure only one disassembler tool is installed.")}</div>");
+                writer.WriteLine($"  <div class=\"header-path-value\">{HtmlEncode($"Multiple disassembler tools were used in this run ({string.Join(", ", allLabels)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. Consider clearing the IL cache to ensure a single tool is used consistently.")}</div>");
                 writer.WriteLine("</div>");
             }
         }
