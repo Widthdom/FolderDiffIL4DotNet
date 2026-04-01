@@ -234,17 +234,17 @@ namespace FolderDiffIL4DotNet
                 Console.ForegroundColor = color.Value;
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar} {count,5}");
                 Console.ForegroundColor = prevColor;
-                Console.Write($"/{total} (");
+                Console.Write($"/{total} ");
                 Console.ForegroundColor = color.Value;
                 Console.Write($"{pct,5}%");
                 Console.ForegroundColor = prevColor;
-                Console.WriteLine(")");
+                Console.WriteLine();
             }
             else
             {
                 // Default color for Unchanged / Unchanged はデフォルト色
                 Console.Write($"  {label.PadRight(LABEL_WIDTH)} {bar}");
-                Console.WriteLine($" {count,5}/{total} ({pct,5}%)");
+                Console.WriteLine($" {count,5}/{total} {pct,5}%");
             }
         }
 

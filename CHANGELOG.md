@@ -33,6 +33,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Folder paths with quotes or relative segments fail on Windows** — CLI arguments and wizard input paths were used as-is without normalization. On Windows, drag-and-drop into a terminal often wraps paths in double quotes (e.g. `"C:\old"`), causing `Directory.Exists()` to return false. Now both wizard input and CLI arguments strip surrounding quotes via `Trim('"')` and resolve to absolute paths via `Path.GetFullPath()`, which also normalizes relative paths and mixed separators. Modified: [`Runner/ProgramRunner.Wizard.cs`](Runner/ProgramRunner.Wizard.cs), [`ProgramRunner.cs`](ProgramRunner.cs).
 
+- **Console completion summary bar removes unnecessary parentheses around percentage** — The `OutputSummaryBar` method wrapped percentages in parentheses (e.g. `(25.0%)`), adding visual noise. Removed the parentheses for a cleaner display (e.g. `25.0%`). Modified: [`ProgramRunner.cs`](ProgramRunner.cs).
+
 ### [1.12.4] - 2026-03-31
 
 #### Changed
@@ -951,6 +953,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **キーボードフォーカスのハイライトが reviewed HTML に残る問題を修正** — ファイル行にキーボードフォーカス（`kb-focus` クラス）がある状態で「Download as reviewed」を実行すると、黄色ハイライトが `outerHTML` スナップショットに含まれ、ダウンロードしたレビュー済みコピーに残留していた。キャプチャ前に `kb-focus` を除去し、キャプチャ後にライブページ上で復元するよう変更。既存の `filter-hidden` クリーンアップと同じパターン。変更: [`Services/HtmlReport/js/diff_report_export.js`](Services/HtmlReport/js/diff_report_export.js)、[`doc/samples/diff_report.html`](doc/samples/diff_report.html)。
 
 - **Windows で引用符付き・相対パスのフォルダ指定が失敗する問題を修正** — CLI 引数およびウィザード入力のパスが正規化されずそのまま使用されていた。Windows ではターミナルへのドラッグ＆ドロップでパスが二重引用符で囲まれることがあり（例: `"C:\old"`）、`Directory.Exists()` が false を返していた。ウィザード入力と CLI 引数の両方で `Trim('"')` による引用符除去と `Path.GetFullPath()` による絶対パス解決を実施。相対パスや混在セパレータも正規化される。変更: [`Runner/ProgramRunner.Wizard.cs`](Runner/ProgramRunner.Wizard.cs)、[`ProgramRunner.cs`](ProgramRunner.cs)。
+
+- **コンソール完了サマリーバーのパーセンテージから不要な括弧を除去** — `OutputSummaryBar` メソッドがパーセンテージを括弧で囲んでいた（例: `(25.0%)`）ため、視覚的なノイズになっていた。括弧を除去しすっきりした表示に変更（例: `25.0%`）。変更: [`ProgramRunner.cs`](ProgramRunner.cs)。
 
 ### [1.12.4] - 2026-03-31
 
