@@ -6,6 +6,7 @@ using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
+using FolderDiffIL4DotNet.Services.ReportFormatters;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FolderDiffIL4DotNet.Runner
@@ -63,6 +64,13 @@ namespace FolderDiffIL4DotNet.Runner
             services.AddScoped<HtmlReportGenerateService>();
             services.AddScoped<AuditLogGenerateService>();
             services.AddScoped<SbomGenerateService>();
+
+            // Report formatters (order determined by each formatter's Order property)
+            // レポートフォーマッター（順序は各フォーマッターの Order プロパティで決定）
+            services.AddScoped<IReportFormatter, MarkdownReportFormatter>();
+            services.AddScoped<IReportFormatter, HtmlReportFormatter>();
+            services.AddScoped<IReportFormatter, AuditLogReportFormatter>();
+            services.AddScoped<IReportFormatter, SbomReportFormatter>();
             services.AddScoped<IFileSystemService, FileSystemService>();
             services.AddScoped<IFolderDiffExecutionStrategy, FolderDiffExecutionStrategy>();
             services.AddScoped<IFileComparisonService, FileComparisonService>();

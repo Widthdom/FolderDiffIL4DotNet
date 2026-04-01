@@ -153,17 +153,21 @@ namespace FolderDiffIL4DotNet.Runner
                 config,
                 ilCache);
 
-            scopedProvider.GetRequiredService<ReportGenerateService>().GenerateDiffReport(reportContext);
-            progressReporter.ReportProgress(25.0);
-
-            scopedProvider.GetRequiredService<HtmlReportGenerateService>().GenerateDiffReportHtml(reportContext);
-            progressReporter.ReportProgress(50.0);
-
-            scopedProvider.GetRequiredService<AuditLogGenerateService>().GenerateAuditLog(reportContext);
-            progressReporter.ReportProgress(75.0);
-
-            scopedProvider.GetRequiredService<SbomGenerateService>().GenerateSbom(reportContext);
-            progressReporter.ReportProgress(100.0);
+            // Execute all registered report formatters in order.
+            // 登録済みの全レポートフォーマッターを順序通りに実行する。
+            var formatters = scopedProvider.GetServices<IReportFormatter>()
+                .OrderBy(f => f.Order)
+                .ToList();
+            int formatterCount = formatters.Count;
+            for (int i = 0; i < formatterCount; i++)
+            {
+                var formatter = formatters[i];
+                if (formatter.IsEnabled(reportContext))
+                {
+                    formatter.Generate(reportContext);
+                }
+                progressReporter.ReportProgress((i + 1) * 100.0 / formatterCount);
+            }
         }
 
         /// <summary>
