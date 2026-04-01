@@ -92,7 +92,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var resultLists = new FileDiffResultLists();
             for (int i = 0; i < 10000; i++)
             {
-                resultLists.UnchangedFiles.Add($"file_{i:D5}.dll");
+                resultLists.AddUnchangedFileRelativePath($"file_{i:D5}.dll");
             }
 
             var sw = Stopwatch.StartNew();
