@@ -221,12 +221,12 @@ namespace FolderDiffIL4DotNet.Services
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
                     string cbId = $"sc_{sectionPrefix}_{idx}_{scRowIdx}";
                     string changeMarker = ChangeToMarker(e.Change);
-                    string statusBg = ChangeToStatusBg(e.Change);
-                    string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
+                    string statusCls = ChangeToStatusClass(e.Change);
+                    string statusAttr = statusCls.Length > 0 ? $" class=\"{statusCls}\"" : "";
                     string impMarker = ImportanceToMarker(e.Importance);
                     string impCls = ImportanceToClass(e.Importance);
                     string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
-                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{scRowIdx + 1}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{scRowIdx + 1}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusAttr}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                     scRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -306,8 +306,8 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string dcImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
                     string changeMarker = DependencyChangeToMarker(e.Change);
-                    string statusBg = DependencyChangeToStatusBg(e.Change);
-                    string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
+                    string statusCls = DependencyChangeToStatusClass(e.Change);
+                    string statusAttr = statusCls.Length > 0 ? $" class=\"{statusCls}\"" : "";
                     string impMarker = ImportanceToMarker(e.Importance);
                     string impCls = ImportanceToClass(e.Importance);
                     string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
@@ -315,7 +315,7 @@ namespace FolderDiffIL4DotNet.Services
                     string oldVer = e.OldVersion.Length > 0 ? HtmlEncode(e.OldVersion) : "&#x2014;";
                     string newVer = e.NewVersion.Length > 0 ? HtmlEncode(e.NewVersion) : "&#x2014;";
                     string vulnCell = hasAnyVuln ? $"<td>{BuildVulnerabilityCell(e.Vulnerabilities)}</td>" : "";
-                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusStyle}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}</tr>");
+                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusAttr}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}</tr>");
                     dcRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -358,14 +358,14 @@ namespace FolderDiffIL4DotNet.Services
         private static string DependencyChangeToMarker(string change)
             => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ * ]", _ => change };
 
-        private static string DependencyChangeToStatusBg(string change)
-            => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Updated" => TH_BG_MODIFIED, _ => "" };
+        private static string DependencyChangeToStatusClass(string change)
+            => change switch { "Added" => "sc-status-added", "Removed" => "sc-status-removed", "Updated" => "sc-status-modified", _ => "" };
 
         private static string ChangeToMarker(string change)
             => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Modified" => "[ * ]", _ => change };
 
-        private static string ChangeToStatusBg(string change)
-            => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Modified" => TH_BG_MODIFIED, _ => "" };
+        private static string ChangeToStatusClass(string change)
+            => change switch { "Added" => "sc-status-added", "Removed" => "sc-status-removed", "Modified" => "sc-status-modified", _ => "" };
 
         /// <summary>
         /// Builds the HTML content for a vulnerability cell in the dependency changes table.

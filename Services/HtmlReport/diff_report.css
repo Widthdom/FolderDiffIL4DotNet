@@ -350,6 +350,10 @@
       --color-hl-string: #0a3069;
       --color-hl-comment: #6e7781;
       --color-hl-label: #953800;
+      /* Semantic/Dependency Status cell / セマンティック・依存関係 Status セル */
+      --color-sc-status-added: #e6ffed;
+      --color-sc-status-removed: #ffeef0;
+      --color-sc-status-modified: #e3f2fd;
       /* Keyboard focus / キーボードフォーカス */
       --color-kb-focus: #e8a500;
       --color-kb-focus-bg: rgba(232, 165, 0, 0.12);
@@ -435,6 +439,9 @@
         --color-hl-string: #a5d6ff;
         --color-hl-comment: #8b949e;
         --color-hl-label: #ffa657;
+        --color-sc-status-added: #1a4d2e;
+        --color-sc-status-removed: #5c1a22;
+        --color-sc-status-modified: #1a3a5c;
         --color-kb-focus: #facc15;
         --color-kb-focus-bg: rgba(250, 204, 21, 0.35);
       }
@@ -479,6 +486,7 @@
       --color-empty: #999; --color-sbs-empty-bg: #f6f8fa;
       --color-hl-directive: #0550ae; --color-hl-keyword: #1f6feb; --color-hl-type: #8250df;
       --color-hl-string: #0a3069; --color-hl-comment: #6e7781; --color-hl-label: #953800;
+      --color-sc-status-added: #e6ffed; --color-sc-status-removed: #ffeef0; --color-sc-status-modified: #e3f2fd;
       --color-kb-focus: #e8a500; --color-kb-focus-bg: rgba(232, 165, 0, 0.12);
       color: #1d1d1f; background-color: #fff;
     }
@@ -521,6 +529,7 @@
       --color-empty: #7d8590; --color-sbs-empty-bg: #1c2128;
       --color-hl-directive: #79c0ff; --color-hl-keyword: #58a6ff; --color-hl-type: #d2a8ff;
       --color-hl-string: #a5d6ff; --color-hl-comment: #8b949e; --color-hl-label: #ffa657;
+      --color-sc-status-added: #1a4d2e; --color-sc-status-removed: #5c1a22; --color-sc-status-modified: #1a3a5c;
       --color-kb-focus: #facc15; --color-kb-focus-bg: rgba(250, 204, 21, 0.35);
       color: #e6edf3; background-color: #0d1117;
     }
@@ -535,6 +544,10 @@
                      text-decoration: line-through; padding: 1px 5px; border-radius: 3px; margin: 1px; display: inline-block; }
     .vuln-resolved-count { color: var(--color-vuln-resolved-count); }
     .vuln-new-count { color: var(--color-vuln-new-count); }
+    /* Status cell backgrounds for semantic/dependency change tables / セマンティック・依存関係テーブルの Status セル背景 */
+    .sc-status-added    { background: var(--color-sc-status-added)   !important; }
+    .sc-status-removed  { background: var(--color-sc-status-removed) !important; }
+    .sc-status-modified { background: var(--color-sc-status-modified) !important; }
     .warn-danger { border-left: 4px solid var(--color-warn-danger-border); background: var(--color-warn-danger-bg); }
     .warn-danger .header-path-label { color: var(--color-warn-danger-border); }
     .warn-caution { border-left: 4px solid var(--color-warn-caution-border); background: var(--color-warn-caution-bg); }
