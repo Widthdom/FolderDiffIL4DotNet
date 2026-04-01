@@ -293,7 +293,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Version info must be included in the warning / 警告にバージョン情報が含まれること
             Assert.Contains("dotnet-ildasm (version: 0.12.0)", reportText);
             Assert.Contains("ilspycmd (version: 8.2.0)", reportText);
-            Assert.Contains("clearing the IL cache", reportText);
+            Assert.Contains("--clear-cache", reportText);
         }
 
         [Fact]

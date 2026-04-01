@@ -260,7 +260,7 @@ The HTML report supports keyboard-driven navigation for efficient review of larg
 | `?` | Show / hide the shortcut help overlay |
 
 All single-key shortcuts are disabled while typing in Justification, Notes, or the search box.
-In reviewed (read-only) mode, `x` is disabled; `j` / `k` navigation remains available.
+In reviewed (read-only) mode, all keyboard shortcuts are disabled to prevent accidental highlights in PDF exports.
 
 **Typical keyboard-only flow:**
 
@@ -961,7 +961,7 @@ HTML レポートは、大量ファイルの効率的なレビューのために
 | `?` | ショートカットヘルプオーバーレイの表示/非表示 |
 
 すべてのシングルキーショートカットは、Justification・Notes・検索ボックスへの入力中は無効になります。
-レビュー済み（読み取り専用）モードでは `x` は無効、`j` / `k` のナビゲーションは使用可能です。
+レビュー済み（読み取り専用）モードでは、PDF エクスポート時にハイライトが残ることを防ぐため、すべてのキーボードショートカットが無効になります。
 
 **キーボードのみの操作フロー：**
 
