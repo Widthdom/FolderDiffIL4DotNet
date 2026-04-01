@@ -95,7 +95,7 @@ jobs:
           output-file-path: BenchmarkDotNet.Artifacts/results/combined-report.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          alert-threshold: '200%'
+          alert-threshold: '150%'
           comment-on-alert: true
           fail-on-alert: ${{ steps.check-baseline.outputs.exists == 'true' }}
           summary-always: true

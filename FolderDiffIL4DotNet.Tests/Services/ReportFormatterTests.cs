@@ -34,7 +34,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void HtmlReportFormatter_IsDisabledByDefault()
         {
             var formatter = new HtmlReportFormatter(
-                new HtmlReportGenerateService(new FileDiffResultLists(), new Helpers.TestLogger()));
+                new HtmlReportGenerateService(new FileDiffResultLists(), new Helpers.TestLogger(), new ConfigSettingsBuilder().Build()));
             var context = CreateMinimalContext(shouldGenerateHtml: false);
             Assert.False(formatter.IsEnabled(context));
         }
@@ -43,7 +43,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void HtmlReportFormatter_IsEnabledWhenConfigured()
         {
             var formatter = new HtmlReportFormatter(
-                new HtmlReportGenerateService(new FileDiffResultLists(), new Helpers.TestLogger()));
+                new HtmlReportGenerateService(new FileDiffResultLists(), new Helpers.TestLogger(), new ConfigSettingsBuilder().Build()));
             var context = CreateMinimalContext(shouldGenerateHtml: true);
             Assert.True(formatter.IsEnabled(context));
         }
@@ -72,7 +72,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var md = new MarkdownReportFormatter(
                 new ReportGenerateService(new FileDiffResultLists(), new Helpers.TestLogger(), ReportGenerateService.CreateBuiltInSectionWriters()));
             var html = new HtmlReportFormatter(
-                new HtmlReportGenerateService(new FileDiffResultLists(), new Helpers.TestLogger()));
+                new HtmlReportGenerateService(new FileDiffResultLists(), new Helpers.TestLogger(), new ConfigSettingsBuilder().Build()));
             var audit = new AuditLogReportFormatter(
                 new AuditLogGenerateService(new FileDiffResultLists(), new Helpers.TestLogger()));
             var sbom = new SbomReportFormatter(
