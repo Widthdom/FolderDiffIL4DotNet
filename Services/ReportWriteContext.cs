@@ -11,15 +11,34 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ReportWriteContext
     {
+        /// <summary>Absolute path to the baseline (old) folder. / 基準（旧）フォルダの絶対パス。</summary>
         public string OldFolderAbsolutePath { get; init; } = null!;
+
+        /// <summary>Absolute path to the comparison (new) folder. / 比較（新）フォルダの絶対パス。</summary>
         public string NewFolderAbsolutePath { get; init; } = null!;
+
+        /// <summary>Application version string. / アプリケーションバージョン文字列。</summary>
         public string AppVersion { get; init; } = null!;
+
+        /// <summary>Formatted elapsed time string for the diff run. / 差分実行の経過時間フォーマット済み文字列。</summary>
         public string ElapsedTimeString { get; init; } = null!;
+
+        /// <summary>Name of the computer that executed the run. / 実行マシン名。</summary>
         public string ComputerName { get; init; } = null!;
+
+        /// <summary>Immutable configuration for this run. / この実行の不変設定。</summary>
         public IReadOnlyConfigSettings Config { get; init; } = null!;
+
+        /// <summary>Whether any SHA256 mismatch was detected. / SHA256 不一致が検出されたかどうか。</summary>
         public bool HasSha256Mismatch { get; init; }
+
+        /// <summary>Whether any timestamp regression warning was raised. / タイムスタンプ後退警告が発生したかどうか。</summary>
         public bool HasTimestampRegressionWarning { get; init; }
+
+        /// <summary>Optional IL cache instance for reporting cache statistics. / キャッシュ統計レポート用の IL キャッシュインスタンス（任意）。</summary>
         public ILCache? IlCache { get; init; }
+
+        /// <summary>Aggregated file diff results for report sections. / レポートセクション用の集約済みファイル差分結果。</summary>
         public FileDiffResultLists FileDiffResultLists { get; init; } = null!;
     }
 }

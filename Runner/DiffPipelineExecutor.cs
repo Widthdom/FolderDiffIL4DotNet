@@ -44,6 +44,7 @@ namespace FolderDiffIL4DotNet.Runner
         /// <param name="config">Immutable configuration for this run. / この実行の不変設定。</param>
         /// <param name="appVersion">Application version string. / アプリケーションバージョン文字列。</param>
         /// <param name="computerName">Name of the computer executing the run. / 実行マシン名。</param>
+        /// <param name="plugins">Optional loaded plugins to register in the DI scope. / DI スコープに登録する読み込み済みプラグイン（任意）。</param>
         /// <returns>
         /// A <see cref="DiffPipelineResult"/> containing warning flags from the completed run.
         /// 完了した実行の警告フラグを含む <see cref="DiffPipelineResult"/>。
