@@ -71,6 +71,29 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_HelpFlag_OutputContainsClearCacheOption()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("--clear-cache", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_DryRunFlag_ExitsZeroWithPreviewOutput()
         {
             var tempRoot = Path.Combine(Path.GetTempPath(), "fd-dryrun-" + Guid.NewGuid().ToString("N"));
@@ -427,6 +450,40 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(2, exitCode);
                 var errOutput = swErr.ToString();
                 Assert.Contains("--wizard requires an interactive terminal", errOutput, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                Console.SetError(origErr);
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // --clear-cache with redirected stdin -> exit code 2
+        // --clear-cache でリダイレクト stdin → 終了コード 2
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_ClearCacheFlag_WithRedirectedStdin_ExitsWithInvalidArguments()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            var origErr = Console.Error;
+            using var swOut = new System.IO.StringWriter();
+            using var swErr = new System.IO.StringWriter();
+            Console.SetOut(swOut);
+            Console.SetError(swErr);
+
+            try
+            {
+                // In test environment, stdin is always redirected, so --clear-cache should refuse to run.
+                // テスト環境では stdin は常にリダイレクトされているため、--clear-cache は実行を拒否する。
+                var exitCode = await runner.RunAsync(new[] { "--clear-cache" });
+
+                Assert.Equal(2, exitCode);
+                var errOutput = swErr.ToString();
+                Assert.Contains("--clear-cache requires an interactive terminal", errOutput, StringComparison.Ordinal);
             }
             finally
             {
