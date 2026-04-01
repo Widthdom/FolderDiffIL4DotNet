@@ -15,7 +15,7 @@ namespace FolderDiffIL4DotNet.Services
 
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                var stats = ctx.IlCache.GetReportStats();
+                var stats = ctx.IlCache!.GetReportStats();
                 writer.WriteLine(REPORT_SECTION_IL_CACHE_STATS);
                 writer.WriteLine();
                 writer.WriteLine("| Metric | Value |");
