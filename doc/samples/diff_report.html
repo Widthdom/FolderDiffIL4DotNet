@@ -1904,16 +1904,16 @@
     // 1. Collapse all diff-detail elements so exported file starts with diffs closed
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
-    // 2. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
-    var cs = getComputedStyle(root);
-    var curWidths = {};
-    colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
     // 2. Clear all filter-hidden state so reviewed HTML shows all rows
     document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
+    // 3. Capture current effective column widths to bake into reviewed HTML as defaults
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
+    var cs = getComputedStyle(root);
+    var curWidths = {};
+    colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
     // Clear body/root inline theme styles before capture so reviewed HTML starts clean
     var savedBodyColor = document.body.style.color;
     var savedBodyBg = document.body.style.backgroundColor;
@@ -3166,7 +3166,7 @@
     var sectionNames = {
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
       'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
-      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only',
+      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
       'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
     };
     var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };

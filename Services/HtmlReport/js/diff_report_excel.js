@@ -407,7 +407,7 @@
     var sectionNames = {
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
       'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
-      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only',
+      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
       'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
     };
     var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
