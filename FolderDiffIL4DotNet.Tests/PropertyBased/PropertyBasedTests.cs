@@ -118,10 +118,10 @@ namespace FolderDiffIL4DotNet.Tests.PropertyBased
             int m = Math.Min(modifiedCount.Get, 100);
 
             var resultLists = new FileDiffResultLists();
-            for (int i = 0; i < a; i++) resultLists.AddedFiles.Add($"added_{i}.dll");
-            for (int i = 0; i < r; i++) resultLists.RemovedFiles.Add($"removed_{i}.dll");
-            for (int i = 0; i < u; i++) resultLists.UnchangedFiles.Add($"unchanged_{i}.dll");
-            for (int i = 0; i < m; i++) resultLists.ModifiedFiles.Add($"modified_{i}.dll");
+            for (int i = 0; i < a; i++) resultLists.AddAddedFileAbsolutePath($"added_{i}.dll");
+            for (int i = 0; i < r; i++) resultLists.AddRemovedFileAbsolutePath($"removed_{i}.dll");
+            for (int i = 0; i < u; i++) resultLists.AddUnchangedFileRelativePath($"unchanged_{i}.dll");
+            for (int i = 0; i < m; i++) resultLists.AddModifiedFileRelativePath($"modified_{i}.dll");
 
             var stats = resultLists.SummaryStatistics;
             return (stats.AddedCount == a

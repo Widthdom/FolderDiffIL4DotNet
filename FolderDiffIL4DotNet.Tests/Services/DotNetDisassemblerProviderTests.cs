@@ -55,7 +55,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var fakeComparison = new FakeFileComparisonServiceForProvider
             {
-                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.IsDotNetExecutable)
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
             };
             var provider = CreateProvider(fileComparisonService: fakeComparison);
             Assert.True(provider.CanHandle("/path/to/managed.dll"));
@@ -66,7 +66,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var fakeComparison = new FakeFileComparisonServiceForProvider
             {
-                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.IsDotNetExecutable)
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
             };
             var provider = CreateProvider(fileComparisonService: fakeComparison);
             Assert.True(provider.CanHandle("/path/to/app.exe"));

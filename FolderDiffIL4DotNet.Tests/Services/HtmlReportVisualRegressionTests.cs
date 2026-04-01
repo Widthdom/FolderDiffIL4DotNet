@@ -66,11 +66,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
         private void SeedTestData()
         {
             // Added files / 追加ファイル
-            _resultLists.AddedFiles.Add("new-module.dll");
-            _resultLists.AddedFiles.Add("config/appsettings.json");
+            _resultLists.AddAddedFileAbsolutePath("new-module.dll");
+            _resultLists.AddAddedFileAbsolutePath("config/appsettings.json");
 
             // Removed files / 削除ファイル
-            _resultLists.RemovedFiles.Add("old-legacy.dll");
+            _resultLists.AddRemovedFileAbsolutePath("old-legacy.dll");
 
             // Modified files / 変更ファイル
             _resultLists.AddModifiedFileRelativePath("core/Engine.dll");
@@ -80,7 +80,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _resultLists.RecordDiffDetail("data/schema.json", FileDiffResultLists.DiffDetailResult.TextMismatch);
 
             // Unchanged files / 未変更ファイル
-            _resultLists.UnchangedFiles.Add("lib/Stable.dll");
+            _resultLists.AddUnchangedFileRelativePath("lib/Stable.dll");
             _resultLists.RecordDiffDetail("lib/Stable.dll", FileDiffResultLists.DiffDetailResult.SHA256Match);
         }
 
