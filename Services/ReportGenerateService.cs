@@ -462,7 +462,7 @@ namespace FolderDiffIL4DotNet.Services
             if (distinctToolNames.Count > 1)
             {
                 writer.WriteLine();
-                writer.WriteLine($"> **⚠ Warning**: Multiple disassembler tools were used in this run ({string.Join(", ", allLabels)}). Different tools may produce different IL output formats, which could lead to false ILMismatch results. Consider clearing the IL cache to ensure a single tool is used consistently.");
+                writer.WriteLine($"> **⚠ Warning**: Multiple disassembler tools were used across file comparisons in this run ({string.Join(", ", allLabels)}). Each file pair is compared using the same tool, but IL output format may differ between tools, reducing cross-file consistency. Consider clearing the IL cache to ensure a single tool is used for all comparisons.");
                 writer.WriteLine();
             }
         }
