@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="FolderDiffIL4DotNet.Core\FolderDiffIL4DotNet.Core.csproj" />
+    <ProjectReference Include="FolderDiffIL4DotNet.Plugin.Abstractions\FolderDiffIL4DotNet.Plugin.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>
