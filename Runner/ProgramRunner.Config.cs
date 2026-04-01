@@ -70,7 +70,7 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine("  1. Delete all cache files");
                 if (ilspyFiles.Length > 0) Console.WriteLine($"  2. Delete ilspycmd cache only ({ilspyFiles.Length} file(s))");
                 if (ildasmFiles.Length > 0) Console.WriteLine($"  3. Delete dotnet-ildasm cache only ({ildasmFiles.Length} file(s))");
-                Console.WriteLine("  4. Delete by specific tool version (e.g. dotnet-ildasm (version: 0.12.0))");
+                Console.WriteLine("  4. Delete by specific tool version");
                 Console.WriteLine("  5. Cancel");
                 Console.WriteLine();
                 Console.Write("> ");
@@ -100,16 +100,35 @@ namespace FolderDiffIL4DotNet
                         description = "dotnet-ildasm";
                         break;
                     case "4":
-                        Console.WriteLine("Enter the tool version label to delete (e.g. dotnet-ildasm (version: 0.12.0)):");
+                        // Enumerate distinct version labels from cache filenames
+                        // キャッシュファイル名から一意なバージョンラベルを列挙
+                        var versionLabels = ExtractDistinctToolLabels(cacheFiles);
+                        if (versionLabels.Length == 0)
+                        {
+                            Console.WriteLine("No recognizable tool version labels found in cache files.");
+                            return 0;
+                        }
+                        Console.WriteLine();
+                        Console.WriteLine("Available tool versions:");
+                        for (int i = 0; i < versionLabels.Length; i++)
+                        {
+                            var matchCount = FilterCacheFilesByToolLabel(cacheFiles, versionLabels[i]).Length;
+                            Console.WriteLine($"  {i + 1}. {versionLabels[i]} ({matchCount} file(s))");
+                        }
+                        Console.WriteLine($"  {versionLabels.Length + 1}. Cancel");
+                        Console.WriteLine();
                         Console.Write("> ");
-                        var versionInput = Console.ReadLine()?.Trim();
-                        if (string.IsNullOrWhiteSpace(versionInput))
+                        var versionChoice = Console.ReadLine()?.Trim();
+                        if (string.IsNullOrWhiteSpace(versionChoice)
+                            || !int.TryParse(versionChoice, out int vIdx)
+                            || vIdx < 1 || vIdx > versionLabels.Length)
                         {
                             Console.WriteLine("Cancelled.");
                             return 0;
                         }
-                        filesToDelete = FilterCacheFilesByToolLabel(cacheFiles, versionInput);
-                        description = versionInput;
+                        var selectedLabel = versionLabels[vIdx - 1];
+                        filesToDelete = FilterCacheFilesByToolLabel(cacheFiles, selectedLabel);
+                        description = selectedLabel;
                         break;
                     default:
                         Console.WriteLine("Invalid option.");
@@ -214,6 +233,54 @@ namespace FolderDiffIL4DotNet
                 var toolPart = name[(CACHE_KEY_HASH_LENGTH + 1)..];
                 return toolPart.StartsWith(sanitized, StringComparison.OrdinalIgnoreCase);
             });
+        }
+
+        /// <summary>
+        /// Extracts distinct tool version labels from cache filenames for interactive selection.
+        /// E.g. ["dotnet-ildasm (version: 0.12.0)", "ilspycmd (version: 8.2.0)"].
+        /// The label is reconstructed by reversing the sanitization (underscores → colons/parentheses).
+        /// キャッシュファイル名から一意なツールバージョンラベルを抽出し、対話的選択用に返します。
+        /// ラベルはサニタイズの逆変換（アンダースコア→コロン/括弧）で復元されます。
+        /// </summary>
+        private static string[] ExtractDistinctToolLabels(string[] cacheFiles)
+        {
+            var labels = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var f in cacheFiles)
+            {
+                var name = Path.GetFileNameWithoutExtension(f);
+                if (name.Length <= CACHE_KEY_HASH_LENGTH + 1) continue;
+                var toolPart = name[(CACHE_KEY_HASH_LENGTH + 1)..];
+                // Reverse sanitization: "_version_ X.Y.Z_" → "(version: X.Y.Z)"
+                // サニタイズの逆変換: "_version_ X.Y.Z_" → "(version: X.Y.Z)"
+                var label = UnsanitizeToolLabel(toolPart);
+                labels.Add(label);
+            }
+            var result = new string[labels.Count];
+            labels.CopyTo(result);
+            Array.Sort(result, StringComparer.OrdinalIgnoreCase);
+            return result;
+        }
+
+        /// <summary>
+        /// Reverses the filename sanitization to reconstruct a human-readable tool label.
+        /// Converts patterns like "dotnet-ildasm _version_ 0.12.0_" back to "dotnet-ildasm (version: 0.12.0)".
+        /// ファイル名サニタイズを逆変換し、人間が読めるツールラベルを復元します。
+        /// </summary>
+        private static string UnsanitizeToolLabel(string sanitized)
+        {
+            // Common pattern: "toolname _version_ X.Y.Z_"
+            // → "toolname (version: X.Y.Z)"
+            // 共通パターン: "toolname _version_ X.Y.Z_"
+            // → "toolname (version: X.Y.Z)"
+            if (sanitized.Contains(" _version_ "))
+            {
+                return sanitized
+                    .Replace(" _version_ ", " (version: ")
+                    .TrimEnd('_') + ")";
+            }
+            // Fallback: return as-is if no version pattern found
+            // フォールバック: バージョンパターンがない場合はそのまま返す
+            return sanitized;
         }
 
         /// <summary>
