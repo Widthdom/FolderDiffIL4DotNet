@@ -9,6 +9,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Plugin system (Phases 1-6)** — Full plugin architecture enabling third-party extensions for report formatting, file comparison, post-processing, and disassembly. Key components:
+  - **Phase 1: DI-ified IReportSectionWriter** — Section writers now have `Order` and `IsEnabled` properties, resolved via DI. Built-in writers exposed through `ReportGenerateService.CreateBuiltInSectionWriters()`. Affected: `Services/IReportSectionWriter.cs`, `Services/ReportGenerateService.cs`, all 10 files in `Services/SectionWriters/`, `Runner/RunScopeBuilder.cs`.
+  - **Phase 2: IReportFormatter abstraction** — Report output formats (Markdown, HTML, Audit Log, SBOM) abstracted behind `IReportFormatter` interface with adapter pattern. Affected: `Services/IReportFormatter.cs`, `Services/ReportFormatters/` (4 files), `Runner/DiffPipelineExecutor.cs`.
+  - **Phase 3: Plugin.Abstractions NuGet package** — New project `FolderDiffIL4DotNet.Plugin.Abstractions` containing plugin contracts: `IPlugin`, `PluginMetadata`, `IFileComparisonHook`, `IPostProcessAction`, `IDisassemblerProvider`, context/result types. Affected: `FolderDiffIL4DotNet.Plugin.Abstractions/` (7 files), `FolderDiffIL4DotNet.sln`, `FolderDiffIL4DotNet.csproj`.
+  - **Phase 4: PluginLoader + AssemblyLoadContext** — Isolated plugin loading with `PluginAssemblyLoadContext` (collectible for unloading). Discovery from `PluginSearchPaths`, version compatibility check, enabled-list filtering. Plugin config settings (`PluginSearchPaths`, `PluginEnabledIds`, `PluginConfig`). Affected: `Runner/PluginLoader.cs`, `Runner/PluginAssemblyLoadContext.cs`, `Models/ConfigSettings.PluginSettings.cs`, `Models/ConfigSettingsBuilder.PluginSettings.cs`, `Models/ConfigSettings.cs`, `Models/IReadOnlyConfigSettings.cs`, `ProgramRunner.cs`.
+  - **Phase 5: IFileComparisonHook + IPostProcessAction** — Comparison hooks allow plugins to override or enrich file comparison results. Post-process actions run after all reports. Both are best-effort (failures logged, don't block pipeline). Affected: `Services/FileDiffService.cs`, `Runner/DiffPipelineExecutor.cs`.
+  - **Phase 6: IDisassemblerProvider** — Built-in `DotNetDisassemblerProvider` wraps existing `IDotNetDisassembleService`. Plugin authors can provide disassemblers for non-.NET file types (Java, Rust, etc.). Affected: `Services/DotNetDisassemblerProvider.cs`, `Runner/RunScopeBuilder.cs`.
+  - **Tests**: `PluginLoaderTests` (5 tests), `FileDiffServiceUnitTests.Hooks` (7 tests), `DotNetDisassemblerProviderTests` (8 tests), `PluginConfigSettingsTests` (7 tests), `ReportFormatterTests` (7 tests), `ReportSectionWriterOrderTests` (5 tests). Total: 39 new tests.
+
 ### [1.13.0] - 2026-04-01
 
 #### Added
@@ -941,6 +952,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **プラグインシステム（Phase 1-6）** — レポートフォーマット、ファイル比較、ポストプロセス、逆アセンブリに対するサードパーティ拡張を可能にする完全なプラグインアーキテクチャ。主要コンポーネント：
+  - **Phase 1: IReportSectionWriter の DI 化** — セクションライターに `Order` と `IsEnabled` プロパティを追加し、DI 経由で解決。組み込みライターは `ReportGenerateService.CreateBuiltInSectionWriters()` で公開。影響: `Services/IReportSectionWriter.cs`、`Services/ReportGenerateService.cs`、`Services/SectionWriters/` 全10ファイル、`Runner/RunScopeBuilder.cs`。
+  - **Phase 2: IReportFormatter 抽象化** — レポート出力形式（Markdown、HTML、監査ログ、SBOM）をアダプターパターンで `IReportFormatter` インターフェース経由に抽象化。影響: `Services/IReportFormatter.cs`、`Services/ReportFormatters/`（4ファイル）、`Runner/DiffPipelineExecutor.cs`。
+  - **Phase 3: Plugin.Abstractions NuGet パッケージ** — プラグイン契約を含む新プロジェクト `FolderDiffIL4DotNet.Plugin.Abstractions`: `IPlugin`、`PluginMetadata`、`IFileComparisonHook`、`IPostProcessAction`、`IDisassemblerProvider`、コンテキスト/結果型。影響: `FolderDiffIL4DotNet.Plugin.Abstractions/`（7ファイル）、`FolderDiffIL4DotNet.sln`、`FolderDiffIL4DotNet.csproj`。
+  - **Phase 4: PluginLoader + AssemblyLoadContext** — `PluginAssemblyLoadContext`（アンロード対応）による分離プラグイン読み込み。`PluginSearchPaths` からの検出、バージョン互換性チェック、有効リストフィルタリング。プラグイン設定（`PluginSearchPaths`、`PluginEnabledIds`、`PluginConfig`）。影響: `Runner/PluginLoader.cs`、`Runner/PluginAssemblyLoadContext.cs`、`Models/ConfigSettings.PluginSettings.cs`、`Models/ConfigSettingsBuilder.PluginSettings.cs`、`Models/ConfigSettings.cs`、`Models/IReadOnlyConfigSettings.cs`、`ProgramRunner.cs`。
+  - **Phase 5: IFileComparisonHook + IPostProcessAction** — 比較フックによりプラグインがファイル比較結果をオーバーライド・拡充可能。ポストプロセスアクションは全レポート完了後に実行。いずれもベストエフォート（失敗はログのみ、パイプラインは中断しない）。影響: `Services/FileDiffService.cs`、`Runner/DiffPipelineExecutor.cs`。
+  - **Phase 6: IDisassemblerProvider** — 組み込み `DotNetDisassemblerProvider` が既存の `IDotNetDisassembleService` をラップ。プラグイン作者は .NET 以外のファイル種別（Java、Rust 等）用の逆アセンブラを提供可能。影響: `Services/DotNetDisassemblerProvider.cs`、`Runner/RunScopeBuilder.cs`。
+  - **テスト**: `PluginLoaderTests`（5件）、`FileDiffServiceUnitTests.Hooks`（7件）、`DotNetDisassemblerProviderTests`（8件）、`PluginConfigSettingsTests`（7件）、`ReportFormatterTests`（7件）、`ReportSectionWriterOrderTests`（5件）。合計: 39件の新規テスト。
 
 ### [1.13.0] - 2026-04-01
 

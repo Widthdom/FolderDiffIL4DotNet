@@ -638,6 +638,21 @@ Override only the settings you want to change. For example:
       <td><code>"CycloneDX"</code></td>
       <td>SBOM output format. <code>"CycloneDX"</code> produces CycloneDX 1.5 JSON; <code>"SPDX"</code> produces SPDX 2.3 JSON. Only used when <code>ShouldGenerateSbom</code> is <code>true</code>.</td>
     </tr>
+    <tr id="config-en-pluginsearchpaths">
+      <td><code>PluginSearchPaths</code></td>
+      <td><code>["./plugins"]</code></td>
+      <td>Directories to scan for plugin subdirectories. Each subdirectory should contain a DLL matching the directory name (e.g. <code>plugins/MyPlugin/MyPlugin.dll</code>).</td>
+    </tr>
+    <tr id="config-en-pluginenabledids">
+      <td><code>PluginEnabledIds</code></td>
+      <td><code>[]</code></td>
+      <td>Plugin IDs to load. Empty array means all discovered plugins are loaded.</td>
+    </tr>
+    <tr id="config-en-pluginconfig">
+      <td><code>PluginConfig</code></td>
+      <td><code>{}</code></td>
+      <td>Per-plugin configuration as JSON objects. Key is the plugin ID, value is plugin-specific configuration passed to <code>IPlugin.ConfigureServices</code>.</td>
+    </tr>
   </tbody>
 </table>
 
@@ -1337,6 +1352,21 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
       <td><code>SbomFormat</code></td>
       <td><code>"CycloneDX"</code></td>
       <td>SBOM 出力形式。<code>"CycloneDX"</code> は CycloneDX 1.5 JSON を出力、<code>"SPDX"</code> は SPDX 2.3 JSON を出力します。<code>ShouldGenerateSbom</code> が <code>true</code> の場合のみ使用されます。</td>
+    </tr>
+    <tr id="config-ja-pluginsearchpaths">
+      <td><code>PluginSearchPaths</code></td>
+      <td><code>["./plugins"]</code></td>
+      <td>プラグインサブディレクトリをスキャンするディレクトリ。各サブディレクトリにはディレクトリ名と一致する DLL が含まれている必要があります（例: <code>plugins/MyPlugin/MyPlugin.dll</code>）。</td>
+    </tr>
+    <tr id="config-ja-pluginenabledids">
+      <td><code>PluginEnabledIds</code></td>
+      <td><code>[]</code></td>
+      <td>読み込むプラグイン ID。空配列の場合、発見されたすべてのプラグインを読み込みます。</td>
+    </tr>
+    <tr id="config-ja-pluginconfig">
+      <td><code>PluginConfig</code></td>
+      <td><code>{}</code></td>
+      <td>プラグインごとの設定（JSON オブジェクト）。キーはプラグイン ID、値は <code>IPlugin.ConfigureServices</code> に渡されるプラグイン固有の設定です。</td>
     </tr>
   </tbody>
 </table>

@@ -776,6 +776,22 @@ For the complete list of affected tests and the `Skip.If` pattern, see [doc/TEST
 
 ## Extension Points
 
+### Plugin System
+
+The application supports a plugin architecture via the [`FolderDiffIL4DotNet.Plugin.Abstractions`](../FolderDiffIL4DotNet.Plugin.Abstractions/) NuGet package. Plugins are loaded from directories specified in `PluginSearchPaths` configuration using isolated `AssemblyLoadContext` instances.
+
+Plugin extension interfaces:
+- [`IPlugin`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs) — Entry point. Provides metadata and registers services via `ConfigureServices`.
+- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — Intercepts file comparison (before/after). Can override built-in comparison results.
+- [`IPostProcessAction`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPostProcessAction.cs) — Executes after all reports are generated (notifications, uploads, etc.).
+- [`IDisassemblerProvider`](../FolderDiffIL4DotNet.Plugin.Abstractions/IDisassemblerProvider.cs) — Provides disassembly for custom file types (Java .class via javap, etc.).
+- [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) — Adds custom sections to the Markdown report.
+- [`IReportFormatter`](../Services/IReportFormatter.cs) — Adds custom report output formats.
+
+Plugin loading flow: [`PluginLoader`](../Runner/PluginLoader.cs) → [`PluginAssemblyLoadContext`](../Runner/PluginAssemblyLoadContext.cs) → `IPlugin.ConfigureServices` → DI resolution.
+
+### Built-in Extension Points
+
 Typical safe extension points:
 - Add new text extensions in [`TextFileExtensions`](../Models/ConfigSettings.cs)
 - Introduce new report metadata in [`ReportGenerateService`](../Services/ReportGenerateService.cs)
@@ -1660,6 +1676,22 @@ v* タグ push 時:
 スキップ対象テストの一覧と `Skip.If` パターンの詳細は [doc/TESTING_GUIDE.md](TESTING_GUIDE.md#testing-ja-isolation) を参照してください。
 
 ## 拡張ポイント
+
+### プラグインシステム
+
+アプリケーションは [`FolderDiffIL4DotNet.Plugin.Abstractions`](../FolderDiffIL4DotNet.Plugin.Abstractions/) NuGet パッケージによるプラグインアーキテクチャをサポートしています。プラグインは `PluginSearchPaths` 設定で指定されたディレクトリから、分離された `AssemblyLoadContext` インスタンスを使用して読み込まれます。
+
+プラグイン拡張インターフェース:
+- [`IPlugin`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs) — エントリポイント。メタデータ提供と `ConfigureServices` によるサービス登録。
+- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — ファイル比較のインターセプト（前後）。組み込み比較結果のオーバーライド可能。
+- [`IPostProcessAction`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPostProcessAction.cs) — 全レポート生成後に実行（通知、アップロード等）。
+- [`IDisassemblerProvider`](../FolderDiffIL4DotNet.Plugin.Abstractions/IDisassemblerProvider.cs) — カスタムファイル種別の逆アセンブリ提供（javap による Java .class 等）。
+- [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) — Markdown レポートへのカスタムセクション追加。
+- [`IReportFormatter`](../Services/IReportFormatter.cs) — カスタムレポート出力形式の追加。
+
+プラグイン読み込みフロー: [`PluginLoader`](../Runner/PluginLoader.cs) → [`PluginAssemblyLoadContext`](../Runner/PluginAssemblyLoadContext.cs) → `IPlugin.ConfigureServices` → DI 解決。
+
+### 組み込み拡張ポイント
 
 比較的安全に触りやすい場所:
 - [`TextFileExtensions`](../Models/ConfigSettings.cs) の値追加

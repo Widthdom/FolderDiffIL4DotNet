@@ -203,5 +203,19 @@
 
   // Number of log file generations to keep (default: 5)
   // 保持するログファイル世代数（デフォルト: 5）
-  "MaxLogGenerations": 5
+  "MaxLogGenerations": 5,
+
+  // --- Plugin / プラグイン ---
+
+  // Directories to scan for plugin subdirectories (default: ["./plugins"])
+  // プラグインサブディレクトリをスキャンするディレクトリ（デフォルト: ["./plugins"]）
+  "PluginSearchPaths": ["./plugins"],
+
+  // Plugin IDs to load. Empty array = all found plugins (default: [])
+  // 読み込むプラグイン ID。空配列 = 見つかった全プラグイン（デフォルト: []）
+  "PluginEnabledIds": [],
+
+  // Per-plugin configuration (key = plugin ID, value = plugin-specific JSON object)
+  // プラグインごとの設定（キー = プラグイン ID、値 = プラグイン固有の JSON オブジェクト）
+  "PluginConfig": {}
 }
