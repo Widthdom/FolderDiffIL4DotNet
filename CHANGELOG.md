@@ -26,6 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Performance regression threshold strictification (#11)** — Reduced `benchmark-regression.yml` alert threshold from 200% to 150%. Added `ILComparisonBenchmarks` (sanitization, identical/different file diffs). Added `PerformanceBudgetTests` (4 tests) with explicit time budgets: TextDiffer 50K identical lines < 500ms, 10K lines with changes < 2s, TextSanitizer 100K iterations < 500ms, FileDiffResultLists 10K statistics < 100ms. Affected: `.github/workflows/benchmark-regression.yml`, `FolderDiffIL4DotNet.Benchmarks/ILComparisonBenchmarks.cs`, `FolderDiffIL4DotNet.Tests/Services/PerformanceBudgetTests.cs`.
 
+- **Plugin.Abstractions NuGet publishing in release workflow** — The `nuget-publish` job in `release.yml` now packs and publishes `FolderDiffIL4DotNet.Plugin.Abstractions` alongside `FolderDiffIL4DotNet.Core`. Each package has independent change detection — only packages with changes since the previous tag are published. Affected: `.github/workflows/release.yml`.
+
 ### [1.13.0] - 2026-04-01
 
 #### Added
@@ -975,6 +977,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **ビジュアルリグレッションテスト（#10）** — `HtmlReportVisualRegressionTests`（22件）を追加。生成 HTML レポートの構造的不変条件を検証: DOCTYPE、CSP、自己完結出力（外部依存なし）、インタラクティブ要素（チェックボックス、テキスト入力、フィルタコントロール）、JS/CSS 機能（ダークモード、キーボードショートカット、localStorage、SHA256 整合性、祝賀アニメーション、Excel エクスポート、テーマ切替）、データ属性、投入ファイルパス描画、決定的出力。影響: `FolderDiffIL4DotNet.Tests/Services/HtmlReportVisualRegressionTests.cs`。
 
 - **パフォーマンスリグレッション閾値厳格化（#11）** — `benchmark-regression.yml` のアラート閾値を 200% から 150% に引き下げ。`ILComparisonBenchmarks`（サニタイズ、同一/異なるファイル差分）を追加。`PerformanceBudgetTests`（4件）に明示的なタイムバジェットを設定: TextDiffer 5万同一行 < 500ms、1万行変更あり < 2s、TextSanitizer 10万回反復 < 500ms、FileDiffResultLists 1万件統計 < 100ms。影響: `.github/workflows/benchmark-regression.yml`、`FolderDiffIL4DotNet.Benchmarks/ILComparisonBenchmarks.cs`、`FolderDiffIL4DotNet.Tests/Services/PerformanceBudgetTests.cs`。
+
+- **Plugin.Abstractions NuGet 公開をリリースワークフローに追加** — `release.yml` の `nuget-publish` ジョブで `FolderDiffIL4DotNet.Plugin.Abstractions` を `FolderDiffIL4DotNet.Core` と並行してパック・公開。各パッケージは独立した変更検知を持ち、前回タグからの変更があるパッケージのみ公開。影響: `.github/workflows/release.yml`。
 
 ### [1.13.0] - 2026-04-01
 
