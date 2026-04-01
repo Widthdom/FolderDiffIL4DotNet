@@ -128,9 +128,10 @@
       }
     });
 
+    saveFilterState();
     autoSave();
   }
-  /** Reset all filter checkboxes and search input to defaults and re-apply. */
+  /** Reset all filter checkboxes and search input to defaults, clear persisted state, and re-apply. */
   function resetFilters() {
     __filterIds__.forEach(function(id) {
       if (id === 'filter-unchecked' || id === 'filter-search') return;
@@ -141,6 +142,7 @@
     if (uc) uc.checked = false;
     var se = document.getElementById('filter-search');
     if (se) se.value = '';
+    clearFilterState();
     applyFilters();
   }
 

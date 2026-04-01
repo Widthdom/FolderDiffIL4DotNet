@@ -75,6 +75,59 @@
   }
 
   /**
+   * Collect current filter state from filter control elements.
+   * フィルターコントロール要素の現在のフィルター状態を収集します。
+   * @returns {Record<string, boolean|string>}
+   */
+  function collectFilterState() {
+    var s = {};
+    __filterIds__.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      s[id] = (el.type === 'checkbox') ? el.checked : el.value;
+    });
+    return s;
+  }
+
+  /**
+   * Save filter state to localStorage (separate key from review state).
+   * フィルター状態を localStorage に保存します（レビュー状態とは別キー）。
+   */
+  function saveFilterState() {
+    if (__savedState__ !== null) return; // Do not persist in reviewed mode / レビュー済みモードでは保存しない
+    try {
+      localStorage.setItem(__storageKey__ + '-filters', JSON.stringify(collectFilterState()));
+    } catch(e) { /* ignore quota errors for filters */ }
+  }
+
+  /**
+   * Restore filter state from localStorage and apply filters.
+   * localStorage からフィルター状態を復元しフィルターを適用します。
+   * @returns {boolean} true if state was restored / 状態が復元された場合 true
+   */
+  function restoreFilterState() {
+    try {
+      var raw = localStorage.getItem(__storageKey__ + '-filters');
+      if (!raw) return false;
+      var state = JSON.parse(raw);
+      if (!state || typeof state !== 'object') return false;
+      __filterIds__.forEach(function(id) {
+        if (!(id in state)) return;
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = Boolean(state[id]);
+        else el.value = String(state[id] || '');
+      });
+      return true;
+    } catch(e) { return false; }
+  }
+
+  /** Clear persisted filter state from localStorage. / localStorage のフィルター状態を削除します。 */
+  function clearFilterState() {
+    try { localStorage.removeItem(__storageKey__ + '-filters'); } catch(e) { /* ignore */ }
+  }
+
+  /**
    * Calculate and display the current localStorage usage in the storage bar.
    * Updates the width of #storage-bar-fill and the text of #storage-text.
    */
@@ -108,11 +161,12 @@
   function clearOldReviewStates() {
     var currentKey = __storageKey__;
     var themeKey = __storageKey__ + '-theme';
+    var filterKey = __storageKey__ + '-filters';
     var removed = 0;
     try {
       for (var i = localStorage.length - 1; i >= 0; i--) {
         var key = localStorage.key(i);
-        if (key === currentKey || key === themeKey) continue;
+        if (key === currentKey || key === themeKey || key === filterKey) continue;
         if (key.indexOf('folderdiff-') === 0) {
           localStorage.removeItem(key);
           removed++;

@@ -12,7 +12,15 @@
     // 1. Collapse all diff-detail elements so exported file starts with diffs closed
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
-    // 2. Clear all filter-hidden state so reviewed HTML shows all rows
+    // 2. Reset filters to defaults and clear all filter-hidden state so reviewed HTML shows all rows
+    // フィルターをデフォルトにリセットし、全行表示にする
+    __filterIds__.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (id === 'filter-unchecked') el.checked = false;
+      else if (id === 'filter-search') el.value = '';
+      else el.checked = true;
+    });
     document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
@@ -186,6 +194,7 @@
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
     applyFilters();
     localStorage.removeItem(__storageKey__);
+    clearFilterState();
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
   }

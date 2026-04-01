@@ -1814,6 +1814,7 @@
         el.addEventListener('input',  autoSave);
       });
     }
+    if (__savedState__ === null) { restoreFilterState(); }
     initColResize();
     syncTableWidths();
     syncScTableWidths();
@@ -1823,6 +1824,7 @@
     setupLazySection();
     setupLazyIntersectionObserver();
     highlightAllILDiffs();
+    applyFilters();
     updateProgress();
     updateStorageUsage();
     // Custom tooltip hover/focus handling
@@ -1871,6 +1873,39 @@
     updateProgress();
   }
 
+  function collectFilterState() {
+    var s = {};
+    __filterIds__.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      s[id] = (el.type === 'checkbox') ? el.checked : el.value;
+    });
+    return s;
+  }
+  function saveFilterState() {
+    if (__savedState__ !== null) return;
+    try { localStorage.setItem(__storageKey__ + '-filters', JSON.stringify(collectFilterState())); } catch(e) { }
+  }
+  function restoreFilterState() {
+    try {
+      var raw = localStorage.getItem(__storageKey__ + '-filters');
+      if (!raw) return false;
+      var state = JSON.parse(raw);
+      if (!state || typeof state !== 'object') return false;
+      __filterIds__.forEach(function(id) {
+        if (!(id in state)) return;
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = Boolean(state[id]);
+        else el.value = String(state[id] || '');
+      });
+      return true;
+    } catch(e) { return false; }
+  }
+  function clearFilterState() {
+    try { localStorage.removeItem(__storageKey__ + '-filters'); } catch(e) { }
+  }
+
   // Update the review progress bar / レビュー進捗バーを更新
   function updateProgress() {
     if (__totalFiles__ <= 0) return;
@@ -1911,7 +1946,14 @@
     // 1. Collapse all diff-detail elements so exported file starts with diffs closed
     var openDetails = Array.from(document.querySelectorAll('details[open]'));
     openDetails.forEach(function(d){ d.removeAttribute('open'); });
-    // 2. Clear all filter-hidden state so reviewed HTML shows all rows
+    // 2. Reset filters to defaults and clear all filter-hidden state so reviewed HTML shows all rows
+    __filterIds__.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (id === 'filter-unchecked') el.checked = false;
+      else if (id === 'filter-search') el.value = '';
+      else el.checked = true;
+    });
     document.querySelectorAll('tr.filter-hidden').forEach(function(tr){ tr.classList.remove('filter-hidden'); });
     document.querySelectorAll('tr.filter-hidden-parent').forEach(function(tr){ tr.classList.remove('filter-hidden-parent'); });
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
@@ -2073,6 +2115,7 @@
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
     applyFilters();
     localStorage.removeItem(__storageKey__);
+    clearFilterState();
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Cleared.';
   }
@@ -2488,11 +2531,12 @@
   function clearOldReviewStates() {
     var currentKey = __storageKey__;
     var themeKey = __storageKey__ + '-theme';
+    var filterKey = __storageKey__ + '-filters';
     var removed = 0;
     try {
       for (var i = localStorage.length - 1; i >= 0; i--) {
         var key = localStorage.key(i);
-        if (key === currentKey || key === themeKey) continue;
+        if (key === currentKey || key === themeKey || key === filterKey) continue;
         if (key.indexOf('folderdiff-') === 0) {
           localStorage.removeItem(key);
           removed++;
@@ -2780,6 +2824,7 @@
       }
     });
 
+    saveFilterState();
     autoSave();
   }
   function resetFilters() {
@@ -2792,6 +2837,7 @@
     if (uc) uc.checked = false;
     var se = document.getElementById('filter-search');
     if (se) se.value = '';
+    clearFilterState();
     applyFilters();
   }
 
