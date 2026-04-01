@@ -243,6 +243,24 @@
       "type": "boolean",
       "default": true,
       "description": "Lazy-render inline diffs on demand when user expands a row.\nユーザーが行を展開したときにインライン差分をオンデマンドで遅延レンダリングする。"
+    },
+
+    "PluginSearchPaths": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["./plugins"],
+      "description": "Directories to scan for plugin subdirectories.\nプラグインサブディレクトリをスキャンするディレクトリ。"
+    },
+    "PluginEnabledIds": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": [],
+      "description": "Plugin IDs to load. Empty list means load all found plugins.\n読み込むプラグイン ID。空リストの場合は見つかった全プラグインを読み込む。"
+    },
+    "PluginConfig": {
+      "type": "object",
+      "default": {},
+      "description": "Per-plugin configuration as raw JSON. Key is the plugin ID.\nプラグインごとの設定（生JSON）。キーはプラグイン ID。"
     }
   }
 }

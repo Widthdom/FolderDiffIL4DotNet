@@ -265,9 +265,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void HtmlReport_DeterministicOutput_SameDataProducesSameHtml()
         {
-            // Generate a second report with the same data and verify it's identical
-            // 同一データで2回生成し、同一の HTML が出力されることを検証
-            var reportDir2 = Path.Combine(_rootDir, "reports2");
+            // Generate a second report with a directory that has the SAME leaf name to avoid
+            // localStorage key differences (the key is derived from the report folder name).
+            // 同一データ・同一フォルダ名で2回生成し、同一の HTML が出力されることを検証
+            // （localStorage キーはレポートフォルダ名から導出されるため同名にする）
+            var reportDir2 = Path.Combine(_rootDir, "alt", "reports");
             Directory.CreateDirectory(reportDir2);
 
             var config = new ConfigSettingsBuilder

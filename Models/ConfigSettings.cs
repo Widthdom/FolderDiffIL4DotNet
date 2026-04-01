@@ -135,9 +135,9 @@ namespace FolderDiffIL4DotNet.Models
             InlineDiffLazyRender = builder.InlineDiffLazyRender;
 
             // Plugin / プラグイン
-            PluginSearchPaths = builder.PluginSearchPaths.AsReadOnly();
-            PluginEnabledIds = builder.PluginEnabledIds.AsReadOnly();
-            PluginConfig = builder.PluginConfig;
+            PluginSearchPaths = new List<string>(builder.PluginSearchPaths).AsReadOnly();
+            PluginEnabledIds = new List<string>(builder.PluginEnabledIds).AsReadOnly();
+            PluginConfig = new Dictionary<string, System.Text.Json.JsonElement>(builder.PluginConfig);
         }
 
         // ── General properties / 一般プロパティ ─────────────────────────────

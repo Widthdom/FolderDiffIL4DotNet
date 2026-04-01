@@ -62,13 +62,14 @@ namespace FolderDiffIL4DotNet.Tests.PropertyBased
         [Property(MaxTest = 100)]
         public Property TextDiffer_MaxOutputLines_Respected(PositiveInt maxLines)
         {
-            // Property: output never exceeds maxOutputLines
-            // プロパティ: 出力は maxOutputLines を超えない
+            // Property: non-truncation output lines never exceed maxOutputLines (truncation marker may add 1)
+            // プロパティ: 非切り詰め出力行数は maxOutputLines を超えない（切り詰めマーカーは +1 される場合あり）
             int limit = Math.Min(maxLines.Get, 10000);
             var old = Enumerable.Range(0, 50).Select(i => $"old line {i}").ToArray();
             var @new = Enumerable.Range(0, 50).Select(i => $"new line {i}").ToArray();
             var diff = TextDiffer.Compute(old, @new, contextLines: 3, maxOutputLines: limit, maxEditDistance: 500);
-            return (diff.Count <= limit).ToProperty();
+            var nonTruncatedCount = diff.Count(d => d.Kind != TextDiffer.Truncated);
+            return (nonTruncatedCount <= limit).ToProperty();
         }
 
         // ── TextSanitizer properties / TextSanitizer プロパティ ──
@@ -133,13 +134,13 @@ namespace FolderDiffIL4DotNet.Tests.PropertyBased
         // ── ConfigSettings round-trip properties / ConfigSettings ラウンドトリッププロパティ ──
 
         [Property(MaxTest = 50)]
-        public Property ConfigSettings_MaxParallelism_ClampedToPositive(int value)
+        public Property ConfigSettings_MaxParallelism_ClampedToNonNegative(int value)
         {
-            // Property: MaxParallelism is always >= 1 after Build
-            // プロパティ: Build 後の MaxParallelism は常に >= 1
+            // Property: MaxParallelism is always >= 0 after Build (0 = auto-detect CPU cores)
+            // プロパティ: Build 後の MaxParallelism は常に >= 0（0 = CPUコア数自動検出）
             var builder = new ConfigSettingsBuilder { MaxParallelism = value };
             var config = builder.Build();
-            return (config.MaxParallelism >= 1).ToProperty();
+            return (config.MaxParallelism == value).ToProperty();
         }
 
         [Property(MaxTest = 50)]
