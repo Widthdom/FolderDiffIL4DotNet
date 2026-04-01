@@ -12,6 +12,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the header section (title, run info, IL comparison notes). / レポートのヘッダ部を書き込みます。</summary>
         private sealed class HeaderSectionWriter : IReportSectionWriter
         {
+            public int Order => 100;
+
+            public bool IsEnabled(ReportWriteContext context) => true;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_TITLE);

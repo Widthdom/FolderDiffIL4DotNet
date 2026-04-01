@@ -54,6 +54,11 @@ namespace FolderDiffIL4DotNet.Runner
             services.AddScoped<ILCache>(sp => CreateIlCache(config, sp.GetRequiredService<ILoggerService>())!);
             services.AddScoped<ProgressReportService>(sp =>
                 new ProgressReportService(sp.GetRequiredService<IReadOnlyConfigSettings>(), sp.GetRequiredService<ILoggerService>()));
+
+            // Report section writers (order determined by each writer's Order property)
+            // レポートセクションライター（順序は各ライターの Order プロパティで決定）
+            RegisterBuiltInSectionWriters(services);
+
             services.AddScoped<ReportGenerateService>();
             services.AddScoped<HtmlReportGenerateService>();
             services.AddScoped<AuditLogGenerateService>();
@@ -67,6 +72,18 @@ namespace FolderDiffIL4DotNet.Runner
             services.AddScoped<IFileDiffService, FileDiffService>();
             services.AddScoped<IFolderDiffService, FolderDiffService>();
             return services.BuildServiceProvider();
+        }
+
+        /// <summary>
+        /// Registers all built-in <see cref="IReportSectionWriter"/> implementations in the DI container.
+        /// 組み込みの <see cref="IReportSectionWriter"/> 実装をすべて DI コンテナに登録する。
+        /// </summary>
+        private static void RegisterBuiltInSectionWriters(ServiceCollection services)
+        {
+            foreach (var writer in ReportGenerateService.CreateBuiltInSectionWriters())
+            {
+                services.AddSingleton<IReportSectionWriter>(writer);
+            }
         }
 
         /// <summary>

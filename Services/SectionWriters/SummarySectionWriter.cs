@@ -10,6 +10,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the Summary section. / Summary セクションを書き込みます。</summary>
         private sealed class SummarySectionWriter : IReportSectionWriter
         {
+            public int Order => 800;
+
+            public bool IsEnabled(ReportWriteContext context) => true;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_SECTION_SUMMARY);

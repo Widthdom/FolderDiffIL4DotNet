@@ -12,12 +12,15 @@ namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
     /// Generates a Markdown diff report (<see cref="DIFF_REPORT_FILE_NAME"/>) summarising folder comparison results.
+    /// Section writers are injected via DI and ordered by <see cref="IReportSectionWriter.Order"/>.
     /// 差分結果の Markdown レポート (<see cref="DIFF_REPORT_FILE_NAME"/>) を生成するサービス。
+    /// セクションライターは DI 経由で注入され、<see cref="IReportSectionWriter.Order"/> でソートされます。
     /// </summary>
     public sealed partial class ReportGenerateService
     {
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly ILoggerService _logger;
+        private readonly IReadOnlyList<IReportSectionWriter> _sectionWriters;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ReportGenerateService"/>.
@@ -25,12 +28,15 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         /// <param name="fileDiffResultLists">Comparison results to include in the report. / レポートに含める比較結果。</param>
         /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
-        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger)
+        /// <param name="sectionWriters">Ordered collection of section writers injected via DI. / DI 経由で注入されるセクションライターのコレクション。</param>
+        public ReportGenerateService(FileDiffResultLists fileDiffResultLists, ILoggerService logger, IEnumerable<IReportSectionWriter> sectionWriters)
         {
             ArgumentNullException.ThrowIfNull(fileDiffResultLists);
             _fileDiffResultLists = fileDiffResultLists;
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
+            ArgumentNullException.ThrowIfNull(sectionWriters);
+            _sectionWriters = sectionWriters.OrderBy(w => w.Order).ToList();
         }
         private const string DIFF_REPORT_FILE_NAME = "diff_report.md";
         private const string REPORT_TITLE = "# Folder Diff Report";
@@ -157,24 +163,6 @@ namespace FolderDiffIL4DotNet.Services
                 ilCache);
         }
 
-        /// <summary>
-        /// Ordered list of all report section writers; sections are emitted in this order.
-        /// レポートに書き込む全セクションのリスト（順序通りに出力されます）。
-        /// </summary>
-        private static readonly IReadOnlyList<IReportSectionWriter> _sectionWriters = new IReportSectionWriter[]
-        {
-            new HeaderSectionWriter(),
-            new LegendSectionWriter(),
-            new IgnoredFilesSectionWriter(),
-            new UnchangedFilesSectionWriter(),
-            new AddedFilesSectionWriter(),
-            new RemovedFilesSectionWriter(),
-            new ModifiedFilesSectionWriter(),
-            new SummarySectionWriter(),
-            new ILCacheStatsSectionWriter(),
-            new WarningsSectionWriter(),
-        };
-
         private void WriteReportSections(
             StreamWriter streamWriter,
             string oldFolderAbsolutePath,
@@ -202,9 +190,33 @@ namespace FolderDiffIL4DotNet.Services
             };
             foreach (var sectionWriter in _sectionWriters)
             {
-                sectionWriter.Write(streamWriter, context);
+                if (sectionWriter.IsEnabled(context))
+                {
+                    sectionWriter.Write(streamWriter, context);
+                }
             }
         }
+
+        /// <summary>
+        /// Returns all built-in section writer instances in default order.
+        /// Used by <see cref="Runner.RunScopeBuilder"/> to register them in DI.
+        /// 組み込みセクションライターのインスタンスをデフォルト順序で返します。
+        /// <see cref="Runner.RunScopeBuilder"/> が DI に登録する際に使用します。
+        /// </summary>
+        internal static IReadOnlyList<IReportSectionWriter> CreateBuiltInSectionWriters() =>
+            new IReportSectionWriter[]
+            {
+                new HeaderSectionWriter(),
+                new LegendSectionWriter(),
+                new IgnoredFilesSectionWriter(),
+                new UnchangedFilesSectionWriter(),
+                new AddedFilesSectionWriter(),
+                new RemovedFilesSectionWriter(),
+                new ModifiedFilesSectionWriter(),
+                new SummarySectionWriter(),
+                new ILCacheStatsSectionWriter(),
+                new WarningsSectionWriter(),
+            };
 
         private void LogReportOutputFailure(string diffReportAbsolutePath)
             => _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);

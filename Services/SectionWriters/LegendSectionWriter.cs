@@ -12,6 +12,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the Legend section for diff-detail labels. / 判定根拠ラベルの凡例を書き込みます。</summary>
         private sealed class LegendSectionWriter : IReportSectionWriter
         {
+            public int Order => 200;
+
+            public bool IsEnabled(ReportWriteContext context) => true;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 writer.WriteLine(REPORT_LEGEND_HEADER);

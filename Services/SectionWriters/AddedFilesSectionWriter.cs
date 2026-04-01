@@ -10,6 +10,10 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Writes the Added Files section. / Added Files セクションを書き込みます。</summary>
         private sealed class AddedFilesSectionWriter : IReportSectionWriter
         {
+            public int Order => 500;
+
+            public bool IsEnabled(ReportWriteContext context) => true;
+
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
                 int count = ctx.FileDiffResultLists.AddedFilesAbsolutePath.Count;

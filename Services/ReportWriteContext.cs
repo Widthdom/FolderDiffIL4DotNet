@@ -9,7 +9,7 @@ namespace FolderDiffIL4DotNet.Services
     /// <see cref="IReportSectionWriter"/> の <c>Write</c> メソッドに渡すレポート生成コンテキスト。
     /// セクション単位の書き込みに必要なすべてのパラメータを 1 か所に集約します。
     /// </summary>
-    internal sealed class ReportWriteContext
+    public sealed class ReportWriteContext
     {
         public string OldFolderAbsolutePath { get; init; } = null!;
         public string NewFolderAbsolutePath { get; init; } = null!;

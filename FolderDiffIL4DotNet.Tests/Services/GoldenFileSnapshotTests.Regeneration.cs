@@ -28,7 +28,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             PopulateTestData();
 
             var config = CreateSnapshotConfig();
-            var service = new ReportGenerateService(_resultLists, _logger);
+            var service = new ReportGenerateService(_resultLists, _logger, ReportGenerateService.CreateBuiltInSectionWriters());
 
             // Use same old/new dirs for both runs so paths in the report are identical
             // 両方の実行で同じ old/new ディレクトリを使用し、レポート内のパスを同一にする
@@ -71,7 +71,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var builder = CreateSnapshotConfigBuilder();
             builder.ShouldIncludeAssemblySemanticChangesInReport = true;
             var config = builder.Build();
-            var service = new ReportGenerateService(_resultLists, _logger);
+            var service = new ReportGenerateService(_resultLists, _logger, ReportGenerateService.CreateBuiltInSectionWriters());
             service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             var report = NormalizeLineEndings(

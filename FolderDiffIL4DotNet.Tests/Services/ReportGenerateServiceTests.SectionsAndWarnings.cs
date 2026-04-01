@@ -251,7 +251,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var logger = new TestLogger();
             var config = CreateConfig();
-            var service = new ReportGenerateService(_resultLists, logger);
+            var service = new ReportGenerateService(_resultLists, logger, ReportGenerateService.CreateBuiltInSectionWriters());
             service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, config));
 
             Assert.DoesNotContain(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message == Constants.WARNING_SHA256_MISMATCH);
