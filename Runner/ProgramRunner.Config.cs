@@ -202,7 +202,7 @@ namespace FolderDiffIL4DotNet
         /// ツール名（例: "dotnet-ildasm"、"ilspycmd"）でキャッシュファイルパスをフィルタリングします。
         /// ファイル名の64文字SHA256ハッシュ+アンダースコア以降のサニタイズ済みツールラベル部分を照合します。
         /// </summary>
-        private static string[] FilterCacheFilesByTool(string[] cacheFiles, string toolName)
+        internal static string[] FilterCacheFilesByTool(string[] cacheFiles, string toolName)
         {
             return Array.FindAll(cacheFiles, f =>
             {
@@ -221,7 +221,7 @@ namespace FolderDiffIL4DotNet
         /// 特定のツールバージョンラベル（例: "dotnet-ildasm (version: 0.12.0)"）でキャッシュファイルパスをフィルタリングします。
         /// ラベルはキャッシュキー構築と同じ方法でサニタイズされます（コロンと括弧→アンダースコア）。
         /// </summary>
-        private static string[] FilterCacheFilesByToolLabel(string[] cacheFiles, string toolLabel)
+        internal static string[] FilterCacheFilesByToolLabel(string[] cacheFiles, string toolLabel)
         {
             // Sanitize the input label the same way TextSanitizer does for cache keys
             // キャッシュキーと同じ方法で入力ラベルをサニタイズ
@@ -242,7 +242,7 @@ namespace FolderDiffIL4DotNet
         /// キャッシュファイル名から一意なツールバージョンラベルを抽出し、対話的選択用に返します。
         /// ラベルはサニタイズの逆変換（アンダースコア→コロン/括弧）で復元されます。
         /// </summary>
-        private static string[] ExtractDistinctToolLabels(string[] cacheFiles)
+        internal static string[] ExtractDistinctToolLabels(string[] cacheFiles)
         {
             var labels = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var f in cacheFiles)
@@ -266,7 +266,7 @@ namespace FolderDiffIL4DotNet
         /// Converts patterns like "dotnet-ildasm _version_ 0.12.0_" back to "dotnet-ildasm (version: 0.12.0)".
         /// ファイル名サニタイズを逆変換し、人間が読めるツールラベルを復元します。
         /// </summary>
-        private static string UnsanitizeToolLabel(string sanitized)
+        internal static string UnsanitizeToolLabel(string sanitized)
         {
             // Common pattern: "toolname _version_ X.Y.Z_"
             // → "toolname (version: X.Y.Z)"
@@ -289,7 +289,7 @@ namespace FolderDiffIL4DotNet
         /// matching the behavior of <see cref="FolderDiffIL4DotNet.Core.Text.TextSanitizer.ToSafeFileName"/>.
         /// キャッシュファイル名との照合用にツールラベルをサニタイズします。
         /// </summary>
-        private static string SanitizeForCacheMatch(string label)
+        internal static string SanitizeForCacheMatch(string label)
         {
             var invalidChars = Path.GetInvalidFileNameChars();
             var sb = new StringBuilder(label.Length);
