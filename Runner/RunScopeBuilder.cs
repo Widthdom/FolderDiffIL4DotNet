@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Services.ILOutput;
@@ -44,7 +47,7 @@ namespace FolderDiffIL4DotNet.Runner
         /// Builds a <see cref="ServiceProvider"/> for the diff-run scope.
         /// 差分実行スコープ用の <see cref="ServiceProvider"/> を構築する。
         /// </summary>
-        internal static ServiceProvider Build(ConfigSettings config, DiffExecutionContext executionContext, ILoggerService logger)
+        internal static ServiceProvider Build(ConfigSettings config, DiffExecutionContext executionContext, ILoggerService logger, IReadOnlyList<IPlugin>? plugins = null)
         {
             var services = new ServiceCollection();
             services.AddSingleton<ILoggerService>(logger);
@@ -79,7 +82,37 @@ namespace FolderDiffIL4DotNet.Runner
             services.AddScoped<IILOutputService, ILOutputService>();
             services.AddScoped<IFileDiffService, FileDiffService>();
             services.AddScoped<IFolderDiffService, FolderDiffService>();
+
+            // Built-in disassembler provider (.NET assemblies)
+            // 組み込み逆アセンブラプロバイダ（.NET アセンブリ）
+            services.AddScoped<IDisassemblerProvider>(sp =>
+                new DotNetDisassemblerProvider(
+                    sp.GetRequiredService<IDotNetDisassembleService>(),
+                    sp.GetRequiredService<IFileComparisonService>()));
+
+            // Register services from loaded plugins / 読み込み済みプラグインからサービスを登録
+            RegisterPluginServices(services, config, plugins);
+
             return services.BuildServiceProvider();
+        }
+
+        /// <summary>
+        /// Invokes <see cref="IPlugin.ConfigureServices"/> for each loaded plugin.
+        /// 読み込み済みの各プラグインに対して <see cref="IPlugin.ConfigureServices"/> を呼び出す。
+        /// </summary>
+        private static void RegisterPluginServices(ServiceCollection services, ConfigSettings config, IReadOnlyList<IPlugin>? plugins)
+        {
+            if (plugins is null || plugins.Count == 0) return;
+
+            foreach (var plugin in plugins)
+            {
+                var pluginId = plugin.Metadata.Id;
+                config.PluginConfig.TryGetValue(pluginId, out var cfgElement);
+                var pluginCfg = cfgElement.ValueKind == JsonValueKind.Object
+                    ? JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(cfgElement.GetRawText()) ?? new Dictionary<string, JsonElement>()
+                    : new Dictionary<string, JsonElement>();
+                plugin.ConfigureServices(services, pluginCfg);
+            }
         }
 
         /// <summary>

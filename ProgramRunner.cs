@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
 
@@ -332,6 +335,9 @@ namespace FolderDiffIL4DotNet
         {
             try
             {
+                // Load plugins from configured search paths / 設定されたサーチパスからプラグインを読み込み
+                var plugins = LoadPlugins(config, appVersion);
+
                 var executor = new DiffPipelineExecutor(_logger);
                 var pipelineResult = await executor.ExecuteAsync(
                     runArguments.OldFolderAbsolutePath,
@@ -339,7 +345,8 @@ namespace FolderDiffIL4DotNet
                     runArguments.ReportsFolderAbsolutePath,
                     config,
                     appVersion,
-                    computerName);
+                    computerName,
+                    plugins);
                 var completionState = new RunCompletionState(
                     pipelineResult.HasSha256MismatchWarnings,
                     pipelineResult.HasTimestampRegressionWarnings,
@@ -355,6 +362,26 @@ namespace FolderDiffIL4DotNet
             {
                 return StepResult<RunCompletionState>.FromFailure(CreateFailureResult(ProgramExitCode.ExecutionFailed, ex));
             }
+        }
+
+        /// <summary>
+        /// Discovers and loads plugins using <see cref="PluginLoader"/>.
+        /// Returns an empty list when no search paths are configured or no plugins are found.
+        /// <see cref="PluginLoader"/> を使用してプラグインを発見・読み込みします。
+        /// サーチパスが未設定またはプラグインが見つからない場合は空リストを返します。
+        /// </summary>
+        private IReadOnlyList<IPlugin> LoadPlugins(ConfigSettings config, string appVersion)
+        {
+            if (config.PluginSearchPaths.Count == 0)
+                return Array.Empty<IPlugin>();
+
+            var hostVersion = Version.TryParse(appVersion, out var parsed)
+                ? parsed
+                : new Version(0, 0, 0);
+
+            var enabledIds = new HashSet<string>(config.PluginEnabledIds, StringComparer.OrdinalIgnoreCase);
+            var loader = new PluginLoader(_logger);
+            return loader.LoadPlugins(config.PluginSearchPaths, enabledIds, hostVersion);
         }
 
         /// <summary>

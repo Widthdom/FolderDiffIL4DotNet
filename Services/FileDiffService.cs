@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Plugin.Abstractions;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -22,6 +24,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly FileDiffResultLists _fileDiffResultLists;
         private readonly ILoggerService _logger;
         private readonly IFileComparisonService _fileComparisonService;
+        private readonly IReadOnlyList<IFileComparisonHook> _comparisonHooks;
 
         /// <summary>
         /// Initializes a new instance of <see cref="FileDiffService"/> with the default <see cref="FileComparisonService"/>.
@@ -33,13 +36,13 @@ namespace FolderDiffIL4DotNet.Services
             DiffExecutionContext executionContext,
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger)
-            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, new FileComparisonService())
+            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, new FileComparisonService(), Array.Empty<IFileComparisonHook>())
         {
         }
 
         /// <summary>
-        /// Constructor that allows substituting the comparison I/O for testing.
-        /// テスト向けに比較 I/O を差し替え可能なコンストラクタ。
+        /// Constructor that allows substituting the comparison I/O and hooks for testing.
+        /// テスト向けに比較 I/O とフックを差し替え可能なコンストラクタ。
         /// </summary>
         public FileDiffService(
             IReadOnlyConfigSettings config,
@@ -48,11 +51,28 @@ namespace FolderDiffIL4DotNet.Services
             FileDiffResultLists fileDiffResultLists,
             ILoggerService logger,
             IFileComparisonService fileComparisonService)
+            : this(config, ilOutputService, executionContext, fileDiffResultLists, logger, fileComparisonService, Array.Empty<IFileComparisonHook>())
+        {
+        }
+
+        /// <summary>
+        /// Full constructor with all dependencies including plugin comparison hooks.
+        /// プラグイン比較フックを含むすべての依存関係を受け取る完全コンストラクタ。
+        /// </summary>
+        public FileDiffService(
+            IReadOnlyConfigSettings config,
+            IILOutputService ilOutputService,
+            DiffExecutionContext executionContext,
+            FileDiffResultLists fileDiffResultLists,
+            ILoggerService logger,
+            IFileComparisonService fileComparisonService,
+            IEnumerable<IFileComparisonHook> comparisonHooks)
         {
             ArgumentNullException.ThrowIfNull(config);
             ArgumentNullException.ThrowIfNull(ilOutputService);
             ArgumentNullException.ThrowIfNull(executionContext);
             ArgumentNullException.ThrowIfNull(fileComparisonService);
+            ArgumentNullException.ThrowIfNull(comparisonHooks);
 
             _config = config;
             _ilOutputService = ilOutputService;
@@ -64,6 +84,7 @@ namespace FolderDiffIL4DotNet.Services
             ArgumentNullException.ThrowIfNull(logger);
             _logger = logger;
             _fileComparisonService = fileComparisonService;
+            _comparisonHooks = comparisonHooks.OrderBy(h => h.Order).ToList();
         }
 
         /// <summary>
@@ -94,6 +115,21 @@ namespace FolderDiffIL4DotNet.Services
             string file2AbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
             try
             {
+                // 0) Plugin hooks: allow plugins to override built-in comparison.
+                // 0) プラグインフック: プラグインが組み込み比較をオーバーライドできるようにする。
+                var hookResult = await TryRunBeforeCompareHooksAsync(fileRelativePath, cancellationToken);
+                if (hookResult != null)
+                {
+                    if (hookResult.DiffDetailLabel != null)
+                    {
+                        _fileDiffResultLists.RecordDiffDetail(fileRelativePath,
+                            hookResult.AreEqual ? FileDiffResultLists.DiffDetailResult.SHA256Match : FileDiffResultLists.DiffDetailResult.SHA256Mismatch,
+                            hookResult.DiffDetailLabel);
+                    }
+                    await RunAfterCompareHooksAsync(fileRelativePath, hookResult.AreEqual, cancellationToken);
+                    return hookResult.AreEqual;
+                }
+
                 // 1) SHA256: exit early when file size and content are identical.
                 //    Also capture computed hex hashes to seed the IL cache, avoiding redundant SHA256 recomputation.
                 // 1) SHA256: ファイルサイズや内容が完全一致する場合はここで終了。
@@ -110,6 +146,7 @@ namespace FolderDiffIL4DotNet.Services
                 if (areHashEqual)
                 {
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Match);
+                    await RunAfterCompareHooksAsync(fileRelativePath, true, cancellationToken);
                     return true;
                 }
 
@@ -146,6 +183,7 @@ namespace FolderDiffIL4DotNet.Services
                             TryClassifyChangeTags(fileRelativePath);
                         }
 
+                        await RunAfterCompareHooksAsync(fileRelativePath, areDotNetAssembliesEqual, cancellationToken);
                         return areDotNetAssembliesEqual;
                     }
                     catch (InvalidOperationException ex)
@@ -172,10 +210,12 @@ namespace FolderDiffIL4DotNet.Services
                         TryClassifyChangeTags(fileRelativePath);
                     }
 
+                    await RunAfterCompareHooksAsync(fileRelativePath, areTextFilesEqual, cancellationToken);
                     return areTextFilesEqual;
                 }
 
                 _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+                await RunAfterCompareHooksAsync(fileRelativePath, false, cancellationToken);
                 return false;
             }
             // Failures in the main comparison directly affect file-classification correctness,
@@ -192,6 +232,83 @@ namespace FolderDiffIL4DotNet.Services
             {
                 LogUnexpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Runs all registered <see cref="IFileComparisonHook.BeforeCompareAsync"/> in order.
+        /// Returns the first non-null result, or <see langword="null"/> to proceed with built-in comparison.
+        /// 登録済みの <see cref="IFileComparisonHook.BeforeCompareAsync"/> を順に実行します。
+        /// 最初の非null結果を返すか、組み込み比較に進む場合は <see langword="null"/> を返します。
+        /// </summary>
+        private async Task<FileComparisonHookResult?> TryRunBeforeCompareHooksAsync(
+            string fileRelativePath, CancellationToken cancellationToken)
+        {
+            if (_comparisonHooks.Count == 0) return null;
+
+            var context = new FileComparisonHookContext
+            {
+                FileRelativePath = fileRelativePath,
+                OldFolderAbsolutePath = _oldFolderAbsolutePath,
+                NewFolderAbsolutePath = _newFolderAbsolutePath
+            };
+
+            foreach (var hook in _comparisonHooks)
+            {
+                try
+                {
+                    var result = await hook.BeforeCompareAsync(context, cancellationToken);
+                    if (result != null)
+                    {
+                        _logger.LogMessage(AppLogLevel.Info,
+                            $"Plugin hook overrode comparison for '{fileRelativePath}': AreEqual={result.AreEqual}, Label={result.DiffDetailLabel ?? "(none)"}",
+                            shouldOutputMessageToConsole: false);
+                        return result;
+                    }
+                }
+#pragma warning disable CA1031 // Plugin hooks are best-effort / プラグインフックはベストエフォート
+                catch (Exception ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        $"Plugin BeforeCompare hook failed for '{fileRelativePath}': {ex.Message}",
+                        shouldOutputMessageToConsole: false, ex);
+                }
+#pragma warning restore CA1031
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Runs all registered <see cref="IFileComparisonHook.AfterCompareAsync"/> in order (best-effort).
+        /// 登録済みの <see cref="IFileComparisonHook.AfterCompareAsync"/> を順に実行します（ベストエフォート）。
+        /// </summary>
+        private async Task RunAfterCompareHooksAsync(
+            string fileRelativePath, bool areEqual, CancellationToken cancellationToken)
+        {
+            if (_comparisonHooks.Count == 0) return;
+
+            var context = new FileComparisonHookContext
+            {
+                FileRelativePath = fileRelativePath,
+                OldFolderAbsolutePath = _oldFolderAbsolutePath,
+                NewFolderAbsolutePath = _newFolderAbsolutePath
+            };
+
+            foreach (var hook in _comparisonHooks)
+            {
+                try
+                {
+                    await hook.AfterCompareAsync(context, areEqual, cancellationToken);
+                }
+#pragma warning disable CA1031 // Plugin hooks are best-effort / プラグインフックはベストエフォート
+                catch (Exception ex)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        $"Plugin AfterCompare hook failed for '{fileRelativePath}': {ex.Message}",
+                        shouldOutputMessageToConsole: false, ex);
+                }
+#pragma warning restore CA1031
             }
         }
 
