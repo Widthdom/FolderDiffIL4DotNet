@@ -21,6 +21,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
             Assert.False(opts.NoIlCache);
+            Assert.False(opts.ClearCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
@@ -58,6 +59,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(opts.ConfigPath);
             Assert.Null(opts.ThreadsOverride);
             Assert.False(opts.NoIlCache);
+            Assert.False(opts.ClearCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
             Assert.False(opts.PrintConfig);
@@ -210,6 +212,19 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { "--no-il-cache" });
 
             Assert.True(opts.NoIlCache);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --clear-cache
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_ClearCacheFlag_SetsClearCache()
+        {
+            var opts = CliParser.Parse(new[] { "--clear-cache" });
+
+            Assert.True(opts.ClearCache);
             Assert.Null(opts.ParseError);
         }
 

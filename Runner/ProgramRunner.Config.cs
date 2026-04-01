@@ -17,6 +17,62 @@ namespace FolderDiffIL4DotNet
         private const string LOG_CONFIGURATION_LOADED = "Configuration loaded successfully.";
 
         /// <summary>
+        /// Deletes all IL cache files from the cache directory and exits.
+        /// IL キャッシュディレクトリ内のすべてのキャッシュファイルを削除して終了します。
+        /// </summary>
+        private async Task<int> ClearCacheAsync(string? configPath)
+        {
+            try
+            {
+                // Resolve cache directory from config (if available) or use default
+                // 設定（利用可能な場合）またはデフォルトからキャッシュディレクトリを解決
+                string cacheDir;
+                try
+                {
+                    var builder = await _configService.LoadConfigBuilderAsync(configPath);
+                    var config = builder.Build();
+                    cacheDir = string.IsNullOrWhiteSpace(config.ILCacheDirectoryAbsolutePath)
+                        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME)
+                        : config.ILCacheDirectoryAbsolutePath;
+                }
+                catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
+                    or IOException or UnauthorizedAccessException)
+                {
+                    // Config not found or invalid — use default path / 設定が見つからないか無効 — デフォルトパスを使用
+                    cacheDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME);
+                }
+
+                if (!Directory.Exists(cacheDir))
+                {
+                    Console.WriteLine($"IL cache directory does not exist: {cacheDir}");
+                    Console.WriteLine("Nothing to clear.");
+                    return 0;
+                }
+
+                var cacheFiles = Directory.GetFiles(cacheDir, "*.ilcache");
+                if (cacheFiles.Length == 0)
+                {
+                    Console.WriteLine($"IL cache directory is empty: {cacheDir}");
+                    Console.WriteLine("Nothing to clear.");
+                    return 0;
+                }
+
+                foreach (var file in cacheFiles)
+                {
+                    File.Delete(file);
+                }
+
+                Console.WriteLine($"Cleared {cacheFiles.Length} IL cache file(s) from: {cacheDir}");
+                return 0;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                Console.Error.WriteLine($"Failed to clear IL cache: {ex.Message}");
+                return (int)ProgramExitCode.ExecutionFailed;
+            }
+        }
+
+        /// <summary>
         /// Validates the configuration (JSON load + environment variable overrides + semantic validation) and reports results.
         /// 設定のバリデーション（JSON 読込 + 環境変数オーバーライド + セマンティック検証）を行い結果を報告します。
         /// </summary>

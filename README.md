@@ -131,6 +131,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
 | `--threads <N>` | Override [`MaxParallelism`](#config-en-maxparallelism) for this run (`0` = auto). |
 | `--no-il-cache` | Disable the IL cache for this run. |
+| `--clear-cache` | Delete all IL cache files and exit. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
 | `--wizard` | Interactive mode: prompts for old folder, new folder, and report label. |
@@ -831,6 +832,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り [`MaxParallelism`](#config-ja-maxparallelism) を上書きします（`0` = 自動）。 |
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
+| `--clear-cache` | すべての IL キャッシュファイルを削除して終了します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
 | `--wizard` | 対話モード: 旧フォルダ、新フォルダ、レポートラベルを対話入力で指定します。 |

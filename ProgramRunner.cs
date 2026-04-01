@@ -71,6 +71,11 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            if (opts.ClearCache)
+            {
+                return await ClearCacheAsync(opts.ConfigPath);
+            }
+
             if (opts.PrintConfig)
             {
                 return await PrintConfigAsync(opts.ConfigPath);
