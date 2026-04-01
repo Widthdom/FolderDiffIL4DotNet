@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775015774214,
+  "lastUpdate": 1775016092188,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -1782,6 +1782,72 @@ window.BENCHMARK_DATA = {
             "value": 27152076.54375,
             "unit": "ns",
             "range": "± 213338.8085553738"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "distinct": true,
+          "id": "12f143e613694d87d573699fb2da1112702972f5",
+          "message": "Bump version to 1.13.0\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>",
+          "timestamp": "2026-04-01T12:57:14+09:00",
+          "tree_id": "09b76aae8c5167b060368fdcb6cb7d5d774a4ee8",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/12f143e613694d87d573699fb2da1112702972f5"
+        },
+        "date": 1775016091507,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61451.588792067305,
+            "unit": "ns",
+            "range": "± 280.4265493688441"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 586270.3106282552,
+            "unit": "ns",
+            "range": "± 692.8247455534074"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 6024926.781808035,
+            "unit": "ns",
+            "range": "± 51123.099361097586"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74829.8748403696,
+            "unit": "ns",
+            "range": "± 201.18264559038622"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2595.1623609716244,
+            "unit": "ns",
+            "range": "± 42.7017725192783"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 268472.3645717076,
+            "unit": "ns",
+            "range": "± 1278.1690617475854"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 28980300.91517857,
+            "unit": "ns",
+            "range": "± 314262.7062733205"
           }
         ]
       }
