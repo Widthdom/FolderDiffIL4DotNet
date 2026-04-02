@@ -464,3 +464,7 @@
     if (!s) return '';
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
+
+  /* Export pure functions for Node.js/Jest testing (no-op in browser) */
+  /* Node.js/Jest テスト用に純粋関数をエクスポート（ブラウザでは無効） */
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { esc: esc }; }

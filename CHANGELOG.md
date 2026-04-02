@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Improved disassembler error messages with actionable fix guidance** — Timeout errors now include the current `DisassemblerTimeoutSeconds` config value and how to increase it. When a tool reaches the consecutive-failure blacklist threshold, a warning log explains the TTL duration, automatic reinstatement, and suggests `--clear-cache` for stale cache issues. Non-zero exit code errors now list common causes (corrupt assemblies, unsupported formats, tool version incompatibility) and suggest `--skip-il` as a workaround. Process-start failures now remind users to check tool installation and PATH. Affected: `Services/DotNetDisassembleService.cs`, `Services/DotNetDisassembleService.Streaming.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`.
 
+- **JS module conditional exports for Jest testability** — Added `if (typeof module !== 'undefined' && module.exports)` guards to 11 of 13 JS modules, exporting key functions for Node.js/Jest testing without affecting browser behavior. Modules remain concatenated for the HTML report but can now be individually `require()`d in test environments. The `keyboard.js` (IIFE) and `init.js` (entry point) modules are excluded as they have no pure-testable exports. Affected: `Services/HtmlReport/js/diff_report_state.js`, `…/diff_report_export.js`, `…/diff_report_diffview.js`, `…/diff_report_lazy.js`, `…/diff_report_virtualscroll.js`, `…/diff_report_layout.js`, `…/diff_report_filter.js`, `…/diff_report_excel.js`, `…/diff_report_theme.js`, `…/diff_report_celebrate.js`, `…/diff_report_highlight.js`.
+
 ### [1.13.2] - 2026-04-02
 
 #### Added
@@ -1000,6 +1002,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Changed
 
 - **逆アセンブラエラーメッセージに具体的な対処方法を追加** — タイムアウトエラーに現在の `DisassemblerTimeoutSeconds` 設定値と変更方法を表示。ツールが連続失敗のブラックリスト閾値に達した際、TTL 期間・自動復旧・`--clear-cache` オプションを案内する警告ログを追加。終了コード非 0 エラーに一般的な原因（破損アセンブリ、非対応形式、ツールバージョン不整合）と `--skip-il` による回避策を追記。プロセス起動失敗時にツールインストールと PATH 確認を促すメッセージを追加。対象: `Services/DotNetDisassembleService.cs`、`Services/DotNetDisassembleService.Streaming.cs`、`Services/DotNetDisassembleService.VersionLabel.cs`。
+
+- **JS モジュールに条件付きエクスポートを追加（Jest テスト対応）** — 13 モジュール中 11 に `if (typeof module !== 'undefined' && module.exports)` ガードを追加し、ブラウザ動作に影響なく Node.js/Jest テスト環境から主要関数を `require()` 可能に。HTML レポートでは従来通り結合出力されるが、テスト環境では個別ファイルとして読み込み可能。`keyboard.js`（IIFE）と `init.js`（エントリーポイント）は純粋テスト可能なエクスポートがないため除外。対象: `Services/HtmlReport/js/` 配下 11 ファイル。
 
 ### [1.13.2] - 2026-04-02
 

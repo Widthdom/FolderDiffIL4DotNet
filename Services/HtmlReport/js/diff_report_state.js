@@ -214,3 +214,7 @@
     var det = document.getElementById('progress-detail');
     if (det && __totalFilesDetail__) det.textContent = '(' + __totalFilesDetail__ + ')';
   }
+
+  /* Export pure functions for Node.js/Jest testing (no-op in browser) */
+  /* Node.js/Jest テスト用に純粋関数をエクスポート（ブラウザでは無効） */
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { formatTs: formatTs }; }
