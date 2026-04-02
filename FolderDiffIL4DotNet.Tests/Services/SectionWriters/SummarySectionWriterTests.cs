@@ -34,11 +34,13 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
         }
 
         [Fact]
-        public void Write_ContainsElapsedTime()
+        public void Write_ContainsComparedRow()
         {
             var ctx = SectionWriterTestBase.CreateMinimalContext();
             string output = SectionWriterTestBase.WriteToString(_writer, ctx);
-            Assert.Contains("0h 0m 1.0s", output);
+            // Summary section contains the Compared row with file counts
+            // Summary セクションには比較対象ファイル数の行を含む
+            Assert.Contains("Compared", output);
         }
 
         [Fact]

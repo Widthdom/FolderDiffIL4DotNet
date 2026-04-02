@@ -1,3 +1,4 @@
+using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
 
@@ -33,6 +34,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
         {
             var writer = SectionWriterTestBase.GetWriterByOrder(300);
             var ctx = SectionWriterTestBase.CreateMinimalContext(shouldIncludeIgnoredFiles: true);
+            // Add an ignored file so the writer actually produces output
+            // ライターが実際に出力するよう無視ファイルを追加
+            ctx.FileDiffResultLists.RecordIgnoredFile("test.pdb", FileDiffResultLists.IgnoredFileLocation.Old);
             string output = SectionWriterTestBase.WriteToString(writer, ctx);
             Assert.Contains("Ignored", output);
         }
