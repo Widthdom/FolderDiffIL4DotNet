@@ -347,6 +347,17 @@ namespace FolderDiffIL4DotNet.Services
             return parts.Count > 0 ? string.Join(", ", parts) : "—";
         }
 
+        /// <summary>
+        /// Builds a Markdown referencing assemblies column value for a dependency change entry.
+        /// 依存関係変更エントリの Markdown 参照アセンブリカラム値を構築します。
+        /// </summary>
+        private static string BuildMarkdownRefsColumn(System.Collections.Generic.IReadOnlyList<string>? refs)
+        {
+            if (refs is not { Count: > 0 })
+                return "—";
+            return string.Join(", ", refs);
+        }
+
         private static string BuildDisassemblerDisplay(string fileRelativePath, FileDiffResultLists.DiffDetailResult diffDetail, FileDiffResultLists fileDiffResultLists)
         {
             if ((diffDetail == FileDiffResultLists.DiffDetailResult.ILMatch || diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch) &&

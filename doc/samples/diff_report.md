@@ -121,13 +121,13 @@
 
 #### Dependency Changes: bin/MyApp.deps.json
 
-| Package | Status | Importance | Old Version | New Version | Vulnerabilities |
-|---------|:------:|:----------:|:-----------:|:-----------:|:---------------:|
-| System.Text.Json | `[ - ]` | `High` | 7.0.0 | — | — |
-| Newtonsoft.Json | `[ + ]` | `Medium` | — | 13.0.3 | ⚠ Moderate |
-| Serilog | `[ * ]` | `High` | 3.0.0 | 4.1.0 | ~~High~~ |
-| Microsoft.Extensions.Logging | `[ * ]` | `Medium` | 8.0.0 | 9.0.0 | — |
-| Microsoft.Extensions.DependencyInjection | `[ * ]` | `Low` | 9.0.0 | 9.0.8 | — |
+| Package | Status | Importance | Old Version | New Version | Vulnerabilities | Referencing Assemblies |
+|---------|:------:|:----------:|:-----------:|:-----------:|:---------------:|:-----------------------|
+| System.Text.Json | `[ - ]` | `High` | 7.0.0 | — | — | MyApp, MyApp.Core |
+| Newtonsoft.Json | `[ + ]` | `Medium` | — | 13.0.3 | ⚠ Moderate | MyApp.Core |
+| Serilog | `[ * ]` | `High` | 3.0.0 | 4.1.0 | ~~High~~ | MyApp |
+| Microsoft.Extensions.Logging | `[ * ]` | `Medium` | 8.0.0 | 9.0.0 | — | MyApp, MyApp.Core, MyApp.Data |
+| Microsoft.Extensions.DependencyInjection | `[ * ]` | `Low` | 9.0.0 | 9.0.8 | — | MyApp |
 
 ## Summary
 
