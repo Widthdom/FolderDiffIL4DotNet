@@ -62,11 +62,13 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
         /// </summary>
         internal static string WriteToString(IReportSectionWriter writer, ReportWriteContext context)
         {
-            using var sw = new StringWriter();
-            using var streamWriter = new StreamWriter(sw);
+            using var ms = new MemoryStream();
+            using var streamWriter = new StreamWriter(ms);
             writer.Write(streamWriter, context);
             streamWriter.Flush();
-            return sw.ToString();
+            ms.Position = 0;
+            using var reader = new StreamReader(ms);
+            return reader.ReadToEnd();
         }
     }
 }

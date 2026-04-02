@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Runner;
+using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Tests.Helpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -102,8 +103,6 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             var cache = RunScopeBuilder.CreateIlCache(config, _logger);
 
             Assert.NotNull(cache);
-            if (cache is IDisposable disposable)
-                disposable.Dispose();
         }
 
         [Fact]
