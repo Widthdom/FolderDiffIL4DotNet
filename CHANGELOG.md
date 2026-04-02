@@ -19,6 +19,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Expanded Jest test coverage (78 → 104 tests)** — Fixed test module loading to include all 13 JS files (was missing virtualscroll, theme, celebrate, keyboard). Added 26 new tests: theme cycling and persistence (5), celebration animation (2), syncTableWidths with hide-disasm/hide-sdk (3), filter state localStorage persistence (3), storage usage display (2), clearOldReviewStates cleanup (1), SDK column in Excel export (1), keyboard j/k/x/? navigation (5), collectFilterState (1), module.exports guards (3). Fixed IL label regex assertion. Added scrollIntoView polyfill for jsdom. Affected: `JsTests/diff_report.test.js`.
 
+- **Plugin unload/cleanup tests** — Added 7 tests in `PluginUnloadCleanupTests`: collectible context unload (1), unload after assembly load (1), multiple independent contexts (1), WeakReference GC reclamation after unload (1), double-unload exception (1), Unloading event (1), shared assembly survives plugin unload (1). Verifies the AssemblyLoadContext lifecycle, memory cleanup, and isolation guarantees. Affected: `FolderDiffIL4DotNet.Tests/Runner/PluginUnloadCleanupTests.cs`.
+
+- **Security tests (XSS, path traversal)** — Added 2 test classes: `HtmlReportSecurityTests` (12 tests) covering script tag injection, attribute injection, template literal backtick escaping, double-encoding, control characters, CJK text, and malicious file paths. `PathTraversalSecurityTests` (10 tests) covering relative path escapes, null byte injection, Windows reserved names, trailing space/dot, absolute paths, Unicode validation, and path length limits. Affected: `FolderDiffIL4DotNet.Tests/Security/HtmlReportSecurityTests.cs`, `…/PathTraversalSecurityTests.cs`.
+
+- **Network share optimization tests** — Added 2 test classes: `NetworkPathDetectorTests` (3 tests) verifying UNC path detection for backslash/forward-slash/device formats, null/empty handling, and local path rejection. `DiffExecutionContextNetworkTests` (5 tests) verifying network flag propagation, null path rejection, and IL output path derivation. Affected: `FolderDiffIL4DotNet.Tests/Core/IO/NetworkPathDetectorTests.cs`.
+
 ### [1.13.2] - 2026-04-02
 
 #### Added
@@ -1012,6 +1018,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Added
 
 - **Jest テストカバレッジ拡充（78 → 104 テスト）** — テストのモジュール読み込みを全 13 JS ファイルに修正（virtualscroll、theme、celebrate、keyboard が欠落）。新規 26 テスト追加: テーマ切替・永続化（5）、セレブレーションアニメーション（2）、syncTableWidths の hide-disasm/hide-sdk 対応（3）、フィルタ状態 localStorage 永続化（3）、ストレージ使用量表示（2）、clearOldReviewStates クリーンアップ（1）、Excel エクスポートの SDK 列（1）、キーボードナビゲーション j/k/x/?（5）、collectFilterState（1）、module.exports ガード（3）。IL ラベル正規表現アサーション修正。jsdom 用 scrollIntoView ポリフィル追加。対象: `JsTests/diff_report.test.js`。
+
+- **プラグインアンロード/クリーンアップテスト** — `PluginUnloadCleanupTests` に 7 テストを追加: コレクティブルコンテキストのアンロード（1）、アセンブリ読み込み後のアンロード（1）、複数コンテキストの独立アンロード（1）、WeakReference による GC 回収検証（1）、二重アンロード例外（1）、Unloading イベント発火（1）、共有アセンブリのアンロード後存続（1）。AssemblyLoadContext のライフサイクル、メモリクリーンアップ、分離保証を検証。対象: `FolderDiffIL4DotNet.Tests/Runner/PluginUnloadCleanupTests.cs`。
+
+- **セキュリティテスト（XSS、パストラバーサル）** — 2 テストクラスを追加: `HtmlReportSecurityTests`（12 テスト）— script タグインジェクション、属性インジェクション、テンプレートリテラルのバックティックエスケープ、二重エンコード、制御文字、CJK テキスト、悪意あるファイルパスをカバー。`PathTraversalSecurityTests`（10 テスト）— 相対パスエスケープ、NULL バイトインジェクション、Windows 予約名、末尾スペース/ドット、絶対パス、Unicode 検証、パス長制限をカバー。対象: `FolderDiffIL4DotNet.Tests/Security/HtmlReportSecurityTests.cs`、`…/PathTraversalSecurityTests.cs`。
+
+- **ネットワーク共有最適化テスト** — 2 テストクラスを追加: `NetworkPathDetectorTests`（3 テスト）— バックスラッシュ/フォワードスラッシュ/デバイス形式の UNC パス検出、null/空文字列処理、ローカルパス拒否を検証。`DiffExecutionContextNetworkTests`（5 テスト）— ネットワークフラグ伝播、null パス拒否、IL 出力パス導出を検証。対象: `FolderDiffIL4DotNet.Tests/Core/IO/NetworkPathDetectorTests.cs`。
 
 ### [1.13.2] - 2026-04-02
 
