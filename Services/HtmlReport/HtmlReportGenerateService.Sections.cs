@@ -100,7 +100,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
             writer.WriteLine("<details class=\"lazy-section\">");
             writer.WriteLine("<summary></summary>");
-            AppendTableStart(writer, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm hide-tag");
+            AppendTableStart(writer, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm hide-tag hide-sdk");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var entry in items)
@@ -143,7 +143,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
             writer.WriteLine("<details class=\"lazy-section\">");
             writer.WriteLine("<summary></summary>");
-            AppendTableStart(writer, TH_BG_DEFAULT, "Diff Reason");
+            AppendTableStart(writer, TH_BG_DEFAULT, "Diff Reason", hideClasses: "hide-sdk");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
@@ -172,7 +172,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] {HtmlEncode("Added Files")} ({items.Count})</h2>");
             if (items.Count == 0) { writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
-            AppendTableStart(writer, TH_BG_ADDED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag");
+            AppendTableStart(writer, TH_BG_ADDED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag hide-sdk");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
@@ -192,7 +192,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] {HtmlEncode("Removed Files")} ({items.Count})</h2>");
             if (items.Count == 0) { writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
-            AppendTableStart(writer, TH_BG_REMOVED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag");
+            AppendTableStart(writer, TH_BG_REMOVED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag hide-sdk");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
@@ -234,11 +234,12 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
+                _fileDiffResultLists.FileRelativePathToSdkVersionDictionary.TryGetValue(path, out var sdkVer);
                 string col6 = BuildDiffDetailDisplay(diffDetail);
                 string imp = GetImportanceLabel(path);
                 string impLevels = GetImportanceLevelsLabel(path);
                 string tag = GetChangeTagDisplay(path);
-                AppendFileRow(writer, "mod", idx, path, ts, col6, asm ?? "", imp, impLevels, tag);
+                AppendFileRow(writer, "mod", idx, path, ts, col6, asm ?? "", imp, impLevels, tag, sdkVer ?? "");
 
                 // Method-level changes row (above IL diff)
                 if (config.ShouldIncludeAssemblySemanticChangesInReport &&
@@ -347,7 +348,8 @@ namespace FolderDiffIL4DotNet.Services
                         string col6 = BuildDiffDetailDisplay(kv.Value);
                         string imp = GetImportanceLabel(kv.Key);
                         string impLevels = GetImportanceLevelsLabel(kv.Key);
-                        AppendFileRow(writer, "sha256w", idx, kv.Key, ts, col6, importance: imp, importanceLevels: impLevels);
+                        _fileDiffResultLists.FileRelativePathToSdkVersionDictionary.TryGetValue(kv.Key, out var sdk);
+                        AppendFileRow(writer, "sha256w", idx, kv.Key, ts, col6, importance: imp, importanceLevels: impLevels, sdk: sdk ?? "");
                         idx++;
                     }
                     writer.WriteLine("</tbody></table></div>");
@@ -371,11 +373,12 @@ namespace FolderDiffIL4DotNet.Services
                     string ts = $"{HtmlEncode(w.OldTimestamp)}{TIMESTAMP_ARROW}{HtmlEncode(w.NewTimestamp)}";
                     _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(w.FileRelativePath, out var diffDetail);
                     _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(w.FileRelativePath, out var asm);
+                    _fileDiffResultLists.FileRelativePathToSdkVersionDictionary.TryGetValue(w.FileRelativePath, out var sdkVer);
                     string col6 = BuildDiffDetailDisplay(diffDetail);
                     string imp = GetImportanceLabel(w.FileRelativePath);
                     string impLevels = GetImportanceLevelsLabel(w.FileRelativePath);
                     string tag = GetChangeTagDisplay(w.FileRelativePath);
-                    AppendFileRow(writer, "tsw", idx, w.FileRelativePath, ts, col6, asm ?? "", imp, impLevels, tag);
+                    AppendFileRow(writer, "tsw", idx, w.FileRelativePath, ts, col6, asm ?? "", imp, impLevels, tag, sdkVer ?? "");
 
                     if (config.EnableInlineDiff &&
                         (diffDetail == FileDiffResultLists.DiffDetailResult.TextMismatch ||

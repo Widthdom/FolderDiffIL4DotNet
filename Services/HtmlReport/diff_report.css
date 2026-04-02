@@ -556,7 +556,7 @@
     .color-removed { color: var(--color-removed); }
     .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em;
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
             --dc-refs-w: 16em;
@@ -571,6 +571,7 @@
     col.col-diff-g   { width: var(--col-diff-w); }
     col.col-tag-g    { width: var(--col-tag-w); }
     col.col-disasm-g { width: var(--col-disasm-w); }
+    col.col-sdk-g    { width: var(--col-sdk-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
@@ -602,16 +603,21 @@
                    font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     td.col-disasm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
+    td.col-sdk    { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+                    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
     table.hide-disasm col.col-disasm-g,
     table.hide-col6 col.col-diff-g,
-    table.hide-tag col.col-tag-g { width: 0 !important; }
+    table.hide-tag col.col-tag-g,
+    table.hide-sdk col.col-sdk-g { width: 0 !important; }
     table.hide-disasm .col-disasm-hd,
     table.hide-disasm td.col-disasm,
     table.hide-col6 .col-diff-hd,
     table.hide-col6 td.col-diff,
     table.hide-tag .col-tag-hd,
-    table.hide-tag td.col-tag {
+    table.hide-tag td.col-tag,
+    table.hide-sdk .col-sdk-hd,
+    table.hide-sdk td.col-sdk {
       padding: 0 !important; border-color: transparent !important;
       overflow: hidden; max-width: 0; visibility: hidden;
     }

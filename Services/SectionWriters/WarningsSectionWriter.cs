@@ -35,8 +35,8 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file ({sha256Files.Count})");
                         writer.WriteLine();
-                        writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |");
-                        writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|");
+                        writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |");
+                        writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|----------|");
                         foreach (var kv in sha256Files)
                         {
                             string tsCol = "";
@@ -46,7 +46,8 @@ namespace FolderDiffIL4DotNet.Services
                                 string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, kv.Key));
                                 tsCol = $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
                             }
-                            writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {kv.Key} | {tsCol} | `{kv.Value}` | | |");
+                            var sdkDisplay = BuildSdkVersionDisplay(kv.Key, ctx.FileDiffResultLists);
+                            writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {kv.Key} | {tsCol} | `{kv.Value}` | | | {sdkDisplay} |");
                         }
                     }
                 }
@@ -63,8 +64,8 @@ namespace FolderDiffIL4DotNet.Services
                         .ToList();
                     writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — new file timestamps older than old ({tsWarnings.Count})");
                     writer.WriteLine();
-                    writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |");
-                    writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|");
+                    writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |");
+                    writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|----------|");
                     foreach (var warning in tsWarnings)
                     {
                         var fileRelativePath = warning.FileRelativePath;
@@ -72,8 +73,9 @@ namespace FolderDiffIL4DotNet.Services
                         var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
                         var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
                         var tagDisplay = BuildChangeTagDisplay(fileRelativePath, ctx.FileDiffResultLists);
+                        var sdkDisplay = BuildSdkVersionDisplay(fileRelativePath, ctx.FileDiffResultLists);
                         string tsCol = $"{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}";
-                        writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {tagDisplay} | {disasmDisplay} |");
+                        writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {tagDisplay} | {disasmDisplay} | {sdkDisplay} |");
                     }
                 }
             }

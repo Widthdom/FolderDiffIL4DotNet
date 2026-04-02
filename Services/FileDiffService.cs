@@ -176,6 +176,14 @@ namespace FolderDiffIL4DotNet.Services
                             areDotNetAssembliesEqual ? FileDiffResultLists.DiffDetailResult.ILMatch : FileDiffResultLists.DiffDetailResult.ILMismatch,
                             disassemblerLabel);
 
+                        // Best-effort target framework version extraction for display in reports
+                        // ベストエフォートでターゲットフレームワークバージョンを抽出しレポート表示用に記録
+                        var sdkDisplay = AssemblySdkVersionReader.ReadPairDisplayString(file1AbsolutePath, file2AbsolutePath);
+                        if (sdkDisplay != null)
+                        {
+                            _fileDiffResultLists.FileRelativePathToSdkVersionDictionary[fileRelativePath] = sdkDisplay;
+                        }
+
                         // Best-effort assembly semantic analysis for ILMismatch assemblies
                         if (!areDotNetAssembliesEqual && _config.ShouldIncludeAssemblySemanticChangesInReport)
                         {

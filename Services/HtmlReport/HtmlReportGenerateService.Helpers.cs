@@ -32,6 +32,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("  <col class=\"col-diff-g\">");
             writer.WriteLine("  <col class=\"col-tag-g\">");
             writer.WriteLine("  <col class=\"col-disasm-g\">");
+            writer.WriteLine("  <col class=\"col-sdk-g\">");
             writer.WriteLine("</colgroup>");
             writer.WriteLine($"<thead><tr style=\"background:{bg}\">");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-no\">#</th>");
@@ -44,6 +45,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"  <th scope=\"col\" class=\"col-diff-hd\">{HtmlEncode(col6Header)}</th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-tag-hd th-resizable\" data-col-var=\"--col-tag-w\">{HtmlEncode("Estimated Change")}</th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-disasm-hd th-resizable\" data-col-var=\"--col-disasm-w\">{HtmlEncode("Disassembler")}</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-sdk-hd th-resizable\" data-col-var=\"--col-sdk-w\">{HtmlEncode(".NET SDK")}</th>");
             writer.WriteLine("</tr></thead>");
         }
 
@@ -57,7 +59,8 @@ namespace FolderDiffIL4DotNet.Services
             string disasm = "",
             string importance = "",
             string importanceLevels = "",
-            string changeTag = "")
+            string changeTag = "",
+            string sdk = "")
         {
             string cbId     = $"cb_{sectionPrefix}_{idx}";
             string reasonId = $"reason_{sectionPrefix}_{idx}";
@@ -98,6 +101,8 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"  <td class=\"col-tag\">{tagCell}</td>");
             string disasmCell = string.IsNullOrEmpty(disasm) ? "" : $"<code>{HtmlEncode(disasm)}</code>";
             writer.WriteLine($"  <td class=\"col-disasm\">{disasmCell}</td>");
+            string sdkCell = string.IsNullOrEmpty(sdk) ? "" : CodeWrapArrow(sdk);
+            writer.WriteLine($"  <td class=\"col-sdk\">{sdkCell}</td>");
             writer.WriteLine("</tr>");
         }
 

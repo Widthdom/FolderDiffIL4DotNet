@@ -173,7 +173,7 @@
     }
     // Helper: column header row — # at col 2 (Excel C) / 列ヘッダー行 — #は列2（Excel C列）
     function colHeaderRow(bg) {
-      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler'];
+      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
       var r = '<tr><td></td><td></td>';
       hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
       return r + '</tr>';
@@ -383,6 +383,8 @@
     var tag = cells[8].textContent.trim();
     // Disassembler
     var disasm = cells[9].textContent.trim();
+    // .NET SDK
+    var sdk = cells.length > 10 ? cells[10].textContent.trim() : '';
 
     return '<tr><td></td><td></td>'
       + '<td class="bd">' + esc(no) + '</td>'
@@ -395,6 +397,7 @@
       + '<td class="bd" style="text-align:center">' + esc(diff) + '</td>'
       + '<td class="bd">' + esc(tag) + '</td>'
       + '<td class="bd">' + esc(disasm) + '</td>'
+      + '<td class="bd">' + esc(sdk) + '</td>'
       + '</tr>';
   }
 
@@ -420,7 +423,7 @@
       for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
     }
     function colHeaderRow(bg) {
-      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler'];
+      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
       var r = '<tr><td></td><td></td>';
       hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
       return r + '</tr>';
