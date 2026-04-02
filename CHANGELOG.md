@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.2] - 2026-04-02
+
 #### Added
 
 - **Dark theme Status column color fix** — Replaced inline `style="background:..."` with CSS classes (`sc-status-added`, `sc-status-removed`, `sc-status-modified`) using dedicated CSS variables with vivid dark-mode values for semantic and dependency change table Status columns. Affected: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.html`.
@@ -30,6 +32,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **CI build errors in new test files** — Fixed 3 compilation errors: missing `using FolderDiffIL4DotNet.Services` in `RunScopeBuilderTests.cs` for `DiffExecutionContext` type resolution, invalid `IDisposable` pattern match on sealed `ILCache` class, and `StreamWriter(StringWriter)` constructor call replaced with `StreamWriter(MemoryStream)` in `SectionWriterTestBase.WriteToString()`. Affected: `FolderDiffIL4DotNet.Tests/Runner/RunScopeBuilderTests.cs`, `FolderDiffIL4DotNet.Tests/Services/SectionWriters/SectionWriterTestBase.cs`.
 
 - **Test assertion mismatches after Task 1 CSS class migration** — Fixed 3 test failures: `SummarySectionWriterTests.Write_ContainsElapsedTime` asserted on content not in Summary section (elapsed time is in Header); `ConditionalSectionWriterTests.IgnoredFiles_Write_ContainsIgnoredHeader` expected output from an empty ignored files list; `HtmlReportGenerateServiceTests.GenerateDiffReportHtml_AssemblySemanticChanges_KindBodyAccessModifiersUseCodeEmphasis` searched for old inline `style="background:var(..."` instead of new `class="sc-status-modified"`. Affected: `FolderDiffIL4DotNet.Tests/Services/SectionWriters/SummarySectionWriterTests.cs`, `…/ConditionalSectionWriterTests.cs`, `…/HtmlReportGenerateServiceTests.SemanticChanges.cs`.
+
+### [1.13.1] - 2026-04-02
 
 #### Added
 
@@ -988,6 +992,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.13.2] - 2026-04-02
 
 #### Added
 
@@ -1971,7 +1977,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.2...HEAD
+[1.13.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.4...v1.13.0
 [1.12.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.3...v1.12.4
