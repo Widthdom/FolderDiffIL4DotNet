@@ -206,6 +206,7 @@ Every file entry is displayed in a table with interactive columns for sign-off:
 | Diff Reason | Diff type only: `SHA256Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. For `ILMismatch` entries with assembly semantic changes, the file-level max importance is appended (e.g. `ILMismatch` `High`). (Unchanged/Modified/Warnings only; not shown for Added/Removed) |
 | Estimated Change | Pattern-based classification tags for .NET assembly changes detected via IL semantic analysis. Possible tags: `+Method`, `-Method`, `+Type`, `-Type`, `Extract`, `Inline`, `Move`, `Rename`, `Signature`, `Access`, `BodyEdit`, `DepUpdate`. Multiple tags may appear for a single file. Shown only for Unchanged and Modified sections |
 | Disassembler | Disassembler label and version used for IL comparison (e.g. [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm <version>)`); shown only for Unchanged and Modified sections |
+| .NET SDK | Target framework of the .NET assembly (e.g. `.NET 8.0`). When old and new assemblies target different frameworks, both are shown (e.g. `.NET 6.0` → `.NET 8.0`). Shown only for Modified section |
 
 Not all columns appear in every table. Added and Removed tables show only ✓, Justification, Notes, File Path, and Timestamp. Ignored tables additionally show Diff Reason (as "Location"). Unchanged and Modified tables show all columns including Estimated Change and Disassembler. Warning tables (SHA256Mismatch, Timestamps Regressed) show Diff Reason but not Estimated Change or Disassembler. Column headers for Added / Removed / Modified use colour-coded backgrounds (**green** / **red** / **blue**); section headings for Added / Removed / Modified use colour-coded text in the same colours. Ignored / Unchanged column headers and section headings use the default style.
 
@@ -922,6 +923,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | Diff Reason | 差分タイプのみ: `SHA256Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など。`ILMismatch` でアセンブリ セマンティック変更がある場合、ファイルレベルの最大重要度が追記される（例: `ILMismatch` `High`）。（Unchanged/Modified/Warnings のみ。Added/Removed には表示されない） |
 | Estimated Change | IL セマンティック分析で検出された .NET アセンブリ変更のパターン分類タグ。タグ種別: `+Method`・`-Method`・`+Type`・`-Type`・`Extract`・`Inline`・`Move`・`Rename`・`Signature`・`Access`・`BodyEdit`・`DepUpdate`。1 ファイルに複数タグが表示される場合あり。Unchanged と Modified セクションのみに表示 |
 | Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm <version>)`）。Unchanged と Modified セクションのみに表示 |
+| .NET SDK | .NET アセンブリのターゲットフレームワーク（例: `.NET 8.0`）。新旧アセンブリのターゲットが異なる場合は両方表示（例: `.NET 6.0` → `.NET 8.0`）。Modified セクションのみに表示 |
 
 すべてのテーブルに全列が表示されるわけではありません。Added・Removed テーブルには ✓・Justification・Notes・File Path・Timestamp のみが表示されます。Ignored テーブルにはさらに Diff Reason（「Location」として表示）が追加されます。Unchanged・Modified テーブルには Estimated Change・Disassembler を含むすべての列が表示されます。警告テーブル（SHA256Mismatch、Timestamps Regressed）には Diff Reason が表示されますが Estimated Change・Disassembler は表示されません。Added / Removed / Modified の列ヘッダはそれぞれ**緑・赤・青**の背景色で色付けされ、セクション見出しも同様に緑・赤・青の文字色で表示されます。Ignored・Unchanged の列ヘッダおよびセクション見出しはデフォルトのスタイルです。
 

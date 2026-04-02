@@ -35,6 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Test failures due to incorrect assumptions about runtime behavior** — Fixed 8 test failures: `NetworkPathDetectorTests` UNC path tests now assert platform-specific behavior (UNC detection is Windows-only; Linux/macOS use mount-point analysis instead). `HtmlReportSecurityTests` assertions corrected to verify angle-bracket encoding (`&lt;`/`&gt;`) rather than checking for `onerror` text inside encoded output; `${7*7}` (no backtick) split into separate pass-through test. `PluginUnloadCleanupTests.DoubleUnload` changed from `Assert.Throws<InvalidOperationException>` to `Record.Exception` null-check since .NET silently allows multiple `Unload()` calls. Affected: `NetworkPathDetectorTests.cs`, `HtmlReportSecurityTests.cs`, `PluginUnloadCleanupTests.cs`.
 
+- **HTML report colspan and Excel export COLS not updated for .NET SDK column** — Inline diff detail rows used `colspan="10"` but the .NET SDK column addition brought the total to 11 columns; updated to `colspan="11"`. Excel export used `COLS = 12` (emptyRow/bannerRow cell count) but the SDK column header and data cell additions require 13; updated to `COLS = 13`. Sample HTML `doc/samples/diff_report.html` also updated: `colspan` (26 occurrences), `COLS` (2 occurrences), `colHeaderRow` headers (added `.NET SDK`), and `buildExcelRow` SDK cell extraction. Affected: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `Services/HtmlReport/js/diff_report_excel.js`, `doc/samples/diff_report.html`.
+
 ### [1.13.2] - 2026-04-02
 
 #### Added
@@ -1044,6 +1046,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **.NET SDK 列追加後のテストアサーション不整合** — 6列テーブルヘッダーを期待していた5つのテストアサーションを7列（SDK列追加）に修正。ゴールデンサンプル `diff_report.md` の Modified Files テーブルと Warnings テーブルに `.NET SDK` 列を追加。`FileDiffResultLists.ResetAll()` に `FileRelativePathToSdkVersionDictionary` のクリア漏れを修正。`DotNetDisassembleService.Streaming.cs` の `JoinLines` メソッドで非 nullable パラメータへの不要な null チェックを除去（Release ビルドの CS8604 警告回避）。対象: `GoldenFileSnapshotTests.cs`、`ReportGenerateServiceTests.SortOrder.cs`、`ReportGenerateServiceTests.SectionsAndWarnings.cs`、`doc/samples/diff_report.md`、`Models/FileDiffResultLists.cs`、`Services/DotNetDisassembleService.Streaming.cs`。
 
 - **ランタイム動作の誤った前提に基づくテスト失敗修正** — 8件のテスト失敗を修正: `NetworkPathDetectorTests` の UNC パステストをプラットフォーム固有の動作に変更（UNC 検出は Windows 専用、Linux/macOS はマウントポイント分析を使用）。`HtmlReportSecurityTests` のアサーションを山括弧エンコード（`&lt;`/`&gt;`）の検証に修正（エンコード済み出力内の `onerror` テキスト検索は不適切）。`${7*7}`（バッククォートなし）は独立したパススルーテストに分離。`PluginUnloadCleanupTests.DoubleUnload` を `Assert.Throws<InvalidOperationException>` から `Record.Exception` null チェックに変更（.NET は複数回の `Unload()` 呼び出しを黙殺するため）。対象: `NetworkPathDetectorTests.cs`、`HtmlReportSecurityTests.cs`、`PluginUnloadCleanupTests.cs`。
+
+- **HTML レポートの colspan と Excel エクスポートの COLS が .NET SDK 列に未対応** — インライン差分詳細行が `colspan="10"` を使用していたが、.NET SDK 列追加により合計 11 列になったため `colspan="11"` に更新。Excel エクスポートの `COLS = 12`（emptyRow/bannerRow のセル数）も SDK 列ヘッダーとデータセル追加により 13 に更新。サンプル HTML `doc/samples/diff_report.html` も同期: `colspan`（26 箇所）、`COLS`（2 箇所）、`colHeaderRow` ヘッダー（`.NET SDK` 追加）、`buildExcelRow` の SDK セル抽出。対象: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`、`Services/HtmlReport/js/diff_report_excel.js`、`doc/samples/diff_report.html`。
 
 ### [1.13.2] - 2026-04-02
 

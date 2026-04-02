@@ -149,7 +149,7 @@
     };
 
     // Helper: 12-cell empty row / 12セルの空行
-    var COLS = 12;
+    var COLS = 13;
     function emptyRow() {
       var r = '<tr>';
       for (var i = 0; i < COLS; i++) r += '<td></td>';
@@ -415,7 +415,7 @@
     };
     var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
     var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3' };
-    var COLS = 12;
+    var COLS = 13;
     function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
     function bannerRow(text, color, style) {
       var s = style || '';
