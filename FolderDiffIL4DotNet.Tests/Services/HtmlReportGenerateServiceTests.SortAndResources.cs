@@ -303,6 +303,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_export.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_diffview.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_lazy.js",
+                "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_virtualscroll.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_layout.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js",
                 "FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js",

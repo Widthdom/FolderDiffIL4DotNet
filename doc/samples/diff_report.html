@@ -573,6 +573,11 @@
     col.sc-col-rettype-g { width: var(--sc-rettype-w); }
     col.sc-col-params-g { width: var(--sc-params-w); }
     col.sc-col-body-g { width: var(--sc-body-w); }
+    /* ── Virtual scroll ───────────────────────────────────────────────── */
+    .vs-viewport { max-height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--color-border); }
+    .vs-sticky-head { position: sticky; top: 0; z-index: 1; }
+    .vs-spacer td { padding: 0 !important; border: none !important; background: transparent !important; }
+    .vs-indicator { font-size: 11px; color: var(--color-muted-text); padding: 2px 4px; text-align: right; }
     /* ── Dependency changes ──────────────────────────────────────────── */
     .dependency-changes { padding: 6px 12px; font-size: 12px; overflow-x: auto; }
     /* dc-detail (dependency changes): checkbox(1) Package(2) Status(3) Importance(4) OldVer(5) NewVer(6) [Vuln(7)] [Refs(8)] */

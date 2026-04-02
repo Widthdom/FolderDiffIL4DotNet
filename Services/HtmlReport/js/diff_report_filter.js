@@ -81,8 +81,9 @@
     });
 
     // Filter semantic change rows by importance inside detail tables / detail テーブル内の semantic change 行を importance でフィルター
+    // Virtual-scrolled tables are handled separately / 仮想スクロールテーブルは別途処理
     if (impActive) {
-      document.querySelectorAll('.semantic-changes-table tr[data-sc-importance]').forEach(function(tr) {
+      document.querySelectorAll('.semantic-changes-table:not(.vs-active) tr[data-sc-importance]').forEach(function(tr) {
         var imp = tr.getAttribute('data-sc-importance');
         if (imp && !impFilter[imp]) {
           tr.classList.add('filter-hidden');
@@ -91,10 +92,14 @@
         }
       });
     } else {
-      document.querySelectorAll('.semantic-changes-table tr.filter-hidden').forEach(function(tr) {
+      document.querySelectorAll('.semantic-changes-table:not(.vs-active) tr.filter-hidden').forEach(function(tr) {
         tr.classList.remove('filter-hidden');
       });
     }
+    // Update virtual scroll tables after filter changes / フィルター変更後に仮想スクロールテーブルを更新
+    document.querySelectorAll('table.vs-active').forEach(function(table) {
+      vsRefreshVisibility(table);
+    });
     // Fix group-cont headers: when a group header row is hidden, promote the first visible
     // continuation row to show typename/basetype so it doesn't appear orphaned.
     // グループヘッダー行が非表示時、最初の可視 group-cont 行に typename/basetype を復元

@@ -3,9 +3,10 @@
    * @returns {Promise<void>}
    */
   async function downloadReviewed() {
-    // 0. Force-decode all lazy sections so their inputs are captured in state
-    // 全lazyセクションを強制デコードし、inputが状態に含まれるようにする
+    // 0. Force-decode all lazy sections and materialize virtual scroll tables
+    // 全lazyセクションを強制デコードし、仮想スクロールテーブルをマテリアライズ
     forceDecodeLazySections();
+    vsMaterializeAll();
     var state   = collectState();
     var slug    = 'diff_report_' + __reportDate__;
     var root    = document.documentElement;

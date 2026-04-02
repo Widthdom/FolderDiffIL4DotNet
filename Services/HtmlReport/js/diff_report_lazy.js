@@ -28,9 +28,18 @@
             initColResizeSingle(th);
           });
           syncScTableWidths();
-          // Wire up save events on new checkboxes
+          // Activate virtual scroll for large semantic changes tables
+          // 大規模セマンティック変更テーブルの仮想スクロールを有効化
+          d.querySelectorAll('table.semantic-changes-table.sc-detail').forEach(function(tbl) {
+            if (initVirtualScroll(tbl)) {
+              tbl.classList.add('vs-active');
+            }
+          });
+          // Wire up save events on new checkboxes (skip if virtual scroll handles them)
+          // 新規チェックボックスにsaveイベントを接続（仮想スクロールが処理する場合はスキップ）
           if (__savedState__ === null) {
             d.querySelectorAll('input').forEach(function(el) {
+              if (el.closest('table.vs-active')) return;
               el.addEventListener('change', autoSave);
             });
           }
