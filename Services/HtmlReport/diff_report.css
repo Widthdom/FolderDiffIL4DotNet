@@ -559,6 +559,7 @@
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
+            --dc-refs-w: 16em;
 }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
@@ -734,7 +735,7 @@
     col.dc-col-package-g { width: 24em; }
     col.dc-col-ver-g { width: 12em; }
     col.dc-col-vuln-g { width: 18em; }
-    col.dc-col-refs-g { width: 16em; }
+    col.dc-col-refs-g { width: var(--dc-refs-w); }
     .dc-refs-cell { font-size: 11px; word-break: break-word; white-space: normal; }
     table.semantic-changes-table.dc-detail td:nth-child(3),
     table.semantic-changes-table.dc-detail td:nth-child(4) { text-align: center; }

@@ -412,6 +412,7 @@
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
+            --dc-refs-w: 16em;
 }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
@@ -584,7 +585,7 @@
     col.dc-col-package-g { width: 24em; }
     col.dc-col-ver-g { width: 12em; }
     col.dc-col-vuln-g { width: 18em; }
-    col.dc-col-refs-g { width: 16em; }
+    col.dc-col-refs-g { width: var(--dc-refs-w); }
     .dc-refs-cell { font-size: 11px; word-break: break-word; white-space: normal; }
     table.semantic-changes-table.dc-detail td:nth-child(3),
     table.semantic-changes-table.dc-detail td:nth-child(4) { text-align: center; }
@@ -1166,7 +1167,7 @@
   <th>Old Version</th>
   <th>New Version</th>
   <th>Vulnerabilities</th>
-  <th>Referencing Assemblies</th>
+  <th class="th-resizable" data-col-var="--dc-refs-w">Referencing Assemblies</th>
 </tr></thead>
 <tbody>
 <tr data-sc-importance="High"><td class="sc-col-cb"><input type="checkbox" id="dc_mod_0_0"></td><td>System.Text.Json</td><td class="sc-status-removed">[ - ]</td><td class="imp-high">High</td><td>7.0.0</td><td>&#x2014;</td><td>&#x2014;</td><td class="dc-refs-cell">MyApp, MyApp.Core</td></tr>
@@ -1968,7 +1969,7 @@
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
@@ -2010,7 +2011,8 @@
       + '; --sc-name-w: '     + curWidths['--sc-name-w']
       + '; --sc-rettype-w: '  + curWidths['--sc-rettype-w']
       + '; --sc-params-w: '   + curWidths['--sc-params-w']
-      + '; --sc-body-w: '     + curWidths['--sc-body-w'] + '; }');
+      + '; --sc-body-w: '     + curWidths['--sc-body-w']
+      + '; --dc-refs-w: '    + curWidths['--dc-refs-w'] + '; }');
     // Remove inline col-var overrides from <html> element (now baked into :root)
     html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
     // Replace button row with reviewed banner (filter zone is preserved outside CTRL markers)
@@ -2118,7 +2120,7 @@
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
@@ -2624,10 +2626,15 @@
             + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
             + px('--sc-body-w', 5);
     document.querySelectorAll('table.sc-detail').forEach(function(t) { t.style.width = detW + 'px'; });
-    // dc-detail (dependency changes): cb(3.2) + package(24) + status(7) + importance(7) + oldVer(12) + newVer(12) = 65.2em
-    // dc-detail のチェック列・Status列を sc-detail と同じ実幅にするため、列幅合計に一致する幅を設定
-    var dcW = (3.2 + 24 + 7 + 7 + 12 + 12) * scEmPx;
-    document.querySelectorAll('table.dc-detail').forEach(function(t) { t.style.width = dcW + 'px'; });
+    // dc-detail (dependency changes): base = cb(3.2) + package(24) + status(7) + importance(7) + oldVer(12) + newVer(12) = 65.2em
+    // Conditionally add vuln(18) and refs(var) columns if present in the table's colgroup
+    // dc-detail の基本幅に、テーブルごとに vuln 列・refs 列が存在すれば加算
+    document.querySelectorAll('table.dc-detail').forEach(function(t) {
+      var dcW = (3.2 + 24 + 7 + 7 + 12 + 12) * scEmPx;
+      if (t.querySelector('col.dc-col-vuln-g')) dcW += 18 * scEmPx;
+      if (t.querySelector('col.dc-col-refs-g')) dcW += px('--dc-refs-w', 16);
+      t.style.width = dcW + 'px';
+    });
   }
 
   function syncFilterRowHeight() {

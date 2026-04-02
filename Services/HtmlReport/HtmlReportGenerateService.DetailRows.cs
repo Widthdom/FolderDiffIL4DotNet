@@ -304,7 +304,7 @@ namespace FolderDiffIL4DotNet.Services
                 if (hasAnyVuln)
                     contentBuilder.AppendLine($"  <th>{HtmlEncode("Vulnerabilities")}</th>");
                 if (hasAnyRefs)
-                    contentBuilder.AppendLine($"  <th>{HtmlEncode("Referencing Assemblies")}</th>");
+                    contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--dc-refs-w\">{HtmlEncode("Referencing Assemblies")}</th>");
                 contentBuilder.AppendLine("</tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 int dcRowIdx = 0;

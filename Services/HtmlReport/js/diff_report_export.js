@@ -28,7 +28,7 @@
     // テーブルの inline width をクリアし reviewed ロード時に再計算させる
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
@@ -74,7 +74,8 @@
       + '; --sc-name-w: '     + curWidths['--sc-name-w']
       + '; --sc-rettype-w: '  + curWidths['--sc-rettype-w']
       + '; --sc-params-w: '   + curWidths['--sc-params-w']
-      + '; --sc-body-w: '     + curWidths['--sc-body-w'] + '; }');
+      + '; --sc-body-w: '     + curWidths['--sc-body-w']
+      + '; --dc-refs-w: '    + curWidths['--dc-refs-w'] + '; }');
     // Remove inline col-var overrides from <html> element (now baked into :root)
     html = html.replace(/(<html\b[^>]*?) style="[^"]*"/, '$1');
     // Remove data-theme attribute so reviewed HTML uses system default
@@ -189,7 +190,7 @@
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
