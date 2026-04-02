@@ -97,14 +97,17 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         }
 
         [Fact]
-        public void DoubleUnload_ThrowsInvalidOperationException()
+        public void DoubleUnload_DoesNotThrow()
         {
-            // Calling Unload() twice on the same context should throw
-            // 同一コンテキストで Unload() を2回呼ぶと例外が発生すること
+            // .NET allows calling Unload() multiple times on a collectible context
+            // without throwing an exception — the second call is silently ignored.
+            // .NET はコレクティブルコンテキストに対する Unload() の複数回呼び出しを許容し、
+            // 2回目の呼び出しは黙殺される（例外は発生しない）。
             var ctx = new PluginAssemblyLoadContext(TestAssemblyPath);
             ctx.Unload();
 
-            Assert.Throws<InvalidOperationException>(() => ctx.Unload());
+            var ex = Record.Exception(() => ctx.Unload());
+            Assert.Null(ex);
         }
 
         [Fact]

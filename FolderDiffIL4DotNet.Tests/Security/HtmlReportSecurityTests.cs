@@ -20,11 +20,12 @@ namespace FolderDiffIL4DotNet.Tests.Security
         public void HtmlEncode_ScriptTags_FullyEscaped(string input)
         {
             var result = HtmlReportGenerateService.HtmlEncode(input);
-            Assert.DoesNotContain("<script", result);
-            Assert.DoesNotContain("<img", result);
-            Assert.DoesNotContain("<svg", result);
-            Assert.DoesNotContain("<iframe", result);
-            Assert.DoesNotContain("onerror", result.ToLowerInvariant().Replace("&", ""));
+            // Angle brackets must be entity-encoded so tags cannot be injected
+            // 山括弧がエンティティエンコードされ、タグが注入できないこと
+            Assert.DoesNotContain("<", result);
+            Assert.DoesNotContain(">", result);
+            Assert.Contains("&lt;", result);
+            Assert.Contains("&gt;", result);
         }
 
         [Theory]
@@ -42,12 +43,20 @@ namespace FolderDiffIL4DotNet.Tests.Security
         [Theory]
         [InlineData("`${document.cookie}`")]
         [InlineData("`alert(1)`")]
-        [InlineData("${7*7}")]
         public void HtmlEncode_TemplateLiteral_BackticksEscaped(string input)
         {
             var result = HtmlReportGenerateService.HtmlEncode(input);
             Assert.DoesNotContain("`", result);
             Assert.Contains("&#96;", result);
+        }
+
+        [Fact]
+        public void HtmlEncode_DollarBraceWithoutBacktick_PassesThrough()
+        {
+            // ${...} without backticks is not a template literal and is safe
+            // バッククォートなしの ${...} はテンプレートリテラルではなく安全
+            var result = HtmlReportGenerateService.HtmlEncode("${7*7}");
+            Assert.Equal("${7*7}", result);
         }
 
         [Theory]
@@ -87,9 +96,10 @@ namespace FolderDiffIL4DotNet.Tests.Security
         public void HtmlEncode_MaliciousFilePaths_SafelyEncoded(string path)
         {
             var result = HtmlReportGenerateService.HtmlEncode(path);
-            Assert.DoesNotContain("<script>", result);
-            Assert.DoesNotContain("<img", result);
-            Assert.DoesNotContain("onerror", result.ToLowerInvariant().Replace("&", ""));
+            // Angle brackets must be entity-encoded, preventing HTML tag injection
+            // 山括弧がエンティティエンコードされ、HTML タグ注入が防止されること
+            Assert.DoesNotContain("<", result);
+            Assert.DoesNotContain(">", result);
         }
 
         [Fact]

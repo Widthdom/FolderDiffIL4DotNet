@@ -31,6 +31,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Test assertion mismatches after .NET SDK column addition** — Fixed 5 test assertions that expected 6-column table headers but the SDK column addition made them 7-column. Updated golden sample `diff_report.md` to include the `.NET SDK` column in Modified Files and Warnings tables. Fixed `FileDiffResultLists.ResetAll()` to clear `FileRelativePathToSdkVersionDictionary`. Removed unnecessary null check on non-nullable parameter in `DotNetDisassembleService.Streaming.cs` (`JoinLines` method) to avoid CS8604 warning in Release builds. Affected: `GoldenFileSnapshotTests.cs`, `ReportGenerateServiceTests.SortOrder.cs`, `ReportGenerateServiceTests.SectionsAndWarnings.cs`, `doc/samples/diff_report.md`, `Models/FileDiffResultLists.cs`, `Services/DotNetDisassembleService.Streaming.cs`.
 
+- **Test failures due to incorrect assumptions about runtime behavior** — Fixed 8 test failures: `NetworkPathDetectorTests` UNC path tests now assert platform-specific behavior (UNC detection is Windows-only; Linux/macOS use mount-point analysis instead). `HtmlReportSecurityTests` assertions corrected to verify angle-bracket encoding (`&lt;`/`&gt;`) rather than checking for `onerror` text inside encoded output; `${7*7}` (no backtick) split into separate pass-through test. `PluginUnloadCleanupTests.DoubleUnload` changed from `Assert.Throws<InvalidOperationException>` to `Record.Exception` null-check since .NET silently allows multiple `Unload()` calls. Affected: `NetworkPathDetectorTests.cs`, `HtmlReportSecurityTests.cs`, `PluginUnloadCleanupTests.cs`.
+
 ### [1.13.2] - 2026-04-02
 
 #### Added
@@ -1036,6 +1038,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **CI ビルドエラー: ConcurrentBag インデクサアクセス** — `FileDiffServiceUnitTests.Hooks.cs` で `ConcurrentBag<T>[0]` を使用していた `CS0021` コンパイルエラーを修正（インデクサ非対応）。LINQ の `.First()` に置換。スレッドセーフティ移行（`List<T>` → `ConcurrentBag<T>`）に起因。対象: `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`。
 
 - **.NET SDK 列追加後のテストアサーション不整合** — 6列テーブルヘッダーを期待していた5つのテストアサーションを7列（SDK列追加）に修正。ゴールデンサンプル `diff_report.md` の Modified Files テーブルと Warnings テーブルに `.NET SDK` 列を追加。`FileDiffResultLists.ResetAll()` に `FileRelativePathToSdkVersionDictionary` のクリア漏れを修正。`DotNetDisassembleService.Streaming.cs` の `JoinLines` メソッドで非 nullable パラメータへの不要な null チェックを除去（Release ビルドの CS8604 警告回避）。対象: `GoldenFileSnapshotTests.cs`、`ReportGenerateServiceTests.SortOrder.cs`、`ReportGenerateServiceTests.SectionsAndWarnings.cs`、`doc/samples/diff_report.md`、`Models/FileDiffResultLists.cs`、`Services/DotNetDisassembleService.Streaming.cs`。
+
+- **ランタイム動作の誤った前提に基づくテスト失敗修正** — 8件のテスト失敗を修正: `NetworkPathDetectorTests` の UNC パステストをプラットフォーム固有の動作に変更（UNC 検出は Windows 専用、Linux/macOS はマウントポイント分析を使用）。`HtmlReportSecurityTests` のアサーションを山括弧エンコード（`&lt;`/`&gt;`）の検証に修正（エンコード済み出力内の `onerror` テキスト検索は不適切）。`${7*7}`（バッククォートなし）は独立したパススルーテストに分離。`PluginUnloadCleanupTests.DoubleUnload` を `Assert.Throws<InvalidOperationException>` から `Record.Exception` null チェックに変更（.NET は複数回の `Unload()` 呼び出しを黙殺するため）。対象: `NetworkPathDetectorTests.cs`、`HtmlReportSecurityTests.cs`、`PluginUnloadCleanupTests.cs`。
 
 ### [1.13.2] - 2026-04-02
 

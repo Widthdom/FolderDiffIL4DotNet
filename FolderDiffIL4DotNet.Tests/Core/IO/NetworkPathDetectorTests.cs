@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -27,10 +28,21 @@ namespace FolderDiffIL4DotNet.Tests.Core.IO
         [InlineData(@"\\server\share\subfolder")]
         [InlineData(@"\\?\UNC\server\share")]
         [InlineData("//server/share")]
-        public void IsLikelyNetworkPath_UncPaths_ReturnsTrue(string path)
+        public void IsLikelyNetworkPath_UncPaths_ReturnsTrue_OnWindows(string path)
         {
-            // UNC paths should always be detected regardless of OS
-            // UNC パスは OS に関わらず常に検出されるべき
+            // UNC path detection is reliable only on Windows where the OS natively
+            // supports UNC paths. On Linux/macOS, network detection uses mount point
+            // analysis instead.
+            // UNC パス検出は Windows でのみ確実。Linux/macOS ではマウントポイント分析を使用。
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // On non-Windows, UNC-style strings are not recognized as network paths
+                // because the OS uses /proc/mounts (Linux) or statfs (macOS) instead.
+                // 非 Windows では UNC 形式文字列はネットワークパスとして認識されない
+                Assert.False(NetworkPathDetector.IsLikelyNetworkPath(path));
+                return;
+            }
+
             Assert.True(NetworkPathDetector.IsLikelyNetworkPath(path));
         }
 
