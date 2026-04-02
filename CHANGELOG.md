@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Improved disassembler error messages with actionable fix guidance** — Timeout errors now include the current `DisassemblerTimeoutSeconds` config value and how to increase it. When a tool reaches the consecutive-failure blacklist threshold, a warning log explains the TTL duration, automatic reinstatement, and suggests `--clear-cache` for stale cache issues. Non-zero exit code errors now list common causes (corrupt assemblies, unsupported formats, tool version incompatibility) and suggest `--skip-il` as a workaround. Process-start failures now remind users to check tool installation and PATH. Affected: `Services/DotNetDisassembleService.cs`, `Services/DotNetDisassembleService.Streaming.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`.
+
 ### [1.13.2] - 2026-04-02
 
 #### Added
@@ -992,6 +996,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **逆アセンブラエラーメッセージに具体的な対処方法を追加** — タイムアウトエラーに現在の `DisassemblerTimeoutSeconds` 設定値と変更方法を表示。ツールが連続失敗のブラックリスト閾値に達した際、TTL 期間・自動復旧・`--clear-cache` オプションを案内する警告ログを追加。終了コード非 0 エラーに一般的な原因（破損アセンブリ、非対応形式、ツールバージョン不整合）と `--skip-il` による回避策を追記。プロセス起動失敗時にツールインストールと PATH 確認を促すメッセージを追加。対象: `Services/DotNetDisassembleService.cs`、`Services/DotNetDisassembleService.Streaming.cs`、`Services/DotNetDisassembleService.VersionLabel.cs`。
 
 ### [1.13.2] - 2026-04-02
 
