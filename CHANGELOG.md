@@ -9,6 +9,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Dark theme Status column color fix** — Replaced inline `style="background:..."` with CSS classes (`sc-status-added`, `sc-status-removed`, `sc-status-modified`) using dedicated CSS variables with vivid dark-mode values for semantic and dependency change table Status columns. Affected: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.html`.
+
+- **Filter state localStorage persistence** — Filter controls (diff detail, importance, unchecked-only, search) are now persisted to a separate `{storageKey}-filters` localStorage key and restored on page reload. Affected: `Services/HtmlReport/js/diff_report_state.js`, `Services/HtmlReport/js/diff_report_filter.js`, `Services/HtmlReport/js/diff_report_init.js`, `Services/HtmlReport/js/diff_report_export.js`, `doc/samples/diff_report.html`.
+
+- **Semantic change delta summary** — The semantic changes `<details>` summary line now shows a member-kind breakdown (e.g. `(+2 methods, -1 type, *3 methods)`) with green for additions and red for removals. Affected: `Models/AssemblySemanticChangesSummary.cs` (`GetChangeDeltaParts`, `NormalizeKindGroup`), `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs` (`BuildChangeDeltaSuffix`), `doc/samples/diff_report.html`.
+
+- **Referencing assemblies column in dependency changes table** — Dependency changes table now includes a rightmost variable-width column showing comma-separated assembly names that depend on each package, parsed from the `.deps.json` targets section. Affected: `Models/DependencyChangeEntry.cs` (`ReferencingAssemblies` property), `Services/DepsJsonAnalyzer.cs` (`BuildReferencingAssembliesIndex`, `CollectReferencesFromTargets`), `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.html`.
+
+- **Virtual scroll for large semantic changes tables** — Tables with more than 100 rows are automatically wrapped in a scrollable viewport with sticky header and row virtualization. Only visible rows plus a buffer are rendered; uses event delegation for checkbox state and integrates with importance filters and `downloadReviewed()` materialization. Affected: `Services/HtmlReport/js/diff_report_virtualscroll.js` (new), `Services/HtmlReport/js/diff_report_lazy.js`, `Services/HtmlReport/js/diff_report_filter.js`, `Services/HtmlReport/js/diff_report_export.js`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/HtmlReportGenerateService.Js.cs`, `FolderDiffIL4DotNet.csproj`.
+
+- **Runner layer unit tests** — Added 6 test classes: `CliOverrideApplierTests` (8 tests), `DiffPipelineExecutorTests` (8 tests), `DryRunExecutorTests` (2 tests), `RunScopeBuilderTests` (6 tests), `PluginAssemblyLoadContextTests` (3 tests), `SpinnerThemesTests` (12 tests). Total: 39 new tests. Affected: `FolderDiffIL4DotNet.Tests/Runner/` (6 new files).
+
+- **IReportSectionWriter individual tests** — Added 5 test classes: `HeaderSectionWriterTests` (6 tests), `LegendSectionWriterTests` (4 tests), `ConditionalSectionWriterTests` (11 tests), `FileListSectionWriterTests` (10 tests), `SummarySectionWriterTests` (5 tests). Total: 36 new tests. Affected: `FolderDiffIL4DotNet.Tests/Services/SectionWriters/` (6 new files).
+
 ### [1.13.1] - 2026-04-02
 
 #### Added
@@ -968,6 +984,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **ダークテーマ Status 列カラー修正** — セマンティック変更・依存関係変更テーブルの Status 列でインライン `style="background:..."` を CSS クラス（`sc-status-added`、`sc-status-removed`、`sc-status-modified`）に置換し、ダークモード用に鮮明な専用 CSS 変数を追加。影響: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`、`Services/HtmlReport/diff_report.css`、`doc/samples/diff_report.html`。
+
+- **フィルタ状態 localStorage 永続化** — フィルタコントロール（Diff Detail、重要度、未チェックのみ、検索）を専用の `{storageKey}-filters` localStorage キーに保存し、ページリロード時に復元。影響: `Services/HtmlReport/js/diff_report_state.js`、`Services/HtmlReport/js/diff_report_filter.js`、`Services/HtmlReport/js/diff_report_init.js`、`Services/HtmlReport/js/diff_report_export.js`、`doc/samples/diff_report.html`。
+
+- **セマンティック変更デルタサマリー** — セマンティック変更の `<details>` サマリー行にメンバー種別の内訳（例: `(+2 methods, -1 type, *3 methods)`）を表示。追加は緑、削除は赤で表示。影響: `Models/AssemblySemanticChangesSummary.cs`（`GetChangeDeltaParts`、`NormalizeKindGroup`）、`Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`（`BuildChangeDeltaSuffix`）、`doc/samples/diff_report.html`。
+
+- **依存関係変更テーブルに参照アセンブリ列追加** — 依存関係変更テーブルの最右端に幅可変の列を追加し、各パッケージを参照するアセンブリ名をカンマ区切りで表示。`.deps.json` の targets セクションから解析。影響: `Models/DependencyChangeEntry.cs`（`ReferencingAssemblies` プロパティ）、`Services/DepsJsonAnalyzer.cs`（`BuildReferencingAssembliesIndex`、`CollectReferencesFromTargets`）、`Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`、`Services/HtmlReport/diff_report.css`、`doc/samples/diff_report.html`。
+
+- **大規模セマンティック変更テーブルの仮想スクロール** — 100 行を超えるテーブルを自動的にスクロール可能なビューポートでラップし、スティッキーヘッダーと行仮想化を適用。表示行+バッファのみレンダリングし、チェックボックスのイベントデリゲーション、重要度フィルタ、`downloadReviewed()` マテリアライズと統合。影響: `Services/HtmlReport/js/diff_report_virtualscroll.js`（新規）、`Services/HtmlReport/js/diff_report_lazy.js`、`Services/HtmlReport/js/diff_report_filter.js`、`Services/HtmlReport/js/diff_report_export.js`、`Services/HtmlReport/diff_report.css`、`Services/HtmlReport/HtmlReportGenerateService.Js.cs`、`FolderDiffIL4DotNet.csproj`。
+
+- **Runner 層ユニットテスト** — 6 テストクラスを追加: `CliOverrideApplierTests`（8 テスト）、`DiffPipelineExecutorTests`（8 テスト）、`DryRunExecutorTests`（2 テスト）、`RunScopeBuilderTests`（6 テスト）、`PluginAssemblyLoadContextTests`（3 テスト）、`SpinnerThemesTests`（12 テスト）。合計: 39 新規テスト。影響: `FolderDiffIL4DotNet.Tests/Runner/`（6 新規ファイル）。
+
+- **IReportSectionWriter 個別テスト** — 5 テストクラスを追加し全 10 組み込みセクションライターをカバー: `HeaderSectionWriterTests`（6 テスト）、`LegendSectionWriterTests`（4 テスト）、`ConditionalSectionWriterTests`（11 テスト）、`FileListSectionWriterTests`（10 テスト）、`SummarySectionWriterTests`（5 テスト）。合計: 36 新規テスト。影響: `FolderDiffIL4DotNet.Tests/Services/SectionWriters/`（6 新規ファイル）。
 
 ### [1.13.1] - 2026-04-02
 
