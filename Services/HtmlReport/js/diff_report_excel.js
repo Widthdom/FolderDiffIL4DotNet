@@ -172,10 +172,12 @@
       return r + '</tr>';
     }
     // Helper: column header row — # at col 2 (Excel C) / 列ヘッダー行 — #は列2（Excel C列）
+    // Per-column extra styles (index into hdrs): 6=Timestamp fixed width / 列ごとの追加スタイル: 6=Timestamp 固定幅
+    var COL_STYLES = { 6: 'width:280px' };
     function colHeaderRow(bg) {
       var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
       var r = '<tr><td></td><td></td>';
-      hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
+      hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
       return r + '</tr>';
     }
 
@@ -393,11 +395,11 @@
       + '<td class="bd">' + esc(notes) + '</td>'
       + '<td class="bd" style="text-align:center">' + esc(status) + '</td>'
       + '<td class="bd">' + esc(path) + '</td>'
-      + '<td class="bd" style="text-align:center;mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
+      + '<td class="bd" style="text-align:center;max-width:280px;mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
       + '<td class="bd" style="text-align:center">' + esc(diff) + '</td>'
       + '<td class="bd">' + esc(tag) + '</td>'
       + '<td class="bd">' + esc(disasm) + '</td>'
-      + '<td class="bd">' + esc(sdk) + '</td>'
+      + '<td class="bd" style="text-align:center">' + esc(sdk) + '</td>'
       + '</tr>';
   }
 
@@ -422,10 +424,11 @@
       var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
       for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
     }
+    var COL_STYLES = { 6: 'width:280px' };
     function colHeaderRow(bg) {
       var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
       var r = '<tr><td></td><td></td>';
-      hdrs.forEach(function(h) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold">' + esc(h) + '</td>'; });
+      hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
       return r + '</tr>';
     }
     var hasIgn = builtRows['ign'] && builtRows['ign'].length > 0;
