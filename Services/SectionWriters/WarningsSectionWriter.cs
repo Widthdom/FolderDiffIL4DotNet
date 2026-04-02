@@ -36,7 +36,7 @@ namespace FolderDiffIL4DotNet.Services
                         writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file ({sha256Files.Count})");
                         writer.WriteLine();
                         writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |");
-                        writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|----------|");
+                        writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|:--------:|");
                         foreach (var kv in sha256Files)
                         {
                             string tsCol = "";
@@ -65,7 +65,7 @@ namespace FolderDiffIL4DotNet.Services
                     writer.WriteLine($"### [ ! ] {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} — new file timestamps older than old ({tsWarnings.Count})");
                     writer.WriteLine();
                     writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |");
-                    writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|----------|");
+                    writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|:--------:|");
                     foreach (var warning in tsWarnings)
                     {
                         var fileRelativePath = warning.FileRelativePath;

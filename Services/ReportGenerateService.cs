@@ -378,6 +378,17 @@ namespace FolderDiffIL4DotNet.Services
             if (fileDiffResultLists.FileRelativePathToSdkVersionDictionary.TryGetValue(fileRelativePath, out var sdkVersion) &&
                 !string.IsNullOrWhiteSpace(sdkVersion))
             {
+                // If the value contains " → " (old ≠ new), backtick-wrap each part separately
+                // so the arrow is not emphasized: "`old` → `new`"
+                // " → " を含む場合（新旧異なる）、各パートを個別にバッククォートで囲み、
+                // 矢印は強調しない: "`old` → `new`"
+                int arrowIdx = sdkVersion.IndexOf(" → ", StringComparison.Ordinal);
+                if (arrowIdx >= 0)
+                {
+                    string oldPart = sdkVersion.Substring(0, arrowIdx);
+                    string newPart = sdkVersion.Substring(arrowIdx + " → ".Length);
+                    return $"`{oldPart}` → `{newPart}`";
+                }
                 return $"`{sdkVersion}`";
             }
             return "";

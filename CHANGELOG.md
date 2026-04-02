@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **.NET SDK column center-aligned and arrow formatting improved** — SDK column body cells are now center-aligned in both Markdown (`|:--------:|`) and HTML (`text-align: center`). When old and new assemblies target different frameworks, the Markdown display uses separately backtick-wrapped parts (`` `.NET 6.0` → `.NET 8.0` ``) instead of wrapping the entire string including the arrow. HTML already uses `CodeWrapArrow` which produces `<code>.NET 6.0</code> → <code>.NET 8.0</code>`. Affected: `Services/ReportGenerateService.cs` (`BuildSdkVersionDisplay`), `Services/SectionWriters/ModifiedFilesSectionWriter.cs`, `Services/SectionWriters/WarningsSectionWriter.cs`, `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.md`.
+
 - **Improved disassembler error messages with actionable fix guidance** — Timeout errors now include the current `DisassemblerTimeoutSeconds` config value and how to increase it. When a tool reaches the consecutive-failure blacklist threshold, a warning log explains the TTL duration, automatic reinstatement, and suggests `--clear-cache` for stale cache issues. Non-zero exit code errors now list common causes (corrupt assemblies, unsupported formats, tool version incompatibility) and suggest `--skip-il` as a workaround. Process-start failures now remind users to check tool installation and PATH. Affected: `Services/DotNetDisassembleService.cs`, `Services/DotNetDisassembleService.Streaming.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`.
 
 - **JS module conditional exports for Jest testability** — Added `if (typeof module !== 'undefined' && module.exports)` guards to 11 of 13 JS modules, exporting key functions for Node.js/Jest testing without affecting browser behavior. Modules remain concatenated for the HTML report but can now be individually `require()`d in test environments. The `keyboard.js` (IIFE) and `init.js` (entry point) modules are excluded as they have no pure-testable exports. Affected: `Services/HtmlReport/js/diff_report_state.js`, `…/diff_report_export.js`, `…/diff_report_diffview.js`, `…/diff_report_lazy.js`, `…/diff_report_virtualscroll.js`, `…/diff_report_layout.js`, `…/diff_report_filter.js`, `…/diff_report_excel.js`, `…/diff_report_theme.js`, `…/diff_report_celebrate.js`, `…/diff_report_highlight.js`.
@@ -1018,6 +1020,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### Changed
+
+- **.NET SDK 列の中央揃えと矢印フォーマット改善** — SDK 列のボディセルを Markdown（`|:--------:|`）と HTML（`text-align: center`）の両方で中央揃えに変更。旧新アセンブリのターゲットフレームワークが異なる場合、Markdown 表示で矢印を含む全体をバッククォートで囲む代わりに各パートを個別に囲むように変更（`` `.NET 6.0` → `.NET 8.0` ``）。HTML は既存の `CodeWrapArrow` により `<code>.NET 6.0</code> → <code>.NET 8.0</code>` 形式。対象: `Services/ReportGenerateService.cs`（`BuildSdkVersionDisplay`）、`Services/SectionWriters/ModifiedFilesSectionWriter.cs`、`Services/SectionWriters/WarningsSectionWriter.cs`、`Services/HtmlReport/diff_report.css`、`doc/samples/diff_report.md`。
 
 - **逆アセンブラエラーメッセージに具体的な対処方法を追加** — タイムアウトエラーに現在の `DisassemblerTimeoutSeconds` 設定値と変更方法を表示。ツールが連続失敗のブラックリスト閾値に達した際、TTL 期間・自動復旧・`--clear-cache` オプションを案内する警告ログを追加。終了コード非 0 エラーに一般的な原因（破損アセンブリ、非対応形式、ツールバージョン不整合）と `--skip-il` による回避策を追記。プロセス起動失敗時にツールインストールと PATH 確認を促すメッセージを追加。対象: `Services/DotNetDisassembleService.cs`、`Services/DotNetDisassembleService.Streaming.cs`、`Services/DotNetDisassembleService.VersionLabel.cs`。
 

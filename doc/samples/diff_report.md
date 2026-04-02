@@ -102,7 +102,7 @@
 ## [ * ] Modified Files (15)
 
 | Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |
-|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|----------|
+|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|:--------:|
 | `[ * ]` | bin/MyApp.deps.json | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `TextMismatch` `High` | `DepUpdate` | | |
 | `[ * ]` | config/app.config | 2026-03-15 08:56:00 → 2026-03-15 09:01:00 | `TextMismatch` | | | |
 | `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | | | |
@@ -116,7 +116,7 @@
 | `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Move`, `Rename` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | lib/Logging.dll | 2026-03-15 08:52:00 → 2026-03-15 09:03:00 | `ILMismatch` `Medium` | `Access` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` `Low` | `BodyEdit` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
-| `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` `Low` | `Inline` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
+| `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` `Low` | `Inline` | `dotnet-ildasm (version: 0.12.2)` | `.NET 6.0` → `.NET 8.0` |
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | | | |
 
 #### Dependency Changes: bin/MyApp.deps.json
@@ -155,13 +155,13 @@
 ### [ ! ] Modified Files — SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file (1)
 
 | Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |
-|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|----------|
+|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|:--------:|
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | | | |
 
 ### [ ! ] Modified Files — new file timestamps older than old (5)
 
 | Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |
-|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|----------|
+|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|:--------:|
 | `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | | | |
 | `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` `High` | `-Method`, `Signature` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Move`, `Rename` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
