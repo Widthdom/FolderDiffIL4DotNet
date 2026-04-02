@@ -54,9 +54,17 @@ namespace FolderDiffIL4DotNet.Services
                     }
                 }
 
-                // Classify importance for each entry / 各エントリの重要度を分類
+                // Build reverse index: package → referencing assemblies / 逆引きインデックス構築: パッケージ → 参照アセンブリ
+                var reverseIndex = BuildReferencingAssembliesIndex(newFilePath, oldFilePath);
+
+                // Classify importance and attach referencing assemblies for each entry
+                // 各エントリの重要度分類と参照アセンブリの付与
                 for (int i = 0; i < entries.Count; i++)
+                {
                     entries[i] = ClassifyImportance(entries[i]);
+                    if (reverseIndex.TryGetValue(entries[i].PackageName, out var refs))
+                        entries[i] = entries[i] with { ReferencingAssemblies = refs };
+                }
 
                 // Sort: by Change order (Added → Removed → Updated), then by package name
                 // ソート: Change 順（Added → Removed → Updated）、次にパッケージ名順
@@ -172,6 +180,74 @@ namespace FolderDiffIL4DotNet.Services
             int patch = parts.Length > 2 && int.TryParse(parts[2], out var p) ? p : 0;
 
             return (major, minor, patch);
+        }
+
+        /// <summary>
+        /// Builds a reverse index from package name to the list of assemblies that depend on it,
+        /// by parsing the "targets" section of .deps.json files. Merges results from both old and new files.
+        /// .deps.json の "targets" セクションを解析し、パッケージ名→依存アセンブリ一覧の逆引きインデックスを構築します。
+        /// 旧ファイルと新ファイルの両方からマージします。
+        /// </summary>
+        internal static Dictionary<string, List<string>> BuildReferencingAssembliesIndex(
+            string newFilePath, string oldFilePath)
+        {
+            var index = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+            CollectReferencesFromTargets(newFilePath, index);
+            CollectReferencesFromTargets(oldFilePath, index);
+            // Sort each list and deduplicate / 各リストをソートして重複排除
+            foreach (var kv in index)
+            {
+                kv.Value.Sort(StringComparer.OrdinalIgnoreCase);
+                for (int i = kv.Value.Count - 1; i > 0; i--)
+                    if (string.Equals(kv.Value[i], kv.Value[i - 1], StringComparison.OrdinalIgnoreCase))
+                        kv.Value.RemoveAt(i);
+            }
+            return index;
+        }
+
+        /// <summary>
+        /// Parses a single .deps.json targets section and populates the reverse index.
+        /// 単一の .deps.json の targets セクションを解析し逆引きインデックスに追加します。
+        /// </summary>
+        private static void CollectReferencesFromTargets(string filePath, Dictionary<string, List<string>> index)
+        {
+            try
+            {
+                var jsonBytes = File.ReadAllBytes(filePath);
+                using var doc = JsonDocument.Parse(jsonBytes);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("targets", out var targets))
+                    return;
+
+                // Iterate each target framework / 各ターゲットフレームワークを列挙
+                foreach (var tfm in targets.EnumerateObject())
+                {
+                    foreach (var lib in tfm.Value.EnumerateObject())
+                    {
+                        // Extract library name from "Name/Version" key / "Name/Version" キーからライブラリ名を抽出
+                        var slashIdx = lib.Name.IndexOf('/', StringComparison.Ordinal);
+                        if (slashIdx <= 0) continue;
+                        var libName = lib.Name.Substring(0, slashIdx);
+
+                        if (!lib.Value.TryGetProperty("dependencies", out var deps))
+                            continue;
+
+                        foreach (var dep in deps.EnumerateObject())
+                        {
+                            if (!index.TryGetValue(dep.Name, out var list))
+                            {
+                                list = new List<string>();
+                                index[dep.Name] = list;
+                            }
+                            list.Add(libName);
+                        }
+                    }
+                }
+            }
+#pragma warning disable CA1031 // ベストエフォート / best-effort
+            catch { /* ignore parse failures */ }
+#pragma warning restore CA1031
         }
 
         private static int ChangeOrder(string change)

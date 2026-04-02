@@ -29,7 +29,9 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         public void Dispose()
         {
             try { Directory.Delete(_tempDir, recursive: true); }
+#pragma warning disable CA1031 // Cleanup best effort / クリーンアップのベストエフォート
             catch { /* best-effort cleanup / ベストエフォートのクリーンアップ */ }
+#pragma warning restore CA1031
         }
 
         [Fact]

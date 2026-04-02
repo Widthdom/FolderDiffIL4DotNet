@@ -31,6 +31,7 @@
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_export.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_export.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_diffview.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_diffview.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_lazy.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_lazy.js" />
+    <EmbeddedResource Include="Services\HtmlReport\js\diff_report_virtualscroll.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_virtualscroll.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_layout.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_layout.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_filter.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_filter.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_excel.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_excel.js" />

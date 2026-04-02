@@ -221,12 +221,12 @@ namespace FolderDiffIL4DotNet.Services
                     string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
                     string cbId = $"sc_{sectionPrefix}_{idx}_{scRowIdx}";
                     string changeMarker = ChangeToMarker(e.Change);
-                    string statusBg = ChangeToStatusBg(e.Change);
-                    string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
+                    string statusCls = ChangeToStatusClass(e.Change);
+                    string statusAttr = statusCls.Length > 0 ? $" class=\"{statusCls}\"" : "";
                     string impMarker = ImportanceToMarker(e.Importance);
                     string impCls = ImportanceToClass(e.Importance);
                     string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
-                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{scRowIdx + 1}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusStyle}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
+                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{scRowIdx + 1}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusAttr}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
                     scRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -242,7 +242,8 @@ namespace FolderDiffIL4DotNet.Services
             string highSuffix = summary.HighImportanceCount > 0
                 ? $" ({summary.HighImportanceCount} High)"
                 : "";
-            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show assembly semantic changes")}{highSuffix}</summary>";
+            string deltaSuffix = BuildChangeDeltaSuffix(summary);
+            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show assembly semantic changes")}{highSuffix}{deltaSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
 
             writer.WriteLine("<tr class=\"diff-row\">");
@@ -274,6 +275,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             int recordNo = idx + 1;
             bool hasAnyVuln = summary.Entries.Any(e => e.Vulnerabilities != null);
+            bool hasAnyRefs = summary.Entries.Any(e => e.ReferencingAssemblies is { Count: > 0 });
             var contentBuilder = new StringBuilder();
             contentBuilder.AppendLine("<div class=\"dependency-changes\">");
 
@@ -289,6 +291,8 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("  <col class=\"dc-col-ver-g\">");
                 if (hasAnyVuln)
                     contentBuilder.AppendLine("  <col class=\"dc-col-vuln-g\">");
+                if (hasAnyRefs)
+                    contentBuilder.AppendLine("  <col class=\"dc-col-refs-g\">");
                 contentBuilder.AppendLine("</colgroup>");
                 contentBuilder.AppendLine("<thead><tr>");
                 contentBuilder.AppendLine($"  <th class=\"sc-col-cb\">&#x2713;</th>");
@@ -299,6 +303,8 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("New Version")}</th>");
                 if (hasAnyVuln)
                     contentBuilder.AppendLine($"  <th>{HtmlEncode("Vulnerabilities")}</th>");
+                if (hasAnyRefs)
+                    contentBuilder.AppendLine($"  <th class=\"th-resizable\" data-col-var=\"--dc-refs-w\">{HtmlEncode("Referencing Assemblies")}</th>");
                 contentBuilder.AppendLine("</tr></thead>");
                 contentBuilder.AppendLine("<tbody>");
                 int dcRowIdx = 0;
@@ -306,8 +312,8 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     string dcImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
                     string changeMarker = DependencyChangeToMarker(e.Change);
-                    string statusBg = DependencyChangeToStatusBg(e.Change);
-                    string statusStyle = statusBg.Length > 0 ? $" style=\"background:{statusBg}\"" : "";
+                    string statusCls = DependencyChangeToStatusClass(e.Change);
+                    string statusAttr = statusCls.Length > 0 ? $" class=\"{statusCls}\"" : "";
                     string impMarker = ImportanceToMarker(e.Importance);
                     string impCls = ImportanceToClass(e.Importance);
                     string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
@@ -315,7 +321,8 @@ namespace FolderDiffIL4DotNet.Services
                     string oldVer = e.OldVersion.Length > 0 ? HtmlEncode(e.OldVersion) : "&#x2014;";
                     string newVer = e.NewVersion.Length > 0 ? HtmlEncode(e.NewVersion) : "&#x2014;";
                     string vulnCell = hasAnyVuln ? $"<td>{BuildVulnerabilityCell(e.Vulnerabilities)}</td>" : "";
-                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusStyle}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}</tr>");
+                    string refsCell = hasAnyRefs ? $"<td class=\"dc-refs-cell\">{BuildReferencingAssembliesCell(e.ReferencingAssemblies)}</td>" : "";
+                    contentBuilder.AppendLine($"<tr{dcImpAttr}><td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\"></td><td>{HtmlEncode(e.PackageName)}</td><td{statusAttr}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td>{oldVer}</td><td>{newVer}</td>{vulnCell}{refsCell}</tr>");
                     dcRowIdx++;
                 }
                 contentBuilder.AppendLine("</tbody></table>");
@@ -358,14 +365,31 @@ namespace FolderDiffIL4DotNet.Services
         private static string DependencyChangeToMarker(string change)
             => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Updated" => "[ * ]", _ => change };
 
-        private static string DependencyChangeToStatusBg(string change)
-            => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Updated" => TH_BG_MODIFIED, _ => "" };
+        private static string DependencyChangeToStatusClass(string change)
+            => change switch { "Added" => "sc-status-added", "Removed" => "sc-status-removed", "Updated" => "sc-status-modified", _ => "" };
+
+        /// <summary>
+        /// Builds comma-separated referencing assembly names for a dependency changes table cell.
+        /// 依存関係変更テーブルセル用に参照アセンブリ名をカンマ区切りで構築します。
+        /// </summary>
+        private static string BuildReferencingAssembliesCell(IReadOnlyList<string>? refs)
+        {
+            if (refs is not { Count: > 0 })
+                return "&#x2014;";
+            var sb = new StringBuilder();
+            for (int i = 0; i < refs.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append(HtmlEncode(refs[i]));
+            }
+            return sb.ToString();
+        }
 
         private static string ChangeToMarker(string change)
             => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Modified" => "[ * ]", _ => change };
 
-        private static string ChangeToStatusBg(string change)
-            => change switch { "Added" => TH_BG_ADDED, "Removed" => TH_BG_REMOVED, "Modified" => TH_BG_MODIFIED, _ => "" };
+        private static string ChangeToStatusClass(string change)
+            => change switch { "Added" => "sc-status-added", "Removed" => "sc-status-removed", "Modified" => "sc-status-modified", _ => "" };
 
         /// <summary>
         /// Builds the HTML content for a vulnerability cell in the dependency changes table.
@@ -459,6 +483,33 @@ namespace FolderDiffIL4DotNet.Services
             if (lastSlash >= 0 && lastSlash < url.Length - 1)
                 return url.Substring(lastSlash + 1);
             return "Advisory";
+        }
+
+        /// <summary>
+        /// Builds the change delta suffix for the semantic changes summary label.
+        /// Returns HTML like " (<span class="color-added">+2 methods</span>, <span class="color-removed">-1 type</span>)".
+        /// セマンティック変更サマリーラベルの変更差分サフィックスを構築します。
+        /// </summary>
+        private static string BuildChangeDeltaSuffix(AssemblySemanticChangesSummary summary)
+        {
+            var parts = summary.GetChangeDeltaParts();
+            if (parts.Count == 0) return "";
+
+            var sb = new StringBuilder();
+            sb.Append(" (");
+            for (int i = 0; i < parts.Count; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                var (prefix, count, kindLabel) = parts[i];
+                string cssClass = prefix switch { "+" => "color-added", "-" => "color-removed", _ => "" };
+                string text = $"{prefix}{count} {kindLabel}";
+                if (cssClass.Length > 0)
+                    sb.Append($"<span class=\"{cssClass}\">{HtmlEncode(text)}</span>");
+                else
+                    sb.Append(HtmlEncode(text));
+            }
+            sb.Append(')');
+            return sb.ToString();
         }
 
         // Vulnerability style constants / 脆弱性スタイル定数

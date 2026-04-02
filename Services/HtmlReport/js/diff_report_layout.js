@@ -50,10 +50,15 @@
             + px('--sc-rettype-w', 12) + px('--sc-params-w', 18)
             + px('--sc-body-w', 5);
     document.querySelectorAll('table.sc-detail').forEach(function(t) { t.style.width = detW + 'px'; });
-    // dc-detail (dependency changes): cb(3.2) + package(24) + status(7) + importance(7) + oldVer(12) + newVer(12) = 65.2em
-    // dc-detail のチェック列・Status列を sc-detail と同じ実幅にするため、列幅合計に一致する幅を設定
-    var dcW = (3.2 + 24 + 7 + 7 + 12 + 12) * scEmPx;
-    document.querySelectorAll('table.dc-detail').forEach(function(t) { t.style.width = dcW + 'px'; });
+    // dc-detail (dependency changes): base = cb(3.2) + package(24) + status(7) + importance(7) + oldVer(12) + newVer(12) = 65.2em
+    // Conditionally add vuln(18) and refs(var) columns if present in the table's colgroup
+    // dc-detail の基本幅に、テーブルごとに vuln 列・refs 列が存在すれば加算
+    document.querySelectorAll('table.dc-detail').forEach(function(t) {
+      var dcW = (3.2 + 24 + 7 + 7 + 12 + 12) * scEmPx;
+      if (t.querySelector('col.dc-col-vuln-g')) dcW += 18 * scEmPx;
+      if (t.querySelector('col.dc-col-refs-g')) dcW += px('--dc-refs-w', 16);
+      t.style.width = dcW + 'px';
+    });
   }
 
   /**

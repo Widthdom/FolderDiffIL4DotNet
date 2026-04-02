@@ -283,7 +283,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("<code>Method</code>", html);        // Kind
             Assert.Contains("<code>public</code>", html);        // Access
             Assert.Contains("<code>virtual</code>", html);       // Modifiers
-            Assert.Contains("style=\"background:var(--color-modified-bg)\">[ * ]", html); // Status cell with modified bg (no code emphasis)
+            Assert.Contains("class=\"sc-status-modified\">[ * ]", html); // Status cell with modified CSS class (no code emphasis)
             Assert.Contains("<code>Changed</code>", html);       // Body
         }
 

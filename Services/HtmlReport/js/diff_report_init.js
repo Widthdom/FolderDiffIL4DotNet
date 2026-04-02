@@ -27,6 +27,10 @@
         el.addEventListener('input',  autoSave);
       });
     }
+    // Restore persisted filter state (before first applyFilters) / 永続化されたフィルター状態を復元
+    if (__savedState__ === null) {
+      restoreFilterState();
+    }
     initColResize();
     syncTableWidths();
     syncScTableWidths();
@@ -36,6 +40,7 @@
     setupLazySection();
     setupLazyIntersectionObserver();
     highlightAllILDiffs();
+    applyFilters();
     updateProgress();
     updateStorageUsage();
     // Custom tooltip hover/focus handling / カスタムツールチップのホバー・フォーカス処理
