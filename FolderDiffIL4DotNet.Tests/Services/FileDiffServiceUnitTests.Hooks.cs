@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
@@ -46,7 +47,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(fakeComparison.HashCalls); // built-in comparison was not called / 組み込み比較は呼ばれていない
             Assert.Single(hook.BeforeCompareCalls);
             Assert.Single(hook.AfterCompareCalls);
-            Assert.True(hook.AfterCompareCalls[0].AreEqual);
+            Assert.True(hook.AfterCompareCalls.First().AreEqual);
         }
 
         [Fact]

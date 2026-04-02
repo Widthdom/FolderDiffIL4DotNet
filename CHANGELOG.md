@@ -25,6 +25,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Network share optimization tests** — Added 2 test classes: `NetworkPathDetectorTests` (3 tests) verifying UNC path detection for backslash/forward-slash/device formats, null/empty handling, and local path rejection. `DiffExecutionContextNetworkTests` (5 tests) verifying network flag propagation, null path rejection, and IL output path derivation. Affected: `FolderDiffIL4DotNet.Tests/Core/IO/NetworkPathDetectorTests.cs`.
 
+#### Fixed
+
+- **CI build error: ConcurrentBag indexer access** — Fixed `CS0021` compilation error in `FileDiffServiceUnitTests.Hooks.cs` where `ConcurrentBag<T>[0]` was used (indexer not supported). Replaced with `.First()` via LINQ. This was caused by the thread-safety migration from `List<T>` to `ConcurrentBag<T>`. Affected: `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`.
+
+- **Test assertion mismatches after .NET SDK column addition** — Fixed 5 test assertions that expected 6-column table headers but the SDK column addition made them 7-column. Updated golden sample `diff_report.md` to include the `.NET SDK` column in Modified Files and Warnings tables. Fixed `FileDiffResultLists.ResetAll()` to clear `FileRelativePathToSdkVersionDictionary`. Removed unnecessary null check on non-nullable parameter in `DotNetDisassembleService.Streaming.cs` (`JoinLines` method) to avoid CS8604 warning in Release builds. Affected: `GoldenFileSnapshotTests.cs`, `ReportGenerateServiceTests.SortOrder.cs`, `ReportGenerateServiceTests.SectionsAndWarnings.cs`, `doc/samples/diff_report.md`, `Models/FileDiffResultLists.cs`, `Services/DotNetDisassembleService.Streaming.cs`.
+
 ### [1.13.2] - 2026-04-02
 
 #### Added
@@ -1024,6 +1030,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **セキュリティテスト（XSS、パストラバーサル）** — 2 テストクラスを追加: `HtmlReportSecurityTests`（12 テスト）— script タグインジェクション、属性インジェクション、テンプレートリテラルのバックティックエスケープ、二重エンコード、制御文字、CJK テキスト、悪意あるファイルパスをカバー。`PathTraversalSecurityTests`（10 テスト）— 相対パスエスケープ、NULL バイトインジェクション、Windows 予約名、末尾スペース/ドット、絶対パス、Unicode 検証、パス長制限をカバー。対象: `FolderDiffIL4DotNet.Tests/Security/HtmlReportSecurityTests.cs`、`…/PathTraversalSecurityTests.cs`。
 
 - **ネットワーク共有最適化テスト** — 2 テストクラスを追加: `NetworkPathDetectorTests`（3 テスト）— バックスラッシュ/フォワードスラッシュ/デバイス形式の UNC パス検出、null/空文字列処理、ローカルパス拒否を検証。`DiffExecutionContextNetworkTests`（5 テスト）— ネットワークフラグ伝播、null パス拒否、IL 出力パス導出を検証。対象: `FolderDiffIL4DotNet.Tests/Core/IO/NetworkPathDetectorTests.cs`。
+
+#### Fixed
+
+- **CI ビルドエラー: ConcurrentBag インデクサアクセス** — `FileDiffServiceUnitTests.Hooks.cs` で `ConcurrentBag<T>[0]` を使用していた `CS0021` コンパイルエラーを修正（インデクサ非対応）。LINQ の `.First()` に置換。スレッドセーフティ移行（`List<T>` → `ConcurrentBag<T>`）に起因。対象: `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`。
+
+- **.NET SDK 列追加後のテストアサーション不整合** — 6列テーブルヘッダーを期待していた5つのテストアサーションを7列（SDK列追加）に修正。ゴールデンサンプル `diff_report.md` の Modified Files テーブルと Warnings テーブルに `.NET SDK` 列を追加。`FileDiffResultLists.ResetAll()` に `FileRelativePathToSdkVersionDictionary` のクリア漏れを修正。`DotNetDisassembleService.Streaming.cs` の `JoinLines` メソッドで非 nullable パラメータへの不要な null チェックを除去（Release ビルドの CS8604 警告回避）。対象: `GoldenFileSnapshotTests.cs`、`ReportGenerateServiceTests.SortOrder.cs`、`ReportGenerateServiceTests.SectionsAndWarnings.cs`、`doc/samples/diff_report.md`、`Models/FileDiffResultLists.cs`、`Services/DotNetDisassembleService.Streaming.cs`。
 
 ### [1.13.2] - 2026-04-02
 

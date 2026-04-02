@@ -309,7 +309,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static string JoinLines(IReadOnlyList<string> lines)
         {
-            if (lines == null || lines.Count == 0)
+            if (lines.Count == 0)
             {
                 return string.Empty;
             }
