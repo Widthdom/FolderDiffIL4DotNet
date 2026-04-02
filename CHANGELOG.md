@@ -25,7 +25,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **IReportSectionWriter individual tests** — Added 5 test classes: `HeaderSectionWriterTests` (6 tests), `LegendSectionWriterTests` (4 tests), `ConditionalSectionWriterTests` (11 tests), `FileListSectionWriterTests` (10 tests), `SummarySectionWriterTests` (5 tests). Total: 36 new tests. Affected: `FolderDiffIL4DotNet.Tests/Services/SectionWriters/` (6 new files).
 
-### [1.13.1] - 2026-04-02
+#### Fixed
+
+- **CI build errors in new test files** — Fixed 3 compilation errors: missing `using FolderDiffIL4DotNet.Services` in `RunScopeBuilderTests.cs` for `DiffExecutionContext` type resolution, invalid `IDisposable` pattern match on sealed `ILCache` class, and `StreamWriter(StringWriter)` constructor call replaced with `StreamWriter(MemoryStream)` in `SectionWriterTestBase.WriteToString()`. Affected: `FolderDiffIL4DotNet.Tests/Runner/RunScopeBuilderTests.cs`, `FolderDiffIL4DotNet.Tests/Services/SectionWriters/SectionWriterTestBase.cs`.
+
+- **Test assertion mismatches after Task 1 CSS class migration** — Fixed 3 test failures: `SummarySectionWriterTests.Write_ContainsElapsedTime` asserted on content not in Summary section (elapsed time is in Header); `ConditionalSectionWriterTests.IgnoredFiles_Write_ContainsIgnoredHeader` expected output from an empty ignored files list; `HtmlReportGenerateServiceTests.GenerateDiffReportHtml_AssemblySemanticChanges_KindBodyAccessModifiersUseCodeEmphasis` searched for old inline `style="background:var(..."` instead of new `class="sc-status-modified"`. Affected: `FolderDiffIL4DotNet.Tests/Services/SectionWriters/SummarySectionWriterTests.cs`, `…/ConditionalSectionWriterTests.cs`, `…/HtmlReportGenerateServiceTests.SemanticChanges.cs`.
 
 #### Added
 
@@ -1000,6 +1004,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Runner 層ユニットテスト** — 6 テストクラスを追加: `CliOverrideApplierTests`（8 テスト）、`DiffPipelineExecutorTests`（8 テスト）、`DryRunExecutorTests`（2 テスト）、`RunScopeBuilderTests`（6 テスト）、`PluginAssemblyLoadContextTests`（3 テスト）、`SpinnerThemesTests`（12 テスト）。合計: 39 新規テスト。影響: `FolderDiffIL4DotNet.Tests/Runner/`（6 新規ファイル）。
 
 - **IReportSectionWriter 個別テスト** — 5 テストクラスを追加し全 10 組み込みセクションライターをカバー: `HeaderSectionWriterTests`（6 テスト）、`LegendSectionWriterTests`（4 テスト）、`ConditionalSectionWriterTests`（11 テスト）、`FileListSectionWriterTests`（10 テスト）、`SummarySectionWriterTests`（5 テスト）。合計: 36 新規テスト。影響: `FolderDiffIL4DotNet.Tests/Services/SectionWriters/`（6 新規ファイル）。
+
+#### Fixed
+
+- **新テストファイルの CI ビルドエラー修正** — 3件のコンパイルエラーを修正: `RunScopeBuilderTests.cs` で `DiffExecutionContext` 型解決に必要な `using FolderDiffIL4DotNet.Services` の追加、sealed クラス `ILCache` に対する無効な `IDisposable` パターンマッチの除去、`SectionWriterTestBase.WriteToString()` で `StreamWriter(StringWriter)` を `StreamWriter(MemoryStream)` に修正。影響: `FolderDiffIL4DotNet.Tests/Runner/RunScopeBuilderTests.cs`、`FolderDiffIL4DotNet.Tests/Services/SectionWriters/SectionWriterTestBase.cs`。
+
+- **Task 1 CSS クラス移行後のテストアサーション不整合修正** — 3件のテスト失敗を修正: `SummarySectionWriterTests.Write_ContainsElapsedTime` が Summary セクションに存在しない経過時間を検索（Header セクションの内容）、`ConditionalSectionWriterTests.IgnoredFiles_Write_ContainsIgnoredHeader` が空の無視ファイルリストから出力を期待、`HtmlReportGenerateServiceTests` が旧インラインスタイル `style="background:var(..."` を検索（新 CSS クラス `class="sc-status-modified"` に変更済み）。影響: `FolderDiffIL4DotNet.Tests/Services/SectionWriters/SummarySectionWriterTests.cs`、`…/ConditionalSectionWriterTests.cs`、`…/HtmlReportGenerateServiceTests.SemanticChanges.cs`。
 
 ### [1.13.1] - 2026-04-02
 
