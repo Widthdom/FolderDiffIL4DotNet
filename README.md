@@ -175,22 +175,25 @@ When you manage multiple products or environments with different settings (ignor
 
 ```
 <exe>/
-  config.json            ← base configuration
+  config.json            ← base configuration (JSONC OK)
   profiles/
-    il-noise-suppress.json
+    il-noise-suppress.jsonc
     production.json
 ```
 
-**2. Write a profile JSON** containing only the settings you want to override. Unspecified settings inherit from the base `config.json`:
+Profile files can use either `.json` or `.jsonc` extension. Both support JSONC format (comments and trailing commas).
 
-```json
+**2. Write a profile** containing only the settings you want to override. Unspecified settings inherit from the base `config.json`:
+
+```jsonc
 {
+  // Filter out build-specific IL noise
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
   "ILIgnoreLineContainingStrings": [
     "buildserver1_",
     "// Method begins at Relative Virtual Address (RVA) 0x",
     ".publickeytoken = ( ",
-    "// Code size "
+    "// Code size ",
   ]
 }
 ```
@@ -944,22 +947,25 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 ```
 <exe>/
-  config.json            ← ベース設定
+  config.json            ← ベース設定（JSONC 可）
   profiles/
-    il-noise-suppress.json
+    il-noise-suppress.jsonc
     production.json
 ```
 
-**2. 上書きしたい設定のみを含むプロファイル JSON を作成**します。未指定の設定はベースの `config.json` から継承されます:
+プロファイルは `.json` と `.jsonc` のどちらの拡張子でも使用可能です。両方とも JSONC 形式（コメント・末尾カンマ）に対応しています。
 
-```json
+**2. 上書きしたい設定のみを含むプロファイルを作成**します。未指定の設定はベースの `config.json` から継承されます:
+
+```jsonc
 {
+  // ビルド固有の IL ノイズを除外
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
   "ILIgnoreLineContainingStrings": [
     "buildserver1_",
     "// Method begins at Relative Virtual Address (RVA) 0x",
     ".publickeytoken = ( ",
-    "// Code size "
+    "// Code size ",
   ]
 }
 ```
