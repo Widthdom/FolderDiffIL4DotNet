@@ -1,0 +1,35 @@
+// Sample IL noise suppression profile — place as profiles/il-noise-suppress.json next to config.json.
+// Usage: FolderDiffIL4DotNet oldDir newDir label --profile il-noise-suppress
+//
+// Filters out IL lines that vary between builds even when the actual logic is unchanged.
+// Typical causes: build server paths embedded in PDB references, RVA offsets that shift
+// due to layout changes, public key tokens from re-signed assemblies, TypeLibrary timestamps,
+// and code-size comments that change with compiler optimisation levels.
+//
+// IL ノイズ抑制サンプルプロファイル — config.json と同じディレクトリの profiles/il-noise-suppress.json として配置してください。
+// 使用例: FolderDiffIL4DotNet oldDir newDir label --profile il-noise-suppress
+//
+// 実際のロジックは同一でもビルド間で変動する IL 行を除外します。
+// 典型的な原因: PDB 参照に埋め込まれたビルドサーバーパス、レイアウト変更で移動する RVA オフセット、
+// 再署名アセンブリの公開キートークン、TypeLibrary タイムスタンプ、
+// コンパイラ最適化レベルで変わるコードサイズコメント。
+{
+  "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ILIgnoreLineContainingStrings": [
+    // Build server paths embedded in IL debug info / IL デバッグ情報に埋め込まれたビルドサーバーパス
+    "buildserver1_",
+    "buildserver2_",
+
+    // RVA offsets shift with binary layout changes / バイナリレイアウト変更で移動する RVA オフセット
+    "// Method begins at Relative Virtual Address (RVA) 0x",
+
+    // Public key tokens change on re-signed assemblies / 再署名アセンブリで変わる公開キートークン
+    ".publickeytoken = ( ",
+
+    // TypeLibrary timestamps from COM interop / COM 相互運用の TypeLibrary タイムスタンプ
+    ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ",
+
+    // Code size comments vary with compiler optimisation / コンパイラ最適化で変わるコードサイズコメント
+    "// Code size "
+  ]
+}
