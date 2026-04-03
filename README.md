@@ -183,17 +183,27 @@ When you manage multiple products or environments with different settings (ignor
 
 Profile files can use either `.json` or `.jsonc` extension. Both support JSONC format (comments and trailing commas).
 
-**2. Write a profile** containing only the settings you want to override. Unspecified settings inherit from the base `config.json`:
+**2. Write a profile** containing only the settings you want to override. Unspecified settings inherit from the base `config.json` (example: [`doc/profiles/il-noise-suppress.sample.jsonc`](doc/profiles/il-noise-suppress.sample.jsonc)):
 
 ```jsonc
 {
-  // Filter out build-specific IL noise
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
   "ILIgnoreLineContainingStrings": [
+    // Build server paths embedded in IL debug info
     "buildserver1_",
+    "buildserver2_",
+
+    // RVA offsets shift with binary layout changes
     "// Method begins at Relative Virtual Address (RVA) 0x",
+
+    // Public key tokens change on re-signed assemblies
     ".publickeytoken = ( ",
-    "// Code size ",
+
+    // TypeLibrary timestamps from COM interop
+    ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ",
+
+    // Code size comments vary with compiler optimisation
+    "// Code size "
   ]
 }
 ```
@@ -213,9 +223,11 @@ dotnet run -- --profile production --print-config
 
 **Priority order** (highest wins): CLI flags > environment variables > profile > `config.json` > code defaults.
 
+If the same setting appears in both `config.json` and a profile, the profile value wins. For example, if `config.json` sets `"MaxParallelism": 4` and the profile sets `"MaxParallelism": 8`, the effective value is `8`. Environment variables and CLI flags override both.
+
 > **Note:** Profile arrays (e.g. `IgnoredExtensions`, `ILIgnoreLineContainingStrings`) **replace** the base value entirely — they are not merged. If the base config has `[".pdb", ".log"]` and the profile has `[".pdb"]`, only `.pdb` will be ignored.
 
-See `doc/profiles/` for annotated sample profiles (`.sample.jsonc`). To use them, copy the file into your `profiles/` directory as either `.json` or `.jsonc`. Both config files and profiles support JSONC format (comments and trailing commas are allowed).
+See [`doc/profiles/`](doc/profiles/) for annotated sample profiles (`.sample.jsonc`). To use them, copy into your `profiles/` directory as `.json` or `.jsonc` — both formats are supported.
 
 > **Tip:** When a configuration error occurs (exit code `3`), a hint is printed to stderr suggesting `--print-config` for diagnosis.
 
@@ -955,17 +967,27 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 プロファイルは `.json` と `.jsonc` のどちらの拡張子でも使用可能です。両方とも JSONC 形式（コメント・末尾カンマ）に対応しています。
 
-**2. 上書きしたい設定のみを含むプロファイルを作成**します。未指定の設定はベースの `config.json` から継承されます:
+**2. 上書きしたい設定のみを含むプロファイルを作成**します。未指定の設定はベースの `config.json` から継承されます（例: [`doc/profiles/il-noise-suppress.sample.jsonc`](doc/profiles/il-noise-suppress.sample.jsonc)）:
 
 ```jsonc
 {
-  // ビルド固有の IL ノイズを除外
   "ShouldIgnoreILLinesContainingConfiguredStrings": true,
   "ILIgnoreLineContainingStrings": [
+    // IL デバッグ情報に埋め込まれたビルドサーバーパス
     "buildserver1_",
+    "buildserver2_",
+
+    // バイナリレイアウト変更で移動する RVA オフセット
     "// Method begins at Relative Virtual Address (RVA) 0x",
+
+    // 再署名アセンブリで変わる公開キートークン
     ".publickeytoken = ( ",
-    "// Code size ",
+
+    // COM 相互運用の TypeLibrary タイムスタンプ
+    ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( ",
+
+    // コンパイラ最適化で変わるコードサイズコメント
+    "// Code size "
   ]
 }
 ```
@@ -985,9 +1007,11 @@ dotnet run -- --profile production --print-config
 
 **優先度**（高い方が勝つ）: CLI フラグ ＞ 環境変数 ＞ プロファイル ＞ `config.json` ＞ コードデフォルト。
 
+同じ設定が `config.json` とプロファイルの両方に存在する場合、プロファイルの値が勝ちます。例えば `config.json` で `"MaxParallelism": 4`、プロファイルで `"MaxParallelism": 8` の場合、有効値は `8` です。環境変数と CLI フラグは両方より優先されます。
+
 > **注意:** プロファイルの配列（`IgnoredExtensions`、`ILIgnoreLineContainingStrings` など）はベース値を**完全に置換**します — マージではありません。ベース設定が `[".pdb", ".log"]` でプロファイルが `[".pdb"]` の場合、`.pdb` のみが除外されます。
 
-コメント付きのサンプルプロファイル（`.sample.jsonc`）は `doc/profiles/` にあります。使用するには、`profiles/` ディレクトリに `.json` または `.jsonc` でコピーしてください。設定ファイルとプロファイルの両方で JSONC 形式（コメントと末尾カンマ）が利用可能です。
+コメント付きのサンプルプロファイル（`.sample.jsonc`）は [`doc/profiles/`](doc/profiles/) にあります。使用するには、`profiles/` ディレクトリに `.json` または `.jsonc` でコピーしてください — 両形式に対応しています。
 
 > **ヒント:** 設定エラー（終了コード `3`）が発生した場合、診断用に `--print-config` を提案するヒントが stderr に出力されます。
 
