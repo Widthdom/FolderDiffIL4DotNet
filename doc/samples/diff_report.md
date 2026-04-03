@@ -79,13 +79,13 @@
 
 ## [ = ] Unchanged Files (5)
 
-| Status | File Path | Timestamp | Diff Reason | Disassembler |
-|:------:|-----------|:---------:|:-----------:|--------------|
-| `[ = ]` | data/schema.bin | 2026-03-15 08:30:00 → 2026-03-15 09:00:00 | `SHA256Match` | |
-| `[ = ]` | vendor/lib.dll | 2026-03-15 09:00:00 | `SHA256Match` | |
-| `[ = ]` | util/Helper.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMatch` | `dotnet-ildasm (version: 0.12.2)` |
-| `[ = ]` | appsettings.json | 2026-03-15 09:00:00 | `TextMatch` | |
-| `[ = ]` | docs/notes.md | 2026-03-15 08:00:00 → 2026-03-15 09:00:00 | `TextMatch` | |
+| Status | File Path | Timestamp | Diff Reason | Disassembler | .NET SDK |
+|:------:|-----------|:---------:|:-----------:|--------------|:--------:|
+| `[ = ]` | data/schema.bin | 2026-03-15 08:30:00 → 2026-03-15 09:00:00 | `SHA256Match` | | |
+| `[ = ]` | vendor/lib.dll | 2026-03-15 09:00:00 | `SHA256Match` | | `.NET 8.0` |
+| `[ = ]` | util/Helper.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMatch` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
+| `[ = ]` | appsettings.json | 2026-03-15 09:00:00 | `TextMatch` | | |
+| `[ = ]` | docs/notes.md | 2026-03-15 08:00:00 → 2026-03-15 09:00:00 | `TextMatch` | | |
 
 ## [ + ] Added Files (1)
 

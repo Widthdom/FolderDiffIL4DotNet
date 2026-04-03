@@ -21,8 +21,8 @@ namespace FolderDiffIL4DotNet.Services
                 int count = ctx.FileDiffResultLists.UnchangedFilesRelativePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_UNCHANGED} {REPORT_LABEL_UNCHANGED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|:-----------:|--------------|");
+                writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Disassembler | .NET SDK |");
+                writer.WriteLine("|:------:|-----------|:---------:|:-----------:|--------------|:--------:|");
                 var sortedUnchanged = ctx.FileDiffResultLists.UnchangedFilesRelativePath
                     .OrderBy(p => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetUnchangedSortOrder(d) : 3)
                     .ThenBy(p => p, StringComparer.OrdinalIgnoreCase);
@@ -31,6 +31,7 @@ namespace FolderDiffIL4DotNet.Services
                     var diffDetail = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath];
                     var diffDetailDisplay = BuildDiffDetailDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
                     var disasmDisplay = BuildDisassemblerDisplay(fileRelativePath, diffDetail, ctx.FileDiffResultLists);
+                    var sdkDisplay = BuildSdkVersionDisplay(fileRelativePath, ctx.FileDiffResultLists);
                     string tsCol = "";
                     if (ctx.Config.ShouldOutputFileTimestamps)
                     {
@@ -38,7 +39,7 @@ namespace FolderDiffIL4DotNet.Services
                         string newTs = Caching.TimestampCache.GetOrAdd(Path.Combine(ctx.NewFolderAbsolutePath, fileRelativePath));
                         tsCol = oldTs != newTs ? $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}" : newTs;
                     }
-                    writer.WriteLine($"| `{REPORT_MARKER_UNCHANGED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} |");
+                    writer.WriteLine($"| `{REPORT_MARKER_UNCHANGED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {disasmDisplay} | {sdkDisplay} |");
                 }
             }
         }

@@ -124,67 +124,132 @@
 
   /**
    * Immediate (non-chunked) Excel export for small reports.
+   * Builds rows synchronously and delegates to buildExcelFramework for final assembly.
+   * 小規模レポート用の即時（非チャンク）Excelエクスポート。
+   * 行を同期的に構築し、最終組み立ては buildExcelFramework に委譲。
    */
   function downloadExcelImmediate() {
-    /* Force-decode all lazy sections to capture all data / 全 lazy セクションを強制デコード */
     forceDecodeLazySections();
+    var allRows = document.querySelectorAll('tbody > tr[data-section]');
+    var builtRows = {};
+    allRows.forEach(function(tr) {
+      var sec = tr.getAttribute('data-section');
+      if (!builtRows[sec]) builtRows[sec] = [];
+      builtRows[sec].push(buildExcelRow(tr));
+    });
+    var out = buildExcelFramework(builtRows);
+    var slug = 'diff_report_' + __reportDate__;
+    var blob = new Blob([out], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = slug + '_reviewed_Excel-compatible.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
+  }
 
+  /**
+   * Build an Excel-compatible HTML table row from a DOM table row element.
+   * For Ignored section rows, Estimated Change / Disassembler / .NET SDK columns are omitted.
+   * @param {HTMLTableRowElement} tr - A data row with data-section attribute
+   * @returns {string} HTML string for the Excel row, or empty string if insufficient cells
+   */
+  function buildExcelRow(tr) {
+    var cells = tr.querySelectorAll('td');
+    if (cells.length < 8) return '';
+    var sec = tr.getAttribute('data-section');
+    // Common columns (0-7): #, Checkbox, Justification, Notes, Status, File Path, Timestamp, Diff Detail/Location
+    // 共通列 (0-7): #, チェック, 理由, メモ, Status, パス, タイムスタンプ, 判定根拠/Location
+    var no = cells[0].textContent.trim();
+    var cb = cells[1].querySelector('input[type="checkbox"]');
+    var checked = cb && cb.checked ? '\u2713' : '';
+    var reasonInp = cells[2].querySelector('input');
+    var reason = reasonInp ? reasonInp.value : '';
+    var notesInp = cells[3].querySelector('input');
+    var notes = notesInp ? notesInp.value : '';
+    var status = cells[4].textContent.trim();
+    var pathSpan = cells[5].querySelector('.path-text');
+    var path = pathSpan ? pathSpan.textContent.trim() : cells[5].textContent.trim();
+    var ts = cells[6].textContent.trim();
+    var diff = cells[7].textContent.trim();
+
+    var r = '<tr><td></td><td></td>'
+      + '<td class="bd">' + esc(no) + '</td>'
+      + '<td class="bd">' + esc(checked) + '</td>'
+      + '<td class="bd">' + esc(reason) + '</td>'
+      + '<td class="bd">' + esc(notes) + '</td>'
+      + '<td class="bd" style="text-align:center">' + esc(status) + '</td>'
+      + '<td class="bd">' + esc(path) + '</td>'
+      + '<td class="bd" style="text-align:center;max-width:280px;mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
+      + '<td class="bd" style="text-align:center">' + esc(diff) + '</td>';
+
+    if (sec === 'ign') {
+      // Ignored: no Estimated Change, Disassembler, .NET SDK — pad to COLS
+      // Ignored: 推定変更、逆アセンブラ、.NET SDK なし — COLS までパディング
+      r += '<td></td><td></td><td></td>';
+    } else {
+      // Standard: Estimated Change, Disassembler, .NET SDK
+      var tag = cells.length > 8 ? cells[8].textContent.trim() : '';
+      var disasm = cells.length > 9 ? cells[9].textContent.trim() : '';
+      var sdk = cells.length > 10 ? cells[10].textContent.trim() : '';
+      r += '<td class="bd">' + esc(tag) + '</td>'
+        + '<td class="bd">' + esc(disasm) + '</td>'
+        + '<td class="bd" style="text-align:center">' + esc(sdk) + '</td>';
+    }
+    return r + '</tr>';
+  }
+
+  /**
+   * Build the complete Excel HTML document from pre-built section row arrays.
+   * Includes header metadata, legend, sections, summary, and warnings — all from DOM.
+   * 事前構築済みセクション行配列から完全な Excel HTML ドキュメントを構築。
+   * ヘッダーメタデータ、凡例、セクション、サマリー、警告をすべて DOM から取得。
+   * @param {Object<string, string[]>} builtRows - Section key to array of HTML row strings
+   * @returns {string} Complete Excel-compatible HTML document
+   */
+  function buildExcelFramework(builtRows) {
     var sectionNames = {
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
       'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
       'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
       'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
     };
-    // Section background colors for column header rows / 列ヘッダー行のセクション背景色
-    var sectionColors = {
-      'ign': '#f0f0f2', 'unch': '#f0f0f2',
-      'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd',
-      'sha256w': '#e3f2fd', 'tsw': '#e3f2fd'
-    };
-    // Section title text colors (match HTML report h2 styles) / セクションタイトルの文字色（HTMLレポートのh2スタイルと一致）
-    var sectionTextColors = {
-      'ign': '#000', 'unch': '#000',
-      'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3',
-      'sha256w': '#0051c3', 'tsw': '#0051c3'
-    };
+    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
+    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3' };
 
-    // Helper: 12-cell empty row / 12セルの空行
+    // ── Helpers ───────────────────────────────────────────────────────────
     var COLS = 13;
-    function emptyRow() {
-      var r = '<tr>';
-      for (var i = 0; i < COLS; i++) r += '<td></td>';
-      return r + '</tr>';
-    }
-    // Helper: section title row — col 1 (Excel B) / セクションタイトル行 — 列1（Excel B列）
+    function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
     function bannerRow(text, color, style) {
       var s = style || '';
       var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 2; i < COLS; i++) r += '<td></td>';
-      return r + '</tr>';
+      for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
     }
-    // Helper: 7-cell empty pad (align with col 7 = Excel H) / 7セルの空パディング（列7 = Excel H列に揃える）
     var PAD7 = '<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
-    // Helper: section title row shifted to col 7 (Excel H) / 列7（Excel H列）に揃えたセクションタイトル行
     function bannerRow7(text, color, style) {
       var s = style || '';
       var r = '<tr>' + PAD7 + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 8; i < COLS; i++) r += '<td></td>';
-      return r + '</tr>';
+      for (var i = 8; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
     }
-    // Helper: column header row — # at col 2 (Excel C) / 列ヘッダー行 — #は列2（Excel C列）
-    // Per-column extra styles (index into hdrs): 6=Timestamp fixed width / 列ごとの追加スタイル: 6=Timestamp 固定幅
+
+    // Per-section column headers: Ignored uses "Location" and omits trailing columns
+    // セクション別列ヘッダー: Ignored は "Location" を使用し末尾列を省略
     var COL_STYLES = { 6: 'width:280px' };
-    function colHeaderRow(bg) {
-      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
+    var DEFAULT_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
+    var IGN_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Location'];
+    function colHeaderRow(bg, sec) {
+      var hdrs = sec === 'ign' ? IGN_HDRS : DEFAULT_HDRS;
       var r = '<tr><td></td><td></td>';
       hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
+      // Pad remaining cells to maintain column count / 列数を揃えるためにパディング
+      for (var j = hdrs.length + 2; j < COLS; j++) r += '<td></td>';
       return r + '</tr>';
     }
 
-    // Collect header info from report / レポートからヘッダー情報を収集
-    var headerCards = document.querySelectorAll('.header-card');
+    // ── Header info from DOM / DOM からのヘッダー情報 ─────────────────────
     var headerHtml = '';
-    headerCards.forEach(function(card) {
+    document.querySelectorAll('.header-card').forEach(function(card) {
       var label = card.querySelector('.header-card-label');
       var value = card.querySelector('.header-card-value');
       if (label && value) {
@@ -194,8 +259,7 @@
         headerHtml += '</tr>';
       }
     });
-    var headerPaths = document.querySelectorAll('.header-path');
-    headerPaths.forEach(function(hp) {
+    document.querySelectorAll('.header-path').forEach(function(hp) {
       var label = hp.querySelector('.header-path-label');
       var value = hp.querySelector('.header-path-value');
       if (label && value) {
@@ -206,71 +270,33 @@
       }
     });
 
-    // Build section tables — always include all main sections even when empty
-    // セクションテーブルを構築 — 0件でも全メインセクションを見出し付きで出力
-    var sectionsHtml = '';
-    // Canonical section order (ign only if present in report) / 正規セクション順序（ignはレポートに存在する場合のみ）
-    var hasIgnSection = document.querySelectorAll('tbody > tr[data-section' + '="ign"]').length > 0
-      || document.querySelector('h2') && Array.prototype.slice.call(document.querySelectorAll('h2')).some(function(h) { return h.textContent.indexOf('Ignored Files') >= 0; });
-    var allSectionKeys = hasIgnSection ? ['ign', 'unch', 'add', 'rem', 'mod'] : ['unch', 'add', 'rem', 'mod'];
-    // Separate warning sections (placed after Summary) / 警告セクションを分離（Summary の後に配置）
-    var warningSections = ['sha256w', 'tsw'];
-    // Discover any warning sections that exist in the DOM / DOM に存在する警告セクションを検出
-    var seenWarnSections = [];
-    document.querySelectorAll('tbody > tr[data-section]').forEach(function(tr) {
-      var sec = tr.getAttribute('data-section');
-      if (warningSections.indexOf(sec) >= 0 && seenWarnSections.indexOf(sec) < 0) seenWarnSections.push(sec);
-    });
-
-    function buildSectionHtml(sec) {
-      var bgColor = sectionColors[sec] || '#f0f0f2';
-      var txtColor = sectionTextColors[sec] || '#000';
-      var name = sectionNames[sec] || sec;
-      var sectionRows = document.querySelectorAll('tbody > tr[data-section="' + sec + '"]');
-      var h = bannerRow(name + ' (' + sectionRows.length + ')', txtColor, 'font-weight:bold;padding:8px');
-      h += colHeaderRow(bgColor);
-      sectionRows.forEach(function(tr) { h += buildExcelRow(tr); });
-      h += emptyRow();
-      return h;
-    }
-
-    allSectionKeys.forEach(function(sec) { sectionsHtml += buildSectionHtml(sec); });
-
-    // Build legend section / 凡例セクションを構築
+    // ── Legend / 凡例 ─────────────────────────────────────────────────────
     var legendHtml = '';
-    // Legend — Diff Detail / 凡例 — 判定根拠
+    function legendKeyValueRows(items) {
+      items.forEach(function(row) {
+        legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
+        for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
+        legendHtml += '</tr>';
+      });
+    }
     legendHtml += bannerRow7('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
-    var diffLegend = [
+    legendKeyValueRows([
       ['SHA256Match / SHA256Mismatch', 'Byte-for-byte match / mismatch (SHA256)'],
       ['ILMatch / ILMismatch', 'IL (Intermediate Language) match / mismatch'],
       ['TextMatch / TextMismatch', 'Text-based match / mismatch']
-    ];
-    diffLegend.forEach(function(row) {
-      legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
-      for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
-      legendHtml += '</tr>';
-    });
+    ]);
     legendHtml += emptyRow();
-    // Legend — Change Importance / 凡例 — 変更重要度
     legendHtml += bannerRow7('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
-    var impLegend = [
+    legendKeyValueRows([
       ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
       ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
       ['Low', 'Low-impact change: body-only modification, internal/private member addition']
-    ];
-    impLegend.forEach(function(row) {
-      legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
-      for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
-      legendHtml += '</tr>';
-    });
+    ]);
     legendHtml += emptyRow();
-    // Legend — Estimated Change / 凡例 — 推定変更
     legendHtml += bannerRow7('Legend \u2014 Estimated Change', '#000', 'font-weight:bold;padding:8px');
-    var tagLegend = [
-      ['+Method', 'New method added'],
-      ['-Method', 'Method removed'],
-      ['+Type', 'New type added'],
-      ['-Type', 'Type removed'],
+    legendKeyValueRows([
+      ['+Method', 'New method added'], ['-Method', 'Method removed'],
+      ['+Type', 'New type added'], ['-Type', 'Type removed'],
       ['Extract', 'Method body extracted to new private/internal method'],
       ['Inline', 'Private/internal method inlined into another method'],
       ['Move', 'Method moved between types'],
@@ -279,28 +305,34 @@
       ['Access', 'Access modifier changed'],
       ['BodyEdit', 'Method body IL changed only'],
       ['DepUpdate', 'Dependency package version changed only']
-    ];
-    tagLegend.forEach(function(row) {
-      legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
-      for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
-      legendHtml += '</tr>';
-    });
+    ]);
     legendHtml += emptyRow();
 
-    // Build summary section / サマリーセクションを構築
+    // ── Sections / セクション ─────────────────────────────────────────────
+    var hasIgn = builtRows['ign'] && builtRows['ign'].length > 0;
+    var mainKeys = hasIgn ? ['ign', 'unch', 'add', 'rem', 'mod'] : ['unch', 'add', 'rem', 'mod'];
+    var sectionsHtml = '';
+    mainKeys.forEach(function(sec) {
+      var rows = builtRows[sec] || [];
+      var txtColor = sectionTextColors[sec] || '#000';
+      var name = sectionNames[sec] || sec;
+      sectionsHtml += bannerRow(name + ' (' + rows.length + ')', txtColor, 'font-weight:bold;padding:8px');
+      sectionsHtml += colHeaderRow(sectionColors[sec] || '#f0f0f2', sec);
+      sectionsHtml += rows.join('');
+      sectionsHtml += emptyRow();
+    });
+
+    // ── Summary from DOM / DOM からのサマリー ─────────────────────────────
     var summaryHtml = '';
     var statTable = document.querySelector('.stat-table');
     if (statTable) {
       summaryHtml += bannerRow7('Summary', '#000', 'font-weight:bold;padding:8px');
-      // Column header row for summary (same bg as Ignored Files header) / サマリーの列ヘッダー行（Ignored Files ヘッダーと同じ背景色）
       summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
         + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>';
       for (var si = 9; si < COLS; si++) summaryHtml += '<td></td>';
       summaryHtml += '</tr>';
-      // Row background colors matching HTML report summary table / HTMLレポートのサマリーテーブルに合わせた行背景色
       var summaryRowColors = { 'Added': '#e6ffed', 'Removed': '#ffeef0', 'Modified': '#e3f2fd' };
       statTable.querySelectorAll('tr').forEach(function(tr) {
-        // Skip header rows containing th elements / th要素を含むヘッダー行をスキップ
         if (tr.querySelector('th')) return;
         var cells = tr.querySelectorAll('td');
         if (cells.length >= 2) {
@@ -315,16 +347,22 @@
       summaryHtml += emptyRow();
     }
 
-    // Build warning sections (placed after Summary) / 警告セクション（Summary の後に配置）
+    // ── Warnings / 警告 ──────────────────────────────────────────────────
     var warningsHtml = '';
-    if (seenWarnSections.length > 0) {
-      warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;padding:8px');
-    }
-    seenWarnSections.forEach(function(sec) { warningsHtml += buildSectionHtml(sec); });
+    var warnKeys = ['sha256w', 'tsw'];
+    var hasWarn = false;
+    warnKeys.forEach(function(sec) {
+      var rows = builtRows[sec];
+      if (!rows || rows.length === 0) return;
+      if (!hasWarn) { warningsHtml += bannerRow('Warnings', '#000', 'font-weight:bold;padding:8px'); hasWarn = true; }
+      warningsHtml += bannerRow((sectionNames[sec] || sec) + ' (' + rows.length + ')', sectionTextColors[sec] || '#000', 'font-weight:bold;padding:8px');
+      warningsHtml += colHeaderRow(sectionColors[sec] || '#e3f2fd', sec);
+      warningsHtml += rows.join('');
+      warningsHtml += emptyRow();
+    });
 
-    var slug = 'diff_report_' + __reportDate__;
-    var excelFileName = slug + '_reviewed_Excel-compatible.html';
-    var out = '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
+    // ── Assemble final HTML / 最終 HTML を組み立て ────────────────────────
+    return '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
       + '<head><meta charset="UTF-8">\n'
       + '<style>\n'
       + 'table { border-collapse: collapse; font-family: "Meiryo UI", sans-serif; font-size: 11px; }\n'
@@ -342,120 +380,6 @@
       + warningsHtml
       + '</table>\n'
       + '</body></html>';
-
-    var blob = new Blob([out], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = excelFileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function() { URL.revokeObjectURL(a.href); }, 1000);
-  }
-
-  /**
-   * Build an Excel-compatible HTML table row from a DOM table row element.
-   * @param {HTMLTableRowElement} tr - A data row with data-section attribute
-   * @returns {string} HTML string for the Excel row, or empty string if insufficient cells
-   */
-  function buildExcelRow(tr) {
-    var cells = tr.querySelectorAll('td');
-    if (cells.length < 10) return '';
-    // #
-    var no = cells[0].textContent.trim();
-    // Checkbox state / チェックボックス状態
-    var cb = cells[1].querySelector('input[type="checkbox"]');
-    var checked = cb && cb.checked ? '\u2713' : '';
-    // Justification (text input value) / 理由（テキスト入力値）
-    var reasonInp = cells[2].querySelector('input');
-    var reason = reasonInp ? reasonInp.value : '';
-    // Notes (text input value) / メモ（テキスト入力値）
-    var notesInp = cells[3].querySelector('input');
-    var notes = notesInp ? notesInp.value : '';
-    // Status / ステータス
-    var status = cells[4].textContent.trim();
-    // File Path / ファイルパス
-    var pathSpan = cells[5].querySelector('.path-text');
-    var path = pathSpan ? pathSpan.textContent.trim() : cells[5].textContent.trim();
-    // Timestamp / タイムスタンプ
-    var ts = cells[6].textContent.trim();
-    // Diff Detail
-    var diff = cells[7].textContent.trim();
-    // Estimated Change / 推定変更
-    var tag = cells[8].textContent.trim();
-    // Disassembler
-    var disasm = cells[9].textContent.trim();
-    // .NET SDK
-    var sdk = cells.length > 10 ? cells[10].textContent.trim() : '';
-
-    return '<tr><td></td><td></td>'
-      + '<td class="bd">' + esc(no) + '</td>'
-      + '<td class="bd">' + esc(checked) + '</td>'
-      + '<td class="bd">' + esc(reason) + '</td>'
-      + '<td class="bd">' + esc(notes) + '</td>'
-      + '<td class="bd" style="text-align:center">' + esc(status) + '</td>'
-      + '<td class="bd">' + esc(path) + '</td>'
-      + '<td class="bd" style="text-align:center;max-width:280px;mso-number-format:\'\\@\'">' + esc(ts) + '</td>'
-      + '<td class="bd" style="text-align:center">' + esc(diff) + '</td>'
-      + '<td class="bd">' + esc(tag) + '</td>'
-      + '<td class="bd">' + esc(disasm) + '</td>'
-      + '<td class="bd" style="text-align:center">' + esc(sdk) + '</td>'
-      + '</tr>';
-  }
-
-  /**
-   * Build the complete Excel HTML from pre-built section row arrays (used by chunked export).
-   * @param {Object<string, string[]>} builtRows - Section key to array of HTML row strings
-   * @returns {string} Complete Excel-compatible HTML document
-   */
-  function buildExcelFramework(builtRows) {
-    var sectionNames = {
-      'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
-      'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
-      'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
-      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
-    };
-    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
-    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3' };
-    var COLS = 13;
-    function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
-    function bannerRow(text, color, style) {
-      var s = style || '';
-      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
-    }
-    var COL_STYLES = { 6: 'width:280px' };
-    function colHeaderRow(bg) {
-      var hdrs = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
-      var r = '<tr><td></td><td></td>';
-      hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
-      return r + '</tr>';
-    }
-    var hasIgn = builtRows['ign'] && builtRows['ign'].length > 0;
-    var mainKeys = hasIgn ? ['ign', 'unch', 'add', 'rem', 'mod'] : ['unch', 'add', 'rem', 'mod'];
-    var sectionsHtml = '';
-    mainKeys.forEach(function(sec) {
-      var rows = builtRows[sec] || [];
-      var txtColor = sectionTextColors[sec] || '#000';
-      var name = sectionNames[sec] || sec;
-      sectionsHtml += bannerRow(name + ' (' + rows.length + ')', txtColor, 'font-weight:bold;padding:8px');
-      sectionsHtml += colHeaderRow(sectionColors[sec] || '#f0f0f2');
-      sectionsHtml += rows.join('');
-      sectionsHtml += emptyRow();
-    });
-    var warnKeys = ['sha256w', 'tsw'];
-    var warningsHtml = '';
-    warnKeys.forEach(function(sec) {
-      var rows = builtRows[sec];
-      if (!rows || rows.length === 0) return;
-      warningsHtml += bannerRow((sectionNames[sec] || sec) + ' (' + rows.length + ')', sectionTextColors[sec] || '#000', 'font-weight:bold;padding:8px');
-      warningsHtml += colHeaderRow(sectionColors[sec] || '#e3f2fd');
-      warningsHtml += rows.join('');
-      warningsHtml += emptyRow();
-    });
-    return '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
-      + '<head><meta charset="UTF-8">\n<style>\ntable { border-collapse: collapse; font-family: "Meiryo UI", sans-serif; font-size: 11px; }\ntd, th { border: none; padding: 4px 8px; white-space: nowrap; vertical-align: top; }\ntd.bd, th.bd { border: 1px solid #ccc; }\n</style>\n</head><body>\n<table>\n'
-      + emptyRow() + '\n' + sectionsHtml + warningsHtml + '</table>\n</body></html>';
   }
 
   /**

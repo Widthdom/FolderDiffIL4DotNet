@@ -143,7 +143,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
             writer.WriteLine("<details class=\"lazy-section\">");
             writer.WriteLine("<summary></summary>");
-            AppendTableStart(writer, TH_BG_DEFAULT, "Diff Reason", hideClasses: "hide-sdk");
+            AppendTableStart(writer, TH_BG_DEFAULT, "Diff Reason");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
@@ -158,7 +158,8 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(path, out var diffDetail);
                 string col6 = BuildDiffDetailDisplay(diffDetail);
                 _fileDiffResultLists.FileRelativePathToIlDisassemblerLabelDictionary.TryGetValue(path, out var asm);
-                AppendFileRow(writer, "unch", idx, path, ts, col6, asm ?? "");
+                _fileDiffResultLists.FileRelativePathToSdkVersionDictionary.TryGetValue(path, out var sdkVer);
+                AppendFileRow(writer, "unch", idx, path, ts, col6, asm ?? "", sdk: sdkVer ?? "");
                 idx++;
             }
             writer.WriteLine("</tbody></table></div>");
