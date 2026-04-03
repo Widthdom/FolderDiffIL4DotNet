@@ -11,7 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **Named configuration profiles (`--profile <name>`)** — Load a named profile from `profiles/<name>.json` (relative to config.json directory) to overlay settings on top of the base config. Profiles allow per-product or per-environment configuration without swapping config.json files. Priority order: config.json < profile < environment variables < CLI flags. Profile JSON uses top-level property replacement (arrays are replaced, not merged). Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `Services/ConfigService.cs`, `Runner/ProgramRunner.Config.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`. Tests: `CliOptionsTests.cs` (4 new tests: `ParseCliOptions_ProfileWithName_SetsProfileName`, `ParseCliOptions_ProfileWithoutName_SetsParseError`, `ParseCliOptions_ProfileFollowedByAnotherFlag_SetsParseError`, `ParseCliOptions_ProfileWithConfig_BothSet`), `ConfigServiceTests.Profile.cs` (6 new tests: overlay, array replacement, not-found, null-profile, JSON merge, schema skip).
+- **Named configuration profiles (`--profile <name>`)** — Load a named profile from `profiles/<name>.json` or `profiles/<name>.jsonc` (relative to config.json directory) to overlay settings on top of the base config. Profiles allow per-product or per-environment configuration without swapping config.json files. Priority order: config.json < profile < environment variables < CLI flags. Profile JSON uses top-level property replacement (arrays are replaced, not merged). `.json` is preferred over `.jsonc` when both exist. Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `Services/ConfigService.cs`, `Runner/ProgramRunner.Config.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`. Tests: `CliOptionsTests.cs` (4 new tests), `ConfigServiceTests.Profile.cs` (9 new tests including JSONC parsing and .json/.jsonc priority).
+
+- **JSONC support for config.json and profile files** — Both `config.json` and profile files now accept JSONC format: single-line comments (`//`), block comments (`/* */`), and trailing commas. This eliminates the need to strip comments when using `config.sample.jsonc` as a starting point. Affected: `Services/ConfigService.cs`. Tests: `ConfigServiceTests.cs` (`LoadConfigBuilderAsync_TrailingCommaInObject_Accepted`, `LoadConfigBuilderAsync_TrailingCommaInArray_Accepted`, `LoadConfigBuilderAsync_JsoncWithComments_Accepted`), `ConfigServiceTests.Profile.cs` (`MergeJson_JsoncWithComments_ParsedCorrectly`).
 
 #### Changed
 
@@ -1041,7 +1043,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **名前付き設定プロファイル（`--profile <name>`）** — `profiles/<name>.json`（config.json ディレクトリからの相対パス）から名前付きプロファイルを読み込み、ベース設定にオーバーレイする。製品別・環境別の設定を config.json の差し替えなしで切り替え可能。優先度: config.json < プロファイル < 環境変数 < CLI フラグ。プロファイル JSON はトップレベルプロパティ置換（配列はマージではなく置換）。影響: `Runner/CliParser.cs`、`Runner/CliOptions.cs`、`Services/ConfigService.cs`、`Runner/ProgramRunner.Config.cs`、`ProgramRunner.cs`、`Runner/ProgramRunner.HelpText.cs`、`README.md`。テスト: `CliOptionsTests.cs`（4 件追加）、`ConfigServiceTests.Profile.cs`（6 件追加）。
+- **名前付き設定プロファイル（`--profile <name>`）** — `profiles/<name>.json` または `profiles/<name>.jsonc`（config.json ディレクトリからの相対パス）から名前付きプロファイルを読み込み、ベース設定にオーバーレイする。製品別・環境別の設定を config.json の差し替えなしで切り替え可能。優先度: config.json < プロファイル < 環境変数 < CLI フラグ。プロファイル JSON はトップレベルプロパティ置換（配列はマージではなく置換）。`.json` と `.jsonc` の両方が存在する場合は `.json` を優先。影響: `Runner/CliParser.cs`、`Runner/CliOptions.cs`、`Services/ConfigService.cs`、`Runner/ProgramRunner.Config.cs`、`ProgramRunner.cs`、`Runner/ProgramRunner.HelpText.cs`、`README.md`。テスト: `CliOptionsTests.cs`（4 件追加）、`ConfigServiceTests.Profile.cs`（9 件追加、JSONC パースと .json/.jsonc 優先度を含む）。
+
+- **config.json とプロファイルの JSONC サポート** — `config.json` とプロファイルファイルの両方で JSONC 形式（シングルラインコメント `//`、ブロックコメント `/* */`、末尾カンマ）が利用可能になった。`config.sample.jsonc` をそのまま config.json として使用する際にコメント除去が不要になった。影響: `Services/ConfigService.cs`。テスト: `ConfigServiceTests.cs`（`LoadConfigBuilderAsync_TrailingCommaInObject_Accepted`、`LoadConfigBuilderAsync_TrailingCommaInArray_Accepted`、`LoadConfigBuilderAsync_JsoncWithComments_Accepted`）、`ConfigServiceTests.Profile.cs`（`MergeJson_JsoncWithComments_ParsedCorrectly`）。
 
 #### Changed
 

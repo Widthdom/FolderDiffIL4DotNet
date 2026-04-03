@@ -35,43 +35,44 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public async Task LoadConfigBuilderAsync_TrailingCommaInObject_ThrowsInvalidDataExceptionWithHint()
+        public async Task LoadConfigBuilderAsync_TrailingCommaInObject_Accepted()
         {
-            // Common mistake: trailing comma after the last property in a JSON object
-            // よくあるミス: オブジェクトの最後のプロパティ後にカンマを入れてしまう
+            // JSONC support: trailing commas are now allowed
+            // JSONC サポート: 末尾カンマは許容される
             await WithConfigFileAsync("{ \"MaxLogGenerations\": 5, }", async () =>
             {
                 var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
-                Assert.IsType<JsonException>(ex.InnerException);
-                Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
+                var builder = await service.LoadConfigBuilderAsync();
+
+                Assert.NotNull(builder);
+                Assert.Equal(5, builder.MaxLogGenerations);
             });
         }
 
         [Fact]
-        public async Task LoadConfigBuilderAsync_TrailingCommaInArray_ThrowsInvalidDataExceptionWithHint()
+        public async Task LoadConfigBuilderAsync_TrailingCommaInArray_Accepted()
         {
-            // Common mistake: trailing comma after the last element in a JSON array
-            // よくあるミス: 配列の最後の要素後にカンマを入れてしまう
+            // JSONC support: trailing commas in arrays are now allowed
+            // JSONC サポート: 配列の末尾カンマは許容される
             await WithConfigFileAsync("{ \"IgnoredExtensions\": [\".pdb\", \".log\",] }", async () =>
             {
                 var service = new ConfigService();
-                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
-                Assert.IsType<JsonException>(ex.InnerException);
-                Assert.Contains("JSON syntax error", ex.Message, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
+                var builder = await service.LoadConfigBuilderAsync();
+
+                Assert.NotNull(builder);
+                Assert.Equal(new[] { ".pdb", ".log" }, builder.IgnoredExtensions);
             });
         }
 
         [Fact]
-        public async Task LoadConfigBuilderAsync_TrailingCommaError_MessageIncludesLineNumber()
+        public async Task LoadConfigBuilderAsync_SyntaxError_MessageIncludesLineNumber()
         {
-            // Verify that line number information is included in the error message
-            // 行番号情報がメッセージに含まれることを確認
+            // Verify that line number information is included in the error message for genuine syntax errors
+            // 真の構文エラー時にエラーメッセージに行番号が含まれることを確認
             const string json = """
                 {
-                  "MaxLogGenerations": 5,
+                  "MaxLogGenerations": 5
+                  "Extra": true
                 }
                 """;
             await WithConfigFileAsync(json, async () =>
@@ -82,6 +83,27 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 // Message should contain a line number (integer >= 1)
                 // メッセージに行番号（1 以上の整数）が含まれている
                 Assert.Matches(@"line \d+", ex.Message);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_JsoncWithComments_Accepted()
+        {
+            // JSONC support: single-line comments are now allowed in config.json
+            // JSONC サポート: config.json でシングルラインコメントが許容される
+            const string jsonc = """
+                {
+                  // This is a comment
+                  "MaxLogGenerations": 7
+                }
+                """;
+            await WithConfigFileAsync(jsonc, async () =>
+            {
+                var service = new ConfigService();
+                var builder = await service.LoadConfigBuilderAsync();
+
+                Assert.NotNull(builder);
+                Assert.Equal(7, builder.MaxLogGenerations);
             });
         }
 

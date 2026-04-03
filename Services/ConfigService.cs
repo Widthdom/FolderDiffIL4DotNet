@@ -17,10 +17,29 @@ namespace FolderDiffIL4DotNet.Services
         internal const string PROFILES_DIR_NAME = "profiles";
         private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse config.json — JSON syntax error";
         private const string ERROR_CONFIG_PARSE_HINT =
-            " Hint: standard JSON does not allow trailing commas after the last property or array element" +
-            " (e.g. remove the comma in \"Key\": \"value\",}).";
+            " Hint: JSONC comments (// and /* */) and trailing commas are supported." +
+            " Check for other syntax issues such as missing quotes, unclosed braces, or invalid values.";
         internal const string ERROR_CONFIG_VALIDATION_PREFIX = "config.json contains invalid settings:";
         internal const string ENV_VAR_PREFIX = "FOLDERDIFF_";
+
+        // Allow JSONC (comments + trailing commas) in config.json and profile files.
+        // config.json とプロファイルファイルで JSONC（コメント＋末尾カンマ）を許可する。
+        private static readonly JsonSerializerOptions s_jsoncSerializerOptions = new()
+        {
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
+        };
+
+        private static readonly JsonNodeOptions s_jsoncNodeOptions = new()
+        {
+            PropertyNameCaseInsensitive = false,
+        };
+
+        private static readonly JsonDocumentOptions s_jsoncDocumentOptions = new()
+        {
+            CommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true,
+        };
 
         /// <summary>
         /// Asynchronously loads settings from config.json at the given path (or the application base directory),
@@ -52,7 +71,7 @@ namespace FolderDiffIL4DotNet.Services
                     json = MergeJson(json, profileJson);
                 }
 
-                var builder = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)
+                var builder = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json, s_jsoncSerializerOptions)
                     ?? throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED);
 
                 ApplyEnvironmentVariableOverrides(builder);
@@ -80,13 +99,16 @@ namespace FolderDiffIL4DotNet.Services
         internal static async Task<string> LoadProfileJsonAsync(string configFileAbsolutePath, string profileName)
         {
             string configDir = Path.GetDirectoryName(configFileAbsolutePath) ?? AppContext.BaseDirectory;
-            string profilePath = Path.Combine(configDir, PROFILES_DIR_NAME, profileName + ".json");
+            string profilesDir = Path.Combine(configDir, PROFILES_DIR_NAME);
 
-            if (!File.Exists(profilePath))
-            {
-                throw new FileNotFoundException(
-                    $"Profile '{profileName}' not found: {profilePath}");
-            }
+            // Try .json first, then .jsonc / .json を優先し、なければ .jsonc を探す
+            string jsonPath = Path.Combine(profilesDir, profileName + ".json");
+            string jsoncPath = Path.Combine(profilesDir, profileName + ".jsonc");
+
+            string profilePath = File.Exists(jsonPath) ? jsonPath
+                : File.Exists(jsoncPath) ? jsoncPath
+                : throw new FileNotFoundException(
+                    $"Profile '{profileName}' not found: {jsonPath} (also tried .jsonc)");
 
             return await File.ReadAllTextAsync(profilePath);
         }
@@ -99,9 +121,9 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         internal static string MergeJson(string baseJson, string overlayJson)
         {
-            var baseNode = JsonNode.Parse(baseJson) as JsonObject
+            var baseNode = JsonNode.Parse(baseJson, s_jsoncNodeOptions, s_jsoncDocumentOptions) as JsonObject
                 ?? throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED);
-            var overlayNode = JsonNode.Parse(overlayJson) as JsonObject
+            var overlayNode = JsonNode.Parse(overlayJson, s_jsoncNodeOptions, s_jsoncDocumentOptions) as JsonObject
                 ?? throw new InvalidDataException("Failed to parse profile JSON — JSON syntax error");
 
             foreach (var prop in overlayNode)
