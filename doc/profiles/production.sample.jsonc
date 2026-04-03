@@ -1,0 +1,20 @@
+// Sample production profile — place as profiles/production.json next to config.json.
+// Usage: FolderDiffIL4DotNet oldDir newDir label --profile production
+//
+// 本番用サンプルプロファイル — config.json と同じディレクトリの profiles/production.json として配置してください。
+// 使用例: FolderDiffIL4DotNet oldDir newDir label --profile production
+{
+  // Generate all report formats for audit trail / 監査証跡のため全レポート形式を生成
+  "ShouldGenerateHtmlReport": true,
+  "ShouldGenerateAuditLog": true,
+  "ShouldGenerateSbom": true,
+
+  // Include unchanged files for completeness / 完全性のため未変更ファイルも含める
+  "ShouldIncludeUnchangedFiles": true,
+
+  // Enable timestamp regression warnings / タイムスタンプ逆転警告を有効化
+  "ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp": true,
+
+  // Conservative parallelism for stability / 安定性のため控えめな並列数
+  "MaxParallelism": 4
+}

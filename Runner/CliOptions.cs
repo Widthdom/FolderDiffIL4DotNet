@@ -10,6 +10,7 @@ namespace FolderDiffIL4DotNet.Runner
         bool ShowBanner,
         bool NoPause,
         string? ConfigPath,
+        string? ProfileName,
         int? ThreadsOverride,
         bool NoIlCache,
         bool ClearCache,

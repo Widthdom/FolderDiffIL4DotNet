@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Named configuration profiles (`--profile <name>`)** — Load a named profile from `profiles/<name>.json` (relative to config.json directory) to overlay settings on top of the base config. Profiles allow per-product or per-environment configuration without swapping config.json files. Priority order: config.json < profile < environment variables < CLI flags. Profile JSON uses top-level property replacement (arrays are replaced, not merged). Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `Services/ConfigService.cs`, `Runner/ProgramRunner.Config.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`. Tests: `CliOptionsTests.cs` (4 new tests: `ParseCliOptions_ProfileWithName_SetsProfileName`, `ParseCliOptions_ProfileWithoutName_SetsParseError`, `ParseCliOptions_ProfileFollowedByAnotherFlag_SetsParseError`, `ParseCliOptions_ProfileWithConfig_BothSet`), `ConfigServiceTests.Profile.cs` (6 new tests: overlay, array replacement, not-found, null-profile, JSON merge, schema skip).
+
 #### Changed
 
 - **InlineDiffContextLines default changed from 0 to 4** — Inline diffs now show 4 context lines around each changed hunk by default, giving reviewers surrounding context to understand changes without manual configuration. Previously the default was 0 (changed lines only). Affected: `Models/ConfigSettings.DiffSettings.cs`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `README.md`. Tests: `ConfigSettingsTests.InlineDiffAndMutation.cs` (`Constructor_InlineDiffDefaults_AreCorrect`), `ConfigSettingsTests.ValidationBoundary.cs` (`AllDefaultConstants_MatchExpectedValues`).
@@ -1034,6 +1038,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **名前付き設定プロファイル（`--profile <name>`）** — `profiles/<name>.json`（config.json ディレクトリからの相対パス）から名前付きプロファイルを読み込み、ベース設定にオーバーレイする。製品別・環境別の設定を config.json の差し替えなしで切り替え可能。優先度: config.json < プロファイル < 環境変数 < CLI フラグ。プロファイル JSON はトップレベルプロパティ置換（配列はマージではなく置換）。影響: `Runner/CliParser.cs`、`Runner/CliOptions.cs`、`Services/ConfigService.cs`、`Runner/ProgramRunner.Config.cs`、`ProgramRunner.cs`、`Runner/ProgramRunner.HelpText.cs`、`README.md`。テスト: `CliOptionsTests.cs`（4 件追加）、`ConfigServiceTests.Profile.cs`（6 件追加）。
 
 #### Changed
 

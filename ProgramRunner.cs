@@ -81,12 +81,12 @@ namespace FolderDiffIL4DotNet
 
             if (opts.PrintConfig)
             {
-                return await PrintConfigAsync(opts.ConfigPath);
+                return await PrintConfigAsync(opts.ConfigPath, opts.ProfileName);
             }
 
             if (opts.ValidateConfig)
             {
-                return await ValidateConfigAsync(opts.ConfigPath);
+                return await ValidateConfigAsync(opts.ConfigPath, opts.ProfileName);
             }
 
             if (opts.Wizard)
@@ -156,7 +156,7 @@ namespace FolderDiffIL4DotNet
                 var pipelineResult = await argsResult
                     .BindAsync(async runArgs =>
                     {
-                        var builderResult = await TryLoadConfigBuilderAsync(opts.ConfigPath);
+                        var builderResult = await TryLoadConfigBuilderAsync(opts.ConfigPath, opts.ProfileName);
                         return builderResult.Bind(builder =>
                         {
                             ApplyCliOverrides(builder, opts);

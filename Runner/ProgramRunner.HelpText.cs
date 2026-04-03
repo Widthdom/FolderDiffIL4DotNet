@@ -20,6 +20,9 @@ namespace FolderDiffIL4DotNet
             "  --validate-config           Validate the configuration file and exit (0=valid, 3=invalid).\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +
             "  --config <path>             Path to config.json (default: <exe>/config.json).\n" +
+            "  --profile <name>            Load a named profile from profiles/<name>.json\n" +
+            "                              (relative to config.json directory). Profile values\n" +
+            "                              overlay the base config; CLI flags still take priority.\n" +
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
             "  --no-il-cache               Disable the IL cache for this run.\n" +
             "  --clear-cache               Interactive wizard to selectively delete IL cache files.\n" +

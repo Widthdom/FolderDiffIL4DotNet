@@ -307,11 +307,11 @@ namespace FolderDiffIL4DotNet
         /// Validates the configuration (JSON load + environment variable overrides + semantic validation) and reports results.
         /// 設定のバリデーション（JSON 読込 + 環境変数オーバーライド + セマンティック検証）を行い結果を報告します。
         /// </summary>
-        private async Task<int> ValidateConfigAsync(string? configPath)
+        private async Task<int> ValidateConfigAsync(string? configPath, string? profileName = null)
         {
             try
             {
-                var builder = await _configService.LoadConfigBuilderAsync(configPath);
+                var builder = await _configService.LoadConfigBuilderAsync(configPath, profileName);
                 var validationResult = builder.Validate();
                 if (!validationResult.IsValid)
                 {
@@ -341,11 +341,11 @@ namespace FolderDiffIL4DotNet
         /// Prints the effective configuration (after JSON load + environment variable overrides) to stdout as JSON.
         /// 有効な設定（JSON 読込 + 環境変数オーバーライド適用後）を JSON として標準出力に書き出します。
         /// </summary>
-        private async Task<int> PrintConfigAsync(string? configPath)
+        private async Task<int> PrintConfigAsync(string? configPath, string? profileName = null)
         {
             try
             {
-                var builder = await _configService.LoadConfigBuilderAsync(configPath);
+                var builder = await _configService.LoadConfigBuilderAsync(configPath, profileName);
                 Console.WriteLine(JsonSerializer.Serialize(builder, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
@@ -361,11 +361,11 @@ namespace FolderDiffIL4DotNet
         /// Returns the configuration builder loading phase as a typed result.
         /// 設定ビルダー読込フェーズを型付き結果として返します。
         /// </summary>
-        private async Task<StepResult<ConfigSettingsBuilder>> TryLoadConfigBuilderAsync(string? configPath)
+        private async Task<StepResult<ConfigSettingsBuilder>> TryLoadConfigBuilderAsync(string? configPath, string? profileName = null)
         {
             try
             {
-                var builder = await LoadConfigBuilderAsync(configPath);
+                var builder = await LoadConfigBuilderAsync(configPath, profileName);
                 return StepResult<ConfigSettingsBuilder>.FromValue(builder);
             }
             catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
@@ -398,10 +398,14 @@ namespace FolderDiffIL4DotNet
             }
         }
 
-        private async Task<ConfigSettingsBuilder> LoadConfigBuilderAsync(string? configPath)
+        private async Task<ConfigSettingsBuilder> LoadConfigBuilderAsync(string? configPath, string? profileName = null)
         {
             _logger.LogMessage(AppLogLevel.Info, LOG_LOADING_CONFIGURATION, shouldOutputMessageToConsole: true);
-            var builder = await _configService.LoadConfigBuilderAsync(configPath);
+            var builder = await _configService.LoadConfigBuilderAsync(configPath, profileName);
+            if (!string.IsNullOrWhiteSpace(profileName))
+            {
+                _logger.LogMessage(AppLogLevel.Info, $"Profile '{profileName}' applied.", shouldOutputMessageToConsole: true);
+            }
             _logger.LogMessage(AppLogLevel.Info, LOG_CONFIGURATION_LOADED, shouldOutputMessageToConsole: true);
             _logger.CleanupOldLogFiles(builder.MaxLogGenerations);
             TimestampCache.Clear();

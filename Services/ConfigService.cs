@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
 
@@ -13,6 +14,7 @@ namespace FolderDiffIL4DotNet.Services
     public sealed class ConfigService
     {
         private const string CONFIG_FILE_NAME = "config.json";
+        internal const string PROFILES_DIR_NAME = "profiles";
         private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse config.json — JSON syntax error";
         private const string ERROR_CONFIG_PARSE_HINT =
             " Hint: standard JSON does not allow trailing commas after the last property or array element" +
@@ -22,13 +24,13 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Asynchronously loads settings from config.json at the given path (or the application base directory),
-        /// deserialises them into a <see cref="ConfigSettingsBuilder"/>, applies environment variable overrides,
+        /// optionally overlays a named profile, applies environment variable overrides,
         /// and returns the mutable builder so that CLI overrides can be applied before calling <see cref="ConfigSettingsBuilder.Build"/>.
         /// config.json を指定パス（または既定のアプリケーションベースディレクトリ）から非同期で読み込み、
-        /// <see cref="ConfigSettingsBuilder"/> にデシリアライズし、環境変数オーバーライドを適用した後、
+        /// 指定があれば名前付きプロファイルをオーバーレイし、環境変数オーバーライドを適用した後、
         /// CLI オーバーライドの適用と <see cref="ConfigSettingsBuilder.Build"/> 呼び出しのためにミュータブルなビルダーを返します。
         /// </summary>
-        public async Task<ConfigSettingsBuilder> LoadConfigBuilderAsync(string? configFilePath = null)
+        public async Task<ConfigSettingsBuilder> LoadConfigBuilderAsync(string? configFilePath = null, string? profileName = null)
         {
             try
             {
@@ -41,6 +43,15 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 string json = await File.ReadAllTextAsync(configFileAbsolutePath);
+
+                // If a profile is specified, merge profile JSON on top of the base config.
+                // プロファイルが指定されている場合、ベース設定の上にプロファイル JSON をマージする。
+                if (!string.IsNullOrWhiteSpace(profileName))
+                {
+                    string profileJson = await LoadProfileJsonAsync(configFileAbsolutePath, profileName);
+                    json = MergeJson(json, profileJson);
+                }
+
                 var builder = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)
                     ?? throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED);
 
@@ -58,6 +69,53 @@ namespace FolderDiffIL4DotNet.Services
                 throw new InvalidDataException(
                     $"{ERROR_CONFIG_PARSE_FAILED}{location}: {ex.Message}{ERROR_CONFIG_PARSE_HINT}", ex);
             }
+        }
+
+        /// <summary>
+        /// Loads the profile JSON file content from the profiles directory next to the base config file.
+        /// Profile path: <c>{configDir}/profiles/{profileName}.json</c>.
+        /// ベース設定ファイルと同じディレクトリの profiles ディレクトリからプロファイル JSON を読み込みます。
+        /// プロファイルパス: <c>{configDir}/profiles/{profileName}.json</c>。
+        /// </summary>
+        internal static async Task<string> LoadProfileJsonAsync(string configFileAbsolutePath, string profileName)
+        {
+            string configDir = Path.GetDirectoryName(configFileAbsolutePath) ?? AppContext.BaseDirectory;
+            string profilePath = Path.Combine(configDir, PROFILES_DIR_NAME, profileName + ".json");
+
+            if (!File.Exists(profilePath))
+            {
+                throw new FileNotFoundException(
+                    $"Profile '{profileName}' not found: {profilePath}");
+            }
+
+            return await File.ReadAllTextAsync(profilePath);
+        }
+
+        /// <summary>
+        /// Merges two JSON strings by overlaying properties from the overlay onto the base.
+        /// Top-level properties in the overlay replace those in the base.
+        /// 2つの JSON 文字列をマージし、オーバーレイのプロパティをベースに上書きします。
+        /// オーバーレイのトップレベルプロパティがベースの同名プロパティを置換します。
+        /// </summary>
+        internal static string MergeJson(string baseJson, string overlayJson)
+        {
+            var baseNode = JsonNode.Parse(baseJson) as JsonObject
+                ?? throw new InvalidDataException(ERROR_CONFIG_PARSE_FAILED);
+            var overlayNode = JsonNode.Parse(overlayJson) as JsonObject
+                ?? throw new InvalidDataException("Failed to parse profile JSON — JSON syntax error");
+
+            foreach (var prop in overlayNode)
+            {
+                // Skip $schema and extension data keys from profile / プロファイルの $schema や拡張データキーはスキップ
+                if (prop.Key == "$schema") continue;
+
+                // Remove existing property before adding (JsonObject doesn't support overwrite)
+                // 既存プロパティを削除してから追加（JsonObject は上書きをサポートしない）
+                baseNode.Remove(prop.Key);
+                baseNode.Add(prop.Key, prop.Value?.DeepClone());
+            }
+
+            return baseNode.ToJsonString();
         }
 
         /// <summary>

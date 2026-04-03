@@ -30,6 +30,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_BELL = "--bell";
         private const string OPT_WIZARD = "--wizard";
         private const string OPT_RANDOM_SPINNER = "--random-spinner";
+        private const string OPT_PROFILE = "--profile";
         private const string OPT_LOG_FORMAT = "--log-format";
 
         /// <summary>
@@ -47,13 +48,14 @@ namespace FolderDiffIL4DotNet.Runner
             // Track how many distinct spinner theme flags have been seen / 何種類のスピナーテーマフラグが指定されたかを追跡
             int spinnerFlagCount = 0;
             string? configPath = null;
+            string? profileName = null;
             int? threadsOverride = null;
             string? logFormatOverride = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
+                return new CliOptions(false, false, false, false, null, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -87,6 +89,16 @@ namespace FolderDiffIL4DotNet.Runner
                         else
                         {
                             parseError ??= $"'{OPT_CONFIG}' requires a file path argument.";
+                        }
+                        break;
+                    case OPT_PROFILE:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            profileName = args[++i];
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_PROFILE}' requires a profile name argument.";
                         }
                         break;
                     case OPT_THREADS:
@@ -199,7 +211,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, profileName, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, parseError);
         }
     }
 }

@@ -19,6 +19,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ShowBanner);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
+            Assert.Null(opts.ProfileName);
             Assert.Null(opts.ThreadsOverride);
             Assert.False(opts.NoIlCache);
             Assert.False(opts.ClearCache);
@@ -57,6 +58,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ShowBanner);
             Assert.False(opts.NoPause);
             Assert.Null(opts.ConfigPath);
+            Assert.Null(opts.ProfileName);
             Assert.Null(opts.ThreadsOverride);
             Assert.False(opts.NoIlCache);
             Assert.False(opts.ClearCache);
@@ -163,6 +165,46 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { "--config", "--no-pause" });
 
             Assert.NotNull(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --profile <name>
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_ProfileWithName_SetsProfileName()
+        {
+            var opts = CliParser.Parse(new[] { "/old", "/new", "lbl", "--profile", "production" });
+
+            Assert.Equal("production", opts.ProfileName);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_ProfileWithoutName_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--profile" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("--profile", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void ParseCliOptions_ProfileFollowedByAnotherFlag_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--profile", "--no-pause" });
+
+            Assert.NotNull(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_ProfileWithConfig_BothSet()
+        {
+            var opts = CliParser.Parse(new[] { "/old", "/new", "lbl", "--config", "/tmp/cfg.json", "--profile", "dev" });
+
+            Assert.Equal("/tmp/cfg.json", opts.ConfigPath);
+            Assert.Equal("dev", opts.ProfileName);
+            Assert.Null(opts.ParseError);
         }
 
         // -----------------------------------------------------------------------
