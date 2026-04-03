@@ -3224,6 +3224,11 @@
       warningsHtml += rows.join('');
       warningsHtml += emptyRow();
     });
+    var colgroup = '<colgroup>';
+    for (var ci = 0; ci < COLS; ci++) {
+      colgroup += ci === 8 ? '<col style="width:280px">' : '<col>';
+    }
+    colgroup += '</colgroup>\n';
     return '<!DOCTYPE html>\n<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">\n'
       + '<head><meta charset="UTF-8">\n'
       + '<style>\n'
@@ -3233,6 +3238,7 @@
       + '</style>\n'
       + '</head><body>\n'
       + '<table>\n'
+      + colgroup
       + emptyRow() + '\n'
       + headerHtml
       + emptyRow() + '\n'
