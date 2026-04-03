@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Time-based greeting after banner** — The console now displays a friendly greeting after the ASCII banner, based on the local time of day (e.g. "Good morning! Have you had breakfast yet?" at 7–9 AM, "Working overtime? Thank you for your hard work." at 9–11 PM). 13 time slots cover the full 24-hour cycle. Affected: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`. Tests: `ConsoleBannerTests.cs` (`GetGreeting_ReturnsExpectedMessageForHour` — 24 cases, `GetGreeting_NeverReturnsEmptyString` — 5 cases, `GetGreeting_AllHoursCovered` — 1 test).
+
+- **Zero-diff easter egg message** — When no files differ between old and new folders (all files unchanged), the completion summary shows "Zero differences found. Are you sure you built the right thing?" instead of the normal bar chart. Affected: `ProgramRunner.cs` (`OutputCompletionSummaryChart`).
+
 #### Changed
 
 - **InlineDiffContextLines default changed from 0 to 4** — Inline diffs now show 4 context lines around each changed hunk by default, giving reviewers surrounding context to understand changes without manual configuration. Previously the default was 0 (changed lines only). Affected: `Models/ConfigSettings.DiffSettings.cs`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `README.md`. Tests: `ConfigSettingsTests.InlineDiffAndMutation.cs` (`Constructor_InlineDiffDefaults_AreCorrect`), `ConfigSettingsTests.ValidationBoundary.cs` (`AllDefaultConstants_MatchExpectedValues`).
@@ -1034,6 +1040,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **バナー後の時刻ベース挨拶** — ASCII バナーの後にローカル時刻に応じた挨拶メッセージをコンソールに表示（例: 朝7〜9時は "Good morning! Have you had breakfast yet?"、夜21〜23時は "Working overtime? Thank you for your hard work."）。24時間を13スロットでカバー。影響: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`。テスト: `ConsoleBannerTests.cs`（`GetGreeting_ReturnsExpectedMessageForHour` — 24 ケース、`GetGreeting_NeverReturnsEmptyString` — 5 ケース、`GetGreeting_AllHoursCovered` — 1 テスト）。
+
+- **ゼロ差分イースターエッグメッセージ** — 旧フォルダと新フォルダの間に差分がない場合（全ファイル未変更）、通常のバーチャートの代わりに "Zero differences found. Are you sure you built the right thing?" と表示。影響: `ProgramRunner.cs`（`OutputCompletionSummaryChart`）。
 
 #### Changed
 
