@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.3] - 2026-04-03
+
 #### Changed
 
 - **.NET SDK column center-aligned and arrow formatting improved** — SDK column body cells are now center-aligned in both Markdown (`|:--------:|`) and HTML (`text-align: center`). When old and new assemblies target different frameworks, the Markdown display uses separately backtick-wrapped parts (`` `.NET 6.0` → `.NET 8.0` ``) instead of wrapping the entire string including the arrow. HTML already uses `CodeWrapArrow` which produces `<code>.NET 6.0</code> → <code>.NET 8.0</code>`. Affected: `Services/ReportGenerateService.cs` (`BuildSdkVersionDisplay`), `Services/SectionWriters/ModifiedFilesSectionWriter.cs`, `Services/SectionWriters/WarningsSectionWriter.cs`, `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.md`.
@@ -1028,6 +1030,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.13.3] - 2026-04-03
 
 #### Changed
 
@@ -2049,7 +2053,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.2...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.3...HEAD
+[1.13.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.2...v1.13.3
 [1.13.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.12.4...v1.13.0
