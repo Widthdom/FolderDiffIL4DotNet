@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Models;
@@ -45,7 +47,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(fakeComparison.HashCalls); // built-in comparison was not called / 組み込み比較は呼ばれていない
             Assert.Single(hook.BeforeCompareCalls);
             Assert.Single(hook.AfterCompareCalls);
-            Assert.True(hook.AfterCompareCalls[0].AreEqual);
+            Assert.True(hook.AfterCompareCalls.First().AreEqual);
         }
 
         [Fact]
@@ -250,8 +252,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             public Exception? BeforeException { get; set; }
             public Exception? AfterException { get; set; }
 
-            public List<FileComparisonHookContext> BeforeCompareCalls { get; } = new();
-            public List<(FileComparisonHookContext Context, bool AreEqual)> AfterCompareCalls { get; } = new();
+            // Thread-safe: hooks may be called from Parallel.ForEachAsync in FolderDiffService / スレッドセーフ: FolderDiffService の Parallel.ForEachAsync から呼ばれる可能性がある
+            public ConcurrentBag<FileComparisonHookContext> BeforeCompareCalls { get; } = new();
+            public ConcurrentBag<(FileComparisonHookContext Context, bool AreEqual)> AfterCompareCalls { get; } = new();
 
             public Task<FileComparisonHookResult?> BeforeCompareAsync(FileComparisonHookContext context, CancellationToken cancellationToken)
             {

@@ -370,6 +370,31 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
+        /// Returns the .NET SDK / target framework display string for a file, or empty if not available.
+        /// ファイルの .NET SDK / ターゲットフレームワーク表示文字列を返します。利用不可の場合は空文字。
+        /// </summary>
+        private static string BuildSdkVersionDisplay(string fileRelativePath, FileDiffResultLists fileDiffResultLists)
+        {
+            if (fileDiffResultLists.FileRelativePathToSdkVersionDictionary.TryGetValue(fileRelativePath, out var sdkVersion) &&
+                !string.IsNullOrWhiteSpace(sdkVersion))
+            {
+                // If the value contains " → " (old ≠ new), backtick-wrap each part separately
+                // so the arrow is not emphasized: "`old` → `new`"
+                // " → " を含む場合（新旧異なる）、各パートを個別にバッククォートで囲み、
+                // 矢印は強調しない: "`old` → `new`"
+                int arrowIdx = sdkVersion.IndexOf(" → ", StringComparison.Ordinal);
+                if (arrowIdx >= 0)
+                {
+                    string oldPart = sdkVersion.Substring(0, arrowIdx);
+                    string newPart = sdkVersion.Substring(arrowIdx + " → ".Length);
+                    return $"`{oldPart}` → `{newPart}`";
+                }
+                return $"`{sdkVersion}`";
+            }
+            return "";
+        }
+
+        /// <summary>
         /// Returns the display order for Unchanged files: SHA256Match → ILMatch → TextMatch.
         /// Unchanged ファイルの表示順序を返します: SHA256Match → ILMatch → TextMatch。
         /// </summary>

@@ -9,6 +9,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **.NET SDK column center-aligned and arrow formatting improved** — SDK column body cells are now center-aligned in both Markdown (`|:--------:|`) and HTML (`text-align: center`). When old and new assemblies target different frameworks, the Markdown display uses separately backtick-wrapped parts (`` `.NET 6.0` → `.NET 8.0` ``) instead of wrapping the entire string including the arrow. HTML already uses `CodeWrapArrow` which produces `<code>.NET 6.0</code> → <code>.NET 8.0</code>`. Affected: `Services/ReportGenerateService.cs` (`BuildSdkVersionDisplay`), `Services/SectionWriters/ModifiedFilesSectionWriter.cs`, `Services/SectionWriters/WarningsSectionWriter.cs`, `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.md`.
+
+- **Excel export: Timestamp column fixed width and SDK column center-aligned** — Timestamp column in Excel-compatible HTML export now has a fixed width (`width:280px` on header, `max-width:280px` on data cells) to prevent Excel from auto-expanding the column to match unrelated content widths. The `.NET SDK` column data cells are now center-aligned (`text-align:center`) in the Excel export, consistent with the main HTML report. Both `colHeaderRow` functions (immediate and chunked export) updated to support per-column style overrides via `COL_STYLES` map. Affected: `Services/HtmlReport/js/diff_report_excel.js`, `doc/samples/diff_report.html`.
+
+- **Unchanged Files table now shows .NET SDK column** — The Unchanged Files table in both Markdown and HTML reports now includes the `.NET SDK` column, showing the target framework for .NET assemblies. Previously the column was hidden via `hide-sdk` CSS class. SDK version data is now populated for unchanged files from `FileRelativePathToSdkVersionDictionary`. Affected: `Services/SectionWriters/UnchangedFilesSectionWriter.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `doc/samples/diff_report.md`, `doc/samples/diff_report.html`.
+
+- **Excel export: Summary section shifted 1 column right** — The Summary title, Category/Count header, and data rows in the Excel-compatible HTML export are now indented 1 additional column to the right (8-cell padding instead of 7), visually separating the summary from header/legend metadata which use 7-cell padding. Affected: `Services/HtmlReport/js/diff_report_excel.js`, `doc/samples/diff_report.html`.
+
+- **Excel export: consolidated architecture and per-section column headers** — Refactored `downloadExcelImmediate` to delegate to `buildExcelFramework` (previously only used by chunked export), eliminating ~200 lines of duplicated logic. Both immediate and chunked export paths now produce identical output including header metadata, legend, summary, and warning sections (previously missing from chunked export). Ignored section now uses "Location" column header instead of "Diff Reason" and omits Estimated Change, Disassembler, and .NET SDK columns (padded with empty cells). `colHeaderRow` accepts a section parameter for per-section header customization. Affected: `Services/HtmlReport/js/diff_report_excel.js`, `doc/samples/diff_report.html`.
+
+- **Improved disassembler error messages with actionable fix guidance** — Timeout errors now include the current `DisassemblerTimeoutSeconds` config value and how to increase it. When a tool reaches the consecutive-failure blacklist threshold, a warning log explains the TTL duration, automatic reinstatement, and suggests `--clear-cache` for stale cache issues. Non-zero exit code errors now list common causes (corrupt assemblies, unsupported formats, tool version incompatibility) and suggest `--skip-il` as a workaround. Process-start failures now remind users to check tool installation and PATH. Affected: `Services/DotNetDisassembleService.cs`, `Services/DotNetDisassembleService.Streaming.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`.
+
+- **JS module conditional exports for Jest testability** — Added `if (typeof module !== 'undefined' && module.exports)` guards to 11 of 13 JS modules, exporting key functions for Node.js/Jest testing without affecting browser behavior. Modules remain concatenated for the HTML report but can now be individually `require()`d in test environments. The `keyboard.js` (IIFE) and `init.js` (entry point) modules are excluded as they have no pure-testable exports. Affected: `Services/HtmlReport/js/diff_report_state.js`, `…/diff_report_export.js`, `…/diff_report_diffview.js`, `…/diff_report_lazy.js`, `…/diff_report_virtualscroll.js`, `…/diff_report_layout.js`, `…/diff_report_filter.js`, `…/diff_report_excel.js`, `…/diff_report_theme.js`, `…/diff_report_celebrate.js`, `…/diff_report_highlight.js`.
+
+#### Added
+
+- **Expanded Jest test coverage (78 → 104 tests)** — Fixed test module loading to include all 13 JS files (was missing virtualscroll, theme, celebrate, keyboard). Added 26 new tests: theme cycling and persistence (5), celebration animation (2), syncTableWidths with hide-disasm/hide-sdk (3), filter state localStorage persistence (3), storage usage display (2), clearOldReviewStates cleanup (1), SDK column in Excel export (1), keyboard j/k/x/? navigation (5), collectFilterState (1), module.exports guards (3). Fixed IL label regex assertion. Added scrollIntoView polyfill for jsdom. Affected: `JsTests/diff_report.test.js`.
+
+- **Plugin unload/cleanup tests** — Added 7 tests in `PluginUnloadCleanupTests`: collectible context unload (1), unload after assembly load (1), multiple independent contexts (1), WeakReference GC reclamation after unload (1), double-unload exception (1), Unloading event (1), shared assembly survives plugin unload (1). Verifies the AssemblyLoadContext lifecycle, memory cleanup, and isolation guarantees. Affected: `FolderDiffIL4DotNet.Tests/Runner/PluginUnloadCleanupTests.cs`.
+
+- **Security tests (XSS, path traversal)** — Added 2 test classes: `HtmlReportSecurityTests` (12 tests) covering script tag injection, attribute injection, template literal backtick escaping, double-encoding, control characters, CJK text, and malicious file paths. `PathTraversalSecurityTests` (10 tests) covering relative path escapes, null byte injection, Windows reserved names, trailing space/dot, absolute paths, Unicode validation, and path length limits. Affected: `FolderDiffIL4DotNet.Tests/Security/HtmlReportSecurityTests.cs`, `…/PathTraversalSecurityTests.cs`.
+
+- **Network share optimization tests** — Added 2 test classes: `NetworkPathDetectorTests` (3 tests) verifying UNC path detection for backslash/forward-slash/device formats, null/empty handling, and local path rejection. `DiffExecutionContextNetworkTests` (5 tests) verifying network flag propagation, null path rejection, and IL output path derivation. Affected: `FolderDiffIL4DotNet.Tests/Core/IO/NetworkPathDetectorTests.cs`.
+
+#### Fixed
+
+- **CI build error: ConcurrentBag indexer access** — Fixed `CS0021` compilation error in `FileDiffServiceUnitTests.Hooks.cs` where `ConcurrentBag<T>[0]` was used (indexer not supported). Replaced with `.First()` via LINQ. This was caused by the thread-safety migration from `List<T>` to `ConcurrentBag<T>`. Affected: `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`.
+
+- **Test assertion mismatches after .NET SDK column addition** — Fixed 5 test assertions that expected 6-column table headers but the SDK column addition made them 7-column. Updated golden sample `diff_report.md` to include the `.NET SDK` column in Modified Files and Warnings tables. Fixed `FileDiffResultLists.ResetAll()` to clear `FileRelativePathToSdkVersionDictionary`. Removed unnecessary null check on non-nullable parameter in `DotNetDisassembleService.Streaming.cs` (`JoinLines` method) to avoid CS8604 warning in Release builds. Affected: `GoldenFileSnapshotTests.cs`, `ReportGenerateServiceTests.SortOrder.cs`, `ReportGenerateServiceTests.SectionsAndWarnings.cs`, `doc/samples/diff_report.md`, `Models/FileDiffResultLists.cs`, `Services/DotNetDisassembleService.Streaming.cs`.
+
+- **Test failures due to incorrect assumptions about runtime behavior** — Fixed 8 test failures: `NetworkPathDetectorTests` UNC path tests now assert platform-specific behavior (UNC detection is Windows-only; Linux/macOS use mount-point analysis instead). `HtmlReportSecurityTests` assertions corrected to verify angle-bracket encoding (`&lt;`/`&gt;`) rather than checking for `onerror` text inside encoded output; `${7*7}` (no backtick) split into separate pass-through test. `PluginUnloadCleanupTests.DoubleUnload` changed from `Assert.Throws<InvalidOperationException>` to `Record.Exception` null-check since .NET silently allows multiple `Unload()` calls. Affected: `NetworkPathDetectorTests.cs`, `HtmlReportSecurityTests.cs`, `PluginUnloadCleanupTests.cs`.
+
+- **HTML report colspan and Excel export COLS not updated for .NET SDK column** — Inline diff detail rows used `colspan="10"` but the .NET SDK column addition brought the total to 11 columns; updated to `colspan="11"`. Excel export used `COLS = 12` (emptyRow/bannerRow cell count) but the SDK column header and data cell additions require 13; updated to `COLS = 13`. Sample HTML `doc/samples/diff_report.html` also updated: `colspan` (26 occurrences), `COLS` (2 occurrences), `colHeaderRow` headers (added `.NET SDK`), and `buildExcelRow` SDK cell extraction. Affected: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `Services/HtmlReport/js/diff_report_excel.js`, `doc/samples/diff_report.html`.
+
 ### [1.13.2] - 2026-04-02
 
 #### Added
@@ -992,6 +1028,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **.NET SDK 列の中央揃えと矢印フォーマット改善** — SDK 列のボディセルを Markdown（`|:--------:|`）と HTML（`text-align: center`）の両方で中央揃えに変更。旧新アセンブリのターゲットフレームワークが異なる場合、Markdown 表示で矢印を含む全体をバッククォートで囲む代わりに各パートを個別に囲むように変更（`` `.NET 6.0` → `.NET 8.0` ``）。HTML は既存の `CodeWrapArrow` により `<code>.NET 6.0</code> → <code>.NET 8.0</code>` 形式。対象: `Services/ReportGenerateService.cs`（`BuildSdkVersionDisplay`）、`Services/SectionWriters/ModifiedFilesSectionWriter.cs`、`Services/SectionWriters/WarningsSectionWriter.cs`、`Services/HtmlReport/diff_report.css`、`doc/samples/diff_report.md`。
+
+- **Excel エクスポート: Timestamp 列の幅固定と SDK 列の中央揃え** — Excel 互換 HTML エクスポートの Timestamp 列に固定幅（ヘッダー `width:280px`、データセル `max-width:280px`）を設定し、Excel が無関係なコンテンツ幅に合わせて列を自動拡張するのを防止。`.NET SDK` 列のデータセルに `text-align:center` を追加し、メイン HTML レポートと一貫した中央揃えに。即時エクスポートとチャンクエクスポートの両 `colHeaderRow` 関数を `COL_STYLES` マップによる列別スタイルオーバーライドに対応。対象: `Services/HtmlReport/js/diff_report_excel.js`、`doc/samples/diff_report.html`。
+
+- **Unchanged Files テーブルに .NET SDK 列を表示** — Markdown・HTML 両レポートの Unchanged Files テーブルに `.NET SDK` 列を追加。.NET アセンブリのターゲットフレームワークを表示。従来は `hide-sdk` CSS クラスで非表示だった。`FileRelativePathToSdkVersionDictionary` から SDK バージョンデータを取得。対象: `Services/SectionWriters/UnchangedFilesSectionWriter.cs`、`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`、`doc/samples/diff_report.md`、`doc/samples/diff_report.html`。
+
+- **Excel エクスポート: Summary セクションを1列右にシフト** — Excel 互換 HTML エクスポートの Summary タイトル、Category/Count ヘッダー、データ行を1列分右にインデント（7セルパディングから8セルに変更）。ヘッダー/凡例メタデータ（7セルパディング）とサマリーを視覚的に区別。対象: `Services/HtmlReport/js/diff_report_excel.js`、`doc/samples/diff_report.html`。
+
+- **Excel エクスポート: アーキテクチャ統合とセクション別列ヘッダー** — `downloadExcelImmediate` を `buildExcelFramework`（従来チャンクエクスポート専用）に委譲するよう リファクタリングし、約200行の重複ロジックを排除。即時・チャンク両エクスポートパスがヘッダーメタデータ、凡例、サマリー、警告セクションを含む同一出力を生成（従来チャンクエクスポートではこれらが欠落）。Ignored セクションの列ヘッダーを「Diff Reason」から「Location」に変更し、Estimated Change・Disassembler・.NET SDK 列を省略（空セルでパディング）。`colHeaderRow` にセクションパラメータを追加しセクション別ヘッダーカスタマイズに対応。対象: `Services/HtmlReport/js/diff_report_excel.js`、`doc/samples/diff_report.html`。
+
+- **逆アセンブラエラーメッセージに具体的な対処方法を追加** — タイムアウトエラーに現在の `DisassemblerTimeoutSeconds` 設定値と変更方法を表示。ツールが連続失敗のブラックリスト閾値に達した際、TTL 期間・自動復旧・`--clear-cache` オプションを案内する警告ログを追加。終了コード非 0 エラーに一般的な原因（破損アセンブリ、非対応形式、ツールバージョン不整合）と `--skip-il` による回避策を追記。プロセス起動失敗時にツールインストールと PATH 確認を促すメッセージを追加。対象: `Services/DotNetDisassembleService.cs`、`Services/DotNetDisassembleService.Streaming.cs`、`Services/DotNetDisassembleService.VersionLabel.cs`。
+
+- **JS モジュールに条件付きエクスポートを追加（Jest テスト対応）** — 13 モジュール中 11 に `if (typeof module !== 'undefined' && module.exports)` ガードを追加し、ブラウザ動作に影響なく Node.js/Jest テスト環境から主要関数を `require()` 可能に。HTML レポートでは従来通り結合出力されるが、テスト環境では個別ファイルとして読み込み可能。`keyboard.js`（IIFE）と `init.js`（エントリーポイント）は純粋テスト可能なエクスポートがないため除外。対象: `Services/HtmlReport/js/` 配下 11 ファイル。
+
+#### Added
+
+- **Jest テストカバレッジ拡充（78 → 104 テスト）** — テストのモジュール読み込みを全 13 JS ファイルに修正（virtualscroll、theme、celebrate、keyboard が欠落）。新規 26 テスト追加: テーマ切替・永続化（5）、セレブレーションアニメーション（2）、syncTableWidths の hide-disasm/hide-sdk 対応（3）、フィルタ状態 localStorage 永続化（3）、ストレージ使用量表示（2）、clearOldReviewStates クリーンアップ（1）、Excel エクスポートの SDK 列（1）、キーボードナビゲーション j/k/x/?（5）、collectFilterState（1）、module.exports ガード（3）。IL ラベル正規表現アサーション修正。jsdom 用 scrollIntoView ポリフィル追加。対象: `JsTests/diff_report.test.js`。
+
+- **プラグインアンロード/クリーンアップテスト** — `PluginUnloadCleanupTests` に 7 テストを追加: コレクティブルコンテキストのアンロード（1）、アセンブリ読み込み後のアンロード（1）、複数コンテキストの独立アンロード（1）、WeakReference による GC 回収検証（1）、二重アンロード例外（1）、Unloading イベント発火（1）、共有アセンブリのアンロード後存続（1）。AssemblyLoadContext のライフサイクル、メモリクリーンアップ、分離保証を検証。対象: `FolderDiffIL4DotNet.Tests/Runner/PluginUnloadCleanupTests.cs`。
+
+- **セキュリティテスト（XSS、パストラバーサル）** — 2 テストクラスを追加: `HtmlReportSecurityTests`（12 テスト）— script タグインジェクション、属性インジェクション、テンプレートリテラルのバックティックエスケープ、二重エンコード、制御文字、CJK テキスト、悪意あるファイルパスをカバー。`PathTraversalSecurityTests`（10 テスト）— 相対パスエスケープ、NULL バイトインジェクション、Windows 予約名、末尾スペース/ドット、絶対パス、Unicode 検証、パス長制限をカバー。対象: `FolderDiffIL4DotNet.Tests/Security/HtmlReportSecurityTests.cs`、`…/PathTraversalSecurityTests.cs`。
+
+- **ネットワーク共有最適化テスト** — 2 テストクラスを追加: `NetworkPathDetectorTests`（3 テスト）— バックスラッシュ/フォワードスラッシュ/デバイス形式の UNC パス検出、null/空文字列処理、ローカルパス拒否を検証。`DiffExecutionContextNetworkTests`（5 テスト）— ネットワークフラグ伝播、null パス拒否、IL 出力パス導出を検証。対象: `FolderDiffIL4DotNet.Tests/Core/IO/NetworkPathDetectorTests.cs`。
+
+#### Fixed
+
+- **CI ビルドエラー: ConcurrentBag インデクサアクセス** — `FileDiffServiceUnitTests.Hooks.cs` で `ConcurrentBag<T>[0]` を使用していた `CS0021` コンパイルエラーを修正（インデクサ非対応）。LINQ の `.First()` に置換。スレッドセーフティ移行（`List<T>` → `ConcurrentBag<T>`）に起因。対象: `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`。
+
+- **.NET SDK 列追加後のテストアサーション不整合** — 6列テーブルヘッダーを期待していた5つのテストアサーションを7列（SDK列追加）に修正。ゴールデンサンプル `diff_report.md` の Modified Files テーブルと Warnings テーブルに `.NET SDK` 列を追加。`FileDiffResultLists.ResetAll()` に `FileRelativePathToSdkVersionDictionary` のクリア漏れを修正。`DotNetDisassembleService.Streaming.cs` の `JoinLines` メソッドで非 nullable パラメータへの不要な null チェックを除去（Release ビルドの CS8604 警告回避）。対象: `GoldenFileSnapshotTests.cs`、`ReportGenerateServiceTests.SortOrder.cs`、`ReportGenerateServiceTests.SectionsAndWarnings.cs`、`doc/samples/diff_report.md`、`Models/FileDiffResultLists.cs`、`Services/DotNetDisassembleService.Streaming.cs`。
+
+- **ランタイム動作の誤った前提に基づくテスト失敗修正** — 8件のテスト失敗を修正: `NetworkPathDetectorTests` の UNC パステストをプラットフォーム固有の動作に変更（UNC 検出は Windows 専用、Linux/macOS はマウントポイント分析を使用）。`HtmlReportSecurityTests` のアサーションを山括弧エンコード（`&lt;`/`&gt;`）の検証に修正（エンコード済み出力内の `onerror` テキスト検索は不適切）。`${7*7}`（バッククォートなし）は独立したパススルーテストに分離。`PluginUnloadCleanupTests.DoubleUnload` を `Assert.Throws<InvalidOperationException>` から `Record.Exception` null チェックに変更（.NET は複数回の `Unload()` 呼び出しを黙殺するため）。対象: `NetworkPathDetectorTests.cs`、`HtmlReportSecurityTests.cs`、`PluginUnloadCleanupTests.cs`。
+
+- **HTML レポートの colspan と Excel エクスポートの COLS が .NET SDK 列に未対応** — インライン差分詳細行が `colspan="10"` を使用していたが、.NET SDK 列追加により合計 11 列になったため `colspan="11"` に更新。Excel エクスポートの `COLS = 12`（emptyRow/bannerRow のセル数）も SDK 列ヘッダーとデータセル追加により 13 に更新。サンプル HTML `doc/samples/diff_report.html` も同期: `colspan`（26 箇所）、`COLS`（2 箇所）、`colHeaderRow` ヘッダー（`.NET SDK` 追加）、`buildExcelRow` の SDK セル抽出。対象: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`、`Services/HtmlReport/js/diff_report_excel.js`、`doc/samples/diff_report.html`。
 
 ### [1.13.2] - 2026-04-02
 

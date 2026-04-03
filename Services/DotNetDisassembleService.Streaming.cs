@@ -73,7 +73,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}. Ensure the tool is installed and its directory is in PATH.", shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
@@ -176,7 +176,10 @@ namespace FolderDiffIL4DotNet.Services
             }
             else
             {
-                var lastError = new InvalidOperationException($"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\nFile: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}");
+                var lastError = new InvalidOperationException(
+                    $"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\n" +
+                    $"File: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}\n" +
+                    $"Hint: Common causes include corrupt assemblies, unsupported formats, or tool version incompatibility. If this persists, try updating the disassembler tool or use --skip-il to bypass IL comparison.");
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlLines: null, Label: null, Error: lastError);
             }
@@ -248,7 +251,7 @@ namespace FolderDiffIL4DotNet.Services
                         try { process.Kill(entireProcessTree: true); } catch { /* best effort / ベストエフォート */ }
 #pragma warning restore CA1031
                         return (ExitCode: int.MinValue, StdoutLines: null, Stderr: null,
-                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds."));
+                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds. To increase the limit, set DisassemblerTimeoutSeconds in config.json (current: {timeoutSeconds})."));
                     }
                 }
                 else
@@ -306,7 +309,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private static string JoinLines(IReadOnlyList<string> lines)
         {
-            if (lines == null || lines.Count == 0)
+            if (lines.Count == 0)
             {
                 return string.Empty;
             }

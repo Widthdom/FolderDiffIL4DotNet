@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Core.Diagnostics;
@@ -53,8 +54,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Both file hashes should have been seeded into the IL cache
             Assert.Equal(2, ilOutputService.PreSeedCalls.Count);
-            Assert.Equal(Path.Combine("/virtual/old", "sample.txt"), ilOutputService.PreSeedCalls[0].Path);
-            Assert.Equal(Path.Combine("/virtual/new", "sample.txt"), ilOutputService.PreSeedCalls[1].Path);
+            Assert.Equal(Path.Combine("/virtual/old", "sample.txt"), ilOutputService.PreSeedCalls.ElementAt(0).Path);
+            Assert.Equal(Path.Combine("/virtual/new", "sample.txt"), ilOutputService.PreSeedCalls.ElementAt(1).Path);
         }
 
         [Fact]
@@ -194,7 +195,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Only file2 should have been pre-seeded / file2 のみ事前登録されるべき
             Assert.Single(ilOutputService.PreSeedCalls);
-            Assert.Equal(Path.Combine("/virtual/new", "nullhash1.dat"), ilOutputService.PreSeedCalls[0].Path);
+            Assert.Equal(Path.Combine("/virtual/new", "nullhash1.dat"), ilOutputService.PreSeedCalls.ElementAt(0).Path);
         }
 
         [Fact]
@@ -220,7 +221,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Only file1 should have been pre-seeded / file1 のみ事前登録されるべき
             Assert.Single(ilOutputService.PreSeedCalls);
-            Assert.Equal(Path.Combine("/virtual/old", "nullhash2.dat"), ilOutputService.PreSeedCalls[0].Path);
+            Assert.Equal(Path.Combine("/virtual/old", "nullhash2.dat"), ilOutputService.PreSeedCalls.ElementAt(0).Path);
         }
 
         [Fact]

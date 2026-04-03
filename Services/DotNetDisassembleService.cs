@@ -131,7 +131,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}. Ensure the tool is installed and its directory is in PATH.", shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
@@ -194,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (System.ComponentModel.Win32Exception ex)
                 {
                     lastError = ex;
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to start disassembler tool '{candidateDisassembleCommand}': {ex.Message}. Ensure the tool is installed and its directory is in PATH.", shouldOutputMessageToConsole: true, ex);
                     RegisterDisassembleFailure(candidateDisassembleCommand);
                     continue;
                 }
@@ -307,7 +307,10 @@ namespace FolderDiffIL4DotNet.Services
             {
                 // Non-zero exit code — wrap into an exception and blacklist the tool.
                 // 終了コードが非 0 の場合は例外に包んでブラックリストに登録。
-                var lastError = new InvalidOperationException($"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\nFile: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}");
+                var lastError = new InvalidOperationException(
+                    $"ildasm failed (exit {exitCode}) with command: {disassembleCommand} {ProcessHelper.GetUsedArgs(argset.args)} in {argset.workingDirectory}\n" +
+                    $"File: {dotNetAssemblyFileAbsolutePath}\nStderr: {stderr}\n" +
+                    $"Hint: Common causes include corrupt assemblies, unsupported formats, or tool version incompatibility. If this persists, try updating the disassembler tool or use --skip-il to bypass IL comparison.");
                 RegisterDisassembleFailure(disassembleCommand);
                 return (Success: false, IlText: null, DisassembleCommandAndItsVersionWithArguments: null, Error: lastError);
             }
@@ -403,7 +406,21 @@ namespace FolderDiffIL4DotNet.Services
             => _blacklist.IsBlacklisted(disassembleCommand);
 
         private void RegisterDisassembleFailure(string disassembleCommand)
-            => _blacklist.RegisterFailure(disassembleCommand);
+        {
+            _blacklist.RegisterFailure(disassembleCommand);
+            if (_blacklist.IsBlacklisted(disassembleCommand))
+            {
+                var ttlMinutes = _config.DisassemblerBlacklistTtlMinutes > 0
+                    ? _config.DisassemblerBlacklistTtlMinutes
+                    : DEFAULT_BLACKLIST_TTL_MINUTES;
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Disassembler '{disassembleCommand}' has been temporarily disabled after {DISASSEMBLE_FAIL_THRESHOLD} consecutive failures. " +
+                    $"It will be reinstated automatically after {ttlMinutes} minutes. " +
+                    $"If caused by stale cache, run with --clear-cache. To adjust the TTL, set DisassemblerBlacklistTtlMinutes in config.json.",
+                    shouldOutputMessageToConsole: true);
+            }
+        }
 
         private void ResetDisassembleFailure(string disassembleCommand)
             => _blacklist.ResetFailure(disassembleCommand);

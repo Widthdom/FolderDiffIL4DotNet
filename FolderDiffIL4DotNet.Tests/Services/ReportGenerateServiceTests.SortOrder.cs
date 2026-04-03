@@ -52,12 +52,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(sha256Start >= 0);
             int tsRegressedStart = reportText.IndexOf("new file timestamps older than old", StringComparison.Ordinal);
             string sha256Section = reportText.Substring(sha256Start, tsRegressedStart - sha256Start);
-            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |", sha256Section);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |", sha256Section);
 
             // new file timestamps older than old warning table: 6 columns (Diff Reason + Estimated Change + Disassembler)
             // タイムスタンプ逆行警告テーブル: 6 列（Diff Reason + Estimated Change + Disassembler）
             string tsSection = reportText.Substring(tsRegressedStart);
-            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |", tsSection);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |", tsSection);
         }
 
         // ── Assembly Semantic Changes removed from Markdown report ─────────────

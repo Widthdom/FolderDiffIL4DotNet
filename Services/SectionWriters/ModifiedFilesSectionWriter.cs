@@ -22,8 +22,8 @@ namespace FolderDiffIL4DotNet.Services
                 int count = ctx.FileDiffResultLists.ModifiedFilesRelativePath.Count;
                 writer.WriteLine($"{REPORT_SECTION_PREFIX}{REPORT_MARKER_MODIFIED} {REPORT_LABEL_MODIFIED}{REPORT_SECTION_FILES_SUFFIX} ({count})");
                 writer.WriteLine();
-                writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |");
-                writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|");
+                writer.WriteLine("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |");
+                writer.WriteLine("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|:--------:|");
                 var sortedModified = ctx.FileDiffResultLists.ModifiedFilesRelativePath
                     .OrderBy(p => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(p, out var d) ? GetModifiedSortOrder(d) : 3)
                     .ThenBy(p => GetImportanceSortOrder(ctx.FileDiffResultLists.GetMaxImportance(p)))
@@ -41,7 +41,8 @@ namespace FolderDiffIL4DotNet.Services
                         tsCol = $"{oldTs}{REPORT_TIMESTAMP_ARROW}{newTs}";
                     }
                     var tagDisplay = BuildChangeTagDisplay(fileRelativePath, ctx.FileDiffResultLists);
-                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {tagDisplay} | {disasmDisplay} |");
+                    var sdkDisplay = BuildSdkVersionDisplay(fileRelativePath, ctx.FileDiffResultLists);
+                    writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {tagDisplay} | {disasmDisplay} | {sdkDisplay} |");
                 }
 
                 // Dependency changes sub-sections for .deps.json files

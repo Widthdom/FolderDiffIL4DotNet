@@ -3,8 +3,10 @@ using System.Linq;
 using FolderDiffIL4DotNet;
 using FolderDiffIL4DotNet.Core.Console;
 using FolderDiffIL4DotNet.Core.Diagnostics;
+using FolderDiffIL4DotNet.Core.IL;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Core.Text;
+using FolderDiffIL4DotNet.Core.Versioning;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Architecture
@@ -32,7 +34,9 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
                 typeof(PathValidator),
                 typeof(ProcessHelper),
                 typeof(SystemInfo),
-                typeof(TextSanitizer)
+                typeof(TextSanitizer),
+                typeof(ILBlockParser),
+                typeof(NuGetVersionRange)
             ];
 
             Assert.Equal("FolderDiffIL4DotNet.Core", coreAssembly.GetName().Name);

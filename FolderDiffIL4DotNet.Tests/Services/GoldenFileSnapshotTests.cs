@@ -143,7 +143,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(modifiedIdx >= 0, "Modified Files section must exist");
 
             var afterModified = content.Substring(modifiedIdx);
-            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |", afterModified);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |", afterModified);
         }
 
         [Fact]

@@ -16,7 +16,8 @@
       'col-ts-g': 28 * emPx,
       'col-diff-g': px('--col-diff-w', 10.8),
       'col-tag-g': px('--col-tag-w', 14),
-      'col-disasm-g': px('--col-disasm-w', 28)
+      'col-disasm-g': px('--col-disasm-w', 28),
+      'col-sdk-g': px('--col-sdk-w', 14)
     };
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
       var cg = t.querySelector('colgroup');
@@ -24,11 +25,13 @@
       var hideDisasm = t.classList.contains('hide-disasm');
       var hideCol6 = t.classList.contains('hide-col6');
       var hideTag = t.classList.contains('hide-tag');
+      var hideSdk = t.classList.contains('hide-sdk');
       var w = 0;
       cg.querySelectorAll('col').forEach(function(col) {
         if (hideDisasm && col.classList.contains('col-disasm-g')) return;
         if (hideCol6 && col.classList.contains('col-diff-g')) return;
         if (hideTag && col.classList.contains('col-tag-g')) return;
+        if (hideSdk && col.classList.contains('col-sdk-g')) return;
         if (colW[col.className] !== undefined) w += colW[col.className];
       });
       if (w > 0) t.style.width = w + 'px';
@@ -147,3 +150,7 @@
       initColResizeSingle(th);
     });
   }
+
+  /* Export functions for Node.js/Jest testing (no-op in browser) */
+  /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { syncTableWidths: syncTableWidths, syncScTableWidths: syncScTableWidths }; }

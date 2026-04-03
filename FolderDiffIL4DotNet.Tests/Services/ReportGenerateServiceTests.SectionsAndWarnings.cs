@@ -281,8 +281,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("## Warnings", reportText);
             Assert.Contains("SHA256Mismatch: binary diff only", reportText);
             Assert.Contains("new file timestamps older than old", reportText);
-            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler |", reportText);
-            Assert.Contains("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|", reportText);
+            Assert.Contains("| Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |", reportText);
+            Assert.Contains("|:------:|-----------|:---------:|:-----------:|:----------------:|--------------|:--------:|", reportText);
             Assert.Contains("| nested", reportText);
             Assert.Contains("2026-03-14 10:00:00 → 2026-03-14 09:00:00", reportText);
         }

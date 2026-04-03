@@ -169,3 +169,7 @@
       }, 1200);
     });
   }
+
+  /* Export functions for Node.js/Jest testing (no-op in browser) */
+  /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, resetFilters: resetFilters }; }

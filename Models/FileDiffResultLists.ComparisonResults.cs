@@ -28,6 +28,14 @@ namespace FolderDiffIL4DotNet.Models
         public ConcurrentDictionary<string, string> FileRelativePathToIlDisassemblerLabelDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
 
         /// <summary>
+        /// .NET SDK / target framework version per .NET assembly (e.g., ".NET 8.0.413", "net8.0").
+        /// Populated for both old and new assemblies as "old → new" when different, or single value when identical.
+        /// .NET アセンブリごとの .NET SDK / ターゲットフレームワークバージョン。
+        /// 旧新が異なる場合は "old → new"、同一なら単一値を格納。
+        /// </summary>
+        public ConcurrentDictionary<string, string> FileRelativePathToSdkVersionDictionary { get; } = new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+
+        /// <summary>
         /// Returns <see langword="true"/> when at least one file comparison resulted in a SHA256 mismatch.
         /// 少なくとも 1 件のファイル比較で SHA256 不一致が発生した場合に <see langword="true"/> を返します。
         /// </summary>

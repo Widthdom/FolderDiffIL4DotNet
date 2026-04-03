@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -92,13 +93,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             public DotNetExecutableDetectionResult DotNetDetectionResult { get; set; } =
                 new(DotNetExecutableDetectionStatus.NotDotNetExecutable);
 
-            public List<(string File1, string File2)> HashCalls { get; } = new();
+            // Thread-safe: these may be called from Parallel.ForEachAsync in FolderDiffService / スレッドセーフ: FolderDiffService の Parallel.ForEachAsync から呼ばれる可能性がある
+            public ConcurrentBag<(string File1, string File2)> HashCalls { get; } = new();
 
-            public List<string> DotNetDetectionCalls { get; } = new();
+            public ConcurrentBag<string> DotNetDetectionCalls { get; } = new();
 
-            public List<(string File1, string File2)> TextDiffCalls { get; } = new();
+            public ConcurrentBag<(string File1, string File2)> TextDiffCalls { get; } = new();
 
-            public List<(string Path, long Offset, int Length)> ReadChunkCalls { get; } = new();
+            public ConcurrentBag<(string Path, long Offset, int Length)> ReadChunkCalls { get; } = new();
 
             public void SetFileContent(string path, string content)
                 => _fileContentsByPath[path] = System.Text.Encoding.UTF8.GetBytes(content);
@@ -199,11 +201,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public Exception DiffException { get; set; }
 
-            public List<DiffCall> DiffCalls { get; } = new();
+            // Thread-safe: called from Parallel.ForEachAsync via FileDiffService / スレッドセーフ: FileDiffService 経由で Parallel.ForEachAsync から呼ばれる
+            public ConcurrentBag<DiffCall> DiffCalls { get; } = new();
 
             public int PrecomputeCallCount { get; private set; }
 
-            public List<(string Path, string Hash)> PreSeedCalls { get; } = new();
+            // Thread-safe + order-preserving: PreSeedFileHash may be called from parallel context, assertions need FIFO order / スレッドセーフ＋順序保持: 並列コンテキストから呼ばれ、アサーションで FIFO 順序が必要
+            public ConcurrentQueue<(string Path, string Hash)> PreSeedCalls { get; } = new();
 
             public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePaths, int maxParallel, CancellationToken cancellationToken = default)
             {
@@ -213,7 +217,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public void PreSeedFileHash(string fileAbsolutePath, string sha256Hex)
             {
-                PreSeedCalls.Add((fileAbsolutePath, sha256Hex));
+                PreSeedCalls.Enqueue((fileAbsolutePath, sha256Hex));
             }
 
             public Task<(bool AreEqual, string? DisassemblerLabel)> DiffDotNetAssembliesAsync(string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, bool shouldOutputIlText, CancellationToken cancellationToken = default)

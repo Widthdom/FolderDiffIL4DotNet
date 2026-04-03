@@ -211,7 +211,7 @@ namespace FolderDiffIL4DotNet.Services
                         try { process.Kill(entireProcessTree: true); } catch { /* best effort / ベストエフォート */ }
 #pragma warning restore CA1031
                         return (ExitCode: int.MinValue, Stdout: null, Stderr: null,
-                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds."));
+                            Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds. To increase the limit, set DisassemblerTimeoutSeconds in config.json (current: {timeoutSeconds})."));
                     }
                 }
                 else
