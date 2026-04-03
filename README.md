@@ -167,6 +167,53 @@ dotnet run -- --print-config
 dotnet run -- --config /etc/my-config.json --print-config
 ```
 
+#### Configuration Profiles
+
+When you manage multiple products or environments with different settings (ignored extensions, IL noise filters, parallelism, etc.), **configuration profiles** let you switch without editing `config.json`.
+
+**1. Create the profiles directory** next to your `config.json`:
+
+```
+<exe>/
+  config.json            ← base configuration
+  profiles/
+    il-noise-suppress.json
+    production.json
+```
+
+**2. Write a profile JSON** containing only the settings you want to override. Unspecified settings inherit from the base `config.json`:
+
+```json
+{
+  "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ILIgnoreLineContainingStrings": [
+    "buildserver1_",
+    "// Method begins at Relative Virtual Address (RVA) 0x",
+    ".publickeytoken = ( ",
+    "// Code size "
+  ]
+}
+```
+
+**3. Run with `--profile`:**
+
+```bash
+# Apply the il-noise-suppress profile
+dotnet run "/path/old" "/path/new" "label" --profile il-noise-suppress --no-pause
+
+# Combine with --config to use a non-default base config
+dotnet run "/path/old" "/path/new" "label" --config /shared/config.json --profile production --no-pause
+
+# Verify the merged result without running a diff
+dotnet run -- --profile production --print-config
+```
+
+**Priority order** (highest wins): CLI flags > environment variables > profile > `config.json` > code defaults.
+
+> **Note:** Profile arrays (e.g. `IgnoredExtensions`, `ILIgnoreLineContainingStrings`) **replace** the base value entirely — they are not merged. If the base config has `[".pdb", ".log"]` and the profile has `[".pdb"]`, only `.pdb` will be ignored.
+
+See `doc/profiles/` for ready-to-use sample profiles.
+
 > **Tip:** When a configuration error occurs (exit code `3`), a hint is printed to stderr suggesting `--print-config` for diagnosis.
 
 Main output is written to `Reports/<label>/`. See [Generated Artifacts](#readme-en-generated-artifacts) for the full list.
@@ -888,6 +935,53 @@ dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pau
 dotnet run -- --print-config
 dotnet run -- --config /etc/my-config.json --print-config
 ```
+
+#### 設定プロファイル
+
+製品や環境ごとに異なる設定（除外拡張子、IL ノイズフィルタ、並列数など）を使い分ける場合、**設定プロファイル**を使うと `config.json` を編集せずに切り替えられます。
+
+**1. `config.json` と同じディレクトリに `profiles` ディレクトリを作成**します:
+
+```
+<exe>/
+  config.json            ← ベース設定
+  profiles/
+    il-noise-suppress.json
+    production.json
+```
+
+**2. 上書きしたい設定のみを含むプロファイル JSON を作成**します。未指定の設定はベースの `config.json` から継承されます:
+
+```json
+{
+  "ShouldIgnoreILLinesContainingConfiguredStrings": true,
+  "ILIgnoreLineContainingStrings": [
+    "buildserver1_",
+    "// Method begins at Relative Virtual Address (RVA) 0x",
+    ".publickeytoken = ( ",
+    "// Code size "
+  ]
+}
+```
+
+**3. `--profile` を指定して実行:**
+
+```bash
+# il-noise-suppress プロファイルを適用
+dotnet run "/path/old" "/path/new" "label" --profile il-noise-suppress --no-pause
+
+# --config と組み合わせてデフォルト以外のベース設定を使用
+dotnet run "/path/old" "/path/new" "label" --config /shared/config.json --profile production --no-pause
+
+# マージ結果を差分実行なしで確認
+dotnet run -- --profile production --print-config
+```
+
+**優先度**（高い方が勝つ）: CLI フラグ ＞ 環境変数 ＞ プロファイル ＞ `config.json` ＞ コードデフォルト。
+
+> **注意:** プロファイルの配列（`IgnoredExtensions`、`ILIgnoreLineContainingStrings` など）はベース値を**完全に置換**します — マージではありません。ベース設定が `[".pdb", ".log"]` でプロファイルが `[".pdb"]` の場合、`.pdb` のみが除外されます。
+
+すぐに使えるサンプルプロファイルは `doc/profiles/` を参照してください。
 
 > **ヒント:** 設定エラー（終了コード `3`）が発生した場合、診断用に `--print-config` を提案するヒントが stderr に出力されます。
 
