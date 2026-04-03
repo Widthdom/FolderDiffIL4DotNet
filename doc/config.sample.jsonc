@@ -179,9 +179,9 @@
   // HTML レポートでインライン差分を有効にする（デフォルト: true）
   "EnableInlineDiff": true,
 
-  // Context lines around each diff hunk (0 = show only changed lines) (default: 0)
-  // 各差分ハンクの前後に表示するコンテキスト行数（0 = 変更行のみ）（デフォルト: 0）
-  "InlineDiffContextLines": 0,
+  // Context lines around each diff hunk (0 = show only changed lines) (default: 4)
+  // 各差分ハンクの前後に表示するコンテキスト行数（0 = 変更行のみ）（デフォルト: 4）
+  "InlineDiffContextLines": 4,
 
   // Maximum edit distance for diff computation; skip diff for very different files (default: 4000)
   // 差分計算の最大編集距離。非常に異なるファイルの差分計算をスキップ（デフォルト: 4000）
