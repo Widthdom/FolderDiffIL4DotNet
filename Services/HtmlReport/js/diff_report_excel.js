@@ -326,10 +326,16 @@
     var summaryHtml = '';
     var statTable = document.querySelector('.stat-table');
     if (statTable) {
-      summaryHtml += bannerRow7('Summary', '#000', 'font-weight:bold;padding:8px');
-      summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
+      // Summary is indented 1 column further right than header/legend (PAD7 + 1 = 8 cells)
+      // サマリーはヘッダー/凡例より1列右にインデント（PAD7 + 1 = 8セル）
+      var PAD8 = PAD7 + '<td></td>';
+      var SUM_FILL = COLS - 10; // remaining cols after PAD8 + Category + Count / PAD8 + Category + Count 後の残り列数
+      summaryHtml += '<tr>' + PAD8 + '<td style="color:#000;font-weight:bold;padding:8px">' + esc('Summary') + '</td>';
+      for (var si = 9; si < COLS; si++) summaryHtml += '<td></td>';
+      summaryHtml += '</tr>';
+      summaryHtml += '<tr>' + PAD8 + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
         + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>'
-        + '<td colspan="' + (SPAN - 2) + '"></td></tr>';
+        + '<td colspan="' + SUM_FILL + '"></td></tr>';
       var summaryRowColors = { 'Added': '#e6ffed', 'Removed': '#ffeef0', 'Modified': '#e3f2fd' };
       statTable.querySelectorAll('tr').forEach(function(tr) {
         if (tr.querySelector('th')) return;
@@ -337,9 +343,9 @@
         if (cells.length >= 2) {
           var label = cells[0].textContent.trim();
           var bgStyle = summaryRowColors[label] ? 'background:' + summaryRowColors[label] + ';' : '';
-          summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="' + bgStyle + '">' + esc(label) + '</td>'
+          summaryHtml += '<tr>' + PAD8 + '<td class="bd" style="' + bgStyle + '">' + esc(label) + '</td>'
             + '<td class="bd" style="' + bgStyle + 'text-align:right">' + esc(cells[1].textContent.trim()) + '</td>'
-            + '<td colspan="' + (SPAN - 2) + '"></td></tr>';
+            + '<td colspan="' + SUM_FILL + '"></td></tr>';
         }
       });
       summaryHtml += emptyRow();
