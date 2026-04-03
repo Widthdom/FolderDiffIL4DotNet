@@ -1,5 +1,7 @@
 # FolderDiffIL4DotNet (English)
 
+> **[日本語版はこちら / Japanese version](#readme-ja)**
+
 [![Build and Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/dotnet.yml)
 [![CodeQL](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/codeql.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/codeql.yml)
 [![Release](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/release.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/release.yml)
@@ -711,7 +713,11 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 
 ---
 
+<a id="readme-ja"></a>
+
 # FolderDiffIL4DotNet（日本語）
+
+> **[English version is here](#folderdiffil4dotnet-english)**
 
 [![Build and Test](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/dotnet.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/dotnet.yml)
 [![CodeQL](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/codeql.yml/badge.svg)](https://github.com/Widthdom/FolderDiffIL4DotNet/actions/workflows/codeql.yml)
