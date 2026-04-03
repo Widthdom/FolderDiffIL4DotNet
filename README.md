@@ -212,7 +212,7 @@ dotnet run -- --profile production --print-config
 
 > **Note:** Profile arrays (e.g. `IgnoredExtensions`, `ILIgnoreLineContainingStrings`) **replace** the base value entirely — they are not merged. If the base config has `[".pdb", ".log"]` and the profile has `[".pdb"]`, only `.pdb` will be ignored.
 
-See `doc/profiles/` for ready-to-use sample profiles.
+See `doc/profiles/` for annotated sample profiles (`.sample.jsonc`). To use them, copy the file into your `profiles/` directory with a `.json` extension and remove the comments, since the tool reads standard JSON only.
 
 > **Tip:** When a configuration error occurs (exit code `3`), a hint is printed to stderr suggesting `--print-config` for diagnosis.
 
@@ -981,7 +981,7 @@ dotnet run -- --profile production --print-config
 
 > **注意:** プロファイルの配列（`IgnoredExtensions`、`ILIgnoreLineContainingStrings` など）はベース値を**完全に置換**します — マージではありません。ベース設定が `[".pdb", ".log"]` でプロファイルが `[".pdb"]` の場合、`.pdb` のみが除外されます。
 
-すぐに使えるサンプルプロファイルは `doc/profiles/` を参照してください。
+コメント付きのサンプルプロファイル（`.sample.jsonc`）は `doc/profiles/` にあります。使用するには、`profiles/` ディレクトリに `.json` 拡張子でコピーし、コメントを削除してください（ツールは標準 JSON のみを読み込みます）。
 
 > **ヒント:** 設定エラー（終了コード `3`）が発生した場合、診断用に `--print-config` を提案するヒントが stderr に出力されます。
 
