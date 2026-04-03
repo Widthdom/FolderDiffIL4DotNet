@@ -248,15 +248,17 @@
     }
 
     // ── Header info from DOM / DOM からのヘッダー情報 ─────────────────────
+    // Value cell spans remaining columns (colspan) to avoid inflating Timestamp column width
+    // 値セルは残りの列に colspan で広がり、Timestamp 列幅の肥大化を防止
+    var SPAN = COLS - 8; // columns remaining after PAD7 + label = 5
     var headerHtml = '';
     document.querySelectorAll('.header-card').forEach(function(card) {
       var label = card.querySelector('.header-card-label');
       var value = card.querySelector('.header-card-value');
       if (label && value) {
         headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>';
-        for (var i = 9; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
-        headerHtml += '</tr>';
+          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
+          + '</tr>';
       }
     });
     document.querySelectorAll('.header-path').forEach(function(hp) {
@@ -264,9 +266,8 @@
       var value = hp.querySelector('.header-path-value');
       if (label && value) {
         headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>';
-        for (var i = 9; i < COLS; i++) headerHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
-        headerHtml += '</tr>';
+          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
+          + '</tr>';
       }
     });
 
@@ -274,9 +275,8 @@
     var legendHtml = '';
     function legendKeyValueRows(items) {
       items.forEach(function(row) {
-        legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td><td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td>';
-        for (var i = 9; i < COLS; i++) legendHtml += '<td style="border-top:1px solid #ccc;border-bottom:1px solid #ccc"></td>';
-        legendHtml += '</tr>';
+        legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td>'
+          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td></tr>';
       });
     }
     legendHtml += bannerRow7('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
@@ -328,9 +328,8 @@
     if (statTable) {
       summaryHtml += bannerRow7('Summary', '#000', 'font-weight:bold;padding:8px');
       summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Category</td>'
-        + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>';
-      for (var si = 9; si < COLS; si++) summaryHtml += '<td></td>';
-      summaryHtml += '</tr>';
+        + '<td class="bd" style="background:#f0f0f2;font-weight:bold">Count</td>'
+        + '<td colspan="' + (SPAN - 2) + '"></td></tr>';
       var summaryRowColors = { 'Added': '#e6ffed', 'Removed': '#ffeef0', 'Modified': '#e3f2fd' };
       statTable.querySelectorAll('tr').forEach(function(tr) {
         if (tr.querySelector('th')) return;
@@ -339,9 +338,8 @@
           var label = cells[0].textContent.trim();
           var bgStyle = summaryRowColors[label] ? 'background:' + summaryRowColors[label] + ';' : '';
           summaryHtml += '<tr>' + PAD7 + '<td class="bd" style="' + bgStyle + '">' + esc(label) + '</td>'
-            + '<td class="bd" style="' + bgStyle + 'text-align:right">' + esc(cells[1].textContent.trim()) + '</td>';
-          for (var i = 9; i < COLS; i++) summaryHtml += '<td></td>';
-          summaryHtml += '</tr>';
+            + '<td class="bd" style="' + bgStyle + 'text-align:right">' + esc(cells[1].textContent.trim()) + '</td>'
+            + '<td colspan="' + (SPAN - 2) + '"></td></tr>';
         }
       });
       summaryHtml += emptyRow();
