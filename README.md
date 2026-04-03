@@ -130,8 +130,8 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects `config.json` + all `FOLDERDIFF_*` env var overrides. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
 | `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. |
 | `--no-pause` | Skip key-wait at process end. |
-| `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
-| `--profile <name>` | Load a named configuration profile from `profiles/<name>.json` (relative to the config.json directory). Profile values overlay the base config; environment variables and CLI flags still take priority. |
+| `--config <path>` | Load config from `<path>` instead of the auto-detected `config.json`/`config.jsonc`. Replaces the **entire** base config file. |
+| `--profile <name>` | Overlay a named profile (`profiles/<name>.json` or `.jsonc`, relative to the config directory) on top of the base config. Only the settings specified in the profile are overridden; everything else inherits from the base config. |
 | `--threads <N>` | Override [`MaxParallelism`](#config-en-maxparallelism) for this run (`0` = auto). |
 | `--no-il-cache` | Disable the IL cache for this run. |
 | `--clear-cache` | Interactive wizard to selectively delete IL cache files (by tool, version, or all). |
@@ -169,13 +169,15 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 #### Configuration Profiles
 
-When you manage multiple products or environments with different settings (ignored extensions, IL noise filters, parallelism, etc.), **configuration profiles** let you switch without editing `config.json`.
+When you manage multiple products or environments with different settings (ignored extensions, IL noise filters, parallelism, etc.), **configuration profiles** let you switch without editing the base config.
 
-**1. Create the profiles directory** next to your `config.json`:
+> **`--config` vs `--profile`:** `--config <path>` replaces the entire base config file (useful when you have completely separate configurations per project). `--profile <name>` overlays a partial config on top of the base — only the settings you specify are overridden. You can combine both: `--config /shared/config.json --profile production`.
+
+**1. Create the profiles directory** next to your config file:
 
 ```
 <exe>/
-  config.json            ← base configuration (JSONC OK)
+  config.json (or config.jsonc) ← base configuration (JSONC OK)
   profiles/
     il-noise-suppress.jsonc
     production.json
@@ -455,9 +457,17 @@ The Diff Reason column in the Modified Files table appends the file-level max im
 
 > **Note:** The semantic summary is supplementary information. Always verify the final details in the inline IL diff.
 
-## Configuration ([`config.json`](config.json))
+## Configuration (`config.json` / `config.jsonc`)
 
-Place [`config.json`](config.json) next to the executable. All keys are optional; omitted keys use the code-defined defaults in [`ConfigSettings`](Models/ConfigSettings.cs). If the defaults are acceptable, this file can be just:
+Place `config.json` (or `config.jsonc`) next to the executable. When no `--config` path is specified, the tool looks for `config.json` first, then falls back to `config.jsonc`. Both formats support JSONC (comments and trailing commas). All keys are optional; omitted keys use the code-defined defaults in [`ConfigSettings`](Models/ConfigSettings.cs). If the defaults are acceptable, this file can be just:
+
+#### Configuration files at a glance
+
+| File | Purpose |
+|---|---|
+| `config.json` / `config.jsonc` | **Runtime config** — loaded automatically from the executable directory (or via `--config`). |
+| [`doc/config.sample.jsonc`](doc/config.sample.jsonc) | **Annotated template** — copy this as your `config.json` or `config.jsonc`. Contains all settings with comments explaining each one. |
+| [`doc/config.schema.json`](doc/config.schema.json) | **JSON Schema** — reference from `$schema` in your config for IDE autocompletion and validation. Not loaded at runtime. |
 
 ```json
 {}
@@ -465,7 +475,7 @@ Place [`config.json`](config.json) next to the executable. All keys are optional
 
 #### JSON Schema for IDE Autocompletion
 
-A JSON Schema file ([`doc/config.schema.json`](doc/config.schema.json)) is provided for IDE autocompletion and real-time validation. Add a `$schema` property to your `config.json` to enable it:
+A JSON Schema file ([`doc/config.schema.json`](doc/config.schema.json)) is provided for IDE autocompletion and real-time validation. Add a `$schema` property to your config file to enable it:
 
 ```json
 {
@@ -473,7 +483,7 @@ A JSON Schema file ([`doc/config.schema.json`](doc/config.schema.json)) is provi
 }
 ```
 
-> **Tip:** Adjust the `$schema` path based on where your `config.json` is relative to `config.schema.json`. Supported in VS Code, Visual Studio, JetBrains Rider, Vim/Neovim (via LSP), and other JSON-aware editors. Benefits include property name autocompletion, type checking, value range validation, and bilingual hover descriptions.
+> **Tip:** Adjust the `$schema` path based on where your config file is relative to `config.schema.json`. Supported in VS Code, Visual Studio, JetBrains Rider, Vim/Neovim (via LSP), and other JSON-aware editors. Benefits include property name autocompletion, type checking, value range validation, and bilingual hover descriptions.
 
 Override only the settings you want to change. For example:
 
@@ -914,8 +924,8 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。`config.json` のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
 | `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
-| `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
-| `--profile <name>` | `profiles/<name>.json`（config.json のディレクトリからの相対パス）から名前付き設定プロファイルを読み込みます。プロファイルの値がベース設定を上書きします。環境変数と CLI フラグはプロファイルより優先されます。 |
+| `--config <path>` | 自動検出される `config.json`/`config.jsonc` の代わりに `<path>` から設定を読み込みます。ベース設定ファイルを**丸ごと**差し替えます。 |
+| `--profile <name>` | ベース設定の上に名前付きプロファイル（`profiles/<name>.json` または `.jsonc`、設定ディレクトリからの相対パス）を重ねます。プロファイルに記載した設定のみが上書きされ、それ以外はベース設定を継承します。 |
 | `--threads <N>` | 今回の実行に限り [`MaxParallelism`](#config-ja-maxparallelism) を上書きします（`0` = 自動）。 |
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
 | `--clear-cache` | IL キャッシュファイルを選択的に削除する対話ウィザードを起動します（ツール別、バージョン別、全削除）。 |
@@ -953,13 +963,15 @@ dotnet run -- --config /etc/my-config.json --print-config
 
 #### 設定プロファイル
 
-製品や環境ごとに異なる設定（除外拡張子、IL ノイズフィルタ、並列数など）を使い分ける場合、**設定プロファイル**を使うと `config.json` を編集せずに切り替えられます。
+製品や環境ごとに異なる設定（除外拡張子、IL ノイズフィルタ、並列数など）を使い分ける場合、**設定プロファイル**を使うとベース設定を編集せずに切り替えられます。
 
-**1. `config.json` と同じディレクトリに `profiles` ディレクトリを作成**します:
+> **`--config` と `--profile` の違い:** `--config <path>` はベース設定ファイルを丸ごと差し替えます（プロジェクトごとに完全に別の設定を使う場合に便利）。`--profile <name>` はベース設定の上に部分的な設定を重ねます — 指定した項目だけが上書きされます。両方の併用も可能です: `--config /shared/config.json --profile production`。
+
+**1. 設定ファイルと同じディレクトリに `profiles` ディレクトリを作成**します:
 
 ```
 <exe>/
-  config.json            ← ベース設定（JSONC 可）
+  config.json (or config.jsonc) ← ベース設定（JSONC 可）
   profiles/
     il-noise-suppress.jsonc
     production.json
@@ -1238,9 +1250,17 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
 
 > **注:** セマンティックサマリーは補助情報です。最終確認は必ず IL インライン差分で行ってください。
 
-## 設定（[`config.json`](config.json)）
+## 設定（`config.json` / `config.jsonc`）
 
-実行ファイルと同じディレクトリに配置します。全項目省略可能で、未指定の項目は [`ConfigSettings`](Models/ConfigSettings.cs) に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
+実行ファイルと同じディレクトリに `config.json`（または `config.jsonc`）を配置します。`--config` 未指定時は `config.json` を優先し、なければ `config.jsonc` にフォールバックします。どちらの形式でも JSONC（コメント・末尾カンマ）に対応しています。全項目省略可能で、未指定の項目は [`ConfigSettings`](Models/ConfigSettings.cs) に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
+
+#### 設定ファイル一覧
+
+| ファイル | 用途 |
+|---|---|
+| `config.json` / `config.jsonc` | **実行時設定** — 実行ファイルと同じディレクトリから自動読み込み（または `--config` で指定）。 |
+| [`doc/config.sample.jsonc`](doc/config.sample.jsonc) | **コメント付きテンプレート** — `config.json` または `config.jsonc` としてコピーして使用。全設定項目の説明コメント付き。 |
+| [`doc/config.schema.json`](doc/config.schema.json) | **JSON Schema** — config ファイルの `$schema` から参照して IDE 補完・バリデーションに使用。実行時には読み込まれない。 |
 
 ```json
 {}
@@ -1248,7 +1268,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
 
 #### IDE 補完用 JSON Schema
 
-JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）を提供しています。`config.json` に `$schema` プロパティを追加すると、IDE の補完とリアルタイムバリデーションが有効になります。
+JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）を提供しています。設定ファイルに `$schema` プロパティを追加すると、IDE の補完とリアルタイムバリデーションが有効になります。
 
 ```json
 {
@@ -1256,7 +1276,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
 }
 ```
 
-> **ヒント:** `$schema` のパスは `config.json` から `config.schema.json` への相対パスに合わせて調整してください。VS Code、Visual Studio、JetBrains Rider、Vim/Neovim（LSP 経由）など JSON 対応エディタで利用可能です。プロパティ名の補完、型チェック、値の範囲検証、英日バイリンガルのホバー説明が得られます。
+> **ヒント:** `$schema` のパスは設定ファイルから `config.schema.json` への相対パスに合わせて調整してください。VS Code、Visual Studio、JetBrains Rider、Vim/Neovim（LSP 経由）など JSON 対応エディタで利用可能です。プロパティ名の補完、型チェック、値の範囲検証、英日バイリンガルのホバー説明が得られます。
 
 変更したい項目だけを書けば十分です。例:
 

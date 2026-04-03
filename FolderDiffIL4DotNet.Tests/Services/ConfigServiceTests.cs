@@ -301,6 +301,123 @@ namespace FolderDiffIL4DotNet.Tests.Services
             });
         }
 
+        // ── config.jsonc fallback tests / config.jsonc フォールバックテスト ──────
+
+        [Fact]
+        public void ResolveDefaultConfigPath_JsonExists_ReturnsJsonPath()
+        {
+            // When config.json exists, it should be returned regardless of config.jsonc
+            // config.json が存在する場合、config.jsonc の有無に関わらず config.json を返す
+            var jsonPath = Path.Combine(AppContext.BaseDirectory, "config.json");
+            Assert.True(File.Exists(jsonPath), "Precondition: config.json should exist in test output");
+
+            string result = ConfigService.ResolveDefaultConfigPath();
+
+            Assert.Equal(jsonPath, result);
+        }
+
+        [Fact]
+        public async Task ResolveDefaultConfigPath_OnlyJsoncExists_ReturnsJsoncPath()
+        {
+            // When config.json is absent but config.jsonc exists, return config.jsonc
+            // config.json がなく config.jsonc がある場合、config.jsonc を返す
+            var jsoncPath = Path.Combine(AppContext.BaseDirectory, "config.jsonc");
+            await File.WriteAllTextAsync(jsoncPath, "{}");
+
+            try
+            {
+                await WithConfigFileAsync(string.Empty, async () =>
+                {
+                    string result = ConfigService.ResolveDefaultConfigPath();
+                    Assert.Equal(jsoncPath, result);
+                    await Task.CompletedTask;
+                }, deleteConfig: true);
+            }
+            finally
+            {
+                if (File.Exists(jsoncPath)) File.Delete(jsoncPath);
+            }
+        }
+
+        [Fact]
+        public async Task ResolveDefaultConfigPath_NeitherExists_ReturnsJsonPath()
+        {
+            // When neither file exists, return config.json path for a clear error message
+            // どちらも存在しない場合、明確なエラーメッセージのために config.json パスを返す
+            var jsoncPath = Path.Combine(AppContext.BaseDirectory, "config.jsonc");
+            bool jsoncExisted = File.Exists(jsoncPath);
+            if (jsoncExisted) File.Move(jsoncPath, jsoncPath + ".bak");
+
+            try
+            {
+                await WithConfigFileAsync(string.Empty, async () =>
+                {
+                    string result = ConfigService.ResolveDefaultConfigPath();
+                    Assert.EndsWith("config.json", result);
+                    await Task.CompletedTask;
+                }, deleteConfig: true);
+            }
+            finally
+            {
+                if (jsoncExisted) File.Move(jsoncPath + ".bak", jsoncPath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_JsoncFallback_LoadsFromJsoncFile()
+        {
+            // End-to-end: when config.json is absent, config.jsonc is loaded successfully
+            // E2E: config.json がない場合、config.jsonc が正常に読み込まれる
+            var jsoncPath = Path.Combine(AppContext.BaseDirectory, "config.jsonc");
+            const string jsonc = """
+                {
+                  // This comment proves JSONC is working
+                  "MaxLogGenerations": 77
+                }
+                """;
+            await File.WriteAllTextAsync(jsoncPath, jsonc);
+
+            try
+            {
+                await WithConfigFileAsync(string.Empty, async () =>
+                {
+                    var service = new ConfigService();
+                    var builder = await service.LoadConfigBuilderAsync();
+
+                    Assert.NotNull(builder);
+                    Assert.Equal(77, builder.MaxLogGenerations);
+                }, deleteConfig: true);
+            }
+            finally
+            {
+                if (File.Exists(jsoncPath)) File.Delete(jsoncPath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_BothJsonAndJsoncExist_PrefersJson()
+        {
+            // When both config.json and config.jsonc exist, config.json takes precedence
+            // 両方存在する場合、config.json が優先される
+            var jsoncPath = Path.Combine(AppContext.BaseDirectory, "config.jsonc");
+            await File.WriteAllTextAsync(jsoncPath, """{ "MaxLogGenerations": 88 }""");
+
+            try
+            {
+                await WithConfigFileAsync("""{ "MaxLogGenerations": 33 }""", async () =>
+                {
+                    var service = new ConfigService();
+                    var builder = await service.LoadConfigBuilderAsync();
+
+                    Assert.Equal(33, builder.MaxLogGenerations);
+                });
+            }
+            finally
+            {
+                if (File.Exists(jsoncPath)) File.Delete(jsoncPath);
+            }
+        }
+
         // ── Helpers / ヘルパー ──────────────────────────────────────────────────
 
         private static async Task WithEnvVarsAsync(

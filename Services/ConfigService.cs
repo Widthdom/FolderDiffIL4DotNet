@@ -8,12 +8,13 @@ using FolderDiffIL4DotNet.Models;
 namespace FolderDiffIL4DotNet.Services
 {
     /// <summary>
-    /// Service for loading and providing settings from config.json.
-    /// config.json の読み込みと設定の提供を行うサービス。
+    /// Service for loading and providing settings from config.json (or config.jsonc).
+    /// config.json（または config.jsonc）の読み込みと設定の提供を行うサービス。
     /// </summary>
     public sealed class ConfigService
     {
         private const string CONFIG_FILE_NAME = "config.json";
+        private const string CONFIG_FILE_NAME_JSONC = "config.jsonc";
         internal const string PROFILES_DIR_NAME = "profiles";
         private const string ERROR_CONFIG_PARSE_FAILED = "Failed to parse config.json — JSON syntax error";
         private const string ERROR_CONFIG_PARSE_HINT =
@@ -54,7 +55,7 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 string configFileAbsolutePath = string.IsNullOrWhiteSpace(configFilePath)
-                    ? Path.Combine(AppContext.BaseDirectory, CONFIG_FILE_NAME)
+                    ? ResolveDefaultConfigPath()
                     : configFilePath;
                 if (!File.Exists(configFileAbsolutePath))
                 {
@@ -138,6 +139,23 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return baseNode.ToJsonString();
+        }
+
+        /// <summary>
+        /// Resolves the default config file path by checking for config.json first, then config.jsonc.
+        /// デフォルトの設定ファイルパスを解決する。config.json を優先し、なければ config.jsonc を探す。
+        /// </summary>
+        internal static string ResolveDefaultConfigPath()
+        {
+            string jsonPath = Path.Combine(AppContext.BaseDirectory, CONFIG_FILE_NAME);
+            if (File.Exists(jsonPath)) return jsonPath;
+
+            string jsoncPath = Path.Combine(AppContext.BaseDirectory, CONFIG_FILE_NAME_JSONC);
+            if (File.Exists(jsoncPath)) return jsoncPath;
+
+            // Return .json path so the caller's FileNotFoundException message is clear.
+            // .json パスを返し、呼び出し元の FileNotFoundException メッセージを明確にする。
+            return jsonPath;
         }
 
         /// <summary>

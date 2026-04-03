@@ -1,8 +1,8 @@
 // FolderDiffIL4DotNet — Annotated Configuration Sample
 // FolderDiffIL4DotNet — コメント付き設定サンプル
 //
-// Copy this file to config.json (remove comments — standard JSON does not allow comments).
-// このファイルを config.json にコピーして使用してください（コメントを削除してください。標準 JSON ではコメントは使用できません）。
+// Copy this file as config.json or config.jsonc next to the executable. Both formats support JSONC (comments and trailing commas).
+// このファイルを実行ファイルと同じディレクトリに config.json または config.jsonc としてコピーしてください。どちらの形式でも JSONC（コメント・末尾カンマ）に対応しています。
 // All settings are optional. Omitted keys use the defaults shown below.
 // すべての設定は省略可能です。省略されたキーは以下に示すデフォルト値を使用します。
 //
