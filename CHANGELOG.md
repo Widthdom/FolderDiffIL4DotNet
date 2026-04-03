@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **Time-based greeting after banner** — The console now displays a friendly greeting after the ASCII banner, based on the local time of day (e.g. "Good morning! Have you had breakfast yet?" at 7–9 AM, "Working overtime? Thank you for your hard work." at 9–11 PM). 13 time slots cover the full 24-hour cycle. Affected: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`. Tests: `ConsoleBannerTests.cs` (`GetGreeting_ReturnsExpectedMessageForHour` — 24 cases, `GetGreeting_NeverReturnsEmptyString` — 5 cases, `GetGreeting_AllHoursCovered` — 1 test).
+- **Time-based greeting after banner** — The console now displays a friendly greeting in Japanese after the ASCII banner, based on the local time of day (17 time slots covering the full 24-hour cycle). Meal-adjacent slots (7 AM, noon, 6 PM) suggest leaving the diff to the tool and going to eat. The 23:30 boundary uses minute-level precision. Affected: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`. Tests: `ConsoleBannerTests.cs` (`GetGreeting_ReturnsExpectedMessageForTime` — 40 cases, `GetGreeting_NeverReturnsEmptyString` — 6 cases, `GetGreeting_AllHoursCovered`, `GetGreeting_2330Boundary_SwitchesMessage`, `GetGreeting_MealTimeSlots_SuggestLeavingDiffToTool`, `GetGreeting_CoffeeBreakSlots_ReturnSameMessage` — 7 tests total).
 
 - **Zero-diff easter egg message** — When no files differ between old and new folders (all files unchanged), the completion summary shows "Zero differences found. Are you sure you built the right thing?" instead of the normal bar chart. Affected: `ProgramRunner.cs` (`OutputCompletionSummaryChart`).
 
@@ -1043,7 +1043,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **バナー後の時刻ベース挨拶** — ASCII バナーの後にローカル時刻に応じた挨拶メッセージをコンソールに表示（例: 朝7〜9時は "Good morning! Have you had breakfast yet?"、夜21〜23時は "Working overtime? Thank you for your hard work."）。24時間を13スロットでカバー。影響: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`。テスト: `ConsoleBannerTests.cs`（`GetGreeting_ReturnsExpectedMessageForHour` — 24 ケース、`GetGreeting_NeverReturnsEmptyString` — 5 ケース、`GetGreeting_AllHoursCovered` — 1 テスト）。
+- **バナー後の時刻ベース挨拶** — ASCII バナーの後にローカル時刻に応じた日本語の挨拶メッセージをコンソールに表示（24時間を17スロットでカバー）。食事時間帯（朝7時、昼12時、夕方18時）は「フォルダ比較は私に任せて〇〇を食べてくださいね」と提案。23時半の境界は分単位で判定。影響: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`。テスト: `ConsoleBannerTests.cs`（`GetGreeting_ReturnsExpectedMessageForTime` — 40 ケース、`GetGreeting_NeverReturnsEmptyString` — 6 ケース、`GetGreeting_AllHoursCovered`、`GetGreeting_2330Boundary_SwitchesMessage`、`GetGreeting_MealTimeSlots_SuggestLeavingDiffToTool`、`GetGreeting_CoffeeBreakSlots_ReturnSameMessage` — 計 7 テスト）。
 
 - **ゼロ差分イースターエッグメッセージ** — 旧フォルダと新フォルダの間に差分がない場合（全ファイル未変更）、通常のバーチャートの代わりに "Zero differences found. Are you sure you built the right thing?" と表示。影響: `ProgramRunner.cs`（`OutputCompletionSummaryChart`）。
 

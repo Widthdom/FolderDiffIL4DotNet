@@ -41,46 +41,48 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// </summary>
         public static void Print()
         {
+            var now = DateTime.Now;
             System.Console.WriteLine();
             System.Console.WriteLine(Banner);
-            PrintGreeting(DateTime.Now.Hour);
+            PrintGreeting(now.Hour, now.Minute);
         }
 
         /// <summary>
-        /// Prints a friendly greeting based on the local hour of day.
+        /// Prints a friendly greeting based on the local time.
         /// ローカル時刻に応じた挨拶メッセージを出力します。
         /// </summary>
-        /// <summary>
-        /// Visible for testing. / テスト用に公開。
-        /// </summary>
-        public static void PrintGreeting(int hour)
+        public static void PrintGreeting(int hour, int minute = 0)
         {
-            string greeting = GetGreeting(hour);
+            string greeting = GetGreeting(hour, minute);
             System.Console.WriteLine($"  {greeting}");
             System.Console.WriteLine();
         }
 
         /// <summary>
-        /// Returns a greeting message for the given hour (0–23).
-        /// 指定された時刻（0–23）に対する挨拶メッセージを返します。
+        /// Returns a greeting message for the given time (hour 0–23, minute 0–59).
+        /// 指定された時刻（時 0–23、分 0–59）に対する挨拶メッセージを返します。
         /// </summary>
-        /// <summary>
-        /// Visible for testing. / テスト用に公開。
-        /// </summary>
-        public static string GetGreeting(int hour) => hour switch
+        public static string GetGreeting(int hour, int minute = 0) => hour switch
         {
-            >= 0 and < 3  => "Can't sleep? Hope you can sleep in tomorrow.",
-            >= 3 and < 5  => "It's still dark outside, isn't it?",
-            >= 5 and < 7  => "You're up early! Did you sleep well?",
-            >= 7 and < 9  => "Good morning! Have you had breakfast yet?",
-            >= 9 and < 11 => "Almost lunchtime, hang in there!",
-            >= 11 and < 13 => "Have you had lunch yet?",
-            >= 13 and < 15 => "Breaks are important too. How about a coffee?",
-            >= 15 and < 17 => "The sun is starting to set, isn't it?",
-            >= 17 and < 19 => "Almost done for the day?",
-            >= 19 and < 21 => "Have you had dinner yet?",
-            >= 21 and < 23 => "Working overtime? Thank you for your hard work.",
-            >= 23          => "The day is almost over. Take care of yourself!",
+            >= 0 and < 3   => "あなたがお仕事でなく趣味の時間を過ごしていることを願っています。",
+            >= 3 and < 5   => "明日はあなたが寝坊できる日だといいのですが...",
+            >= 5 and < 7   => "朝早いですね。よく眠れましたか？",
+            >= 7 and < 8   => "フォルダ比較は私に任せて朝ご飯を食べてくださいね。",
+            >= 8 and < 10  => "おはようございます。朝ご飯は食べましたか？",
+            >= 10 and < 11 => "休憩も大事です。コーヒータイムにしませんか？",
+            >= 11 and < 12 => "お昼ご飯までもう少しでしょうか？",
+            >= 12 and < 13 => "フォルダ比較は私に任せてお昼ご飯を食べてくださいね。",
+            >= 13 and < 14 => "お昼ご飯は食べましたか？",
+            >= 14 and < 15 => "休憩も大事です。コーヒータイムにしませんか？",
+            >= 15 and < 17 => "今日のタスクは全て終わりそうでしょうか？",
+            >= 17 and < 18 => "晩ご飯までもう少しでしょうか？",
+            >= 18 and < 19 => "フォルダ比較は私に任せて晩ご飯を食べてくださいね。",
+            >= 19 and < 20 => "晩ご飯は食べましたか？",
+            >= 20 and < 21 => "今日中のタスクがまだ残っているのでしょうか？お疲れ様です。",
+            >= 21 and < 22 => "フォルダ比較は私に任せてシャワーを浴びてきてください。",
+            >= 22          => minute < 30 || hour < 23
+                ? "夜分遅くまでお疲れ様です。シャワーは浴びましたか？"
+                : "そろそろ日が変わってしまいます。健康に気をつけてくださいね。",
             _              => "Hello!",
         };
     }
