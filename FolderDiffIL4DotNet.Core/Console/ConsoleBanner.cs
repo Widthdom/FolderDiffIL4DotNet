@@ -41,28 +41,27 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// </summary>
         public static void Print()
         {
-            var now = DateTime.Now;
             System.Console.WriteLine();
             System.Console.WriteLine(Banner);
-            PrintGreeting(now.Hour, now.Minute);
+            PrintGreeting(DateTime.Now.Hour);
         }
 
         /// <summary>
-        /// Prints a friendly greeting based on the local time.
+        /// Prints a friendly greeting based on the local hour of day.
         /// ローカル時刻に応じた挨拶メッセージを出力します。
         /// </summary>
-        public static void PrintGreeting(int hour, int minute = 0)
+        public static void PrintGreeting(int hour)
         {
-            string greeting = GetGreeting(hour, minute);
+            string greeting = GetGreeting(hour);
             System.Console.WriteLine($"  {greeting}");
             System.Console.WriteLine();
         }
 
         /// <summary>
-        /// Returns a greeting message for the given time (hour 0–23, minute 0–59).
-        /// 指定された時刻（時 0–23、分 0–59）に対する挨拶メッセージを返します。
+        /// Returns a greeting message for the given hour (0–23).
+        /// 指定された時刻（0–23）に対する挨拶メッセージを返します。
         /// </summary>
-        public static string GetGreeting(int hour, int minute = 0) => hour switch
+        public static string GetGreeting(int hour) => hour switch
         {
             >= 0 and < 3   => "I hope you're enjoying hobby time, not working.",
             >= 3 and < 5   => "I hope tomorrow is a day you can sleep in...",
@@ -80,9 +79,8 @@ namespace FolderDiffIL4DotNet.Core.Console
             >= 19 and < 20 => "Have you had dinner?",
             >= 20 and < 21 => "Still have tasks left today? Thank you for your hard work.",
             >= 21 and < 22 => "Leave the diff to me and go take a shower!",
-            >= 22          => minute < 30 || hour < 23
-                ? "Working late. Have you taken a shower?"
-                : "The day is almost over. Take care of your health!",
+            >= 22 and < 23 => "Working late. Have you taken a shower?",
+            >= 23          => "The day is almost over. Take care of your health!",
             _              => "Hello!",
         };
     }
