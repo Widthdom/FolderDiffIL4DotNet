@@ -89,6 +89,7 @@ Large service classes are split into partial class files to keep each file focus
 | `AssemblySdkVersionReader` | [`Services/AssemblySdkVersionReader.cs`](../Services/AssemblySdkVersionReader.cs) | (single file) Extracts TargetFrameworkAttribute from .NET assemblies via System.Reflection.Metadata and formats display strings (e.g. `.NET 8.0`, `.NET 6.0` → `.NET 8.0`) |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs) (sequential/chunk-parallel text comparison, memory-budget-aware parallelism) |
 | `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs) (version/label management, tool fingerprinting, process execution, usage recording), [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs) (line-based streaming disassembly, avoids LOH string allocations) |
+| `DotNetDisassemblerProvider` | [`Services/DotNetDisassemblerProvider.cs`](../Services/DotNetDisassemblerProvider.cs) | (single file) Built-in `IDisassemblerProvider` implementation wrapping `IDotNetDisassembleService`. Enables plugin authors to provide alternative disassemblers for non-.NET file types |
 
 ## Nullable Reference Types
 
@@ -995,6 +996,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 | `AssemblySdkVersionReader` | [`Services/AssemblySdkVersionReader.cs`](../Services/AssemblySdkVersionReader.cs) | （単一ファイル）System.Reflection.Metadata 経由で .NET アセンブリから TargetFrameworkAttribute を抽出し、表示文字列をフォーマット（例: `.NET 8.0`、`.NET 6.0` → `.NET 8.0`） |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs)（逐次/チャンク並列テキスト比較、メモリ予算考慮の並列度制御） |
 | `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs)（バージョン/ラベル管理、ツールフィンガープリント、プロセス実行、使用記録）, [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs)（行単位ストリーミング逆アセンブル、LOH 文字列割り当て回避） |
+| `DotNetDisassemblerProvider` | [`Services/DotNetDisassemblerProvider.cs`](../Services/DotNetDisassemblerProvider.cs) | （単一ファイル）`IDotNetDisassembleService` をラップする組み込み `IDisassemblerProvider` 実装。プラグイン開発者が非 .NET ファイル用の代替逆アセンブラを提供可能にする |
 
 ## Nullable 参照型
 
