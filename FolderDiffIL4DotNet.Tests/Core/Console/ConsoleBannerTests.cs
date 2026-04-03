@@ -7,50 +7,50 @@ namespace FolderDiffIL4DotNet.Tests.Core.Console
     public class ConsoleBannerTests
     {
         [Theory]
-        [InlineData(0, 0, "趣味の時間")]
-        [InlineData(1, 30, "趣味の時間")]
-        [InlineData(2, 59, "趣味の時間")]
-        [InlineData(3, 0, "寝坊できる日")]
-        [InlineData(4, 30, "寝坊できる日")]
-        [InlineData(5, 0, "よく眠れましたか")]
-        [InlineData(6, 30, "よく眠れましたか")]
-        [InlineData(7, 0, "朝ご飯を食べてください")]
-        [InlineData(7, 45, "朝ご飯を食べてください")]
-        [InlineData(8, 0, "朝ご飯は食べましたか")]
-        [InlineData(9, 30, "朝ご飯は食べましたか")]
-        [InlineData(10, 0, "コーヒータイム")]
-        [InlineData(10, 45, "コーヒータイム")]
-        [InlineData(11, 0, "お昼ご飯までもう少し")]
-        [InlineData(11, 30, "お昼ご飯までもう少し")]
-        [InlineData(12, 0, "お昼ご飯を食べてください")]
-        [InlineData(12, 45, "お昼ご飯を食べてください")]
-        [InlineData(13, 0, "お昼ご飯は食べましたか")]
-        [InlineData(13, 30, "お昼ご飯は食べましたか")]
-        [InlineData(14, 0, "コーヒータイム")]
-        [InlineData(14, 45, "コーヒータイム")]
-        [InlineData(15, 0, "タスクは全て終わりそう")]
-        [InlineData(16, 30, "タスクは全て終わりそう")]
-        [InlineData(17, 0, "晩ご飯までもう少し")]
-        [InlineData(17, 30, "晩ご飯までもう少し")]
-        [InlineData(18, 0, "晩ご飯を食べてください")]
-        [InlineData(18, 45, "晩ご飯を食べてください")]
-        [InlineData(19, 0, "晩ご飯は食べましたか")]
-        [InlineData(19, 30, "晩ご飯は食べましたか")]
-        [InlineData(20, 0, "今日中のタスク")]
-        [InlineData(20, 45, "今日中のタスク")]
-        [InlineData(21, 0, "シャワーを浴びてきて")]
-        [InlineData(21, 45, "シャワーを浴びてきて")]
-        [InlineData(22, 0, "シャワーは浴びましたか")]
-        [InlineData(22, 59, "シャワーは浴びましたか")]
-        [InlineData(23, 0, "シャワーは浴びましたか")]
-        [InlineData(23, 29, "シャワーは浴びましたか")]
-        [InlineData(23, 30, "日が変わってしまいます")]
-        [InlineData(23, 59, "日が変わってしまいます")]
+        [InlineData(0, 0, "hobby time")]
+        [InlineData(1, 30, "hobby time")]
+        [InlineData(2, 59, "hobby time")]
+        [InlineData(3, 0, "sleep in")]
+        [InlineData(4, 30, "sleep in")]
+        [InlineData(5, 0, "Did you sleep well")]
+        [InlineData(6, 30, "Did you sleep well")]
+        [InlineData(7, 0, "breakfast")]
+        [InlineData(7, 45, "breakfast")]
+        [InlineData(8, 0, "breakfast")]
+        [InlineData(9, 30, "breakfast")]
+        [InlineData(10, 0, "coffee")]
+        [InlineData(10, 45, "coffee")]
+        [InlineData(11, 0, "lunchtime")]
+        [InlineData(11, 30, "lunchtime")]
+        [InlineData(12, 0, "Leave the diff to me")]
+        [InlineData(12, 45, "Leave the diff to me")]
+        [InlineData(13, 0, "had lunch")]
+        [InlineData(13, 30, "had lunch")]
+        [InlineData(14, 0, "coffee")]
+        [InlineData(14, 45, "coffee")]
+        [InlineData(15, 0, "tasks today")]
+        [InlineData(16, 30, "tasks today")]
+        [InlineData(17, 0, "dinnertime")]
+        [InlineData(17, 30, "dinnertime")]
+        [InlineData(18, 0, "Leave the diff to me")]
+        [InlineData(18, 45, "Leave the diff to me")]
+        [InlineData(19, 0, "had dinner")]
+        [InlineData(19, 30, "had dinner")]
+        [InlineData(20, 0, "tasks left")]
+        [InlineData(20, 45, "tasks left")]
+        [InlineData(21, 0, "go take a shower")]
+        [InlineData(21, 45, "go take a shower")]
+        [InlineData(22, 0, "shower")]
+        [InlineData(22, 59, "shower")]
+        [InlineData(23, 0, "shower")]
+        [InlineData(23, 29, "shower")]
+        [InlineData(23, 30, "day is almost over")]
+        [InlineData(23, 59, "day is almost over")]
         public void GetGreeting_ReturnsExpectedMessageForTime(int hour, int minute, string expectedSubstring)
         {
             string greeting = ConsoleBanner.GetGreeting(hour, minute);
 
-            Assert.Contains(expectedSubstring, greeting);
+            Assert.Contains(expectedSubstring, greeting, System.StringComparison.OrdinalIgnoreCase);
         }
 
         [Theory]
@@ -88,30 +88,30 @@ namespace FolderDiffIL4DotNet.Tests.Core.Console
             string after = ConsoleBanner.GetGreeting(23, 30);
 
             Assert.NotEqual(before, after);
-            Assert.Contains("シャワー", before);
-            Assert.Contains("日が変わって", after);
+            Assert.Contains("shower", before, System.StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("day is almost over", after, System.StringComparison.OrdinalIgnoreCase);
         }
 
         [Fact]
         public void GetGreeting_MealTimeSlots_SuggestLeavingDiffToTool()
         {
             // Meal-adjacent slots (7, 12, 18) suggest leaving the diff to the tool
-            // 食事時間帯（7時、12時、18時）は「私に任せて」メッセージであることを確認
-            Assert.Contains("私に任せて", ConsoleBanner.GetGreeting(7));
-            Assert.Contains("私に任せて", ConsoleBanner.GetGreeting(12));
-            Assert.Contains("私に任せて", ConsoleBanner.GetGreeting(18));
+            // 食事時間帯（7時、12時、18時）は「Leave the diff to me」メッセージであることを確認
+            Assert.Contains("Leave the diff to me", ConsoleBanner.GetGreeting(7));
+            Assert.Contains("Leave the diff to me", ConsoleBanner.GetGreeting(12));
+            Assert.Contains("Leave the diff to me", ConsoleBanner.GetGreeting(18));
         }
 
         [Fact]
         public void GetGreeting_CoffeeBreakSlots_ReturnSameMessage()
         {
             // 10:00 and 14:00 both suggest coffee break
-            // 10時と14時の両方でコーヒータイムが提案されることを確認
+            // 10時と14時の両方でコーヒーブレイクが提案されることを確認
             string morning = ConsoleBanner.GetGreeting(10);
             string afternoon = ConsoleBanner.GetGreeting(14);
 
             Assert.Equal(morning, afternoon);
-            Assert.Contains("コーヒータイム", morning);
+            Assert.Contains("coffee", morning, System.StringComparison.OrdinalIgnoreCase);
         }
     }
 }

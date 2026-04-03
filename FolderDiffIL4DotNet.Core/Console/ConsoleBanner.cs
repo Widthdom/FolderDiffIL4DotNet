@@ -64,25 +64,25 @@ namespace FolderDiffIL4DotNet.Core.Console
         /// </summary>
         public static string GetGreeting(int hour, int minute = 0) => hour switch
         {
-            >= 0 and < 3   => "あなたがお仕事でなく趣味の時間を過ごしていることを願っています。",
-            >= 3 and < 5   => "明日はあなたが寝坊できる日だといいのですが...",
-            >= 5 and < 7   => "朝早いですね。よく眠れましたか？",
-            >= 7 and < 8   => "フォルダ比較は私に任せて朝ご飯を食べてくださいね。",
-            >= 8 and < 10  => "おはようございます。朝ご飯は食べましたか？",
-            >= 10 and < 11 => "休憩も大事です。コーヒータイムにしませんか？",
-            >= 11 and < 12 => "お昼ご飯までもう少しでしょうか？",
-            >= 12 and < 13 => "フォルダ比較は私に任せてお昼ご飯を食べてくださいね。",
-            >= 13 and < 14 => "お昼ご飯は食べましたか？",
-            >= 14 and < 15 => "休憩も大事です。コーヒータイムにしませんか？",
-            >= 15 and < 17 => "今日のタスクは全て終わりそうでしょうか？",
-            >= 17 and < 18 => "晩ご飯までもう少しでしょうか？",
-            >= 18 and < 19 => "フォルダ比較は私に任せて晩ご飯を食べてくださいね。",
-            >= 19 and < 20 => "晩ご飯は食べましたか？",
-            >= 20 and < 21 => "今日中のタスクがまだ残っているのでしょうか？お疲れ様です。",
-            >= 21 and < 22 => "フォルダ比較は私に任せてシャワーを浴びてきてください。",
+            >= 0 and < 3   => "I hope you're enjoying hobby time, not working.",
+            >= 3 and < 5   => "I hope tomorrow is a day you can sleep in...",
+            >= 5 and < 7   => "You're up early! Did you sleep well?",
+            >= 7 and < 8   => "Leave the diff to me and go have breakfast!",
+            >= 8 and < 10  => "Good morning! Have you had breakfast?",
+            >= 10 and < 11 => "Breaks matter. How about a coffee?",
+            >= 11 and < 12 => "Almost lunchtime!",
+            >= 12 and < 13 => "Leave the diff to me and go have lunch!",
+            >= 13 and < 14 => "Have you had lunch?",
+            >= 14 and < 15 => "Breaks matter. How about a coffee?",
+            >= 15 and < 17 => "Think you'll finish all your tasks today?",
+            >= 17 and < 18 => "Almost dinnertime!",
+            >= 18 and < 19 => "Leave the diff to me and go have dinner!",
+            >= 19 and < 20 => "Have you had dinner?",
+            >= 20 and < 21 => "Still have tasks left today? Thank you for your hard work.",
+            >= 21 and < 22 => "Leave the diff to me and go take a shower!",
             >= 22          => minute < 30 || hour < 23
-                ? "夜分遅くまでお疲れ様です。シャワーは浴びましたか？"
-                : "そろそろ日が変わってしまいます。健康に気をつけてくださいね。",
+                ? "Working late. Have you taken a shower?"
+                : "The day is almost over. Take care of your health!",
             _              => "Hello!",
         };
     }
