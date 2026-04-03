@@ -110,7 +110,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(2048, ConfigSettings.DefaultILPrecomputeBatchSize);
             Assert.Equal(10, ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes);
             Assert.Equal(300, ConfigSettings.DefaultDisassemblerTimeoutSeconds);
-            Assert.Equal(0, ConfigSettings.DefaultInlineDiffContextLines);
+            Assert.Equal(4, ConfigSettings.DefaultInlineDiffContextLines);
             Assert.Equal(4000, ConfigSettings.DefaultInlineDiffMaxEditDistance);
             Assert.Equal(10000, ConfigSettings.DefaultInlineDiffMaxDiffLines);
             Assert.Equal(10000, ConfigSettings.DefaultInlineDiffMaxOutputLines);

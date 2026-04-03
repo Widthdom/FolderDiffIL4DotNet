@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             var config = new ConfigSettingsBuilder().Build();
 
             Assert.True(config.EnableInlineDiff);
-            Assert.Equal(0, config.InlineDiffContextLines);
+            Assert.Equal(4, config.InlineDiffContextLines);
             Assert.Equal(10000, config.InlineDiffMaxDiffLines);
             Assert.Equal(10000, config.InlineDiffMaxOutputLines);
         }

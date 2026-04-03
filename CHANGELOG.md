@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **InlineDiffContextLines default changed from 0 to 4** — Inline diffs now show 4 context lines around each changed hunk by default, giving reviewers surrounding context to understand changes without manual configuration. Previously the default was 0 (changed lines only). Affected: `Models/ConfigSettings.DiffSettings.cs`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `README.md`. Tests: `ConfigSettingsTests.InlineDiffAndMutation.cs` (`Constructor_InlineDiffDefaults_AreCorrect`), `ConfigSettingsTests.ValidationBoundary.cs` (`AllDefaultConstants_MatchExpectedValues`).
+
 ### [1.13.3] - 2026-04-03
 
 #### Changed
@@ -1030,6 +1034,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Changed
+
+- **InlineDiffContextLines のデフォルトを 0 から 4 に変更** — インライン差分が各変更ハンクの前後に 4 行のコンテキストをデフォルトで表示するようになり、手動設定なしで変更箇所の前後文脈を把握できるようになった。以前のデフォルトは 0（変更行のみ）。影響: `Models/ConfigSettings.DiffSettings.cs`、`doc/config.sample.jsonc`、`doc/config.schema.json`、`README.md`。テスト: `ConfigSettingsTests.InlineDiffAndMutation.cs`（`Constructor_InlineDiffDefaults_AreCorrect`）、`ConfigSettingsTests.ValidationBoundary.cs`（`AllDefaultConstants_MatchExpectedValues`）。
 
 ### [1.13.3] - 2026-04-03
 

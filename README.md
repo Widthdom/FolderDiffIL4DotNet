@@ -593,7 +593,7 @@ Override only the settings you want to change. For example:
     </tr>
     <tr id="config-en-inlinediffcontextlines">
       <td><code>InlineDiffContextLines</code></td>
-      <td><code>0</code></td>
+      <td><code>4</code></td>
       <td>Number of unchanged context lines to show above and below each changed hunk in inline diffs. <code>0</code> shows only the changed lines themselves.</td>
     </tr>
     <tr id="config-en-inlinediffmaxeditdistance">
@@ -1313,7 +1313,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     </tr>
     <tr id="config-ja-inlinediffcontextlines">
       <td><code>InlineDiffContextLines</code></td>
-      <td><code>0</code></td>
+      <td><code>4</code></td>
       <td>インライン差分で各変更ハンクの前後に表示する未変更コンテキスト行数。<code>0</code> では変更行のみを表示します。</td>
     </tr>
     <tr id="config-ja-inlinediffmaxeditdistance">
