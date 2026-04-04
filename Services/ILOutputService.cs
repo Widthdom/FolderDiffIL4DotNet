@@ -30,7 +30,6 @@ namespace FolderDiffIL4DotNet.Services
         private readonly IILTextOutputService _ilTextOutputService;
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
         private readonly ILoggerService _logger;
-        private int _filterWarningEmitted; // 0=not yet, 1=done / 0=未発行, 1=発行済み
 
         /// <summary>
         /// Initializes a new instance of <see cref="ILOutputService"/>.
