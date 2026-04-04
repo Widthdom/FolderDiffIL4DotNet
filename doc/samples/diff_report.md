@@ -152,6 +152,11 @@
 | Expired | 0 |
 
 ## Warnings
+
+### [ ! ] IL filter validation warnings (1)
+
+- ILIgnoreLineContainingStrings: "rva" is very short (3 chars) and may inadvertently exclude legitimate IL lines. Consider using a more specific pattern.
+
 ### [ ! ] Modified Files — SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file (1)
 
 | Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |
