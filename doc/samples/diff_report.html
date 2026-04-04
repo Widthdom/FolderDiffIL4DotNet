@@ -2238,9 +2238,9 @@
   }
 
   // Toggle between unified and side-by-side diff view / 統合ビューとサイドバイサイドビューを切り替え
-  // 3-column layout: [LineNum] [Old/Red] [New/Green]
-  // Red and green columns each get exactly (table_width - line_number_width) / 2
-  // 3列レイアウト: [行番号] [旧/赤] [新/緑] — 赤と緑は (テーブル幅 - 行番号列幅) / 2 で等幅、隙間なし
+  // 4-column layout: [OldLn] [OldText] [NewLn] [NewText]
+  // Each side gets a line-number column (4em) and a text column (calc(50% - 4em))
+  // 4列レイアウト: [旧行番号] [旧テキスト] [新行番号] [新テキスト] — 各側に行番号列(4em)とテキスト列を配置
   function toggleDiffView(detailsEl) {
     var table = detailsEl.querySelector('.diff-table');
     if (!table) return;
