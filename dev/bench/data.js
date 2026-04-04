@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775281532618,
+  "lastUpdate": 1775293313776,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -2712,6 +2712,102 @@ window.BENCHMARK_DATA = {
             "value": 28696681.35267857,
             "unit": "ns",
             "range": "± 288919.4568911607"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e1ba6290f5705f1c9fe7e8c63c57b607fadb5df8",
+          "message": "Merge pull request #120 from Widthdom/claude/review-folderdiffil4dotnet-bnhss\n\nAdd 42 Jest tests for HTML report JS module coverage gaps",
+          "timestamp": "2026-04-04T17:57:12+09:00",
+          "tree_id": "35dd8e470b47e226a97a88358e2b6c38ff786047",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/e1ba6290f5705f1c9fe7e8c63c57b607fadb5df8"
+        },
+        "date": 1775293313425,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61799.37451171875,
+            "unit": "ns",
+            "range": "± 205.87254733576836"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 580016.6214425223,
+            "unit": "ns",
+            "range": "± 1858.439615484591"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5898040.352864583,
+            "unit": "ns",
+            "range": "± 18222.940256472968"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74731.52775355747,
+            "unit": "ns",
+            "range": "± 337.8193465728964"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 28.571462298432987,
+            "unit": "ns",
+            "range": "± 0.06991920265108652"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 59.1397314230601,
+            "unit": "ns",
+            "range": "± 0.4196556347676954"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.072238358167503,
+            "unit": "ns",
+            "range": "± 0.22178818231861902"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5306438.368303572,
+            "unit": "ns",
+            "range": "± 17348.044732775666"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 127025.8551920573,
+            "unit": "ns",
+            "range": "± 1032.765163557018"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2585.847250529698,
+            "unit": "ns",
+            "range": "± 10.805174281261095"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 261039.29473407453,
+            "unit": "ns",
+            "range": "± 2108.2642468870704"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27525006.058333334,
+            "unit": "ns",
+            "range": "± 237136.6791232647"
           }
         ]
       }
