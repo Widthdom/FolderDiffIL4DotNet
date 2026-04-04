@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.5] - 2026-04-04
+
 #### Added
 
 - **IL filter string safety warnings in console and reports** — When `ILIgnoreLineContainingStrings` contains strings shorter than 4 characters, warnings are now emitted to the console during execution (both at validation time and before "Press any key to exit...") and displayed in both Markdown and HTML report Warnings sections. Short filter strings risk inadvertently excluding legitimate IL lines. Validation is performed via `ILOutputService.ValidateILFilterStrings()` and wired through `FolderDiffService.ValidateILFilterStrings()`. Warnings are stored in `FileDiffResultLists.ILFilterWarnings` (ConcurrentBag) and propagated via `DiffPipelineResult` → `RunCompletionState` → `ProgramRunResult` → `OutputCompletionWarnings`. Markdown report: `WarningsSectionWriter` renders a bullet list. HTML report: `HtmlReportGenerateService.Sections.cs` renders a `<ul class="warnings">` list. Affected: `Services/ILOutputService.cs`, `Services/FolderDiffService.cs`, `Models/FileDiffResultLists.Metadata.cs`, `Services/ReportWriteContext.cs`, `Services/ReportGenerateService.cs`, `Services/SectionWriters/WarningsSectionWriter.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `Runner/DiffPipelineExecutor.cs`, `Runner/ProgramRunner.Types.cs`, `Runner/ProgramRunner.Wizard.cs`, `ProgramRunner.cs`. Tests: `ILOutputServiceTests` (6 new: `ValidateILFilterStrings_NullInput_ReturnsEmpty`, `ValidateILFilterStrings_EmptyInput_ReturnsEmpty`, `ValidateILFilterStrings_AllLongStrings_ReturnsEmpty`, `ValidateILFilterStrings_ShortString_ReturnsWarning`, `ValidateILFilterStrings_MixedLengths_ReturnsWarningsForShortOnly`, `ValidateILFilterStrings_ExactlyMinLength_NoWarning`), `ConditionalSectionWriterTests` (2 new: `Warnings_IsEnabled_WhenILFilterWarnings`, `Warnings_Write_ContainsILFilterWarningText`).
@@ -21,15 +23,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **Extended JavaScript test coverage for HTML report modules** — Added 42 new Jest tests in `diff_report_extended.test.js` covering previously untested functions: virtual scroll (`initVirtualScroll` threshold gating, viewport wrapping, partial rendering, `vsRender` idempotency, `vsRefreshVisibility` importance filtering, `vsMaterializeAll` DOM restoration), Excel export (`buildExcelFramework` header/legend/section/summary/warning assembly, `downloadExcelImmediate` blob creation, `downloadExcelCompatibleHtml` small-report path, `downloadAsPdf` print injection and afterprint cleanup), layout (`syncScTableWidths`, `initColResizeSingle` resize handle and drag, `wrapInputWithClear` with clear-button and event dispatch, `initClearButtons`, `syncFilterRowHeight`), export (`downloadReviewed` with crypto.subtle mock), lazy rendering (`setupLazyIntersectionObserver` with observer mock and intersection callback), highlight (`highlightAllILDiffs` ILMismatch/SHA256Mismatch discrimination), theme (`getStoredTheme` read/error handling), and keyboard (IME `Process` key fallback with `KeyJ`/`KeyK`/`KeyX` code mapping, Escape focus clear). Also fixed a pre-existing flaky test for keyboard help overlay auto-show/auto-hide timing in `diff_report.test.js`. Total JS test count: 105 → 147 (+42). Affected: `JsTests/diff_report_extended.test.js` (new), `JsTests/diff_report.test.js` (1 test fix), `doc/TESTING_GUIDE.md` (scope map updated EN+JA).
+
 - **Aligned log level prefixes to equal width** — Console and text-format log prefixes are now padded to 9 characters: `[INFO   ]`, `[WARNING]`, `[ERROR  ]`. This ensures all log messages start at the same column for improved readability. JSON log `level` field is unaffected. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests` (4 assertions updated).
 
 #### Fixed
 
 - **CompilerGeneratedResolver: regex and annotation ordering bugs** — Fixed `s_compilerGeneratedType` regex from `/<[^/]+>` to `/<` to correctly detect display class types like `<>c__DisplayClass5_0` and `<>c` where text follows the closing `>`. Restructured `AnnotateEntry` to apply TypeName-level annotations (async state machine, display class) independently from MemberName-level annotations (backing field, lambda method), fixing the case where a display class type with a lambda member name only received the member annotation due to early return. Affected: `Services/CompilerGeneratedResolver.cs`. Tests: `CompilerGeneratedResolverTests` (3 tests fixed: `IsCompilerGeneratedType_ReturnsExpected` for display class inputs, `AnnotateEntry_DisplayClassSimple_AnnotatesTypeName`).
-
-#### Changed
-
-- **Extended JavaScript test coverage for HTML report modules** — Added 42 new Jest tests in `diff_report_extended.test.js` covering previously untested functions: virtual scroll (`initVirtualScroll` threshold gating, viewport wrapping, partial rendering, `vsRender` idempotency, `vsRefreshVisibility` importance filtering, `vsMaterializeAll` DOM restoration), Excel export (`buildExcelFramework` header/legend/section/summary/warning assembly, `downloadExcelImmediate` blob creation, `downloadExcelCompatibleHtml` small-report path, `downloadAsPdf` print injection and afterprint cleanup), layout (`syncScTableWidths`, `initColResizeSingle` resize handle and drag, `wrapInputWithClear` with clear-button and event dispatch, `initClearButtons`, `syncFilterRowHeight`), export (`downloadReviewed` with crypto.subtle mock), lazy rendering (`setupLazyIntersectionObserver` with observer mock and intersection callback), highlight (`highlightAllILDiffs` ILMismatch/SHA256Mismatch discrimination), theme (`getStoredTheme` read/error handling), and keyboard (IME `Process` key fallback with `KeyJ`/`KeyK`/`KeyX` code mapping, Escape focus clear). Also fixed a pre-existing flaky test for keyboard help overlay auto-show/auto-hide timing in `diff_report.test.js`. Total JS test count: 105 → 147 (+42). Affected: `JsTests/diff_report_extended.test.js` (new), `JsTests/diff_report.test.js` (1 test fix), `doc/TESTING_GUIDE.md` (scope map updated EN+JA).
 
 ### [1.13.4] - 2026-04-04
 
@@ -1069,6 +1069,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.5] - 2026-04-04
+
 #### Added
 
 - **IL フィルタ文字列の安全性警告（コンソール＋レポート）** — `ILIgnoreLineContainingStrings` に 4 文字未満の文字列が含まれている場合、実行中にコンソールへ警告を出力し（検証時と「Press any key to exit...」の直前の両方）、Markdown および HTML レポートの Warnings セクションにも表示するようになった。短いフィルタ文字列は正規の IL 行を誤って除外するリスクがある。検証は `ILOutputService.ValidateILFilterStrings()` で実行され、`FolderDiffService.ValidateILFilterStrings()` 経由で呼び出される。警告は `FileDiffResultLists.ILFilterWarnings`（ConcurrentBag）に格納され、`DiffPipelineResult` → `RunCompletionState` → `ProgramRunResult` → `OutputCompletionWarnings` で伝搬。Markdown レポート: `WarningsSectionWriter` がバレットリストで表示。HTML レポート: `HtmlReportGenerateService.Sections.cs` が `<ul class="warnings">` リストで表示。影響: `Services/ILOutputService.cs`、`Services/FolderDiffService.cs`、`Models/FileDiffResultLists.Metadata.cs`、`Services/ReportWriteContext.cs`、`Services/ReportGenerateService.cs`、`Services/SectionWriters/WarningsSectionWriter.cs`、`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`、`Runner/DiffPipelineExecutor.cs`、`Runner/ProgramRunner.Types.cs`、`Runner/ProgramRunner.Wizard.cs`、`ProgramRunner.cs`。テスト: `ILOutputServiceTests`（6 件追加）、`ConditionalSectionWriterTests`（2 件追加）。
@@ -1081,15 +1083,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Changed
 
+- **HTML レポート JS モジュールのテストカバレッジ拡充** — `diff_report_extended.test.js` に 42 件の新規 Jest テストを追加し、未テストだった関数をカバー: 仮想スクロール（`initVirtualScroll` 閾値判定、ビューポートラップ、部分レンダリング、`vsRender` 冪等性、`vsRefreshVisibility` 重要度フィルタリング、`vsMaterializeAll` DOM 復元）、Excel エクスポート（`buildExcelFramework` ヘッダー/凡例/セクション/サマリー/警告の組み立て、`downloadExcelImmediate` Blob 生成、`downloadExcelCompatibleHtml` 小規模レポートパス、`downloadAsPdf` 印刷注入と afterprint クリーンアップ）、レイアウト（`syncScTableWidths`、`initColResizeSingle` リサイズハンドルとドラッグ、`wrapInputWithClear` クリアボタンとイベント発火、`initClearButtons`、`syncFilterRowHeight`）、エクスポート（`downloadReviewed` crypto.subtle モック付き）、遅延レンダリング（`setupLazyIntersectionObserver` オブザーバーモックと交差コールバック）、ハイライト（`highlightAllILDiffs` ILMismatch/SHA256Mismatch 識別）、テーマ（`getStoredTheme` 読み取り/エラーハンドリング）、キーボード（IME `Process` キーフォールバックと `KeyJ`/`KeyK`/`KeyX` コードマッピング、Escape フォーカス解除）。既存の `diff_report.test.js` のキーボードヘルプオーバーレイ自動表示/非表示タイミングに関する flaky テストも修正。JS テスト総数: 105 → 147（+42）。影響: `JsTests/diff_report_extended.test.js`（新規）、`JsTests/diff_report.test.js`（1 テスト修正）、`doc/TESTING_GUIDE.md`（scope map 更新 EN+JA）。
+
 - **ログレベルプレフィックスの文字幅統一** — コンソールおよびテキスト形式ログのプレフィックスを 9 文字に統一: `[INFO   ]`、`[WARNING]`、`[ERROR  ]`。全ログメッセージの開始位置が揃い可読性が向上。JSON ログの `level` フィールドは影響なし。影響: `Services/LoggerService.cs`。テスト: `LoggerServiceTests`（4 アサーション更新）。
 
 #### Fixed
 
 - **CompilerGeneratedResolver: 正規表現と注釈順序のバグ修正** — `s_compilerGeneratedType` の正規表現を `/<[^/]+>` から `/<` に変更し、`<>c__DisplayClass5_0` や `<>c` のように `>` の後にテキストが続く display class 型を正しく検出するように修正。`AnnotateEntry` を再構成し、TypeName レベルの注釈（async ステートマシン、display class）と MemberName レベルの注釈（バッキングフィールド、ラムダメソッド）を独立して適用するようにし、display class 型にラムダメソッド名がある場合に早期リターンによりメンバー注釈のみが適用されていた問題を修正。影響: `Services/CompilerGeneratedResolver.cs`。テスト: `CompilerGeneratedResolverTests`（3 テスト修正: display class 入力に対する `IsCompilerGeneratedType_ReturnsExpected`、`AnnotateEntry_DisplayClassSimple_AnnotatesTypeName`）。
-
-#### Changed
-
-- **HTML レポート JS モジュールのテストカバレッジ拡充** — `diff_report_extended.test.js` に 42 件の新規 Jest テストを追加し、未テストだった関数をカバー: 仮想スクロール（`initVirtualScroll` 閾値判定、ビューポートラップ、部分レンダリング、`vsRender` 冪等性、`vsRefreshVisibility` 重要度フィルタリング、`vsMaterializeAll` DOM 復元）、Excel エクスポート（`buildExcelFramework` ヘッダー/凡例/セクション/サマリー/警告の組み立て、`downloadExcelImmediate` Blob 生成、`downloadExcelCompatibleHtml` 小規模レポートパス、`downloadAsPdf` 印刷注入と afterprint クリーンアップ）、レイアウト（`syncScTableWidths`、`initColResizeSingle` リサイズハンドルとドラッグ、`wrapInputWithClear` クリアボタンとイベント発火、`initClearButtons`、`syncFilterRowHeight`）、エクスポート（`downloadReviewed` crypto.subtle モック付き）、遅延レンダリング（`setupLazyIntersectionObserver` オブザーバーモックと交差コールバック）、ハイライト（`highlightAllILDiffs` ILMismatch/SHA256Mismatch 識別）、テーマ（`getStoredTheme` 読み取り/エラーハンドリング）、キーボード（IME `Process` キーフォールバックと `KeyJ`/`KeyK`/`KeyX` コードマッピング、Escape フォーカス解除）。既存の `diff_report.test.js` のキーボードヘルプオーバーレイ自動表示/非表示タイミングに関する flaky テストも修正。JS テスト総数: 105 → 147（+42）。影響: `JsTests/diff_report_extended.test.js`（新規）、`JsTests/diff_report.test.js`（1 テスト修正）、`doc/TESTING_GUIDE.md`（scope map 更新 EN+JA）。
 
 ### [1.13.4] - 2026-04-04
 
@@ -2129,7 +2129,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.4...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.5...HEAD
+[1.13.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.4...v1.13.5
 [1.13.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.3...v1.13.4
 [1.13.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.2...v1.13.3
 [1.13.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.1...v1.13.2
