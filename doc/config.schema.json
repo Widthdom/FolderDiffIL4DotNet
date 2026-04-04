@@ -117,7 +117,7 @@
       "type": "array",
       "items": { "type": "string" },
       "default": [],
-      "description": "Strings to filter from IL comparison. Only used when ShouldIgnoreILLinesContainingConfiguredStrings is true.\nIL比較から除外する文字列。ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ有効。"
+      "description": "Strings to filter from IL comparison. Only used when ShouldIgnoreILLinesContainingConfiguredStrings is true. Strings shorter than 4 characters trigger a safety warning.\nIL比較から除外する文字列。ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ有効。4文字未満の文字列は安全性警告を出力する。"
     },
 
     "EnableILCache": {
