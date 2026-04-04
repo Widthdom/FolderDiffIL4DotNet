@@ -17,6 +17,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Aligned log level prefixes to equal width** — Console and text-format log prefixes are now padded to 9 characters: `[INFO   ]`, `[WARNING]`, `[ERROR  ]`. This ensures all log messages start at the same column for improved readability. JSON log `level` field is unaffected. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests` (4 assertions updated).
 
+#### Fixed
+
+- **CompilerGeneratedResolver: regex and annotation ordering bugs** — Fixed `s_compilerGeneratedType` regex from `/<[^/]+>` to `/<` to correctly detect display class types like `<>c__DisplayClass5_0` and `<>c` where text follows the closing `>`. Restructured `AnnotateEntry` to apply TypeName-level annotations (async state machine, display class) independently from MemberName-level annotations (backing field, lambda method), fixing the case where a display class type with a lambda member name only received the member annotation due to early return. Affected: `Services/CompilerGeneratedResolver.cs`. Tests: `CompilerGeneratedResolverTests` (3 tests fixed: `IsCompilerGeneratedType_ReturnsExpected` for display class inputs, `AnnotateEntry_DisplayClassSimple_AnnotatesTypeName`).
+
+#### Changed
+
 - **Extended JavaScript test coverage for HTML report modules** — Added 42 new Jest tests in `diff_report_extended.test.js` covering previously untested functions: virtual scroll (`initVirtualScroll` threshold gating, viewport wrapping, partial rendering, `vsRender` idempotency, `vsRefreshVisibility` importance filtering, `vsMaterializeAll` DOM restoration), Excel export (`buildExcelFramework` header/legend/section/summary/warning assembly, `downloadExcelImmediate` blob creation, `downloadExcelCompatibleHtml` small-report path, `downloadAsPdf` print injection and afterprint cleanup), layout (`syncScTableWidths`, `initColResizeSingle` resize handle and drag, `wrapInputWithClear` with clear-button and event dispatch, `initClearButtons`, `syncFilterRowHeight`), export (`downloadReviewed` with crypto.subtle mock), lazy rendering (`setupLazyIntersectionObserver` with observer mock and intersection callback), highlight (`highlightAllILDiffs` ILMismatch/SHA256Mismatch discrimination), theme (`getStoredTheme` read/error handling), and keyboard (IME `Process` key fallback with `KeyJ`/`KeyK`/`KeyX` code mapping, Escape focus clear). Also fixed a pre-existing flaky test for keyboard help overlay auto-show/auto-hide timing in `diff_report.test.js`. Total JS test count: 105 → 147 (+42). Affected: `JsTests/diff_report_extended.test.js` (new), `JsTests/diff_report.test.js` (1 test fix), `doc/TESTING_GUIDE.md` (scope map updated EN+JA).
 
 ### [1.13.4] - 2026-04-04
@@ -1070,6 +1076,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Changed
 
 - **ログレベルプレフィックスの文字幅統一** — コンソールおよびテキスト形式ログのプレフィックスを 9 文字に統一: `[INFO   ]`、`[WARNING]`、`[ERROR  ]`。全ログメッセージの開始位置が揃い可読性が向上。JSON ログの `level` フィールドは影響なし。影響: `Services/LoggerService.cs`。テスト: `LoggerServiceTests`（4 アサーション更新）。
+
+#### Fixed
+
+- **CompilerGeneratedResolver: 正規表現と注釈順序のバグ修正** — `s_compilerGeneratedType` の正規表現を `/<[^/]+>` から `/<` に変更し、`<>c__DisplayClass5_0` や `<>c` のように `>` の後にテキストが続く display class 型を正しく検出するように修正。`AnnotateEntry` を再構成し、TypeName レベルの注釈（async ステートマシン、display class）と MemberName レベルの注釈（バッキングフィールド、ラムダメソッド）を独立して適用するようにし、display class 型にラムダメソッド名がある場合に早期リターンによりメンバー注釈のみが適用されていた問題を修正。影響: `Services/CompilerGeneratedResolver.cs`。テスト: `CompilerGeneratedResolverTests`（3 テスト修正: display class 入力に対する `IsCompilerGeneratedType_ReturnsExpected`、`AnnotateEntry_DisplayClassSimple_AnnotatesTypeName`）。
+
+#### Changed
 
 - **HTML レポート JS モジュールのテストカバレッジ拡充** — `diff_report_extended.test.js` に 42 件の新規 Jest テストを追加し、未テストだった関数をカバー: 仮想スクロール（`initVirtualScroll` 閾値判定、ビューポートラップ、部分レンダリング、`vsRender` 冪等性、`vsRefreshVisibility` 重要度フィルタリング、`vsMaterializeAll` DOM 復元）、Excel エクスポート（`buildExcelFramework` ヘッダー/凡例/セクション/サマリー/警告の組み立て、`downloadExcelImmediate` Blob 生成、`downloadExcelCompatibleHtml` 小規模レポートパス、`downloadAsPdf` 印刷注入と afterprint クリーンアップ）、レイアウト（`syncScTableWidths`、`initColResizeSingle` リサイズハンドルとドラッグ、`wrapInputWithClear` クリアボタンとイベント発火、`initClearButtons`、`syncFilterRowHeight`）、エクスポート（`downloadReviewed` crypto.subtle モック付き）、遅延レンダリング（`setupLazyIntersectionObserver` オブザーバーモックと交差コールバック）、ハイライト（`highlightAllILDiffs` ILMismatch/SHA256Mismatch 識別）、テーマ（`getStoredTheme` 読み取り/エラーハンドリング）、キーボード（IME `Process` キーフォールバックと `KeyJ`/`KeyK`/`KeyX` コードマッピング、Escape フォーカス解除）。既存の `diff_report.test.js` のキーボードヘルプオーバーレイ自動表示/非表示タイミングに関する flaky テストも修正。JS テスト総数: 105 → 147（+42）。影響: `JsTests/diff_report_extended.test.js`（新規）、`JsTests/diff_report.test.js`（1 テスト修正）、`doc/TESTING_GUIDE.md`（scope map 更新 EN+JA）。
 
