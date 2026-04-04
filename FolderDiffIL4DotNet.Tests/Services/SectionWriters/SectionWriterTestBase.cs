@@ -30,6 +30,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
         internal static ReportWriteContext CreateMinimalContext(
             bool hasSha256Mismatch = false,
             bool hasTimestampRegressionWarning = false,
+            bool hasILFilterWarnings = false,
             bool shouldIncludeIgnoredFiles = false,
             bool shouldIncludeUnchangedFiles = false,
             bool shouldIncludeILCacheStats = false)
@@ -41,6 +42,12 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
                 ShouldIncludeILCacheStatsInReport = shouldIncludeILCacheStats
             };
 
+            var fileDiffResultLists = new FileDiffResultLists();
+            if (hasILFilterWarnings)
+            {
+                fileDiffResultLists.ILFilterWarnings.Add("ILIgnoreLineContainingStrings: \"ab\" is very short (2 chars) and may inadvertently exclude legitimate IL lines. Consider using a more specific pattern.");
+            }
+
             return new ReportWriteContext
             {
                 OldFolderAbsolutePath = "/old",
@@ -51,8 +58,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
                 Config = builder.Build(),
                 HasSha256Mismatch = hasSha256Mismatch,
                 HasTimestampRegressionWarning = hasTimestampRegressionWarning,
+                HasILFilterWarnings = hasILFilterWarnings,
                 IlCache = null,
-                FileDiffResultLists = new FileDiffResultLists()
+                FileDiffResultLists = fileDiffResultLists
             };
         }
 

@@ -93,6 +93,26 @@ namespace FolderDiffIL4DotNet.Models
         }
 
         // ──────────────────────────────────────────────
+        // IL filter warnings
+        // IL フィルタ警告
+        // ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Warning messages for potentially over-broad IL filter strings configured via
+        /// <c>ILIgnoreLineContainingStrings</c>. Recorded during diff execution and
+        /// rendered in both Markdown and HTML report Warnings sections.
+        /// <c>ILIgnoreLineContainingStrings</c> で設定された過度に広範な IL フィルタ文字列に対する
+        /// 警告メッセージ。差分実行時に記録され、Markdown および HTML レポートの警告セクションに表示されます。
+        /// </summary>
+        public ConcurrentBag<string> ILFilterWarnings { get; } = new ConcurrentBag<string>();
+
+        /// <summary>
+        /// Returns <see langword="true"/> when at least one IL filter warning exists.
+        /// IL フィルタ警告が 1 件以上ある場合に <see langword="true"/> を返します。
+        /// </summary>
+        public bool HasAnyILFilterWarning => !ILFilterWarnings.IsEmpty;
+
+        // ──────────────────────────────────────────────
         // Semantic & dependency analysis
         // セマンティック・依存関係分析
         // ──────────────────────────────────────────────

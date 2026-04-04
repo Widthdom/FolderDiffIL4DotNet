@@ -85,6 +85,7 @@ namespace FolderDiffIL4DotNet.Services
             string diffReportAbsolutePath = GetDiffReportAbsolutePath(context.ReportsFolderAbsolutePath);
             bool hasSha256Mismatch = _fileDiffResultLists.HasAnySha256Mismatch;
             bool hasTimestampRegressionWarning = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
+            bool hasILFilterWarnings = _fileDiffResultLists.HasAnyILFilterWarning;
             var reportGenerated = false;
             try
             {
@@ -98,6 +99,7 @@ namespace FolderDiffIL4DotNet.Services
                     context.Config,
                     hasSha256Mismatch,
                     hasTimestampRegressionWarning,
+                    hasILFilterWarnings,
                     context.IlCache);
                 reportGenerated = true;
             }
@@ -144,6 +146,7 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyConfigSettings config,
             bool hasSha256Mismatch,
             bool hasTimestampRegressionWarning,
+            bool hasILFilterWarnings,
             ILCache? ilCache)
         {
             PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
@@ -160,6 +163,7 @@ namespace FolderDiffIL4DotNet.Services
                 config,
                 hasSha256Mismatch,
                 hasTimestampRegressionWarning,
+                hasILFilterWarnings,
                 ilCache);
         }
 
@@ -173,6 +177,7 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyConfigSettings config,
             bool hasSha256Mismatch,
             bool hasTimestampRegressionWarning,
+            bool hasILFilterWarnings,
             ILCache? ilCache)
         {
             var context = new ReportWriteContext
@@ -185,6 +190,7 @@ namespace FolderDiffIL4DotNet.Services
                 Config = config,
                 HasSha256Mismatch = hasSha256Mismatch,
                 HasTimestampRegressionWarning = hasTimestampRegressionWarning,
+                HasILFilterWarnings = hasILFilterWarnings,
                 IlCache = ilCache,
                 FileDiffResultLists = _fileDiffResultLists,
             };

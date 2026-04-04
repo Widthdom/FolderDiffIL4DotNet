@@ -24,11 +24,13 @@ namespace FolderDiffIL4DotNet.Services
         private const string LOG_OPTIMIZE_FOR_NETWORK_SHARES_SKIP = $"OptimizeForNetworkShares=true: Skip {Constants.LABEL_IL} precompute/prefetch to reduce network I/O.";
         private const string VERSION_LABEL_PREFIX = " (version: ";
         private const string ERROR_FAILED_TO_OUTPUT_IL = $"Failed to output {Constants.LABEL_IL}.";
+        private const int IL_FILTER_STRING_MIN_LENGTH = 4;
         private readonly IReadOnlyConfigSettings _config;
         private readonly ILCache? _ilCache;
         private readonly IILTextOutputService _ilTextOutputService;
         private readonly IDotNetDisassembleService _dotNetDisassembleService;
         private readonly ILoggerService _logger;
+        private int _filterWarningEmitted; // 0=not yet, 1=done / 0=未発行, 1=発行済み
 
         /// <summary>
         /// Initializes a new instance of <see cref="ILOutputService"/>.
@@ -394,6 +396,32 @@ namespace FolderDiffIL4DotNet.Services
             }
             byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));
             return BitConverter.ToString(hashBytes).Replace("-", string.Empty);
+        }
+
+        /// <summary>
+        /// Validates configured IL filter strings and returns warning messages for any that appear
+        /// too short or overly broad. Strings shorter than <see cref="IL_FILTER_STRING_MIN_LENGTH"/>
+        /// characters risk matching legitimate IL lines.
+        /// 設定された IL フィルタ文字列を検証し、短すぎるまたは広範すぎるパターンに対する
+        /// 警告メッセージを返します。<see cref="IL_FILTER_STRING_MIN_LENGTH"/> 文字未満の文字列は
+        /// 正規の IL 行を誤って除外するリスクがあります。
+        /// </summary>
+        /// <param name="normalizedStrings">The normalized filter strings as returned by <see cref="GetNormalizedIlIgnoreContainingStrings"/>. / <see cref="GetNormalizedIlIgnoreContainingStrings"/> が返した正規化済みフィルタ文字列。</param>
+        /// <returns>List of warning messages (empty if all strings are safe). / 警告メッセージのリスト（すべて安全なら空）。</returns>
+        internal static List<string> ValidateILFilterStrings(IReadOnlyCollection<string> normalizedStrings)
+        {
+            var warnings = new List<string>();
+            if (normalizedStrings == null || normalizedStrings.Count == 0)
+                return warnings;
+
+            foreach (var s in normalizedStrings)
+            {
+                if (s.Length < IL_FILTER_STRING_MIN_LENGTH)
+                {
+                    warnings.Add($"ILIgnoreLineContainingStrings: \"{s}\" is very short ({s.Length} chars) and may inadvertently exclude legitimate IL lines. Consider using a more specific pattern.");
+                }
+            }
+            return warnings;
         }
 
         /// <summary>
