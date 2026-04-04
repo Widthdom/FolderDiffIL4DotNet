@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775281165657,
+  "lastUpdate": 1775281532618,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -2616,6 +2616,102 @@ window.BENCHMARK_DATA = {
             "value": 27540308.802083332,
             "unit": "ns",
             "range": "± 210813.336795049"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "distinct": true,
+          "id": "a5e8ac5ba84dc49effb67510b3561e1b9d8735a0",
+          "message": "Bump version to 1.13.4",
+          "timestamp": "2026-04-04T14:40:16+09:00",
+          "tree_id": "1c4c507a0597c5362f446f39ac24c0f53f7e6ef9",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/a5e8ac5ba84dc49effb67510b3561e1b9d8735a0"
+        },
+        "date": 1775281532256,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62298.65612792969,
+            "unit": "ns",
+            "range": "± 123.98018251760689"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 576994.13671875,
+            "unit": "ns",
+            "range": "± 1005.4733915948325"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5927361.498958333,
+            "unit": "ns",
+            "range": "± 17458.85227160237"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 75593.60255650112,
+            "unit": "ns",
+            "range": "± 314.67211652365006"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 31.674391786257427,
+            "unit": "ns",
+            "range": "± 0.2271916234021737"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 67.47881714786801,
+            "unit": "ns",
+            "range": "± 1.264177296411469"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.395326891115733,
+            "unit": "ns",
+            "range": "± 0.21049755125307873"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5440170.495225694,
+            "unit": "ns",
+            "range": "± 115830.20974132864"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 131594.56321614582,
+            "unit": "ns",
+            "range": "± 1644.95297868529"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2799.0461053559275,
+            "unit": "ns",
+            "range": "± 77.24822816221278"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 267096.5237955729,
+            "unit": "ns",
+            "range": "± 3915.7351883450924"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 28696681.35267857,
+            "unit": "ns",
+            "range": "± 288919.4568911607"
           }
         ]
       }
