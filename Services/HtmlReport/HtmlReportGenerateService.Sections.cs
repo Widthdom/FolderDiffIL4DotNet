@@ -318,9 +318,24 @@ namespace FolderDiffIL4DotNet.Services
         {
             bool hasSha256 = _fileDiffResultLists.HasAnySha256Mismatch;
             bool hasTs  = _fileDiffResultLists.HasAnyNewFileTimestampOlderThanOldWarning;
-            if (!hasSha256 && !hasTs) return;
+            bool hasILFilter = _fileDiffResultLists.HasAnyILFilterWarning;
+            if (!hasSha256 && !hasTs && !hasILFilter) return;
 
             writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("Warnings")}</h2>");
+
+            // IL filter string validation warnings
+            // IL フィルタ文字列検証警告
+            if (hasILFilter)
+            {
+                var filterWarnings = _fileDiffResultLists.ILFilterWarnings.OrderBy(w => w, StringComparer.Ordinal).ToList();
+                writer.WriteLine($"<h2 style=\"color:#e65100\">[ ! ] {HtmlEncode("IL filter validation warnings")} ({filterWarnings.Count})</h2>");
+                writer.WriteLine("<ul class=\"warnings\">");
+                foreach (var w in filterWarnings)
+                {
+                    writer.WriteLine($"  <li>{HtmlEncode(w)}</li>");
+                }
+                writer.WriteLine("</ul>");
+            }
 
             // SHA256Mismatch warning + detail table (grouped together)
             // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）

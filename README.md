@@ -494,7 +494,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-ilignorelinecontainingstrings">
       <td><code>ILIgnoreLineContainingStrings</code></td>
       <td><code>[]</code></td>
-      <td>String list used by IL substring-ignore filter.</td>
+      <td>String list used by IL substring-ignore filter. Strings shorter than 4 characters trigger a safety warning in both console output and reports, as they risk inadvertently excluding legitimate IL lines.</td>
     </tr>
     <tr id="config-en-shouldoutputfiletimestamps">
       <td><code>ShouldOutputFileTimestamps</code></td>
@@ -1214,7 +1214,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-ilignorelinecontainingstrings">
       <td><code>ILIgnoreLineContainingStrings</code></td>
       <td><code>[]</code></td>
-      <td>IL 行除外に使う文字列一覧。</td>
+      <td>IL 行除外に使う文字列一覧。4 文字未満の文字列が含まれる場合、正規の IL 行を誤って除外するリスクがあるため、コンソールとレポートの両方に安全性警告が表示される。</td>
     </tr>
     <tr id="config-ja-shouldoutputfiletimestamps">
       <td><code>ShouldOutputFileTimestamps</code></td>

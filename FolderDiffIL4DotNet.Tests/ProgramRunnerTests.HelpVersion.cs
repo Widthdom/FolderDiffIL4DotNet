@@ -287,7 +287,7 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
             Assert.NotNull(stateType);
-            var state = Activator.CreateInstance(stateType, new object[] { false, false, 100, 20, 5, 30 });
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, false, 100, 20, 5, 30 });
 
             var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(method);
@@ -331,7 +331,7 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
             Assert.NotNull(stateType);
-            var state = Activator.CreateInstance(stateType, new object[] { false, false, 0, 0, 0, 0 });
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, false, 0, 0, 0, 0 });
 
             var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(method);
@@ -355,7 +355,7 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var stateType = typeof(ProgramRunner).GetNestedType("RunCompletionState", BindingFlags.NonPublic);
             Assert.NotNull(stateType);
-            var state = Activator.CreateInstance(stateType, new object[] { false, false, 50, 10, 5, 35 });
+            var state = Activator.CreateInstance(stateType, new object[] { false, false, false, 50, 10, 5, 35 });
 
             var method = typeof(ProgramRunner).GetMethod("OutputCompletionSummaryChart", BindingFlags.NonPublic | BindingFlags.Static);
             Assert.NotNull(method);

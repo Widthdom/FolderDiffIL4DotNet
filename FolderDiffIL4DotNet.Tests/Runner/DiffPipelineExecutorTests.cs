@@ -65,16 +65,16 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         [Fact]
         public void DiffPipelineResult_RecordEquality_Works()
         {
-            var a = new DiffPipelineResult(true, false, 10, 2, 1, 3);
-            var b = new DiffPipelineResult(true, false, 10, 2, 1, 3);
+            var a = new DiffPipelineResult(true, false, false, 10, 2, 1, 3);
+            var b = new DiffPipelineResult(true, false, false, 10, 2, 1, 3);
             Assert.Equal(a, b);
         }
 
         [Fact]
         public void DiffPipelineResult_DifferentValues_NotEqual()
         {
-            var a = new DiffPipelineResult(true, false, 10, 2, 1, 3);
-            var b = new DiffPipelineResult(false, false, 10, 2, 1, 3);
+            var a = new DiffPipelineResult(true, false, false, 10, 2, 1, 3);
+            var b = new DiffPipelineResult(false, false, false, 10, 2, 1, 3);
             Assert.NotEqual(a, b);
         }
     }

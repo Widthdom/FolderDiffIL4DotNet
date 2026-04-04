@@ -69,7 +69,7 @@ namespace FolderDiffIL4DotNet
             // 合成引数を構築し通常パイプラインに委譲
             var syntheticArgs = new[] { oldFolder, newFolder, reportLabel };
             var result = await RunWithResultAsync(syntheticArgs, opts);
-            OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings);
+            OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings, result.HasILFilterWarnings);
             return (int)result.ExitCode;
         }
 

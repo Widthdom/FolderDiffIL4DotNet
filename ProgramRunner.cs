@@ -28,6 +28,7 @@ namespace FolderDiffIL4DotNet
         private const string PRESS_ANY_KEY = "Press any key to exit...";
         private const string ERROR_KEY_PROMPT = "An error occurred during key prompt.";
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more modified files in 'new' have older timestamps than the corresponding files in 'old'. See diff_report for details.";
+        private const string WARNING_IL_FILTER_STRINGS_TOO_SHORT = "One or more ILIgnoreLineContainingStrings entries are very short and may inadvertently exclude legitimate IL lines. See diff_report Warnings section for details.";
         private const string TIP_PRINT_CONFIG = "Tip: Run with --print-config to display the effective configuration as JSON.";
 
         private readonly ILoggerService _logger;
@@ -95,7 +96,7 @@ namespace FolderDiffIL4DotNet
             }
 
             var result = await RunWithResultAsync(args, opts);
-            OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings);
+            OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings, result.HasILFilterWarnings);
 
             // Ring terminal bell on completion if requested / 要求された場合、完了時にターミナルベルを鳴らす
             if (opts.Bell)
@@ -175,7 +176,7 @@ namespace FolderDiffIL4DotNet
                     var ctx = pipelineResult.Value!;
                     var dryRunExecutor = new Runner.DryRunExecutor(_logger);
                     dryRunExecutor.Execute(ctx.RunArgs.OldFolderAbsolutePath, ctx.RunArgs.NewFolderAbsolutePath, ctx.Config);
-                    return ProgramRunResult.Success(new RunCompletionState(false, false));
+                    return ProgramRunResult.Success(new RunCompletionState(false, false, false));
                 }
 
                 var completionStateResult = await pipelineResult
@@ -265,19 +266,22 @@ namespace FolderDiffIL4DotNet
             }
         }
 
-        private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings)
+        private void OutputCompletionWarnings(bool hasSha256MismatchWarnings, bool hasTimestampRegressionWarnings, bool hasILFilterWarnings)
         {
             if (hasSha256MismatchWarnings)
             {
                 _logger.LogMessage(AppLogLevel.Warning, Constants.WARNING_SHA256_MISMATCH, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
             }
 
-            if (!hasTimestampRegressionWarnings)
+            if (hasTimestampRegressionWarnings)
             {
-                return;
+                _logger.LogMessage(AppLogLevel.Warning, WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
             }
 
-            _logger.LogMessage(AppLogLevel.Warning, WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
+            if (hasILFilterWarnings)
+            {
+                _logger.LogMessage(AppLogLevel.Warning, WARNING_IL_FILTER_STRINGS_TOO_SHORT, shouldOutputMessageToConsole: true, ConsoleColor.Yellow);
+            }
         }
 
         /// <summary>
@@ -359,6 +363,7 @@ namespace FolderDiffIL4DotNet
                 var completionState = new RunCompletionState(
                     pipelineResult.HasSha256MismatchWarnings,
                     pipelineResult.HasTimestampRegressionWarnings,
+                    pipelineResult.HasILFilterWarnings,
                     pipelineResult.UnchangedCount,
                     pipelineResult.AddedCount,
                     pipelineResult.RemovedCount,

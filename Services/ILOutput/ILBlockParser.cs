@@ -13,5 +13,8 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
     {
         internal static List<List<string>> ParseBlocks(IReadOnlyList<string> lines)
             => CoreILBlockParser.ParseBlocks(lines);
+
+        internal static string ExtractBlockSignature(IReadOnlyList<string> blockLines)
+            => CoreILBlockParser.ExtractBlockSignature(blockLines);
     }
 }

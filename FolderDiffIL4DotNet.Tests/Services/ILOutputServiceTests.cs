@@ -418,6 +418,134 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
         }
 
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_ContentSwappedBetweenMethods_ReturnsFalse()
+        {
+            // Two methods swap their bodies — signature-aware comparison detects this
+            // 2つのメソッドのボディが入れ替わった場合 — シグネチャ対応比較で検知
+            var lines1 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.0",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ldc.i4.0",
+                "  ret",
+                "}"
+            };
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_OneMethodContentChangedToMatchAnother_ReturnsFalse()
+        {
+            // MethodA's content changes to match MethodB — must be detected as different
+            // MethodA の内容が MethodB と同じになった場合 — 差分として検知すべき
+            var lines1 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.0",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}"
+            };
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        // --- ValidateILFilterStrings tests / ValidateILFilterStrings テスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILFilterStrings_NullInput_ReturnsEmpty()
+        {
+            var result = ILOutputService.ValidateILFilterStrings(null!);
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILFilterStrings_EmptyInput_ReturnsEmpty()
+        {
+            var result = ILOutputService.ValidateILFilterStrings(new List<string>());
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILFilterStrings_AllLongStrings_ReturnsEmpty()
+        {
+            var result = ILOutputService.ValidateILFilterStrings(new List<string> { "buildserver", "// MVID" });
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILFilterStrings_ShortString_ReturnsWarning()
+        {
+            var result = ILOutputService.ValidateILFilterStrings(new List<string> { "ret" });
+            Assert.Single(result);
+            Assert.Contains("ret", result[0]);
+            Assert.Contains("3 chars", result[0]);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILFilterStrings_MixedLengths_ReturnsWarningsForShortOnly()
+        {
+            var result = ILOutputService.ValidateILFilterStrings(new List<string> { "ab", "buildserver", "x", "longstring" });
+            Assert.Equal(2, result.Count);
+            Assert.Contains(result, w => w.Contains("\"ab\""));
+            Assert.Contains(result, w => w.Contains("\"x\""));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ValidateILFilterStrings_ExactlyMinLength_NoWarning()
+        {
+            // 4 chars is the minimum length (IL_FILTER_STRING_MIN_LENGTH = 4), so should pass
+            // 4 文字は最小長（IL_FILTER_STRING_MIN_LENGTH = 4）なので警告なし
+            var result = ILOutputService.ValidateILFilterStrings(new List<string> { "abcd" });
+            Assert.Empty(result);
+        }
+
         // --- FilterIlLines tests / FilterIlLines テスト ---
 
         [Fact]

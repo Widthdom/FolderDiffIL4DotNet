@@ -33,6 +33,7 @@
 | ".publickeytoken = ( " |
 | ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( " |
 | "// Code size " |
+| "rva" |
 
 > Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
 
@@ -152,6 +153,11 @@
 | Expired | 0 |
 
 ## Warnings
+
+### [ ! ] IL filter validation warnings (1)
+
+- ILIgnoreLineContainingStrings: "rva" is very short (3 chars) and may inadvertently exclude legitimate IL lines. Consider using a more specific pattern.
+
 ### [ ! ] Modified Files — SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file (1)
 
 | Status | File Path | Timestamp | Diff Reason | Estimated Change | Disassembler | .NET SDK |

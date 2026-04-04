@@ -35,6 +35,9 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Whether any timestamp regression warning was raised. / タイムスタンプ後退警告が発生したかどうか。</summary>
         public bool HasTimestampRegressionWarning { get; init; }
 
+        /// <summary>Whether any IL filter string validation warning was raised. / IL フィルタ文字列検証警告が発生したかどうか。</summary>
+        public bool HasILFilterWarnings { get; init; }
+
         /// <summary>Optional IL cache instance for reporting cache statistics. / キャッシュ統計レポート用の IL キャッシュインスタンス（任意）。</summary>
         public ILCache? IlCache { get; init; }
 

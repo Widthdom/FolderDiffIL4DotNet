@@ -17,7 +17,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             public int Order => 1000;
 
-            public bool IsEnabled(ReportWriteContext context) => context.HasSha256Mismatch || context.HasTimestampRegressionWarning;
+            public bool IsEnabled(ReportWriteContext context) => context.HasSha256Mismatch || context.HasTimestampRegressionWarning || context.HasILFilterWarnings;
 
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
@@ -49,6 +49,20 @@ namespace FolderDiffIL4DotNet.Services
                             var sdkDisplay = BuildSdkVersionDisplay(kv.Key, ctx.FileDiffResultLists);
                             writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {kv.Key} | {tsCol} | `{kv.Value}` | | | {sdkDisplay} |");
                         }
+                    }
+                }
+
+                // IL filter string validation warnings
+                // IL フィルタ文字列検証警告
+                if (ctx.HasILFilterWarnings)
+                {
+                    writer.WriteLine();
+                    var filterWarnings = ctx.FileDiffResultLists.ILFilterWarnings.OrderBy(w => w, StringComparer.Ordinal).ToList();
+                    writer.WriteLine($"### [ ! ] IL filter validation warnings ({filterWarnings.Count})");
+                    writer.WriteLine();
+                    foreach (var warning in filterWarnings)
+                    {
+                        writer.WriteLine($"- {warning}");
                     }
                 }
 

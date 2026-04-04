@@ -112,5 +112,23 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
             string output = SectionWriterTestBase.WriteToString(writer, ctx);
             Assert.Contains("Warning", output);
         }
+
+        [Fact]
+        public void Warnings_IsEnabled_WhenILFilterWarnings()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(1000);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(hasILFilterWarnings: true);
+            Assert.True(writer.IsEnabled(ctx));
+        }
+
+        [Fact]
+        public void Warnings_Write_ContainsILFilterWarningText()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(1000);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(hasILFilterWarnings: true);
+            string output = SectionWriterTestBase.WriteToString(writer, ctx);
+            Assert.Contains("IL filter validation warnings", output);
+            Assert.Contains("very short", output);
+        }
     }
 }

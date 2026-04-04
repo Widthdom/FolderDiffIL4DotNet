@@ -92,7 +92,9 @@
   "ShouldIgnoreILLinesContainingConfiguredStrings": false,
 
   // Strings to ignore — only used when ShouldIgnoreILLinesContainingConfiguredStrings is true
+  // Strings shorter than 4 characters trigger a safety warning in both console output and reports.
   // 無視する文字列 — ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ使用
+  // 4 文字未満の文字列はコンソールとレポートに安全性警告を出力する。
   "ILIgnoreLineContainingStrings": [],
 
   // --- File Extensions / ファイル拡張子 ---

@@ -152,6 +152,7 @@ namespace FolderDiffIL4DotNet.Services
                 var maxParallel = _executionStrategy.DetermineMaxParallel();
                 LogDiscoveryStats(totalFilesRelativePathCount, maxParallel);
                 ScanAssemblyCandidatesAndLog();
+                ValidateILFilterStrings();
 
                 await PrecomputeIlCachesAsync(maxParallel, cancellationToken);
 
@@ -313,6 +314,31 @@ namespace FolderDiffIL4DotNet.Services
                 _fileDiffResultLists.AddAddedFileAbsolutePath(newFileAbsolutePath);
                 processedFileCount++;
                 _progressReporter.ReportProgress(Math.Min((double)processedFileCount * 100.0 / totalFilesRelativePathCount, 100.0));
+            }
+        }
+
+        /// <summary>
+        /// Validates configured IL filter strings and records warnings for any that appear too short or overly broad.
+        /// Also logs each warning to the console.
+        /// 設定された IL フィルタ文字列を検証し、短すぎるまたは広範すぎるパターンに対する警告を記録します。
+        /// 各警告はコンソールにも出力されます。
+        /// </summary>
+        private void ValidateILFilterStrings()
+        {
+            if (_config.ILIgnoreLineContainingStrings == null || _config.ILIgnoreLineContainingStrings.Count == 0)
+                return;
+
+            var normalized = _config.ILIgnoreLineContainingStrings
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            var warnings = ILOutputService.ValidateILFilterStrings(normalized);
+            foreach (var warning in warnings)
+            {
+                _fileDiffResultLists.ILFilterWarnings.Add(warning);
+                _logger.LogMessage(AppLogLevel.Warning, warning, shouldOutputMessageToConsole: true);
             }
         }
 

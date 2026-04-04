@@ -61,13 +61,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.LogMessage(AppLogLevel.Error, "failure", shouldOutputMessageToConsole: true, ConsoleColor.Red, captured);
 
                 var consoleText = writer.ToString();
-                Assert.Contains("[ERROR] failure", consoleText);
+                Assert.Contains("[ERROR  ] failure", consoleText);
 
                 var logText = File.ReadAllText(tempLogPath);
-                Assert.Contains("[ERROR] failure", logText);
+                Assert.Contains("[ERROR  ] failure", logText);
                 Assert.Contains(captured.StackTrace, logText);
                 var firstLine = Assert.IsType<string>(logText.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)[0]);
-                Assert.Matches(new Regex(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[ERROR\] failure$", RegexOptions.CultureInvariant), firstLine);
+                Assert.Matches(new Regex(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[ERROR  \] failure$", RegexOptions.CultureInvariant), firstLine);
                 var timestampText = firstLine[1..firstLine.IndexOf(']')];
                 Assert.True(
                     DateTime.TryParseExact(timestampText, Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
@@ -105,7 +105,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.LogMessage(AppLogLevel.Info, "success", shouldOutputMessageToConsole: true);
 
                 var consoleText = writer.ToString();
-                Assert.Contains("[INFO] success", consoleText);
+                Assert.Contains("[INFO   ] success", consoleText);
             }
             finally
             {
@@ -367,11 +367,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var consoleText = writer.ToString();
                 // Should contain just the prefix without trailing whitespace message
                 // プレフィックスのみが含まれ、後続のホワイトスペースメッセージがないこと
-                Assert.Contains("[INFO]", consoleText);
+                Assert.Contains("[INFO   ]", consoleText);
                 // The trimmed line should be exactly the prefix
                 // トリムされた行はプレフィックスのみであること
                 var trimmed = consoleText.Trim();
-                Assert.Equal("[INFO]", trimmed);
+                Assert.Equal("[INFO   ]", trimmed);
             }
             finally
             {
