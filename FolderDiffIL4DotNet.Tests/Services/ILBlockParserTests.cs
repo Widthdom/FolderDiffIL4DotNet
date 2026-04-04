@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using FolderDiffIL4DotNet.Core.IL;
 using FolderDiffIL4DotNet.Services.ILOutput;
 using Xunit;
 using CoreParser = FolderDiffIL4DotNet.Core.IL.ILBlockParser;

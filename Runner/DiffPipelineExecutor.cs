@@ -112,6 +112,7 @@ namespace FolderDiffIL4DotNet.Runner
                 var pipelineResult = new DiffPipelineResult(
                     resultLists.HasAnySha256Mismatch,
                     resultLists.HasAnyNewFileTimestampOlderThanOldWarning,
+                    resultLists.HasAnyILFilterWarning,
                     stats.UnchangedCount,
                     stats.AddedCount,
                     stats.RemovedCount,
@@ -314,6 +315,7 @@ namespace FolderDiffIL4DotNet.Runner
     internal sealed record DiffPipelineResult(
         bool HasSha256MismatchWarnings,
         bool HasTimestampRegressionWarnings,
+        bool HasILFilterWarnings,
         int UnchangedCount,
         int AddedCount,
         int RemovedCount,
