@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Extended JavaScript test coverage for HTML report modules** — Added 42 new Jest tests in `diff_report_extended.test.js` covering previously untested functions: virtual scroll (`initVirtualScroll` threshold gating, viewport wrapping, partial rendering, `vsRender` idempotency, `vsRefreshVisibility` importance filtering, `vsMaterializeAll` DOM restoration), Excel export (`buildExcelFramework` header/legend/section/summary/warning assembly, `downloadExcelImmediate` blob creation, `downloadExcelCompatibleHtml` small-report path, `downloadAsPdf` print injection and afterprint cleanup), layout (`syncScTableWidths`, `initColResizeSingle` resize handle and drag, `wrapInputWithClear` with clear-button and event dispatch, `initClearButtons`, `syncFilterRowHeight`), export (`downloadReviewed` with crypto.subtle mock), lazy rendering (`setupLazyIntersectionObserver` with observer mock and intersection callback), highlight (`highlightAllILDiffs` ILMismatch/SHA256Mismatch discrimination), theme (`getStoredTheme` read/error handling), and keyboard (IME `Process` key fallback with `KeyJ`/`KeyK`/`KeyX` code mapping, Escape focus clear). Also fixed a pre-existing flaky test for keyboard help overlay auto-show/auto-hide timing in `diff_report.test.js`. Total JS test count: 105 → 147 (+42). Affected: `JsTests/diff_report_extended.test.js` (new), `JsTests/diff_report.test.js` (1 test fix), `doc/TESTING_GUIDE.md` (scope map updated EN+JA).
+
 ### [1.13.4] - 2026-04-04
 
 #### Added
@@ -1046,6 +1050,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **HTML レポート JS モジュールのテストカバレッジ拡充** — `diff_report_extended.test.js` に 42 件の新規 Jest テストを追加し、未テストだった関数をカバー: 仮想スクロール（`initVirtualScroll` 閾値判定、ビューポートラップ、部分レンダリング、`vsRender` 冪等性、`vsRefreshVisibility` 重要度フィルタリング、`vsMaterializeAll` DOM 復元）、Excel エクスポート（`buildExcelFramework` ヘッダー/凡例/セクション/サマリー/警告の組み立て、`downloadExcelImmediate` Blob 生成、`downloadExcelCompatibleHtml` 小規模レポートパス、`downloadAsPdf` 印刷注入と afterprint クリーンアップ）、レイアウト（`syncScTableWidths`、`initColResizeSingle` リサイズハンドルとドラッグ、`wrapInputWithClear` クリアボタンとイベント発火、`initClearButtons`、`syncFilterRowHeight`）、エクスポート（`downloadReviewed` crypto.subtle モック付き）、遅延レンダリング（`setupLazyIntersectionObserver` オブザーバーモックと交差コールバック）、ハイライト（`highlightAllILDiffs` ILMismatch/SHA256Mismatch 識別）、テーマ（`getStoredTheme` 読み取り/エラーハンドリング）、キーボード（IME `Process` キーフォールバックと `KeyJ`/`KeyK`/`KeyX` コードマッピング、Escape フォーカス解除）。既存の `diff_report.test.js` のキーボードヘルプオーバーレイ自動表示/非表示タイミングに関する flaky テストも修正。JS テスト総数: 105 → 147（+42）。影響: `JsTests/diff_report_extended.test.js`（新規）、`JsTests/diff_report.test.js`（1 テスト修正）、`doc/TESTING_GUIDE.md`（scope map 更新 EN+JA）。
 
 ### [1.13.4] - 2026-04-04
 

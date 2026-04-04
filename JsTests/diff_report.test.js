@@ -1815,7 +1815,8 @@ describe('keyboard navigation — j/k/x keys', () => {
     expect(document.getElementById('cb_mod_1').checked).toBe(false);
   });
 
-  test('? key toggles keyboard help overlay visibility', () => {
+  test('keyboard help overlay auto-shows on first visit and auto-hides after 4s', () => {
+    jest.useFakeTimers();
     const dom = buildKeyboardDom()
       + '<div id="kb-help" class="kb-help-overlay kb-help-hidden"><p>Keyboard shortcuts</p></div>';
     loadScript({
@@ -1828,16 +1829,19 @@ describe('keyboard navigation — j/k/x keys', () => {
     // After DOMContentLoaded, the first-visit auto-show sets it visible.
     // DOMContentLoaded 後、初回表示により visible に設定される。
     expect(overlay.classList.contains('kb-help-visible')).toBe(true);
+    expect(overlay.classList.contains('kb-help-hidden')).toBe(false);
 
-    // ? toggles it hidden
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }));
+    // After 4 seconds, the auto-hide timeout fires / 4秒後に自動非表示タイマーが発火
+    jest.advanceTimersByTime(4100);
     expect(overlay.classList.contains('kb-help-visible')).toBe(false);
     expect(overlay.classList.contains('kb-help-hidden')).toBe(true);
 
-    // ? toggles it visible again
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }));
-    expect(overlay.classList.contains('kb-help-visible')).toBe(true);
-    expect(overlay.classList.contains('kb-help-hidden')).toBe(false);
+    // Second DOMContentLoaded should not re-show (localStorage flag set)
+    // 2回目の DOMContentLoaded は再表示しない（localStorage フラグ設定済み）
+    fireDOMContentLoaded();
+    expect(overlay.classList.contains('kb-help-hidden')).toBe(true);
+
+    jest.useRealTimers();
   });
 
   test('keyboard shortcuts disabled in reviewed mode', () => {
