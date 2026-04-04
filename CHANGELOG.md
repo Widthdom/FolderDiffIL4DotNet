@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.4] - 2026-04-04
+
 #### Added
 
 - **Time-based greeting after banner** — The console now displays a friendly greeting after the ASCII banner, based on the local hour (18 time slots covering the full 24-hour cycle). Meal-adjacent slots (7 AM, noon, 6 PM) say "Leave the diff to me and go have breakfast/lunch/dinner!" and the 9 PM slot suggests taking a shower. Affected: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`. Tests: `ConsoleBannerTests.cs` (`GetGreeting_ReturnsExpectedMessageForHour` — 24 cases, `GetGreeting_NeverReturnsEmptyString` — 5 cases, `GetGreeting_AllHoursCovered`, `GetGreeting_MealTimeSlots_SuggestLeavingDiffToTool`, `GetGreeting_CoffeeBreakSlots_ReturnSameMessage` — 5 tests total).
@@ -1044,6 +1046,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.13.4] - 2026-04-04
 
 #### Added
 
@@ -2081,7 +2085,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.3...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.4...HEAD
+[1.13.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.3...v1.13.4
 [1.13.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.2...v1.13.3
 [1.13.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.1...v1.13.2
 [1.13.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.0...v1.13.1
