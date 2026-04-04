@@ -39,6 +39,10 @@ namespace FolderDiffIL4DotNet.Services
                 CompareProperties(oldSnapshot, newSnapshot, entries);
                 CompareFields(oldSnapshot, newSnapshot, entries);
 
+                // Annotate compiler-generated members with their user-authored origin.
+                // コンパイラ生成メンバーにユーザー記述元の注釈を付加。
+                CompilerGeneratedResolver.Annotate(entries);
+
                 // Classify importance for each entry.
                 // 各エントリの重要度を分類。
                 for (int i = 0; i < entries.Count; i++)
