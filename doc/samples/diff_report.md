@@ -33,6 +33,7 @@
 | ".publickeytoken = ( " |
 | ".custom instance void class [System.Windows.Forms]System.Windows.Forms.AxHost/TypeLibraryTimeStampAttribute::.ctor(string) = ( " |
 | "// Code size " |
+| "rva" |
 
 > Note: When diffing IL, lines starting with "// MVID:" (if present) are ignored because they contain disassembler-emitted Module Version ID metadata that can change on rebuild without meaning the executable IL changed.
 
