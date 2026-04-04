@@ -34,9 +34,9 @@ namespace FolderDiffIL4DotNet.Services
         // 自動プロパティバッキングフィールド: <PropertyName>k__BackingField
         private static readonly Regex s_backingField = new(@"<(\w+)>k__BackingField$", RegexOptions.Compiled);
 
-        // Compiler-generated nested type name: contains '<' and '>' in the final segment
-        // コンパイラ生成のネストされた型名: 最終セグメントに '<' と '>' を含む
-        private static readonly Regex s_compilerGeneratedType = new(@"/<[^/]+>", RegexOptions.Compiled);
+        // Compiler-generated nested type name: slash followed by '<' in the nested segment
+        // コンパイラ生成のネストされた型名: ネストセグメントで '/' の後に '<' を含む
+        private static readonly Regex s_compilerGeneratedType = new(@"/<", RegexOptions.Compiled);
 
         /// <summary>
         /// Post-processes semantic change entries to annotate compiler-generated members
@@ -63,60 +63,70 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         internal static MemberChangeEntry AnnotateEntry(MemberChangeEntry entry)
         {
-            // Check backing field first (member-level, not type-level)
-            // バッキングフィールドを最初にチェック（メンバーレベル、型レベルではない）
-            var backingMatch = s_backingField.Match(entry.MemberName);
-            if (backingMatch.Success)
-            {
-                string propertyName = backingMatch.Groups[1].Value;
-                return entry with
-                {
-                    MemberName = $"<{propertyName}>k__BackingField (backing field of {propertyName})",
-                };
-            }
+            string annotatedTypeName = entry.TypeName;
+            string annotatedMemberName = entry.MemberName;
 
-            // Check lambda method name (e.g. <DoWork>b__0)
-            // ラムダメソッド名をチェック（例: <DoWork>b__0）
-            var lambdaMatch = s_lambdaMethod.Match(entry.MemberName);
-            if (lambdaMatch.Success)
-            {
-                string originMethod = lambdaMatch.Groups[1].Value;
-                return entry with
-                {
-                    MemberName = $"{entry.MemberName} (lambda in {originMethod})",
-                };
-            }
+            // --- TypeName-level annotations ---
+            // --- 型名レベルの注釈 ---
 
             // Check if TypeName contains a compiler-generated nested type
             // TypeName にコンパイラ生成のネストされた型が含まれるかチェック
-            string typeName = entry.TypeName;
-
-            // Async state machine type: ParentType/<MethodName>d__N
-            // async ステートマシン型: ParentType/<MethodName>d__N
-            int slashIdx = typeName.LastIndexOf('/');
+            int slashIdx = annotatedTypeName.LastIndexOf('/');
             if (slashIdx >= 0)
             {
-                string nestedPart = typeName[(slashIdx + 1)..];
-                string parentType = typeName[..slashIdx];
+                string nestedPart = annotatedTypeName[(slashIdx + 1)..];
+                string parentType = annotatedTypeName[..slashIdx];
 
+                // Async state machine type: ParentType/<MethodName>d__N
+                // async ステートマシン型: ParentType/<MethodName>d__N
                 var asyncMatch = s_asyncStateMachine.Match(nestedPart);
                 if (asyncMatch.Success)
                 {
                     string originMethod = asyncMatch.Groups[1].Value;
-                    return entry with
-                    {
-                        TypeName = $"{parentType}/{nestedPart} (state machine of {parentType}.{originMethod})",
-                    };
+                    annotatedTypeName = $"{parentType}/{nestedPart} (state machine of {parentType}.{originMethod})";
                 }
-
-                var displayMatch = s_displayClass.Match(nestedPart);
-                if (displayMatch.Success)
+                else
                 {
-                    return entry with
+                    var displayMatch = s_displayClass.Match(nestedPart);
+                    if (displayMatch.Success)
                     {
-                        TypeName = $"{parentType}/{nestedPart} (closure of {parentType})",
-                    };
+                        annotatedTypeName = $"{parentType}/{nestedPart} (closure of {parentType})";
+                    }
                 }
+            }
+
+            // --- MemberName-level annotations ---
+            // --- メンバー名レベルの注釈 ---
+
+            // Check backing field: <PropertyName>k__BackingField
+            // バッキングフィールドをチェック: <PropertyName>k__BackingField
+            var backingMatch = s_backingField.Match(annotatedMemberName);
+            if (backingMatch.Success)
+            {
+                string propertyName = backingMatch.Groups[1].Value;
+                annotatedMemberName = $"<{propertyName}>k__BackingField (backing field of {propertyName})";
+            }
+            else
+            {
+                // Check lambda method name (e.g. <DoWork>b__0)
+                // ラムダメソッド名をチェック（例: <DoWork>b__0）
+                var lambdaMatch = s_lambdaMethod.Match(annotatedMemberName);
+                if (lambdaMatch.Success)
+                {
+                    string originMethod = lambdaMatch.Groups[1].Value;
+                    annotatedMemberName = $"{annotatedMemberName} (lambda in {originMethod})";
+                }
+            }
+
+            // Return annotated entry if any annotation was applied
+            // 注釈が適用された場合は注釈付きエントリを返す
+            if (annotatedTypeName != entry.TypeName || annotatedMemberName != entry.MemberName)
+            {
+                return entry with
+                {
+                    TypeName = annotatedTypeName,
+                    MemberName = annotatedMemberName,
+                };
             }
 
             return entry;
