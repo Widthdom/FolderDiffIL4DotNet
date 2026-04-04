@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775293313776,
+  "lastUpdate": 1775313086645,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -2808,6 +2808,102 @@ window.BENCHMARK_DATA = {
             "value": 27525006.058333334,
             "unit": "ns",
             "range": "± 237136.6791232647"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "cdc0894d59bcce6b3cf0ae541a4185a74e2cc55b",
+          "message": "Add compiler-generated member resolution and IL filter validation (#121)\n\n* Add signature-aware block comparison to detect IL content swaps\n\nBlock-aware IL comparison previously used content-hash-only multisets,\nwhich could miss cases where blocks with different signatures swapped\ntheir content. Now uses (signature, contentHash) composite keys so that\neach block is matched by both its directive line and content.\n\nAdded ILBlockParser.ExtractBlockSignature() to extract the first\ndirective line from a parsed block. Updated BuildBlockHashBag to use\nDictionary<(string, string), int> with composite keys.\n\nTests: 5 new ExtractBlockSignature tests, 2 new BlockAwareSequenceEqual\ntests for content swap and content convergence scenarios.\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Add compiler-generated member annotation in semantic analysis\n\nAssemblyMethodAnalyzer now annotates compiler-generated types/members\nwith their user-authored origin: async state machines, lambda capture\nclasses, lambda methods, and auto-property backing fields. This makes\nsemantic change tables much more readable for reviewers who no longer\nneed to mentally decode names like <DoWork>d__0.\n\nNew CompilerGeneratedResolver with regex-based pattern matching for\nC# compiler naming conventions. Called as post-processing in Analyze()\nbefore importance classification.\n\nTests: 14 new tests in CompilerGeneratedResolverTests.\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Add brace counting resilience for string literals and comments\n\nILBlockParser.CountBraces now skips braces inside string literals and\nafter line comments. This prevents false block boundary detection from\nIL string operands like ldstr \"JSON: {\\\"key\\\"}\" or comments containing\nbraces. Escaped quotes are handled correctly.\n\nTests: 4 new tests for string literal braces, comment braces, mixed\nscenarios, and escaped quotes.\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Add IL filter string safety warnings to console and reports\n\nShort ILIgnoreLineContainingStrings entries (< 4 chars) now trigger\nwarnings in the console during execution and in both Markdown and HTML\nreport Warnings sections, helping reviewers catch overly broad filters.\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Update documentation for IL filter string safety warnings\n\n- README.md: expanded ILIgnoreLineContainingStrings description (EN+JA)\n  to mention 4-char minimum length validation and warning behavior\n- DEVELOPER_GUIDE.md: added IL filter string safety validation to\n  ILOutputService file table (EN+JA)\n- TESTING_GUIDE.md: updated scope map for ILOutputServiceTests and\n  ConditionalSectionWriterTests with new coverage (EN+JA)\n- doc/samples/diff_report.md: added IL filter validation warning example\n- doc/samples/diff_report.html: added IL filter validation warning example\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Add short filter string example to sample report headers\n\nAdded \"rva\" (3 chars) to IL Ignored Strings in both sample report\nheaders so the IL filter validation warning in the Warnings section\nhas a matching origin in the header configuration display.\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Remove unused _filterWarningEmitted field from ILOutputService\n\nValidation logic was moved to FolderDiffService, making this field\nunnecessary. Fixes CI warning CS0169.\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Fix CI build error, add IL filter warning before exit prompt, align log prefixes\n\n- Fix CS0104 ambiguous ILBlockParser reference in ILBlockParserTests\n  by removing unnecessary `using FolderDiffIL4DotNet.Core.IL`\n- Propagate HasILFilterWarnings through DiffPipelineResult →\n  RunCompletionState → ProgramRunResult → OutputCompletionWarnings\n  so IL filter warnings appear before \"Press any key to exit...\"\n- Align log level prefixes to equal width: [INFO   ], [WARNING],\n  [ERROR  ] so console/log messages start at the same column\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Update CHANGELOG for exit-prompt warnings and aligned log prefixes\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Fix documentation gaps found in consistency review\n\n- config.sample.jsonc: add comment about 4-char minimum length warning\n- config.schema.json: add minimum length note to description\n- TESTING_GUIDE.md: add aligned log prefix assertions to\n  LoggerServiceTests scope (EN+JA), add HasILFilterWarnings to\n  DiffPipelineExecutorTests scope (EN+JA)\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Fix CompilerGeneratedResolver: regex and annotation ordering bugs\n\n- Fix s_compilerGeneratedType regex from /<[^/]+> to /< to correctly\n  detect display class types like <>c__DisplayClass5_0 and <>c\n- Restructure AnnotateEntry to apply TypeName-level and MemberName-level\n  annotations independently, fixing the case where a display class type\n  with a lambda member only got the member annotation due to early return\n\nResolves 3 failing CompilerGeneratedResolverTests in CI.\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Add CHANGELOG entry for CompilerGeneratedResolver bug fix\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n* Move misplaced CHANGELOG entries from released sections to Unreleased\n\nThree commits (600b43e, 56cb2e4, 879d5e0) incorrectly inserted their\nCHANGELOG entries into released version sections ([1.11.0] and [1.12.0])\ninstead of the [Unreleased] section. Moved all three entries (EN+JA)\nto Unreleased:\n- Signature-aware block comparison (was in [1.11.0])\n- Compiler-generated member annotation (was in [1.12.0])\n- Brace counting resilience (was in [1.11.0])\n\nhttps://claude.ai/code/session_011sj5agFHQXNHZfsy1gc66z\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-04-04T23:26:36+09:00",
+          "tree_id": "6dcf185bdede415dc7d1a62daabcb784f408747c",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/cdc0894d59bcce6b3cf0ae541a4185a74e2cc55b"
+        },
+        "date": 1775313086416,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61675.04696890024,
+            "unit": "ns",
+            "range": "± 233.94172755976882"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 586749.3686523438,
+            "unit": "ns",
+            "range": "± 1569.5796261560895"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5867234.012319712,
+            "unit": "ns",
+            "range": "± 18307.792660591418"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 75017.03440504808,
+            "unit": "ns",
+            "range": "± 417.0323141552762"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 30.317322727044424,
+            "unit": "ns",
+            "range": "± 0.23483462987984782"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 65.63765777074374,
+            "unit": "ns",
+            "range": "± 0.9865393954343997"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 33.42296579678853,
+            "unit": "ns",
+            "range": "± 0.43253139599674595"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5349858.108258928,
+            "unit": "ns",
+            "range": "± 34986.645477768936"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 128117.76034109933,
+            "unit": "ns",
+            "range": "± 1429.9657517400105"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2774.1005630493164,
+            "unit": "ns",
+            "range": "± 70.15961653516203"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 262656.13069661456,
+            "unit": "ns",
+            "range": "± 592.3656660615925"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27354361.425,
+            "unit": "ns",
+            "range": "± 142496.0481754747"
           }
         ]
       }
