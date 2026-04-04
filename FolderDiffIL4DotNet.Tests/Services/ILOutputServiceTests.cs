@@ -418,6 +418,78 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
         }
 
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_ContentSwappedBetweenMethods_ReturnsFalse()
+        {
+            // Two methods swap their bodies — signature-aware comparison detects this
+            // 2つのメソッドのボディが入れ替わった場合 — シグネチャ対応比較で検知
+            var lines1 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.0",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ldc.i4.0",
+                "  ret",
+                "}"
+            };
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_OneMethodContentChangedToMatchAnother_ReturnsFalse()
+        {
+            // MethodA's content changes to match MethodB — must be detected as different
+            // MethodA の内容が MethodB と同じになった場合 — 差分として検知すべき
+            var lines1 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.0",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}",
+                ".method public void Bar() cil managed",
+                "{",
+                "  ldc.i4.1",
+                "  ret",
+                "}"
+            };
+
+            Assert.False(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
         // --- FilterIlLines tests / FilterIlLines テスト ---
 
         [Fact]

@@ -89,6 +89,33 @@ namespace FolderDiffIL4DotNet.Core.IL
         }
 
         /// <summary>
+        /// Extracts the signature (first directive line) from a parsed block.
+        /// Returns an empty string for preamble or inter-block lines that have no directive.
+        /// パース済みブロックからシグネチャ（最初のディレクティブ行）を抽出します。
+        /// ディレクティブを持たないプリアンブルやブロック間の行の場合は空文字列を返します。
+        /// </summary>
+        /// <param name="blockLines">A single block as returned by <see cref="ParseBlocks"/>. / <see cref="ParseBlocks"/> が返した単一ブロック。</param>
+        /// <returns>The directive line (trimmed) if found, otherwise an empty string. / ディレクティブ行（トリム済み）が見つかれば返し、なければ空文字列。</returns>
+        public static string ExtractBlockSignature(IReadOnlyList<string> blockLines)
+        {
+            if (blockLines == null || blockLines.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            // The first line of a directive block is the directive itself.
+            // For preamble blocks, no line starts with a block directive.
+            // ディレクティブブロックの最初の行がディレクティブそのもの。
+            // プリアンブルブロックではブロックディレクティブで始まる行はない。
+            string firstTrimmed = blockLines[0].TrimStart();
+            if (IsBlockStart(firstTrimmed))
+            {
+                return firstTrimmed;
+            }
+            return string.Empty;
+        }
+
+        /// <summary>
         /// Determines whether a trimmed line starts a new top-level IL block.
         /// トリム済みの行が新しいトップレベル IL ブロックの開始かどうかを判定します。
         /// </summary>

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using FolderDiffIL4DotNet.Core.IL;
 using FolderDiffIL4DotNet.Services.ILOutput;
 using Xunit;
+using CoreParser = FolderDiffIL4DotNet.Core.IL.ILBlockParser;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
@@ -129,6 +131,73 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Single(result);
             Assert.Equal(8, result[0].Count);
+        }
+
+        // --- ExtractBlockSignature tests / ExtractBlockSignature テスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ExtractBlockSignature_NullOrEmpty_ReturnsEmptyString()
+        {
+            Assert.Equal(string.Empty, CoreParser.ExtractBlockSignature(null!));
+            Assert.Equal(string.Empty, CoreParser.ExtractBlockSignature(new List<string>()));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ExtractBlockSignature_PreambleBlock_ReturnsEmptyString()
+        {
+            var preamble = new List<string>
+            {
+                ".assembly extern mscorlib {}",
+                ".module test.dll"
+            };
+
+            Assert.Equal(string.Empty, CoreParser.ExtractBlockSignature(preamble));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ExtractBlockSignature_MethodBlock_ReturnsDirectiveLine()
+        {
+            var block = new List<string>
+            {
+                ".method public void Foo() cil managed",
+                "{",
+                "  ret",
+                "}"
+            };
+
+            Assert.Equal(".method public void Foo() cil managed", CoreParser.ExtractBlockSignature(block));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ExtractBlockSignature_ClassBlock_ReturnsDirectiveLine()
+        {
+            var block = new List<string>
+            {
+                ".class public auto ansi MyClass",
+                "  extends [mscorlib]System.Object",
+                "{",
+                "}"
+            };
+
+            Assert.Equal(".class public auto ansi MyClass", CoreParser.ExtractBlockSignature(block));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ExtractBlockSignature_IndentedDirective_ReturnsTrimmedLine()
+        {
+            // Verify leading whitespace is trimmed from the signature
+            // シグネチャの先頭空白がトリムされることを検証
+            var block = new List<string>
+            {
+                "  .field public int32 _value",
+            };
+
+            Assert.Equal(".field public int32 _value", CoreParser.ExtractBlockSignature(block));
         }
     }
 }

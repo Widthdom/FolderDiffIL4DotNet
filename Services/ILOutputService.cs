@@ -315,14 +315,16 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Compares two filtered IL line lists using block-aware (order-independent) comparison.
+        /// Compares two filtered IL line lists using signature-aware, block-based (order-independent) comparison.
         /// Parses IL into logical blocks (methods, classes, etc.) via <see cref="ILBlockParser"/>,
-        /// hashes each block, and compares as multisets. This handles compiler-induced reordering
-        /// of methods/classes that would cause false positives in line-by-line comparison.
-        /// フィルタ済み IL 行リストをブロック単位（順序非依存）で比較します。
+        /// extracts each block's signature (directive line) and content hash, then compares as multisets
+        /// of (signature, hash) pairs. This handles compiler-induced reordering while correctly detecting
+        /// content changes even when blocks with different signatures have identical bodies.
+        /// フィルタ済み IL 行リストをシグネチャ対応のブロック単位（順序非依存）で比較します。
         /// <see cref="ILBlockParser"/> で IL を論理ブロック（メソッド、クラス等）に分割し、
-        /// 各ブロックをハッシュ化してマルチセットとして比較します。コンパイラによるメソッド・クラスの
-        /// 並び替えが原因の行単位比較での誤検知を解消します。
+        /// 各ブロックのシグネチャ（ディレクティブ行）とコンテンツハッシュを抽出してから
+        /// (シグネチャ, ハッシュ) ペアのマルチセットとして比較します。コンパイラによる並び替えを
+        /// 許容しつつ、異なるシグネチャのブロック間でのコンテンツ入れ替わりを正しく検知します。
         /// </summary>
         internal static bool BlockAwareSequenceEqual(IReadOnlyList<string> filteredLines1, IReadOnlyList<string> filteredLines2)
         {
@@ -334,8 +336,8 @@ namespace FolderDiffIL4DotNet.Services
                 return false;
             }
 
-            // Build multiset of block hashes for each side and compare
-            // 各側のブロックハッシュのマルチセットを構築して比較
+            // Build multiset of (signature, content hash) pairs for each side and compare
+            // 各側の (シグネチャ, コンテンツハッシュ) ペアのマルチセットを構築して比較
             var hashBag1 = BuildBlockHashBag(blocks1);
             var hashBag2 = BuildBlockHashBag(blocks2);
 
@@ -356,17 +358,23 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         /// <summary>
-        /// Builds a multiset (hash → count) from a list of IL blocks.
-        /// IL ブロックのリストからマルチセット（ハッシュ → 出現回数）を構築します。
+        /// Builds a multiset ((signature, hash) → count) from a list of IL blocks.
+        /// Each block's signature is extracted via <see cref="ILBlockParser.ExtractBlockSignature"/>,
+        /// ensuring that blocks are matched by both identity (signature) and content (hash).
+        /// IL ブロックのリストからマルチセット（(シグネチャ, ハッシュ) → 出現回数）を構築します。
+        /// 各ブロックのシグネチャは <see cref="ILBlockParser.ExtractBlockSignature"/> で抽出し、
+        /// ブロックの同一性（シグネチャ）と内容（ハッシュ）の両方で照合します。
         /// </summary>
-        private static Dictionary<string, int> BuildBlockHashBag(List<List<string>> blocks)
+        private static Dictionary<(string Signature, string Hash), int> BuildBlockHashBag(List<List<string>> blocks)
         {
-            var bag = new Dictionary<string, int>(StringComparer.Ordinal);
+            var bag = new Dictionary<(string Signature, string Hash), int>();
             foreach (var block in blocks)
             {
+                string signature = ILBlockParser.ExtractBlockSignature(block);
                 string hash = ComputeBlockHash(block);
-                bag.TryGetValue(hash, out int count);
-                bag[hash] = count + 1;
+                var key = (signature, hash);
+                bag.TryGetValue(key, out int count);
+                bag[key] = count + 1;
             }
             return bag;
         }
