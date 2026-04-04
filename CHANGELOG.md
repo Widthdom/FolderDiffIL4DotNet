@@ -9,6 +9,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Time-based greeting after banner** — The console now displays a friendly greeting after the ASCII banner, based on the local hour (18 time slots covering the full 24-hour cycle). Meal-adjacent slots (7 AM, noon, 6 PM) say "Leave the diff to me and go have breakfast/lunch/dinner!" and the 9 PM slot suggests taking a shower. Affected: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`. Tests: `ConsoleBannerTests.cs` (`GetGreeting_ReturnsExpectedMessageForHour` — 24 cases, `GetGreeting_NeverReturnsEmptyString` — 5 cases, `GetGreeting_AllHoursCovered`, `GetGreeting_MealTimeSlots_SuggestLeavingDiffToTool`, `GetGreeting_CoffeeBreakSlots_ReturnSameMessage` — 5 tests total).
+
+- **Zero-diff easter egg message** — When no files differ between old and new folders (all files unchanged), the completion summary shows "Zero differences found. Are you sure you built the right thing?" instead of the normal bar chart. Affected: `ProgramRunner.cs` (`OutputCompletionSummaryChart`).
+
+#### Changed
+
+- **InlineDiffContextLines default changed from 0 to 4** — Inline diffs now show 4 context lines around each changed hunk by default, giving reviewers surrounding context to understand changes without manual configuration. Previously the default was 0 (changed lines only). Affected: `Models/ConfigSettings.DiffSettings.cs`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `README.md`. Tests: `ConfigSettingsTests.InlineDiffAndMutation.cs` (`Constructor_InlineDiffDefaults_AreCorrect`), `ConfigSettingsTests.ValidationBoundary.cs` (`AllDefaultConstants_MatchExpectedValues`).
+
+#### Fixed
+
+- **Side-by-side diff view: context lines missing on right side and no right-side line numbers** — The side-by-side (SBS) diff view previously used a 3-column layout `[LineNum] [OldText] [NewText]` which caused context/unchanged lines to appear only on the left side (right side was empty due to `colSpan=2`), and showed only one line number column. Restructured to a proper 4-column layout `[OldLn] [OldText] [NewLn] [NewText]` where context lines are duplicated on both sides with their respective line numbers. Hunk and truncation rows now span 3 columns. Scroll proxy tfoot updated to 4 columns. CSS updated to include `td.sbs-ctx` in the overflow rule. Sample HTML diffs updated to include context lines reflecting InlineDiffContextLines=4 default. Affected: `Services/HtmlReport/js/diff_report_diffview.js`, `Services/HtmlReport/diff_report.css`, `doc/samples/diff_report.html`. Tests: `JsTests/diff_report.test.js` (6 tests updated for 4-column layout: `switches to sbs-mode and back to unified`, `pairs consecutive del+add rows into 4-column rows`, `standalone deletion gets 4-column row`, `standalone addition gets 4-column row`, `hunk header spans 3 columns`, `context rows show text on both sides with line numbers` — new test).
+
 ### [1.13.3] - 2026-04-03
 
 #### Changed
@@ -1030,6 +1044,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **バナー後の時刻ベース挨拶** — ASCII バナーの後にローカル時刻に応じた英語の挨拶メッセージをコンソールに表示（24時間を18スロットでカバー）。食事時間帯（朝7時、昼12時、夕方18時）は "Leave the diff to me and go have breakfast/lunch/dinner!" と提案。21時台はシャワーを提案。影響: `FolderDiffIL4DotNet.Core/Console/ConsoleBanner.cs`。テスト: `ConsoleBannerTests.cs`（`GetGreeting_ReturnsExpectedMessageForHour` — 24 ケース、`GetGreeting_NeverReturnsEmptyString` — 5 ケース、`GetGreeting_AllHoursCovered`、`GetGreeting_MealTimeSlots_SuggestLeavingDiffToTool`、`GetGreeting_CoffeeBreakSlots_ReturnSameMessage` — 計 5 テスト）。
+
+- **ゼロ差分イースターエッグメッセージ** — 旧フォルダと新フォルダの間に差分がない場合（全ファイル未変更）、通常のバーチャートの代わりに "Zero differences found. Are you sure you built the right thing?" と表示。影響: `ProgramRunner.cs`（`OutputCompletionSummaryChart`）。
+
+#### Changed
+
+- **InlineDiffContextLines のデフォルトを 0 から 4 に変更** — インライン差分が各変更ハンクの前後に 4 行のコンテキストをデフォルトで表示するようになり、手動設定なしで変更箇所の前後文脈を把握できるようになった。以前のデフォルトは 0（変更行のみ）。影響: `Models/ConfigSettings.DiffSettings.cs`、`doc/config.sample.jsonc`、`doc/config.schema.json`、`README.md`。テスト: `ConfigSettingsTests.InlineDiffAndMutation.cs`（`Constructor_InlineDiffDefaults_AreCorrect`）、`ConfigSettingsTests.ValidationBoundary.cs`（`AllDefaultConstants_MatchExpectedValues`）。
+
+#### Fixed
+
+- **サイドバイサイド差分ビュー: 右側のコンテキスト行欠落と右側行番号の不在を修正** — サイドバイサイド（SBS）差分ビューが従来 3 列レイアウト `[行番号] [旧テキスト] [新テキスト]` を使用していたため、コンテキスト行（変更なし行）が左側にのみ表示され右側は `colSpan=2` により空になっていた。また行番号列が 1 つしかなかった。正しい 4 列レイアウト `[旧行番号] [旧テキスト] [新行番号] [新テキスト]` に再構築し、コンテキスト行は両側にそれぞれの行番号付きで複製表示。ハンク行と切り詰め行は 3 列スパンに変更。スクロールプロキシ tfoot も 4 列に更新。CSS に `td.sbs-ctx` を overflow ルールに追加。サンプル HTML の差分を InlineDiffContextLines=4 デフォルトに合わせてコンテキスト行を追加。影響: `Services/HtmlReport/js/diff_report_diffview.js`、`Services/HtmlReport/diff_report.css`、`doc/samples/diff_report.html`。テスト: `JsTests/diff_report.test.js`（4 列レイアウト対応で 6 テスト更新: `switches to sbs-mode and back to unified`、`pairs consecutive del+add rows into 4-column rows`、`standalone deletion gets 4-column row`、`standalone addition gets 4-column row`、`hunk header spans 3 columns`、`context rows show text on both sides with line numbers` — 新規テスト）。
 
 ### [1.13.3] - 2026-04-03
 

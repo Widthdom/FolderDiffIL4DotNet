@@ -1089,10 +1089,10 @@ describe('toggleDiffView', () => {
         return `<tr class="diff-add-tr"><td class="diff-ln">${r.oldLn || ''}</td><td class="diff-ln">${r.newLn || ''}</td><td class="diff-add-td">${r.text}</td></tr>`;
       }
       if (r.type === 'ctx') {
-        return `<tr class="diff-ctx-tr"><td class="diff-ln">${r.ln || ''}</td><td class="diff-ctx-td">${r.text}</td></tr>`;
+        return `<tr class="diff-ctx-tr"><td class="diff-ln">${r.oldLn || ''}</td><td class="diff-ln">${r.newLn || ''}</td><td class="diff-ctx-td">${r.text}</td></tr>`;
       }
       if (r.type === 'hunk') {
-        return `<tr class="diff-hunk-tr"><td class="diff-ln"></td><td class="diff-hunk-td">${r.text}</td></tr>`;
+        return `<tr class="diff-hunk-tr"><td class="diff-ln"></td><td class="diff-ln"></td><td class="diff-hunk-td">${r.text}</td></tr>`;
       }
       return '';
     }).join('');
@@ -1124,7 +1124,8 @@ describe('toggleDiffView', () => {
     window.toggleDiffView(details);
     expect(table.classList.contains('sbs-mode')).toBe(true);
     expect(btn.textContent).toBe('Unified');
-    // Should have 3-column layout with colgroup
+    // Should have 4-column layout with colgroup
+    // 4列レイアウトの colgroup が存在すること
     expect(table.querySelector('.sbs-colgroup')).not.toBeNull();
 
     // Switch back to unified
@@ -1134,7 +1135,7 @@ describe('toggleDiffView', () => {
     expect(table.querySelector('.sbs-colgroup')).toBeNull();
   });
 
-  test('pairs consecutive del+add rows into 3-column rows', () => {
+  test('pairs consecutive del+add rows into 4-column rows', () => {
     loadScript({
       bodyHtml: buildDiffDetails([
         { type: 'del', oldLn: '5', text: 'removed' },
@@ -1148,17 +1149,22 @@ describe('toggleDiffView', () => {
     const tbody = document.querySelector('.diff-table tbody');
     const row = tbody.querySelector('tr');
     const cells = row.querySelectorAll('td');
-    // 3 cells: line num, old (sbs-old), new (sbs-new)
-    expect(cells.length).toBe(3);
+    // 4 cells: [oldLn] [sbs-old] [newLn] [sbs-new]
+    // 4セル: [旧行番号] [sbs-old] [新行番号] [sbs-new]
+    expect(cells.length).toBe(4);
+    expect(cells[0].classList.contains('diff-ln')).toBe(true);
+    expect(cells[0].textContent).toBe('5');
     expect(cells[1].classList.contains('sbs-old')).toBe(true);
-    expect(cells[2].classList.contains('sbs-new')).toBe(true);
+    expect(cells[2].classList.contains('diff-ln')).toBe(true);
+    expect(cells[2].textContent).toBe('5');
+    expect(cells[3].classList.contains('sbs-new')).toBe(true);
   });
 
-  test('standalone deletion gets sbs-old + sbs-empty', () => {
+  test('standalone deletion gets 4-column row with sbs-old + sbs-empty', () => {
     loadScript({
       bodyHtml: buildDiffDetails([
         { type: 'del', oldLn: '10', text: 'deleted line' },
-        { type: 'ctx', ln: '11', text: 'context' },
+        { type: 'ctx', oldLn: '11', newLn: '10', text: 'context' },
       ]),
     });
     fireDOMContentLoaded();
@@ -1166,16 +1172,20 @@ describe('toggleDiffView', () => {
     window.toggleDiffView(document.getElementById('test-detail'));
 
     const rows = document.querySelectorAll('.diff-table tbody tr');
-    // First row: standalone del
+    // First row: standalone del — [oldLn] [sbs-old] [empty] [sbs-empty]
+    // 最初の行: 単独削除 — [旧行番号] [sbs-old] [空] [sbs-empty]
     const delCells = rows[0].querySelectorAll('td');
+    expect(delCells.length).toBe(4);
+    expect(delCells[0].textContent).toBe('10');
     expect(delCells[1].classList.contains('sbs-old')).toBe(true);
-    expect(delCells[2].classList.contains('sbs-empty')).toBe(true);
+    expect(delCells[2].textContent).toBe('');
+    expect(delCells[3].classList.contains('sbs-empty')).toBe(true);
   });
 
-  test('standalone addition gets sbs-empty + sbs-new', () => {
+  test('standalone addition gets 4-column row with sbs-empty + sbs-new', () => {
     loadScript({
       bodyHtml: buildDiffDetails([
-        { type: 'ctx', ln: '1', text: 'context' },
+        { type: 'ctx', oldLn: '1', newLn: '1', text: 'context' },
         { type: 'add', newLn: '2', text: 'added line' },
       ]),
     });
@@ -1184,13 +1194,17 @@ describe('toggleDiffView', () => {
     window.toggleDiffView(document.getElementById('test-detail'));
 
     const rows = document.querySelectorAll('.diff-table tbody tr');
-    // Second row: standalone add
+    // Second row: standalone add — [empty] [sbs-empty] [newLn] [sbs-new]
+    // 2行目: 単独追加 — [空] [sbs-empty] [新行番号] [sbs-new]
     const addCells = rows[1].querySelectorAll('td');
+    expect(addCells.length).toBe(4);
+    expect(addCells[0].textContent).toBe('');
     expect(addCells[1].classList.contains('sbs-empty')).toBe(true);
-    expect(addCells[2].classList.contains('sbs-new')).toBe(true);
+    expect(addCells[2].textContent).toBe('2');
+    expect(addCells[3].classList.contains('sbs-new')).toBe(true);
   });
 
-  test('hunk header spans 2 columns', () => {
+  test('hunk header spans 3 columns in 4-column layout', () => {
     loadScript({
       bodyHtml: buildDiffDetails([
         { type: 'hunk', text: '@@ -1,5 +1,6 @@' },
@@ -1202,7 +1216,30 @@ describe('toggleDiffView', () => {
 
     const row = document.querySelector('.diff-table tbody tr.diff-hunk-tr');
     const hunkTd = row.querySelector('.diff-hunk-td');
-    expect(hunkTd.colSpan).toBe(2);
+    // Hunk TD spans 3 columns (oldText + newLn + newText) in the 4-column layout
+    // ハンク TD は4列レイアウトで3列分（旧テキスト + 新行番号 + 新テキスト）にまたがる
+    expect(hunkTd.colSpan).toBe(3);
+  });
+
+  test('context rows show text on both sides with line numbers', () => {
+    loadScript({
+      bodyHtml: buildDiffDetails([
+        { type: 'ctx', oldLn: '5', newLn: '7', text: 'unchanged line' },
+      ]),
+    });
+    fireDOMContentLoaded();
+
+    window.toggleDiffView(document.getElementById('test-detail'));
+
+    const rows = document.querySelectorAll('.diff-table tbody tr');
+    const cells = rows[0].querySelectorAll('td');
+    // 4 cells: [oldLn] [sbs-ctx] [newLn] [sbs-ctx]
+    // 4セル: [旧行番号] [sbs-ctx] [新行番号] [sbs-ctx]
+    expect(cells.length).toBe(4);
+    expect(cells[0].textContent).toBe('5');
+    expect(cells[1].classList.contains('sbs-ctx')).toBe(true);
+    expect(cells[2].textContent).toBe('7');
+    expect(cells[3].classList.contains('sbs-ctx')).toBe(true);
   });
 });
 

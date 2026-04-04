@@ -217,6 +217,15 @@ namespace FolderDiffIL4DotNet
                 return;
             }
 
+            // Easter egg: when there are absolutely no changes / イースターエッグ: 変更が完全にゼロの場合
+            if (state.AddedCount == 0 && state.RemovedCount == 0 && state.ModifiedCount == 0)
+            {
+                Console.WriteLine();
+                Console.WriteLine("  Zero differences found. Are you sure you built the right thing?");
+                Console.WriteLine();
+                return;
+            }
+
             Console.WriteLine();
             OutputSummaryBar("Unchanged", state.UnchangedCount, total, null);
             OutputSummaryBar("Added",     state.AddedCount,     total, ConsoleColor.Green);

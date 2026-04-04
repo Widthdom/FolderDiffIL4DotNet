@@ -753,7 +753,8 @@
     .sbs-toggle:hover { background: var(--color-accent-hover-bg); }
     table.diff-table.sbs-mode { table-layout: fixed; }
     table.diff-table.sbs-mode td.sbs-old,
-    table.diff-table.sbs-mode td.sbs-new { overflow: hidden; padding: 0; }
+    table.diff-table.sbs-mode td.sbs-new,
+    table.diff-table.sbs-mode td.sbs-ctx { overflow: hidden; padding: 0; }
     table.diff-table.sbs-mode td.sbs-old { background: var(--color-removed-bg); color: var(--color-removed); }
     table.diff-table.sbs-mode td.sbs-new { background: var(--color-added-bg); color: var(--color-added); }
     table.diff-table.sbs-mode td.sbs-ctx { background: var(--color-diff-ctx-bg); color: var(--color-diff-ctx-text); }

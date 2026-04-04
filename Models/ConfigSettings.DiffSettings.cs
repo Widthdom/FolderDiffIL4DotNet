@@ -24,7 +24,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="EnableInlineDiff"/>. / <see cref="EnableInlineDiff"/> の既定値。</summary>
         public const bool DefaultEnableInlineDiff = true;
         /// <summary>Default value for <see cref="InlineDiffContextLines"/>. / <see cref="InlineDiffContextLines"/> の既定値。</summary>
-        public const int DefaultInlineDiffContextLines = 0;
+        public const int DefaultInlineDiffContextLines = 4;
         /// <summary>Default value for <see cref="InlineDiffMaxEditDistance"/>. / <see cref="InlineDiffMaxEditDistance"/> の既定値。</summary>
         public const int DefaultInlineDiffMaxEditDistance = 4000;
         /// <summary>Default value for <see cref="InlineDiffMaxDiffLines"/>. / <see cref="InlineDiffMaxDiffLines"/> の既定値。</summary>
