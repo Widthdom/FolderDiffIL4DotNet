@@ -30,12 +30,21 @@
     var rows = tbody.querySelectorAll('tr');
     if (rows.length <= VS_THRESHOLD) return false;
 
-    // Extract all row data: outerHTML and key attributes / 全行データを抽出
+    // Extract all row data: outerHTML, key attributes, and pre-parsed metadata.
+    // Pre-extracting importance/typename/basetype avoids regex parsing on every
+    // filter change or scroll event for tables with thousands of rows.
+    // 全行データを抽出: outerHTML、キー属性、事前パース済みメタデータ。
+    // importance/typename/basetype を事前抽出し、数千行テーブルでのフィルター変更・
+    // スクロールイベント時の正規表現パースを回避。
     var rowData = [];
+    var cbIdMap = {};
     for (var i = 0; i < rows.length; i++) {
       rowData.push({
         html: rows[i].outerHTML,
         hidden: rows[i].classList.contains('filter-hidden'),
+        importance: rows[i].getAttribute('data-sc-importance') || '',
+        typename: rows[i].getAttribute('data-sc-typename') || '',
+        basetype: rows[i].getAttribute('data-sc-basetype') || '',
         cbId: null,
         cbChecked: false
       });
@@ -44,6 +53,7 @@
       if (cb) {
         rowData[i].cbId = cb.id;
         rowData[i].cbChecked = cb.checked;
+        cbIdMap[cb.id] = i;
       }
     }
 
@@ -63,22 +73,21 @@
     // Store virtual scroll state on the table element / テーブル要素に仮想スクロール状態を保存
     table.__vs = {
       rowData: rowData,
+      cbIdMap: cbIdMap,
       wrapper: wrapper,
       tbody: tbody,
       renderedStart: -1,
       renderedEnd: -1
     };
 
-    // Event delegation for checkbox changes / チェックボックス変更のイベントデリゲーション
+    // Event delegation for checkbox changes (O(1) lookup via cbIdMap)
+    // チェックボックス変更のイベントデリゲーション（cbIdMap による O(1) 検索）
     tbody.addEventListener('change', function(ev) {
       var target = ev.target;
       if (target.type !== 'checkbox' || !target.id) return;
-      // Update stored state / 保存された状態を更新
-      for (var j = 0; j < table.__vs.rowData.length; j++) {
-        if (table.__vs.rowData[j].cbId === target.id) {
-          table.__vs.rowData[j].cbChecked = target.checked;
-          break;
-        }
+      var idx = table.__vs.cbIdMap[target.id];
+      if (idx !== undefined) {
+        table.__vs.rowData[idx].cbChecked = target.checked;
       }
       if (__savedState__ === null) autoSave();
     });
@@ -149,28 +158,54 @@
     html += '<tr class="vs-spacer" style="height:' + bottomPad + 'px"><td colspan="99"></td></tr>';
     vs.tbody.innerHTML = html;
 
-    // Restore checkbox states for rendered rows / レンダリング済み行のチェックボックス状態を復元
+    // Restore checkbox states for rendered rows (O(1) lookup via cbIdMap)
+    // レンダリング済み行のチェックボックス状態を復元（cbIdMap による O(1) 検索）
     var toRestore = __savedState__ || readSavedStateFromStorage('null');
     vs.tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
-      // First check stored rowData state / まず rowData の状態をチェック
-      for (var j = 0; j < vs.rowData.length; j++) {
-        if (vs.rowData[j].cbId === cb.id) {
-          cb.checked = vs.rowData[j].cbChecked;
-          return;
-        }
-      }
-      // Fallback to saved state / 保存済み状態にフォールバック
-      if (toRestore && cb.id in toRestore) {
+      var rdIdx = vs.cbIdMap[cb.id];
+      if (rdIdx !== undefined) {
+        cb.checked = vs.rowData[rdIdx].cbChecked;
+      } else if (toRestore && cb.id in toRestore) {
         cb.checked = Boolean(toRestore[cb.id]);
+      }
+      // Disable in reviewed mode / レビュー済みモードでは無効化
+      if (__savedState__ !== null) {
+        cb.style.pointerEvents = 'none';
+        cb.style.cursor = 'default';
       }
     });
 
-    // Disable checkboxes in reviewed mode / レビュー済みモードではチェックボックスを無効化
-    if (__savedState__ !== null) {
-      vs.tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
-        cb.style.pointerEvents = 'none';
-        cb.style.cursor = 'default';
-      });
+    // Fix group-cont headers for filtered view: when importance filtering hides
+    // the first row of a type, the next visible row must show typename/basetype.
+    // Compute prevType from visible rows before the rendered window.
+    // フィルタリングで型の先頭行が非表示時、次の可視行に typename/basetype を表示。
+    // レンダリング窓より前の可視行から prevType を算出。
+    var prevType = '';
+    for (var p = 0; p < startVis; p++) {
+      var rd = vs.rowData[visibleIndices[p]];
+      if (rd.typename) prevType = rd.typename;
+    }
+    var renderedTrs = vs.tbody.querySelectorAll('tr:not(.vs-spacer)');
+    for (var ri = 0; ri < renderedTrs.length; ri++) {
+      var dataIdx = visibleIndices[startVis + ri];
+      if (dataIdx === undefined) break;
+      var rowMeta = vs.rowData[dataIdx];
+      if (!rowMeta.typename) continue;
+      var cells = renderedTrs[ri].querySelectorAll('td');
+      if (rowMeta.typename !== prevType) {
+        renderedTrs[ri].classList.remove('group-cont');
+        if (cells.length >= 3) {
+          cells[1].textContent = rowMeta.typename;
+          cells[2].textContent = rowMeta.basetype;
+        }
+      } else {
+        renderedTrs[ri].classList.add('group-cont');
+        if (cells.length >= 3) {
+          cells[1].textContent = '';
+          cells[2].textContent = '';
+        }
+      }
+      prevType = rowMeta.typename;
     }
   }
 
@@ -205,9 +240,9 @@
     var visibleCount = 0;
     for (var i = 0; i < vs.rowData.length; i++) {
       var row = vs.rowData[i];
-      // Parse importance from stored HTML / 保存されたHTMLからimportanceをパース
-      var impMatch = row.html.match(/data-sc-importance="([^"]*)"/);
-      var imp = impMatch ? impMatch[1] : '';
+      // Use pre-extracted importance (avoids regex on every filter change)
+      // 事前抽出済み importance を使用（フィルター変更ごとの正規表現を回避）
+      var imp = row.importance;
       var hidden = false;
       if (imp === 'High' && !showHigh) hidden = true;
       else if (imp === 'Medium' && !showMedium) hidden = true;
@@ -243,13 +278,12 @@
         html += vs.rowData[i].html;
       }
       vs.tbody.innerHTML = html;
-      // Restore all checkbox states / 全チェックボックス状態を復元
+      // Restore all checkbox states (O(1) lookup via cbIdMap)
+      // 全チェックボックス状態を復元（cbIdMap による O(1) 検索）
       vs.tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
-        for (var j = 0; j < vs.rowData.length; j++) {
-          if (vs.rowData[j].cbId === cb.id) {
-            cb.checked = vs.rowData[j].cbChecked;
-            break;
-          }
+        var idx = vs.cbIdMap[cb.id];
+        if (idx !== undefined) {
+          cb.checked = vs.rowData[idx].cbChecked;
         }
       });
       // Unwrap from viewport / ビューポートからアンラップ

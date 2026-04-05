@@ -11,7 +11,24 @@
         d.removeAttribute('data-diff-html');
         d.removeEventListener('toggle', onToggle);
         try {
-          d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
+          var decoded = decodeDiffHtml(b64);
+          // Pre-initialize virtual scroll on a detached container to avoid inserting
+          // thousands of rows into the live DOM only to immediately extract and remove them.
+          // This eliminates expensive layout/reflow for assemblies with 10,000+ methods.
+          // デタッチコンテナで仮想スクロールを事前初期化し、数千行のライブDOM挿入→
+          // 即時抽出→削除の高コストなレイアウト/リフローを回避（1万メソッド超対応）
+          var tmp = document.createElement('div');
+          tmp.innerHTML = decoded;
+          tmp.querySelectorAll('table.semantic-changes-table.sc-detail').forEach(function(tbl) {
+            if (initVirtualScroll(tbl)) {
+              tbl.classList.add('vs-active');
+            }
+          });
+          // Move content to live DOM (virtual scroll tables already trimmed to viewport)
+          // コンテンツをライブDOMに移動（仮想スクロールテーブルはビューポート分のみ）
+          while (tmp.firstChild) {
+            d.appendChild(tmp.firstChild);
+          }
           // Insert side-by-side toggle button before each diff-table / 各diff-tableの前にサイドバイサイド切り替えボタンを挿入
           d.querySelectorAll('.diff-table').forEach(function(tbl) {
             highlightILDiff(tbl);
@@ -28,13 +45,6 @@
             initColResizeSingle(th);
           });
           syncScTableWidths();
-          // Activate virtual scroll for large semantic changes tables
-          // 大規模セマンティック変更テーブルの仮想スクロールを有効化
-          d.querySelectorAll('table.semantic-changes-table.sc-detail').forEach(function(tbl) {
-            if (initVirtualScroll(tbl)) {
-              tbl.classList.add('vs-active');
-            }
-          });
           // Wire up save events on new checkboxes (skip if virtual scroll handles them)
           // 新規チェックボックスにsaveイベントを接続（仮想スクロールが処理する場合はスキップ）
           if (__savedState__ === null) {

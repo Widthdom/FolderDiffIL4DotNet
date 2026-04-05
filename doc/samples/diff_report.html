@@ -2435,8 +2435,17 @@
         d.removeAttribute('data-diff-html');
         d.removeEventListener('toggle', onToggle);
         try {
-          d.insertAdjacentHTML('beforeend', decodeDiffHtml(b64));
-          // Insert side-by-side toggle button before each diff-table / 各diff-tableの前にサイドバイサイド切り替えボタンを挿入
+          var decoded = decodeDiffHtml(b64);
+          var tmp = document.createElement('div');
+          tmp.innerHTML = decoded;
+          tmp.querySelectorAll('table.semantic-changes-table.sc-detail').forEach(function(tbl) {
+            if (initVirtualScroll(tbl)) {
+              tbl.classList.add('vs-active');
+            }
+          });
+          while (tmp.firstChild) {
+            d.appendChild(tmp.firstChild);
+          }
           d.querySelectorAll('.diff-table').forEach(function(tbl) {
             var btn = document.createElement('button');
             btn.type = 'button';
@@ -2445,15 +2454,14 @@
             btn.addEventListener('click', function() { toggleDiffView(d); });
             tbl.parentNode.insertBefore(btn, tbl);
           });
-          // Re-init column resize handles on newly rendered tables
           d.querySelectorAll('th.th-resizable').forEach(function(th) {
             if (th.querySelector('.col-resize-handle')) return;
             initColResizeSingle(th);
           });
           syncScTableWidths();
-          // Wire up save events on new checkboxes
           if (__savedState__ === null) {
             d.querySelectorAll('input').forEach(function(el) {
+              if (el.closest('table.vs-active')) return;
               el.addEventListener('change', autoSave);
             });
           }
