@@ -162,11 +162,12 @@
     var currentKey = __storageKey__;
     var themeKey = __storageKey__ + '-theme';
     var filterKey = __storageKey__ + '-filters';
+    var colWidthsKey = __storageKey__ + '-colwidths';
     var removed = 0;
     try {
       for (var i = localStorage.length - 1; i >= 0; i--) {
         var key = localStorage.key(i);
-        if (key === currentKey || key === themeKey || key === filterKey) continue;
+        if (key === currentKey || key === themeKey || key === filterKey || key === colWidthsKey) continue;
         if (key.indexOf('folderdiff-') === 0) {
           localStorage.removeItem(key);
           removed++;
