@@ -141,7 +141,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings });
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings, true });
 
             // MVID lines should be excluded; non-MVID lines retained (including empty trailing line from final \n)
             Assert.DoesNotContain(result, line => line.StartsWith("// MVID:", StringComparison.Ordinal));
@@ -158,7 +158,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings });
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings, true });
 
             Assert.Equal(new[] { "line1", "line3", "" }, result);
         }
@@ -195,9 +195,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static bool InvokeShouldExcludeIlLine(string line, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
         {
+            // Pass shouldIgnoreMVID=true as the default to match previous behavior / 従来の動作に合わせて shouldIgnoreMVID=true をデフォルトで渡す
             var method = typeof(ILOutputService).GetMethod("ShouldExcludeIlLine", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = method.Invoke(null, new object[] { line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings });
+            var result = method.Invoke(null, new object[] { line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings, true });
             return Assert.IsType<bool>(result);
         }
 
@@ -638,8 +639,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(splitAndFilter);
 
             var ignoreStrings = new List<string>();
-            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings })!;
-            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings })!;
+            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings, true })!;
+            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings, true })!;
             bool legacyResult = legacy1.SequenceEqual(legacy2);
 
             var lines1 = DotNetDisassembleService.SplitToLines(ilText1);
