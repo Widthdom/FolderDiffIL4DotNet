@@ -121,7 +121,7 @@ The tool marked **In Use** in the report is the one that was successfully probed
 | Tool installed but "command not found" | `~/.dotnet/tools` not in PATH | See Step 3 above |
 | `dotnet-ildasm --version` works but report still shows `SHA256Mismatch` | `SkipIL` is enabled | Check that `--skip-il` is not passed and `SkipIL` is `false` in `config.json` |
 | Tool works for some assemblies but fails for others | Framework version mismatch or corrupt assembly | Check the per-file "Disassembler" column in the report; failed files show the fallback tool or `SHA256` |
-| `ilspycmd` hangs on certain assemblies | Known issue with some obfuscated assemblies | Set `DisassemblerTimeoutSeconds` in `config.json` (default: 300s) to auto-kill hanging processes |
+| `ilspycmd` hangs on certain assemblies | Known issue with some obfuscated assemblies | Set `DisassemblerTimeoutSeconds` in `config.json` (default: 60s) to auto-kill hanging processes |
 | Permission denied on macOS/Linux | File not executable | Run `chmod +x ~/.dotnet/tools/dotnet-ildasm` |
 
 ### IL cache disk usage grows too large
@@ -388,7 +388,7 @@ FolderDiffIL4DotNet を実行し、レポートヘッダの **Disassembler Avail
 | インストール済みだが「command not found」 | `~/.dotnet/tools` が PATH に未追加 | 上記の手順 3 を参照 |
 | `dotnet-ildasm --version` は動作するがレポートが `SHA256Mismatch` のまま | `SkipIL` が有効 | `--skip-il` が渡されていないこと、`config.json` の `SkipIL` が `false` であることを確認 |
 | 一部のアセンブリでのみツールが失敗する | フレームワークバージョンの不一致またはアセンブリの破損 | レポートのファイルごとの「Disassembler」列を確認。失敗したファイルはフォールバックツールまたは `SHA256` と表示される |
-| `ilspycmd` が特定のアセンブリでハングする | 難読化されたアセンブリでの既知の問題 | `config.json` の `DisassemblerTimeoutSeconds` を設定（デフォルト: 300秒）してハングしたプロセスを自動終了 |
+| `ilspycmd` が特定のアセンブリでハングする | 難読化されたアセンブリでの既知の問題 | `config.json` の `DisassemblerTimeoutSeconds` を設定（デフォルト: 60秒）してハングしたプロセスを自動終了 |
 | macOS/Linux でパーミッションエラー | ファイルに実行権限がない | `chmod +x ~/.dotnet/tools/dotnet-ildasm` を実行 |
 
 ### IL キャッシュのディスク使用量が大きくなりすぎる

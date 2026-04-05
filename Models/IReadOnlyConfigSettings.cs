@@ -82,6 +82,9 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Whether to skip IL comparison for .NET assemblies. / .NET アセンブリの IL 比較をスキップするかどうか。</summary>
         bool SkipIL { get; }
 
+        /// <summary>Whether to ignore MVID lines during IL comparison (default true). / IL 比較時に MVID 行を無視するかどうか（デフォルト true）。</summary>
+        bool ShouldIgnoreMVID { get; }
+
         // ── IL cache / IL キャッシュ ────────────────────────────────────────
 
         /// <summary>Whether to cache IL disassembly results. / IL 逆アセンブル結果をキャッシュするか。</summary>

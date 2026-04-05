@@ -35,6 +35,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.RandomSpinner);
             Assert.False(opts.MultipleSpinnersDetected);
             Assert.Null(opts.LogFormatOverride);
+            Assert.Null(opts.OutputDirectory);
             Assert.Null(opts.ParseError);
         }
 

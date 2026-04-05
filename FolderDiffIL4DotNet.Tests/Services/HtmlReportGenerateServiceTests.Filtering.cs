@@ -36,6 +36,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("id=\"filter-unchecked\"", html);
             Assert.Contains("id=\"filter-search\"", html);
             Assert.Contains("applyFilters()", html);
+            // Search input uses debounced variant to avoid excessive DOM traversal / 検索入力はデバウンス版を使用
+            Assert.Contains("oninput=\"applyFiltersDebounced()\"", html);
             Assert.Contains("resetFilters()", html);
         }
 
@@ -182,9 +184,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
 
-            // Assert: JS filtering functions are included
-            // JS フィルタリング関数が含まれていることを検証
+            // Assert: JS filtering functions are included (with debounce wrapper for search)
+            // JS フィルタリング関数が含まれていることを検証（検索用デバウンスラッパー含む）
             Assert.Contains("function applyFilters()", html);
+            Assert.Contains("function applyFiltersDebounced()", html);
             Assert.Contains("function resetFilters()", html);
             Assert.Contains("function copyPath(", html);
         }

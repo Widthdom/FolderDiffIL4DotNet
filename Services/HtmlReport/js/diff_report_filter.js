@@ -1,3 +1,15 @@
+  /** Debounce timer ID for search input filtering. / 検索入力フィルタリング用デバウンスタイマーID */
+  var _filterDebounceTimer = 0;
+  /**
+   * Debounced wrapper for applyFilters(). Delays execution by 150 ms to avoid
+   * excessive DOM traversal on every keystroke in large reports.
+   * 大規模レポートでキーストロークごとの過剰な DOM 走査を避けるため、
+   * applyFilters() を 150ms 遅延実行するデバウンスラッパー。
+   */
+  function applyFiltersDebounced() {
+    clearTimeout(_filterDebounceTimer);
+    _filterDebounceTimer = setTimeout(applyFilters, 150);
+  }
   /**
    * Apply all active filters (diff detail, importance, unchecked-only, search) to file rows.
    * Hides non-matching rows and manages semantic change row visibility.
@@ -172,4 +184,4 @@
 
   /* Export functions for Node.js/Jest testing (no-op in browser) */
   /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
-  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, resetFilters: resetFilters }; }
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { applyFilters: applyFilters, applyFiltersDebounced: applyFiltersDebounced, resetFilters: resetFilters }; }

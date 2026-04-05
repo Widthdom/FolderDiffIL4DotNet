@@ -32,6 +32,7 @@
       restoreFilterState();
     }
     initColResize();
+    restoreColumnWidths();
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();

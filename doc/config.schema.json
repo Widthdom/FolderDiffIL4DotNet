@@ -108,6 +108,11 @@
       "default": true,
       "description": "Output full IL disassembly text to Reports/<label>/IL/ folder.\nIL逆アセンブリテキストをReports/<label>/IL/フォルダに出力する。"
     },
+    "ShouldIgnoreMVID": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to exclude MVID (Module Version ID) lines from IL comparison. When false, MVID differences are included, enabling detection of recompilation even when source code is identical.\nIL比較からMVID（Module Version ID）行を除外するかどうか。false にするとMVID差異が比較に含まれ、ソースコードが同一でも再コンパイルを検出できる。"
+    },
     "ShouldIgnoreILLinesContainingConfiguredStrings": {
       "type": "boolean",
       "default": false,
@@ -170,7 +175,7 @@
     "DisassemblerTimeoutSeconds": {
       "type": "integer",
       "minimum": 0,
-      "default": 300,
+      "default": 60,
       "description": "Timeout (seconds) for each disassembler invocation. 0 = no timeout.\n逆アセンブラ呼び出しごとのタイムアウト（秒）。0=タイムアウトなし。"
     },
 

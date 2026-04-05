@@ -61,11 +61,15 @@ namespace FolderDiffIL4DotNet.Runner
 
         /// <summary>
         /// Builds the absolute path to the report folder from the given report label.
+        /// When <paramref name="outputDirectory"/> is specified, uses it as the base instead of the default Reports/ directory.
         /// レポートラベルからレポートフォルダの絶対パスを構築する。
+        /// <paramref name="outputDirectory"/> が指定された場合、デフォルトの Reports/ ディレクトリの代わりにそのパスをベースとして使用する。
         /// </summary>
-        internal static string GetReportsFolderAbsolutePath(string reportLabel)
+        internal static string GetReportsFolderAbsolutePath(string reportLabel, string? outputDirectory = null)
         {
-            string reportsRootDirAbsolutePath = Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
+            string reportsRootDirAbsolutePath = !string.IsNullOrWhiteSpace(outputDirectory)
+                ? Path.GetFullPath(outputDirectory)
+                : Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
             Directory.CreateDirectory(reportsRootDirAbsolutePath);
             return Path.Combine(reportsRootDirAbsolutePath, reportLabel);
         }

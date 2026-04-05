@@ -5,10 +5,20 @@ on:
     branches:
       - main
       - pre-main-integration
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CLAUDE.md'
+      - 'LICENSE'
   push:
     branches:
       - main
       - pre-main-integration
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CLAUDE.md'
+      - 'LICENSE'
   workflow_dispatch:
 
 permissions:

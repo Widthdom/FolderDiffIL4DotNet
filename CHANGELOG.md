@@ -9,6 +9,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Expanded compiler-generated code coverage in semantic analysis** — `CompilerGeneratedResolver` now annotates additional compiler-generated patterns: local functions (`<Method>g__LocalFunc|N_M` → "local function LocalFunc in Method"), record clone methods (`<Clone>$` → "record clone method"), and record synthesized members (`PrintMembers`, `op_Equality`, `op_Inequality` → "record synthesized"). `IsCompilerGeneratedMember` also detects these new patterns. This helps reviewers instantly identify compiler-generated changes without manually decoding mangled names. Affected: `Services/CompilerGeneratedResolver.cs`. Tests: `CompilerGeneratedResolverTests` (6 new: `AnnotateEntry_LocalFunction_AnnotatesMemberName`, `AnnotateEntry_LocalFunctionNestedIndex_AnnotatesMemberName`, `AnnotateEntry_RecordClone_AnnotatesMemberName`, `AnnotateEntry_RecordPrintMembers_AnnotatesMemberName`, `AnnotateEntry_RecordOpEquality_AnnotatesMemberName`, `AnnotateEntry_RecordOpInequality_AnnotatesMemberName`; 5 new `InlineData` cases for `IsCompilerGeneratedMember_ReturnsExpected`).
+
+- **In-memory cache for assembly semantic analysis results** — `FileDiffService` now caches `AssemblyMethodAnalyzer.Analyze` results keyed by `(oldSHA256, newSHA256)` in a `ConcurrentDictionary`. When the same assembly content pair appears at multiple paths (e.g., same DLL copied to different locations), the second and subsequent analyses are served from cache, avoiding redundant `System.Reflection.Metadata` parsing. Cache hits are logged at Info level. Affected: `Services/FileDiffService.cs`. Tests: `FileDiffServiceUnitTests.ILComparison.cs` (1 new: `FilesAreEqualAsync_SemanticAnalysisCacheHit_WhenSameHashPairReused`).
+
+- **Configurable MVID inclusion in IL comparison** — New `ShouldIgnoreMVID` config setting (default `true`) controls whether MVID (Module Version ID) lines are excluded during IL comparison. When set to `false`, MVID differences are included, enabling detection of recompilation even when source code is identical. The `ShouldExcludeIlLine`, `StreamingFilteredSequenceEqual`, `FilterIlLines`, and `SplitAndFilterIlLines` methods now accept a `shouldIgnoreMVID` parameter. The "IL Diff Note" about MVID auto-ignore is now conditionally shown in both Markdown and HTML reports only when `ShouldIgnoreMVID` is `true`. Affected: `Models/ConfigSettings.ILSettings.cs`, `Models/ConfigSettingsBuilder.ILSettings.cs`, `Models/IReadOnlyConfigSettings.cs`, `Models/ConfigSettings.cs`, `Services/ILOutputService.cs`, `Services/SectionWriters/HeaderSectionWriter.cs`, `Services/HtmlReport/HtmlReportGenerateService.Sections.cs`, `doc/config.sample.jsonc`. Tests: `ILOutputServiceTests` (2 new), `ReportGenerateServiceTests.Header` (1 new: `GenerateDiffReport_WhenShouldIgnoreMVIDFalse_OmitsMvidNote`).
+
+- **Column width persistence in HTML report** — Resized column widths are now saved to localStorage and restored on page reload. Previously, column widths reset to defaults on every reload, requiring repeated manual adjustment. The `saveColumnWidths()` function stores CSS custom property values after each resize, and `restoreColumnWidths()` applies them during initialization. The colwidths key is preserved during `clearOldReviewStates()`. Reviewed mode does not persist widths. Affected: `Services/HtmlReport/js/diff_report_layout.js` (new `saveColumnWidths`, `restoreColumnWidths`, `__colVarNames__`), `Services/HtmlReport/js/diff_report_init.js` (restore call), `Services/HtmlReport/js/diff_report_state.js` (colwidths key protection), `doc/samples/diff_report.html` (sample updated).
+
+- **IL whitespace normalization in comparison** — Both streaming IL comparison (`StreamingFilteredSequenceEqual`) and block-aware comparison (`BlockAwareSequenceEqual` / `ComputeBlockHash`) now trim leading and trailing whitespace from each line before comparing. This absorbs indentation variations between disassembler versions or formatting differences, reducing false positives from cosmetic IL changes. Affected: `Services/ILOutputService.cs`. Tests: `ILOutputServiceTests` (3 new: `StreamingFilteredSequenceEqual_WhitespaceDifferences_ReturnsTrue`, `StreamingFilteredSequenceEqual_ContentDiffBeyondWhitespace_ReturnsFalse`, `BlockAwareSequenceEqual_IndentDifferences_ReturnsTrue`).
+
+- **Custom output directory via `--output` CLI option** — New `--output <path>` CLI option allows overriding the default `<exe>/Reports/` base directory for report output. The report label subfolder is created under the specified path. This is useful for CI/CD pipelines that need reports written to a custom location (e.g., artifact staging directories). When omitted, the default `Reports/` directory under the application base is used. Affected: `Runner/CliParser.cs`, `Runner/CliOptions.cs`, `Runner/RunPreflightValidator.cs`, `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md`. Tests: `CliOptionsTests.Combined.cs` (3 new: `ParseCliOptions_OutputWithPath_SetsOutputDirectory`, `ParseCliOptions_OutputMissingValue_SetsParseError`, `ParseCliOptions_NoOutput_DefaultsToNull`), `ProgramRunnerTests.Preflight.cs` (3 new: `GetReportsFolderAbsolutePath_WithOutputDirectory_UsesCustomBase`, `GetReportsFolderAbsolutePath_WithNullOutputDirectory_UsesDefaultReportsDir`, `GetReportsFolderAbsolutePath_WithEmptyOutputDirectory_UsesDefaultReportsDir`).
+
+#### Performance
+
+- **Debounced search input filtering in HTML report** — The file path search input (`filter-search`) now uses a 150 ms debounce (`applyFiltersDebounced()`) instead of calling `applyFilters()` directly on every keystroke. This prevents excessive DOM traversal on large reports (10,000+ rows) where per-keystroke filtering caused noticeable input lag. Checkbox filters continue to apply immediately via `onchange`. Affected: `Services/HtmlReport/js/diff_report_filter.js` (new `applyFiltersDebounced` function), `Services/HtmlReportGenerateService.cs` (search input `oninput` handler), `doc/samples/diff_report.html` (sample updated). Tests: `HtmlReportGenerateServiceTests.Filtering.cs` (2 assertions added for debounce function presence and search input binding).
+
+#### Changed
+
+- **`DisassemblerTimeoutSeconds` default reduced from 300 to 60 seconds** — The default disassembler process timeout was 300 seconds (5 minutes), which caused long blocking periods when a disassembler hung on a large or corrupted assembly. Reduced to 60 seconds to fail faster and allow the blacklist mechanism to kick in sooner. Users with very large assemblies can override via `config.json` or `FOLDERDIFF_DISASSEMBLERTIMEOUTSECONDS` environment variable. Affected: `Models/ConfigSettings.ILSettings.cs`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `README.md`. Tests: `ConfigSettingsTests.ValidationBoundary.cs` (`AllDefaultConstants_MatchExpectedValues` updated).
+
+- **CI workflows skip on docs-only changes** — Added `paths-ignore` filters to `dotnet.yml`, `codeql.yml`, and `benchmark-regression.yml` so that commits touching only Markdown files (`**.md`), `doc/**`, `CLAUDE.md`, or `LICENSE` do not trigger build/test/analysis pipelines. `workflow_dispatch` and `schedule` triggers are unaffected. `release.yml` is tag-triggered and unchanged. Affected: `.github/workflows/dotnet.yml`, `.github/workflows/codeql.yml`, `.github/workflows/benchmark-regression.yml`.
+
+- **Log level prefixes shortened to 3-character labels** — Console and text-format log prefixes changed from padded 9-character labels (`[INFO   ]`, `[WARNING]`, `[ERROR  ]`) to compact 5-character labels (`[INF]`, `[WRN]`, `[ERR]`). All three labels are the same width without padding. JSON log `level` field is unaffected. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests` (assertions updated).
+
+#### Documentation
+
+- **DEVELOPER_GUIDE: Hash-based caching flow documentation** — Consolidated the "SHA256 Hash Pre-Seeding" and new "Semantic Analysis Cache" subsections into a unified "Hash-Based Caching in FileDiffService" section with a mermaid flowchart showing how SHA256 hashes computed in Step 1 (hash comparison) are reused for IL cache pre-seeding and semantic analysis cache keying. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
+
+- **Cross-cutting documentation updates** — Added `ShouldIgnoreMVID` to README config tables (EN+JA), `CompilerGeneratedResolver` to DEVELOPER_GUIDE architecture table (EN+JA), `--output` flag and custom output directory tests to TESTING_GUIDE scope maps (EN+JA), `CompilerGeneratedResolverTests` to TESTING_GUIDE scope maps (EN+JA). Updated `DisassemblerTimeoutSeconds` default from 300 to 60 in TROUBLESHOOTING (EN+JA). Affected: `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `doc/TROUBLESHOOTING.md`.
+
 ### [1.13.5] - 2026-04-04
 
 #### Added
@@ -1068,6 +1100,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **セマンティック分析のコンパイラ生成コードカバレッジ拡大** — `CompilerGeneratedResolver` が追加のコンパイラ生成パターンを注釈するようになった: ローカル関数（`<Method>g__LocalFunc|N_M` → "local function LocalFunc in Method"）、record クローンメソッド（`<Clone>$` → "record clone method"）、record 合成メンバー（`PrintMembers`、`op_Equality`、`op_Inequality` → "record synthesized"）。`IsCompilerGeneratedMember` もこれらの新パターンを検出する。レビュアーがマングルされた名前を手動でデコードせずにコンパイラ生成の変更を即座に識別できるようになる。影響: `Services/CompilerGeneratedResolver.cs`。テスト: `CompilerGeneratedResolverTests`（6 件追加、`IsCompilerGeneratedMember_ReturnsExpected` に 5 件の `InlineData` 追加）。
+
+- **アセンブリセマンティック分析結果のインメモリキャッシュ** — `FileDiffService` が `AssemblyMethodAnalyzer.Analyze` の結果を `(oldSHA256, newSHA256)` をキーとする `ConcurrentDictionary` にキャッシュするようになった。同一アセンブリ内容のペアが複数パスに存在する場合（例: 同じ DLL が異なる場所にコピーされている場合）、2 回目以降の解析はキャッシュから提供され、冗長な `System.Reflection.Metadata` パースを回避する。キャッシュヒットは Info レベルでログに記録される。影響: `Services/FileDiffService.cs`。テスト: `FileDiffServiceUnitTests.ILComparison.cs`（1 件追加: `FilesAreEqualAsync_SemanticAnalysisCacheHit_WhenSameHashPairReused`）。
+
+- **IL比較でのMVID包含の設定可能化** — 新しい `ShouldIgnoreMVID` 設定（デフォルト `true`）で、IL 比較時に MVID（Module Version ID）行を除外するかどうかを制御できるようになった。`false` に設定すると MVID 差異が比較に含まれ、ソースコードが同一でも再コンパイルを検出できる。`ShouldExcludeIlLine`、`StreamingFilteredSequenceEqual`、`FilterIlLines`、`SplitAndFilterIlLines` メソッドに `shouldIgnoreMVID` パラメータを追加。MVID 自動除外に関する「IL Diff Note」は `ShouldIgnoreMVID` が `true` の場合のみ Markdown/HTML 両レポートに表示されるようになった。影響: `Models/ConfigSettings.ILSettings.cs`、`Models/ConfigSettingsBuilder.ILSettings.cs`、`Models/IReadOnlyConfigSettings.cs`、`Models/ConfigSettings.cs`、`Services/ILOutputService.cs`、`Services/SectionWriters/HeaderSectionWriter.cs`、`Services/HtmlReport/HtmlReportGenerateService.Sections.cs`、`doc/config.sample.jsonc`。テスト: `ILOutputServiceTests`（2 件追加）、`ReportGenerateServiceTests.Header`（1 件追加: `GenerateDiffReport_WhenShouldIgnoreMVIDFalse_OmitsMvidNote`）。
+
+- **HTMLレポートのカラム幅永続化** — リサイズされたカラム幅が localStorage に保存され、ページリロード時に復元されるようになった。従来はリロードのたびにカラム幅がデフォルトにリセットされ、毎回手動調整が必要だった。`saveColumnWidths()` がリサイズ後に CSS カスタムプロパティ値を保存し、`restoreColumnWidths()` が初期化時に適用する。colwidths キーは `clearOldReviewStates()` で保護される。レビュー済みモードでは幅を永続化しない。影響: `Services/HtmlReport/js/diff_report_layout.js`（`saveColumnWidths`、`restoreColumnWidths`、`__colVarNames__` 追加）、`Services/HtmlReport/js/diff_report_init.js`（復元呼び出し追加）、`Services/HtmlReport/js/diff_report_state.js`（colwidths キー保護追加）、`doc/samples/diff_report.html`（サンプル更新）。
+
+- **IL比較時の空白正規化** — ストリーミングIL比較（`StreamingFilteredSequenceEqual`）とブロック単位比較（`BlockAwareSequenceEqual` / `ComputeBlockHash`）の両方で、各行の先頭・末尾空白をトリムしてから比較するようになった。逆アセンブラバージョン間のインデント差異やフォーマット差異を吸収し、表面的なIL変更による偽陽性を削減する。影響: `Services/ILOutputService.cs`。テスト: `ILOutputServiceTests`（3 件追加: `StreamingFilteredSequenceEqual_WhitespaceDifferences_ReturnsTrue`、`StreamingFilteredSequenceEqual_ContentDiffBeyondWhitespace_ReturnsFalse`、`BlockAwareSequenceEqual_IndentDifferences_ReturnsTrue`）。
+
+- **`--output` CLIオプションによるカスタム出力ディレクトリ** — 新しい `--output <path>` CLIオプションで、レポート出力のデフォルトベースディレクトリ `<exe>/Reports/` を上書きできるようになった。レポートラベルのサブフォルダが指定パスの下に作成される。CI/CDパイプラインでレポートを任意の場所（アーティファクトステージングディレクトリなど）に出力したい場合に便利。省略時はアプリケーションベース配下のデフォルト `Reports/` ディレクトリが使用される。影響: `Runner/CliParser.cs`、`Runner/CliOptions.cs`、`Runner/RunPreflightValidator.cs`、`ProgramRunner.cs`、`Runner/ProgramRunner.HelpText.cs`、`README.md`。テスト: `CliOptionsTests.Combined.cs`（3 件追加: `ParseCliOptions_OutputWithPath_SetsOutputDirectory`、`ParseCliOptions_OutputMissingValue_SetsParseError`、`ParseCliOptions_NoOutput_DefaultsToNull`）、`ProgramRunnerTests.Preflight.cs`（3 件追加: `GetReportsFolderAbsolutePath_WithOutputDirectory_UsesCustomBase`、`GetReportsFolderAbsolutePath_WithNullOutputDirectory_UsesDefaultReportsDir`、`GetReportsFolderAbsolutePath_WithEmptyOutputDirectory_UsesDefaultReportsDir`）。
+
+#### パフォーマンス
+
+- **HTMLレポートの検索入力にデバウンスを追加** — ファイルパス検索入力（`filter-search`）がキーストロークごとに `applyFilters()` を直接呼び出す代わりに、150ms のデバウンス（`applyFiltersDebounced()`）を使用するようになった。大規模レポート（1万行超）でキーストロークごとのフィルタリングが顕著な入力ラグを引き起こす問題を防止する。チェックボックスフィルターは引き続き `onchange` で即座に適用される。影響: `Services/HtmlReport/js/diff_report_filter.js`（`applyFiltersDebounced` 関数追加）、`Services/HtmlReportGenerateService.cs`（検索入力の `oninput` ハンドラ変更）、`doc/samples/diff_report.html`（サンプル更新）。テスト: `HtmlReportGenerateServiceTests.Filtering.cs`（デバウンス関数の存在と検索入力バインディングのアサーション 2 件追加）。
+
+#### 変更
+
+- **`DisassemblerTimeoutSeconds` のデフォルトを 300 秒から 60 秒に短縮** — 逆アセンブラプロセスのデフォルトタイムアウトが 300 秒（5 分）であったため、大きなまたは破損したアセンブリで逆アセンブラがハングした場合に長時間ブロックされていた。60 秒に短縮することで早期に失敗し、ブラックリスト機構がより早く機能するようになった。非常に大きなアセンブリを扱うユーザーは `config.json` または `FOLDERDIFF_DISASSEMBLERTIMEOUTSECONDS` 環境変数でオーバーライド可能。影響: `Models/ConfigSettings.ILSettings.cs`、`doc/config.sample.jsonc`、`doc/config.schema.json`、`README.md`。テスト: `ConfigSettingsTests.ValidationBoundary.cs`（`AllDefaultConstants_MatchExpectedValues` 更新）。
+
+- **CI ワークフローのドキュメントのみ変更スキップ** — `dotnet.yml`、`codeql.yml`、`benchmark-regression.yml` に `paths-ignore` フィルタを追加し、Markdown ファイル（`**.md`）、`doc/**`、`CLAUDE.md`、`LICENSE` のみの変更ではビルド/テスト/解析パイプラインが起動しないようにした。`workflow_dispatch` と `schedule` トリガーは影響なし。`release.yml` はタグトリガーのため変更なし。影響: `.github/workflows/dotnet.yml`、`.github/workflows/codeql.yml`、`.github/workflows/benchmark-regression.yml`。
+
+- **ログレベルプレフィックスを 3 文字ラベルに短縮** — コンソールおよびテキスト形式ログのプレフィックスをパディング付き 9 文字（`[INFO   ]`、`[WARNING]`、`[ERROR  ]`）からパディングなし 5 文字（`[INF]`、`[WRN]`、`[ERR]`）に変更。3 ラベルとも同一幅でスペースなく揃う。JSON ログの `level` フィールドは影響なし。影響: `Services/LoggerService.cs`。テスト: `LoggerServiceTests`（アサーション更新）。
+
+#### ドキュメント
+
+- **DEVELOPER_GUIDE: ハッシュベースキャッシュフローのドキュメント化** — 既存の「SHA256 ハッシュのプリシード」と新規「セマンティック分析キャッシュ」のサブセクションを「FileDiffService におけるハッシュベースキャッシュ」として統合し、ステップ 1（ハッシュ比較）で計算した SHA256 が IL キャッシュのプリシードとセマンティック分析キャッシュのキーにどのように再利用されるかを mermaid フローチャートで示した。影響: `doc/DEVELOPER_GUIDE.md`（EN+JA セクション）。
+
+- **横断的ドキュメント更新** — README の設定テーブルに `ShouldIgnoreMVID` を追加（EN+JA）、DEVELOPER_GUIDE のアーキテクチャテーブルに `CompilerGeneratedResolver` を追加（EN+JA）、TESTING_GUIDE のスコープマップに `--output` フラグとカスタム出力ディレクトリテスト・`CompilerGeneratedResolverTests` を追加（EN+JA）。TROUBLESHOOTING の `DisassemblerTimeoutSeconds` デフォルトを 300 から 60 に更新（EN+JA）。影響: `README.md`、`doc/DEVELOPER_GUIDE.md`、`doc/TESTING_GUIDE.md`、`doc/TROUBLESHOOTING.md`。
 
 ### [1.13.5] - 2026-04-04
 

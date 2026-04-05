@@ -76,9 +76,13 @@ namespace FolderDiffIL4DotNet.Services
                 // (end of Configuration Details section)
                 writer.WriteLine();
 
-                // Notes / ノート
-                writer.WriteLine($"> {NOTE_MVID_SKIP}");
-                writer.WriteLine();
+                // Notes — only show MVID note when MVID lines are actually ignored
+                // ノート — MVID 行が実際に除外される場合のみ MVID ノートを表示
+                if (ctx.Config.ShouldIgnoreMVID)
+                {
+                    writer.WriteLine($"> {NOTE_MVID_SKIP}");
+                    writer.WriteLine();
+                }
             }
         }
     }

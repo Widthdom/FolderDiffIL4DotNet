@@ -31,6 +31,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_WIZARD = "--wizard";
         private const string OPT_RANDOM_SPINNER = "--random-spinner";
         private const string OPT_LOG_FORMAT = "--log-format";
+        private const string OPT_OUTPUT = "--output";
 
         /// <summary>
         /// Scans command-line arguments and returns parsed CLI options.
@@ -49,11 +50,12 @@ namespace FolderDiffIL4DotNet.Runner
             string? configPath = null;
             int? threadsOverride = null;
             string? logFormatOverride = null;
+            string? outputDirectory = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -185,6 +187,16 @@ namespace FolderDiffIL4DotNet.Runner
                             parseError ??= $"'{OPT_LOG_FORMAT}' requires a format argument (text or json).";
                         }
                         break;
+                    case OPT_OUTPUT:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            outputDirectory = args[++i];
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_OUTPUT}' requires a directory path argument.";
+                        }
+                        break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
                         // 位置引数ではなく認識されないフラグ（-- で始まるもの）を検出する。
@@ -199,7 +211,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, parseError);
         }
     }
 }

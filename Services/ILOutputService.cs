@@ -138,6 +138,7 @@ namespace FolderDiffIL4DotNet.Services
 
             var ilIgnoreContainingStrings = GetNormalizedIlIgnoreContainingStrings(_config);
             bool shouldIgnore = _config.ShouldIgnoreILLinesContainingConfiguredStrings;
+            bool ignoreMVID = _config.ShouldIgnoreMVID;
 
             // Disassemble old/new as lines (reads process stdout line-by-line, avoiding LOH-sized string allocations).
             // old/new を行リストとして逆アセンブル（プロセス stdout を行単位で読み取り、LOH サイズの文字列割り当てを回避）。
@@ -151,11 +152,11 @@ namespace FolderDiffIL4DotNet.Services
                 // If lines differ, fall back to block-aware comparison to handle method reordering.
                 // ストリーミング比較: フィルタ済み行リストを実体化せずに行単位でフィルタ・比較する。
                 // 行単位で不一致の場合、メソッド並び順変更を考慮しブロック単位比較にフォールバック。
-                bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings);
+                bool areILsEqual = StreamingFilteredSequenceEqual(il1Lines, il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
                 if (!areILsEqual)
                 {
-                    var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
-                    var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
+                    var filtered1 = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+                    var filtered2 = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
                     areILsEqual = BlockAwareSequenceEqual(filtered1, filtered2);
                 }
                 return (areILsEqual, disassemblerLabel);
@@ -163,8 +164,8 @@ namespace FolderDiffIL4DotNet.Services
 
             // Materialized path: need full filtered lists for IL text file output.
             // 実体化パス: IL テキストファイル出力用にフィルタ済み全行リストが必要。
-            var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings);
-            var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings);
+            var il1LinesExcluded = FilterIlLines(il1Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
+            var il2LinesExcluded = FilterIlLines(il2Lines, shouldIgnore, ilIgnoreContainingStrings, ignoreMVID);
             bool areEqual = il1LinesExcluded.SequenceEqual(il2LinesExcluded);
             if (!areEqual)
             {
@@ -200,18 +201,19 @@ namespace FolderDiffIL4DotNet.Services
             IReadOnlyList<string> lines1,
             IReadOnlyList<string> lines2,
             bool shouldIgnoreContainingStrings,
-            IReadOnlyCollection<string> ilIgnoreContainingStrings)
+            IReadOnlyCollection<string> ilIgnoreContainingStrings,
+            bool shouldIgnoreMVID = true)
         {
             int i = 0, j = 0;
             int count1 = lines1.Count, count2 = lines2.Count;
             while (true)
             {
                 // Advance past excluded lines / 除外行をスキップ
-                while (i < count1 && ShouldExcludeIlLine(lines1[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
+                while (i < count1 && ShouldExcludeIlLine(lines1[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings, shouldIgnoreMVID))
                 {
                     i++;
                 }
-                while (j < count2 && ShouldExcludeIlLine(lines2[j], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
+                while (j < count2 && ShouldExcludeIlLine(lines2[j], shouldIgnoreContainingStrings, ilIgnoreContainingStrings, shouldIgnoreMVID))
                 {
                     j++;
                 }
@@ -227,7 +229,11 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     return false;
                 }
-                if (!string.Equals(lines1[i], lines2[j], StringComparison.Ordinal))
+                // Compare with leading/trailing whitespace trimmed to absorb indentation
+                // variations between disassembler versions or formatting differences.
+                // 逆アセンブラバージョン間のインデント差異やフォーマット差異を吸収するため
+                // 先頭・末尾空白をトリムして比較する。
+                if (!lines1[i].AsSpan().Trim().SequenceEqual(lines2[j].AsSpan().Trim()))
                 {
                     return false;
                 }
@@ -245,12 +251,13 @@ namespace FolderDiffIL4DotNet.Services
         internal static List<string> FilterIlLines(
             IReadOnlyList<string> lines,
             bool shouldIgnoreContainingStrings,
-            IReadOnlyCollection<string> ilIgnoreContainingStrings)
+            IReadOnlyCollection<string> ilIgnoreContainingStrings,
+            bool shouldIgnoreMVID = true)
         {
             var result = new List<string>(lines.Count);
             for (int i = 0; i < lines.Count; i++)
             {
-                if (!ShouldExcludeIlLine(lines[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
+                if (!ShouldExcludeIlLine(lines[i], shouldIgnoreContainingStrings, ilIgnoreContainingStrings, shouldIgnoreMVID))
                 {
                     result.Add(lines[i]);
                 }
@@ -264,7 +271,7 @@ namespace FolderDiffIL4DotNet.Services
         /// IL テキストを行に分割し、除外行を 1 パスでフィルタリングすることで
         /// Split → Where → ToList の中間リスト割り当てを回避します。
         /// </summary>
-        private static List<string> SplitAndFilterIlLines(string ilText, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
+        private static List<string> SplitAndFilterIlLines(string ilText, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings, bool shouldIgnoreMVID = true)
         {
             var result = new List<string>();
             int startIndex = 0;
@@ -283,7 +290,7 @@ namespace FolderDiffIL4DotNet.Services
                     line = ilText.Substring(startIndex, newlineIndex - startIndex);
                     startIndex = newlineIndex + 1;
                 }
-                if (!ShouldExcludeIlLine(line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings))
+                if (!ShouldExcludeIlLine(line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings, shouldIgnoreMVID))
                 {
                     result.Add(line);
                 }
@@ -295,14 +302,15 @@ namespace FolderDiffIL4DotNet.Services
         /// Determines whether a line should be excluded from IL comparison.
         /// IL 比較時に除外すべき行かを判定します。
         /// </summary>
-        private static bool ShouldExcludeIlLine(string line, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
+        private static bool ShouldExcludeIlLine(string line, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings,
+            bool shouldIgnoreMVID = true)
         {
             if (line is null)
             {
                 return false;
             }
 
-            if (line.StartsWith(Constants.IL_MVID_LINE_PREFIX, StringComparison.Ordinal))
+            if (shouldIgnoreMVID && line.StartsWith(Constants.IL_MVID_LINE_PREFIX, StringComparison.Ordinal))
             {
                 return true;
             }
@@ -391,7 +399,9 @@ namespace FolderDiffIL4DotNet.Services
             for (int i = 0; i < blockLines.Count; i++)
             {
                 if (i > 0) sb.Append('\n');
-                sb.Append(blockLines[i]);
+                // Trim leading/trailing whitespace to absorb indentation variations
+                // 先頭・末尾空白をトリムしてインデント差異を吸収
+                sb.Append(blockLines[i].Trim());
             }
             byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));
             return BitConverter.ToString(hashBytes).Replace("-", string.Empty);

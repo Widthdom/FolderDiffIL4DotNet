@@ -800,7 +800,7 @@
 <div class="ctrl-filter-row">
   <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
   <span class="filter-sep"></span>
-  <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()" aria-label="Search file path">
+  <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFiltersDebounced()" aria-label="Search file path">
 </div>
 <div class="filter-tables">
 <div class="filter-table-wrap">
@@ -1883,6 +1883,7 @@
     }
     if (__savedState__ === null) { restoreFilterState(); }
     initColResize();
+    restoreColumnWidths();
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();
@@ -2557,11 +2558,12 @@
     var currentKey = __storageKey__;
     var themeKey = __storageKey__ + '-theme';
     var filterKey = __storageKey__ + '-filters';
+    var colWidthsKey = __storageKey__ + '-colwidths';
     var removed = 0;
     try {
       for (var i = localStorage.length - 1; i >= 0; i--) {
         var key = localStorage.key(i);
-        if (key === currentKey || key === themeKey || key === filterKey) continue;
+        if (key === currentKey || key === themeKey || key === filterKey || key === colWidthsKey) continue;
         if (key.indexOf('folderdiff-') === 0) {
           localStorage.removeItem(key);
           removed++;
@@ -2718,10 +2720,42 @@
       function onUp() {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        saveColumnWidths();
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
+  }
+
+  var __colVarNames__ = [
+    '--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w',
+    '--col-tag-w','--col-disasm-w','--col-sdk-w',
+    '--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w',
+    '--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'
+  ];
+  function saveColumnWidths() {
+    if (__savedState__ !== null) return;
+    try {
+      var widths = {};
+      var root = document.documentElement;
+      __colVarNames__.forEach(function(v) {
+        var val = root.style.getPropertyValue(v);
+        if (val) widths[v] = val;
+      });
+      localStorage.setItem(__storageKey__ + '-colwidths', JSON.stringify(widths));
+    } catch(e) { }
+  }
+  function restoreColumnWidths() {
+    try {
+      var raw = localStorage.getItem(__storageKey__ + '-colwidths');
+      if (!raw) return;
+      var widths = JSON.parse(raw);
+      if (!widths || typeof widths !== 'object') return;
+      var root = document.documentElement;
+      Object.keys(widths).forEach(function(v) {
+        root.style.setProperty(v, widths[v]);
+      });
+    } catch(e) { }
   }
 
   function initColResize() {
@@ -2731,6 +2765,11 @@
   }
 
   // ── Filtering ──────────────────────────────────────────────────────────
+  var _filterDebounceTimer = 0;
+  function applyFiltersDebounced() {
+    clearTimeout(_filterDebounceTimer);
+    _filterDebounceTimer = setTimeout(applyFilters, 150);
+  }
   function applyFilters() {
     var impHigh    = document.getElementById('filter-imp-high');
     // If any element is missing (e.g. reviewed mode), skip

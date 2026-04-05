@@ -5,10 +5,20 @@ on:
     branches:
       - main
       - pre-main-integration
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CLAUDE.md'
+      - 'LICENSE'
   pull_request:
     branches:
       - main
       - pre-main-integration
+    paths-ignore:
+      - '**.md'
+      - 'doc/**'
+      - 'CLAUDE.md'
+      - 'LICENSE'
   schedule:
     - cron: "0 18 * * 0"
   workflow_dispatch:

@@ -141,7 +141,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings });
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, false, ignoreStrings, true });
 
             // MVID lines should be excluded; non-MVID lines retained (including empty trailing line from final \n)
             Assert.DoesNotContain(result, line => line.StartsWith("// MVID:", StringComparison.Ordinal));
@@ -158,7 +158,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             var method = typeof(ILOutputService).GetMethod("SplitAndFilterIlLines", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings });
+            var result = (List<string>)method.Invoke(null, new object[] { ilText, true, ignoreStrings, true });
 
             Assert.Equal(new[] { "line1", "line3", "" }, result);
         }
@@ -195,9 +195,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static bool InvokeShouldExcludeIlLine(string line, bool shouldIgnoreContainingStrings, IReadOnlyCollection<string> ilIgnoreContainingStrings)
         {
+            // Pass shouldIgnoreMVID=true as the default to match previous behavior / 従来の動作に合わせて shouldIgnoreMVID=true をデフォルトで渡す
             var method = typeof(ILOutputService).GetMethod("ShouldExcludeIlLine", BindingFlags.Static | BindingFlags.NonPublic);
             Assert.NotNull(method);
-            var result = method.Invoke(null, new object[] { line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings });
+            var result = method.Invoke(null, new object[] { line, shouldIgnoreContainingStrings, ilIgnoreContainingStrings, true });
             return Assert.IsType<bool>(result);
         }
 
@@ -638,8 +639,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(splitAndFilter);
 
             var ignoreStrings = new List<string>();
-            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings })!;
-            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings })!;
+            var legacy1 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText1, false, ignoreStrings, true })!;
+            var legacy2 = (List<string>)splitAndFilter.Invoke(null, new object[] { ilText2, false, ignoreStrings, true })!;
             bool legacyResult = legacy1.SequenceEqual(legacy2);
 
             var lines1 = DotNetDisassembleService.SplitToLines(ilText1);
@@ -647,6 +648,83 @@ namespace FolderDiffIL4DotNet.Tests.Services
             bool streamingResult = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, ignoreStrings);
 
             Assert.Equal(legacyResult, streamingResult);
+        }
+
+        // --- ShouldIgnoreMVID tests / MVID 無視フラグテスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_WhenShouldIgnoreMVIDFalse_IncludesMVIDLines()
+        {
+            // When ShouldIgnoreMVID is false, MVID lines affect comparison result.
+            // ShouldIgnoreMVID が false の場合、MVID 行は比較結果に影響する。
+            var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
+            var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), shouldIgnoreMVID: false);
+            Assert.False(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_WhenShouldIgnoreMVIDTrue_ExcludesMVIDLines()
+        {
+            // Default behavior: MVID lines are excluded from comparison.
+            // デフォルト動作: MVID 行は比較から除外される。
+            var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
+            var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), shouldIgnoreMVID: true);
+            Assert.True(result);
+        }
+
+        // --- Whitespace trimming tests / 空白トリミングテスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_WhitespaceDifferences_ReturnsTrue()
+        {
+            // Lines differing only in leading/trailing whitespace should be treated as equal.
+            // 先頭・末尾空白のみ異なる行は等価として扱われるべき。
+            var lines1 = new List<string> { "  .method public void Foo()", "    ldarg.0", "    ret" };
+            var lines2 = new List<string> { ".method public void Foo()", "      ldarg.0", "  ret" };
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            Assert.True(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_ContentDiffBeyondWhitespace_ReturnsFalse()
+        {
+            // Lines differing in actual content (not just whitespace) must still be detected.
+            // 実際の内容が異なる行（空白だけでなく）は引き続き検出されるべき。
+            var lines1 = new List<string> { "  call void Foo()" };
+            var lines2 = new List<string> { "  call void Bar()" };
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            Assert.False(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_IndentDifferences_ReturnsTrue()
+        {
+            // Block-aware comparison should also ignore indentation differences.
+            // ブロック単位比較でもインデント差異を無視すべき。
+            var lines1 = new List<string>
+            {
+                ".method public void Foo()",
+                "{",
+                "    ldarg.0",
+                "    ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                "  .method public void Foo()",
+                "  {",
+                "      ldarg.0",
+                "      ret",
+                "  }"
+            };
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
         }
 
         private static ILOutputService CreateILOutputService(ConfigSettings config, string? ilOldFolder = null, string? ilNewFolder = null)

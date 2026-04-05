@@ -13,6 +13,8 @@ namespace FolderDiffIL4DotNet.Models
         public const bool DefaultShouldIgnoreILLinesContainingConfiguredStrings = false;
         /// <summary>Default value for <see cref="SkipIL"/>. / <see cref="SkipIL"/> の既定値。</summary>
         public const bool DefaultSkipIL = false;
+        /// <summary>Default value for <see cref="ShouldIgnoreMVID"/>. / <see cref="ShouldIgnoreMVID"/> の既定値。</summary>
+        public const bool DefaultShouldIgnoreMVID = true;
 
         // ── IL cache defaults / IL キャッシュデフォルト ───────────────────────
         /// <summary>Default value for <see cref="EnableILCache"/>. / <see cref="EnableILCache"/> の既定値。</summary>
@@ -32,7 +34,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="DisassemblerBlacklistTtlMinutes"/>. / <see cref="DisassemblerBlacklistTtlMinutes"/> の既定値。</summary>
         public const int DefaultDisassemblerBlacklistTtlMinutes = 10;
         /// <summary>Default value for <see cref="DisassemblerTimeoutSeconds"/>. / <see cref="DisassemblerTimeoutSeconds"/> の既定値。</summary>
-        public const int DefaultDisassemblerTimeoutSeconds = 300;
+        public const int DefaultDisassemblerTimeoutSeconds = 60;
 
         // ── IL comparison properties / IL 比較プロパティ ─────────────────────
 
@@ -59,6 +61,15 @@ namespace FolderDiffIL4DotNet.Models
         /// .NET アセンブリの IL 比較をスキップするかどうか。
         /// </summary>
         public bool SkipIL { get; }
+
+        /// <summary>
+        /// Whether to ignore MVID (Module Version ID) lines during IL comparison.
+        /// When false, MVID differences are included in the comparison, which can detect
+        /// recompilation even when the source code is identical.
+        /// IL 比較時に MVID（Module Version ID）行を無視するかどうか。
+        /// false の場合、ソースコードが同一でも再コンパイルを検出するために MVID 差異が比較に含まれる。
+        /// </summary>
+        public bool ShouldIgnoreMVID { get; }
 
         // ── IL cache properties / IL キャッシュプロパティ ─────────────────────
 

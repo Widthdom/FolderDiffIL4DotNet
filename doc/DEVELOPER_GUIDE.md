@@ -216,9 +216,49 @@ Benchmark classes:
 
 **Regression detection:** The [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) workflow runs automatically on every PR to `main` and on `push` to `main`. It combines JSON results from all benchmark classes into a single report and uses [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) to compare against the stored baseline in the `gh-benchmarks` branch. If any benchmark degrades by more than 50% (alert threshold `150%`), the job fails and a PR comment is posted. On push to `main`, the results are stored as the new baseline.
 
-### SHA256 Hash Pre-Seeding
+### Hash-Based Caching in FileDiffService
 
-When IL cache is enabled, `FileDiffService` seeds computed SHA256 hashes into `ILMemoryCache` via `PreSeedFileHash` after the initial hash comparison. This avoids recomputing SHA256 during IL cache key construction (`BuildILCacheKey`), which would otherwise re-read the file.
+`FileDiffService` reuses SHA256 hashes computed during Step 1 (hash comparison) at two later points in the per-file flow to avoid redundant I/O and computation.
+
+```mermaid
+flowchart TD
+    A["Step 1: DiffFilesByHashWithHexAsync"] --> B["hash1Hex, hash2Hex"]
+    B --> C{"IL cache enabled?"}
+    C -- "Yes" --> D["PreSeedFileHash(hash1Hex)\nPreSeedFileHash(hash2Hex)"]
+    D --> E["ILMemoryCache"]
+    E -. "reused later by" .-> F["BuildILCacheKey\n(skips file re-read)"]
+    C -- "No" --> G[" "]
+    B --> H{"SHA256 mismatch\n& .NET assembly?"}
+    H -- "Yes" --> I["Step 2: IL comparison"]
+    I --> J{"IL mismatch?"}
+    J -- "Yes" --> K["TryAnalyzeAssemblySemanticChanges"]
+    K --> L{"Both hashes\navailable?"}
+    L -- "Yes" --> M{"Cache hit?\n_semanticAnalysisCache\n.TryGetValue(oldHash, newHash)"}
+    M -- "Hit" --> N["Return cached\nAssemblySemanticChangesSummary"]
+    M -- "Miss" --> O["AssemblyMethodAnalyzer.Analyze\n+ CompilerGeneratedResolver.Annotate"]
+    O --> P["Store in _semanticAnalysisCache"]
+    P --> Q["Record in FileDiffResultLists"]
+    N --> Q
+    L -- "No (null hash)" --> O
+
+    style A fill:#4a90d9,color:#fff
+    style E fill:#f5a623,color:#fff
+    style P fill:#f5a623,color:#fff
+    style G fill:none,stroke:none
+```
+
+#### IL Cache Pre-Seeding
+
+When IL cache is enabled, the hex-encoded SHA256 values (`hash1Hex`, `hash2Hex`) are seeded into `ILMemoryCache` via `PreSeedFileHash` immediately after `DiffFilesByHashWithHexAsync`. This avoids recomputing SHA256 during IL cache key construction (`BuildILCacheKey`), which would otherwise re-read the file from disk.
+
+#### Semantic Analysis Cache
+
+`TryAnalyzeAssemblySemanticChanges` uses a `ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?>` keyed by the same SHA256 pair. When the same old/new hash pair appears at multiple relative paths (e.g. the same DLL copied into several subdirectories), `AssemblyMethodAnalyzer.Analyze` runs only once and subsequent lookups return the cached instance.
+
+Cache safety:
+- `AssemblySemanticChangesSummary` is effectively immutable after construction: `Entries` is an `init`-only `IReadOnlyList<MemberChangeEntry>`, and all other properties (`TotalChanges`, `MaxImportance`) are computed from `Entries`.
+- `CompilerGeneratedResolver.Annotate` runs inside `Analyze()` before the result enters the cache, so cached entries are fully annotated.
+- When either hash is unavailable (`null`), the cache is bypassed and `Analyze` runs unconditionally.
 
 ### IL Line Split-and-Filter Optimization
 
@@ -400,6 +440,7 @@ Why this matters:
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL compare flow, line filtering, block-aware order-independent comparison, optional IL dump writing, IL filter string safety validation | Enforces same disassembler identity; falls back to block-level multiset comparison when line order differs; `ValidateILFilterStrings` warns on overly short filter strings (< 4 chars) |
 | [`Services/ILOutput/ILBlockParser.cs`](../Services/ILOutput/ILBlockParser.cs) | Parses IL disassembly output into logical blocks (methods, classes, properties) | Used by `ILOutputService.BlockAwareSequenceEqual` for order-independent comparison |
 | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | Method-level change detection via `System.Reflection.Metadata` | Best-effort; returns `null` on failure. Detects type/method/property/field additions, removals, and modifications (access modifier changes, modifier changes, type changes, IL body changes). Each entry is auto-classified by [`ChangeImportanceClassifier`](../Services/ChangeImportanceClassifier.cs) |
+| [`Services/CompilerGeneratedResolver.cs`](../Services/CompilerGeneratedResolver.cs) | Annotates compiler-generated types/members with user-authored origins | Resolves async state machines, display classes, lambda methods, backing fields, local functions, record clone/synthesized members to human-readable descriptions; called as a post-processing step in `AssemblyMethodAnalyzer.Analyze` |
 | [`Services/ChangeImportanceClassifier.cs`](../Services/ChangeImportanceClassifier.cs) | Rule-based importance classifier for `MemberChangeEntry` | Assigns `High` / `Medium` / `Low` [`ChangeImportance`](../Models/ChangeImportance.cs) based on change type, access modifiers, and arrow-notation field changes |
 | [`Models/ChangeImportance.cs`](../Models/ChangeImportance.cs) | Change importance enum | `Low=0`, `Medium=1`, `High=2`; used by `MemberChangeEntry.Importance` and report display |
 | [`Services/ChangeTagClassifier.cs`](../Services/ChangeTagClassifier.cs) | Heuristic change-pattern classifier | Infers [`ChangeTag`](../Models/ChangeTag.cs) labels (Extract, Inline, Move, Rename, Signature, Access, BodyEdit, DepUpdate, +Method, -Method, +Type, -Type) from semantic analysis and dependency data; called by [`FileDiffService`](../Services/FileDiffService.cs) after semantic/dependency analysis |
@@ -1122,9 +1163,49 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 
 **リグレッション検知:** [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) ワークフローは `main` への PR および `push` のたびに自動実行されます。全ベンチマーククラスの JSON 結果を単一レポートに統合し、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して `gh-benchmarks` ブランチに保存されたベースラインと比較します。いずれかのベンチマークが 50% 以上劣化した場合（閾値 `150%`）、ジョブが失敗し PR コメントが投稿されます。`main` への push 時には結果が新しいベースラインとして保存されます。
 
-### SHA256 ハッシュのプリシード
+### FileDiffService におけるハッシュベースキャッシュ
 
-IL キャッシュが有効な場合、`FileDiffService` は初回ハッシュ比較後に計算済み SHA256 ハッシュを `PreSeedFileHash` 経由で `ILMemoryCache` にシード登録します。これにより、IL キャッシュキー生成（`BuildILCacheKey`）時にファイルを再読み込みして SHA256 を再計算することを回避します。
+`FileDiffService` はステップ 1（ハッシュ比較）で計算した SHA256 ハッシュを、ファイル単位フローの後続 2 箇所で再利用し、冗長な I/O と計算を回避します。
+
+```mermaid
+flowchart TD
+    A["ステップ 1: DiffFilesByHashWithHexAsync"] --> B["hash1Hex, hash2Hex"]
+    B --> C{"IL キャッシュ\n有効？"}
+    C -- "Yes" --> D["PreSeedFileHash(hash1Hex)\nPreSeedFileHash(hash2Hex)"]
+    D --> E["ILMemoryCache"]
+    E -. "後で再利用" .-> F["BuildILCacheKey\n（ファイル再読込スキップ）"]
+    C -- "No" --> G[" "]
+    B --> H{"SHA256 不一致\n& .NET アセンブリ？"}
+    H -- "Yes" --> I["ステップ 2: IL 比較"]
+    I --> J{"IL 不一致？"}
+    J -- "Yes" --> K["TryAnalyzeAssemblySemanticChanges"]
+    K --> L{"両方のハッシュ\n利用可能？"}
+    L -- "Yes" --> M{"キャッシュヒット？\n_semanticAnalysisCache\n.TryGetValue(oldHash, newHash)"}
+    M -- "ヒット" --> N["キャッシュ済み\nAssemblySemanticChangesSummary\nを返却"]
+    M -- "ミス" --> O["AssemblyMethodAnalyzer.Analyze\n+ CompilerGeneratedResolver.Annotate"]
+    O --> P["_semanticAnalysisCache に格納"]
+    P --> Q["FileDiffResultLists に記録"]
+    N --> Q
+    L -- "No（null ハッシュ）" --> O
+
+    style A fill:#4a90d9,color:#fff
+    style E fill:#f5a623,color:#fff
+    style P fill:#f5a623,color:#fff
+    style G fill:none,stroke:none
+```
+
+#### IL キャッシュのプリシード
+
+IL キャッシュが有効な場合、`DiffFilesByHashWithHexAsync` 直後に 16 進エンコード済み SHA256 値（`hash1Hex`、`hash2Hex`）を `PreSeedFileHash` 経由で `ILMemoryCache` にシード登録します。これにより、IL キャッシュキー生成（`BuildILCacheKey`）時にファイルを再読み込みして SHA256 を再計算することを回避します。
+
+#### セマンティック分析キャッシュ
+
+`TryAnalyzeAssemblySemanticChanges` は同じ SHA256 ペアをキーとする `ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?>` を使用します。同一の old/new ハッシュペアが複数の相対パスに出現する場合（同じ DLL が複数サブディレクトリにコピーされている場合など）、`AssemblyMethodAnalyzer.Analyze` は 1 回のみ実行され、以降のルックアップではキャッシュ済みインスタンスが返されます。
+
+キャッシュの安全性：
+- `AssemblySemanticChangesSummary` は構築後に実質不変：`Entries` は `init` 専用の `IReadOnlyList<MemberChangeEntry>` であり、その他のプロパティ（`TotalChanges`、`MaxImportance`）はすべて `Entries` からの算出値。
+- `CompilerGeneratedResolver.Annotate` は `Analyze()` 内でキャッシュに格納される前に実行されるため、キャッシュされたエントリはすべてアノテーション済み。
+- いずれかのハッシュが利用不可（`null`）の場合はキャッシュをバイパスし、`Analyze` を無条件に実行。
 
 ### IL 行分割・フィルタの最適化
 
@@ -1306,6 +1387,7 @@ sequenceDiagram
 | [`Services/ILOutputService.cs`](../Services/ILOutputService.cs) | IL 比較、行除外、ブロック単位順序非依存比較、任意 IL 出力、IL フィルタ文字列安全性検証 | 同一逆アセンブラ制約を保証；行順序が異なる場合はブロック単位マルチセット比較にフォールバック；`ValidateILFilterStrings` が短すぎるフィルタ文字列（4 文字未満）を警告 |
 | [`Services/ILOutput/ILBlockParser.cs`](../Services/ILOutput/ILBlockParser.cs) | IL 逆アセンブリ出力を論理ブロック（メソッド、クラス、プロパティ）に分割 | `ILOutputService.BlockAwareSequenceEqual` で順序非依存比較に使用 |
 | [`Services/AssemblyMethodAnalyzer.cs`](../Services/AssemblyMethodAnalyzer.cs) | `System.Reflection.Metadata` によるメソッドレベル変更検出 | ベストエフォート；失敗時は `null` を返す。型・メソッド・プロパティ・フィールドの追加・削除・変更（アクセス修飾子変更、修飾子変更、型変更、IL ボディ変更）を検出。各エントリは [`ChangeImportanceClassifier`](../Services/ChangeImportanceClassifier.cs) により自動分類 |
+| [`Services/CompilerGeneratedResolver.cs`](../Services/CompilerGeneratedResolver.cs) | コンパイラ生成型/メンバーにユーザー記述元を注釈 | async ステートマシン、ディスプレイクラス、ラムダメソッド、バッキングフィールド、ローカル関数、record クローン/合成メンバーを人間可読な説明に解決。`AssemblyMethodAnalyzer.Analyze` の後処理ステップとして呼び出される |
 | [`Services/ChangeImportanceClassifier.cs`](../Services/ChangeImportanceClassifier.cs) | `MemberChangeEntry` のルールベース重要度分類器 | 変更種別・アクセス修飾子・アロー表記フィールド変更に基づき `High` / `Medium` / `Low` の [`ChangeImportance`](../Models/ChangeImportance.cs) を付与 |
 | [`Models/ChangeImportance.cs`](../Models/ChangeImportance.cs) | 変更の重要度列挙型 | `Low=0`, `Medium=1`, `High=2`；`MemberChangeEntry.Importance` およびレポート表示に使用 |
 | [`Services/ChangeTagClassifier.cs`](../Services/ChangeTagClassifier.cs) | ヒューリスティック変更パターン分類器 | セマンティック解析と依存関係データから [`ChangeTag`](../Models/ChangeTag.cs) ラベル（Extract、Inline、Move、Rename、Signature、Access、BodyEdit、DepUpdate、+Method、-Method、+Type、-Type）を推定；[`FileDiffService`](../Services/FileDiffService.cs) がセマンティック/依存関係解析後に呼び出す |

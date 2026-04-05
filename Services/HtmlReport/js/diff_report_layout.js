@@ -94,10 +94,54 @@
       function onUp() {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
+        // Persist column widths to localStorage / カラム幅を localStorage に永続化
+        saveColumnWidths();
       }
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
+  }
+
+  /** CSS variable names for resizable columns. / リサイズ可能カラムの CSS 変数名。 */
+  var __colVarNames__ = [
+    '--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w',
+    '--col-tag-w','--col-disasm-w','--col-sdk-w',
+    '--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w',
+    '--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'
+  ];
+
+  /**
+   * Save current column widths (CSS custom properties) to localStorage.
+   * カラム幅（CSSカスタムプロパティ）を localStorage に保存する。
+   */
+  function saveColumnWidths() {
+    if (__savedState__ !== null) return; // Do not persist in reviewed mode / レビュー済みモードでは保存しない
+    try {
+      var widths = {};
+      var root = document.documentElement;
+      __colVarNames__.forEach(function(v) {
+        var val = root.style.getPropertyValue(v);
+        if (val) widths[v] = val;
+      });
+      localStorage.setItem(__storageKey__ + '-colwidths', JSON.stringify(widths));
+    } catch(e) { /* ignore quota errors */ }
+  }
+
+  /**
+   * Restore column widths from localStorage and apply to CSS custom properties.
+   * localStorage からカラム幅を復元し CSS カスタムプロパティに適用する。
+   */
+  function restoreColumnWidths() {
+    try {
+      var raw = localStorage.getItem(__storageKey__ + '-colwidths');
+      if (!raw) return;
+      var widths = JSON.parse(raw);
+      if (!widths || typeof widths !== 'object') return;
+      var root = document.documentElement;
+      Object.keys(widths).forEach(function(v) {
+        root.style.setProperty(v, widths[v]);
+      });
+    } catch(e) { /* ignore */ }
   }
 
   /** Measure a Diff Detail body row height and set --ft-row-h for double-height filter rows. */
@@ -153,4 +197,4 @@
 
   /* Export functions for Node.js/Jest testing (no-op in browser) */
   /* Node.js/Jest テスト用に関数をエクスポート（ブラウザでは無効） */
-  if (typeof module !== 'undefined' && module.exports) { module.exports = { syncTableWidths: syncTableWidths, syncScTableWidths: syncScTableWidths }; }
+  if (typeof module !== 'undefined' && module.exports) { module.exports = { syncTableWidths: syncTableWidths, syncScTableWidths: syncScTableWidths, saveColumnWidths: saveColumnWidths, restoreColumnWidths: restoreColumnWidths }; }
