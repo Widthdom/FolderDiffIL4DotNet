@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Performance
+
+- **Debounced search input filtering in HTML report** — The file path search input (`filter-search`) now uses a 150 ms debounce (`applyFiltersDebounced()`) instead of calling `applyFilters()` directly on every keystroke. This prevents excessive DOM traversal on large reports (10,000+ rows) where per-keystroke filtering caused noticeable input lag. Checkbox filters continue to apply immediately via `onchange`. Affected: `Services/HtmlReport/js/diff_report_filter.js` (new `applyFiltersDebounced` function), `Services/HtmlReportGenerateService.cs` (search input `oninput` handler), `doc/samples/diff_report.html` (sample updated). Tests: `HtmlReportGenerateServiceTests.Filtering.cs` (2 assertions added for debounce function presence and search input binding).
+
 ### [1.13.5] - 2026-04-04
 
 #### Added
@@ -1068,6 +1072,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### パフォーマンス
+
+- **HTMLレポートの検索入力にデバウンスを追加** — ファイルパス検索入力（`filter-search`）がキーストロークごとに `applyFilters()` を直接呼び出す代わりに、150ms のデバウンス（`applyFiltersDebounced()`）を使用するようになった。大規模レポート（1万行超）でキーストロークごとのフィルタリングが顕著な入力ラグを引き起こす問題を防止する。チェックボックスフィルターは引き続き `onchange` で即座に適用される。影響: `Services/HtmlReport/js/diff_report_filter.js`（`applyFiltersDebounced` 関数追加）、`Services/HtmlReportGenerateService.cs`（検索入力の `oninput` ハンドラ変更）、`doc/samples/diff_report.html`（サンプル更新）。テスト: `HtmlReportGenerateServiceTests.Filtering.cs`（デバウンス関数の存在と検索入力バインディングのアサーション 2 件追加）。
 
 ### [1.13.5] - 2026-04-04
 

@@ -800,7 +800,7 @@
 <div class="ctrl-filter-row">
   <label class="filter-chip"><input type="checkbox" id="filter-unchecked" onchange="applyFilters()"> Unchecked only</label>
   <span class="filter-sep"></span>
-  <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFilters()" aria-label="Search file path">
+  <input type="text" id="filter-search" placeholder="Search file path..." class="filter-search" oninput="applyFiltersDebounced()" aria-label="Search file path">
 </div>
 <div class="filter-tables">
 <div class="filter-table-wrap">
@@ -2731,6 +2731,11 @@
   }
 
   // ── Filtering ──────────────────────────────────────────────────────────
+  var _filterDebounceTimer = 0;
+  function applyFiltersDebounced() {
+    clearTimeout(_filterDebounceTimer);
+    _filterDebounceTimer = setTimeout(applyFilters, 150);
+  }
   function applyFilters() {
     var impHigh    = document.getElementById('filter-imp-high');
     // If any element is missing (e.g. reviewed mode), skip

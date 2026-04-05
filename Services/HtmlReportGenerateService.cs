@@ -182,7 +182,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("<div class=\"ctrl-filter-row\">");
             writer.WriteLine("  <label class=\"filter-chip\"><input type=\"checkbox\" id=\"filter-unchecked\" onchange=\"applyFilters()\"> " + HtmlEncode("Unchecked only") + "</label>");
             writer.WriteLine("  <span class=\"filter-sep\"></span>");
-            writer.WriteLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFilters()\" aria-label=\"" + HtmlEncode("Search file path") + "\">");
+            writer.WriteLine("  <input type=\"text\" id=\"filter-search\" placeholder=\"" + HtmlEncode("Search file path...") + "\" class=\"filter-search\" oninput=\"applyFiltersDebounced()\" aria-label=\"" + HtmlEncode("Search file path") + "\">");
             writer.WriteLine("</div>");
 
             // Filter tables row / フィルターテーブル行
