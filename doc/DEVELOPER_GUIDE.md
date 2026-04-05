@@ -218,20 +218,47 @@ Benchmark classes:
 
 ### Hash-Based Caching in FileDiffService
 
-`FileDiffService` reuses SHA256 hashes computed during Step 1 (hash comparison) at two later points in the per-file flow to avoid redundant I/O and computation:
+`FileDiffService` reuses SHA256 hashes computed during Step 1 (hash comparison) at two later points in the per-file flow to avoid redundant I/O and computation.
 
-1. **IL Cache Pre-Seeding** — When IL cache is enabled, the hex-encoded SHA256 values (`hash1Hex`, `hash2Hex`) are seeded into `ILMemoryCache` via `PreSeedFileHash` immediately after `DiffFilesByHashWithHexAsync`. This avoids recomputing SHA256 during IL cache key construction (`BuildILCacheKey`), which would otherwise re-read the file from disk.
+```mermaid
+flowchart TD
+    A["Step 1: DiffFilesByHashWithHexAsync"] --> B["hash1Hex, hash2Hex"]
+    B --> C{"IL cache enabled?"}
+    C -- "Yes" --> D["PreSeedFileHash(hash1Hex)\nPreSeedFileHash(hash2Hex)"]
+    D --> E["ILMemoryCache"]
+    E -. "reused later by" .-> F["BuildILCacheKey\n(skips file re-read)"]
+    C -- "No" --> G[" "]
+    B --> H{"SHA256 mismatch\n& .NET assembly?"}
+    H -- "Yes" --> I["Step 2: IL comparison"]
+    I --> J{"IL mismatch?"}
+    J -- "Yes" --> K["TryAnalyzeAssemblySemanticChanges"]
+    K --> L{"Both hashes\navailable?"}
+    L -- "Yes" --> M{"Cache hit?\n_semanticAnalysisCache\n.TryGetValue(oldHash, newHash)"}
+    M -- "Hit" --> N["Return cached\nAssemblySemanticChangesSummary"]
+    M -- "Miss" --> O["AssemblyMethodAnalyzer.Analyze\n+ CompilerGeneratedResolver.Annotate"]
+    O --> P["Store in _semanticAnalysisCache"]
+    P --> Q["Record in FileDiffResultLists"]
+    N --> Q
+    L -- "No (null hash)" --> O
 
-2. **Semantic Analysis Cache** — `TryAnalyzeAssemblySemanticChanges` uses a `ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?>` keyed by the same SHA256 pair. When the same old/new hash pair appears at multiple relative paths (e.g. the same DLL copied into several subdirectories), `AssemblyMethodAnalyzer.Analyze` runs only once and subsequent lookups return the cached instance. This is safe because `AssemblySemanticChangesSummary` is effectively immutable after construction: `Entries` is an `init`-only `IReadOnlyList<MemberChangeEntry>`, and all other properties (`TotalChanges`, `MaxImportance`) are computed from `Entries`. `CompilerGeneratedResolver.Annotate` runs inside `Analyze()` before the result enters the cache, so cached entries are fully annotated. When either hash is unavailable (`null`), the cache is bypassed and `Analyze` runs unconditionally.
-
-Data flow summary:
-
+    style A fill:#4a90d9,color:#fff
+    style E fill:#f5a623,color:#fff
+    style P fill:#f5a623,color:#fff
+    style G fill:none,stroke:none
 ```
-DiffFilesByHashWithHexAsync
-  ├─→ hash1Hex ─→ PreSeedFileHash (IL cache)
-  ├─→ hash2Hex ─→ PreSeedFileHash (IL cache)
-  └─→ (hash1Hex, hash2Hex) ─→ _semanticAnalysisCache key (semantic analysis)
-```
+
+#### IL Cache Pre-Seeding
+
+When IL cache is enabled, the hex-encoded SHA256 values (`hash1Hex`, `hash2Hex`) are seeded into `ILMemoryCache` via `PreSeedFileHash` immediately after `DiffFilesByHashWithHexAsync`. This avoids recomputing SHA256 during IL cache key construction (`BuildILCacheKey`), which would otherwise re-read the file from disk.
+
+#### Semantic Analysis Cache
+
+`TryAnalyzeAssemblySemanticChanges` uses a `ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?>` keyed by the same SHA256 pair. When the same old/new hash pair appears at multiple relative paths (e.g. the same DLL copied into several subdirectories), `AssemblyMethodAnalyzer.Analyze` runs only once and subsequent lookups return the cached instance.
+
+Cache safety:
+- `AssemblySemanticChangesSummary` is effectively immutable after construction: `Entries` is an `init`-only `IReadOnlyList<MemberChangeEntry>`, and all other properties (`TotalChanges`, `MaxImportance`) are computed from `Entries`.
+- `CompilerGeneratedResolver.Annotate` runs inside `Analyze()` before the result enters the cache, so cached entries are fully annotated.
+- When either hash is unavailable (`null`), the cache is bypassed and `Analyze` runs unconditionally.
 
 ### IL Line Split-and-Filter Optimization
 
@@ -1138,20 +1165,47 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 
 ### FileDiffService におけるハッシュベースキャッシュ
 
-`FileDiffService` はステップ 1（ハッシュ比較）で計算した SHA256 ハッシュを、ファイル単位フローの後続 2 箇所で再利用し、冗長な I/O と計算を回避します：
+`FileDiffService` はステップ 1（ハッシュ比較）で計算した SHA256 ハッシュを、ファイル単位フローの後続 2 箇所で再利用し、冗長な I/O と計算を回避します。
 
-1. **IL キャッシュのプリシード** — IL キャッシュが有効な場合、`DiffFilesByHashWithHexAsync` 直後に 16 進エンコード済み SHA256 値（`hash1Hex`、`hash2Hex`）を `PreSeedFileHash` 経由で `ILMemoryCache` にシード登録します。これにより、IL キャッシュキー生成（`BuildILCacheKey`）時にファイルを再読み込みして SHA256 を再計算することを回避します。
+```mermaid
+flowchart TD
+    A["ステップ 1: DiffFilesByHashWithHexAsync"] --> B["hash1Hex, hash2Hex"]
+    B --> C{"IL キャッシュ\n有効？"}
+    C -- "Yes" --> D["PreSeedFileHash(hash1Hex)\nPreSeedFileHash(hash2Hex)"]
+    D --> E["ILMemoryCache"]
+    E -. "後で再利用" .-> F["BuildILCacheKey\n（ファイル再読込スキップ）"]
+    C -- "No" --> G[" "]
+    B --> H{"SHA256 不一致\n& .NET アセンブリ？"}
+    H -- "Yes" --> I["ステップ 2: IL 比較"]
+    I --> J{"IL 不一致？"}
+    J -- "Yes" --> K["TryAnalyzeAssemblySemanticChanges"]
+    K --> L{"両方のハッシュ\n利用可能？"}
+    L -- "Yes" --> M{"キャッシュヒット？\n_semanticAnalysisCache\n.TryGetValue(oldHash, newHash)"}
+    M -- "ヒット" --> N["キャッシュ済み\nAssemblySemanticChangesSummary\nを返却"]
+    M -- "ミス" --> O["AssemblyMethodAnalyzer.Analyze\n+ CompilerGeneratedResolver.Annotate"]
+    O --> P["_semanticAnalysisCache に格納"]
+    P --> Q["FileDiffResultLists に記録"]
+    N --> Q
+    L -- "No（null ハッシュ）" --> O
 
-2. **セマンティック分析キャッシュ** — `TryAnalyzeAssemblySemanticChanges` は同じ SHA256 ペアをキーとする `ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?>` を使用します。同一の old/new ハッシュペアが複数の相対パスに出現する場合（同じ DLL が複数サブディレクトリにコピーされている場合など）、`AssemblyMethodAnalyzer.Analyze` は 1 回のみ実行され、以降のルックアップではキャッシュ済みインスタンスが返されます。これが安全な理由は、`AssemblySemanticChangesSummary` が構築後に実質不変であるためです：`Entries` は `init` 専用の `IReadOnlyList<MemberChangeEntry>` であり、その他のプロパティ（`TotalChanges`、`MaxImportance`）はすべて `Entries` からの算出値です。`CompilerGeneratedResolver.Annotate` は `Analyze()` 内でキャッシュに格納される前に実行されるため、キャッシュされたエントリはすべてアノテーション済みです。いずれかのハッシュが利用不可（`null`）の場合はキャッシュをバイパスし、`Analyze` を無条件に実行します。
-
-データフローの概要：
-
+    style A fill:#4a90d9,color:#fff
+    style E fill:#f5a623,color:#fff
+    style P fill:#f5a623,color:#fff
+    style G fill:none,stroke:none
 ```
-DiffFilesByHashWithHexAsync
-  ├─→ hash1Hex ─→ PreSeedFileHash（IL キャッシュ）
-  ├─→ hash2Hex ─→ PreSeedFileHash（IL キャッシュ）
-  └─→ (hash1Hex, hash2Hex) ─→ _semanticAnalysisCache キー（セマンティック分析）
-```
+
+#### IL キャッシュのプリシード
+
+IL キャッシュが有効な場合、`DiffFilesByHashWithHexAsync` 直後に 16 進エンコード済み SHA256 値（`hash1Hex`、`hash2Hex`）を `PreSeedFileHash` 経由で `ILMemoryCache` にシード登録します。これにより、IL キャッシュキー生成（`BuildILCacheKey`）時にファイルを再読み込みして SHA256 を再計算することを回避します。
+
+#### セマンティック分析キャッシュ
+
+`TryAnalyzeAssemblySemanticChanges` は同じ SHA256 ペアをキーとする `ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?>` を使用します。同一の old/new ハッシュペアが複数の相対パスに出現する場合（同じ DLL が複数サブディレクトリにコピーされている場合など）、`AssemblyMethodAnalyzer.Analyze` は 1 回のみ実行され、以降のルックアップではキャッシュ済みインスタンスが返されます。
+
+キャッシュの安全性：
+- `AssemblySemanticChangesSummary` は構築後に実質不変：`Entries` は `init` 専用の `IReadOnlyList<MemberChangeEntry>` であり、その他のプロパティ（`TotalChanges`、`MaxImportance`）はすべて `Entries` からの算出値。
+- `CompilerGeneratedResolver.Annotate` は `Analyze()` 内でキャッシュに格納される前に実行されるため、キャッシュされたエントリはすべてアノテーション済み。
+- いずれかのハッシュが利用不可（`null`）の場合はキャッシュをバイパスし、`Analyze` を無条件に実行。
 
 ### IL 行分割・フィルタの最適化
 
