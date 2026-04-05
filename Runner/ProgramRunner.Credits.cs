@@ -35,11 +35,13 @@ namespace FolderDiffIL4DotNet
             "  FolderDiffIL4DotNet.Core\n" +
             "    File comparison, assembly detection, Myers diff,\n" +
             "    encoding detection, and process helpers.\n" +
+            "    https://www.nuget.org/packages/FolderDiffIL4DotNet.Core\n" +
             "\n" +
             "  FolderDiffIL4DotNet.Plugin.Abstractions\n" +
             "    Interfaces for building custom plugins:\n" +
             "    report formatters, section writers,\n" +
             "    file comparison hooks, and more.\n" +
+            "    https://www.nuget.org/packages/FolderDiffIL4DotNet.Plugin.Abstractions\n" +
             "\n" +
             "  ── Distribution ─────────────────────────\n" +
             "\n" +
