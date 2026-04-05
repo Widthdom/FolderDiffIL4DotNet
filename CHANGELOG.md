@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Expanded compiler-generated code coverage in semantic analysis** — `CompilerGeneratedResolver` now annotates additional compiler-generated patterns: local functions (`<Method>g__LocalFunc|N_M` → "local function LocalFunc in Method"), record clone methods (`<Clone>$` → "record clone method"), and record synthesized members (`PrintMembers`, `op_Equality`, `op_Inequality` → "record synthesized"). `IsCompilerGeneratedMember` also detects these new patterns. This helps reviewers instantly identify compiler-generated changes without manually decoding mangled names. Affected: `Services/CompilerGeneratedResolver.cs`. Tests: `CompilerGeneratedResolverTests` (6 new: `AnnotateEntry_LocalFunction_AnnotatesMemberName`, `AnnotateEntry_LocalFunctionNestedIndex_AnnotatesMemberName`, `AnnotateEntry_RecordClone_AnnotatesMemberName`, `AnnotateEntry_RecordPrintMembers_AnnotatesMemberName`, `AnnotateEntry_RecordOpEquality_AnnotatesMemberName`, `AnnotateEntry_RecordOpInequality_AnnotatesMemberName`; 5 new `InlineData` cases for `IsCompilerGeneratedMember_ReturnsExpected`).
+
 #### Performance
 
 - **Debounced search input filtering in HTML report** — The file path search input (`filter-search`) now uses a 150 ms debounce (`applyFiltersDebounced()`) instead of calling `applyFilters()` directly on every keystroke. This prevents excessive DOM traversal on large reports (10,000+ rows) where per-keystroke filtering caused noticeable input lag. Checkbox filters continue to apply immediately via `onchange`. Affected: `Services/HtmlReport/js/diff_report_filter.js` (new `applyFiltersDebounced` function), `Services/HtmlReportGenerateService.cs` (search input `oninput` handler), `doc/samples/diff_report.html` (sample updated). Tests: `HtmlReportGenerateServiceTests.Filtering.cs` (2 assertions added for debounce function presence and search input binding).
@@ -1072,6 +1076,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **セマンティック分析のコンパイラ生成コードカバレッジ拡大** — `CompilerGeneratedResolver` が追加のコンパイラ生成パターンを注釈するようになった: ローカル関数（`<Method>g__LocalFunc|N_M` → "local function LocalFunc in Method"）、record クローンメソッド（`<Clone>$` → "record clone method"）、record 合成メンバー（`PrintMembers`、`op_Equality`、`op_Inequality` → "record synthesized"）。`IsCompilerGeneratedMember` もこれらの新パターンを検出する。レビュアーがマングルされた名前を手動でデコードせずにコンパイラ生成の変更を即座に識別できるようになる。影響: `Services/CompilerGeneratedResolver.cs`。テスト: `CompilerGeneratedResolverTests`（6 件追加、`IsCompilerGeneratedMember_ReturnsExpected` に 5 件の `InlineData` 追加）。
 
 #### パフォーマンス
 

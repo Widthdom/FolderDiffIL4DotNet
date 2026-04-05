@@ -86,6 +86,80 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void AnnotateEntry_LocalFunction_AnnotatesMemberName()
+        {
+            // Local function: <ProcessData>g__Validate|0_0
+            // ローカル関数: <ProcessData>g__Validate|0_0
+            var entry = MakeEntry(typeName: "MyClass", memberName: "<ProcessData>g__Validate|0_0");
+
+            var result = CompilerGeneratedResolver.AnnotateEntry(entry);
+
+            Assert.Contains("local function Validate in ProcessData", result.MemberName);
+            Assert.Equal("MyClass", result.TypeName);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void AnnotateEntry_LocalFunctionNestedIndex_AnnotatesMemberName()
+        {
+            // Local function with nested index: <Run>g__Helper|2_1
+            // ネストインデックス付きローカル関数: <Run>g__Helper|2_1
+            var entry = MakeEntry(typeName: "MyClass", memberName: "<Run>g__Helper|2_1");
+
+            var result = CompilerGeneratedResolver.AnnotateEntry(entry);
+
+            Assert.Contains("local function Helper in Run", result.MemberName);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void AnnotateEntry_RecordClone_AnnotatesMemberName()
+        {
+            // Record clone method: <Clone>$
+            // record クローンメソッド: <Clone>$
+            var entry = MakeEntry(typeName: "MyRecord", memberName: "<Clone>$");
+
+            var result = CompilerGeneratedResolver.AnnotateEntry(entry);
+
+            Assert.Contains("record clone method", result.MemberName);
+            Assert.Equal("MyRecord", result.TypeName);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void AnnotateEntry_RecordPrintMembers_AnnotatesMemberName()
+        {
+            var entry = MakeEntry(typeName: "MyRecord", memberName: "PrintMembers");
+
+            var result = CompilerGeneratedResolver.AnnotateEntry(entry);
+
+            Assert.Contains("record synthesized", result.MemberName);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void AnnotateEntry_RecordOpEquality_AnnotatesMemberName()
+        {
+            var entry = MakeEntry(typeName: "MyRecord", memberName: "op_Equality");
+
+            var result = CompilerGeneratedResolver.AnnotateEntry(entry);
+
+            Assert.Contains("record synthesized", result.MemberName);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void AnnotateEntry_RecordOpInequality_AnnotatesMemberName()
+        {
+            var entry = MakeEntry(typeName: "MyRecord", memberName: "op_Inequality");
+
+            var result = CompilerGeneratedResolver.AnnotateEntry(entry);
+
+            Assert.Contains("record synthesized", result.MemberName);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void AnnotateEntry_RegularMember_ReturnsUnchanged()
         {
             var entry = MakeEntry(typeName: "MyClass", memberName: "Process");
@@ -149,6 +223,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Trait("Category", "Unit")]
         [InlineData("<Name>k__BackingField", true)]
         [InlineData("<DoWork>b__5_0", true)]
+        [InlineData("<ProcessData>g__Validate|0_0", true)]
+        [InlineData("<Clone>$", true)]
+        [InlineData("PrintMembers", true)]
+        [InlineData("op_Equality", true)]
+        [InlineData("op_Inequality", true)]
         [InlineData("Process", false)]
         [InlineData("", false)]
         public void IsCompilerGeneratedMember_ReturnsExpected(string memberName, bool expected)
