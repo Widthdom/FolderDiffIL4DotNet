@@ -649,6 +649,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(legacyResult, streamingResult);
         }
 
+        // --- Whitespace trimming tests / 空白トリミングテスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_WhitespaceDifferences_ReturnsTrue()
+        {
+            // Lines differing only in leading/trailing whitespace should be treated as equal.
+            // 先頭・末尾空白のみ異なる行は等価として扱われるべき。
+            var lines1 = new List<string> { "  .method public void Foo()", "    ldarg.0", "    ret" };
+            var lines2 = new List<string> { ".method public void Foo()", "      ldarg.0", "  ret" };
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            Assert.True(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_ContentDiffBeyondWhitespace_ReturnsFalse()
+        {
+            // Lines differing in actual content (not just whitespace) must still be detected.
+            // 実際の内容が異なる行（空白だけでなく）は引き続き検出されるべき。
+            var lines1 = new List<string> { "  call void Foo()" };
+            var lines2 = new List<string> { "  call void Bar()" };
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>());
+            Assert.False(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BlockAwareSequenceEqual_IndentDifferences_ReturnsTrue()
+        {
+            // Block-aware comparison should also ignore indentation differences.
+            // ブロック単位比較でもインデント差異を無視すべき。
+            var lines1 = new List<string>
+            {
+                ".method public void Foo()",
+                "{",
+                "    ldarg.0",
+                "    ret",
+                "}"
+            };
+            var lines2 = new List<string>
+            {
+                "  .method public void Foo()",
+                "  {",
+                "      ldarg.0",
+                "      ret",
+                "  }"
+            };
+            Assert.True(ILOutputService.BlockAwareSequenceEqual(lines1, lines2));
+        }
+
         private static ILOutputService CreateILOutputService(ConfigSettings config, string? ilOldFolder = null, string? ilNewFolder = null)
         {
             var logger = new LoggerService();

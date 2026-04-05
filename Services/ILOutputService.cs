@@ -227,7 +227,11 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     return false;
                 }
-                if (!string.Equals(lines1[i], lines2[j], StringComparison.Ordinal))
+                // Compare with leading/trailing whitespace trimmed to absorb indentation
+                // variations between disassembler versions or formatting differences.
+                // 逆アセンブラバージョン間のインデント差異やフォーマット差異を吸収するため
+                // 先頭・末尾空白をトリムして比較する。
+                if (!lines1[i].AsSpan().Trim().SequenceEqual(lines2[j].AsSpan().Trim()))
                 {
                     return false;
                 }
@@ -391,7 +395,9 @@ namespace FolderDiffIL4DotNet.Services
             for (int i = 0; i < blockLines.Count; i++)
             {
                 if (i > 0) sb.Append('\n');
-                sb.Append(blockLines[i]);
+                // Trim leading/trailing whitespace to absorb indentation variations
+                // 先頭・末尾空白をトリムしてインデント差異を吸収
+                sb.Append(blockLines[i].Trim());
             }
             byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString()));
             return BitConverter.ToString(hashBytes).Replace("-", string.Empty);
