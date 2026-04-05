@@ -216,9 +216,22 @@ Benchmark classes:
 
 **Regression detection:** The [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) workflow runs automatically on every PR to `main` and on `push` to `main`. It combines JSON results from all benchmark classes into a single report and uses [`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) to compare against the stored baseline in the `gh-benchmarks` branch. If any benchmark degrades by more than 50% (alert threshold `150%`), the job fails and a PR comment is posted. On push to `main`, the results are stored as the new baseline.
 
-### SHA256 Hash Pre-Seeding
+### Hash-Based Caching in FileDiffService
 
-When IL cache is enabled, `FileDiffService` seeds computed SHA256 hashes into `ILMemoryCache` via `PreSeedFileHash` after the initial hash comparison. This avoids recomputing SHA256 during IL cache key construction (`BuildILCacheKey`), which would otherwise re-read the file.
+`FileDiffService` reuses SHA256 hashes computed during Step 1 (hash comparison) at two later points in the per-file flow to avoid redundant I/O and computation:
+
+1. **IL Cache Pre-Seeding** — When IL cache is enabled, the hex-encoded SHA256 values (`hash1Hex`, `hash2Hex`) are seeded into `ILMemoryCache` via `PreSeedFileHash` immediately after `DiffFilesByHashWithHexAsync`. This avoids recomputing SHA256 during IL cache key construction (`BuildILCacheKey`), which would otherwise re-read the file from disk.
+
+2. **Semantic Analysis Cache** — `TryAnalyzeAssemblySemanticChanges` uses a `ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?>` keyed by the same SHA256 pair. When the same old/new hash pair appears at multiple relative paths (e.g. the same DLL copied into several subdirectories), `AssemblyMethodAnalyzer.Analyze` runs only once and subsequent lookups return the cached instance. This is safe because `AssemblySemanticChangesSummary` is effectively immutable after construction: `Entries` is an `init`-only `IReadOnlyList<MemberChangeEntry>`, and all other properties (`TotalChanges`, `MaxImportance`) are computed from `Entries`. `CompilerGeneratedResolver.Annotate` runs inside `Analyze()` before the result enters the cache, so cached entries are fully annotated. When either hash is unavailable (`null`), the cache is bypassed and `Analyze` runs unconditionally.
+
+Data flow summary:
+
+```
+DiffFilesByHashWithHexAsync
+  ├─→ hash1Hex ─→ PreSeedFileHash (IL cache)
+  ├─→ hash2Hex ─→ PreSeedFileHash (IL cache)
+  └─→ (hash1Hex, hash2Hex) ─→ _semanticAnalysisCache key (semantic analysis)
+```
 
 ### IL Line Split-and-Filter Optimization
 
@@ -1123,9 +1136,22 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 
 **リグレッション検知:** [`.github/workflows/benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) ワークフローは `main` への PR および `push` のたびに自動実行されます。全ベンチマーククラスの JSON 結果を単一レポートに統合し、[`benchmark-action/github-action-benchmark@v1`](https://github.com/benchmark-action/github-action-benchmark) を使用して `gh-benchmarks` ブランチに保存されたベースラインと比較します。いずれかのベンチマークが 50% 以上劣化した場合（閾値 `150%`）、ジョブが失敗し PR コメントが投稿されます。`main` への push 時には結果が新しいベースラインとして保存されます。
 
-### SHA256 ハッシュのプリシード
+### FileDiffService におけるハッシュベースキャッシュ
 
-IL キャッシュが有効な場合、`FileDiffService` は初回ハッシュ比較後に計算済み SHA256 ハッシュを `PreSeedFileHash` 経由で `ILMemoryCache` にシード登録します。これにより、IL キャッシュキー生成（`BuildILCacheKey`）時にファイルを再読み込みして SHA256 を再計算することを回避します。
+`FileDiffService` はステップ 1（ハッシュ比較）で計算した SHA256 ハッシュを、ファイル単位フローの後続 2 箇所で再利用し、冗長な I/O と計算を回避します：
+
+1. **IL キャッシュのプリシード** — IL キャッシュが有効な場合、`DiffFilesByHashWithHexAsync` 直後に 16 進エンコード済み SHA256 値（`hash1Hex`、`hash2Hex`）を `PreSeedFileHash` 経由で `ILMemoryCache` にシード登録します。これにより、IL キャッシュキー生成（`BuildILCacheKey`）時にファイルを再読み込みして SHA256 を再計算することを回避します。
+
+2. **セマンティック分析キャッシュ** — `TryAnalyzeAssemblySemanticChanges` は同じ SHA256 ペアをキーとする `ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?>` を使用します。同一の old/new ハッシュペアが複数の相対パスに出現する場合（同じ DLL が複数サブディレクトリにコピーされている場合など）、`AssemblyMethodAnalyzer.Analyze` は 1 回のみ実行され、以降のルックアップではキャッシュ済みインスタンスが返されます。これが安全な理由は、`AssemblySemanticChangesSummary` が構築後に実質不変であるためです：`Entries` は `init` 専用の `IReadOnlyList<MemberChangeEntry>` であり、その他のプロパティ（`TotalChanges`、`MaxImportance`）はすべて `Entries` からの算出値です。`CompilerGeneratedResolver.Annotate` は `Analyze()` 内でキャッシュに格納される前に実行されるため、キャッシュされたエントリはすべてアノテーション済みです。いずれかのハッシュが利用不可（`null`）の場合はキャッシュをバイパスし、`Analyze` を無条件に実行します。
+
+データフローの概要：
+
+```
+DiffFilesByHashWithHexAsync
+  ├─→ hash1Hex ─→ PreSeedFileHash（IL キャッシュ）
+  ├─→ hash2Hex ─→ PreSeedFileHash（IL キャッシュ）
+  └─→ (hash1Hex, hash2Hex) ─→ _semanticAnalysisCache キー（セマンティック分析）
+```
 
 ### IL 行分割・フィルタの最適化
 

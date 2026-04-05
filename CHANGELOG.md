@@ -31,6 +31,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **`DisassemblerTimeoutSeconds` default reduced from 300 to 60 seconds** — The default disassembler process timeout was 300 seconds (5 minutes), which caused long blocking periods when a disassembler hung on a large or corrupted assembly. Reduced to 60 seconds to fail faster and allow the blacklist mechanism to kick in sooner. Users with very large assemblies can override via `config.json` or `FOLDERDIFF_DISASSEMBLERTIMEOUTSECONDS` environment variable. Affected: `Models/ConfigSettings.ILSettings.cs`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `README.md`. Tests: `ConfigSettingsTests.ValidationBoundary.cs` (`AllDefaultConstants_MatchExpectedValues` updated).
 
+#### Documentation
+
+- **DEVELOPER_GUIDE: Hash-based caching flow documentation** — Consolidated the "SHA256 Hash Pre-Seeding" and new "Semantic Analysis Cache" subsections into a unified "Hash-Based Caching in FileDiffService" section with a data flow diagram showing how SHA256 hashes computed in Step 1 (hash comparison) are reused for IL cache pre-seeding and semantic analysis cache keying. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
+
 ### [1.13.5] - 2026-04-04
 
 #### Added
@@ -1112,6 +1116,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 変更
 
 - **`DisassemblerTimeoutSeconds` のデフォルトを 300 秒から 60 秒に短縮** — 逆アセンブラプロセスのデフォルトタイムアウトが 300 秒（5 分）であったため、大きなまたは破損したアセンブリで逆アセンブラがハングした場合に長時間ブロックされていた。60 秒に短縮することで早期に失敗し、ブラックリスト機構がより早く機能するようになった。非常に大きなアセンブリを扱うユーザーは `config.json` または `FOLDERDIFF_DISASSEMBLERTIMEOUTSECONDS` 環境変数でオーバーライド可能。影響: `Models/ConfigSettings.ILSettings.cs`、`doc/config.sample.jsonc`、`doc/config.schema.json`、`README.md`。テスト: `ConfigSettingsTests.ValidationBoundary.cs`（`AllDefaultConstants_MatchExpectedValues` 更新）。
+
+#### ドキュメント
+
+- **DEVELOPER_GUIDE: ハッシュベースキャッシュフローのドキュメント化** — 既存の「SHA256 ハッシュのプリシード」と新規「セマンティック分析キャッシュ」のサブセクションを「FileDiffService におけるハッシュベースキャッシュ」として統合し、ステップ 1（ハッシュ比較）で計算した SHA256 が IL キャッシュのプリシードとセマンティック分析キャッシュのキーにどのように再利用されるかをデータフロー図で示した。影響: `doc/DEVELOPER_GUIDE.md`（EN+JA セクション）。
 
 ### [1.13.5] - 2026-04-04
 
