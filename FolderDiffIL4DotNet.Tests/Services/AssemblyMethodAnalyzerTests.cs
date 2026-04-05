@@ -51,6 +51,36 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_NonExistentFile_InvokesOnErrorCallbackWithException()
+        {
+            // When analysis fails and onError is provided, it should be invoked with the exception.
+            // 解析失敗時に onError が提供されている場合、例外を渡して呼び出されるべき。
+            Exception? captured = null;
+            var result = AssemblyMethodAnalyzer.Analyze(
+                "/nonexistent/old.dll", "/nonexistent/new.dll",
+                onError: ex => captured = ex);
+
+            Assert.Null(result);
+            Assert.NotNull(captured);
+            Assert.IsAssignableFrom<Exception>(captured);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_SameAssembly_DoesNotInvokeOnErrorCallback()
+        {
+            // Successful analysis should not invoke the onError callback.
+            // 正常な解析では onError コールバックが呼ばれないこと。
+            bool errorInvoked = false;
+            var assemblyPath = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var result = AssemblyMethodAnalyzer.Analyze(assemblyPath, assemblyPath, onError: _ => errorInvoked = true);
+
+            Assert.NotNull(result);
+            Assert.False(errorInvoked);
+        }
+
+        [Fact]
         public void Analyze_InvalidFile_ReturnsNull()
         {
             // Attempting to analyse a non-PE file should gracefully return null
@@ -432,6 +462,142 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.NotNull(result);
             Assert.False(result.HasChanges);
             Assert.Empty(result.Entries);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SimpleSignatureTypeProvider_GetGenericInstantiation_StripsAritySuffix()
+        {
+            // GetGenericInstantiation should strip the backtick-arity suffix from the generic type name
+            // since the type arguments make the arity explicit.
+            // 型引数によりアリティは明示されるため、バッククォートアリティ接尾辞を除去すべき。
+            var assemblyPath = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            using var stream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var peReader = new PEReader(stream);
+            var reader = peReader.GetMetadataReader();
+            var provider = new SimpleSignatureTypeProvider(reader);
+
+            // Single type argument / 単一型引数
+            var result1 = provider.GetGenericInstantiation(
+                "System.Collections.Generic.List`1",
+                ImmutableArray.Create("System.Int32"));
+            Assert.Equal("System.Collections.Generic.List<System.Int32>", result1);
+
+            // Multiple type arguments / 複数型引数
+            var result2 = provider.GetGenericInstantiation(
+                "System.Collections.Generic.Dictionary`2",
+                ImmutableArray.Create("System.String", "System.Int32"));
+            Assert.Equal("System.Collections.Generic.Dictionary<System.String, System.Int32>", result2);
+
+            // Nested generics: inner result already resolved / ネストしたジェネリクス: 内側は解決済み
+            var innerGeneric = provider.GetGenericInstantiation(
+                "System.Collections.Generic.List`1",
+                ImmutableArray.Create("System.Int32"));
+            var result3 = provider.GetGenericInstantiation(
+                "System.Collections.Generic.Dictionary`2",
+                ImmutableArray.Create("System.String", innerGeneric));
+            Assert.Equal(
+                "System.Collections.Generic.Dictionary<System.String, System.Collections.Generic.List<System.Int32>>",
+                result3);
+
+            // Deeply nested generics: Func<string, Task<IEnumerable<int>>>
+            // 深くネストしたジェネリクス: Func<string, Task<IEnumerable<int>>>
+            var innermost = provider.GetGenericInstantiation(
+                "System.Collections.Generic.IEnumerable`1",
+                ImmutableArray.Create("System.Int32"));
+            var middle = provider.GetGenericInstantiation(
+                "System.Threading.Tasks.Task`1",
+                ImmutableArray.Create(innermost));
+            var outer = provider.GetGenericInstantiation(
+                "System.Func`2",
+                ImmutableArray.Create("System.String", middle));
+            Assert.Equal(
+                "System.Func<System.String, System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<System.Int32>>>",
+                outer);
+
+            // No arity suffix: should pass through unchanged / アリティ接尾辞なし: そのまま通過
+            var result4 = provider.GetGenericInstantiation(
+                "MyNamespace.MyType",
+                ImmutableArray.Create("System.String"));
+            Assert.Equal("MyNamespace.MyType<System.String>", result4);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void SimpleSignatureTypeProvider_GetTypeFromReference_ResolvesNestedTypes()
+        {
+            // GetTypeFromReference should follow ResolutionScope for nested type references
+            // so that nested types are fully qualified (e.g. "Outer/Inner" not just "Inner").
+            // ネストされた型参照の ResolutionScope をたどり完全修飾名を返すことを検証。
+            var assemblyPath = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
+            using var stream = new FileStream(assemblyPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var peReader = new PEReader(stream);
+            var reader = peReader.GetMetadataReader();
+            var provider = new SimpleSignatureTypeProvider(reader);
+
+            // Find a nested type reference in the assembly / アセンブリ内のネスト型参照を探す
+            bool foundNestedRef = false;
+            foreach (var handle in reader.TypeReferences)
+            {
+                var typeRef = reader.GetTypeReference(handle);
+                if (typeRef.ResolutionScope.Kind == HandleKind.TypeReference)
+                {
+                    string result = provider.GetTypeFromReference(reader, handle, 0);
+                    // Should contain "/" separator for nested types / ネスト型は "/" 区切りを含むべき
+                    Assert.Contains("/", result);
+                    // Should not start with "/" / "/" で始まらないこと
+                    Assert.False(result.StartsWith("/"), $"Nested type name should not start with '/': {result}");
+                    foundNestedRef = true;
+                    break;
+                }
+            }
+
+            // If no nested type references found, this is a documentation test —
+            // the assembly may not reference nested types from other assemblies.
+            // ネスト型参照が見つからない場合はドキュメントテスト（参照が存在しない可能性あり）。
+            if (!foundNestedRef)
+            {
+                // At minimum, verify non-nested references still work / 非ネスト参照が正常に動作することを確認
+                foreach (var handle in reader.TypeReferences)
+                {
+                    var typeRef = reader.GetTypeReference(handle);
+                    if (typeRef.ResolutionScope.Kind != HandleKind.TypeReference)
+                    {
+                        string result = provider.GetTypeFromReference(reader, handle, 0);
+                        Assert.False(string.IsNullOrEmpty(result));
+                        break;
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_RuntimeAssembly_GenericSignaturesDoNotContainAritySuffix()
+        {
+            // Verify that after the fix, analysed assemblies produce signatures
+            // without backtick-arity suffixes in generic instantiations.
+            // 修正後、解析されたアセンブリのジェネリクスインスタンス化にバッククォートアリティ接尾辞が含まれないことを検証。
+            var testAssembly = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var mainAssembly = typeof(FolderDiffIL4DotNet.Models.ConfigSettings).Assembly.Location;
+
+            var result = AssemblyMethodAnalyzer.Analyze(testAssembly, mainAssembly);
+
+            Assert.NotNull(result);
+            // Check that no entry has backtick-arity in generic type arguments
+            // (signatures like "Dictionary`2<String, Int32>" should now be "Dictionary<String, Int32>")
+            // ジェネリック型引数にバッククォートアリティが含まれないことを確認
+            foreach (var entry in result.Entries)
+            {
+                // Only check entries that contain angle brackets (generic signatures)
+                // 山括弧を含むエントリ（ジェネリクスシグネチャ）のみ検査
+                if (entry.Parameters.Contains('<'))
+                    Assert.DoesNotMatch(@"`\d+<", entry.Parameters);
+                if (entry.ReturnType.Contains('<'))
+                    Assert.DoesNotMatch(@"`\d+<", entry.ReturnType);
+                if (entry.BaseType.Contains('<'))
+                    Assert.DoesNotMatch(@"`\d+<", entry.BaseType);
+            }
         }
     }
 }

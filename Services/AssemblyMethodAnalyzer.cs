@@ -22,10 +22,14 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>
         /// Analyses two assembly files and returns a summary of assembly semantic changes.
         /// Returns <see langword="null"/> if analysis fails (best-effort).
+        /// When <paramref name="onError"/> is provided, it is invoked with the caught exception
+        /// before returning <see langword="null"/>, enabling callers to log diagnostic details.
         /// 2 つのアセンブリファイルを解析し、アセンブリセマンティック変更要約を返します。
         /// 解析に失敗した場合は <see langword="null"/> を返します（ベストエフォート）。
+        /// <paramref name="onError"/> が指定されている場合、<see langword="null"/> を返す前に
+        /// キャッチした例外を渡して呼び出し、呼び出し元で診断詳細をログ可能にします。
         /// </summary>
-        public static AssemblySemanticChangesSummary? Analyze(string oldAssemblyPath, string newAssemblyPath)
+        public static AssemblySemanticChangesSummary? Analyze(string oldAssemblyPath, string newAssemblyPath, Action<Exception>? onError = null)
         {
             try
             {
@@ -62,8 +66,9 @@ namespace FolderDiffIL4DotNet.Services
                 };
             }
 #pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
-            catch
+            catch (Exception ex)
             {
+                onError?.Invoke(ex);
                 return null;
             }
 #pragma warning restore CA1031

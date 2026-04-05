@@ -383,13 +383,19 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     else
                     {
-                        summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath);
+                        summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
+                            _logger.LogMessage(AppLogLevel.Warning,
+                                $"Semantic analysis failed for '{fileRelativePath}': {ex.Message}",
+                                shouldOutputMessageToConsole: false, ex));
                         _semanticAnalysisCache.TryAdd(cacheKey, summary);
                     }
                 }
                 else
                 {
-                    summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath);
+                    summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
+                        _logger.LogMessage(AppLogLevel.Warning,
+                            $"Semantic analysis failed for '{fileRelativePath}': {ex.Message}",
+                            shouldOutputMessageToConsole: false, ex));
                 }
 
                 if (summary?.HasChanges == true)

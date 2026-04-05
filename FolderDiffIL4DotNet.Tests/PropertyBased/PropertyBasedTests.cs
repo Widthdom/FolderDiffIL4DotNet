@@ -43,7 +43,10 @@ namespace FolderDiffIL4DotNet.Tests.PropertyBased
         {
             // Property: applying diff should reconstruct new lines from old lines
             // プロパティ: 差分を適用すると old lines から new lines を再構成できる
-            var diff = TextDiffer.Compute(oldLines, newLines, contextLines: 3, maxOutputLines: 50000, maxEditDistance: 500);
+            // Use a context window large enough to include every line so reconstruction is complete.
+            // 全行を含む十分なコンテキストウィンドウを使用して再構成の完全性を保証する。
+            var fullContext = oldLines.Length + newLines.Length;
+            var diff = TextDiffer.Compute(oldLines, newLines, contextLines: fullContext, maxOutputLines: 50000, maxEditDistance: 500);
 
             // If diff was truncated, skip this check / 差分が打ち切られた場合はスキップ
             if (diff.Any(d => d.Kind == TextDiffer.Truncated))

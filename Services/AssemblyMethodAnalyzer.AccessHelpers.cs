@@ -146,7 +146,12 @@ namespace FolderDiffIL4DotNet.Services
             return string.Join(", ", parts);
         }
 
-        /// <summary>Get the full name of an interface from its EntityHandle.</summary>
+        /// <summary>
+        /// Get the full name of an interface from its EntityHandle, including generic
+        /// base types via TypeSpecification decoding (e.g. <c>IComparable&lt;int&gt;</c>).
+        /// EntityHandle からインターフェース名を取得。TypeSpecification のデコードにより
+        /// ジェネリック基底型（例: <c>IComparable&lt;int&gt;</c>）にも対応。
+        /// </summary>
         private static string GetInterfaceTypeName(MetadataReader reader, EntityHandle handle)
         {
             if (handle.Kind == HandleKind.TypeReference)
@@ -161,10 +166,19 @@ namespace FolderDiffIL4DotNet.Services
                 var typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)handle);
                 return GetFullTypeName(reader, typeDef);
             }
+            if (handle.Kind == HandleKind.TypeSpecification)
+            {
+                return DecodeTypeSpecification(reader, (TypeSpecificationHandle)handle);
+            }
             return "";
         }
 
-        /// <summary>Get the full name of a base type from its EntityHandle.</summary>
+        /// <summary>
+        /// Get the full name of a base type from its EntityHandle, including constructed
+        /// generic types via TypeSpecification decoding (e.g. <c>List&lt;int&gt;</c>).
+        /// EntityHandle から基底型名を取得。TypeSpecification のデコードにより
+        /// 構築済みジェネリック型（例: <c>List&lt;int&gt;</c>）にも対応。
+        /// </summary>
         private static string GetBaseTypeName(MetadataReader reader, EntityHandle baseTypeHandle)
         {
             if (baseTypeHandle.Kind == HandleKind.TypeReference)
@@ -179,7 +193,34 @@ namespace FolderDiffIL4DotNet.Services
                 var typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)baseTypeHandle);
                 return GetFullTypeName(reader, typeDef);
             }
+            if (baseTypeHandle.Kind == HandleKind.TypeSpecification)
+            {
+                return DecodeTypeSpecification(reader, (TypeSpecificationHandle)baseTypeHandle);
+            }
             return "";
+        }
+
+        /// <summary>
+        /// Decode a TypeSpecification handle into its human-readable string representation
+        /// using the signature type provider. Used for generic base types and interfaces.
+        /// TypeSpecification ハンドルをシグネチャ型プロバイダーで可読文字列にデコード。
+        /// ジェネリック基底型やインターフェースの表示に使用。
+        /// </summary>
+        private static string DecodeTypeSpecification(MetadataReader reader, TypeSpecificationHandle handle)
+        {
+            try
+            {
+                var spec = reader.GetTypeSpecification(handle);
+                var typeProvider = new SimpleSignatureTypeProvider(reader);
+                var sigReader = reader.GetBlobReader(spec.Signature);
+                return new SignatureDecoder<string, GenericContext?>(typeProvider, reader, genericContext: null).DecodeType(ref sigReader);
+            }
+#pragma warning disable CA1031 // ベストエフォートの型仕様デコード / Best-effort type specification decode
+            catch
+            {
+                return "";
+            }
+#pragma warning restore CA1031
         }
 
         /// <summary>Extract non-access modifiers from method attributes (static, abstract, virtual, sealed, override, etc.).</summary>

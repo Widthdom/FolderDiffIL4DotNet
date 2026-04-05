@@ -136,7 +136,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--clear-cache` | Interactive wizard to selectively delete IL cache files (by tool, version, or all). |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
-| `--wizard` | Interactive mode: prompts for old folder, new folder, and report label. |
+| `--wizard` | Interactive mode: prompts for old folder, new folder, and report label. Drag-and-drop friendly — auto-strips surrounding quotes, `file://` URI prefixes, backslash-escaped spaces, and percent-encoded characters. |
 | `--dry-run` | Enumerate files and show statistics without running comparison. |
 | `--coffee` | Use coffee-themed spinner animation during execution (easter egg). |
 | `--beer` | Use beer-themed spinner animation during execution (easter egg). |
@@ -863,7 +863,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--clear-cache` | IL キャッシュファイルを選択的に削除する対話ウィザードを起動します（ツール別、バージョン別、全削除）。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
-| `--wizard` | 対話モード: 旧フォルダ、新フォルダ、レポートラベルを対話入力で指定します。 |
+| `--wizard` | 対話モード: 旧フォルダ、新フォルダ、レポートラベルを対話入力で指定します。ドラッグ＆ドロップ対応 — 囲みクォート、`file://` URI プレフィックス、バックスラッシュエスケープされたスペース、パーセントエンコード文字を自動除去します。 |
 | `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
 | `--coffee` | 実行中にコーヒーテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--beer` | 実行中にビールテーマのスピナーアニメーションを使用します（イースターエッグ）。 |

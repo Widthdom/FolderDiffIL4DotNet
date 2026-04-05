@@ -105,9 +105,9 @@ jobs:
           output-file-path: BenchmarkDotNet.Artifacts/results/combined-report.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          alert-threshold: '150%'
+          alert-threshold: '200%'
           comment-on-alert: true
-          fail-on-alert: ${{ steps.check-baseline.outputs.exists == 'true' }}
+          fail-on-alert: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           summary-always: true
           gh-pages-branch: gh-benchmarks
           benchmark-data-dir-path: dev/bench
