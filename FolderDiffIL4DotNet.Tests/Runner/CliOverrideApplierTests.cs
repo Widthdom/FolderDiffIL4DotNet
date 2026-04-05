@@ -18,7 +18,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
                 DryRun: false, Coffee: false, Beer: false, Matcha: false, Whisky: false,
                 Wine: false, Ramen: false, Sushi: false, Bell: false, Wizard: false,
                 RandomSpinner: false, MultipleSpinnersDetected: false,
-                LogFormatOverride: null, ParseError: null);
+                LogFormatOverride: null, OutputDirectory: null, ParseError: null);
 
         [Fact]
         public void Apply_ThreadsOverride_SetsMaxParallelism()
