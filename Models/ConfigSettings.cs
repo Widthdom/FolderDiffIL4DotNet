@@ -102,6 +102,7 @@ namespace FolderDiffIL4DotNet.Models
             ShouldIgnoreILLinesContainingConfiguredStrings = builder.ShouldIgnoreILLinesContainingConfiguredStrings;
             ILIgnoreLineContainingStrings = builder.ILIgnoreLineContainingStrings.AsReadOnly();
             SkipIL = builder.SkipIL;
+            ShouldIgnoreMVID = builder.ShouldIgnoreMVID;
 
             // IL cache / IL キャッシュ
             EnableILCache = builder.EnableILCache;

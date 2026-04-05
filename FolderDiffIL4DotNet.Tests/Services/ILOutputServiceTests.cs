@@ -649,6 +649,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(legacyResult, streamingResult);
         }
 
+        // --- ShouldIgnoreMVID tests / MVID 無視フラグテスト ---
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_WhenShouldIgnoreMVIDFalse_IncludesMVIDLines()
+        {
+            // When ShouldIgnoreMVID is false, MVID lines affect comparison result.
+            // ShouldIgnoreMVID が false の場合、MVID 行は比較結果に影響する。
+            var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
+            var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), shouldIgnoreMVID: false);
+            Assert.False(result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void StreamingFilteredSequenceEqual_WhenShouldIgnoreMVIDTrue_ExcludesMVIDLines()
+        {
+            // Default behavior: MVID lines are excluded from comparison.
+            // デフォルト動作: MVID 行は比較から除外される。
+            var lines1 = new List<string> { "// MVID: ABC", "class Foo {", "}" };
+            var lines2 = new List<string> { "// MVID: XYZ", "class Foo {", "}" };
+            var result = ILOutputService.StreamingFilteredSequenceEqual(lines1, lines2, false, new List<string>(), shouldIgnoreMVID: true);
+            Assert.True(result);
+        }
+
         // --- Whitespace trimming tests / 空白トリミングテスト ---
 
         [Fact]
