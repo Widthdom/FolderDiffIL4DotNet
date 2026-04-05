@@ -31,11 +31,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **`DisassemblerTimeoutSeconds` default reduced from 300 to 60 seconds** — The default disassembler process timeout was 300 seconds (5 minutes), which caused long blocking periods when a disassembler hung on a large or corrupted assembly. Reduced to 60 seconds to fail faster and allow the blacklist mechanism to kick in sooner. Users with very large assemblies can override via `config.json` or `FOLDERDIFF_DISASSEMBLERTIMEOUTSECONDS` environment variable. Affected: `Models/ConfigSettings.ILSettings.cs`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `README.md`. Tests: `ConfigSettingsTests.ValidationBoundary.cs` (`AllDefaultConstants_MatchExpectedValues` updated).
 
+- **CI workflows skip on docs-only changes** — Added `paths-ignore` filters to `dotnet.yml`, `codeql.yml`, and `benchmark-regression.yml` so that commits touching only Markdown files (`**.md`), `doc/**`, `CLAUDE.md`, or `LICENSE` do not trigger build/test/analysis pipelines. `workflow_dispatch` and `schedule` triggers are unaffected. `release.yml` is tag-triggered and unchanged. Affected: `.github/workflows/dotnet.yml`, `.github/workflows/codeql.yml`, `.github/workflows/benchmark-regression.yml`.
+
 #### Documentation
 
 - **DEVELOPER_GUIDE: Hash-based caching flow documentation** — Consolidated the "SHA256 Hash Pre-Seeding" and new "Semantic Analysis Cache" subsections into a unified "Hash-Based Caching in FileDiffService" section with a mermaid flowchart showing how SHA256 hashes computed in Step 1 (hash comparison) are reused for IL cache pre-seeding and semantic analysis cache keying. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
 
-- **CI workflows skip on docs-only changes** — Added `paths-ignore` filters to `dotnet.yml`, `codeql.yml`, and `benchmark-regression.yml` so that commits touching only Markdown files (`**.md`), `doc/**`, `CLAUDE.md`, or `LICENSE` do not trigger build/test/analysis pipelines. `workflow_dispatch` and `schedule` triggers are unaffected. `release.yml` is tag-triggered and unchanged. Affected: `.github/workflows/dotnet.yml`, `.github/workflows/codeql.yml`, `.github/workflows/benchmark-regression.yml`.
+- **Cross-cutting documentation updates** — Added `ShouldIgnoreMVID` to README config tables (EN+JA), `CompilerGeneratedResolver` to DEVELOPER_GUIDE architecture table (EN+JA), `--output` flag and custom output directory tests to TESTING_GUIDE scope maps (EN+JA), `CompilerGeneratedResolverTests` to TESTING_GUIDE scope maps (EN+JA). Updated `DisassemblerTimeoutSeconds` default from 300 to 60 in TROUBLESHOOTING (EN+JA). Affected: `README.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`, `doc/TROUBLESHOOTING.md`.
 
 ### [1.13.5] - 2026-04-04
 
@@ -1119,11 +1121,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **`DisassemblerTimeoutSeconds` のデフォルトを 300 秒から 60 秒に短縮** — 逆アセンブラプロセスのデフォルトタイムアウトが 300 秒（5 分）であったため、大きなまたは破損したアセンブリで逆アセンブラがハングした場合に長時間ブロックされていた。60 秒に短縮することで早期に失敗し、ブラックリスト機構がより早く機能するようになった。非常に大きなアセンブリを扱うユーザーは `config.json` または `FOLDERDIFF_DISASSEMBLERTIMEOUTSECONDS` 環境変数でオーバーライド可能。影響: `Models/ConfigSettings.ILSettings.cs`、`doc/config.sample.jsonc`、`doc/config.schema.json`、`README.md`。テスト: `ConfigSettingsTests.ValidationBoundary.cs`（`AllDefaultConstants_MatchExpectedValues` 更新）。
 
+- **CI ワークフローのドキュメントのみ変更スキップ** — `dotnet.yml`、`codeql.yml`、`benchmark-regression.yml` に `paths-ignore` フィルタを追加し、Markdown ファイル（`**.md`）、`doc/**`、`CLAUDE.md`、`LICENSE` のみの変更ではビルド/テスト/解析パイプラインが起動しないようにした。`workflow_dispatch` と `schedule` トリガーは影響なし。`release.yml` はタグトリガーのため変更なし。影響: `.github/workflows/dotnet.yml`、`.github/workflows/codeql.yml`、`.github/workflows/benchmark-regression.yml`。
+
 #### ドキュメント
 
 - **DEVELOPER_GUIDE: ハッシュベースキャッシュフローのドキュメント化** — 既存の「SHA256 ハッシュのプリシード」と新規「セマンティック分析キャッシュ」のサブセクションを「FileDiffService におけるハッシュベースキャッシュ」として統合し、ステップ 1（ハッシュ比較）で計算した SHA256 が IL キャッシュのプリシードとセマンティック分析キャッシュのキーにどのように再利用されるかを mermaid フローチャートで示した。影響: `doc/DEVELOPER_GUIDE.md`（EN+JA セクション）。
 
-- **CI ワークフローのドキュメントのみ変更スキップ** — `dotnet.yml`、`codeql.yml`、`benchmark-regression.yml` に `paths-ignore` フィルタを追加し、Markdown ファイル（`**.md`）、`doc/**`、`CLAUDE.md`、`LICENSE` のみの変更ではビルド/テスト/解析パイプラインが起動しないようにした。`workflow_dispatch` と `schedule` トリガーは影響なし。`release.yml` はタグトリガーのため変更なし。影響: `.github/workflows/dotnet.yml`、`.github/workflows/codeql.yml`、`.github/workflows/benchmark-regression.yml`。
+- **横断的ドキュメント更新** — README の設定テーブルに `ShouldIgnoreMVID` を追加（EN+JA）、DEVELOPER_GUIDE のアーキテクチャテーブルに `CompilerGeneratedResolver` を追加（EN+JA）、TESTING_GUIDE のスコープマップに `--output` フラグとカスタム出力ディレクトリテスト・`CompilerGeneratedResolverTests` を追加（EN+JA）。TROUBLESHOOTING の `DisassemblerTimeoutSeconds` デフォルトを 300 から 60 に更新（EN+JA）。影響: `README.md`、`doc/DEVELOPER_GUIDE.md`、`doc/TESTING_GUIDE.md`、`doc/TROUBLESHOOTING.md`。
 
 ### [1.13.5] - 2026-04-04
 
