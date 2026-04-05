@@ -422,7 +422,7 @@ namespace FolderDiffIL4DotNet.Tests
             }
             finally
             {
-                SafeDeleteDirectory(tempDir);
+                TryDeleteDirectory(tempDir);
             }
         }
 
