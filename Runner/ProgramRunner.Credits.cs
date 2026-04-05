@@ -6,21 +6,21 @@ namespace FolderDiffIL4DotNet
     {
         private const string CREDITS_TEXT =
             "\n" +
-            "  ╔══════════════════════════════════════════════════════╗\n" +
-            "  ║              FolderDiffIL4DotNet Credits             ║\n" +
-            "  ╚══════════════════════════════════════════════════════╝\n" +
+            "  ╔══════════════════════════════════════════════════════════════════════╗\n" +
+            "  ║                     FolderDiffIL4DotNet Credits                      ║\n" +
+            "  ╚══════════════════════════════════════════════════════════════════════╝\n" +
             "\n" +
             "  Crafted with care for release engineers\n" +
             "  who compare folders at 2 AM.\n" +
             "\n" +
-            "  ── Core Technology ──────────────────────\n" +
+            "  ── Core Technology ─────────────────────────────────────────────────────\n" +
             "\n" +
             "  .NET 8                     Runtime & SDK\n" +
             "  System.Reflection.Metadata Assembly analysis\n" +
             "  dotnet-ildasm              IL disassembly\n" +
             "  ilspycmd                   IL disassembly (fallback)\n" +
             "\n" +
-            "  ── Open Source Libraries ────────────────\n" +
+            "  ── Open Source Libraries ───────────────────────────────────────────────\n" +
             "\n" +
             "  Nerdbank.GitVersioning     Semantic versioning\n" +
             "  coverlet.collector         Code coverage\n" +
@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet
             "  DocFX                      API documentation\n" +
             "  BenchmarkDotNet            Performance benchmarks\n" +
             "\n" +
-            "  ── NuGet Packages ───────────────────────\n" +
+            "  ── NuGet Packages ──────────────────────────────────────────────────────\n" +
             "\n" +
             "  FolderDiffIL4DotNet.Core\n" +
             "    File comparison, assembly detection, Myers diff,\n" +
@@ -43,19 +43,19 @@ namespace FolderDiffIL4DotNet
             "    file comparison hooks, and more.\n" +
             "    https://www.nuget.org/packages/FolderDiffIL4DotNet.Plugin.Abstractions\n" +
             "\n" +
-            "  ── Distribution ─────────────────────────\n" +
+            "  ── Distribution ────────────────────────────────────────────────────────\n" +
             "\n" +
             "  NuGet                      Package distribution\n" +
             "  GitHub Actions             CI/CD pipelines\n" +
             "\n" +
-            "  ── Special Thanks ───────────────────────\n" +
+            "  ── Special Thanks ──────────────────────────────────────────────────────\n" +
             "\n" +
             "  The .NET open-source community\n" +
             "  Everyone who reviews 500 files before a deadline\n" +
             "  Coffee, matcha, beer, whisky, wine, ramen, and sushi\n" +
             "  for keeping us going\n" +
             "\n" +
-            "  ── Philosophy ───────────────────────────\n" +
+            "  ── Philosophy ──────────────────────────────────────────────────────────\n" +
             "\n" +
             "  \"Signal over noise.\"\n" +
             "\n" +
