@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.6] - 2026-04-04
+
 #### Added
 
 - **Expanded compiler-generated code coverage in semantic analysis** — `CompilerGeneratedResolver` now annotates additional compiler-generated patterns: local functions (`<Method>g__LocalFunc|N_M` → "local function LocalFunc in Method"), record clone methods (`<Clone>$` → "record clone method"), and record synthesized members (`PrintMembers`, `op_Equality`, `op_Inequality` → "record synthesized"). `IsCompilerGeneratedMember` also detects these new patterns. This helps reviewers instantly identify compiler-generated changes without manually decoding mangled names. Affected: `Services/CompilerGeneratedResolver.cs`. Tests: `CompilerGeneratedResolverTests` (6 new: `AnnotateEntry_LocalFunction_AnnotatesMemberName`, `AnnotateEntry_LocalFunctionNestedIndex_AnnotatesMemberName`, `AnnotateEntry_RecordClone_AnnotatesMemberName`, `AnnotateEntry_RecordPrintMembers_AnnotatesMemberName`, `AnnotateEntry_RecordOpEquality_AnnotatesMemberName`, `AnnotateEntry_RecordOpInequality_AnnotatesMemberName`; 5 new `InlineData` cases for `IsCompilerGeneratedMember_ReturnsExpected`).
@@ -1100,6 +1102,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.13.6] - 2026-04-04
 
 #### 追加
 
@@ -2193,7 +2197,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.5...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.6...HEAD
+[1.13.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.5...v1.13.6
 [1.13.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.4...v1.13.5
 [1.13.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.3...v1.13.4
 [1.13.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.2...v1.13.3
