@@ -2436,16 +2436,7 @@
         d.removeEventListener('toggle', onToggle);
         try {
           var decoded = decodeDiffHtml(b64);
-          var tmp = document.createElement('div');
-          tmp.innerHTML = decoded;
-          tmp.querySelectorAll('table.semantic-changes-table.sc-detail').forEach(function(tbl) {
-            if (initVirtualScroll(tbl)) {
-              tbl.classList.add('vs-active');
-            }
-          });
-          while (tmp.firstChild) {
-            d.appendChild(tmp.firstChild);
-          }
+          d.insertAdjacentHTML('beforeend', decoded);
           d.querySelectorAll('.diff-table').forEach(function(tbl) {
             var btn = document.createElement('button');
             btn.type = 'button';
@@ -2461,7 +2452,6 @@
           syncScTableWidths();
           if (__savedState__ === null) {
             d.querySelectorAll('input').forEach(function(el) {
-              if (el.closest('table.vs-active')) return;
               el.addEventListener('change', autoSave);
             });
           }
