@@ -380,6 +380,41 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task FilesAreEqualAsync_SemanticAnalysisCacheHit_WhenSameHashPairReused()
+        {
+            // When two different relative paths resolve to assemblies with the same SHA256 hashes,
+            // the second analysis should be served from the in-memory cache.
+            // 異なる相対パスが同じ SHA256 ハッシュを持つアセンブリに解決される場合、
+            // 2 回目の解析はインメモリキャッシュから提供されるべき。
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                UseHashHexOverride = true,
+                Hash1HexOverride = "aaa" + new string('0', 61),
+                Hash2HexOverride = "bbb" + new string('0', 61),
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.DotNetExecutable)
+            };
+            var ilOutputService = new FakeILOutputService
+            {
+                DiffResult = (AreEqual: false, DisassemblerLabel: "test-tool")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(fileComparisonService, ilOutputService, resultLists, logger,
+                configure: config => config.ShouldIncludeAssemblySemanticChangesInReport = true);
+
+            // First call — cache miss (analysis runs, returns null for non-existent files)
+            // 1 回目 — キャッシュミス（解析実行、存在しないファイルのため null を返す）
+            await service.FilesAreEqualAsync("first.dll", maxParallel: 1);
+
+            // Second call with same hash pair — should hit cache
+            // 同じハッシュペアの 2 回目 — キャッシュヒットすべき
+            await service.FilesAreEqualAsync("second.dll", maxParallel: 1);
+
+            Assert.Contains(logger.Messages, m => m.Contains("Semantic analysis cache hit") && m.Contains("second.dll"));
+        }
+
+        [Fact]
         public async Task PrecomputeAsync_WhenSkipILIsFalse_PassesFilesAndMaxParallel()
         {
             // When SkipIL is false, PrecomputeAsync delegates to ILOutputService.PrecomputeAsync.

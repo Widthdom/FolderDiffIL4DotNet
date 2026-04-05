@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,6 +26,12 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILoggerService _logger;
         private readonly IFileComparisonService _fileComparisonService;
         private readonly IReadOnlyList<IFileComparisonHook> _comparisonHooks;
+
+        // In-memory cache for assembly semantic analysis results, keyed by (oldSHA256, newSHA256).
+        // Avoids redundant analysis when the same assembly content appears at multiple paths.
+        // アセンブリセマンティック解析結果のインメモリキャッシュ。(oldSHA256, newSHA256) をキーとする。
+        // 同一アセンブリ内容が複数パスに存在する場合の重複解析を回避する。
+        private readonly ConcurrentDictionary<(string OldHash, string NewHash), AssemblySemanticChangesSummary?> _semanticAnalysisCache = new();
 
         /// <summary>
         /// Initializes a new instance of <see cref="FileDiffService"/> with the default <see cref="FileComparisonService"/>.
@@ -187,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services
                         // Best-effort assembly semantic analysis for ILMismatch assemblies
                         if (!areDotNetAssembliesEqual && _config.ShouldIncludeAssemblySemanticChangesInReport)
                         {
-                            TryAnalyzeAssemblySemanticChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath);
+                            TryAnalyzeAssemblySemanticChanges(fileRelativePath, file1AbsolutePath, file2AbsolutePath, hash1Hex, hash2Hex);
                             TryClassifyChangeTags(fileRelativePath);
                         }
 
@@ -348,15 +355,43 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>
         /// Best-effort assembly semantic analysis using System.Reflection.Metadata.
+        /// Results are cached by (oldHash, newHash) to avoid redundant analysis when the same
+        /// assembly content appears at multiple paths.
         /// Failures are logged but do not affect the comparison result.
         /// System.Reflection.Metadata を使用したベストエフォートのアセンブリセマンティック解析。
+        /// 同一アセンブリ内容が複数パスに存在する場合の重複解析を回避するため、
+        /// (oldHash, newHash) をキーにして結果をキャッシュする。
         /// 失敗してもファイル比較結果には影響しません。
         /// </summary>
-        private void TryAnalyzeAssemblySemanticChanges(string fileRelativePath, string oldPath, string newPath)
+        private void TryAnalyzeAssemblySemanticChanges(string fileRelativePath, string oldPath, string newPath,
+            string? oldHash, string? newHash)
         {
             try
             {
-                var summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath);
+                AssemblySemanticChangesSummary? summary;
+
+                // Use cached result if both hashes are available and a prior analysis exists
+                // 両方のハッシュが利用可能で事前解析結果が存在する場合はキャッシュを使用
+                if (oldHash != null && newHash != null)
+                {
+                    var cacheKey = (oldHash, newHash);
+                    if (_semanticAnalysisCache.TryGetValue(cacheKey, out summary))
+                    {
+                        _logger.LogMessage(AppLogLevel.Info,
+                            $"Semantic analysis cache hit for '{fileRelativePath}'.",
+                            shouldOutputMessageToConsole: false);
+                    }
+                    else
+                    {
+                        summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath);
+                        _semanticAnalysisCache.TryAdd(cacheKey, summary);
+                    }
+                }
+                else
+                {
+                    summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath);
+                }
+
                 if (summary?.HasChanges == true)
                 {
                     _fileDiffResultLists.FileRelativePathToAssemblySemanticChanges[fileRelativePath] = summary;
