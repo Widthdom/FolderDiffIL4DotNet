@@ -30,6 +30,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_BELL = "--bell";
         private const string OPT_WIZARD = "--wizard";
         private const string OPT_RANDOM_SPINNER = "--random-spinner";
+        private const string OPT_CREDITS = "--credits";
         private const string OPT_LOG_FORMAT = "--log-format";
         private const string OPT_OUTPUT = "--output";
 
@@ -43,7 +44,7 @@ namespace FolderDiffIL4DotNet.Runner
         {
             bool showHelp = false, showVersion = false, showBanner = false, noPause = false;
             bool noIlCache = false, clearCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
-            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false;
+            bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false, showCredits = false;
             bool randomSpinner = false;
             // Track how many distinct spinner theme flags have been seen / 何種類のスピナーテーマフラグが指定されたかを追跡
             int spinnerFlagCount = 0;
@@ -55,7 +56,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -169,6 +170,9 @@ namespace FolderDiffIL4DotNet.Runner
                     case OPT_RANDOM_SPINNER:
                         randomSpinner = true;
                         break;
+                    case OPT_CREDITS:
+                        showCredits = true;
+                        break;
                     case OPT_LOG_FORMAT:
                         if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
                         {
@@ -211,7 +215,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, parseError);
         }
     }
 }

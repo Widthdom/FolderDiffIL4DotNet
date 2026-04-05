@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **`--credits` CLI option (easter egg)** — Displays an end-credits-style screen showing core technologies, open source library acknowledgements, special thanks, and the project philosophy ("Signal over noise."). Exits with code `0` without initializing the logger, following the same early-exit pattern as `--help`/`--version`/`--banner`. Affected: `Runner/CliOptions.cs`, `Runner/CliParser.cs`, `Runner/ProgramRunner.Credits.cs` (new), `Runner/ProgramRunner.HelpText.cs`, `ProgramRunner.cs`, `README.md`. Tests: `CliOptionsTests` (1 new Theory with 2 InlineData: `ParseCliOptions_CreditsFlag_SetsShowCredits`), `ProgramRunnerTests.HelpVersion.cs` (1 new: `RunAsync_CreditsFlag_ExitsZeroWithCreditsOutput`).
+
 ### [1.13.7] - 2026-04-05
 
 #### Changed
@@ -1124,6 +1128,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **`--credits` CLI オプション（イースターエッグ）** — エンドクレジット風の画面を表示し、コア技術、オープンソースライブラリへの謝辞、スペシャルサンクス、プロジェクト哲学（「ノイズよりシグナル。」）を紹介する。ロガーを初期化せずコード `0` で終了する `--help`/`--version`/`--banner` と同じ早期終了パターンに従う。対象: `Runner/CliOptions.cs`、`Runner/CliParser.cs`、`Runner/ProgramRunner.Credits.cs`（新規）、`Runner/ProgramRunner.HelpText.cs`、`ProgramRunner.cs`、`README.md`。テスト: `CliOptionsTests`（Theory 1件・InlineData 2件: `ParseCliOptions_CreditsFlag_SetsShowCredits`）、`ProgramRunnerTests.HelpVersion.cs`（1件: `RunAsync_CreditsFlag_ExitsZeroWithCreditsOutput`）。
 
 ### [1.13.7] - 2026-04-05
 

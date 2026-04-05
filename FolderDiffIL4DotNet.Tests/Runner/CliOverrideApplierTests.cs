@@ -17,7 +17,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
                 SkipIL: false, NoTimestampWarnings: false, PrintConfig: false, ValidateConfig: false,
                 DryRun: false, Coffee: false, Beer: false, Matcha: false, Whisky: false,
                 Wine: false, Ramen: false, Sushi: false, Bell: false, Wizard: false,
-                RandomSpinner: false, MultipleSpinnersDetected: false,
+                ShowCredits: false, RandomSpinner: false, MultipleSpinnersDetected: false,
                 LogFormatOverride: null, OutputDirectory: null, ParseError: null);
 
         [Fact]

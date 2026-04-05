@@ -86,6 +86,7 @@ This is the single most important rule in this repository.
 | Any significant feature or fix | CHANGELOG.md `[Unreleased]` section (EN+JA) |
 | HTML report JS/CSS | Embedded resource files (`Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/*.js`), generator `.cs` files, AND `doc/samples/diff_report.html` |
 | New service/interface added | `Runner/RunScopeBuilder.cs` (DI registration) |
+| Core technologies, libraries, NuGet packages, or distribution channels | `Runner/ProgramRunner.Credits.cs` (CREDITS_TEXT constant) |
 
 ### Architecture
 
@@ -309,6 +310,7 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 | 重要な機能追加・修正 | CHANGELOG.md `[Unreleased]` セクション（EN+JA） |
 | HTML レポート JS/CSS | 埋め込みリソースファイル（`Services/HtmlReport/diff_report.css`、`diff_report.js`）、ジェネレータ `.cs` ファイル、`doc/samples/diff_report.html` |
 | 新サービス/インターフェース追加 | `Runner/RunScopeBuilder.cs`（DI 登録） |
+| コア技術、ライブラリ、NuGet パッケージ、配布チャネル | `Runner/ProgramRunner.Credits.cs`（CREDITS_TEXT 定数） |
 
 ### アーキテクチャ
 
