@@ -36,6 +36,7 @@ namespace FolderDiffIL4DotNet
             "  --ramen                     Use ramen steaming spinner animation during execution.\n" +
             "  --sushi                     Use conveyor-belt sushi spinner animation during execution.\n" +
             "  --random-spinner            Randomly select a spinner theme for each run.\n" +
+            "  --credits                   Show credits and acknowledgements.\n" +
             "  --bell                      Ring terminal bell when execution completes.\n" +
             "  --output <path>             Output directory for reports (default: <exe>/Reports/).\n" +
             "  --log-format <text|json>    Log file output format (default: text).\n" +

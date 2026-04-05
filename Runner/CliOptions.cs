@@ -27,6 +27,7 @@ namespace FolderDiffIL4DotNet.Runner
         bool Sushi,
         bool Bell,
         bool Wizard,
+        bool ShowCredits,
         bool RandomSpinner,
         bool MultipleSpinnersDetected,
         string? LogFormatOverride,

@@ -75,6 +75,12 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            if (opts.ShowCredits)
+            {
+                Console.WriteLine(CREDITS_TEXT);
+                return 0;
+            }
+
             if (opts.ClearCache)
             {
                 return await ClearCacheAsync(opts.ConfigPath);

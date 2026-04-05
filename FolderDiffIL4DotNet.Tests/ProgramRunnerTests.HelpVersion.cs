@@ -391,6 +391,41 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --credits early-exit test
+        // --credits 早期終了テスト
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_CreditsFlag_ExitsZeroWithCreditsOutput()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--credits" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("FolderDiffIL4DotNet Credits", output, StringComparison.Ordinal);
+                Assert.Contains("Signal over noise", output, StringComparison.Ordinal);
+                Assert.Contains("Core Technology", output, StringComparison.Ordinal);
+                Assert.Contains("Open Source Libraries", output, StringComparison.Ordinal);
+                Assert.Contains("Special Thanks", output, StringComparison.Ordinal);
+                // Logger should NOT have been initialized
+                // ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // --banner early-exit test
         // --banner 早期終了テスト
         // -----------------------------------------------------------------------

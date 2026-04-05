@@ -32,6 +32,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
             Assert.False(opts.Bell);
+            Assert.False(opts.ShowCredits);
             Assert.False(opts.RandomSpinner);
             Assert.False(opts.MultipleSpinnersDetected);
             Assert.Null(opts.LogFormatOverride);
@@ -71,6 +72,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.Whisky);
             Assert.False(opts.Wine);
             Assert.False(opts.Bell);
+            Assert.False(opts.ShowCredits);
             Assert.False(opts.RandomSpinner);
             Assert.False(opts.MultipleSpinnersDetected);
             Assert.Null(opts.ParseError);
@@ -120,6 +122,21 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { arg });
 
             Assert.True(opts.ShowBanner);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --credits
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--credits")]
+        [InlineData("--CREDITS")]
+        public void ParseCliOptions_CreditsFlag_SetsShowCredits(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.ShowCredits);
             Assert.Null(opts.ParseError);
         }
 
