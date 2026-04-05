@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Improved generic signature resolution in semantic analysis** — Fixed three issues in `AssemblyMethodAnalyzer.SignatureProvider` that caused suboptimal or incorrect type name output for deeply nested generics: (1) `GetGenericInstantiation` now strips the metadata arity suffix (e.g. `` Dictionary`2<String, Int32> `` → `Dictionary<String, Int32>`) since type arguments make the arity explicit; (2) `GetTypeFromReference` now follows `ResolutionScope` for nested type references (e.g. `Enumerator` → `Dictionary/Enumerator`) instead of returning the unqualified inner name; (3) `GetBaseTypeName` and `GetInterfaceTypeName` now handle `TypeSpecificationHandle` to correctly resolve constructed generic base types and interfaces (e.g. `List<int>`, `IComparable<T>`) that were previously returned as empty strings. Added `StripGenericArity` and `DecodeTypeSpecification` helper methods. Affected: `Services/AssemblyMethodAnalyzer.SignatureProvider.cs`, `Services/AssemblyMethodAnalyzer.AccessHelpers.cs`. Tests: `AssemblyMethodAnalyzerTests` (3 new: `SimpleSignatureTypeProvider_GetGenericInstantiation_StripsAritySuffix`, `SimpleSignatureTypeProvider_GetTypeFromReference_ResolvesNestedTypes`, `Analyze_RuntimeAssembly_GenericSignaturesDoNotContainAritySuffix`).
+
 ### [1.13.6] - 2026-04-04
 
 #### Added
@@ -1102,6 +1106,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **セマンティック分析におけるジェネリクスシグネチャ解決の改善** — `AssemblyMethodAnalyzer.SignatureProvider` で深くネストした���ェネリクスの型名出力が不正確または不完全になる3つの問題を修正: (1) `GetGenericInstantiation` がメタデータのアリティ接尾辞を除去するようになった（例: `` Dictionary`2<String, Int32> `` → `Dictionary<String, Int32>`）。型引数によりアリティは明示されるため不要。(2) `GetTypeFromReference` がネストされた型参照の `ResolutionScope` をたどるようになった（例: `Enumerator` → `Dictionary/Enumerator`）。従来は非修飾の内部名のみ返していた。(3) `GetBaseTypeName` と `GetInterfaceTypeName` が `TypeSpecificationHandle` を処理し、構築済みジェネリック基底型・インターフェース（例: `List<int>`、`IComparable<T>`）を正しく解決するようになった。従来は空文字を返していた。`StripGenericArity` と `DecodeTypeSpecification` ヘルパーメソッドを追加。対象: `Services/AssemblyMethodAnalyzer.SignatureProvider.cs`、`Services/AssemblyMethodAnalyzer.AccessHelpers.cs`。テスト: `AssemblyMethodAnalyzerTests`（3件追加: `SimpleSignatureTypeProvider_GetGenericInstantiation_StripsAritySuffix`、`SimpleSignatureTypeProvider_GetTypeFromReference_ResolvesNestedTypes`、`Analyze_RuntimeAssembly_GenericSignaturesDoNotContainAritySuffix`���。
 
 ### [1.13.6] - 2026-04-04
 
