@@ -51,6 +51,36 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_NonExistentFile_InvokesOnErrorCallbackWithException()
+        {
+            // When analysis fails and onError is provided, it should be invoked with the exception.
+            // 解析失敗時に onError が提供されている場合、例外を渡して呼び出されるべき。
+            Exception? captured = null;
+            var result = AssemblyMethodAnalyzer.Analyze(
+                "/nonexistent/old.dll", "/nonexistent/new.dll",
+                onError: ex => captured = ex);
+
+            Assert.Null(result);
+            Assert.NotNull(captured);
+            Assert.IsAssignableFrom<Exception>(captured);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Analyze_SameAssembly_DoesNotInvokeOnErrorCallback()
+        {
+            // Successful analysis should not invoke the onError callback.
+            // 正常な解析では onError コールバックが呼ばれないこと。
+            bool errorInvoked = false;
+            var assemblyPath = typeof(AssemblyMethodAnalyzerTests).Assembly.Location;
+            var result = AssemblyMethodAnalyzer.Analyze(assemblyPath, assemblyPath, onError: _ => errorInvoked = true);
+
+            Assert.NotNull(result);
+            Assert.False(errorInvoked);
+        }
+
+        [Fact]
         public void Analyze_InvalidFile_ReturnsNull()
         {
             // Attempting to analyse a non-PE file should gracefully return null
