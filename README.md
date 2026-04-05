@@ -492,6 +492,11 @@ Override only the settings you want to change. For example:
       <td><code>false</code></td>
       <td>Enables additional IL line-ignore filter by substring.</td>
     </tr>
+    <tr id="config-en-shouldignoremvid">
+      <td><code>ShouldIgnoreMVID</code></td>
+      <td><code>true</code></td>
+      <td>Whether to exclude MVID (Module Version ID) lines from IL comparison. Set to <code>false</code> to detect recompilation even when source code is identical.</td>
+    </tr>
     <tr id="config-en-ilignorelinecontainingstrings">
       <td><code>ILIgnoreLineContainingStrings</code></td>
       <td><code>[]</code></td>
@@ -1212,6 +1217,11 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
       <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>
       <td><code>false</code></td>
       <td>IL 比較時の追加行除外（部分一致）を有効化するか。</td>
+    </tr>
+    <tr id="config-ja-shouldignoremvid">
+      <td><code>ShouldIgnoreMVID</code></td>
+      <td><code>true</code></td>
+      <td>IL 比較から MVID（Module Version ID）行を除外するかどうか。<code>false</code> にするとソースコードが同一でも再コンパイルを検出できる。</td>
     </tr>
     <tr id="config-ja-ilignorelinecontainingstrings">
       <td><code>ILIgnoreLineContainingStrings</code></td>
