@@ -137,6 +137,39 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --output
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_OutputWithPath_SetsOutputDirectory()
+        {
+            var opts = CliParser.Parse(new[] { "--output", "/custom/reports" });
+
+            Assert.Equal("/custom/reports", opts.OutputDirectory);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_OutputMissingValue_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--output" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("--output", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void ParseCliOptions_NoOutput_DefaultsToNull()
+        {
+            var opts = CliParser.Parse(new[] { "--no-pause" });
+
+            Assert.Null(opts.OutputDirectory);
+        }
+
+        // -----------------------------------------------------------------------
         // --random-spinner
         // -----------------------------------------------------------------------
 

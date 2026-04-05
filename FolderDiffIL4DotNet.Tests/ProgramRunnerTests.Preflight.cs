@@ -402,5 +402,48 @@ namespace FolderDiffIL4DotNet.Tests
                 // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
             }
         }
+
+        // -----------------------------------------------------------------------
+        // GetReportsFolderAbsolutePath with custom output directory
+        // カスタム出力ディレクトリ付き GetReportsFolderAbsolutePath
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithOutputDirectory_UsesCustomBase()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-output-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", tempDir);
+
+                Assert.Equal(Path.Combine(Path.GetFullPath(tempDir), "myLabel"), result);
+                Assert.True(Directory.Exists(Path.GetFullPath(tempDir)));
+            }
+            finally
+            {
+                SafeDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithNullOutputDirectory_UsesDefaultReportsDir()
+        {
+            var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", null);
+
+            Assert.Contains("Reports", result, StringComparison.Ordinal);
+            Assert.EndsWith("myLabel", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithEmptyOutputDirectory_UsesDefaultReportsDir()
+        {
+            var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", "");
+
+            Assert.Contains("Reports", result, StringComparison.Ordinal);
+            Assert.EndsWith("myLabel", result);
+        }
     }
 }

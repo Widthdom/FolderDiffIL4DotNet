@@ -30,5 +30,6 @@ namespace FolderDiffIL4DotNet.Runner
         bool RandomSpinner,
         bool MultipleSpinnersDetected,
         string? LogFormatOverride,
+        string? OutputDirectory,
         string? ParseError);
 }
