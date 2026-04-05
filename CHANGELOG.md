@@ -33,6 +33,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **CI workflows skip on docs-only changes** — Added `paths-ignore` filters to `dotnet.yml`, `codeql.yml`, and `benchmark-regression.yml` so that commits touching only Markdown files (`**.md`), `doc/**`, `CLAUDE.md`, or `LICENSE` do not trigger build/test/analysis pipelines. `workflow_dispatch` and `schedule` triggers are unaffected. `release.yml` is tag-triggered and unchanged. Affected: `.github/workflows/dotnet.yml`, `.github/workflows/codeql.yml`, `.github/workflows/benchmark-regression.yml`.
 
+- **Log level prefixes shortened to 3-character labels** — Console and text-format log prefixes changed from padded 9-character labels (`[INFO   ]`, `[WARNING]`, `[ERROR  ]`) to compact 5-character labels (`[INF]`, `[WRN]`, `[ERR]`). All three labels are the same width without padding. JSON log `level` field is unaffected. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests` (assertions updated).
+
 #### Documentation
 
 - **DEVELOPER_GUIDE: Hash-based caching flow documentation** — Consolidated the "SHA256 Hash Pre-Seeding" and new "Semantic Analysis Cache" subsections into a unified "Hash-Based Caching in FileDiffService" section with a mermaid flowchart showing how SHA256 hashes computed in Step 1 (hash comparison) are reused for IL cache pre-seeding and semantic analysis cache keying. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
@@ -1122,6 +1124,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **`DisassemblerTimeoutSeconds` のデフォルトを 300 秒から 60 秒に短縮** — 逆アセンブラプロセスのデフォルトタイムアウトが 300 秒（5 分）であったため、大きなまたは破損したアセンブリで逆アセンブラがハングした場合に長時間ブロックされていた。60 秒に短縮することで早期に失敗し、ブラックリスト機構がより早く機能するようになった。非常に大きなアセンブリを扱うユーザーは `config.json` または `FOLDERDIFF_DISASSEMBLERTIMEOUTSECONDS` 環境変数でオーバーライド可能。影響: `Models/ConfigSettings.ILSettings.cs`、`doc/config.sample.jsonc`、`doc/config.schema.json`、`README.md`。テスト: `ConfigSettingsTests.ValidationBoundary.cs`（`AllDefaultConstants_MatchExpectedValues` 更新）。
 
 - **CI ワークフローのドキュメントのみ変更スキップ** — `dotnet.yml`、`codeql.yml`、`benchmark-regression.yml` に `paths-ignore` フィルタを追加し、Markdown ファイル（`**.md`）、`doc/**`、`CLAUDE.md`、`LICENSE` のみの変更ではビルド/テスト/解析パイプラインが起動しないようにした。`workflow_dispatch` と `schedule` トリガーは影響なし。`release.yml` はタグトリガーのため変更なし。影響: `.github/workflows/dotnet.yml`、`.github/workflows/codeql.yml`、`.github/workflows/benchmark-regression.yml`。
+
+- **ログレベルプレフィックスを 3 文字ラベルに短縮** — コンソールおよびテキスト形式ログのプレフィックスをパディング付き 9 文字（`[INFO   ]`、`[WARNING]`、`[ERROR  ]`）からパディングなし 5 文字（`[INF]`、`[WRN]`、`[ERR]`）に変更。3 ラベルとも同一幅でスペースなく揃う。JSON ログの `level` フィールドは影響なし。影響: `Services/LoggerService.cs`。テスト: `LoggerServiceTests`（アサーション更新）。
 
 #### ドキュメント
 
