@@ -127,7 +127,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Theory]
         [InlineData(@"""C:\folder with spaces\subfolder""", @"C:\folder with spaces\subfolder")]
         [InlineData("'/Users/test/My Documents'", "/Users/test/My Documents")]
-        [InlineData("file:///C:/Users/test/folder", "C:/Users/test/folder")]
+        [InlineData("file:///home/user/test/folder", "/home/user/test/folder")]
         [Trait("Category", "Unit")]
         public void NormalizeDragDropPath_VariousDragDropFormats_NormalizedCorrectly(string input, string expected)
         {
