@@ -30,6 +30,17 @@ namespace FolderDiffIL4DotNet
             "  DocFX                      API documentation\n" +
             "  BenchmarkDotNet            Performance benchmarks\n" +
             "\n" +
+            "  ── NuGet Packages ───────────────────────\n" +
+            "\n" +
+            "  FolderDiffIL4DotNet.Core\n" +
+            "    File comparison, assembly detection, Myers diff,\n" +
+            "    encoding detection, and process helpers.\n" +
+            "\n" +
+            "  FolderDiffIL4DotNet.Plugin.Abstractions\n" +
+            "    Interfaces for building custom plugins:\n" +
+            "    report formatters, section writers,\n" +
+            "    file comparison hooks, and more.\n" +
+            "\n" +
             "  ── Distribution ─────────────────────────\n" +
             "\n" +
             "  NuGet                      Package distribution\n" +
