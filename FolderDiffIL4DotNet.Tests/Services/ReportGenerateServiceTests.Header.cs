@@ -127,6 +127,25 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateDiffReport_WhenShouldIgnoreMVIDFalse_OmitsMvidNote()
+        {
+            var oldDir = Path.Combine(_rootDir, "old-mvid-off");
+            var newDir = Path.Combine(_rootDir, "new-mvid-off");
+            var reportDir = Path.Combine(_rootDir, "report-mvid-off");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var builder = CreateConfigBuilder();
+            builder.ShouldIgnoreMVID = false;
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, builder.Build()));
+
+            var reportPath = Path.Combine(reportDir, "diff_report.md");
+            var reportText = File.ReadAllText(reportPath);
+            Assert.DoesNotContain("// MVID:", reportText);
+        }
+
+        [Fact]
         public void GenerateDiffReport_IlDiffDetailsIncludeDisassemblerLabel()
         {
             var oldDir = Path.Combine(_rootDir, "old");
