@@ -170,7 +170,7 @@
     "DisassemblerTimeoutSeconds": {
       "type": "integer",
       "minimum": 0,
-      "default": 300,
+      "default": 60,
       "description": "Timeout (seconds) for each disassembler invocation. 0 = no timeout.\n逆アセンブラ呼び出しごとのタイムアウト（秒）。0=タイムアウトなし。"
     },
 

@@ -34,7 +34,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="DisassemblerBlacklistTtlMinutes"/>. / <see cref="DisassemblerBlacklistTtlMinutes"/> の既定値。</summary>
         public const int DefaultDisassemblerBlacklistTtlMinutes = 10;
         /// <summary>Default value for <see cref="DisassemblerTimeoutSeconds"/>. / <see cref="DisassemblerTimeoutSeconds"/> の既定値。</summary>
-        public const int DefaultDisassemblerTimeoutSeconds = 300;
+        public const int DefaultDisassemblerTimeoutSeconds = 60;
 
         // ── IL comparison properties / IL 比較プロパティ ─────────────────────
 
