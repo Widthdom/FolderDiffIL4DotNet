@@ -33,7 +33,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Documentation
 
-- **DEVELOPER_GUIDE: Hash-based caching flow documentation** — Consolidated the "SHA256 Hash Pre-Seeding" and new "Semantic Analysis Cache" subsections into a unified "Hash-Based Caching in FileDiffService" section with a data flow diagram showing how SHA256 hashes computed in Step 1 (hash comparison) are reused for IL cache pre-seeding and semantic analysis cache keying. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
+- **DEVELOPER_GUIDE: Hash-based caching flow documentation** — Consolidated the "SHA256 Hash Pre-Seeding" and new "Semantic Analysis Cache" subsections into a unified "Hash-Based Caching in FileDiffService" section with a mermaid flowchart showing how SHA256 hashes computed in Step 1 (hash comparison) are reused for IL cache pre-seeding and semantic analysis cache keying. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
+
+- **CI workflows skip on docs-only changes** — Added `paths-ignore` filters to `dotnet.yml`, `codeql.yml`, and `benchmark-regression.yml` so that commits touching only Markdown files (`**.md`), `doc/**`, `CLAUDE.md`, or `LICENSE` do not trigger build/test/analysis pipelines. `workflow_dispatch` and `schedule` triggers are unaffected. `release.yml` is tag-triggered and unchanged. Affected: `.github/workflows/dotnet.yml`, `.github/workflows/codeql.yml`, `.github/workflows/benchmark-regression.yml`.
 
 ### [1.13.5] - 2026-04-04
 
@@ -1119,7 +1121,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### ドキュメント
 
-- **DEVELOPER_GUIDE: ハッシュベースキャッシュフローのドキュメント化** — 既存の「SHA256 ハッシュのプリシード」と新規「セマンティック分析キャッシュ」のサブセクションを「FileDiffService におけるハッシュベースキャッシュ」として統合し、ステップ 1（ハッシュ比較）で計算した SHA256 が IL キャッシュのプリシードとセマンティック分析キャッシュのキーにどのように再利用されるかをデータフロー図で示した。影響: `doc/DEVELOPER_GUIDE.md`（EN+JA セクション）。
+- **DEVELOPER_GUIDE: ハッシュベースキャッシュフローのドキュメント化** — 既存の「SHA256 ハッシュのプリシード」と新規「セマンティック分析キャッシュ」のサブセクションを「FileDiffService におけるハッシュベースキャッシュ」として統合し、ステップ 1（ハッシュ比較）で計算した SHA256 が IL キャッシュのプリシードとセマンティック分析キャッシュのキーにどのように再利用されるかを mermaid フローチャートで示した。影響: `doc/DEVELOPER_GUIDE.md`（EN+JA セクション）。
+
+- **CI ワークフローのドキュメントのみ変更スキップ** — `dotnet.yml`、`codeql.yml`、`benchmark-regression.yml` に `paths-ignore` フィルタを追加し、Markdown ファイル（`**.md`）、`doc/**`、`CLAUDE.md`、`LICENSE` のみの変更ではビルド/テスト/解析パイプラインが起動しないようにした。`workflow_dispatch` と `schedule` トリガーは影響なし。`release.yml` はタグトリガーのため変更なし。影響: `.github/workflows/dotnet.yml`、`.github/workflows/codeql.yml`、`.github/workflows/benchmark-regression.yml`。
 
 ### [1.13.5] - 2026-04-04
 
