@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.7] - 2026-04-05
+
 #### Changed
 
 - **Relaxed benchmark regression CI to avoid false failures from runner noise** — `alert-threshold` raised from `150%` to `200%` because shared GitHub Actions VMs frequently show 1.5x–1.6x variance from noisy neighbors. `fail-on-alert` changed from "whenever baseline exists" to "only on push to main", so PRs receive warning comments but are not blocked by transient benchmark fluctuations. Affected: `.github/workflows/benchmark-regression.yml`, `CiAutomationConfigurationTests` (assertion updated to match new threshold).
@@ -1122,6 +1124,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.13.7] - 2026-04-05
 
 #### 変更
 
@@ -2237,7 +2241,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.6...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.7...HEAD
+[1.13.7]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.6...v1.13.7
 [1.13.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.5...v1.13.6
 [1.13.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.4...v1.13.5
 [1.13.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.3...v1.13.4
