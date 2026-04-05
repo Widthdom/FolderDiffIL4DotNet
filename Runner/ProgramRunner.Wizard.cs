@@ -9,8 +9,8 @@ namespace FolderDiffIL4DotNet
     public sealed partial class ProgramRunner
     {
         private const string WIZARD_HEADER = "=== FolderDiffIL4DotNet Interactive Wizard ===";
-        private const string WIZARD_PROMPT_OLD_FOLDER = "Enter the path to the OLD (baseline) folder:";
-        private const string WIZARD_PROMPT_NEW_FOLDER = "Enter the path to the NEW (comparison) folder:";
+        private const string WIZARD_PROMPT_OLD_FOLDER = "Enter the path to the OLD (baseline) folder (drag & drop OK):";
+        private const string WIZARD_PROMPT_NEW_FOLDER = "Enter the path to the NEW (comparison) folder (drag & drop OK):";
         private const string WIZARD_PROMPT_REPORT_LABEL = "Enter the report label (subfolder name under Reports/):";
         private const string WIZARD_PROMPT_INDICATOR = "> ";
         private const string WIZARD_INPUT_EMPTY = "Input cannot be empty. Please try again.";
@@ -75,7 +75,11 @@ namespace FolderDiffIL4DotNet
 
         /// <summary>
         /// Prompts the user for a non-empty input string. Returns null on EOF (Ctrl+D / Ctrl+Z).
+        /// Automatically strips surrounding quotes (single/double) and <c>file://</c> URI prefixes
+        /// that terminals or file managers insert during drag-and-drop operations.
         /// 非空の入力文字列をユーザーに要求します。EOF（Ctrl+D / Ctrl+Z）時は null を返します。
+        /// ターミナルやファイルマネージャがドラッグ＆ドロップ時に挿入する囲みクォート
+        /// （シングル/ダブル）および <c>file://</c> URI プレフィックスを自動除去します。
         /// </summary>
         private static string? PromptForInput(string prompt)
         {
@@ -88,7 +92,7 @@ namespace FolderDiffIL4DotNet
                 {
                     return null; // EOF
                 }
-                input = input.Trim().Trim('"');
+                input = NormalizeDragDropPath(input);
                 if (input.Length > 0)
                 {
                     // Resolve to absolute path (handles relative paths and normalizes separators)
@@ -98,6 +102,74 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine(WIZARD_INPUT_EMPTY);
                 Console.WriteLine();
             }
+        }
+
+        /// <summary>
+        /// Normalize a path string from drag-and-drop input by stripping surrounding quotes,
+        /// <c>file://</c> URI prefixes, and trailing path separators that appear inside quotes.
+        /// Handles: <c>"C:\folder\"</c>, <c>'~/folder'</c>, <c>file:///home/user/folder</c>,
+        /// and backslash-escaped spaces (<c>path\ with\ spaces</c> → <c>path with spaces</c>).
+        /// ドラッグ＆ドロップ入力のパス文字列を正規化します。囲みクォート、<c>file://</c>
+        /// URI プレフィックス、クォート内末尾パス区切りを除去します。
+        /// </summary>
+        internal static string NormalizeDragDropPath(string input)
+        {
+            input = input.Trim();
+
+            // Strip matching surrounding quotes (double or single)
+            // 一致する囲みクォート（ダブルまたはシングル）を除去
+            if (input.Length >= 2)
+            {
+                char first = input[0];
+                char last = input[^1];
+                if ((first == '"' && last == '"') || (first == '\'' && last == '\''))
+                {
+                    input = input[1..^1];
+                }
+            }
+
+            // Also strip unmatched leading/trailing quotes from mixed D&D scenarios
+            // 混合 D&D シナリオの不一致な先頭/末尾クォートも除去
+            input = input.Trim('"', '\'');
+
+            // Strip file:// or file:/// URI prefix (some file managers produce this on D&D)
+            // file:// または file:/// URI プレフィックスを除去（一部ファイルマネージャが D&D 時に生成）
+            if (input.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+            {
+                input = input[7..]; // "file:///home/..." → "/home/..." (Unix), "file:///C:/..." → "C:/..." (Windows via Path.GetFullPath)
+                // On Windows, file:///C:/path has an extra leading slash → C:/path
+                // Path.GetFullPath will normalize this correctly
+            }
+            else if (input.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+            {
+                input = input[7..]; // "file://server/share" → "server/share"
+            }
+
+            // Unescape backslash-escaped spaces (common in Unix terminal D&D without quotes)
+            // バックスラッシュエスケープされたスペースを復元（Unix ターミナルでクォートなし D&D 時に一般的）
+            if (input.Contains("\\ "))
+            {
+                input = input.Replace("\\ ", " ");
+            }
+
+            // Unescape URI percent-encoding for common characters (space, Japanese chars)
+            // URI パーセントエンコーディングの一般的な文字をデコード（スペース、日本語文字）
+            if (input.Contains('%'))
+            {
+                try
+                {
+                    input = Uri.UnescapeDataString(input);
+                }
+#pragma warning disable CA1031 // ベストエフォートの URI デコード / Best-effort URI decode
+                catch
+                {
+                    // If UnescapeDataString fails (malformed %), keep the original
+                    // UnescapeDataString が失敗した場合（不正な %）、元の文字列を保持
+                }
+#pragma warning restore CA1031
+            }
+
+            return input.Trim();
         }
     }
 }

@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Improved drag-and-drop path handling in `--wizard` mode** — The interactive wizard now automatically normalizes folder paths from various drag-and-drop formats: double-quoted paths (`"C:\folder"`), single-quoted paths (`'/home/user/folder'`), `file:///` URI prefixes from file managers, backslash-escaped spaces (`path\ with\ spaces`), and URI percent-encoded characters (including Japanese filenames). Prompt text now includes "(drag & drop OK)" hint. Extracted `NormalizeDragDropPath` as an `internal static` method for testability. Affected: `Runner/ProgramRunner.Wizard.cs`. Tests: `ProgramRunnerTests.Wizard.cs` (14 new: `NormalizeDragDropPath_PlainPath_PassesThrough`, `_DoubleQuotedPath_StripsQuotes`, `_SingleQuotedPath_StripsQuotes`, `_FileUriTripleSlash_StripsPrefix`, `_FileUriDoubleSlash_StripsPrefix`, `_BackslashEscapedSpaces_Unescaped`, `_PercentEncodedSpaces_Decoded`, `_PercentEncodedJapanese_Decoded`, `_SurroundingWhitespace_Trimmed`, `_CombinedQuotesAndUri_HandledCorrectly`, `_EmptyInput_ReturnsEmpty`, `_MalformedPercentEncoding_PreservesOriginal`, `_VariousDragDropFormats_NormalizedCorrectly` ×3).
+
 #### Fixed
 
 - **Improved generic signature resolution in semantic analysis** — Fixed three issues in `AssemblyMethodAnalyzer.SignatureProvider` that caused suboptimal or incorrect type name output for deeply nested generics: (1) `GetGenericInstantiation` now strips the metadata arity suffix (e.g. `` Dictionary`2<String, Int32> `` → `Dictionary<String, Int32>`) since type arguments make the arity explicit; (2) `GetTypeFromReference` now follows `ResolutionScope` for nested type references (e.g. `Enumerator` → `Dictionary/Enumerator`) instead of returning the unqualified inner name; (3) `GetBaseTypeName` and `GetInterfaceTypeName` now handle `TypeSpecificationHandle` to correctly resolve constructed generic base types and interfaces (e.g. `List<int>`, `IComparable<T>`) that were previously returned as empty strings. Added `StripGenericArity` and `DecodeTypeSpecification` helper methods. Affected: `Services/AssemblyMethodAnalyzer.SignatureProvider.cs`, `Services/AssemblyMethodAnalyzer.AccessHelpers.cs`. Tests: `AssemblyMethodAnalyzerTests` (3 new: `SimpleSignatureTypeProvider_GetGenericInstantiation_StripsAritySuffix`, `SimpleSignatureTypeProvider_GetTypeFromReference_ResolvesNestedTypes`, `Analyze_RuntimeAssembly_GenericSignaturesDoNotContainAritySuffix`).
@@ -1108,6 +1112,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **`--wizard` モードでのドラッグ＆ドロップパス処理の改善** — 対話ウィザードが各種ドラッグ＆ドロップ形式のフォルダパスを自動正規化するようになった: ダブルクォートパス（`"C:\folder"`）、シングルクォートパス（`'/home/user/folder'`）、ファイルマネージャからの `file:///` URI プレフィックス、バックスラッシュエスケープされたスペース（`path\ with\ spaces`）、URI パーセントエンコード文字（日本語ファイル名を含む）。プロンプトに「(drag & drop OK)」ヒントを追加。テスト可能性のため `NormalizeDragDropPath` を `internal static` メソッドとして抽出。対象: `Runner/ProgramRunner.Wizard.cs`。テスト: `ProgramRunnerTests.Wizard.cs`（14件追加: `NormalizeDragDropPath_PlainPath_PassesThrough`、`_DoubleQuotedPath_StripsQuotes`、`_SingleQuotedPath_StripsQuotes`、`_FileUriTripleSlash_StripsPrefix`、`_FileUriDoubleSlash_StripsPrefix`、`_BackslashEscapedSpaces_Unescaped`、`_PercentEncodedSpaces_Decoded`、`_PercentEncodedJapanese_Decoded`、`_SurroundingWhitespace_Trimmed`、`_CombinedQuotesAndUri_HandledCorrectly`、`_EmptyInput_ReturnsEmpty`、`_MalformedPercentEncoding_PreservesOriginal`、`_VariousDragDropFormats_NormalizedCorrectly` ×3）。
 
 #### 修正
 
