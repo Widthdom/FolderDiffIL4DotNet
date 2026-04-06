@@ -192,7 +192,7 @@ namespace FolderDiffIL4DotNet.Services
                 contentBuilder.AppendLine("  <col class=\"sc-col-body-g\">");
                 contentBuilder.AppendLine("</colgroup>");
                 contentBuilder.AppendLine("<thead><tr>");
-                contentBuilder.AppendLine("  <th scope=\"col\" class=\"sc-col-cb\">&#x2713;</th>");
+                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"sc-col-cb\"><input type=\"checkbox\" class=\"cb-all-detail\" onchange=\"toggleAllInDetailTable(this)\" aria-label=\"{HtmlEncode("Toggle all checkboxes")}\"></th>");
                 contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-class-w\">{HtmlEncode("Class")}</th>");
                 contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">{HtmlEncode("BaseType")}</th>");
                 contentBuilder.AppendLine($"  <th scope=\"col\">{HtmlEncode("Status")}</th><th scope=\"col\">{HtmlEncode("Importance")}</th><th scope=\"col\">{HtmlEncode("Kind")}</th><th scope=\"col\">{HtmlEncode("Access")}</th><th scope=\"col\">{HtmlEncode("Modifiers")}</th>");
@@ -295,7 +295,7 @@ namespace FolderDiffIL4DotNet.Services
                     contentBuilder.AppendLine("  <col class=\"dc-col-refs-g\">");
                 contentBuilder.AppendLine("</colgroup>");
                 contentBuilder.AppendLine("<thead><tr>");
-                contentBuilder.AppendLine($"  <th class=\"sc-col-cb\">&#x2713;</th>");
+                contentBuilder.AppendLine($"  <th class=\"sc-col-cb\"><input type=\"checkbox\" class=\"cb-all-detail\" onchange=\"toggleAllInDetailTable(this)\" aria-label=\"{HtmlEncode("Toggle all checkboxes")}\"></th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Package")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Status")}</th>");
                 contentBuilder.AppendLine($"  <th>{HtmlEncode("Importance")}</th>");

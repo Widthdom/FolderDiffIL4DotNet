@@ -23,6 +23,7 @@
       });
     } else {
       document.querySelectorAll('input, textarea').forEach(function(el) {
+        if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
         el.addEventListener('change', autoSave);
         el.addEventListener('input',  autoSave);
       });
@@ -43,6 +44,7 @@
     highlightAllILDiffs();
     applyFilters();
     updateProgress();
+    syncHeaderCheckboxes();
     updateStorageUsage();
     // Custom tooltip hover/focus handling / カスタムツールチップのホバー・フォーカス処理
     document.querySelectorAll('.btn-tooltip-wrap').forEach(function(wrap) {

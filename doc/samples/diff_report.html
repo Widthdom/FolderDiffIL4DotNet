@@ -441,6 +441,7 @@
     td { padding: 2px 4px; border: 1px solid var(--color-border); vertical-align: middle; font-size: 12px; }
     td.col-no   { width: 3.2em; text-align: right; color: var(--color-text-faint);
                   font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
+    th.col-cb   { width: 2.2em; text-align: center; }
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }
@@ -885,7 +886,7 @@
 </colgroup>
 <thead><tr style="background:var(--color-default-bg)">
   <th scope="col" class="col-no">#</th>
-  <th scope="col" class="col-cb">&#x2713;</th>
+  <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="ign" onchange="toggleAllInSection(this)" aria-label="Toggle all checkboxes"></th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th scope="col" class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th scope="col" class="col-status">Status</th>
@@ -959,7 +960,7 @@
 </colgroup>
 <thead><tr style="background:var(--color-default-bg)">
   <th scope="col" class="col-no">#</th>
-  <th scope="col" class="col-cb">&#x2713;</th>
+  <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="unch" onchange="toggleAllInSection(this)" aria-label="Toggle all checkboxes"></th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th scope="col" class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th scope="col" class="col-status">Status</th>
@@ -1057,7 +1058,7 @@
 </colgroup>
 <thead><tr style="background:var(--color-added-bg)">
   <th scope="col" class="col-no">#</th>
-  <th scope="col" class="col-cb">&#x2713;</th>
+  <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="add" onchange="toggleAllInSection(this)" aria-label="Toggle all checkboxes"></th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th scope="col" class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th scope="col" class="col-status">Status</th>
@@ -1102,7 +1103,7 @@
 </colgroup>
 <thead><tr style="background:var(--color-removed-bg)">
   <th scope="col" class="col-no">#</th>
-  <th scope="col" class="col-cb">&#x2713;</th>
+  <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="rem" onchange="toggleAllInSection(this)" aria-label="Toggle all checkboxes"></th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th scope="col" class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th scope="col" class="col-status">Status</th>
@@ -1147,7 +1148,7 @@
 </colgroup>
 <thead><tr style="background:var(--color-modified-bg)">
   <th scope="col" class="col-no">#</th>
-  <th scope="col" class="col-cb">&#x2713;</th>
+  <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="mod" onchange="toggleAllInSection(this)" aria-label="Toggle all checkboxes"></th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th scope="col" class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th scope="col" class="col-status">Status</th>
@@ -1189,7 +1190,7 @@
   <col class="dc-col-refs-g">
 </colgroup>
 <thead><tr>
-  <th class="sc-col-cb">&#x2713;</th>
+  <th class="sc-col-cb"><input type="checkbox" class="cb-all-detail" onchange="toggleAllInDetailTable(this)" aria-label="Toggle all checkboxes"></th>
   <th>Package</th>
   <th>Status</th>
   <th>Importance</th>
@@ -1563,7 +1564,7 @@
 </colgroup>
 <thead><tr style="background:var(--color-modified-bg)">
   <th scope="col" class="col-no">#</th>
-  <th scope="col" class="col-cb">&#x2713;</th>
+  <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="sha256w" onchange="toggleAllInSection(this)" aria-label="Toggle all checkboxes"></th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th scope="col" class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th scope="col" class="col-status">Status</th>
@@ -1608,7 +1609,7 @@
 </colgroup>
 <thead><tr style="background:var(--color-modified-bg)">
   <th scope="col" class="col-no">#</th>
-  <th scope="col" class="col-cb">&#x2713;</th>
+  <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="tsw" onchange="toggleAllInSection(this)" aria-label="Toggle all checkboxes"></th>
   <th scope="col" class="th-resizable" data-col-var="--col-reason-w">Justification</th>
   <th scope="col" class="th-resizable" data-col-var="--col-notes-w">Notes</th>
   <th scope="col" class="col-status">Status</th>
@@ -1877,6 +1878,7 @@
       });
     } else {
       document.querySelectorAll('input, textarea').forEach(function(el) {
+        if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
         el.addEventListener('change', autoSave);
         el.addEventListener('input',  autoSave);
       });
@@ -1894,6 +1896,7 @@
     highlightAllILDiffs();
     applyFilters();
     updateProgress();
+    syncHeaderCheckboxes();
     updateStorageUsage();
     // Custom tooltip hover/focus handling
     document.querySelectorAll('.btn-tooltip-wrap').forEach(function(wrap) {
@@ -1926,6 +1929,16 @@
       if (__filterIds__.indexOf(el.id) >= 0) return;
       s[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
     });
+    document.querySelectorAll('table.vs-active').forEach(function(table) {
+      var vs = table.__vs;
+      if (!vs) return;
+      for (var i = 0; i < vs.rowData.length; i++) {
+        var rd = vs.rowData[i];
+        if (rd.cbId && !(rd.cbId in s)) {
+          s[rd.cbId] = rd.cbChecked;
+        }
+      }
+    });
     return s;
   }
 
@@ -1939,6 +1952,71 @@
     var status = document.getElementById('save-status');
     if (status) status.textContent = 'Auto-saved at ' + formatTs(new Date());
     updateProgress();
+    syncHeaderCheckboxes();
+  }
+
+  function toggleAllInSection(headerCb) {
+    var section = headerCb.getAttribute('data-section');
+    var table = headerCb.closest('table');
+    if (!table || !section) return;
+    var checked = headerCb.checked;
+    table.querySelectorAll('tbody > tr[data-section="' + section + '"] > td.col-cb > input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = checked;
+    });
+    autoSave();
+  }
+
+  function toggleAllInDetailTable(headerCb) {
+    var table = headerCb.closest('table');
+    if (!table) return;
+    var checked = headerCb.checked;
+    if (table.__vs) {
+      var vs = table.__vs;
+      for (var i = 0; i < vs.rowData.length; i++) {
+        vs.rowData[i].cbChecked = checked;
+      }
+      vs.tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = checked;
+      });
+    } else {
+      table.querySelectorAll('tbody input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = checked;
+      });
+    }
+    autoSave();
+  }
+
+  function syncHeaderCheckboxes() {
+    document.querySelectorAll('input.cb-all').forEach(function(hcb) {
+      var section = hcb.getAttribute('data-section');
+      var table = hcb.closest('table');
+      if (!table || !section) return;
+      var cbs = table.querySelectorAll('tbody > tr[data-section="' + section + '"] > td.col-cb > input[type="checkbox"]');
+      var total = cbs.length, checked = 0;
+      cbs.forEach(function(cb) { if (cb.checked) checked++; });
+      hcb.checked = total > 0 && checked === total;
+      hcb.indeterminate = checked > 0 && checked < total;
+    });
+    document.querySelectorAll('input.cb-all-detail').forEach(function(hcb) {
+      var table = hcb.closest('table');
+      if (!table) return;
+      var total = 0, checked = 0;
+      if (table.__vs) {
+        var vs = table.__vs;
+        for (var i = 0; i < vs.rowData.length; i++) {
+          if (vs.rowData[i].cbId) {
+            total++;
+            if (vs.rowData[i].cbChecked) checked++;
+          }
+        }
+      } else {
+        var cbs = table.querySelectorAll('tbody input[type="checkbox"]');
+        total = cbs.length;
+        cbs.forEach(function(cb) { if (cb.checked) checked++; });
+      }
+      hcb.checked = total > 0 && checked === total;
+      hcb.indeterminate = checked > 0 && checked < total;
+    });
   }
 
   function collectFilterState() {
@@ -2184,6 +2262,7 @@
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
     applyFilters();
+    syncHeaderCheckboxes();
     localStorage.removeItem(__storageKey__);
     clearFilterState();
     var status = document.getElementById('save-status');
@@ -2452,6 +2531,7 @@
           syncScTableWidths();
           if (__savedState__ === null) {
             d.querySelectorAll('input').forEach(function(el) {
+              if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
               el.addEventListener('change', autoSave);
             });
           }
@@ -2469,6 +2549,7 @@
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
           }
           updateProgress();
+          syncHeaderCheckboxes();
           // Apply current importance filters to newly rendered semantic change rows
           // 新規レンダリングされたセマンティック変更行に現在の重要度フィルターを適用
           applyFilters();
@@ -2490,6 +2571,7 @@
           syncTableWidths();
           if (__savedState__ === null) {
             d.querySelectorAll('input, textarea').forEach(function(el) {
+              if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
               el.addEventListener('change', autoSave);
               el.addEventListener('input',  autoSave);
             });
@@ -2507,6 +2589,7 @@
             d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
           }
           updateProgress();
+          syncHeaderCheckboxes();
         } catch(e) {}
       });
     });

@@ -479,6 +479,199 @@ describe('vsMaterializeAll', () => {
   });
 });
 
+// ─── Toggle-all header checkbox ─────────────────────────────────────────────
+// 一括ヘッダーチェックボックステスト
+describe('toggleAllInSection', () => {
+  function buildMainTable(sectionPrefix, rowCount) {
+    let rows = '';
+    for (let i = 0; i < rowCount; i++) {
+      rows += `<tr data-section="${sectionPrefix}"><td class="col-cb"><input type="checkbox" id="cb_${sectionPrefix}_${i}" /></td><td>File ${i}</td></tr>`;
+    }
+    return `<table><thead><tr><th class="col-cb"><input type="checkbox" class="cb-all" data-section="${sectionPrefix}" onchange="toggleAllInSection(this)" /></th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  test('checks all row checkboxes when header is checked', () => {
+    loadScript({ bodyHtml: buildMainTable('add', 5) + filterControlsHtml() });
+    const headerCb = document.querySelector('.cb-all');
+    headerCb.checked = true;
+    window.toggleAllInSection(headerCb);
+    const rowCbs = document.querySelectorAll('tbody input[type="checkbox"]');
+    rowCbs.forEach(cb => expect(cb.checked).toBe(true));
+  });
+
+  test('unchecks all row checkboxes when header is unchecked', () => {
+    loadScript({ bodyHtml: buildMainTable('rem', 3) + filterControlsHtml() });
+    // First check all / まず全チェック
+    document.querySelectorAll('tbody input[type="checkbox"]').forEach(cb => { cb.checked = true; });
+    const headerCb = document.querySelector('.cb-all');
+    headerCb.checked = false;
+    window.toggleAllInSection(headerCb);
+    document.querySelectorAll('tbody input[type="checkbox"]').forEach(cb => expect(cb.checked).toBe(false));
+  });
+});
+
+describe('toggleAllInDetailTable', () => {
+  function buildDetailTable(rowCount) {
+    let rows = '';
+    for (let i = 0; i < rowCount; i++) {
+      rows += `<tr><td><input type="checkbox" id="sc_x_${i}" /></td><td>Member ${i}</td></tr>`;
+    }
+    return `<table class="semantic-changes-table sc-detail"><thead><tr><th class="sc-col-cb"><input type="checkbox" class="cb-all-detail" onchange="toggleAllInDetailTable(this)" /></th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+
+  test('checks all row checkboxes in non-virtual-scroll table', () => {
+    loadScript({ bodyHtml: buildDetailTable(5) + filterControlsHtml() });
+    const headerCb = document.querySelector('.cb-all-detail');
+    headerCb.checked = true;
+    window.toggleAllInDetailTable(headerCb);
+    document.querySelectorAll('tbody input[type="checkbox"]').forEach(cb => expect(cb.checked).toBe(true));
+  });
+
+  test('updates rowData.cbChecked for all rows in virtual scroll table', () => {
+    // Build table with >100 rows to trigger virtual scroll / 仮想スクロール起動のため100行超テーブル構築
+    let rows = '';
+    for (let i = 0; i < 120; i++) {
+      rows += `<tr data-sc-importance="High"><td><input type="checkbox" id="sc_vs_${i}" /></td><td>Member ${i}</td></tr>`;
+    }
+    const html = `<table class="semantic-changes-table sc-detail"><thead><tr><th class="sc-col-cb"><input type="checkbox" class="cb-all-detail" onchange="toggleAllInDetailTable(this)" /></th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>${filterControlsHtml()}`;
+    loadScript({ bodyHtml: html });
+    const table = document.querySelector('.semantic-changes-table');
+    window.initVirtualScroll(table);
+    table.classList.add('vs-active');
+
+    // Toggle all on / 全チェック
+    const headerCb = document.querySelector('.cb-all-detail');
+    headerCb.checked = true;
+    window.toggleAllInDetailTable(headerCb);
+
+    // All rowData entries should be checked / 全 rowData エントリがチェック済みであること
+    table.__vs.rowData.forEach(rd => {
+      if (rd.cbId) expect(rd.cbChecked).toBe(true);
+    });
+
+    // Currently rendered DOM checkboxes should also be checked / 描画済み DOM チェックボックスもチェック済み
+    table.__vs.tbody.querySelectorAll('input[type="checkbox"]').forEach(cb => expect(cb.checked).toBe(true));
+  });
+
+  test('virtual scroll: unchecked state persists after re-render', () => {
+    let rows = '';
+    for (let i = 0; i < 120; i++) {
+      rows += `<tr data-sc-importance="High"><td><input type="checkbox" id="sc_vr_${i}" /></td><td>Member ${i}</td></tr>`;
+    }
+    const html = `<table class="semantic-changes-table sc-detail"><thead><tr><th class="sc-col-cb"><input type="checkbox" class="cb-all-detail" onchange="toggleAllInDetailTable(this)" /></th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>${filterControlsHtml()}`;
+    loadScript({ bodyHtml: html });
+    const table = document.querySelector('.semantic-changes-table');
+    window.initVirtualScroll(table);
+    table.classList.add('vs-active');
+
+    // Check all then uncheck all / 全チェック後に全チェック解除
+    const headerCb = document.querySelector('.cb-all-detail');
+    headerCb.checked = true;
+    window.toggleAllInDetailTable(headerCb);
+    headerCb.checked = false;
+    window.toggleAllInDetailTable(headerCb);
+
+    // Force re-render / 再レンダリングを強制
+    table.__vs.renderedStart = -1;
+    table.__vs.renderedEnd = -1;
+    window.vsRender(table);
+
+    // Rendered checkboxes should be unchecked / 描画済みチェックボックスが未チェックであること
+    table.__vs.tbody.querySelectorAll('input[type="checkbox"]').forEach(cb => expect(cb.checked).toBe(false));
+  });
+});
+
+describe('syncHeaderCheckboxes', () => {
+  test('sets indeterminate when partially checked', () => {
+    let rows = '';
+    for (let i = 0; i < 3; i++) {
+      rows += `<tr data-section="mod"><td class="col-cb"><input type="checkbox" id="cb_mod_${i}" /></td><td>File ${i}</td></tr>`;
+    }
+    const html = `<table><thead><tr><th class="col-cb"><input type="checkbox" class="cb-all" data-section="mod" /></th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>${filterControlsHtml()}`;
+    loadScript({ bodyHtml: html });
+    // Check only first row / 最初の行のみチェック
+    document.getElementById('cb_mod_0').checked = true;
+    window.syncHeaderCheckboxes();
+    const hcb = document.querySelector('.cb-all');
+    expect(hcb.indeterminate).toBe(true);
+    expect(hcb.checked).toBe(false);
+  });
+
+  test('sets checked when all rows checked', () => {
+    let rows = '';
+    for (let i = 0; i < 3; i++) {
+      rows += `<tr data-section="add"><td class="col-cb"><input type="checkbox" id="cb_add_${i}" /></td><td>File ${i}</td></tr>`;
+    }
+    const html = `<table><thead><tr><th class="col-cb"><input type="checkbox" class="cb-all" data-section="add" /></th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>${filterControlsHtml()}`;
+    loadScript({ bodyHtml: html });
+    document.querySelectorAll('tbody input[type="checkbox"]').forEach(cb => { cb.checked = true; });
+    window.syncHeaderCheckboxes();
+    const hcb = document.querySelector('.cb-all');
+    expect(hcb.checked).toBe(true);
+    expect(hcb.indeterminate).toBe(false);
+  });
+
+  test('reads from rowData for virtual scroll detail tables', () => {
+    let rows = '';
+    for (let i = 0; i < 120; i++) {
+      rows += `<tr data-sc-importance="High"><td><input type="checkbox" id="sc_sh_${i}" /></td><td>M ${i}</td></tr>`;
+    }
+    const html = `<table class="semantic-changes-table sc-detail"><thead><tr><th class="sc-col-cb"><input type="checkbox" class="cb-all-detail" /></th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>${filterControlsHtml()}`;
+    loadScript({ bodyHtml: html });
+    const table = document.querySelector('.semantic-changes-table');
+    window.initVirtualScroll(table);
+    table.classList.add('vs-active');
+
+    // Mark all rowData as checked / 全 rowData をチェック済みに
+    table.__vs.rowData.forEach(rd => { rd.cbChecked = true; });
+    window.syncHeaderCheckboxes();
+    const hcb = document.querySelector('.cb-all-detail');
+    expect(hcb.checked).toBe(true);
+    expect(hcb.indeterminate).toBe(false);
+  });
+
+  test('virtual scroll: partial check shows indeterminate on detail header', () => {
+    let rows = '';
+    for (let i = 0; i < 120; i++) {
+      rows += `<tr data-sc-importance="High"><td><input type="checkbox" id="sc_si_${i}" /></td><td>M ${i}</td></tr>`;
+    }
+    const html = `<table class="semantic-changes-table sc-detail"><thead><tr><th class="sc-col-cb"><input type="checkbox" class="cb-all-detail" /></th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>${filterControlsHtml()}`;
+    loadScript({ bodyHtml: html });
+    const table = document.querySelector('.semantic-changes-table');
+    window.initVirtualScroll(table);
+    table.classList.add('vs-active');
+
+    // Mark only first half as checked / 前半のみチェック済みに
+    table.__vs.rowData.forEach((rd, i) => { rd.cbChecked = i < 60; });
+    window.syncHeaderCheckboxes();
+    const hcb = document.querySelector('.cb-all-detail');
+    expect(hcb.checked).toBe(false);
+    expect(hcb.indeterminate).toBe(true);
+  });
+});
+
+describe('collectState with virtual scroll', () => {
+  test('includes virtual scroll rowData entries not in DOM', () => {
+    let rows = '';
+    for (let i = 0; i < 120; i++) {
+      rows += `<tr data-sc-importance="High"><td><input type="checkbox" id="sc_cs_${i}" /></td><td>M ${i}</td></tr>`;
+    }
+    const html = `<table class="semantic-changes-table sc-detail"><thead><tr><th>CB</th><th>Name</th></tr></thead><tbody>${rows}</tbody></table>${filterControlsHtml()}`;
+    loadScript({ bodyHtml: html });
+    const table = document.querySelector('.semantic-changes-table');
+    window.initVirtualScroll(table);
+    table.classList.add('vs-active');
+
+    // Mark some non-rendered rows as checked / 非描画行をチェック済みに
+    table.__vs.rowData[119].cbChecked = true;
+
+    const state = window.collectState();
+    // The last row (likely not rendered) should still appear in state
+    // 最後の行（おそらく非描画）もstateに含まれるはず
+    expect(state['sc_cs_119']).toBe(true);
+  });
+});
+
 // ─── Excel export ───────────────────────────────────────────────────────────
 // Excel エクスポートパイプラインテスト
 describe('buildExcelFramework', () => {

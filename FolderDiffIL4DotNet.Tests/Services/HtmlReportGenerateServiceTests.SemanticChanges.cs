@@ -215,8 +215,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         /// <summary>
-        /// Verifies that the checkbox column header (&#x2713;) is present in the semantic-changes detail table.
-        /// semantic-changes 詳細テーブルにチェック列ヘッダ (&#x2713;) が存在することを確認する。
+        /// Verifies that the checkbox column header has a toggle-all checkbox in the semantic-changes detail table.
+        /// semantic-changes 詳細テーブルに一括切り替えチェックボックスのヘッダが存在することを確認する。
         /// </summary>
         [Fact]
         public void GenerateDiffReportHtml_AssemblySemanticChanges_CheckboxHeaderPresent()
@@ -243,9 +243,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            // Detail table must have checkbox header (✓) AND body checkboxes
-            // 詳細テーブルにチェックヘッダ(✓)とボディのチェックボックスが両方存在すること
-            Assert.Contains("<th scope=\"col\" class=\"sc-col-cb\">&#x2713;</th>", html);
+            // Detail table must have toggle-all checkbox header AND body checkboxes
+            // 詳細テーブルに一括切り替えチェックボックスヘッダとボディのチェックボックスが両方存在すること
+            Assert.Contains("<th scope=\"col\" class=\"sc-col-cb\"><input type=\"checkbox\" class=\"cb-all-detail\"", html);
             Assert.Contains("<td class=\"sc-col-cb\"><input type=\"checkbox\"", html);
         }
 

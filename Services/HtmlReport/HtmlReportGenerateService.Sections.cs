@@ -103,7 +103,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2>[ x ] {HtmlEncode("Ignored Files")} ({items.Count})</h2>");
             writer.WriteLine("<details class=\"lazy-section\">");
             writer.WriteLine("<summary></summary>");
-            AppendTableStart(writer, TH_BG_DEFAULT, "Location", hideClasses: "hide-disasm hide-tag hide-sdk");
+            AppendTableStart(writer, TH_BG_DEFAULT, "Location", "ign", hideClasses: "hide-disasm hide-tag hide-sdk");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var entry in items)
@@ -146,7 +146,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2>[ = ] {HtmlEncode("Unchanged Files")} ({items.Count})</h2>");
             writer.WriteLine("<details class=\"lazy-section\">");
             writer.WriteLine("<summary></summary>");
-            AppendTableStart(writer, TH_BG_DEFAULT, "Diff Reason");
+            AppendTableStart(writer, TH_BG_DEFAULT, "Diff Reason", "unch");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
@@ -176,7 +176,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2 style=\"color:{COLOR_ADDED}\">[ + ] {HtmlEncode("Added Files")} ({items.Count})</h2>");
             if (items.Count == 0) { writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
-            AppendTableStart(writer, TH_BG_ADDED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag hide-sdk");
+            AppendTableStart(writer, TH_BG_ADDED, "Diff Reason", "add", hideClasses: "hide-col6 hide-disasm hide-tag hide-sdk");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
@@ -196,7 +196,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2 style=\"color:{COLOR_REMOVED}\">[ - ] {HtmlEncode("Removed Files")} ({items.Count})</h2>");
             if (items.Count == 0) { writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
-            AppendTableStart(writer, TH_BG_REMOVED, "Diff Reason", hideClasses: "hide-col6 hide-disasm hide-tag hide-sdk");
+            AppendTableStart(writer, TH_BG_REMOVED, "Diff Reason", "rem", hideClasses: "hide-col6 hide-disasm hide-tag hide-sdk");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var absPath in items)
@@ -224,7 +224,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ * ] {HtmlEncode("Modified Files")} ({items.Count})</h2>");
             if (items.Count == 0) { writer.WriteLine($"<p class=\"empty\">{HtmlEncode("(none)")}</p>"); return; }
 
-            AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason");
+            AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason", "mod");
             writer.WriteLine("<tbody>");
             int idx = 0;
             foreach (var path in items)
@@ -352,7 +352,7 @@ namespace FolderDiffIL4DotNet.Services
                 if (sha256Files.Count > 0)
                 {
                     writer.WriteLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("SHA256Mismatch: binary diff only — not a .NET assembly and not a recognized text file")} ({sha256Files.Count})</h2>");
-                    AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason");
+                    AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason", "sha256w");
                     writer.WriteLine("<tbody>");
                     int idx = 0;
                     foreach (var kv in sha256Files)
@@ -384,7 +384,7 @@ namespace FolderDiffIL4DotNet.Services
                     .ThenBy(w => GetImportanceSortOrder(_fileDiffResultLists.GetMaxImportance(w.FileRelativePath)))
                     .ThenBy(w => w.FileRelativePath, StringComparer.OrdinalIgnoreCase).ToList();
                 writer.WriteLine($"<h2 style=\"color:{COLOR_MODIFIED}\">[ ! ] {HtmlEncode("Modified Files")} &#x2014; {HtmlEncode("new file timestamps older than old")} ({warnings.Count})</h2>");
-                AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason");
+                AppendTableStart(writer, TH_BG_MODIFIED, "Diff Reason", "tsw");
                 writer.WriteLine("<tbody>");
                 int idx = 0;
                 foreach (var w in warnings)

@@ -50,6 +50,7 @@
           if (__savedState__ === null) {
             d.querySelectorAll('input').forEach(function(el) {
               if (el.closest('table.vs-active')) return;
+              if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
               el.addEventListener('change', autoSave);
             });
           }
@@ -67,6 +68,7 @@
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
           }
           updateProgress();
+          syncHeaderCheckboxes();
           // Apply current importance filters to newly rendered semantic change rows
           // 新規レンダリングされたセマンティック変更行に現在の重要度フィルターを適用
           applyFilters();
@@ -98,6 +100,7 @@
           // Wire up save events on new inputs / 新規inputにsaveイベントを接続
           if (__savedState__ === null) {
             d.querySelectorAll('input, textarea').forEach(function(el) {
+              if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
               el.addEventListener('change', autoSave);
               el.addEventListener('input',  autoSave);
             });
@@ -116,6 +119,7 @@
             d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
           }
           updateProgress();
+          syncHeaderCheckboxes();
         } catch(e) {}
       });
     });

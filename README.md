@@ -202,7 +202,7 @@ Every file entry is displayed in a table with interactive columns for sign-off:
 
 | Column | Description |
 |---|---|
-| ✓ | Checkbox to mark a file as reviewed |
+| ✓ | Checkbox to mark a file as reviewed. The column header is also a checkbox that toggles all rows in the table at once (indeterminate state shown when partially checked). For the Modified table, the header checkbox only affects file-level rows — inline detail tables (semantic changes, dependency changes) each have their own independent header checkbox |
 | Justification | Free-text input — explain why the change is expected |
 | Notes | Free-text input — additional remarks |
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
@@ -930,7 +930,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 
 | 列 | 説明 |
 |---|---|
-| ✓ | チェックボックス（確認済みマーク） |
+| ✓ | チェックボックス（確認済みマーク）。列ヘッダーもチェックボックスになっており、テーブル内の全行を一括で切り替え可能（一部チェック時は indeterminate 表示）。Modified テーブルではファイルレベルの行のみを切り替え、インライン詳細テーブル（セマンティック変更、依存関係変更）には影響しない。各インライン詳細テーブルには独立したヘッダーチェックボックスがある |
 | Justification | 自由テキスト入力 — 変更が想定内である理由を記入 |
 | Notes | 自由テキスト入力 — 補足メモ |
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
