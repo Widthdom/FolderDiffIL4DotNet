@@ -52,6 +52,17 @@
       if (__filterIds__.indexOf(el.id) >= 0) return;
       s[el.id] = (el.type === 'checkbox') ? el.checked : el.value;
     });
+    // Include virtual scroll rows not currently in DOM / 仮想スクロールで DOM 外の行も含める
+    document.querySelectorAll('table.vs-active').forEach(function(table) {
+      var vs = table.__vs;
+      if (!vs) return;
+      for (var i = 0; i < vs.rowData.length; i++) {
+        var rd = vs.rowData[i];
+        if (rd.cbId && !(rd.cbId in s)) {
+          s[rd.cbId] = rd.cbChecked;
+        }
+      }
+    });
     return s;
   }
 
@@ -246,9 +257,20 @@
     var table = headerCb.closest('table');
     if (!table) return;
     var checked = headerCb.checked;
-    table.querySelectorAll('tbody input[type="checkbox"]').forEach(function(cb) {
-      cb.checked = checked;
-    });
+    // Virtual scroll: update rowData and rendered DOM / 仮想スクロール: rowData と描画済み DOM を更新
+    if (table.__vs) {
+      var vs = table.__vs;
+      for (var i = 0; i < vs.rowData.length; i++) {
+        vs.rowData[i].cbChecked = checked;
+      }
+      vs.tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = checked;
+      });
+    } else {
+      table.querySelectorAll('tbody input[type="checkbox"]').forEach(function(cb) {
+        cb.checked = checked;
+      });
+    }
     autoSave();
   }
 
@@ -274,9 +296,21 @@
     document.querySelectorAll('input.cb-all-detail').forEach(function(hcb) {
       var table = hcb.closest('table');
       if (!table) return;
-      var cbs = table.querySelectorAll('tbody input[type="checkbox"]');
-      var total = cbs.length, checked = 0;
-      cbs.forEach(function(cb) { if (cb.checked) checked++; });
+      var total = 0, checked = 0;
+      // Virtual scroll: count from rowData / 仮想スクロール: rowData からカウント
+      if (table.__vs) {
+        var vs = table.__vs;
+        for (var i = 0; i < vs.rowData.length; i++) {
+          if (vs.rowData[i].cbId) {
+            total++;
+            if (vs.rowData[i].cbChecked) checked++;
+          }
+        }
+      } else {
+        var cbs = table.querySelectorAll('tbody input[type="checkbox"]');
+        total = cbs.length;
+        cbs.forEach(function(cb) { if (cb.checked) checked++; });
+      }
       hcb.checked = total > 0 && checked === total;
       hcb.indeterminate = checked > 0 && checked < total;
     });

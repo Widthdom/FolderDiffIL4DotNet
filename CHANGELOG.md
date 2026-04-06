@@ -19,6 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Fixed toggle-all header checkbox not checking all rows when in indeterminate state** — Clicking an indeterminate header checkbox (partially checked section) unchecked all rows instead of checking all. Root cause: the `autoSave` event listener was registered on header checkboxes (`.cb-all`, `.cb-all-detail`), causing the `input` event to fire before `change`. The `input` handler triggered `syncHeaderCheckboxes()` which reset the header to unchecked (since rows hadn't changed yet), then `toggleAllInSection` read the now-false `checked` property and unchecked all rows. Fix: header checkboxes are now excluded from `autoSave` event listener registration in DOMContentLoaded, `setupLazyDiff`, and `setupLazySection`. Affected: `Services/HtmlReport/js/diff_report_init.js`, `Services/HtmlReport/js/diff_report_lazy.js`, `doc/samples/diff_report.html`.
 
+- **Fixed toggle-all header checkbox not working with virtual scroll in semantic changes tables** — In detail tables with 100+ rows, virtual scroll only renders visible rows in the DOM. `toggleAllInDetailTable` only toggled DOM checkboxes, so scrolling revealed unchecked rows whose state was never updated in `rowData`. Similarly, `syncHeaderCheckboxes` counted only rendered DOM checkboxes, giving incorrect totals. `collectState` also missed virtual scroll rows not in the DOM, causing incomplete state persistence. Fix: (1) `toggleAllInDetailTable` now updates `rowData[i].cbChecked` for all rows when the table has `__vs`; (2) `syncHeaderCheckboxes` reads from `rowData` instead of DOM for virtual scroll tables; (3) `collectState` merges virtual scroll `rowData` entries not present in DOM. Affected: `Services/HtmlReport/js/diff_report_state.js`, `doc/samples/diff_report.html`.
+
 ### [1.13.7] - 2026-04-05
 
 #### Changed
@@ -1144,6 +1146,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### 修正
 
 - **indeterminate 状態の一括チェックボックスをクリックしても全行チェックされない不具合を修正** — 一部チェック済み（indeterminate）のヘッダーチェックボックスをクリックすると、全行チェックではなく全行チェック解除になっていた。原因: `autoSave` イベントリスナーがヘッダーチェックボックス（`.cb-all`、`.cb-all-detail`）にも登録されており、`input` イベントが `change` より先に発火。`input` ハンドラが `syncHeaderCheckboxes()` を実行し、行が未変更のためヘッダーが unchecked にリセットされた後、`toggleAllInSection` が false になった `checked` プロパティを読み取り全行をチェック解除していた。修正: DOMContentLoaded、`setupLazyDiff`、`setupLazySection` での `autoSave` イベントリスナー登録時にヘッダーチェックボックスを除外するようにした。対象: `Services/HtmlReport/js/diff_report_init.js`、`Services/HtmlReport/js/diff_report_lazy.js`、`doc/samples/diff_report.html`。
+
+- **セマンティック変更テーブルの仮想スクロールで一括チェックボックスが機能しない不具合を修正** — 100行超の詳細テーブルでは仮想スクロールが有効となり、表示行のみ DOM にレンダリングされる。`toggleAllInDetailTable` は DOM 上のチェックボックスのみ操作していたため、スクロールすると `rowData` の元の未チェック状態が復元されチェックが消えていた。`syncHeaderCheckboxes` も DOM 上のチェックボックスのみカウントしており、正しい合計が得られなかった。`collectState` も DOM 外の仮想スクロール行を見落とし、状態保存が不完全だった。修正: (1) `toggleAllInDetailTable` が `__vs` 付きテーブルで全行の `rowData[i].cbChecked` を更新; (2) `syncHeaderCheckboxes` が仮想スクロールテーブルでは DOM ではなく `rowData` から集計; (3) `collectState` が DOM に存在しない仮想スクロール `rowData` エントリをマージ。対象: `Services/HtmlReport/js/diff_report_state.js`、`doc/samples/diff_report.html`。
 
 ### [1.13.7] - 2026-04-05
 
