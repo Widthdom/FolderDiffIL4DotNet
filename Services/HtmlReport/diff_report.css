@@ -588,6 +588,7 @@
     td { padding: 2px 4px; border: 1px solid var(--color-border); vertical-align: middle; font-size: 12px; }
     td.col-no   { width: 3.2em; text-align: right; color: var(--color-text-faint);
                   font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; }
+    th.col-cb   { width: 2.2em; text-align: center; }
     td.col-cb   { width: 2.2em; text-align: center; }
     td.col-reason { overflow: hidden; text-align: center; }
     td.col-notes  { overflow: hidden; }

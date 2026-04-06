@@ -196,6 +196,7 @@
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
     applyFilters();
+    syncHeaderCheckboxes();
     localStorage.removeItem(__storageKey__);
     clearFilterState();
     var status = document.getElementById('save-status');

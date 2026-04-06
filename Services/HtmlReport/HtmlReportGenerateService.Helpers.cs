@@ -15,7 +15,7 @@ namespace FolderDiffIL4DotNet.Services
         // ── Table helpers ────────────────────────────────────────────────────
 
         private static void AppendTableStart(TextWriter writer, string headerBgColor, string col6Header,
-            string hideClasses = "")
+            string sectionPrefix, string hideClasses = "")
         {
             string bg = headerBgColor ?? TH_BG_DEFAULT;
             string tableCls = string.IsNullOrEmpty(hideClasses) ? "" : $" class=\"{hideClasses}\"";
@@ -36,7 +36,7 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("</colgroup>");
             writer.WriteLine($"<thead><tr style=\"background:{bg}\">");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-no\">#</th>");
-            writer.WriteLine($"  <th scope=\"col\" class=\"col-cb\">&#x2713;</th>");
+            writer.WriteLine($"  <th scope=\"col\" class=\"col-cb\"><input type=\"checkbox\" class=\"cb-all\" data-section=\"{HtmlEncode(sectionPrefix)}\" onchange=\"toggleAllInSection(this)\" aria-label=\"{HtmlEncode("Toggle all checkboxes")}\"></th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-reason-w\">{HtmlEncode("Justification")}</th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-notes-w\">{HtmlEncode("Notes")}</th>");
             writer.WriteLine($"  <th scope=\"col\" class=\"col-status\">{HtmlEncode("Status")}</th>");

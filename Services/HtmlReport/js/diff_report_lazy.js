@@ -67,6 +67,7 @@
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
           }
           updateProgress();
+          syncHeaderCheckboxes();
           // Apply current importance filters to newly rendered semantic change rows
           // 新規レンダリングされたセマンティック変更行に現在の重要度フィルターを適用
           applyFilters();
@@ -116,6 +117,7 @@
             d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
           }
           updateProgress();
+          syncHeaderCheckboxes();
         } catch(e) {}
       });
     });

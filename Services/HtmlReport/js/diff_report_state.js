@@ -71,6 +71,7 @@
     var status = document.getElementById('save-status');
     if (status) { status.textContent = 'Auto-saved at ' + formatTs(new Date()); status.style.color = ''; }
     updateProgress();
+    syncHeaderCheckboxes();
     updateStorageUsage();
   }
 
@@ -214,6 +215,71 @@
     if (txt) txt.textContent = checked + ' / ' + __totalFiles__ + ' reviewed';
     var det = document.getElementById('progress-detail');
     if (det && __totalFilesDetail__) det.textContent = '(' + __totalFilesDetail__ + ')';
+  }
+
+  /**
+   * Toggle all row checkboxes in a main table section when the header checkbox is clicked.
+   * For the modified section, only toggles file-level checkboxes (cb_*), NOT inline detail checkboxes (sc_*, dc_*).
+   * メインテーブルのヘッダーチェックボックスがクリックされたとき、セクション内の全行チェックボックスを切り替えます。
+   * Modified セクションでは、ファイルレベルのチェックボックス（cb_*）のみを切り替え、インライン詳細（sc_*, dc_*）は切り替えません。
+   * @param {HTMLInputElement} headerCb - The header checkbox element
+   */
+  function toggleAllInSection(headerCb) {
+    var section = headerCb.getAttribute('data-section');
+    var table = headerCb.closest('table');
+    if (!table || !section) return;
+    var checked = headerCb.checked;
+    table.querySelectorAll('tbody > tr[data-section="' + section + '"] > td.col-cb > input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = checked;
+    });
+    autoSave();
+  }
+
+  /**
+   * Toggle all row checkboxes in an inline detail table (semantic changes / dependency changes)
+   * when the detail table header checkbox is clicked.
+   * インライン詳細テーブル（セマンティック変更/依存関係変更）のヘッダーチェックボックスがクリックされたとき、
+   * テーブル内の全行チェックボックスを切り替えます。
+   * @param {HTMLInputElement} headerCb - The header checkbox element
+   */
+  function toggleAllInDetailTable(headerCb) {
+    var table = headerCb.closest('table');
+    if (!table) return;
+    var checked = headerCb.checked;
+    table.querySelectorAll('tbody input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = checked;
+    });
+    autoSave();
+  }
+
+  /**
+   * Synchronize header checkbox state (checked/indeterminate) based on row checkboxes.
+   * Called after state restore, lazy load, and clear operations.
+   * ヘッダーチェックボックスの状態（checked/indeterminate）を行チェックボックスに基づいて同期します。
+   * 状態復元、遅延ロード、クリア操作の後に呼び出されます。
+   */
+  function syncHeaderCheckboxes() {
+    // Main table headers / メインテーブルヘッダー
+    document.querySelectorAll('input.cb-all').forEach(function(hcb) {
+      var section = hcb.getAttribute('data-section');
+      var table = hcb.closest('table');
+      if (!table || !section) return;
+      var cbs = table.querySelectorAll('tbody > tr[data-section="' + section + '"] > td.col-cb > input[type="checkbox"]');
+      var total = cbs.length, checked = 0;
+      cbs.forEach(function(cb) { if (cb.checked) checked++; });
+      hcb.checked = total > 0 && checked === total;
+      hcb.indeterminate = checked > 0 && checked < total;
+    });
+    // Inline detail table headers (semantic changes, dependency changes) / インライン詳細テーブルヘッダー
+    document.querySelectorAll('input.cb-all-detail').forEach(function(hcb) {
+      var table = hcb.closest('table');
+      if (!table) return;
+      var cbs = table.querySelectorAll('tbody input[type="checkbox"]');
+      var total = cbs.length, checked = 0;
+      cbs.forEach(function(cb) { if (cb.checked) checked++; });
+      hcb.checked = total > 0 && checked === total;
+      hcb.indeterminate = checked > 0 && checked < total;
+    });
   }
 
   /* Export pure functions for Node.js/Jest testing (no-op in browser) */

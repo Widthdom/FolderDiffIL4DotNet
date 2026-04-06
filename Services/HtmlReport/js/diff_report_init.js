@@ -43,6 +43,7 @@
     highlightAllILDiffs();
     applyFilters();
     updateProgress();
+    syncHeaderCheckboxes();
     updateStorageUsage();
     // Custom tooltip hover/focus handling / カスタムツールチップのホバー・フォーカス処理
     document.querySelectorAll('.btn-tooltip-wrap').forEach(function(wrap) {
