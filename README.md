@@ -128,7 +128,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--version` | Show the application version and exit (code `0`). |
 | `--banner` | Show the ASCII-art banner and exit (code `0`). |
 | `--credits` | Show credits and acknowledgements (easter egg). |
-| `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects `config.json` + all `FOLDERDIFF_*` env var overrides. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
+| `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects [`config.json`](config.json) + all `FOLDERDIFF_*` env var overrides. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
 | `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. |
 | `--no-pause` | Skip key-wait at process end. |
 | `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
@@ -151,7 +151,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--output <path>` | Output directory for reports (default: `<exe>/Reports/`). The report label subfolder is created under this directory. Useful for CI/CD pipelines that need reports written to a custom path. |
 | `--log-format <text\|json>` | Log file output format (default: `text`). `json` emits NDJSON (one JSON object per line) with W3C Trace Context fields (`traceId`, `spanId`) for SIEM, OpenTelemetry, and log aggregation tool integration. Console output remains plain text regardless. |
 
-> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the tool gently suggests matcha instead (easter egg). Use `--random-spinner` for a surprise theme each run. They also override any custom `SpinnerFrames` set in `config.json`.
+> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the tool gently suggests matcha instead (easter egg). Use `--random-spinner` for a surprise theme each run. They also override any custom `SpinnerFrames` set in [`config.json`](config.json).
 
 ```bash
 dotnet build
@@ -404,7 +404,7 @@ Place [`config.json`](config.json) next to the executable. All keys are optional
 
 #### JSON Schema for IDE Autocompletion
 
-A JSON Schema file ([`doc/config.schema.json`](doc/config.schema.json)) is provided for IDE autocompletion and real-time validation. Add a `$schema` property to your `config.json` to enable it:
+A JSON Schema file ([`doc/config.schema.json`](doc/config.schema.json)) is provided for IDE autocompletion and real-time validation. Add a `$schema` property to your [`config.json`](config.json) to enable it:
 
 ```json
 {
@@ -412,7 +412,7 @@ A JSON Schema file ([`doc/config.schema.json`](doc/config.schema.json)) is provi
 }
 ```
 
-> **Tip:** Adjust the `$schema` path based on where your `config.json` is relative to `config.schema.json`. Supported in VS Code, Visual Studio, JetBrains Rider, Vim/Neovim (via LSP), and other JSON-aware editors. Benefits include property name autocompletion, type checking, value range validation, and bilingual hover descriptions.
+> **Tip:** Adjust the `$schema` path based on where your [`config.json`](config.json) is relative to [`config.schema.json`](doc/config.schema.json). Supported in VS Code, Visual Studio, JetBrains Rider, Vim/Neovim (via LSP), and other JSON-aware editors. Benefits include property name autocompletion, type checking, value range validation, and bilingual hover descriptions.
 
 Override only the settings you want to change. For example:
 
@@ -689,7 +689,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 | `string` | Raw value as-is |
 
 Rules:
-- Environment variables are applied **after** `config.json` is loaded and **before** validation, so env-var values are subject to the same validation constraints as JSON values.
+- Environment variables are applied **after** [`config.json`](config.json) is loaded and **before** validation, so env-var values are subject to the same validation constraints as JSON values.
 - If an env var has an unrecognised value for its type (e.g. `"yes"` for a bool, `"x"` for an int), it is silently ignored and the JSON (or built-in default) value is kept.
 - List properties ([`IgnoredExtensions`](#config-en-ignoredextensions), [`TextFileExtensions`](#config-en-textfileextensions), [`ILIgnoreLineContainingStrings`](#config-en-ilignorelinecontainingstrings), [`SpinnerFrames`](#config-en-spinnerframes)) cannot be overridden via environment variables; edit [`config.json`](config.json) for those.
 
@@ -856,7 +856,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
 | `--banner` | ASCII アートバナーを表示してコード `0` で終了します。 |
 | `--credits` | クレジットと謝辞を表示します（イースターエッグ）。 |
-| `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。`config.json` のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
+| `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。[`config.json`](config.json) のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
 | `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
 | `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
@@ -879,7 +879,7 @@ FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
 | `--output <path>` | レポートの出力ディレクトリ（既定: `<exe>/Reports/`）。このディレクトリの下にレポートラベルのサブフォルダが作成されます。CI/CD パイプラインでレポートを任意のパスに出力したい場合に便利です。 |
 | `--log-format <text\|json>` | ログファイルの出力形式（既定: `text`）。`json` を指定すると W3C Trace Context フィールド（`traceId`、`spanId`）付きの NDJSON（1行1 JSON オブジェクト）で出力し、SIEM、OpenTelemetry、ログ集約ツールとの連携が容易になります。コンソール出力は形式に関わらずプレーンテキストのままです。 |
 
-> **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`、`--ramen`、`--sushi`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は抹茶が提案されます（イースターエッグ）。`--random-spinner` で毎回サプライズテーマを楽しめます。`config.json` で設定したカスタム `SpinnerFrames` も上書きされます。
+> **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`、`--ramen`、`--sushi`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は抹茶が提案されます（イースターエッグ）。`--random-spinner` で毎回サプライズテーマを楽しめます。[`config.json`](config.json) で設定したカスタム `SpinnerFrames` も上書きされます。
 
 ```bash
 dotnet build
@@ -1131,7 +1131,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
 
 #### IDE 補完用 JSON Schema
 
-JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）を提供しています。`config.json` に `$schema` プロパティを追加すると、IDE の補完とリアルタイムバリデーションが有効になります。
+JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）を提供しています。[`config.json`](config.json) に `$schema` プロパティを追加すると、IDE の補完とリアルタイムバリデーションが有効になります。
 
 ```json
 {
@@ -1139,7 +1139,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
 }
 ```
 
-> **ヒント:** `$schema` のパスは `config.json` から `config.schema.json` への相対パスに合わせて調整してください。VS Code、Visual Studio、JetBrains Rider、Vim/Neovim（LSP 経由）など JSON 対応エディタで利用可能です。プロパティ名の補完、型チェック、値の範囲検証、英日バイリンガルのホバー説明が得られます。
+> **ヒント:** `$schema` のパスは [`config.json`](config.json) から [`config.schema.json`](doc/config.schema.json) への相対パスに合わせて調整してください。VS Code、Visual Studio、JetBrains Rider、Vim/Neovim（LSP 経由）など JSON 対応エディタで利用可能です。プロパティ名の補完、型チェック、値の範囲検証、英日バイリンガルのホバー説明が得られます。
 
 変更したい項目だけを書けば十分です。例:
 
@@ -1416,7 +1416,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 | `string` | 入力値をそのまま使用 |
 
 ルール:
-- 環境変数は `config.json` 読み込み**後**・バリデーション**前**に適用されます。そのため、環境変数で設定した値も JSON と同じバリデーション制約の対象になります。
+- 環境変数は [`config.json`](config.json) 読み込み**後**・バリデーション**前**に適用されます。そのため、環境変数で設定した値も JSON と同じバリデーション制約の対象になります。
 - 型に合わない値（bool に `"yes"`、int に `"x"` など）は警告なしで無視され、JSON（または組み込み既定値）が引き続き使用されます。
 - リスト型プロパティ（[`IgnoredExtensions`](#config-ja-ignoredextensions)、[`TextFileExtensions`](#config-ja-textfileextensions)、[`ILIgnoreLineContainingStrings`](#config-ja-ilignorelinecontainingstrings)、[`SpinnerFrames`](#config-ja-spinnerframes)）は環境変数でのオーバーライドに対応していません。これらは [`config.json`](config.json) を編集してください。
 

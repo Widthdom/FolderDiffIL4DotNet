@@ -16,7 +16,7 @@ This document describes the threat model and security considerations for FolderD
 
 ### Trust Boundaries
 
-1. **User input** — CLI arguments, `config.json` / `config.jsonc`, environment variables (`FOLDERDIFF_*` prefix)
+1. **User input** — CLI arguments, [`config.json`](config.json) / `config.jsonc`, environment variables (`FOLDERDIFF_*` prefix)
 2. **File system** — Old/new folder contents being compared, report output directory, IL disassembly cache
 3. **External tools** — Subprocess execution of `dotnet-ildasm` and `ilspycmd` for IL disassembly
 4. **Browser** — HTML report rendered locally by the reviewer's browser
@@ -132,7 +132,7 @@ If you discover a security vulnerability, please report it by opening a GitHub i
 
 ### 信頼境界
 
-1. **ユーザー入力** — CLI 引数、`config.json` / `config.jsonc`、環境変数（`FOLDERDIFF_*` プレフィックス）
+1. **ユーザー入力** — CLI 引数、[`config.json`](config.json) / `config.jsonc`、環境変数（`FOLDERDIFF_*` プレフィックス）
 2. **ファイルシステム** — 比較対象の旧/新フォルダ内容、レポート出力ディレクトリ、IL 逆アセンブリキャッシュ
 3. **外部ツール** — IL 逆アセンブリ用の `dotnet-ildasm` および `ilspycmd` のサブプロセス実行
 4. **ブラウザ** — レビュアーのブラウザでローカルにレンダリングされる HTML レポート
