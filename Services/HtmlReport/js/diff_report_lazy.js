@@ -50,6 +50,7 @@
           if (__savedState__ === null) {
             d.querySelectorAll('input').forEach(function(el) {
               if (el.closest('table.vs-active')) return;
+              if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
               el.addEventListener('change', autoSave);
             });
           }
@@ -99,6 +100,7 @@
           // Wire up save events on new inputs / 新規inputにsaveイベントを接続
           if (__savedState__ === null) {
             d.querySelectorAll('input, textarea').forEach(function(el) {
+              if (el.classList.contains('cb-all') || el.classList.contains('cb-all-detail')) return;
               el.addEventListener('change', autoSave);
               el.addEventListener('input',  autoSave);
             });
