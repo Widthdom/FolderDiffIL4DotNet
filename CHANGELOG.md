@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.13.8] - 2026-04-06
+
 #### Added
 
 - **`--credits` CLI option (easter egg)** — Displays an end-credits-style screen showing core technologies, open source library acknowledgements, special thanks, and the project philosophy ("Signal over noise."). Exits with code `0` without initializing the logger, following the same early-exit pattern as `--help`/`--version`/`--banner`. Affected: `Runner/CliOptions.cs`, `Runner/CliParser.cs`, `Runner/ProgramRunner.Credits.cs` (new), `Runner/ProgramRunner.HelpText.cs`, `ProgramRunner.cs`, `README.md`. Tests: `CliOptionsTests` (1 new Theory with 2 InlineData: `ParseCliOptions_CreditsFlag_SetsShowCredits`), `ProgramRunnerTests.HelpVersion.cs` (1 new: `RunAsync_CreditsFlag_ExitsZeroWithCreditsOutput`).
@@ -1130,6 +1132,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.13.8] - 2026-04-06
 
 #### 追加
 
@@ -2253,7 +2257,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.7...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.8...HEAD
+[1.13.8]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.7...v1.13.8
 [1.13.7]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.6...v1.13.7
 [1.13.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.5...v1.13.6
 [1.13.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.4...v1.13.5
