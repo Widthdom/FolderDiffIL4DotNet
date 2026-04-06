@@ -358,6 +358,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("--color-hl-label", css);
         }
 
+        // ── State module: toggle-all and virtual scroll support / ステートモジュール: 一括切り替えと仮想スクロール対応 ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_ContainsToggleAllAndSyncFunctions()
+        {
+            // Verify toggle-all and sync functions exist in state module
+            // ステートモジュールに一括切り替え・同期関数が存在することを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("function toggleAllInSection(", js);
+            Assert.Contains("function toggleAllInDetailTable(", js);
+            Assert.Contains("function syncHeaderCheckboxes(", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_ToggleAllInDetailTable_HandlesVirtualScroll()
+        {
+            // Verify toggleAllInDetailTable checks for __vs (virtual scroll)
+            // toggleAllInDetailTable が __vs（仮想スクロール）を考慮していることを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("table.__vs", js);
+            Assert.Contains("rowData[i].cbChecked", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_StateModule_CollectState_IncludesVirtualScrollRows()
+        {
+            // Verify collectState merges virtual scroll rowData
+            // collectState が仮想スクロール rowData をマージすることを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_state.js");
+
+            Assert.Contains("table.vs-active", js);
+            Assert.Contains("rd.cbId", js);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Js_InitModule_ExcludesHeaderCheckboxesFromAutoSave()
+        {
+            // Verify init module skips .cb-all and .cb-all-detail from autoSave listeners
+            // 初期化モジュールが .cb-all / .cb-all-detail を autoSave リスナーから除外することを確認
+            var js = HtmlReportGenerateService.LoadEmbeddedResource("FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js");
+
+            Assert.Contains("cb-all", js);
+            Assert.Contains("cb-all-detail", js);
+        }
+
         [Fact]
         [Trait("Category", "Unit")]
         public void Js_HighlightModule_ContainsRequiredFunctions()
