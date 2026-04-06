@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775394865658,
+  "lastUpdate": 1775477458773,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -3480,6 +3480,102 @@ window.BENCHMARK_DATA = {
             "value": 40061572.164102554,
             "unit": "ns",
             "range": "± 261402.33161109008"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f801b92dcdf378266f9e5ced0ddc64b6c0ce2b9b",
+          "message": "Merge pull request #125 from Widthdom/claude/table-checkbox-headers-MYcLx\n\nAdd toggle-all checkboxes in table column headers with virtual scroll support",
+          "timestamp": "2026-04-06T21:06:18+09:00",
+          "tree_id": "65810f5f245c1d1b4813e0576989681b93144f31",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/f801b92dcdf378266f9e5ced0ddc64b6c0ce2b9b"
+        },
+        "date": 1775477458143,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 38575.887115478516,
+            "unit": "ns",
+            "range": "± 181.66322686567102"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 375775.1833871695,
+            "unit": "ns",
+            "range": "± 1336.2544591748913"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 3972717.0126201925,
+            "unit": "ns",
+            "range": "± 9637.44934870413"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 49435.351416954625,
+            "unit": "ns",
+            "range": "± 84.83023120362239"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 31.866607040166855,
+            "unit": "ns",
+            "range": "± 0.1851180715261802"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 80.2655130704244,
+            "unit": "ns",
+            "range": "± 1.4965673176585967"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.545041608810426,
+            "unit": "ns",
+            "range": "± 0.3900123779068982"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 4663836.759635417,
+            "unit": "ns",
+            "range": "± 69345.7334846428"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 136741.19459751673,
+            "unit": "ns",
+            "range": "± 370.2377974237376"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2824.139792222243,
+            "unit": "ns",
+            "range": "± 39.36301246985175"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 299048.9444754464,
+            "unit": "ns",
+            "range": "± 3669.4884836743017"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 40297436.40512821,
+            "unit": "ns",
+            "range": "± 443321.9581136192"
           }
         ]
       }
