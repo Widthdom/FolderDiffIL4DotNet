@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **Fixed stale JS file references in DEVELOPER_GUIDE** — Updated references to the old monolithic `diff_report.js` in the column visibility explanation and Jest test comment to point to the correct modular source path `js/diff_report_layout.js` and "HTML report JS modules" respectively, aligning with the JS modularization completed in v1.13.x. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
+
 ### [1.13.8] - 2026-04-06
 
 #### Added
@@ -1132,6 +1136,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### ドキュメント
+
+- **DEVELOPER_GUIDE の古い JS ファイル参照を修正** — 列表示の説明と Jest テストコメントにおいて、旧モノリシックファイル `diff_report.js` への参照を、モジュール分割後の正しいパス `js/diff_report_layout.js` および「HTML レポート JS モジュール」にそれぞれ更新し、v1.13.x で完了した JS モジュール化と整合させた。対象: `doc/DEVELOPER_GUIDE.md`（EN+JA セクション）。
 
 ### [1.13.8] - 2026-04-06
 
