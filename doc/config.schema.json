@@ -266,6 +266,17 @@
       "type": "object",
       "default": {},
       "description": "Per-plugin configuration as raw JSON. Key is the plugin ID.\nプラグインごとの設定（生JSON）。キーはプラグイン ID。"
+    },
+    "PluginStrictMode": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, only plugins whose DLL SHA-256 hash matches PluginTrustedHashes are loaded.\ntrue の場合、DLL の SHA-256 ハッシュが PluginTrustedHashes と一致するプラグインのみを読み込む。"
+    },
+    "PluginTrustedHashes": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "default": {},
+      "description": "Map of plugin ID to expected SHA-256 hash (hex). Only used when PluginStrictMode is true.\nプラグイン ID から期待される SHA-256 ハッシュ（16進数）へのマップ。PluginStrictMode が true の場合のみ使用。"
     }
   }
 }

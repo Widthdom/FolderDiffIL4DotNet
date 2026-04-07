@@ -411,8 +411,10 @@ namespace FolderDiffIL4DotNet.Services
                 string sevLabel = VulnerabilityCheckResult.SeverityToLabel(v.Severity);
                 string advisoryId = ExtractAdvisoryId(v.AdvisoryUrl);
                 sb.Append($"<span class=\"vuln-badge {NEW_VULN_CLASS}\" title=\"{HtmlEncode(sevLabel)}: {HtmlEncode(v.AdvisoryUrl)}\">");
-                if (v.AdvisoryUrl.Length > 0)
+                if (v.AdvisoryUrl.Length > 0 && IsAllowedUriScheme(v.AdvisoryUrl))
                     sb.Append($"<a href=\"{HtmlEncode(v.AdvisoryUrl)}\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline\">{HtmlEncode(advisoryId)}</a>");
+                else if (v.AdvisoryUrl.Length > 0)
+                    sb.Append(HtmlEncode(advisoryId));
                 else
                     sb.Append(HtmlEncode(sevLabel));
                 sb.Append($" <small>({HtmlEncode(sevLabel)})</small></span> ");
@@ -440,8 +442,10 @@ namespace FolderDiffIL4DotNet.Services
                     sb.Append($"<span class=\"vuln-badge {RESOLVED_VULN_CLASS}\" title=\"Resolved: ");
                     sb.Append(HtmlEncode(v.AdvisoryUrl));
                     sb.Append("\">");
-                    if (v.AdvisoryUrl.Length > 0)
+                    if (v.AdvisoryUrl.Length > 0 && IsAllowedUriScheme(v.AdvisoryUrl))
                         sb.Append($"<a href=\"{HtmlEncode(v.AdvisoryUrl)}\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit\">{HtmlEncode(advisoryId)}</a>");
+                    else if (v.AdvisoryUrl.Length > 0)
+                        sb.Append(HtmlEncode(advisoryId));
                     else
                         sb.Append(HtmlEncode(sevLabel));
                     sb.Append($" <small>({HtmlEncode(sevLabel)})</small></span> ");
@@ -483,6 +487,27 @@ namespace FolderDiffIL4DotNet.Services
             if (lastSlash >= 0 && lastSlash < url.Length - 1)
                 return url.Substring(lastSlash + 1);
             return "Advisory";
+        }
+
+        /// <summary>
+        /// Returns true if the URL uses a safe scheme (https or http). Blocks dangerous schemes
+        /// such as javascript:, data:, and vbscript: to prevent script injection via advisory links.
+        /// URL が安全なスキーム（https または http）を使用している場合に true を返す。
+        /// javascript:、data:、vbscript: などの危険なスキームをブロックし、アドバイザリリンク経由の
+        /// スクリプトインジェクションを防止する。
+        /// </summary>
+        internal static bool IsAllowedUriScheme(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return false;
+
+            if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
+                return string.Equals(uri.Scheme, "https", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(uri.Scheme, "http", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
         }
 
         /// <summary>

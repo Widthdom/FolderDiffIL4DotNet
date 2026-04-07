@@ -168,5 +168,11 @@ namespace FolderDiffIL4DotNet.Models
 
         /// <summary>Per-plugin configuration as raw JSON. / プラグインごとの設定（生JSON）。</summary>
         System.Collections.Generic.IReadOnlyDictionary<string, System.Text.Json.JsonElement> PluginConfig { get; }
+
+        /// <summary>Whether to enforce plugin DLL hash verification. / プラグイン DLL ハッシュ検証を強制するかどうか。</summary>
+        bool PluginStrictMode { get; }
+
+        /// <summary>Map of plugin ID to trusted SHA-256 hash. / プラグイン ID から信頼済み SHA-256 ハッシュへのマップ。</summary>
+        System.Collections.Generic.IReadOnlyDictionary<string, string> PluginTrustedHashes { get; }
     }
 }

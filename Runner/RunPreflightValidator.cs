@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Services;
@@ -65,13 +66,79 @@ namespace FolderDiffIL4DotNet.Runner
         /// レポートラベルからレポートフォルダの絶対パスを構築する。
         /// <paramref name="outputDirectory"/> が指定された場合、デフォルトの Reports/ ディレクトリの代わりにそのパスをベースとして使用する。
         /// </summary>
-        internal static string GetReportsFolderAbsolutePath(string reportLabel, string? outputDirectory = null)
+        internal static string GetReportsFolderAbsolutePath(string reportLabel, string? outputDirectory = null, ILoggerService? logger = null)
         {
             string reportsRootDirAbsolutePath = !string.IsNullOrWhiteSpace(outputDirectory)
                 ? Path.GetFullPath(outputDirectory)
                 : Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
+
+            // Warn when custom output directory escapes application base directory
+            // カスタム出力ディレクトリがアプリケーションベースディレクトリ外の場合に警告
+            if (!string.IsNullOrWhiteSpace(outputDirectory) && logger != null)
+            {
+                WarnIfOutputEscapesAppBase(logger, reportsRootDirAbsolutePath);
+                WarnIfSystemDirectory(logger, reportsRootDirAbsolutePath);
+            }
+
             Directory.CreateDirectory(reportsRootDirAbsolutePath);
             return Path.Combine(reportsRootDirAbsolutePath, reportLabel);
+        }
+
+        /// <summary>
+        /// Logs a warning when the resolved output path is outside the application base directory.
+        /// 解決された出力パスがアプリケーションベースディレクトリ外にある場合に警告をログ出力する。
+        /// </summary>
+        internal static void WarnIfOutputEscapesAppBase(ILoggerService logger, string resolvedOutputPath)
+        {
+            var appBase = Path.GetFullPath(AppContext.BaseDirectory);
+            var normalizedOutput = Path.GetFullPath(resolvedOutputPath);
+
+            if (!normalizedOutput.StartsWith(appBase, StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogMessage(AppLogLevel.Warning,
+                    $"Output directory '{normalizedOutput}' is outside the application base directory '{appBase}'. Verify this is intentional.",
+                    shouldOutputMessageToConsole: true);
+            }
+        }
+
+        /// <summary>
+        /// Logs a warning when the output path targets a sensitive system directory.
+        /// 出力パスが機密システムディレクトリを対象としている場合に警告をログ出力する。
+        /// </summary>
+        internal static void WarnIfSystemDirectory(ILoggerService logger, string resolvedOutputPath)
+        {
+            var normalizedOutput = Path.GetFullPath(resolvedOutputPath);
+
+            string[] systemDirs;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                systemDirs = new[]
+                {
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                    Environment.GetFolderPath(Environment.SpecialFolder.System),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+                };
+            }
+            else
+            {
+                systemDirs = new[] { "/bin", "/sbin", "/usr/bin", "/usr/sbin", "/etc", "/boot", "/proc", "/sys" };
+            }
+
+            foreach (var sysDir in systemDirs)
+            {
+                if (string.IsNullOrEmpty(sysDir))
+                    continue;
+
+                var normalizedSysDir = Path.GetFullPath(sysDir);
+                if (normalizedOutput.StartsWith(normalizedSysDir, StringComparison.OrdinalIgnoreCase))
+                {
+                    logger.LogMessage(AppLogLevel.Warning,
+                        $"Output directory '{normalizedOutput}' targets a system directory '{normalizedSysDir}'. This may be dangerous.",
+                        shouldOutputMessageToConsole: true);
+                    return;
+                }
+            }
         }
 
         /// <summary>

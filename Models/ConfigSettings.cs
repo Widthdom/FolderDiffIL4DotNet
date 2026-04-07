@@ -139,6 +139,8 @@ namespace FolderDiffIL4DotNet.Models
             PluginSearchPaths = new List<string>(builder.PluginSearchPaths).AsReadOnly();
             PluginEnabledIds = new List<string>(builder.PluginEnabledIds).AsReadOnly();
             PluginConfig = new Dictionary<string, System.Text.Json.JsonElement>(builder.PluginConfig);
+            PluginStrictMode = builder.PluginStrictMode;
+            PluginTrustedHashes = new Dictionary<string, string>(builder.PluginTrustedHashes);
         }
 
         // ── General properties / 一般プロパティ ─────────────────────────────

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Services;
 
@@ -35,11 +36,15 @@ namespace FolderDiffIL4DotNet.Runner
         /// <param name="searchPaths">Directories to scan for plugin subdirectories. / プラグインサブディレクトリをスキャンするディレクトリ。</param>
         /// <param name="enabledPluginIds">Set of plugin IDs to load. Empty = load all found. / 読み込むプラグイン ID のセット。空 = 見つかった全プラグインを読み込む。</param>
         /// <param name="hostVersion">Current host application version for compatibility check. / 互換性チェック用の現在のホストアプリバージョン。</param>
+        /// <param name="strictMode">When true, only plugins whose SHA-256 hash matches <paramref name="trustedHashes"/> are loaded. / true の場合、SHA-256 ハッシュが一致するプラグインのみ読み込む。</param>
+        /// <param name="trustedHashes">Map of plugin ID to trusted SHA-256 hash (hex). / プラグイン ID から信頼済み SHA-256 ハッシュへのマップ。</param>
         /// <returns>List of successfully loaded plugins. / 正常に読み込まれたプラグインのリスト。</returns>
         internal IReadOnlyList<IPlugin> LoadPlugins(
             IReadOnlyList<string> searchPaths,
             IReadOnlySet<string> enabledPluginIds,
-            Version hostVersion)
+            Version hostVersion,
+            bool strictMode = false,
+            IReadOnlyDictionary<string, string>? trustedHashes = null)
         {
             var plugins = new List<IPlugin>();
 
@@ -61,7 +66,7 @@ namespace FolderDiffIL4DotNet.Runner
                     if (!File.Exists(candidateDll))
                         continue;
 
-                    var plugin = TryLoadPlugin(candidateDll, enabledPluginIds, hostVersion);
+                    var plugin = TryLoadPlugin(candidateDll, enabledPluginIds, hostVersion, strictMode, trustedHashes);
                     if (plugin != null)
                     {
                         plugins.Add(plugin);
@@ -79,7 +84,9 @@ namespace FolderDiffIL4DotNet.Runner
         private IPlugin? TryLoadPlugin(
             string pluginDllPath,
             IReadOnlySet<string> enabledPluginIds,
-            Version hostVersion)
+            Version hostVersion,
+            bool strictMode,
+            IReadOnlyDictionary<string, string>? trustedHashes)
         {
             try
             {
@@ -110,6 +117,16 @@ namespace FolderDiffIL4DotNet.Runner
                     return null;
                 }
 
+                // Strict mode: verify DLL SHA-256 hash against trusted allowlist
+                // 厳格モード: DLL の SHA-256 ハッシュを信頼済みリストと照合
+                if (strictMode)
+                {
+                    if (!VerifyPluginHash(pluginDllPath, metadata.Id, trustedHashes))
+                    {
+                        return null;
+                    }
+                }
+
                 // Host version compatibility check / ホストバージョン互換性チェック
                 if (metadata.MinHostVersion > hostVersion)
                 {
@@ -134,6 +151,43 @@ namespace FolderDiffIL4DotNet.Runner
                 return null;
             }
 #pragma warning restore CA1031
+        }
+
+        /// <summary>
+        /// Computes the SHA-256 hash of the plugin DLL and verifies it against the trusted hash map.
+        /// Returns false (with warning log) when hash is missing from the map or does not match.
+        /// プラグイン DLL の SHA-256 ハッシュを計算し、信頼済みハッシュマップと照合する。
+        /// ハッシュがマップに存在しないか一致しない場合は false を返す（警告ログ付き）。
+        /// </summary>
+        private bool VerifyPluginHash(
+            string pluginDllPath,
+            string pluginId,
+            IReadOnlyDictionary<string, string>? trustedHashes)
+        {
+            if (trustedHashes == null || !trustedHashes.TryGetValue(pluginId, out var expectedHash))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Plugin '{pluginId}' rejected: strict mode is enabled but no trusted hash is configured for this plugin ID.",
+                    shouldOutputMessageToConsole: true);
+                return false;
+            }
+
+            using var stream = File.OpenRead(pluginDllPath);
+            var actualHashBytes = SHA256.HashData(stream);
+            var actualHash = Convert.ToHexString(actualHashBytes);
+
+            if (!string.Equals(actualHash, expectedHash, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Plugin '{pluginId}' rejected: SHA-256 hash mismatch. Expected '{expectedHash}', actual '{actualHash}'.",
+                    shouldOutputMessageToConsole: true);
+                return false;
+            }
+
+            _logger.LogMessage(AppLogLevel.Info,
+                $"Plugin '{pluginId}' passed SHA-256 hash verification.",
+                shouldOutputMessageToConsole: false);
+            return true;
         }
     }
 }

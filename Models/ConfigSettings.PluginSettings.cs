@@ -33,6 +33,22 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         public IReadOnlyDictionary<string, System.Text.Json.JsonElement> PluginConfig { get; }
 
+        /// <summary>
+        /// When true, only plugins whose DLL SHA-256 hash appears in <see cref="PluginTrustedHashes"/>
+        /// are loaded. Untrusted DLLs are logged as warnings and skipped.
+        /// true の場合、<see cref="PluginTrustedHashes"/> に DLL の SHA-256 ハッシュが含まれる
+        /// プラグインのみを読み込む。信頼されていない DLL は警告ログに記録しスキップする。
+        /// </summary>
+        public bool PluginStrictMode { get; }
+
+        /// <summary>
+        /// Map of plugin ID to expected SHA-256 hash (hex, case-insensitive).
+        /// Only used when <see cref="PluginStrictMode"/> is true.
+        /// プラグイン ID から期待される SHA-256 ハッシュ（16進数、大文字小文字不問）へのマップ。
+        /// <see cref="PluginStrictMode"/> が true の場合のみ使用。
+        /// </summary>
+        public IReadOnlyDictionary<string, string> PluginTrustedHashes { get; }
+
         // Factory methods / ファクトリメソッド
         internal static List<string> CreateDefaultPluginSearchPaths() => new(DefaultPluginSearchPathsValues);
     }

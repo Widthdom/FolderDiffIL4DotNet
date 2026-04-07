@@ -445,5 +445,105 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Contains("Reports", result, StringComparison.Ordinal);
             Assert.EndsWith("myLabel", result);
         }
+
+        // -----------------------------------------------------------------------
+        // Output directory security guardrails
+        // 出力ディレクトリのセキュリティガードレール
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_OutsideAppBase_LogsWarning()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var outsidePath = Path.Combine(Path.GetTempPath(), "fd-outside-" + Guid.NewGuid().ToString("N"));
+
+            // Act / 実行
+            RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, outsidePath);
+
+            // Assert / 検証
+            Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory"));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_InsideAppBase_NoWarning()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var insidePath = Path.Combine(AppContext.BaseDirectory, "Reports");
+
+            // Act / 実行
+            RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, insidePath);
+
+            // Assert / 検証
+            Assert.Empty(logger.Messages);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_SystemPath_LogsWarning()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            // Use a system directory appropriate for the current platform
+            // 現在のプラットフォームに適したシステムディレクトリを使用
+            string systemDir;
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            {
+                systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (string.IsNullOrEmpty(systemDir))
+                    return; // Cannot test on this platform / このプラットフォームではテスト不可
+            }
+            else
+            {
+                systemDir = "/etc/myreports";
+            }
+
+            // Act / 実行
+            RunPreflightValidator.WarnIfSystemDirectory(logger, systemDir);
+
+            // Assert / 検証
+            Assert.Contains(logger.Messages, m => m.Contains("system directory"));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_SafePath_NoWarning()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var safePath = Path.Combine(Path.GetTempPath(), "fd-safe-" + Guid.NewGuid().ToString("N"));
+
+            // Act / 実行
+            RunPreflightValidator.WarnIfSystemDirectory(logger, safePath);
+
+            // Assert / 検証
+            Assert.Empty(logger.Messages);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithLoggerAndCustomDir_LogsWarningWhenOutsideBase()
+        {
+            // Arrange / 準備
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-guardrail-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                // Act / 実行
+                var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", tempDir, logger);
+
+                // Assert / 検証 — result is still correct, but warning is logged
+                Assert.Equal(Path.Combine(Path.GetFullPath(tempDir), "myLabel"), result);
+                Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory"));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
     }
 }
