@@ -406,6 +406,9 @@ Registered in [`RunScopeBuilder.Build(...)`](../Runner/RunScopeBuilder.cs):
 - [`ProgressReportService`](../Services/ProgressReportService.cs)
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs)
 - [`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs)
+- [`AuditLogGenerateService`](../Services/AuditLogGenerateService.cs)
+- [`SbomGenerateService`](../Services/SbomGenerateService.cs)
+- [`IReportFormatter`](../Services/IReportFormatter.cs) / [`MarkdownReportFormatter`](../Services/ReportFormatters/MarkdownReportFormatter.cs), [`HtmlReportFormatter`](../Services/ReportFormatters/HtmlReportFormatter.cs), [`AuditLogReportFormatter`](../Services/ReportFormatters/AuditLogReportFormatter.cs), [`SbomReportFormatter`](../Services/ReportFormatters/SbomReportFormatter.cs)
 - [`IFileSystemService`](../Services/IFileSystemService.cs) / [`FileSystemService`](../Services/FileSystemService.cs)
 - [`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs) / [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs)
 - [`IFileComparisonService`](../Services/IFileComparisonService.cs) / [`FileComparisonService`](../Services/FileComparisonService.cs)
@@ -414,6 +417,7 @@ Registered in [`RunScopeBuilder.Build(...)`](../Runner/RunScopeBuilder.cs):
 - [`IILOutputService`](../Services/IILOutputService.cs) / [`ILOutputService`](../Services/ILOutputService.cs)
 - [`IFileDiffService`](../Services/IFileDiffService.cs) / [`FileDiffService`](../Services/FileDiffService.cs)
 - [`IFolderDiffService`](../Services/IFolderDiffService.cs) / [`FolderDiffService`](../Services/FolderDiffService.cs)
+- [`IDisassemblerProvider`](../FolderDiffIL4DotNet.Plugin.Abstractions/IDisassemblerProvider.cs) / [`DotNetDisassemblerProvider`](../Services/DotNetDisassemblerProvider.cs)
 
 Why this matters:
 - Each execution gets a newly created [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) for diff results plus newly created disassembler-related state and caches for keeping old/new on the same disassembler, so nothing is carried over from the previous run.
@@ -1354,6 +1358,9 @@ sequenceDiagram
 - [`ProgressReportService`](../Services/ProgressReportService.cs)
 - [`ReportGenerateService`](../Services/ReportGenerateService.cs)
 - [`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs)
+- [`AuditLogGenerateService`](../Services/AuditLogGenerateService.cs)
+- [`SbomGenerateService`](../Services/SbomGenerateService.cs)
+- [`IReportFormatter`](../Services/IReportFormatter.cs) / [`MarkdownReportFormatter`](../Services/ReportFormatters/MarkdownReportFormatter.cs)、[`HtmlReportFormatter`](../Services/ReportFormatters/HtmlReportFormatter.cs)、[`AuditLogReportFormatter`](../Services/ReportFormatters/AuditLogReportFormatter.cs)、[`SbomReportFormatter`](../Services/ReportFormatters/SbomReportFormatter.cs)
 - [`IFileSystemService`](../Services/IFileSystemService.cs) / [`FileSystemService`](../Services/FileSystemService.cs)
 - [`IFolderDiffExecutionStrategy`](../Services/IFolderDiffExecutionStrategy.cs) / [`FolderDiffExecutionStrategy`](../Services/FolderDiffExecutionStrategy.cs)
 - [`IFileComparisonService`](../Services/IFileComparisonService.cs) / [`FileComparisonService`](../Services/FileComparisonService.cs)
@@ -1362,6 +1369,7 @@ sequenceDiagram
 - [`IILOutputService`](../Services/IILOutputService.cs) / [`ILOutputService`](../Services/ILOutputService.cs)
 - [`IFileDiffService`](../Services/IFileDiffService.cs) / [`FileDiffService`](../Services/FileDiffService.cs)
 - [`IFolderDiffService`](../Services/IFolderDiffService.cs) / [`FolderDiffService`](../Services/FolderDiffService.cs)
+- [`IDisassemblerProvider`](../FolderDiffIL4DotNet.Plugin.Abstractions/IDisassemblerProvider.cs) / [`DotNetDisassemblerProvider`](../Services/DotNetDisassemblerProvider.cs)
 
 この構成が重要な理由:
 - 実行ごとに、差分結果を保持する [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) と、old/new で同じ逆アセンブラを使うための内部状態やキャッシュは新しく作られ、前回の実行内容を引き継ぎません。
