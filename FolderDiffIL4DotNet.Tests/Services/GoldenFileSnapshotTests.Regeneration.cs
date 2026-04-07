@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -45,7 +46,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Structural checks on generated report / 生成レポートの構造チェック
             Assert.Contains("# Folder Diff Report", report1);
-            Assert.Contains("| App Version | FolderDiffIL4DotNet 1.0.0-snapshot |", report1);
+            Assert.Contains($"| App Version | {Constants.APP_NAME} 1.0.0-snapshot |", report1);
             Assert.Contains("| Computer | snapshot-host |", report1);
             Assert.Contains("## [ = ] Unchanged Files (2)", report1);
             Assert.Contains("## [ + ] Added Files (1)", report1);
