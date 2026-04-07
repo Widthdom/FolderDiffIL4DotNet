@@ -30,5 +30,19 @@ namespace FolderDiffIL4DotNet.Models
         /// </summary>
         [JsonPropertyName("PluginConfig")]
         public Dictionary<string, JsonElement> PluginConfig { get; set; } = new();
+
+        /// <summary>
+        /// When true, only plugins whose DLL SHA-256 hash matches <see cref="PluginTrustedHashes"/> are loaded.
+        /// true の場合、DLL の SHA-256 ハッシュが <see cref="PluginTrustedHashes"/> と一致するプラグインのみを読み込む。
+        /// </summary>
+        [JsonPropertyName("PluginStrictMode")]
+        public bool PluginStrictMode { get; set; }
+
+        /// <summary>
+        /// Map of plugin ID to expected SHA-256 hash (hex). Used when <see cref="PluginStrictMode"/> is true.
+        /// プラグイン ID から期待される SHA-256 ハッシュ（16進数）へのマップ。<see cref="PluginStrictMode"/> が true の場合に使用。
+        /// </summary>
+        [JsonPropertyName("PluginTrustedHashes")]
+        public Dictionary<string, string> PluginTrustedHashes { get; set; } = new();
     }
 }

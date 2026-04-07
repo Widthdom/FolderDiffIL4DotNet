@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Plugin strict mode with SHA-256 hash verification** — New `PluginStrictMode` (default `false`) and `PluginTrustedHashes` config settings enable an optional allowlist that verifies each plugin DLL's SHA-256 hash before loading. When strict mode is enabled, plugins not in the trusted hash map or with mismatched hashes are rejected with a warning. This mitigates arbitrary code execution from compromised plugin directories. Affected: `Models/ConfigSettings.PluginSettings.cs`, `Models/ConfigSettingsBuilder.PluginSettings.cs`, `Models/IReadOnlyConfigSettings.cs`, `Models/ConfigSettings.cs`, `Runner/PluginLoader.cs`, `ProgramRunner.cs`, `doc/config.sample.jsonc`. Tests: `PluginLoaderTests` (3 new: `LoadPlugins_StrictModeNoTrustedHashes_ReturnsEmptyAndLogsWarning`, `LoadPlugins_StrictModeWithEmptyTrustedHashes_ReturnsEmptyAndLogsWarning`, `LoadPlugins_StrictModeDisabled_DoesNotRequireHashes`), `PluginConfigSettingsTests` (4 new: `DefaultPluginStrictMode_IsFalse`, `DefaultPluginTrustedHashes_IsEmpty`, `Build_PluginStrictMode_IsPreserved`, `Build_PluginTrustedHashes_ArePreserved`).
+
+- **URI scheme allowlist for advisory URLs in HTML report** — Advisory links in the vulnerability badges now enforce an `https`/`http` scheme allowlist via `IsAllowedUriScheme()`. URLs with dangerous schemes (`javascript:`, `data:`, `vbscript:`, etc.) are rendered as plain text instead of clickable links, preventing potential script injection through malicious advisory URLs. Affected: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`. Tests: `HtmlReportGenerateServiceTests.Security.cs` (3 new: `IsAllowedUriScheme_HttpAndHttps_ReturnsTrue` ×4 InlineData, `IsAllowedUriScheme_DangerousOrInvalid_ReturnsFalse` ×8 InlineData, `IsAllowedUriScheme_Null_ReturnsFalse`).
+
+- **Output directory security guardrails** — `GetReportsFolderAbsolutePath` now accepts an optional `ILoggerService` and logs warnings when: (1) the resolved output path escapes the application base directory, (2) the output path targets a known system directory (`/etc`, `/bin`, `C:\Windows`, etc.). These are informational warnings that do not block execution, helping operators detect potentially dangerous `--output` values in CI/automation. Affected: `Runner/RunPreflightValidator.cs`, `ProgramRunner.cs`. Tests: `ProgramRunnerTests.Preflight.cs` (5 new: `WarnIfOutputEscapesAppBase_OutsideAppBase_LogsWarning`, `WarnIfOutputEscapesAppBase_InsideAppBase_NoWarning`, `WarnIfSystemDirectory_SystemPath_LogsWarning`, `WarnIfSystemDirectory_SafePath_NoWarning`, `GetReportsFolderAbsolutePath_WithLoggerAndCustomDir_LogsWarningWhenOutsideBase`).
+
 ### [1.14.0] - 2026-04-07
 
 #### Changed
@@ -1152,6 +1160,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **プラグイン厳格モード（SHA-256 ハッシュ検証）** — 新設定 `PluginStrictMode`（デフォルト `false`）と `PluginTrustedHashes` により、各プラグイン DLL の SHA-256 ハッシュを読み込み前に検証するオプションの許可リストを提供。厳格モード有効時、信頼済みハッシュマップに含まれないプラグインやハッシュ不一致のプラグインは警告付きで拒否される。侵害されたプラグインディレクトリからの任意コード実行リスクを軽減。対象: `Models/ConfigSettings.PluginSettings.cs`、`Models/ConfigSettingsBuilder.PluginSettings.cs`、`Models/IReadOnlyConfigSettings.cs`、`Models/ConfigSettings.cs`、`Runner/PluginLoader.cs`、`ProgramRunner.cs`、`doc/config.sample.jsonc`。テスト: `PluginLoaderTests`（3 新規）、`PluginConfigSettingsTests`（4 新規）。
+
+- **HTML レポートのアドバイザリ URL スキーム許可リスト** — 脆弱性バッジのアドバイザリリンクに `https`/`http` スキーム許可リストを `IsAllowedUriScheme()` で適用。`javascript:`、`data:`、`vbscript:` 等の危険なスキームの URL はクリック可能なリンクではなくプレーンテキストとして表示され、悪意のあるアドバイザリ URL 経由のスクリプトインジェクションを防止。対象: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`。テスト: `HtmlReportGenerateServiceTests.Security.cs`（3 新規）。
+
+- **出力ディレクトリのセキュリティガードレール** — `GetReportsFolderAbsolutePath` がオプションの `ILoggerService` を受け取り、以下の場合に警告をログ出力: (1) 解決された出力パスがアプリケーションベースディレクトリ外、(2) 出力パスが既知のシステムディレクトリ（`/etc`、`/bin`、`C:\Windows` 等）を対象。実行をブロックせず情報提供のみの警告で、CI/自動化環境での危険な `--output` 値の検出を支援。対象: `Runner/RunPreflightValidator.cs`、`ProgramRunner.cs`。テスト: `ProgramRunnerTests.Preflight.cs`（5 新規）。
 
 ### [1.14.0] - 2026-04-07
 

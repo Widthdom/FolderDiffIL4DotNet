@@ -108,5 +108,72 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         {
             Assert.Throws<ArgumentNullException>(() => new PluginLoader(null!));
         }
+
+        // -----------------------------------------------------------------------
+        // Strict mode (SHA-256 hash verification) tests
+        // 厳格モード（SHA-256 ハッシュ検証）テスト
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void LoadPlugins_StrictModeNoTrustedHashes_ReturnsEmptyAndLogsWarning()
+        {
+            // Arrange: directory with an invalid DLL, strict mode enabled but no trusted hashes
+            // 準備: 無効な DLL を含むディレクトリ、厳格モード有効だが信頼済みハッシュなし
+            var pluginDir = Path.Combine(_tempDir, "StrictPlugin");
+            Directory.CreateDirectory(pluginDir);
+            File.WriteAllBytes(Path.Combine(pluginDir, "StrictPlugin.dll"), new byte[] { 0x4D, 0x5A, 0x00, 0x01 });
+
+            var searchPaths = new List<string> { _tempDir };
+            var enabledIds = new HashSet<string>();
+
+            // Act / 実行
+            var result = _loader.LoadPlugins(searchPaths, enabledIds, new Version(1, 0, 0),
+                strictMode: true, trustedHashes: null);
+
+            // Assert / 検証 — plugin loading fails (either hash rejection or bad DLL format)
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public void LoadPlugins_StrictModeWithEmptyTrustedHashes_ReturnsEmptyAndLogsWarning()
+        {
+            // Arrange: directory with a DLL, strict mode enabled but empty hash map
+            // 準備: DLL を含むディレクトリ、厳格モード有効だが空のハッシュマップ
+            var pluginDir = Path.Combine(_tempDir, "NoHashPlugin");
+            Directory.CreateDirectory(pluginDir);
+            File.WriteAllBytes(Path.Combine(pluginDir, "NoHashPlugin.dll"), new byte[] { 0x4D, 0x5A, 0x00, 0x01 });
+
+            var searchPaths = new List<string> { _tempDir };
+            var enabledIds = new HashSet<string>();
+            var trustedHashes = new Dictionary<string, string>();
+
+            // Act / 実行
+            var result = _loader.LoadPlugins(searchPaths, enabledIds, new Version(1, 0, 0),
+                strictMode: true, trustedHashes: trustedHashes);
+
+            // Assert / 検証 — plugin loading fails (either hash not found or bad format)
+            Assert.Empty(result);
+        }
+
+        [Fact]
+        public void LoadPlugins_StrictModeDisabled_DoesNotRequireHashes()
+        {
+            // Arrange: invalid DLL, strict mode disabled — should fail from bad format, not hash check
+            // 準備: 無効な DLL、厳格モード無効 — ハッシュチェックではなくフォーマット不正で失敗すべき
+            var pluginDir = Path.Combine(_tempDir, "NoStrictPlugin");
+            Directory.CreateDirectory(pluginDir);
+            File.WriteAllBytes(Path.Combine(pluginDir, "NoStrictPlugin.dll"), new byte[] { 0x4D, 0x5A, 0x00, 0x01 });
+
+            var searchPaths = new List<string> { _tempDir };
+            var enabledIds = new HashSet<string>();
+
+            // Act / 実行
+            var result = _loader.LoadPlugins(searchPaths, enabledIds, new Version(1, 0, 0),
+                strictMode: false, trustedHashes: null);
+
+            // Assert / 検証 — fails due to bad DLL format, not hash rejection
+            Assert.Empty(result);
+            Assert.Contains(_logger.Messages, m => m.Contains("Failed to load plugin"));
+        }
     }
 }

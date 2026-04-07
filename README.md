@@ -663,6 +663,16 @@ Override only the settings you want to change. For example:
       <td><code>{}</code></td>
       <td>Per-plugin configuration as JSON objects. Key is the plugin ID, value is plugin-specific configuration passed to <code>IPlugin.ConfigureServices</code>.</td>
     </tr>
+    <tr id="config-en-pluginstrictmode">
+      <td><code>PluginStrictMode</code></td>
+      <td><code>false</code></td>
+      <td>When true, only plugins whose DLL SHA-256 hash matches <code>PluginTrustedHashes</code> are loaded. Untrusted plugins are rejected with a warning.</td>
+    </tr>
+    <tr id="config-en-plugintrustedhashes">
+      <td><code>PluginTrustedHashes</code></td>
+      <td><code>{}</code></td>
+      <td>Map of plugin ID to expected SHA-256 hash (hex string). Only used when <code>PluginStrictMode</code> is true.</td>
+    </tr>
   </tbody>
 </table>
 
@@ -1389,6 +1399,16 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
       <td><code>PluginConfig</code></td>
       <td><code>{}</code></td>
       <td>プラグインごとの設定（JSON オブジェクト）。キーはプラグイン ID、値は <code>IPlugin.ConfigureServices</code> に渡されるプラグイン固有の設定です。</td>
+    </tr>
+    <tr id="config-ja-pluginstrictmode">
+      <td><code>PluginStrictMode</code></td>
+      <td><code>false</code></td>
+      <td>true の場合、DLL の SHA-256 ハッシュが <code>PluginTrustedHashes</code> と一致するプラグインのみを読み込みます。信頼されていないプラグインは警告付きで拒否されます。</td>
+    </tr>
+    <tr id="config-ja-plugintrustedhashes">
+      <td><code>PluginTrustedHashes</code></td>
+      <td><code>{}</code></td>
+      <td>プラグイン ID から期待される SHA-256 ハッシュ（16進数文字列）へのマップ。<code>PluginStrictMode</code> が true の場合のみ使用。</td>
     </tr>
   </tbody>
 </table>

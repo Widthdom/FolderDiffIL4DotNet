@@ -104,6 +104,48 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         [Fact]
+        public void DefaultPluginStrictMode_IsFalse()
+        {
+            var builder = new ConfigSettingsBuilder();
+            Assert.False(builder.PluginStrictMode);
+        }
+
+        [Fact]
+        public void DefaultPluginTrustedHashes_IsEmpty()
+        {
+            var builder = new ConfigSettingsBuilder();
+            Assert.Empty(builder.PluginTrustedHashes);
+        }
+
+        [Fact]
+        public void Build_PluginStrictMode_IsPreserved()
+        {
+            var builder = new ConfigSettingsBuilder { PluginStrictMode = true };
+            var config = builder.Build();
+            Assert.True(config.PluginStrictMode);
+        }
+
+        [Fact]
+        public void Build_PluginTrustedHashes_ArePreserved()
+        {
+            // Arrange / 準備
+            var builder = new ConfigSettingsBuilder
+            {
+                PluginTrustedHashes = new Dictionary<string, string>
+                {
+                    ["my-plugin"] = "ABC123DEF456"
+                }
+            };
+
+            // Act / 実行
+            var config = builder.Build();
+
+            // Assert / 検証
+            Assert.Single(config.PluginTrustedHashes);
+            Assert.Equal("ABC123DEF456", config.PluginTrustedHashes["my-plugin"]);
+        }
+
+        [Fact]
         public void PluginSettings_RoundTripThroughJson()
         {
             // Arrange / 準備
