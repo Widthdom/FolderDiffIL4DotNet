@@ -16,6 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### Documentation
 
 - **Fixed stale JS file references in DEVELOPER_GUIDE** — Updated references to the old monolithic `diff_report.js` in the column visibility explanation and Jest test comment to point to the correct modular source path `js/diff_report_layout.js` and "HTML report JS modules" respectively, aligning with the JS modularization completed in v1.13.x. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
+- **Fixed JS module file count in CLAUDE.md** — Updated "12 JS module files" to "13 JS module files" in both EN and JA sections, reflecting the addition of `diff_report_layout.js`. Affected: `CLAUDE.md`.
+- **Added missing DI registrations in DEVELOPER_GUIDE** — The run-scoped container section was missing `AuditLogGenerateService`, `SbomGenerateService`, 4 `IReportFormatter` implementations (`MarkdownReportFormatter`, `HtmlReportFormatter`, `AuditLogReportFormatter`, `SbomReportFormatter`), and `IDisassemblerProvider` / `DotNetDisassemblerProvider`. Added all to both EN and JA sections. Affected: `doc/DEVELOPER_GUIDE.md`.
 
 ### [1.13.8] - 2026-04-06
 
@@ -1148,6 +1150,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### ドキュメント
 
 - **DEVELOPER_GUIDE の古い JS ファイル参照を修正** — 列表示の説明と Jest テストコメントにおいて、旧モノリシックファイル `diff_report.js` への参照を、モジュール分割後の正しいパス `js/diff_report_layout.js` および「HTML レポート JS モジュール」にそれぞれ更新し、v1.13.x で完了した JS モジュール化と整合させた。対象: `doc/DEVELOPER_GUIDE.md`（EN+JA セクション）。
+- **CLAUDE.md の JS モジュールファイル数を修正** — `diff_report_layout.js` の追加を反映し、EN・JA 両セクションで「12 JS モジュールファイル」を「13 JS モジュールファイル」に修正。対象: `CLAUDE.md`。
+- **DEVELOPER_GUIDE に不足していた DI 登録を追加** — 実行スコープコンテナセクションに `AuditLogGenerateService`、`SbomGenerateService`、4 つの `IReportFormatter` 実装（`MarkdownReportFormatter`、`HtmlReportFormatter`、`AuditLogReportFormatter`、`SbomReportFormatter`）、および `IDisassemblerProvider` / `DotNetDisassemblerProvider` が未記載だったため追加。EN・JA 両セクションに反映。対象: `doc/DEVELOPER_GUIDE.md`。
 
 ### [1.13.8] - 2026-04-06
 
