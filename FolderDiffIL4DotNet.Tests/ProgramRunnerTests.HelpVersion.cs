@@ -410,7 +410,7 @@ namespace FolderDiffIL4DotNet.Tests
 
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString();
-                Assert.Contains("nildiff Credits", output, StringComparison.Ordinal);
+                Assert.Contains("FolderDiffIL4DotNet Credits", output, StringComparison.Ordinal);
                 Assert.Contains("Signal over noise", output, StringComparison.Ordinal);
                 Assert.Contains("Core Technology", output, StringComparison.Ordinal);
                 Assert.Contains("Open Source Libraries", output, StringComparison.Ordinal);

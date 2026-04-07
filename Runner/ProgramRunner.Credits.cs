@@ -7,7 +7,7 @@ namespace FolderDiffIL4DotNet
         private const string CREDITS_TEXT =
             "\n" +
             "  ╔══════════════════════════════════════════════════════════════════════╗\n" +
-            "  ║                          nildiff Credits                              ║\n" +
+            "  ║                     FolderDiffIL4DotNet Credits                      ║\n" +
             "  ╚══════════════════════════════════════════════════════════════════════╝\n" +
             "\n" +
             "  Crafted with care for release engineers\n" +
