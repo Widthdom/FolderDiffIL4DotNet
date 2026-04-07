@@ -110,7 +110,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 true);
 
             Assert.Contains("12.34%", result);
-            Assert.EndsWith("|", result);
+            Assert.EndsWith("⠇", result);
         }
 
         [Fact]

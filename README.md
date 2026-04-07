@@ -625,8 +625,8 @@ Override only the settings you want to change. For example:
     </tr>
     <tr>
       <td id="config-en-spinnerframes"><code>SpinnerFrames</code></td>
-      <td><code>["|", "/", "-", "\"]</code></td>
-      <td>Array of strings used for the console spinner animation. Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default. The CLI options <code>--coffee</code>, <code>--beer</code>, <code>--matcha</code>, <code>--whisky</code>, <code>--wine</code>, <code>--ramen</code>, and <code>--sushi</code> override this value.</td>
+      <td><code>["⠇", "⠋", "⠏", "⠸", "⠏", "⠹"]</code></td>
+      <td>Array of strings used for the console spinner animation (default: Braille pattern characters). Each element is one frame in the rotation, so multi-character strings (e.g. block characters, emoji) are supported. Must contain at least one element. Setting <code>null</code> restores the default. The CLI options <code>--coffee</code>, <code>--beer</code>, <code>--matcha</code>, <code>--whisky</code>, <code>--wine</code>, <code>--ramen</code>, and <code>--sushi</code> override this value.</td>
     </tr>
     <tr id="config-en-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
@@ -1362,8 +1362,8 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     </tr>
     <tr id="config-ja-spinnerframes">
       <td><code>SpinnerFrames</code></td>
-      <td><code>["|", "/", "-", "\"]</code></td>
-      <td>コンソールスピナーアニメーションに使用する文字列の配列。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。CLI オプション <code>--coffee</code>、<code>--beer</code>、<code>--matcha</code>、<code>--whisky</code>、<code>--wine</code>、<code>--ramen</code>、<code>--sushi</code> を指定するとこの値は上書きされます。</td>
+      <td><code>["⠇", "⠋", "⠏", "⠸", "⠏", "⠹"]</code></td>
+      <td>コンソールスピナーアニメーションに使用する文字列の配列（既定: ブライユパターン文字）。各要素が 1 フレームになるため、複数文字のフレーム（ブロック文字・絵文字など）も指定できます。1 件以上必須です。<code>null</code> を指定すると既定値に戻ります。CLI オプション <code>--coffee</code>、<code>--beer</code>、<code>--matcha</code>、<code>--whisky</code>、<code>--wine</code>、<code>--ramen</code>、<code>--sushi</code> を指定するとこの値は上書きされます。</td>
     </tr>
     <tr id="config-ja-shouldgeneratehtmlreport">
       <td><code>ShouldGenerateHtmlReport</code></td>
