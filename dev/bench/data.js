@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775574579941,
+  "lastUpdate": 1775579392206,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -4152,6 +4152,102 @@ window.BENCHMARK_DATA = {
             "value": 27559565.675,
             "unit": "ns",
             "range": "± 385979.36973726057"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "bd259ed80f6925cbae18ffeab939d8dff3b92541",
+          "message": "Replace default spinner frames with Braille pattern characters (#133)\n\n* Change default spinner frames to Braille pattern characters\n\nReplace ASCII spinner frames (|, /, -, \\) with Braille pattern\ncharacters (⠇, ⠋, ⠏, ⠸, ⠏, ⠹) for smoother animation.\n\nUpdated: ConsoleSpinner.cs, ConfigSettings.cs, config.schema.json,\nREADME.md (EN+JA), ConfigSettingsTests (2 assertions), CHANGELOG.md.\n\nhttps://claude.ai/code/session_01C4j4MDARhXVUFSSmgdopxZ\n\n* Fix ProgressReportServiceTests for braille spinner default\n\nUpdate hardcoded \"|\" assertion to \"⠇\" to match the new default\nbraille spinner frames.\n\nhttps://claude.ai/code/session_01C4j4MDARhXVUFSSmgdopxZ\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-04-08T01:25:13+09:00",
+          "tree_id": "ea4f906c92f5598ddaa7064ccf8ed7f4e1cbfd73",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/bd259ed80f6925cbae18ffeab939d8dff3b92541"
+        },
+        "date": 1775579391951,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61331.67934744699,
+            "unit": "ns",
+            "range": "± 179.4889208447207"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 582292.5166015625,
+            "unit": "ns",
+            "range": "± 2003.129693266977"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5930802.915364583,
+            "unit": "ns",
+            "range": "± 6224.141447742496"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 75762.98606654575,
+            "unit": "ns",
+            "range": "± 186.3872364032887"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 28.98225063085556,
+            "unit": "ns",
+            "range": "± 0.4596813295365783"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 63.94191537797451,
+            "unit": "ns",
+            "range": "± 1.2900558135017657"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.13261666042464,
+            "unit": "ns",
+            "range": "± 0.2593346307817288"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5172552.993303572,
+            "unit": "ns",
+            "range": "± 36716.27757762638"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 126195.2759312221,
+            "unit": "ns",
+            "range": "± 1047.4693543094183"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2628.841270192464,
+            "unit": "ns",
+            "range": "± 34.74529829312322"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 260480.61872746394,
+            "unit": "ns",
+            "range": "± 941.0952103659761"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 26773135.020833332,
+            "unit": "ns",
+            "range": "± 166560.40478003785"
           }
         ]
       }
