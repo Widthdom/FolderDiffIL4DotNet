@@ -94,7 +94,7 @@ dir "$env:USERPROFILE\.dotnet\tools"
 
 #### Step 5: Confirm detection in the report
 
-Run FolderDiffIL4DotNet and check the **Disassembler Availability** table in the report header. Each candidate is probed at startup:
+Run nildiff and check the **Disassembler Availability** table in the report header. Each candidate is probed at startup:
 
 | Tool Name | Probed Path | Priority |
 |-----------|-------------|----------|
@@ -361,7 +361,7 @@ dir "$env:USERPROFILE\.dotnet\tools"
 
 #### 手順 5: レポートでの検出確認
 
-FolderDiffIL4DotNet を実行し、レポートヘッダの **Disassembler Availability** テーブルを確認してください。起動時に各候補がプローブされます:
+nildiff を実行し、レポートヘッダの **Disassembler Availability** テーブルを確認してください。起動時に各候補がプローブされます:
 
 | ツール名 | プローブパス | 優先度 |
 |----------|-------------|--------|

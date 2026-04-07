@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Shortened executable name from `FolderDiffIL4DotNet` to `nildiff`** — Added `<AssemblyName>nildiff</AssemblyName>` to the main project `.csproj` so the published executable is `nildiff` (or `nildiff.exe` on Windows). The name combines **.N**et + **IL** + **diff** and also evokes "nil diff" (eliminating meaningless differences), reflecting the tool's IL-level noise filtering. Namespaces, NuGet package names, and project directory names remain unchanged. The IL cache directory path (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`) is preserved for backward compatibility via a new `Constants.APP_DATA_DIR_NAME` constant. Affected: `FolderDiffIL4DotNet.csproj`, `Common/Constants.cs`, `Runner/ProgramRunner.Config.cs`, `Runner/RunScopeBuilder.cs`, `README.md` (EN+JA usage), `doc/TROUBLESHOOTING.md` (EN+JA), `doc/config.sample.jsonc`, `doc/samples/diff_report.md`, `doc/samples/diff_report.html`, `doc/samples/sbom.cdx.json`, `doc/samples/sbom.spdx.json`. Tests: `ProgramRunnerTests` (updated cache path assertion to use `APP_DATA_DIR_NAME`).
+
 #### Documentation
 
 - **Fixed stale JS file references in DEVELOPER_GUIDE** — Updated references to the old monolithic `diff_report.js` in the column visibility explanation and Jest test comment to point to the correct modular source path `js/diff_report_layout.js` and "HTML report JS modules" respectively, aligning with the JS modularization completed in v1.13.x. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
@@ -1136,6 +1140,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **実行ファイル名を `FolderDiffIL4DotNet` から `nildiff` に短縮** — メインプロジェクトの `.csproj` に `<AssemblyName>nildiff</AssemblyName>` を追加し、公開される実行ファイルを `nildiff`（Windows では `nildiff.exe`）に変更。名前は **.N**et + **IL** + **diff** の組み合わせであり、「nil diff（意味のない差分を無くす）」というツールの IL レベルノイズ除去コンセプトも表現。名前空間、NuGet パッケージ名、プロジェクトディレクトリ名は変更なし。IL キャッシュディレクトリパス（`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`）は後方互換のため `Constants.APP_DATA_DIR_NAME` 定数で維持。対象: `FolderDiffIL4DotNet.csproj`、`Common/Constants.cs`、`Runner/ProgramRunner.Config.cs`、`Runner/RunScopeBuilder.cs`、`README.md`（EN+JA 使用例）、`doc/TROUBLESHOOTING.md`（EN+JA）、`doc/config.sample.jsonc`、`doc/samples/diff_report.md`、`doc/samples/diff_report.html`、`doc/samples/sbom.cdx.json`、`doc/samples/sbom.spdx.json`。テスト: `ProgramRunnerTests`（キャッシュパスアサーションを `APP_DATA_DIR_NAME` に更新）。
 
 #### ドキュメント
 

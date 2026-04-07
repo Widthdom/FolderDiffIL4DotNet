@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <AssemblyName>nildiff</AssemblyName>
     <TargetFramework>net8.0</TargetFramework>
     <DefaultItemExcludes>$(DefaultItemExcludes);FolderDiffIL4DotNet.Tests/**;FolderDiffIL4DotNet.Core/**;FolderDiffIL4DotNet.Benchmarks/**;FolderDiffIL4DotNet.Plugin.Abstractions/**</DefaultItemExcludes>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

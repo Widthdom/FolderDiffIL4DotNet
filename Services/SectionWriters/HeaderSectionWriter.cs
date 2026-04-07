@@ -24,7 +24,7 @@ namespace FolderDiffIL4DotNet.Services
                 // Key metadata table / キーメタデータテーブル
                 writer.WriteLine("| Property | Value |");
                 writer.WriteLine("|----------|-------|");
-                writer.WriteLine($"| App Version | FolderDiffIL4DotNet {ctx.AppVersion} |");
+                writer.WriteLine($"| App Version | {Constants.APP_NAME} {ctx.AppVersion} |");
                 writer.WriteLine($"| Computer | {ctx.ComputerName} |");
                 if (ctx.Config.ShouldOutputFileTimestamps)
                 {

@@ -1,5 +1,5 @@
-// FolderDiffIL4DotNet — Annotated Configuration Sample
-// FolderDiffIL4DotNet — コメント付き設定サンプル
+// nildiff — Annotated Configuration Sample
+// nildiff — コメント付き設定サンプル
 //
 // Copy this file to config.json (remove comments — standard JSON does not allow comments).
 // このファイルを config.json にコピーして使用してください（コメントを削除してください。標準 JSON ではコメントは使用できません）。

@@ -174,7 +174,7 @@ namespace FolderDiffIL4DotNet.Tests
 
             var expectedDir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                Constants.APP_NAME,
+                Constants.APP_DATA_DIR_NAME,
                 Constants.DEFAULT_IL_CACHE_DIR_NAME);
             Assert.Equal(expectedDir, cacheDir);
             Assert.DoesNotContain(AppContext.BaseDirectory, cacheDir);
