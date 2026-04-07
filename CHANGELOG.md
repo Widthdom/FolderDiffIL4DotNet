@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.14.2] - 2026-04-08
+
 #### Changed
 
 - Change default spinner frames from ASCII (`|`, `/`, `-`, `\`) to Braille pattern characters (`⠇`, `⠋`, `⠏`, `⠸`, `⠏`, `⠹`) for a smoother animation — `ConsoleSpinner.cs`, `ConfigSettings.cs`, `config.schema.json`, `README.md` (EN+JA), `ConfigSettingsTests` (2 assertions)
@@ -1166,6 +1168,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.14.2] - 2026-04-08
 
 #### 変更
 
@@ -2325,7 +2329,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.2...HEAD
+[1.14.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.8...v1.14.0
 [1.13.8]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.7...v1.13.8
