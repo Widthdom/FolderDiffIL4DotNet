@@ -69,7 +69,7 @@ namespace FolderDiffIL4DotNet.Models
             ".txt", ".vb", ".vbproj", ".vue", ".xaml", ".xml", ".yaml", ".yml"
         };
 
-        internal static readonly string[] DefaultSpinnerFramesValues = ["|", "/", "-", "\\"];
+        internal static readonly string[] DefaultSpinnerFramesValues = ["⠇", "⠋", "⠏", "⠸", "⠏", "⠹"];
 
         /// <summary>
         /// Constructs an immutable <see cref="ConfigSettings"/> from the specified builder.

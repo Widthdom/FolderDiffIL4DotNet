@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- Change default spinner frames from ASCII (`|`, `/`, `-`, `\`) to Braille pattern characters (`⠇`, `⠋`, `⠏`, `⠸`, `⠏`, `⠹`) for a smoother animation — `ConsoleSpinner.cs`, `ConfigSettings.cs`, `config.schema.json`, `README.md` (EN+JA), `ConfigSettingsTests` (2 assertions)
+
 ### [1.14.1] - 2026-04-08
 
 #### Added
@@ -1162,6 +1166,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- デフォルトスピナーフレームを ASCII（`|`, `/`, `-`, `\`）からブライユパターン文字（`⠇`, `⠋`, `⠏`, `⠸`, `⠏`, `⠹`）に変更し、より滑らかなアニメーションを実現 — `ConsoleSpinner.cs`、`ConfigSettings.cs`、`config.schema.json`、`README.md`（EN+JA）、`ConfigSettingsTests`（アサーション 2 箇所）
 
 ### [1.14.1] - 2026-04-08
 

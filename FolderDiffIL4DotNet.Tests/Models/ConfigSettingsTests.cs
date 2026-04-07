@@ -118,7 +118,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             var config = JsonSerializer.Deserialize<ConfigSettingsBuilder>(json)!.Build();
 
             Assert.NotNull(config);
-            Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
+            Assert.Equal(new[] { "⠇", "⠋", "⠏", "⠸", "⠏", "⠹" }, config.SpinnerFrames);
         }
 
         [Fact]
@@ -359,7 +359,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.Equal(ConfigSettings.DefaultAutoDetectNetworkShares, config.AutoDetectNetworkShares);
             Assert.Equal(ConfigSettings.DefaultSkipIL, config.SkipIL);
             Assert.Equal(ConfigSettings.DefaultShouldIncludeILCacheStatsInReport, config.ShouldIncludeILCacheStatsInReport);
-            Assert.Equal(new[] { "|", "/", "-", "\\" }, config.SpinnerFrames);
+            Assert.Equal(new[] { "⠇", "⠋", "⠏", "⠸", "⠏", "⠹" }, config.SpinnerFrames);
             Assert.Equal(ConfigSettings.DefaultDisassemblerBlacklistTtlMinutes, config.DisassemblerBlacklistTtlMinutes);
             Assert.Equal(ConfigSettings.DefaultDisassemblerTimeoutSeconds, config.DisassemblerTimeoutSeconds);
             Assert.Equal(ConfigSettings.DefaultEnableInlineDiff, config.EnableInlineDiff);

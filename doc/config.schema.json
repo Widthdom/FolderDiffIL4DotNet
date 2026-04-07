@@ -21,7 +21,7 @@
       "type": "array",
       "items": { "type": "string" },
       "minItems": 1,
-      "default": ["|", "/", "-", "\\"],
+      "default": ["⠇", "⠋", "⠏", "⠸", "⠏", "⠹"],
       "description": "Console spinner animation frames.\nコンソールスピナーのアニメーションフレーム。"
     },
     "IgnoredExtensions": {
