@@ -220,9 +220,9 @@ namespace FolderDiffIL4DotNet.Tests.Services.EdgeCases
             public DotNetExecutableDetectionResult DotNetDetectionResult { get; set; } =
                 new(DotNetExecutableDetectionStatus.NotDotNetExecutable);
 
-            public List<(string, string)> HashCalls { get; } = new();
-            public List<string> DotNetDetectionCalls { get; } = new();
-            public List<(string, string)> TextDiffCalls { get; } = new();
+            public ConcurrentBag<(string, string)> HashCalls { get; } = new();
+            public ConcurrentBag<string> DotNetDetectionCalls { get; } = new();
+            public ConcurrentBag<(string, string)> TextDiffCalls { get; } = new();
             public ConcurrentBag<(string Path, long Offset, int Length)> ReadChunkCalls { get; } = new();
 
             public void SetFileContent(string path, string content)

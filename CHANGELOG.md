@@ -13,11 +13,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Shortened executable name from `FolderDiffIL4DotNet` to `nildiff`** — Added `<AssemblyName>nildiff</AssemblyName>` to the main project `.csproj` so the published executable is `nildiff` (or `nildiff.exe` on Windows). The name combines **.N**et + **IL** + **diff** and also evokes "nil diff" (eliminating meaningless differences), reflecting the tool's IL-level noise filtering. Namespaces, NuGet package names, and project directory names remain unchanged. The IL cache directory path (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`) is preserved for backward compatibility via a new `Constants.APP_DATA_DIR_NAME` constant. Affected: `FolderDiffIL4DotNet.csproj`, `Common/Constants.cs`, `Runner/ProgramRunner.Config.cs`, `Runner/RunScopeBuilder.cs`, `README.md` (EN+JA usage), `doc/TROUBLESHOOTING.md` (EN+JA), `doc/config.sample.jsonc`, `doc/samples/diff_report.md`, `doc/samples/diff_report.html`, `doc/samples/sbom.cdx.json`, `doc/samples/sbom.spdx.json`. Tests: `ProgramRunnerTests` (updated cache path assertion to use `APP_DATA_DIR_NAME`).
 
+#### Fixed
+
+- **Thread-unsafe `List<T>` in `LargeFileComparisonTests.FakeFileComparisonService`** — `HashCalls`, `DotNetDetectionCalls`, and `TextDiffCalls` were `List<T>` but are called from parallel contexts (`maxParallel: 4`/`8`). Replaced with `ConcurrentBag<T>` to match the already-correct `ReadChunkCalls`. Affected: `FolderDiffIL4DotNet.Tests/Services/EdgeCases/LargeFileComparisonTests.cs`.
+
+- **Added `[Collection]` to `ProgramRunnerTests` and `ProgramTests`** — Both test classes redirect `Console.SetOut`/`Console.SetError` but lacked `[Collection]` attributes. Added `[Collection("ConsoleOutput NonParallel")]` to prevent potential cross-class interference. Affected: `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs`, `FolderDiffIL4DotNet.Tests/ProgramTests.cs`.
+
 #### Documentation
 
 - **Fixed stale JS file references in DEVELOPER_GUIDE** — Updated references to the old monolithic `diff_report.js` in the column visibility explanation and Jest test comment to point to the correct modular source path `js/diff_report_layout.js` and "HTML report JS modules" respectively, aligning with the JS modularization completed in v1.13.x. Affected: `doc/DEVELOPER_GUIDE.md` (EN+JA sections).
 - **Fixed JS module file count in CLAUDE.md** — Updated "12 JS module files" to "13 JS module files" in both EN and JA sections, reflecting the addition of `diff_report_layout.js`. Affected: `CLAUDE.md`.
 - **Added missing DI registrations in DEVELOPER_GUIDE** — The run-scoped container section was missing `AuditLogGenerateService`, `SbomGenerateService`, 4 `IReportFormatter` implementations (`MarkdownReportFormatter`, `HtmlReportFormatter`, `AuditLogReportFormatter`, `SbomReportFormatter`), and `IDisassemblerProvider` / `DotNetDisassemblerProvider`. Added all to both EN and JA sections. Affected: `doc/DEVELOPER_GUIDE.md`.
+- **Fixed `DotNetDisassembleService` partial file count in CLAUDE.md** — Updated from "2 files" to "3 files" in both EN and JA sections, reflecting the addition of `DotNetDisassembleService.Streaming.cs`. Affected: `CLAUDE.md`.
+- **Added missing config keys to `config.sample.jsonc`** — Added `ILCacheDirectoryAbsolutePath` and `SpinnerFrames`, which were present in `ConfigSettings` but missing from the sample file. Affected: `doc/config.sample.jsonc`.
 
 ### [1.13.8] - 2026-04-06
 
@@ -1147,11 +1155,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **実行ファイル名を `FolderDiffIL4DotNet` から `nildiff` に短縮** — メインプロジェクトの `.csproj` に `<AssemblyName>nildiff</AssemblyName>` を追加し、公開される実行ファイルを `nildiff`（Windows では `nildiff.exe`）に変更。名前は **.N**et + **IL** + **diff** の組み合わせであり、「nil diff（意味のない差分を無くす）」というツールの IL レベルノイズ除去コンセプトも表現。名前空間、NuGet パッケージ名、プロジェクトディレクトリ名は変更なし。IL キャッシュディレクトリパス（`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`）は後方互換のため `Constants.APP_DATA_DIR_NAME` 定数で維持。対象: `FolderDiffIL4DotNet.csproj`、`Common/Constants.cs`、`Runner/ProgramRunner.Config.cs`、`Runner/RunScopeBuilder.cs`、`README.md`（EN+JA 使用例）、`doc/TROUBLESHOOTING.md`（EN+JA）、`doc/config.sample.jsonc`、`doc/samples/diff_report.md`、`doc/samples/diff_report.html`、`doc/samples/sbom.cdx.json`、`doc/samples/sbom.spdx.json`。テスト: `ProgramRunnerTests`（キャッシュパスアサーションを `APP_DATA_DIR_NAME` に更新）。
 
+#### 修正
+
+- **`LargeFileComparisonTests.FakeFileComparisonService` のスレッドセーフでない `List<T>`** — `HashCalls`、`DotNetDetectionCalls`、`TextDiffCalls` が `List<T>` だったが、並列コンテキスト（`maxParallel: 4`/`8`）から呼び出される。既に正しく `ConcurrentBag<T>` を使用している `ReadChunkCalls` に合わせて修正。対象: `FolderDiffIL4DotNet.Tests/Services/EdgeCases/LargeFileComparisonTests.cs`。
+
+- **`ProgramRunnerTests` と `ProgramTests` に `[Collection]` を追加** — 両テストクラスが `Console.SetOut`/`Console.SetError` をリダイレクトしているが `[Collection]` 属性が未設定だった。クラス間の干渉を防止するため `[Collection("ConsoleOutput NonParallel")]` を追加。対象: `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs`、`FolderDiffIL4DotNet.Tests/ProgramTests.cs`。
+
 #### ドキュメント
 
 - **DEVELOPER_GUIDE の古い JS ファイル参照を修正** — 列表示の説明と Jest テストコメントにおいて、旧モノリシックファイル `diff_report.js` への参照を、モジュール分割後の正しいパス `js/diff_report_layout.js` および「HTML レポート JS モジュール」にそれぞれ更新し、v1.13.x で完了した JS モジュール化と整合させた。対象: `doc/DEVELOPER_GUIDE.md`（EN+JA セクション）。
 - **CLAUDE.md の JS モジュールファイル数を修正** — `diff_report_layout.js` の追加を反映し、EN・JA 両セクションで「12 JS モジュールファイル」を「13 JS モジュールファイル」に修正。対象: `CLAUDE.md`。
 - **DEVELOPER_GUIDE に不足していた DI 登録を追加** — 実行スコープコンテナセクションに `AuditLogGenerateService`、`SbomGenerateService`、4 つの `IReportFormatter` 実装（`MarkdownReportFormatter`、`HtmlReportFormatter`、`AuditLogReportFormatter`、`SbomReportFormatter`）、および `IDisassemblerProvider` / `DotNetDisassemblerProvider` が未記載だったため追加。EN・JA 両セクションに反映。対象: `doc/DEVELOPER_GUIDE.md`。
+- **CLAUDE.md の `DotNetDisassembleService` partial ファイル数を修正** — `DotNetDisassembleService.Streaming.cs` の追加を反映し、EN・JA 両セクションで「2 ファイル」を「3 ファイル」に修正。対象: `CLAUDE.md`。
+- **`config.sample.jsonc` に不足していた設定キーを追加** — `ConfigSettings` に存在するが sample ファイルに未記載だった `ILCacheDirectoryAbsolutePath` と `SpinnerFrames` を追加。対象: `doc/config.sample.jsonc`。
 
 ### [1.13.8] - 2026-04-06
 
