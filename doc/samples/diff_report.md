@@ -2,7 +2,7 @@
 
 | Property | Value |
 |----------|-------|
-| App Version | FolderDiffIL4DotNet 1.0.0.0+98587820469656dc0794524de1e1bf03ae3f2b8a |
+| App Version | nildiff 1.0.0.0+98587820469656dc0794524de1e1bf03ae3f2b8a |
 | Computer | dev-machine |
 | Timezone | +09:00 |
 | Elapsed Time | 0h 0m 1.2s |

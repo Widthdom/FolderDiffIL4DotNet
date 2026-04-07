@@ -29,7 +29,7 @@ namespace FolderDiffIL4DotNet.Services
 
             // Metadata cards row / メタデータカード行
             writer.WriteLine("<div class=\"header-cards\">");
-            AppendHeaderCard(writer, "App Version", $"FolderDiffIL4DotNet {HtmlEncode(appVersion)}");
+            AppendHeaderCard(writer, "App Version", $"{Common.Constants.APP_NAME} {HtmlEncode(appVersion)}");
             AppendHeaderCard(writer, "Computer", HtmlEncode(computerName));
             if (config.ShouldOutputFileTimestamps)
                 AppendHeaderCard(writer, "Timezone", HtmlEncode(DateTimeOffset.Now.ToString("zzz")));

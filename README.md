@@ -109,7 +109,7 @@ dotnet tool install --global ilspycmd
 ## Usage
 
 ```
-FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
+nildiff <oldFolder> <newFolder> <reportLabel> [options]
 ```
 
 **Arguments:**
@@ -837,7 +837,7 @@ dotnet tool install --global ilspycmd
 ## 使い方
 
 ```
-FolderDiffIL4DotNet <oldFolder> <newFolder> <reportLabel> [options]
+nildiff <oldFolder> <newFolder> <reportLabel> [options]
 ```
 
 **引数:**

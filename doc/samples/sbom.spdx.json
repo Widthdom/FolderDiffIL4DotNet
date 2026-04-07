@@ -2,12 +2,12 @@
   "spdxVersion": "SPDX-2.3",
   "dataLicense": "CC0-1.0",
   "spdxid": "SPDXRef-DOCUMENT",
-  "name": "FolderDiffIL4DotNet-SBOM",
+  "name": "nildiff-SBOM",
   "documentNamespace": "https://folderdiff.local/sbom/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "creationInfo": {
     "created": "2026-03-28T10:30:00Z",
     "creators": [
-      "Tool: FolderDiffIL4DotNet-1.10.0"
+      "Tool: nildiff-1.10.0"
     ]
   },
   "packages": [

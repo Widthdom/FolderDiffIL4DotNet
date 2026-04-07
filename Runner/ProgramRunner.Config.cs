@@ -179,13 +179,13 @@ namespace FolderDiffIL4DotNet
                 var builder = await _configService.LoadConfigBuilderAsync(configPath);
                 var config = builder.Build();
                 return string.IsNullOrWhiteSpace(config.ILCacheDirectoryAbsolutePath)
-                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME)
+                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_DATA_DIR_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME)
                     : config.ILCacheDirectoryAbsolutePath;
             }
             catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException)
             {
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME);
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_DATA_DIR_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME);
             }
         }
 

@@ -98,8 +98,8 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         new CycloneDxTool
                         {
-                            Vendor = "FolderDiffIL4DotNet",
-                            Name = "FolderDiffIL4DotNet",
+                            Vendor = Common.Constants.APP_NAME,
+                            Name = Common.Constants.APP_NAME,
                             Version = context.AppVersion
                         }
                     }
@@ -146,12 +146,12 @@ namespace FolderDiffIL4DotNet.Services
             var timestamp = DateTimeOffset.Now.ToString("yyyy-MM-ddTHH:mm:ssZ");
             var doc = new SpdxDocument
             {
-                Name = "FolderDiffIL4DotNet-SBOM",
+                Name = $"{Common.Constants.APP_NAME}-SBOM",
                 DocumentNamespace = $"https://folderdiff.local/sbom/{Guid.NewGuid()}",
                 CreationInfo = new SpdxCreationInfo
                 {
                     Created = timestamp,
-                    Creators = new List<string> { $"Tool: FolderDiffIL4DotNet-{context.AppVersion}" }
+                    Creators = new List<string> { $"Tool: {Common.Constants.APP_NAME}-{context.AppVersion}" }
                 },
                 Packages = components.Select((c, i) => ToSpdxPackage(c, i)).ToList()
             };

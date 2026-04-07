@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -107,7 +108,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var doc = JsonDocument.Parse(json);
             var tools = doc.RootElement.GetProperty("metadata").GetProperty("tools");
             Assert.Equal(1, tools.GetArrayLength());
-            Assert.Equal("FolderDiffIL4DotNet", tools[0].GetProperty("name").GetString());
+            Assert.Equal(Constants.APP_NAME, tools[0].GetProperty("name").GetString());
             Assert.Equal("2.0.0", tools[0].GetProperty("version").GetString());
         }
 
@@ -208,7 +209,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal("SPDX-2.3", root.GetProperty("spdxVersion").GetString());
             Assert.Equal("CC0-1.0", root.GetProperty("dataLicense").GetString());
             Assert.Equal("SPDXRef-DOCUMENT", root.GetProperty("spdxid").GetString());
-            Assert.Equal("FolderDiffIL4DotNet-SBOM", root.GetProperty("name").GetString());
+            Assert.Equal($"{Constants.APP_NAME}-SBOM", root.GetProperty("name").GetString());
             Assert.True(root.TryGetProperty("creationInfo", out _));
             Assert.True(root.TryGetProperty("packages", out _));
         }
