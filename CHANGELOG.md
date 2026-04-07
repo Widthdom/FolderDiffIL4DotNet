@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.14.1] - 2026-04-08
+
 #### Added
 
 - **Plugin strict mode with SHA-256 hash verification** — New `PluginStrictMode` (default `false`) and `PluginTrustedHashes` config settings enable an optional allowlist that verifies each plugin DLL's SHA-256 hash before loading. When strict mode is enabled, plugins not in the trusted hash map or with mismatched hashes are rejected with a warning. This mitigates arbitrary code execution from compromised plugin directories. Affected: `Models/ConfigSettings.PluginSettings.cs`, `Models/ConfigSettingsBuilder.PluginSettings.cs`, `Models/IReadOnlyConfigSettings.cs`, `Models/ConfigSettings.cs`, `Runner/PluginLoader.cs`, `ProgramRunner.cs`, `doc/config.sample.jsonc`. Tests: `PluginLoaderTests` (3 new: `LoadPlugins_StrictModeNoTrustedHashes_ReturnsEmptyAndLogsWarning`, `LoadPlugins_StrictModeWithEmptyTrustedHashes_ReturnsEmptyAndLogsWarning`, `LoadPlugins_StrictModeDisabled_DoesNotRequireHashes`), `PluginConfigSettingsTests` (4 new: `DefaultPluginStrictMode_IsFalse`, `DefaultPluginTrustedHashes_IsEmpty`, `Build_PluginStrictMode_IsPreserved`, `Build_PluginTrustedHashes_ArePreserved`).
@@ -1160,6 +1162,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.14.1] - 2026-04-08
 
 #### 追加
 
@@ -2313,7 +2317,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.1...HEAD
+[1.14.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.8...v1.14.0
 [1.13.8]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.7...v1.13.8
 [1.13.7]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.6...v1.13.7
