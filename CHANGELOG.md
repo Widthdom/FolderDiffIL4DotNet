@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.14.0] - 2026-04-07
+
 #### Changed
 
 - **Shortened executable name from `FolderDiffIL4DotNet` to `nildiff`** — Added `<AssemblyName>nildiff</AssemblyName>` to the main project `.csproj` so the published executable is `nildiff` (or `nildiff.exe` on Windows). The name combines **.N**et + **IL** + **diff** and also evokes "nil diff" (eliminating meaningless differences), reflecting the tool's IL-level noise filtering. Namespaces, NuGet package names, and project directory names remain unchanged. The IL cache directory path (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`) is preserved for backward compatibility via a new `Constants.APP_DATA_DIR_NAME` constant. Affected: `FolderDiffIL4DotNet.csproj`, `Common/Constants.cs`, `Runner/ProgramRunner.Config.cs`, `Runner/RunScopeBuilder.cs`, `README.md` (EN+JA usage), `doc/TROUBLESHOOTING.md` (EN+JA), `doc/config.sample.jsonc`, `doc/samples/diff_report.md`, `doc/samples/diff_report.html`, `doc/samples/sbom.cdx.json`, `doc/samples/sbom.spdx.json`. Tests: `ProgramRunnerTests` (updated cache path assertion to use `APP_DATA_DIR_NAME`).
@@ -1150,6 +1152,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.14.0] - 2026-04-07
 
 #### 変更
 
@@ -2293,7 +2297,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.8...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.8...v1.14.0
 [1.13.8]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.7...v1.13.8
 [1.13.7]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.6...v1.13.7
 [1.13.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.5...v1.13.6
