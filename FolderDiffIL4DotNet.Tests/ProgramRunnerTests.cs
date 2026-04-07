@@ -17,6 +17,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests
 {
+    [Collection("ConsoleOutput NonParallel")]
     public sealed partial class ProgramRunnerTests
     {
         private static readonly string ConfigFilePath = Path.Combine(AppContext.BaseDirectory, "config.json");

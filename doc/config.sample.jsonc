@@ -141,6 +141,10 @@
   // CLI override: --no-il-cache
   "EnableILCache": true,
 
+  // Absolute path for the IL disk cache directory (default: "" = %LOCALAPPDATA%/FolderDiffIL4DotNet/ILCache)
+  // IL ディスクキャッシュディレクトリの絶対パス（デフォルト: "" = %LOCALAPPDATA%/FolderDiffIL4DotNet/ILCache）
+  "ILCacheDirectoryAbsolutePath": "",
+
   // Interval (seconds) for periodic IL cache statistics logging (default: 60)
   // IL キャッシュ統計の定期ログ出力間隔（秒）（デフォルト: 60）
   "ILCacheStatsLogIntervalSeconds": 60,
@@ -206,6 +210,13 @@
   // Render inline diffs lazily (on-demand when expanded) (default: true)
   // インライン差分を遅延レンダリングする（展開時にオンデマンド）（デフォルト: true）
   "InlineDiffLazyRender": true,
+
+  // --- Spinner / スピナー ---
+
+  // Custom spinner animation frames (default: null = built-in braille animation)
+  // カスタムスピナーアニメーションフレーム（デフォルト: null = 組み込みブライユアニメーション）
+  // CLI overrides: --coffee, --beer, --matcha, --whisky, --wine, --ramen, --sushi, --random-spinner
+  "SpinnerFrames": null,
 
   // --- Logging / ログ ---
 
