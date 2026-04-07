@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775484482683,
+  "lastUpdate": 1775565721829,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -3672,6 +3672,102 @@ window.BENCHMARK_DATA = {
             "value": 28152407.046875,
             "unit": "ns",
             "range": "± 146408.86060062266"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "163a413cbf8f44c4bd1663dd20f253c9c55778d6",
+          "message": "Merge pull request #128 from Widthdom/claude/shorten-app-name-wkA4e\n\nShorten executable name from FolderDiffIL4DotNet to nildiff",
+          "timestamp": "2026-04-07T21:37:15+09:00",
+          "tree_id": "1e9a1c618cbde804393624116b6021560d4ce56b",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/163a413cbf8f44c4bd1663dd20f253c9c55778d6"
+        },
+        "date": 1775565721527,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62360.11483328683,
+            "unit": "ns",
+            "range": "± 319.2693712178483"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 585832.7788461539,
+            "unit": "ns",
+            "range": "± 2735.58448975757"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5926454.905691965,
+            "unit": "ns",
+            "range": "± 17894.636369474898"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 75109.21260579427,
+            "unit": "ns",
+            "range": "± 449.902618000519"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 31.334744147459666,
+            "unit": "ns",
+            "range": "± 0.3219174163649719"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 64.43668456304641,
+            "unit": "ns",
+            "range": "± 1.5681079337694535"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.016907423734665,
+            "unit": "ns",
+            "range": "± 0.3542746125586143"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5330641.503004808,
+            "unit": "ns",
+            "range": "± 32163.259395823334"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 129979.42521158855,
+            "unit": "ns",
+            "range": "± 1384.5924600489411"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2766.4159845205454,
+            "unit": "ns",
+            "range": "± 40.73583632744571"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 268477.9396972656,
+            "unit": "ns",
+            "range": "± 1089.2186619311808"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27796977.609375,
+            "unit": "ns",
+            "range": "± 156444.35044060272"
           }
         ]
       }
