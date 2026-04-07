@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775568752710,
+  "lastUpdate": 1775574392702,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -3960,6 +3960,102 @@ window.BENCHMARK_DATA = {
             "value": 27276051.69375,
             "unit": "ns",
             "range": "± 158495.62086284364"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "26a9f25708900af1e187aee52c31fb7699c550c3",
+          "message": "Fix three security vulnerabilities: plugin trust, URL scheme, output guardrails (#132)\n\n1. Plugin strict mode (SHA-256 hash verification): New PluginStrictMode and\n   PluginTrustedHashes config settings enable optional allowlist that verifies\n   each plugin DLL's hash before loading. Untrusted plugins are rejected.\n\n2. Advisory URL scheme allowlist: Vulnerability badge links now enforce\n   https/http-only via IsAllowedUriScheme(). Dangerous schemes (javascript:,\n   data:, vbscript:) are rendered as plain text instead of clickable links.\n\n3. Output directory guardrails: GetReportsFolderAbsolutePath logs warnings\n   when the output path escapes app base directory or targets system dirs\n   (/etc, /bin, C:\\Windows, etc.).\n\nhttps://claude.ai/code/session_012bGwqMR81ELMDfWrFZyobB\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-04-08T00:01:44+09:00",
+          "tree_id": "ec7112dd32d4128463fc30b04152eb1755286ba2",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/26a9f25708900af1e187aee52c31fb7699c550c3"
+        },
+        "date": 1775574392394,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62966.06951434795,
+            "unit": "ns",
+            "range": "± 92.45259245735583"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 584021.4202706473,
+            "unit": "ns",
+            "range": "± 1152.172326541644"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 6136362.786458333,
+            "unit": "ns",
+            "range": "± 15190.157918463285"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74344.80894252232,
+            "unit": "ns",
+            "range": "± 104.27007285204516"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 30.087173361044663,
+            "unit": "ns",
+            "range": "± 0.2117124974318937"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 66.1517992842765,
+            "unit": "ns",
+            "range": "± 1.6142475672632068"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.29495852759906,
+            "unit": "ns",
+            "range": "± 0.1690792861404859"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5209090.454241072,
+            "unit": "ns",
+            "range": "± 17843.208184108717"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 127621.55911690848,
+            "unit": "ns",
+            "range": "± 1015.0486328150733"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2626.2484583536784,
+            "unit": "ns",
+            "range": "± 18.084093995211926"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 261578.11899414062,
+            "unit": "ns",
+            "range": "± 1774.2568122961295"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27226369.54017857,
+            "unit": "ns",
+            "range": "± 135978.31183009304"
           }
         ]
       }
