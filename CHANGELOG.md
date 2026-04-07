@@ -9,6 +9,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **JsMinifier unit tests** — Added `JsMinifierTests` (21 tests) covering JS comment stripping with string literal preservation (single/double-quoted `//` URLs, escaped quotes, mixed quote nesting), blank line removal, whitespace preservation for `downloadReviewed()` patterns, null/empty input, CSS block comment removal, important comment (`/*! ... */`) retention, unterminated comment handling, and CSS whitespace preservation. This was the highest-priority gap: `JsMinifier` had 3 past incidents (commits `553a53b`, `b4f6f82`, `34d46f3`) but zero tests. Affected: `FolderDiffIL4DotNet.Tests/Services/HtmlReport/JsMinifierTests.cs` (new file).
+
+- **ExceptionFilters unit tests** — Added `ExceptionFiltersTests` (17 tests) covering all four filter predicates (`IsFileIoRecoverable`, `IsFileIoOrOperationRecoverable`, `IsPathOrFileIoRecoverable`, `IsProcessExecutionRecoverable`) with true/false matrices for each exception type, including subclass behavior (`FileNotFoundException` → `IOException`, `ArgumentNullException` → `ArgumentException`). Affected: `FolderDiffIL4DotNet.Tests/Core/Common/ExceptionFiltersTests.cs` (new file).
+
+- **AssemblySdkVersionReader unit tests** — Added `AssemblySdkVersionReaderTests` (10 tests) covering `FormatTargetFramework` conversion for `.NETCoreApp`/`.NETFramework`/`.NETStandard`/unknown frameworks, no-comma raw value, `Version=` fallback, `ReadTargetFramework` with real assemblies and error cases (non-existent/non-assembly/empty files), and `ReadPairDisplayString` null permutations. Affected: `FolderDiffIL4DotNet.Tests/Services/AssemblySdkVersionReaderTests.cs` (new file).
+
+- **TimestampCache unit tests** — Added `TimestampCacheTests` (5 tests, `[Collection("TimestampCache NonParallel")]`) covering `GetOrAdd` cache hit/miss, null/empty `ArgumentException`, `Clear` invalidation with timestamp change detection, and case-insensitive key matching. Affected: `FolderDiffIL4DotNet.Tests/Services/Caching/TimestampCacheTests.cs` (new file).
+
+#### Documentation
+
+- Updated TESTING_GUIDE.md scope map tables (EN + JA) with 4 new rows: JS/CSS minification, Exception filters, Assembly SDK version, Timestamp caching.
+
 ### [1.14.2] - 2026-04-08
 
 #### Changed
@@ -1168,6 +1182,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **JsMinifier ユニットテスト** — `JsMinifierTests`（21 テスト）を追加。JS コメント除去における文字列リテラル保持（シングル/ダブルクォート内 `//` URL、エスケープ引用符、混在引用符ネスト）、空行除去、`downloadReviewed()` パターン用の空白保持、null/空入力、CSS ブロックコメント除去、重要コメント（`/*! ... */`）保持、未終端コメント処理、CSS 空白保持をカバー。`JsMinifier` は過去 3 回のインシデント（コミット `553a53b`、`b4f6f82`、`34d46f3`）がありながらテストがゼロだったため、最優先のギャップ。影響: `FolderDiffIL4DotNet.Tests/Services/HtmlReport/JsMinifierTests.cs`（新規ファイル）。
+
+- **ExceptionFilters ユニットテスト** — `ExceptionFiltersTests`（17 テスト）を追加。4 つのフィルタ述語（`IsFileIoRecoverable`、`IsFileIoOrOperationRecoverable`、`IsPathOrFileIoRecoverable`、`IsProcessExecutionRecoverable`）の例外型ごとの true/false マトリクスをカバー。サブクラス動作（`FileNotFoundException` → `IOException`、`ArgumentNullException` → `ArgumentException`）を含む。影響: `FolderDiffIL4DotNet.Tests/Core/Common/ExceptionFiltersTests.cs`（新規ファイル）。
+
+- **AssemblySdkVersionReader ユニットテスト** — `AssemblySdkVersionReaderTests`（10 テスト）を追加。`FormatTargetFramework` の `.NETCoreApp`/`.NETFramework`/`.NETStandard`/不明フレームワーク変換、カンマなし生値、`Version=` フォールバック、`ReadTargetFramework` の実アセンブリ抽出・エラーケース（非存在/非アセンブリ/空ファイル）、`ReadPairDisplayString` の null 順列をカバー。影響: `FolderDiffIL4DotNet.Tests/Services/AssemblySdkVersionReaderTests.cs`（新規ファイル）。
+
+- **TimestampCache ユニットテスト** — `TimestampCacheTests`（5 テスト、`[Collection("TimestampCache NonParallel")]`）を追加。`GetOrAdd` のキャッシュヒット/ミス、null/空の `ArgumentException`、`Clear` 無効化（タイムスタンプ変更検出）、大文字小文字を区別しないキーマッチングをカバー。影響: `FolderDiffIL4DotNet.Tests/Services/Caching/TimestampCacheTests.cs`（新規ファイル）。
+
+#### ドキュメント
+
+- TESTING_GUIDE.md 範囲マップテーブル（EN + JA）に 4 行追加: JS/CSS ミニファイ、例外フィルタ、アセンブリ SDK バージョン、タイムスタンプキャッシュ。
 
 ### [1.14.2] - 2026-04-08
 
