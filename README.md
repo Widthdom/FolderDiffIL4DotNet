@@ -21,6 +21,40 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 <a id="readme-en-quick-start"></a>
 ## Quick Start (5 minutes)
 
+### Option A: Install as .NET Global Tool (recommended)
+
+Requires [.NET SDK 8.x](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) or later.
+
+```bash
+# 1. Install nildiff
+dotnet tool install -g nildiff
+
+# 2. (Optional) Install an IL disassembler for IL-level comparison
+dotnet tool install -g dotnet-ildasm
+
+# 3. Run a diff between two folders
+nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+```
+
+The tool works out of the box with default settings. To customize behavior, create a `config.json` and pass it via `--config`:
+
+```bash
+nildiff "/old" "/new" "label" --config /path/to/config.json
+```
+
+See [`doc/config.sample.jsonc`](doc/config.sample.jsonc) for all available settings. Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`).
+
+The default `config.json` location varies by OS:
+
+| OS | Path |
+|---|---|
+| Windows | `%USERPROFILE%\.dotnet\tools\.store\nildiff\<version>\nildiff\<version>\tools\net8.0\any\config.json` |
+| macOS / Linux | `$HOME/.dotnet/tools/.store/nildiff/<version>/nildiff/<version>/tools/net8.0/any/config.json` |
+
+> **Note:** The default config in the tool store is overwritten on tool update. For persistent customization, keep your own `config.json` and use `--config`.
+
+### Option B: Clone and build from source
+
 ```bash
 # 1. Install .NET SDK 8.x (skip if already installed)
 #    Windows: winget install Microsoft.DotNet.SDK.8 --source winget
@@ -754,6 +788,40 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 
 <a id="readme-ja-quick-start"></a>
 ## クイックスタート（5 分）
+
+### 方法 A: .NET グローバルツールとしてインストール（推奨）
+
+[.NET SDK 8.x](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0) 以降が必要です。
+
+```bash
+# 1. nildiff をインストール
+dotnet tool install -g nildiff
+
+# 2. （任意）IL レベル比較用に IL 逆アセンブラをインストール
+dotnet tool install -g dotnet-ildasm
+
+# 3. 2つのフォルダを比較
+nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+```
+
+デフォルト設定のまま動作します。動作をカスタマイズするには、`config.json` を作成して `--config` で指定してください：
+
+```bash
+nildiff "/old" "/new" "label" --config /path/to/config.json
+```
+
+利用可能な設定項目は [`doc/config.sample.jsonc`](doc/config.sample.jsonc) を参照してください。個別の設定は `FOLDERDIFF_*` 環境変数でも上書き可能です（例: `FOLDERDIFF_MAXPARALLELISM=8`）。
+
+デフォルトの `config.json` の配置場所は OS によって異なります：
+
+| OS | パス |
+|---|---|
+| Windows | `%USERPROFILE%\.dotnet\tools\.store\nildiff\<version>\nildiff\<version>\tools\net8.0\any\config.json` |
+| macOS / Linux | `$HOME/.dotnet/tools/.store/nildiff/<version>/nildiff/<version>/tools/net8.0/any/config.json` |
+
+> **注意:** ツールストア内のデフォルト config はツール更新時に上書きされます。永続的なカスタマイズには、独自の `config.json` を保持して `--config` で指定してください。
+
+### 方法 B: ソースからクローンしてビルド
 
 ```bash
 # 1. .NET SDK 8.x をインストール（インストール済みならスキップ）

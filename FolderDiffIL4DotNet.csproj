@@ -11,6 +11,26 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!-- NuGet global tool metadata / NuGet グローバルツール メタデータ -->
+  <PropertyGroup>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>nildiff</ToolCommandName>
+    <PackageId>nildiff</PackageId>
+    <Authors>Widthdom</Authors>
+    <Description>Folder diff tool for .NET release validation. Compares two folders and generates structured diff reports (Markdown, interactive HTML, audit log). For .NET assemblies, compares at the IL level — filtering out build-specific noise (MVID, timestamps) so functionally identical assemblies are reported as unchanged.</Description>
+    <PackageTags>diff;folder-diff;dotnet;il;release-validation;build-comparison;audit;report</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Widthdom/FolderDiffIL4DotNet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Widthdom/FolderDiffIL4DotNet.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>PACKAGE_README.md</PackageReadmeFile>
+    <Copyright>Copyright (c) 2025 Widthdom</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="PACKAGE_README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- Nerdbank.GitVersioning: https://github.com/dotnet/Nerdbank.GitVersioning -->
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.143" PrivateAssets="All" />
