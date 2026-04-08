@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <!-- Nerdbank.GitVersioning: version derived from version.json / version.json からバージョンを自動算出 -->
-    <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.143" PrivateAssets="All" />
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.9.50" PrivateAssets="All" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
   </ItemGroup>
 
