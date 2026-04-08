@@ -33,6 +33,25 @@ nildiff --help
 
 For .NET assemblies (`.dll`, `.exe`), nildiff compares at the **IL level** rather than binary level, filtering out build-specific noise (MVID, timestamps). Functionally identical assemblies are reported as "unchanged" even when binary hashes differ due to non-deterministic builds.
 
+## Configuration
+
+The tool works out of the box with default settings. To customize behavior, create a `config.json` and pass it via `--config`:
+
+```bash
+nildiff "/old" "/new" "label" --config /path/to/config.json
+```
+
+Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`). See the [annotated sample config](https://github.com/Widthdom/FolderDiffIL4DotNet/blob/main/doc/config.sample.jsonc) for all available settings.
+
+The default `config.json` location varies by OS:
+
+| OS | Path |
+|---|---|
+| Windows | `%USERPROFILE%\.dotnet\tools\.store\nildiff\<version>\nildiff\<version>\tools\net8.0\any\config.json` |
+| macOS / Linux | `$HOME/.dotnet/tools/.store/nildiff/<version>/nildiff/<version>/tools/net8.0/any/config.json` |
+
+> **Note:** The default config in the tool store is overwritten on tool update. For persistent customization, keep your own `config.json` and use `--config`.
+
 ## Optional: IL Disassembler
 
 For IL-level comparison, install an IL disassembler:
