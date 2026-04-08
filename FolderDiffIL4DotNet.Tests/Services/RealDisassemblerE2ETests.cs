@@ -48,7 +48,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public async Task FilesAreEqualAsync_WhenDotNetIldasmComparesNonDeterministicRebuilds_ReturnsIlMatch()
         {
             Skip.IfNot(IsE2EEnabled(), "Set FOLDERDIFF_RUN_E2E=true to run E2E tests.");
-            Skip.If(!CanRunDotNetIldasm(), "dotnet-ildasm is not available in this environment.");
+            Assert.True(
+                CanRunDotNetIldasm(),
+                "FOLDERDIFF_RUN_E2E=true requires dotnet-ildasm to be installed and runnable in PATH.");
             var previousRollForward = Environment.GetEnvironmentVariable("DOTNET_ROLL_FORWARD");
             Environment.SetEnvironmentVariable("DOTNET_ROLL_FORWARD", "Major");
             try

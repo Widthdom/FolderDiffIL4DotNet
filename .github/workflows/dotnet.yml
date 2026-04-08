@@ -65,7 +65,8 @@ jobs:
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         run: |
           dotnet tool install --global dotnet-ildasm
-          DOTNET_ROLL_FORWARD=Major dotnet-ildasm --version
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+          DOTNET_ROLL_FORWARD=Major "$HOME/.dotnet/tools/dotnet-ildasm" --version
 
       - name: Restore local tools
         run: dotnet tool restore
@@ -74,6 +75,7 @@ jobs:
         if: ${{ hashFiles('FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj') != '' }}
         env:
           DOTNET_ROLL_FORWARD: Major
+          FOLDERDIFF_RUN_E2E: true
         run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
       - name: Generate coverage report
@@ -258,7 +260,8 @@ jobs:
       - name: Install real disassembler for E2E tests
         run: |
           dotnet tool install --global dotnet-ildasm
-          DOTNET_ROLL_FORWARD=Major dotnet-ildasm --version
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+          DOTNET_ROLL_FORWARD=Major "$HOME/.dotnet/tools/dotnet-ildasm" --version
 
       - name: Run Stryker mutation testing
         env:
@@ -358,7 +361,12 @@ jobs:
         run: dotnet build FolderDiffIL4DotNet.sln --configuration Release --no-restore
 
       - name: Install real disassembler for E2E tests
-        run: dotnet tool install --global dotnet-ildasm
+        shell: pwsh
+        run: |
+          dotnet tool install --global dotnet-ildasm
+          $toolPath = Join-Path $env:USERPROFILE ".dotnet\tools"
+          $toolPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          & (Join-Path $toolPath "dotnet-ildasm.exe") --version
         env:
           DOTNET_ROLL_FORWARD: Major
 
@@ -366,3 +374,4 @@ jobs:
         run: dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo
         env:
           DOTNET_ROLL_FORWARD: Major
+          FOLDERDIFF_RUN_E2E: true

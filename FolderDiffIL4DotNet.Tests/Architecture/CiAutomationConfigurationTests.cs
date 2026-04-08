@@ -46,6 +46,23 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that CI/release workflows force the real-disassembler E2E gate on the release path.
+        /// CI/リリースのワークフローが実逆アセンブラ E2E ゲートをリリース経路で強制していることを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Workflows_EnableRealDisassemblerE2EInCi()
+        {
+            var dotnetWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+            var releaseWorkflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "release.yml"));
+
+            Assert.Contains("FOLDERDIFF_RUN_E2E: true", dotnetWorkflow, StringComparison.Ordinal);
+            Assert.Contains("FOLDERDIFF_RUN_E2E: true", releaseWorkflow, StringComparison.Ordinal);
+            Assert.Contains(".dotnet/tools", dotnetWorkflow, StringComparison.Ordinal);
+            Assert.Contains(".dotnet/tools", releaseWorkflow, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that the benchmark regression workflow detects performance degradation on PRs.
         /// ベンチマークリグレッションワークフローが PR でパフォーマンス劣化を検知することを検証します。
         /// </summary>
