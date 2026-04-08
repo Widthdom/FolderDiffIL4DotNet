@@ -11,7 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Added
 
-- **NuGet global tool distribution** — The main application can now be installed as a .NET global tool via `dotnet tool install -g nildiff`. Added `PackAsTool`, `ToolCommandName`, and NuGet package metadata to `FolderDiffIL4DotNet.csproj`. The release workflow (`release.yml`) now packs and publishes the global tool package to nuget.org alongside existing Core and Plugin.Abstractions packages. Affected: `FolderDiffIL4DotNet.csproj`, `PACKAGE_README.md` (new), `.github/workflows/release.yml`, `Runner/ProgramRunner.Credits.cs`, `README.md` (EN+JA Quick Start), `CiAutomationConfigurationTests`.
+- **NuGet global tool distribution** — The main application can now be installed as a .NET global tool via `dotnet tool install -g nildiff`. Added `PackAsTool`, `ToolCommandName`, and NuGet package metadata to `FolderDiffIL4DotNet.csproj`. The release workflow (`release.yml`) now packs and publishes the global tool package to nuget.org alongside existing Core and Plugin.Abstractions packages. Documentation includes .NET SDK 8.x prerequisite, per-OS default `config.json` paths (Windows/macOS/Linux tool store), `--config` flag and `FOLDERDIFF_*` environment variable usage for persistent customization. Affected: `FolderDiffIL4DotNet.csproj`, `PACKAGE_README.md` (new), `.github/workflows/release.yml`, `Runner/ProgramRunner.Credits.cs`, `README.md` (EN+JA Quick Start + config guide), `CiAutomationConfigurationTests`.
+
+#### Documentation
+
+- **Per-commit checklist** — Added a 14-item per-commit checklist to `CLAUDE.md` (EN+JA) covering tests, CHANGELOG, README, guides, report samples, config, DI registration, credits, CI workflows, and PR description. Complements the existing cross-cutting consistency table with an actionable checkpoint workflow.
 
 ### [1.14.3] - 2026-04-08
 
@@ -1191,7 +1195,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 追加
 
-- **NuGet グローバルツール配布** — メインアプリケーションを `dotnet tool install -g nildiff` で .NET グローバルツールとしてインストール可能にした。`FolderDiffIL4DotNet.csproj` に `PackAsTool`、`ToolCommandName`、NuGet パッケージメタデータを追加。リリースワークフロー（`release.yml`）で既存の Core・Plugin.Abstractions パッケージと共にグローバルツールパッケージを nuget.org に公開する。影響: `FolderDiffIL4DotNet.csproj`、`PACKAGE_README.md`（新規）、`.github/workflows/release.yml`、`Runner/ProgramRunner.Credits.cs`、`README.md`（EN+JA クイックスタート）、`CiAutomationConfigurationTests`。
+- **NuGet グローバルツール配布** — メインアプリケーションを `dotnet tool install -g nildiff` で .NET グローバルツールとしてインストール可能にした。`FolderDiffIL4DotNet.csproj` に `PackAsTool`、`ToolCommandName`、NuGet パッケージメタデータを追加。リリースワークフロー（`release.yml`）で既存の Core・Plugin.Abstractions パッケージと共にグローバルツールパッケージを nuget.org に公開する。ドキュメントには .NET SDK 8.x 前提条件、OS 別デフォルト `config.json` パス（Windows/macOS/Linux ツールストア）、永続的なカスタマイズのための `--config` フラグと `FOLDERDIFF_*` 環境変数の使い方を含む。影響: `FolderDiffIL4DotNet.csproj`、`PACKAGE_README.md`（新規）、`.github/workflows/release.yml`、`Runner/ProgramRunner.Credits.cs`、`README.md`（EN+JA クイックスタート + config ガイド）、`CiAutomationConfigurationTests`。
+
+#### ドキュメント
+
+- **コミットごとのチェックリスト** — `CLAUDE.md`（EN+JA）に 14 項目のコミットごとチェックリストを追加。テスト、CHANGELOG、README、各ガイド、レポートサンプル、設定、DI 登録、クレジット、CI ワークフロー、PR 説明をカバー。既存の横断的整合性テーブルを補完する実行可能なチェックポイントワークフロー。
 
 ### [1.14.3] - 2026-04-08
 
