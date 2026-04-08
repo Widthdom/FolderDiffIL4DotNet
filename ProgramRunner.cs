@@ -81,6 +81,11 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            if (opts.OpenReports || opts.OpenConfig || opts.OpenLogs)
+            {
+                return HandleOpenFolderCommands(opts);
+            }
+
             if (opts.ClearCache)
             {
                 return await ClearCacheAsync(opts.ConfigPath);

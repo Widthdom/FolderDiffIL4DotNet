@@ -19,7 +19,9 @@ namespace FolderDiffIL4DotNet.Tests.Runner
                 DryRun: false, Coffee: false, Beer: false, Matcha: false, Whisky: false,
                 Wine: false, Ramen: false, Sushi: false, Bell: false, Wizard: false,
                 ShowCredits: false, RandomSpinner: false, MultipleSpinnersDetected: false,
-                LogFormatOverride: null, OutputDirectory: null, ParseError: null);
+                LogFormatOverride: null, OutputDirectory: null,
+                OpenReports: false, OpenConfig: false, OpenLogs: false,
+                ParseError: null);
 
         [Fact]
         public void MultipleSpinnersMessage_HasExpectedContent()

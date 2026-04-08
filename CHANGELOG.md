@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Folder open commands** (`--open-reports`, `--open-config`, `--open-logs`) — New CLI options that open the Reports, config, or Logs directory in the platform's default file manager and exit. Useful for quickly navigating to output directories when the tool is installed as a global tool in a deeply nested path. `--open-reports` respects `--output` if specified; `--open-config` respects `--config` if specified. Folders are created automatically if they do not yet exist. Cross-platform support via `Process.Start` with `UseShellExecute`. Affected: `Runner/CliOptions.cs`, `Runner/CliParser.cs`, `Runner/ProgramRunner.OpenFolder.cs` (new), `ProgramRunner.cs`, `Runner/ProgramRunner.HelpText.cs`, `README.md` (EN+JA options table). Tests: `CliOptionsTests` (8 new tests), `ProgramRunnerTests.HelpVersion` (7 new tests), `CliOverrideApplierTests` and `SpinnerThemesTests` (`DefaultOpts` updated).
+
 ### [1.15.0] - 2026-04-08
 
 #### Added
@@ -1194,6 +1198,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **フォルダ開放コマンド**（`--open-reports`、`--open-config`、`--open-logs`）— Reports・config・Logs ディレクトリをプラットフォームのデフォルトファイルマネージャで開いて終了する新 CLI オプション。グローバルツールとして深いパスにインストールされた場合に出力ディレクトリへ素早くナビゲートするのに有用。`--open-reports` は `--output` 指定時にそのカスタムディレクトリを開く。`--open-config` は `--config` 指定時にその設定ファイルの親ディレクトリを開く。フォルダが存在しない場合は自動作成。`Process.Start` + `UseShellExecute` によるクロスプラットフォーム対応。影響: `Runner/CliOptions.cs`、`Runner/CliParser.cs`、`Runner/ProgramRunner.OpenFolder.cs`（新規）、`ProgramRunner.cs`、`Runner/ProgramRunner.HelpText.cs`、`README.md`（EN+JA オプション表）。テスト: `CliOptionsTests`（8 件追加）、`ProgramRunnerTests.HelpVersion`（7 件追加）、`CliOverrideApplierTests` および `SpinnerThemesTests`（`DefaultOpts` 更新）。
 
 ### [1.15.0] - 2026-04-08
 

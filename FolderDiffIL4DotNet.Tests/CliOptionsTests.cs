@@ -37,6 +37,9 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.MultipleSpinnersDetected);
             Assert.Null(opts.LogFormatOverride);
             Assert.Null(opts.OutputDirectory);
+            Assert.False(opts.OpenReports);
+            Assert.False(opts.OpenConfig);
+            Assert.False(opts.OpenLogs);
             Assert.Null(opts.ParseError);
         }
 
@@ -75,6 +78,9 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ShowCredits);
             Assert.False(opts.RandomSpinner);
             Assert.False(opts.MultipleSpinnersDetected);
+            Assert.False(opts.OpenReports);
+            Assert.False(opts.OpenConfig);
+            Assert.False(opts.OpenLogs);
             Assert.Null(opts.ParseError);
         }
 
@@ -454,6 +460,79 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.True(opts.NoPause);
             Assert.True(opts.SkipIL);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-reports
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--open-reports")]
+        [InlineData("--OPEN-REPORTS")]
+        public void ParseCliOptions_OpenReportsFlag_SetsOpenReports(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.OpenReports);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-config
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--open-config")]
+        [InlineData("--OPEN-CONFIG")]
+        public void ParseCliOptions_OpenConfigFlag_SetsOpenConfig(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.OpenConfig);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-logs
+        // -----------------------------------------------------------------------
+
+        [Theory]
+        [InlineData("--open-logs")]
+        [InlineData("--OPEN-LOGS")]
+        public void ParseCliOptions_OpenLogsFlag_SetsOpenLogs(string arg)
+        {
+            var opts = CliParser.Parse(new[] { arg });
+
+            Assert.True(opts.OpenLogs);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-reports with --output
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_OpenReportsWithOutput_BothParsed()
+        {
+            var opts = CliParser.Parse(new[] { "--open-reports", "--output", "/custom/path" });
+
+            Assert.True(opts.OpenReports);
+            Assert.Equal("/custom/path", opts.OutputDirectory);
+            Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --open-config with --config
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_OpenConfigWithConfig_BothParsed()
+        {
+            var opts = CliParser.Parse(new[] { "--open-config", "--config", "/tmp/my-config.json" });
+
+            Assert.True(opts.OpenConfig);
+            Assert.Equal("/tmp/my-config.json", opts.ConfigPath);
             Assert.Null(opts.ParseError);
         }
 
