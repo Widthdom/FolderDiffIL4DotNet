@@ -827,8 +827,8 @@
 <tbody>
 <tr><td class="ft-label"><code>+Method</code></td><td class="ft-desc">New method added</td><td class="ft-label"><code>-Method</code></td><td class="ft-desc">Method removed</td></tr>
 <tr><td class="ft-label"><code>+Type</code></td><td class="ft-desc">New type added</td><td class="ft-label"><code>-Type</code></td><td class="ft-desc">Type removed</td></tr>
-<tr><td class="ft-label"><code>Extract</code></td><td class="ft-desc">Method body extracted to new private/internal method</td><td class="ft-label"><code>Inline</code></td><td class="ft-desc">Private/internal method inlined into another method</td></tr>
-<tr><td class="ft-label"><code>Move</code></td><td class="ft-desc">Method moved between types</td><td class="ft-label"><code>Rename</code></td><td class="ft-desc">Method renamed (same signature and IL body)</td></tr>
+<tr><td class="ft-label"><code>Possible Extract</code></td><td class="ft-desc">Possible method body extraction to a new private/internal method</td><td class="ft-label"><code>Possible Inline</code></td><td class="ft-desc">Possible private/internal method inlining into another method</td></tr>
+<tr><td class="ft-label"><code>Possible Move</code></td><td class="ft-desc">Possible method move between types</td><td class="ft-label"><code>Possible Rename</code></td><td class="ft-desc">Possible method rename (same signature and IL body)</td></tr>
 <tr><td class="ft-label"><code>Signature</code></td><td class="ft-desc">Method/property signature changed</td><td class="ft-label"><code>Access</code></td><td class="ft-desc">Access modifier changed</td></tr>
 <tr><td class="ft-label"><code>BodyEdit</code></td><td class="ft-desc">Method body IL changed only</td><td class="ft-label"><code>DepUpdate</code></td><td class="ft-desc">Dependency package version changed only</td></tr>
 </tbody></table></div>
@@ -1385,7 +1385,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/App.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:58:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>High</code></td>
-  <td class="col-tag"><code>Extract</code>, <code>+Method</code></td>
+  <td class="col-tag"><code>Possible Extract</code>, <code>+Method</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
   <td class="col-sdk"><code>.NET 8.0</code></td>
 </tr>
@@ -1412,7 +1412,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
-  <td class="col-tag"><code>Move</code>, <code>Rename</code></td>
+  <td class="col-tag"><code>Possible Move</code>, <code>Possible Rename</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
   <td class="col-sdk"><code>.NET 8.0</code></td>
 </tr>
@@ -1482,7 +1482,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">util/Legacy.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 08:50:00 &#x2192; 2026-03-15 09:01:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Low</code></td>
-  <td class="col-tag"><code>Inline</code></td>
+  <td class="col-tag"><code>Possible Inline</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
   <td class="col-sdk"><code>.NET 6.0</code> &#x2192; <code>.NET 8.0</code></td>
 </tr>
@@ -1677,7 +1677,7 @@
   <td class="col-path"><div class="path-wrap"><span class="path-text">src/BigModule.dll</span><button class="btn-copy-path" onclick="copyPath(this)" title="Copy" aria-label="Copy file path"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/><path d="M5 10.5H2.5A1.5 1.5 0 011 9V2.5A1.5 1.5 0 012.5 1H9A1.5 1.5 0 0110.5 2.5V5"/></svg></button></div></td>
   <td class="col-ts">2026-03-15 09:10:00 &#x2192; 2026-03-15 09:02:00</td>
   <td class="col-diff"><code>ILMismatch</code> <code>Medium</code></td>
-  <td class="col-tag"><code>Move</code>, <code>Rename</code></td>
+  <td class="col-tag"><code>Possible Move</code>, <code>Possible Rename</code></td>
   <td class="col-disasm"><code>dotnet-ildasm (version: 0.12.2)</code></td>
   <td class="col-sdk"><code>.NET 8.0</code></td>
 </tr>
@@ -3247,10 +3247,10 @@
     legendKeyValueRows([
       ['+Method', 'New method added'], ['-Method', 'Method removed'],
       ['+Type', 'New type added'], ['-Type', 'Type removed'],
-      ['Extract', 'Method body extracted to new private/internal method'],
-      ['Inline', 'Private/internal method inlined into another method'],
-      ['Move', 'Method moved between types'],
-      ['Rename', 'Method renamed (same signature and IL body)'],
+      ['Possible Extract', 'Possible method body extraction to a new private/internal method'],
+      ['Possible Inline', 'Possible private/internal method inlining into another method'],
+      ['Possible Move', 'Possible method move between types'],
+      ['Possible Rename', 'Possible method rename (same signature and IL body)'],
       ['Signature', 'Method/property signature changed'],
       ['Access', 'Access modifier changed'],
       ['BodyEdit', 'Method body IL changed only'],

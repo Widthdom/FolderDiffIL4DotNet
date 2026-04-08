@@ -245,7 +245,7 @@ Every file entry is displayed in a table with interactive columns for sign-off:
 | File Path | Path label (relative for Modified/Unchanged; absolute for Added/Removed; Ignored single-side entries show absolute path, both-sides show relative) |
 | Timestamp | Old → New last-modified times (or single value for Added/Removed) |
 | Diff Reason | Diff type only: `SHA256Mismatch`, `ILMatch`, `ILMismatch`, `TextMismatch`, etc. For `ILMismatch` entries with assembly semantic changes, the file-level max importance is appended (e.g. `ILMismatch` `High`). (Unchanged/Modified/Warnings only; not shown for Added/Removed) |
-| Estimated Change | Pattern-based classification tags for .NET assembly changes detected via IL semantic analysis. Possible tags: `+Method`, `-Method`, `+Type`, `-Type`, `Extract`, `Inline`, `Move`, `Rename`, `Signature`, `Access`, `BodyEdit`, `DepUpdate`. Multiple tags may appear for a single file. Shown only for Unchanged and Modified sections |
+| Estimated Change | Pattern-based classification tags for .NET assembly changes detected via IL semantic analysis. Possible tags: `+Method`, `-Method`, `+Type`, `-Type`, `Possible Extract`, `Possible Inline`, `Possible Move`, `Possible Rename`, `Signature`, `Access`, `BodyEdit`, `DepUpdate`. Multiple tags may appear for a single file. Shown only for Unchanged and Modified sections |
 | Disassembler | Disassembler label and version used for IL comparison (e.g. [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm <version>)`); shown only for Unchanged and Modified sections |
 | .NET SDK | Target framework of the .NET assembly (e.g. `.NET 8.0`). When old and new assemblies target different frameworks, both are shown (e.g. `.NET 6.0` → `.NET 8.0`). Shown for Unchanged and Modified sections |
 
@@ -1020,7 +1020,7 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 | File Path | パスラベル（Modified/Unchanged は相対パス、Added/Removed は絶対パス、Ignored は片側のみのエントリは絶対パス・両側のエントリは相対パス） |
 | Timestamp | 旧→新の更新日時（Added/Removed は片方のみ） |
 | Diff Reason | 差分タイプのみ: `SHA256Mismatch`・`ILMatch`・`ILMismatch`・`TextMismatch` など。`ILMismatch` でアセンブリ セマンティック変更がある場合、ファイルレベルの最大重要度が追記される（例: `ILMismatch` `High`）。（Unchanged/Modified/Warnings のみ。Added/Removed には表示されない） |
-| Estimated Change | IL セマンティック分析で検出された .NET アセンブリ変更のパターン分類タグ。タグ種別: `+Method`・`-Method`・`+Type`・`-Type`・`Extract`・`Inline`・`Move`・`Rename`・`Signature`・`Access`・`BodyEdit`・`DepUpdate`。1 ファイルに複数タグが表示される場合あり。Unchanged と Modified セクションのみに表示 |
+| Estimated Change | IL セマンティック分析で検出された .NET アセンブリ変更のパターン分類タグ。タグ種別: `+Method`・`-Method`・`+Type`・`-Type`・`Possible Extract`・`Possible Inline`・`Possible Move`・`Possible Rename`・`Signature`・`Access`・`BodyEdit`・`DepUpdate`。1 ファイルに複数タグが表示される場合あり。Unchanged と Modified セクションのみに表示 |
 | Disassembler | IL 比較に使用した逆アセンブラのラベルとバージョン（例: [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) `(version: dotnet ildasm <version>)`）。Unchanged と Modified セクションのみに表示 |
 | .NET SDK | .NET アセンブリのターゲットフレームワーク（例: `.NET 8.0`）。新旧アセンブリのターゲットが異なる場合は両方表示（例: `.NET 6.0` → `.NET 8.0`）。Unchanged と Modified セクションに表示 |
 

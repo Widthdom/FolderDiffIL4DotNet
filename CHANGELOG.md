@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Estimated Change heuristic labels softened** — Renamed the heuristic-only change tags from `Extract` / `Inline` / `Move` / `Rename` to `Possible Extract` / `Possible Inline` / `Possible Move` / `Possible Rename` so reviewers are less likely to over-trust pattern inference. Updated the Markdown/HTML legend text, Excel-compatible HTML export legend, README tag list, sample reports, and `ChangeTagClassifierTests`. Affected: `Services/ChangeTagClassifier.cs`, `Services/SectionWriters/LegendSectionWriter.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/js/diff_report_excel.js`, `README.md`, `doc/samples/diff_report.md`, `doc/samples/diff_report.html`, `FolderDiffIL4DotNet.Tests/Services/ChangeTagClassifierTests.cs`.
+
 ### [1.16.0] - 2026-04-08
 
 #### Added
@@ -1200,6 +1204,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **Estimated Change のヒューリスティック系ラベルを弱めた** — 推定ベースの変更タグ `Extract` / `Inline` / `Move` / `Rename` を `Possible Extract` / `Possible Inline` / `Possible Move` / `Possible Rename` に変更し、レビュアーがパターン推定を断定的に受け取ってしまうリスクを下げた。Markdown/HTML の凡例文言、Excel-compatible HTML エクスポートの凡例、README のタグ一覧、サンプルレポート、`ChangeTagClassifierTests` も更新。影響: `Services/ChangeTagClassifier.cs`、`Services/SectionWriters/LegendSectionWriter.cs`、`Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`、`Services/HtmlReport/js/diff_report_excel.js`、`README.md`、`doc/samples/diff_report.md`、`doc/samples/diff_report.html`、`FolderDiffIL4DotNet.Tests/Services/ChangeTagClassifierTests.cs`。
 
 ### [1.16.0] - 2026-04-08
 

@@ -61,10 +61,10 @@
 | `-Method` | Method removed |
 | `+Type` | New type added |
 | `-Type` | Type removed |
-| `Extract` | Method body extracted to new private/internal method |
-| `Inline` | Private/internal method inlined into another method |
-| `Move` | Method moved between types |
-| `Rename` | Method renamed (same signature and IL body) |
+| `Possible Extract` | Possible method body extraction to a new private/internal method |
+| `Possible Inline` | Possible private/internal method inlining into another method |
+| `Possible Move` | Possible method move between types |
+| `Possible Rename` | Possible method rename (same signature and IL body) |
 | `Signature` | Method/property signature changed |
 | `Access` | Access modifier changed |
 | `BodyEdit` | Method body IL changed only |
@@ -113,11 +113,11 @@
 | `[ * ]` | src/Web.config | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `TextMismatch` | | | |
 | `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` `High` | `-Method`, `Signature` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | src/ApiClient.dll | 2026-03-15 08:55:00 → 2026-03-15 09:04:00 | `ILMismatch` `High` | `+Type`, `+Method` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
-| `[ * ]` | src/App.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Extract`, `+Method` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
-| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Move`, `Rename` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
+| `[ * ]` | src/App.dll | 2026-03-15 08:58:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Possible Extract`, `+Method` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
+| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Possible Move`, `Possible Rename` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | lib/Logging.dll | 2026-03-15 08:52:00 → 2026-03-15 09:03:00 | `ILMismatch` `Medium` | `Access` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` `Low` | `BodyEdit` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
-| `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` `Low` | `Inline` | `dotnet-ildasm (version: 0.12.2)` | `.NET 6.0` → `.NET 8.0` |
+| `[ * ]` | util/Legacy.dll | 2026-03-15 08:50:00 → 2026-03-15 09:01:00 | `ILMismatch` `Low` | `Possible Inline` | `dotnet-ildasm (version: 0.12.2)` | `.NET 6.0` → `.NET 8.0` |
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | | | |
 
 #### Dependency Changes: bin/MyApp.deps.json
@@ -170,6 +170,6 @@
 |:------:|-----------|:---------:|:-----------:|:----------------:|--------------|:--------:|
 | `[ * ]` | config/settings.ini | 2026-03-15 09:08:00 → 2026-03-15 09:01:00 | `TextMismatch` | | | |
 | `[ * ]` | lib/Core.dll | 2026-03-15 09:12:00 → 2026-03-15 09:03:00 | `ILMismatch` `High` | `-Method`, `Signature` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
-| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Move`, `Rename` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
+| `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Possible Move`, `Possible Rename` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` `Low` | `BodyEdit` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | | | |
