@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.14.3] - 2026-04-08
+
 #### Added
 
 - **JsMinifier unit tests** — Added `JsMinifierTests` (21 tests) covering JS comment stripping with string literal preservation (single/double-quoted `//` URLs, escaped quotes, mixed quote nesting), blank line removal, whitespace preservation for `downloadReviewed()` patterns, null/empty input, CSS block comment removal, important comment (`/*! ... */`) retention, unterminated comment handling, and CSS whitespace preservation. This was the highest-priority gap: `JsMinifier` had 3 past incidents (commits `553a53b`, `b4f6f82`, `34d46f3`) but zero tests. Affected: `FolderDiffIL4DotNet.Tests/Services/HtmlReport/JsMinifierTests.cs` (new file).
@@ -1182,6 +1184,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.14.3] - 2026-04-08
 
 #### 追加
 
@@ -2357,7 +2361,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.2...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.3...HEAD
+[1.14.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.2...v1.14.3
 [1.14.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.13.8...v1.14.0
