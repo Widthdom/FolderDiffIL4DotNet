@@ -45,7 +45,7 @@ Without an IL disassembler, .NET assemblies are compared by SHA256 hash only.
 
 ## Requirements
 
-- .NET 8.0 or later
+- [.NET SDK 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) or later
 
 ## License
 

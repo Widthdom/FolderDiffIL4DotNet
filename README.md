@@ -23,6 +23,8 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 
 ### Option A: Install as .NET Global Tool (recommended)
 
+Requires [.NET SDK 8.x](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) or later.
+
 ```bash
 # 1. Install nildiff
 dotnet tool install -g nildiff
@@ -771,6 +773,8 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 ## クイックスタート（5 分）
 
 ### 方法 A: .NET グローバルツールとしてインストール（推奨）
+
+[.NET SDK 8.x](https://dotnet.microsoft.com/ja-jp/download/dotnet/8.0) 以降が必要です。
 
 ```bash
 # 1. nildiff をインストール
