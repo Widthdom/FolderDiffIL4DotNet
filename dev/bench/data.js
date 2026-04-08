@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775608067051,
+  "lastUpdate": 1775649553360,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -4536,6 +4536,102 @@ window.BENCHMARK_DATA = {
             "value": 27807398.095833335,
             "unit": "ns",
             "range": "± 140437.7547526932"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "2f32393da7e5f23983fc35c671e98b4cc28e6b3d",
+          "message": "Add NuGet global tool distribution (`dotnet tool install -g nildiff`) (#135)\n\n* Add NuGet global tool support (dotnet tool install -g nildiff)\n\nEnable the main application to be installed as a .NET global tool.\nUsers can now install via `dotnet tool install -g nildiff` instead of\ncloning and building from source.\n\n- Add PackAsTool, ToolCommandName, and NuGet metadata to csproj\n- Create PACKAGE_README.md for the NuGet package page\n- Add global tool pack & publish steps to release.yml\n- Update CiAutomationConfigurationTests for new workflow steps\n- Add global tool to CREDITS_TEXT distribution section\n- Update README.md Quick Start (EN+JA) with Option A/B install paths\n- Update CHANGELOG.md (EN+JA) Unreleased sections\n\nhttps://claude.ai/code/session_011JWYZ5oyP4XjJm7WNfccUh\n\n* Add per-commit checklist to CLAUDE.md (EN+JA)\n\nImport and adapt the per-commit checklist pattern from the CodeIndex\nrepository. Provides a quick mental workflow to run before every commit,\ncomplementing the existing cross-cutting consistency table with\nactionable checkpoint items specific to this repository.\n\nhttps://claude.ai/code/session_011JWYZ5oyP4XjJm7WNfccUh\n\n* Expand per-commit checklist to cover all cross-cutting artifacts\n\nThe initial checklist missed several repo-specific items that the\ncross-cutting consistency table covers: report samples (HTML/MD/JSON),\nHTML report JS/CSS resources, config.sample.jsonc, HELP_TEXT sync,\nTROUBLESHOOTING.md, DI registration, Credits, and CI workflow tests.\nNow all 14 items provide complete coverage of every artifact that\nmight need updating alongside a code change.\n\nhttps://claude.ai/code/session_011JWYZ5oyP4XjJm7WNfccUh\n\n* Add .NET SDK 8.x prerequisite to global tool install instructions\n\nUsers with older .NET SDKs (6.x, 7.x) can install the tool but it\nwill fail at runtime due to missing .NET 8 runtime. Explicitly state\nthe SDK version requirement in README (EN+JA) Option A and in\nPACKAGE_README.md Requirements section.\n\nhttps://claude.ai/code/session_011JWYZ5oyP4XjJm7WNfccUh\n\n* Document config.json location and usage for global tool users\n\nGlobal tool users need to know how to customize settings since the\ndefault config.json is buried in the .NET tool store and gets\noverwritten on update. Document --config flag, FOLDERDIFF_* env vars,\nper-OS default paths, and the recommendation to maintain a separate\nconfig.json for persistent customization.\n\nhttps://claude.ai/code/session_011JWYZ5oyP4XjJm7WNfccUh\n\n* Update CHANGELOG with config.json docs and per-commit checklist entries\n\nExpand the NuGet global tool entry to cover SDK prerequisite, per-OS\nconfig.json paths, and --config/env var customization docs. Add\nseparate Documentation entry for the 14-item per-commit checklist.\nBoth EN and JA sections updated.\n\nhttps://claude.ai/code/session_011JWYZ5oyP4XjJm7WNfccUh\n\n* Add cdidx code search rules to CLAUDE.md (EN+JA)\n\nAdd instructions for using cdidx (pre-built SQLite index) for fast\ncodebase search, with setup, index update rules, CLI examples, and\ndirect SQL query fallback. Placed after Build & Test in both EN and\nJA sections. Adapted --lang example to csharp for this .NET project.\n\nhttps://claude.ai/code/session_011JWYZ5oyP4XjJm7WNfccUh\n\n* Fix cdidx files example to include all file types\n\nThis project contains .cs, .js, .css, .json and more. Using\n--lang csharp would miss the embedded JS/CSS resources under\nServices/HtmlReport/. Changed to plain `cdidx files` with a\ncomment listing the relevant extensions.\n\nhttps://claude.ai/code/session_011JWYZ5oyP4XjJm7WNfccUh\n\n---------\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-04-08T20:54:18+09:00",
+          "tree_id": "f017de17497473478124b88c5400c22ec46465b4",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/2f32393da7e5f23983fc35c671e98b4cc28e6b3d"
+        },
+        "date": 1775649552961,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62339.41748046875,
+            "unit": "ns",
+            "range": "± 358.10533207629516"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 566219.3498186384,
+            "unit": "ns",
+            "range": "± 1512.1384454460565"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5815325.279575893,
+            "unit": "ns",
+            "range": "± 17417.38271853819"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 76697.41382707868,
+            "unit": "ns",
+            "range": "± 175.99383906153577"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 30.108004053433735,
+            "unit": "ns",
+            "range": "± 0.16616657618266126"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 63.66688081423442,
+            "unit": "ns",
+            "range": "± 1.039440553945623"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 29.679399605592092,
+            "unit": "ns",
+            "range": "± 0.1820757334982702"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5284921.77890625,
+            "unit": "ns",
+            "range": "± 39606.70984795434"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 129898.91179547991,
+            "unit": "ns",
+            "range": "± 1414.557848319023"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2640.5255732218425,
+            "unit": "ns",
+            "range": "± 30.352767796124304"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 276900.888671875,
+            "unit": "ns",
+            "range": "± 2587.5231125028868"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27868966.096153848,
+            "unit": "ns",
+            "range": "± 230102.9150218916"
           }
         ]
       }
