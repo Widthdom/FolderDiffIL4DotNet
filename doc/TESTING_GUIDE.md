@@ -138,7 +138,7 @@ The `benchmark` CI job (workflow_dispatch only) runs all benchmarks with JSON an
 CI-parity command (same as GitHub Actions test step):
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+FOLDERDIFF_RUN_E2E=true DOTNET_ROLL_FORWARD=Major dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
 Run mutation testing (Stryker.NET):
@@ -177,7 +177,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 
 - DocFX site generation runs before tests and publishes `_site/` as the `DocumentationSite` artifact.
 - Tests and coverage run only when [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) exists.
-- CI runs two jobs: the `build` job (Ubuntu) installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool before the test step and runs it with `DOTNET_ROLL_FORWARD=Major` so the preferred disassembler path is exercised in GitHub Actions; the `test-windows` job (Windows) runs the same suite on `windows-latest` with `dotnet-ildasm` installed as well.
+- CI runs two jobs: the `build` job (Ubuntu) installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool, adds the global-tool directory to `PATH`, and runs the test step with both `DOTNET_ROLL_FORWARD=Major` and `FOLDERDIFF_RUN_E2E=true`; the `test-windows` job (Windows) does the same on `windows-latest`. This makes the real-disassembler E2E test part of the blocking CI gate instead of an opt-in skip.
 - `TestAndCoverage` artifact includes TRX and coverage outputs.
 - `CoverageReport/SummaryGithub.md` is appended to GitHub Step Summary when present.
 - A dedicated threshold step parses `coverage.cobertura.xml` and fails the workflow if total coverage falls below `80%` line or `75%` branch. The same step also enforces per-class thresholds (`90%` line, `85%` branch) for core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`).
@@ -193,8 +193,8 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - Most tests create unique temporary directories under [`Path.GetTempPath()`](https://learn.microsoft.com/en-us/dotnet/api/system.io.path.gettemppath?view=net-8.0) and clean them up in `Dispose`/`finally`.
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) temporarily writes [`config.json`](../config.json) under [`AppContext.BaseDirectory`](https://learn.microsoft.com/en-us/dotNet/API/system.appcontext.basedirectory?view=net-8.0) and restores original content.
 - [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) temporarily rewires `PATH`/`HOME` and uses scripted fake tools to test fallback/blacklist logic deterministically; any test that pre-seeds a specific disassembler version into the version cache must also prepend a matching fake tool to `PATH` so that `GetVersionWithFallbacksAsync` finds the fake before the real tool installed on the CI runner, which would otherwise overwrite the seeded entry.
-- [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) builds throwaway class libraries under temp directories and pins the E2E assertion to [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/); CI ensures that prerequisite and sets `DOTNET_ROLL_FORWARD=Major` for the test step.
-- Some disassembler tests are skipped on Windows using [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) + `Skip.If(OperatingSystem.IsWindows(), ...)`, which reports them as **Skipped** in the test runner rather than silently passing. The [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) test is similarly skipped with `Skip.If(!CanRunDotNetIldasm(), ...)` when the tool is unavailable.
+- [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) builds throwaway class libraries under temp directories and pins the E2E assertion to [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/); CI ensures that prerequisite, adds the global tool directory to `PATH`, and sets both `DOTNET_ROLL_FORWARD=Major` and `FOLDERDIFF_RUN_E2E=true` for the blocking test step.
+- Some disassembler tests are skipped on Windows using [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) + `Skip.If(OperatingSystem.IsWindows(), ...)`, which reports them as **Skipped** in the test runner rather than silently passing. [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) is skipped only when the explicit E2E opt-in is absent; once `FOLDERDIFF_RUN_E2E=true` is set, missing or non-runnable [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) is treated as a test failure rather than a skip.
 - Unit tests do not require globally installed real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) or [`ilspycmd`](https://www.nuget.org/packages/ilspycmd/) for most scenarios because test doubles are used.
 - Avoid adding static mutable test hooks. Prefer constructor injection plus [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) for per-run values.
 - The test project has `<Nullable>enable</Nullable>` enabled but suppresses nullable warnings (`CS8600`, `CS8603`, `CS8604`, `CS8605`, `CS8618`, `CS8619`, `CS8620`, `CS8625`) and `xUnit1012` via `<NoWarn>` in the `.csproj`. This is intentional: test code deliberately passes `null` to verify argument validation, null-guard branches, and graceful failure paths. Suppressing these warnings avoids noisy false positives while keeping nullable analysis active for production code.
@@ -354,7 +354,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Text
 CI 同等コマンド（GitHub Actions と同じ test ステップ）:
 
 ```bash
-dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+FOLDERDIFF_RUN_E2E=true DOTNET_ROLL_FORWARD=Major dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --no-build --nologo --settings coverlet.runsettings --logger "trx;LogFileName=test_results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
 ミューテーションテスト実行（Stryker.NET）:
@@ -393,7 +393,7 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 
 - テスト前に DocFX サイト生成を実行し、`_site/` を `DocumentationSite` artifact として公開します。
 - [`FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj`](../FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj) が存在する場合のみテスト/カバレッジを実行します。
-- CI は 2 つのジョブで構成されます。`build` ジョブ（Ubuntu）はテスト前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし `DOTNET_ROLL_FORWARD=Major` 付きで優先逆アセンブラ経路を実行します。`test-windows` ジョブ（Windows）も `windows-latest` 上で同じテストスイートを実行し、`dotnet-ildasm` をインストールした状態で検証します。
+- CI は 2 つのジョブで構成されます。`build` ジョブ（Ubuntu）はテスト前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし、グローバルツールディレクトリを `PATH` に追加したうえで、`DOTNET_ROLL_FORWARD=Major` と `FOLDERDIFF_RUN_E2E=true` 付きでテストを実行します。`test-windows` ジョブ（Windows）も `windows-latest` 上で同様に検証します。これにより、実逆アセンブラ E2E がブロッキングな CI ゲートに入ります。
 - `TestAndCoverage` アーティファクトに TRX とカバレッジ関連ファイルを格納します。
 - `CoverageReport/SummaryGithub.md` があれば GitHub Step Summary に追記されます。
 - 専用のしきい値チェックで `coverage.cobertura.xml` を解析し、total 行 `80%` / 分岐 `75%` を下回るとワークフローを失敗させます。同ステップでコア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）のクラス単位しきい値（行 `90%` / 分岐 `85%`）も強制します。
@@ -409,8 +409,8 @@ dotnet tool run reportgenerator -reports:"TestResults/**/coverage.cobertura.xml"
 - 多くのテストは [`Path.GetTempPath()`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.path.gettemppath?view=net-8.0) 配下に一意ディレクトリを作成し、`Dispose`/`finally` で後始末します。
 - [`ProgramTests`](../FolderDiffIL4DotNet.Tests/ProgramTests.cs) は [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) 配下の [`config.json`](../config.json) を一時書き換えし、必ず復元します。
 - [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) は `PATH`/`HOME` を一時変更し、擬似ツールスクリプトでフォールバック/ブラックリスト挙動を決定的に検証します。バージョンキャッシュに特定バージョンを事前投入するテストは、`GetVersionWithFallbacksAsync` が実ツールより先に擬似ツールを解決できるよう、同じバージョンを返す偽スクリプトも `PATH` に追加する必要があります（CI ランナーに実ツールがインストールされているため、追加しないとキャッシュ投入値が上書きされます）。
-- [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) は temp ディレクトリ上に一時クラスライブラリをビルドし、[`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) 固定で E2E 検証します。CI では [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) のインストールと `DOTNET_ROLL_FORWARD=Major` でこの前提を満たします。
-- 逆アセンブラ関連の一部テストは Windows では [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) + `Skip.If(OperatingSystem.IsWindows(), ...)` によりスキップされます。これにより、テストが「成功」扱いで素通りするのではなく、テストランナー上で**Skipped（スキップ）**として明示的に報告されます。[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) も同様に、ツールが存在しない場合は `Skip.If(!CanRunDotNetIldasm(), ...)` でスキップします。
+- [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) は temp ディレクトリ上に一時クラスライブラリをビルドし、[`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) 固定で E2E 検証します。CI では [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) のインストール、グローバルツールディレクトリの `PATH` 追加、`DOTNET_ROLL_FORWARD=Major`、`FOLDERDIFF_RUN_E2E=true` によりこの前提を満たします。
+- 逆アセンブラ関連の一部テストは Windows では [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) + `Skip.If(OperatingSystem.IsWindows(), ...)` によりスキップされます。これにより、テストが「成功」扱いで素通りするのではなく、テストランナー上で**Skipped（スキップ）**として明示的に報告されます。[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) は E2E opt-in がない場合のみスキップされ、`FOLDERDIFF_RUN_E2E=true` のときに [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) が使えなければスキップではなく失敗します。
 - 多くの単体テストは実ツールのグローバルインストールを不要とします（テストダブル利用）。
 - 静的な可変テストフックは追加せず、実行単位の値はコンストラクタ注入と [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) で渡してください。
 - テストプロジェクトでは `<Nullable>enable</Nullable>` を有効にしていますが、nullable 警告（`CS8600`、`CS8603`、`CS8604`、`CS8605`、`CS8618`、`CS8619`、`CS8620`、`CS8625`）および `xUnit1012` を `.csproj` の `<NoWarn>` で抑制しています。これは意図的な設計です：テストコードでは引数バリデーション、null ガード分岐、エラー時の正常動作を検証するために意図的に `null` を渡しています。これらの警告を抑制することで、本番コードの nullable 解析を維持しつつ、テストコードでの誤検知ノイズを回避しています。

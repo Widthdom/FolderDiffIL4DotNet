@@ -757,7 +757,7 @@ Current CI behavior (`build` job — Ubuntu):
 - Uses [`global.json`](../global.json) through `actions/setup-dotnet`
 - Restores and builds [`FolderDiffIL4DotNet.sln`](../FolderDiffIL4DotNet.sln)
 - Installs DocFX, generates the documentation site, and uploads it as `DocumentationSite`
-- Installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool and runs tests with `DOTNET_ROLL_FORWARD=Major` so the preferred disassembler path is exercised in CI as well
+- Installs a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) tool, adds the global tool directory to `PATH`, and runs tests with `DOTNET_ROLL_FORWARD=Major` plus `FOLDERDIFF_RUN_E2E=true` so the preferred disassembler path and the real-disassembler E2E gate are exercised in CI as well
 - Runs tests and coverage only when the test project exists
 - Generates coverage summary with `reportgenerator`
 - Enforces total coverage thresholds of `80%` line and `75%` branch from the generated Cobertura XML, plus per-class thresholds of `90%` line and `85%` branch for core diff classes (`FileDiffService`, `FolderDiffService`, `FileComparisonService`)
@@ -766,7 +766,7 @@ Current CI behavior (`build` job — Ubuntu):
 
 `test-windows` job — Windows:
 - Runs in parallel with `build` on `windows-latest`
-- Restores, builds, installs [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/), and runs the full test suite with `DOTNET_ROLL_FORWARD=Major`
+- Restores, builds, installs [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/), adds the global tool directory to `PATH`, and runs the full test suite with `DOTNET_ROLL_FORWARD=Major` plus `FOLDERDIFF_RUN_E2E=true`
 - Ensures Windows-specific code paths are exercised under CI as well
 
 `mutation-testing` job — Stryker:
@@ -814,10 +814,10 @@ Some tests report as **Skipped** when run locally. This is intentional and does 
 
 Which tests skip and why:
 - **[`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs)** (six tests) — these exercise fallback and blacklist logic using fake `#!/bin/sh` shell scripts created by [`WriteExecutable`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs). [`File.SetUnixFileMode`](https://learn.microsoft.com/en-us/dotnet/api/system.io.file.setunixfilemode?view=net-8.0) and shell script execution are not available on Windows, so the tests call `Skip.If(OperatingSystem.IsWindows(), ...)` and report Skipped there.
-- **[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs)** (one test) — this builds the same tiny class library twice with `Deterministic=false` and verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) produces `ILMatch` after MVID filtering. It calls `Skip.IfNot(IsE2EEnabled(), ...)` and `Skip.If(!CanRunDotNetIldasm(), ...)`, so it reports Skipped unless both `FOLDERDIFF_RUN_E2E=true` and a working [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) (or [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)) are available.
+- **[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs)** (one test) — this builds the same tiny class library twice with `Deterministic=false` and verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) produces `ILMatch` after MVID filtering. It still calls `Skip.IfNot(IsE2EEnabled(), ...)` for local opt-in behavior, but once `FOLDERDIFF_RUN_E2E=true` is set it asserts that a working [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) (or [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)) is actually runnable, so missing tooling becomes a failure rather than a skip.
 
 Why this is safe:
-- CI runs on both Linux (`build` job) and Windows (`test-windows` job), and both install a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) before the test step. That ensures the preferred disassembler path and Windows-specific code paths are exercised in CI. The real-disassembler E2E test still additionally requires `FOLDERDIFF_RUN_E2E=true`, so a local Skipped result can mean either a missing prerequisite or an opt-in that was not enabled.
+- CI runs on both Linux (`build` job) and Windows (`test-windows` job), and both install a real [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/), add the global tool directory to `PATH`, and set `FOLDERDIFF_RUN_E2E=true` before the test step. That ensures the preferred disassembler path, the real-disassembler E2E assertion, and Windows-specific code paths are all exercised in CI. A local Skipped result now means the explicit opt-in was not enabled; with the opt-in enabled, missing tooling fails the test.
 - The skippable tests use [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) from [`Xunit.SkippableFact`](https://www.nuget.org/packages/Xunit.SkippableFact/), so the runner counts them as Skipped rather than Passed, making the distinction visible.
 - If a previously Skipped test appears as **Failed**, that is a real issue and should be investigated. Skipped and Failed are distinct outcomes.
 
@@ -1707,7 +1707,7 @@ v* タグ push 時:
 - `actions/setup-dotnet` で [`global.json`](../global.json) を利用
 - [`FolderDiffIL4DotNet.sln`](../FolderDiffIL4DotNet.sln) を restore / build
 - DocFX を導入し、ドキュメントサイトを生成して `DocumentationSite` artifact としてアップロード
-- 実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) を入れ、`DOTNET_ROLL_FORWARD=Major` 付きで優先逆アセンブラ経路を CI 上でも検証する
+- 実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) を入れ、グローバルツールディレクトリを `PATH` に追加し、`DOTNET_ROLL_FORWARD=Major` と `FOLDERDIFF_RUN_E2E=true` 付きで優先逆アセンブラ経路と実逆アセンブラ E2E ゲートを CI 上でも検証する
 - テストプロジェクトが存在するときだけテストとカバレッジを実行
 - `reportgenerator` でカバレッジ要約を生成
 - 生成された Cobertura XML から total 行 `80%` / 分岐 `75%` のしきい値を強制する。同時にコア差分クラス（`FileDiffService`、`FolderDiffService`、`FileComparisonService`）のクラス単位しきい値（行 `90%` / 分岐 `85%`）も適用する
@@ -1716,7 +1716,7 @@ v* タグ push 時:
 
 `test-windows` ジョブ — Windows:
 - `build` ジョブと並行して `windows-latest` 上で実行
-- restore / build / [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) インストール後、`DOTNET_ROLL_FORWARD=Major` 付きでフルテストスイートを実行
+- restore / build / [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) インストールとグローバルツールディレクトリの `PATH` 追加後、`DOTNET_ROLL_FORWARD=Major` と `FOLDERDIFF_RUN_E2E=true` 付きでフルテストスイートを実行
 - Windows 固有のコードパスを CI 上でも検証する
 
 `mutation-testing` ジョブ — Stryker:
@@ -1764,10 +1764,10 @@ v* タグ push 時:
 
 スキップされるテストとその理由:
 - **[`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs)**（6 件）— 偽の `#!/bin/sh` シェルスクリプトを [`WriteExecutable`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs) で生成し、フォールバック・ブラックリスト挙動を決定的に検証します。[`File.SetUnixFileMode`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.file.setunixfilemode?view=net-8.0) およびシェルスクリプトの実行は Windows では使えないため、`Skip.If(OperatingSystem.IsWindows(), ...)` を呼び出して Skipped を報告します。
-- **[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs)**（1 件）— `Deterministic=false` で 2 回ビルドした同一クラスライブラリを [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) が MVID 除外後に `ILMatch` と判定することを確認します。`Skip.IfNot(IsE2EEnabled(), ...)` と `Skip.If(!CanRunDotNetIldasm(), ...)` を使っているため、`FOLDERDIFF_RUN_E2E=true` と利用可能な [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)（または [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)）の両方が揃わない限り Skipped になります。
+- **[`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs)**（1 件）— `Deterministic=false` で 2 回ビルドした同一クラスライブラリを [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) が MVID 除外後に `ILMatch` と判定することを確認します。ローカルでは `Skip.IfNot(IsE2EEnabled(), ...)` による opt-in のままですが、`FOLDERDIFF_RUN_E2E=true` が設定されたら、利用可能な [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)（または [`dotnet ildasm`](https://www.nuget.org/packages/dotnet-ildasm/)）が実際に実行できることを assert するため、ツール不足はスキップではなく失敗になります。
 
 なぜ安全か:
-- CI は Linux（`build` ジョブ）と Windows（`test-windows` ジョブ）の両方で動き、どちらもテストステップの前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールします。これにより、優先逆アセンブラ経路と Windows 固有コードパスは CI 上で検証されます。実逆アセンブラ E2E テストはさらに `FOLDERDIFF_RUN_E2E=true` が必要なため、ローカルの Skipped は前提条件不足または opt-in 未設定を示す場合があります。
+- CI は Linux（`build` ジョブ）と Windows（`test-windows` ジョブ）の両方で動き、どちらもテストステップの前に実 [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) をインストールし、グローバルツールディレクトリを `PATH` に追加し、`FOLDERDIFF_RUN_E2E=true` を設定します。これにより、優先逆アセンブラ経路、実逆アセンブラ E2E アサーション、Windows 固有コードパスが CI 上で検証されます。ローカルの Skipped は明示的な opt-in が無効なことを示し、opt-in 済みでのツール不足は失敗として扱われます。
 - スキップ対象のテストは [`Xunit.SkippableFact`](https://www.nuget.org/packages/Xunit.SkippableFact/) の [`[SkippableFact]`](https://github.com/AArnott/Xunit.SkippableFact) を使うため、ランナーは Passed ではなく Skipped として別カウントで表示し、区別が明確になっています。
 - これまで Skipped だったテストが **Failed** になった場合は実際の問題であり、調査が必要です。Skipped と Failed は異なる結果です。
 

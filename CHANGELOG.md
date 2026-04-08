@@ -9,6 +9,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Release-gate real disassembler E2E is now enforced** — CI and release workflows now add the global .NET tool directory to `PATH`, run tests with `FOLDERDIFF_RUN_E2E=true`, and treat missing/non-runnable `dotnet-ildasm` as a failure once the opt-in is enabled. This turns the non-deterministic-builds-should-still-be-`ILMatch` assertion into a blocking gate on Ubuntu, Windows, and tagged releases. Updated workflow guard tests plus the testing/developer guides. Affected: `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `doc/TESTING_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`.
+- **Estimated Change heuristic labels softened** — Renamed the heuristic-only change tags from `Extract` / `Inline` / `Move` / `Rename` to `Possible Extract` / `Possible Inline` / `Possible Move` / `Possible Rename` so reviewers are less likely to over-trust pattern inference. Updated the Markdown/HTML legend text, Excel-compatible HTML export legend, README tag list, sample reports, and `ChangeTagClassifierTests`. Affected: `Services/ChangeTagClassifier.cs`, `Services/SectionWriters/LegendSectionWriter.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/js/diff_report_excel.js`, `README.md`, `doc/samples/diff_report.md`, `doc/samples/diff_report.html`, `FolderDiffIL4DotNet.Tests/Services/ChangeTagClassifierTests.cs`.
+
 ### [1.16.0] - 2026-04-08
 
 #### Added
@@ -1200,6 +1205,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **release gate で実逆アセンブラ E2E を強制** — CI と release workflow がグローバル .NET ツールディレクトリを `PATH` に追加し、`FOLDERDIFF_RUN_E2E=true` 付きでテストを実行し、opt-in 有効時に `dotnet-ildasm` が存在しない・実行できない場合はスキップではなく失敗として扱うようにした。これにより、「非決定的ビルドでも `ILMatch` になるべき」という中核アサーションが Ubuntu / Windows / タグ付きリリースのブロッキングゲートになった。workflow ガード用テストと testing/developer guide も更新。影響: `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `doc/TESTING_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`。
+- **Estimated Change のヒューリスティック系ラベルを弱めた** — 推定ベースの変更タグ `Extract` / `Inline` / `Move` / `Rename` を `Possible Extract` / `Possible Inline` / `Possible Move` / `Possible Rename` に変更し、レビュアーがパターン推定を断定的に受け取ってしまうリスクを下げた。Markdown/HTML の凡例文言、Excel-compatible HTML エクスポートの凡例、README のタグ一覧、サンプルレポート、`ChangeTagClassifierTests` も更新。影響: `Services/ChangeTagClassifier.cs`、`Services/SectionWriters/LegendSectionWriter.cs`、`Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`、`Services/HtmlReport/js/diff_report_excel.js`、`README.md`、`doc/samples/diff_report.md`、`doc/samples/diff_report.html`、`FolderDiffIL4DotNet.Tests/Services/ChangeTagClassifierTests.cs`。
 
 ### [1.16.0] - 2026-04-08
 
