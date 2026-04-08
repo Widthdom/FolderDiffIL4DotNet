@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.15.0] - 2026-04-08
+
 #### Added
 
 - **NuGet global tool distribution** — The main application can now be installed as a .NET global tool via `dotnet tool install -g nildiff`. Added `PackAsTool`, `ToolCommandName`, and NuGet package metadata to `FolderDiffIL4DotNet.csproj`. The release workflow (`release.yml`) now packs and publishes the global tool package to nuget.org alongside existing Core and Plugin.Abstractions packages. Documentation includes .NET SDK 8.x prerequisite, per-OS default `config.json` paths (Windows/macOS/Linux tool store), `--config` flag and `FOLDERDIFF_*` environment variable usage for persistent customization. Affected: `FolderDiffIL4DotNet.csproj`, `PACKAGE_README.md` (new), `.github/workflows/release.yml`, `Runner/ProgramRunner.Credits.cs`, `README.md` (EN+JA Quick Start + config guide), `CiAutomationConfigurationTests`.
@@ -1192,6 +1194,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.15.0] - 2026-04-08
 
 #### 追加
 
@@ -2377,7 +2381,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.3...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.3...v1.15.0
 [1.14.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.2...v1.14.3
 [1.14.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.1...v1.14.2
 [1.14.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.0...v1.14.1
