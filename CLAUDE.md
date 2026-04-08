@@ -57,6 +57,75 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 - Core diff class targets (FileDiffService, FolderDiffService, FileComparisonService): line >= 90%, branch >= 85% (CI warns but does not block)
 - **Before committing**, always run tests with the Release configuration to match CI: `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo`. Release builds enable `TreatWarningsAsErrors` and full code analysis rules (e.g. CA1031), which are not enforced in Debug builds. If `dotnet` is unavailable, state this explicitly.
 
+### Code Search Rules
+
+This project uses **cdidx** for fast code search via a pre-built SQLite index (`.cdidx/codeindex.db`).
+**Query this database** instead of using `find`, `grep`, or `ls -R`.
+
+#### Setup
+
+First check if `cdidx` is available:
+
+```bash
+cdidx --version
+```
+
+If the command is not found, install it. .NET 8+ SDK is required:
+
+```bash
+dotnet --version   # must be 8.x or higher; if not, ask the user to install .NET 8+ SDK
+dotnet tool install -g cdidx
+```
+
+If installation fails (e.g. no network access to NuGet, or .NET SDK unavailable), skip to the **"Direct SQL queries"** section below — you can query `.cdidx/codeindex.db` directly with `sqlite3`.
+
+#### Keeping the index up to date (requires cdidx)
+
+After editing files, update the database so search results stay accurate:
+
+```bash
+cdidx . --files path/to/changed_file.cs   # update specific files you modified
+cdidx . --commits HEAD                     # update all files changed in the last commit
+cdidx . --commits abc123                   # you can also pass a specific commit hash
+cdidx .                                    # full incremental update (skips unchanged files)
+```
+
+**Rule: whenever you modify source files, run one of the above before your next search.**
+
+#### CLI (recommended if cdidx is available)
+
+```bash
+cdidx search "keyword"           # full-text search (JSON lines)
+cdidx symbols "ClassName"        # structured symbol search
+cdidx files --lang csharp        # list indexed files
+cdidx status --json              # DB stats
+```
+
+#### Direct SQL queries (fallback if cdidx is unavailable)
+
+The queries below require `sqlite3`. If it is not installed, suggest the user install it:
+- **macOS**: pre-installed
+- **Linux**: `sudo apt install sqlite3`
+- **Windows**: `winget install SQLite.SQLite` or `scoop install sqlite`
+
+##### Full-text search
+```sql
+SELECT f.path, c.start_line, c.content
+FROM fts_chunks fc
+JOIN chunks c ON c.id = fc.rowid
+JOIN files f ON f.id = c.file_id
+WHERE fts_chunks MATCH 'keyword'
+LIMIT 20;
+```
+
+##### Search by function/class name
+```sql
+SELECT f.path, s.name, s.line
+FROM symbols s
+JOIN files f ON f.id = s.file_id
+WHERE s.kind = 'function' AND s.name LIKE '%keyword%';
+```
+
 ### Bilingual Rule
 
 All documentation and in-code comments MUST be bilingual (English first, then Japanese).
@@ -304,6 +373,75 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 - CI カバレッジ閾値: 行 >= 80%、ブランチ >= 75%
 - コア差分クラス閾値（FileDiffService、FolderDiffService、FileComparisonService）: 行 >= 90%、ブランチ >= 85%
 - **コミット前に**必ず Release 構成でテストを実行し CI と同一条件を確認すること: `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo`。Release ビルドでは `TreatWarningsAsErrors` と完全なコード解析ルール（CA1031 等）が有効になるため、Debug ビルドでは検出できない問題を事前に捕捉できる。`dotnet` が利用不可なら明記すること。
+
+### コードベース検索ルール
+
+このプロジェクトは **cdidx** を使い、事前構築済みSQLiteインデックス（`.cdidx/codeindex.db`）で高速コード検索を行います。
+コードを検索する際は `find`, `grep`, `ls -R` ではなく**このデータベースを検索**してください。
+
+#### セットアップ
+
+まず `cdidx` が利用可能か確認してください:
+
+```bash
+cdidx --version
+```
+
+コマンドが見つからない場合はインストールしてください。.NET 8+ SDKが必要です:
+
+```bash
+dotnet --version   # 8.x以上であること。そうでなければユーザーに.NET 8+ SDKのインストールを依頼
+dotnet tool install -g cdidx
+```
+
+インストールに失敗した場合（NuGetへのネットワークアクセスがない、.NET SDKが利用不可等）は、下記の **「直接SQLクエリ」** セクションを参照してください。`sqlite3` で `.cdidx/codeindex.db` を直接クエリできます。
+
+#### インデックスの最新化（cdidxが必要）
+
+ファイルを編集したら、検索結果を正確に保つためにデータベースを更新してください:
+
+```bash
+cdidx . --files path/to/changed_file.cs   # 変更したファイルだけ更新
+cdidx . --commits HEAD                     # 直前のコミットで変更されたファイルを更新
+cdidx . --commits abc123                   # 特定のコミットハッシュも指定可能
+cdidx .                                    # フルインクリメンタル更新（未変更ファイルはスキップ）
+```
+
+**ルール: ソースファイルを修正したら、次の検索の前に上記のいずれかを実行すること。**
+
+#### CLI（cdidxが利用可能な場合に推奨）
+
+```bash
+cdidx search "keyword"           # 全文検索（JSONライン出力）
+cdidx symbols "ClassName"        # 構造化シンボル検索
+cdidx files --lang csharp        # インデックス済みファイル一覧
+cdidx status --json              # DB統計情報
+```
+
+#### 直接SQLクエリ（cdidxが利用できない場合のフォールバック）
+
+以下のクエリには `sqlite3` が必要です。未インストールの場合、ユーザーにインストールを提案してください:
+- **macOS**: プリインストール済み
+- **Linux**: `sudo apt install sqlite3`
+- **Windows**: `winget install SQLite.SQLite` または `scoop install sqlite`
+
+##### 全文検索
+```sql
+SELECT f.path, c.start_line, c.content
+FROM fts_chunks fc
+JOIN chunks c ON c.id = fc.rowid
+JOIN files f ON f.id = c.file_id
+WHERE fts_chunks MATCH 'キーワード'
+LIMIT 20;
+```
+
+##### 関数・クラス名で検索
+```sql
+SELECT f.path, s.name, s.line
+FROM symbols s
+JOIN files f ON f.id = s.file_id
+WHERE s.kind = 'function' AND s.name LIKE '%キーワード%';
+```
 
 ### 英日併記ルール
 
