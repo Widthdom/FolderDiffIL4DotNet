@@ -220,3 +220,12 @@ jobs:
       - name: Skip Plugin.Abstractions NuGet publish (no changes)
         if: steps.plugin-diff.outputs.changed != 'true'
         run: echo "NuGet publish skipped — FolderDiffIL4DotNet.Plugin.Abstractions/ has no changes since the previous tag"
+
+      - name: Restore global tool dependencies
+        run: dotnet restore FolderDiffIL4DotNet.csproj
+
+      - name: Pack global tool NuGet package
+        run: dotnet pack FolderDiffIL4DotNet.csproj --configuration Release --no-restore --output nupkgs
+
+      - name: Publish global tool to nuget.org
+        run: dotnet nuget push "nupkgs/nildiff.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

@@ -45,6 +45,7 @@ namespace FolderDiffIL4DotNet
             "\n" +
             "  ── Distribution ────────────────────────────────────────────────────────\n" +
             "\n" +
+            "  NuGet (.NET Global Tool)   dotnet tool install -g nildiff\n" +
             "  NuGet                      Package distribution\n" +
             "  GitHub Actions             CI/CD pipelines\n" +
             "\n" +

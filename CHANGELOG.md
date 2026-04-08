@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **NuGet global tool distribution** — The main application can now be installed as a .NET global tool via `dotnet tool install -g nildiff`. Added `PackAsTool`, `ToolCommandName`, and NuGet package metadata to `FolderDiffIL4DotNet.csproj`. The release workflow (`release.yml`) now packs and publishes the global tool package to nuget.org alongside existing Core and Plugin.Abstractions packages. Affected: `FolderDiffIL4DotNet.csproj`, `PACKAGE_README.md` (new), `.github/workflows/release.yml`, `Runner/ProgramRunner.Credits.cs`, `README.md` (EN+JA Quick Start), `CiAutomationConfigurationTests`.
+
 ### [1.14.3] - 2026-04-08
 
 #### Added
@@ -1184,6 +1188,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **NuGet グローバルツール配布** — メインアプリケーションを `dotnet tool install -g nildiff` で .NET グローバルツールとしてインストール可能にした。`FolderDiffIL4DotNet.csproj` に `PackAsTool`、`ToolCommandName`、NuGet パッケージメタデータを追加。リリースワークフロー（`release.yml`）で既存の Core・Plugin.Abstractions パッケージと共にグローバルツールパッケージを nuget.org に公開する。影響: `FolderDiffIL4DotNet.csproj`、`PACKAGE_README.md`（新規）、`.github/workflows/release.yml`、`Runner/ProgramRunner.Credits.cs`、`README.md`（EN+JA クイックスタート）、`CiAutomationConfigurationTests`。
 
 ### [1.14.3] - 2026-04-08
 

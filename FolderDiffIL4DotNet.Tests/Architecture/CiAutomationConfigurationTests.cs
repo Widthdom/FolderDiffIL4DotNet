@@ -41,6 +41,8 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains("dotnet publish FolderDiffIL4DotNet.csproj", workflow, StringComparison.Ordinal);
             Assert.Contains("gh release create", workflow, StringComparison.Ordinal);
             Assert.Contains("DocumentationSite", workflow, StringComparison.Ordinal);
+            Assert.Contains("Pack global tool NuGet package", workflow, StringComparison.Ordinal);
+            Assert.Contains("Publish global tool to nuget.org", workflow, StringComparison.Ordinal);
         }
 
         /// <summary>

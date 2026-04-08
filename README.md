@@ -21,6 +21,21 @@ Developer-focused details (architecture, CI, tests, implementation cautions):
 <a id="readme-en-quick-start"></a>
 ## Quick Start (5 minutes)
 
+### Option A: Install as .NET Global Tool (recommended)
+
+```bash
+# 1. Install nildiff
+dotnet tool install -g nildiff
+
+# 2. (Optional) Install an IL disassembler for IL-level comparison
+dotnet tool install -g dotnet-ildasm
+
+# 3. Run a diff between two folders
+nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+```
+
+### Option B: Clone and build from source
+
 ```bash
 # 1. Install .NET SDK 8.x (skip if already installed)
 #    Windows: winget install Microsoft.DotNet.SDK.8 --source winget
@@ -754,6 +769,21 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 
 <a id="readme-ja-quick-start"></a>
 ## クイックスタート（5 分）
+
+### 方法 A: .NET グローバルツールとしてインストール（推奨）
+
+```bash
+# 1. nildiff をインストール
+dotnet tool install -g nildiff
+
+# 2. （任意）IL レベル比較用に IL 逆アセンブラをインストール
+dotnet tool install -g dotnet-ildasm
+
+# 3. 2つのフォルダを比較
+nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
+```
+
+### 方法 B: ソースからクローンしてビルド
 
 ```bash
 # 1. .NET SDK 8.x をインストール（インストール済みならスキップ）
