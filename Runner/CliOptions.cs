@@ -32,5 +32,8 @@ namespace FolderDiffIL4DotNet.Runner
         bool MultipleSpinnersDetected,
         string? LogFormatOverride,
         string? OutputDirectory,
+        bool OpenReports,
+        bool OpenConfig,
+        bool OpenLogs,
         string? ParseError);
 }

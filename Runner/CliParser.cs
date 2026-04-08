@@ -33,6 +33,9 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_CREDITS = "--credits";
         private const string OPT_LOG_FORMAT = "--log-format";
         private const string OPT_OUTPUT = "--output";
+        private const string OPT_OPEN_REPORTS = "--open-reports";
+        private const string OPT_OPEN_CONFIG = "--open-config";
+        private const string OPT_OPEN_LOGS = "--open-logs";
 
         /// <summary>
         /// Scans command-line arguments and returns parsed CLI options.
@@ -46,6 +49,7 @@ namespace FolderDiffIL4DotNet.Runner
             bool noIlCache = false, clearCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
             bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false, showCredits = false;
             bool randomSpinner = false;
+            bool openReports = false, openConfig = false, openLogs = false;
             // Track how many distinct spinner theme flags have been seen / 何種類のスピナーテーマフラグが指定されたかを追跡
             int spinnerFlagCount = 0;
             string? configPath = null;
@@ -56,7 +60,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, false, false, false, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -201,6 +205,15 @@ namespace FolderDiffIL4DotNet.Runner
                             parseError ??= $"'{OPT_OUTPUT}' requires a directory path argument.";
                         }
                         break;
+                    case OPT_OPEN_REPORTS:
+                        openReports = true;
+                        break;
+                    case OPT_OPEN_CONFIG:
+                        openConfig = true;
+                        break;
+                    case OPT_OPEN_LOGS:
+                        openLogs = true;
+                        break;
                     default:
                         // Flags (starting with --) that are not positional arguments and not recognised.
                         // 位置引数ではなく認識されないフラグ（-- で始まるもの）を検出する。
@@ -215,7 +228,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, openReports, openConfig, openLogs, parseError);
         }
     }
 }

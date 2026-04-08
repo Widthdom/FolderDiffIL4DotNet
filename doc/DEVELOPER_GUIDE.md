@@ -429,7 +429,7 @@ Why this matters:
 | File | Responsibility | Notes |
 | --- | --- | --- |
 | [`Program.cs`](../Program.cs) | Application entry point | Must remain thin |
-| [`ProgramRunner.cs`](../ProgramRunner.cs) | CLI dispatch, argument validation, config loading, exit-code mapping | Help text in [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs), config loading/validation in [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs), interactive wizard with drag-and-drop path normalization (`NormalizeDragDropPath`) in [`ProgramRunner.Wizard.cs`](../Runner/ProgramRunner.Wizard.cs) |
+| [`ProgramRunner.cs`](../ProgramRunner.cs) | CLI dispatch, argument validation, config loading, exit-code mapping | Help text in [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs), config loading/validation in [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs), interactive wizard with drag-and-drop path normalization (`NormalizeDragDropPath`) in [`ProgramRunner.Wizard.cs`](../Runner/ProgramRunner.Wizard.cs), folder-open commands in [`ProgramRunner.OpenFolder.cs`](../Runner/ProgramRunner.OpenFolder.cs) |
 | [`Runner/CliOverrideApplier.cs`](../Runner/CliOverrideApplier.cs) | CLI option → config builder override application | Delegates spinner theme logic to `SpinnerThemes` |
 | [`Runner/SpinnerThemes.cs`](../Runner/SpinnerThemes.cs) | Spinner animation theme definitions and application | 7 themes (coffee, beer, matcha, whisky, wine, ramen, sushi) + random selection |
 | [`Runner/DiffPipelineExecutor.cs`](../Runner/DiffPipelineExecutor.cs) | Diff execution pipeline and report generation | Builds scoped DI container, runs diff, generates Markdown/HTML/audit-log reports |
@@ -1381,7 +1381,7 @@ sequenceDiagram
 | ファイル | 主な責務 | 補足 |
 | --- | --- | --- |
 | [`Program.cs`](../Program.cs) | アプリ起動点 | 薄いまま維持する |
-| [`ProgramRunner.cs`](../ProgramRunner.cs) | CLI 分岐、引数検証、設定読込、終了コード写像 | ヘルプテキストは [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)、設定読込/バリデーションは [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs)、ドラッグ＆ドロップパス正規化（`NormalizeDragDropPath`）付き対話ウィザードは [`ProgramRunner.Wizard.cs`](../Runner/ProgramRunner.Wizard.cs) |
+| [`ProgramRunner.cs`](../ProgramRunner.cs) | CLI 分岐、引数検証、設定読込、終了コード写像 | ヘルプテキストは [`ProgramRunner.HelpText.cs`](../Runner/ProgramRunner.HelpText.cs)、設定読込/バリデーションは [`ProgramRunner.Config.cs`](../Runner/ProgramRunner.Config.cs)、ドラッグ＆ドロップパス正規化（`NormalizeDragDropPath`）付き対話ウィザードは [`ProgramRunner.Wizard.cs`](../Runner/ProgramRunner.Wizard.cs)、フォルダ開放コマンドは [`ProgramRunner.OpenFolder.cs`](../Runner/ProgramRunner.OpenFolder.cs) |
 | [`Runner/CliOverrideApplier.cs`](../Runner/CliOverrideApplier.cs) | CLI オプション → 設定ビルダーへのオーバーライド適用 | スピナーテーマロジックを `SpinnerThemes` に委譲 |
 | [`Runner/SpinnerThemes.cs`](../Runner/SpinnerThemes.cs) | スピナーアニメーションテーマの定義と適用 | 7テーマ（coffee, beer, matcha, whisky, wine, ramen, sushi）+ ランダム選択 |
 | [`Runner/DiffPipelineExecutor.cs`](../Runner/DiffPipelineExecutor.cs) | 差分実行パイプラインとレポート生成 | スコープ付き DI コンテナ構築・差分実行・Markdown/HTML/監査ログの全レポート生成 |

@@ -460,6 +460,169 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         // -----------------------------------------------------------------------
+        // --open-reports / --open-config / --open-logs early-exit tests
+        // --open-reports / --open-config / --open-logs 早期終了テスト
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public async Task RunAsync_OpenReportsFlag_ExitsZeroAndPrintsPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
+                Assert.Contains("Reports", output, StringComparison.Ordinal);
+                // Logger should NOT have been initialized / ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenConfigFlag_ExitsZeroAndPrintsPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-config" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
+                // Logger should NOT have been initialized / ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenLogsFlag_ExitsZeroAndPrintsPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-logs" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
+                Assert.Contains("Logs", output, StringComparison.Ordinal);
+                // Logger should NOT have been initialized / ロガーは初期化されていないはず
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenReportsWithOutput_OpensCustomDirectory()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-reports-" + Guid.NewGuid().ToString("N"));
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--output", tempDir });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                // Should print the custom path, not the default Reports/ path
+                // デフォルトの Reports/ パスではなく、カスタムパスが出力されるべき
+                Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_OpenConfigWithConfigPath_OpensConfigParentDirectory()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-config-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var configPath = Path.Combine(tempDir, "config.json");
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-config", "--config", configPath });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                // Should open the parent directory of the config file
+                // config ファイルの親ディレクトリを開くべき
+                Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_HelpFlag_OutputContainsOpenFolderOptions()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--help" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains("--open-reports", output, StringComparison.Ordinal);
+                Assert.Contains("--open-config", output, StringComparison.Ordinal);
+                Assert.Contains("--open-logs", output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        // -----------------------------------------------------------------------
         // --wizard with redirected stdin -> exit code 2
         // --wizard でリダイレクト stdin → 終了コード 2
         // -----------------------------------------------------------------------

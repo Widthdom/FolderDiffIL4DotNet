@@ -40,7 +40,12 @@ namespace FolderDiffIL4DotNet
             "  --bell                      Ring terminal bell when execution completes.\n" +
             "  --output <path>             Output directory for reports (default: <exe>/Reports/).\n" +
             "  --log-format <text|json>    Log file output format (default: text).\n" +
-            "                              'json' emits NDJSON lines for SIEM/log aggregation.\n\n" +
+            "                              'json' emits NDJSON lines for SIEM/log aggregation.\n" +
+            "  --open-reports              Open the Reports folder in the file manager.\n" +
+            "                              Respects --output if specified.\n" +
+            "  --open-config               Open the config folder in the file manager.\n" +
+            "                              Respects --config if specified.\n" +
+            "  --open-logs                 Open the Logs folder in the file manager.\n\n" +
             "Environment variables (override config.json values):\n" +
             "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +
             "  FOLDERDIFF_ENABLEILCACHE=<true|false>       Enable/disable the IL cache.\n" +

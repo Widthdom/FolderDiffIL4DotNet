@@ -184,6 +184,9 @@ nildiff <oldFolder> <newFolder> <reportLabel> [options]
 | `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
 | `--output <path>` | Output directory for reports (default: `<exe>/Reports/`). The report label subfolder is created under this directory. Useful for CI/CD pipelines that need reports written to a custom path. |
 | `--log-format <text\|json>` | Log file output format (default: `text`). `json` emits NDJSON (one JSON object per line) with W3C Trace Context fields (`traceId`, `spanId`) for SIEM, OpenTelemetry, and log aggregation tool integration. Console output remains plain text regardless. |
+| `--open-reports` | Open the Reports folder in the default file manager and exit. When `--output` is also specified, opens that custom directory instead of `<exe>/Reports/`. |
+| `--open-config` | Open the configuration folder in the default file manager and exit. When `--config` is also specified, opens the parent directory of the specified config file. |
+| `--open-logs` | Open the Logs folder (`<exe>/Logs/`) in the default file manager and exit. |
 
 > **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the tool gently suggests matcha instead (easter egg). Use `--random-spinner` for a surprise theme each run. They also override any custom `SpinnerFrames` set in [`config.json`](config.json).
 
@@ -956,6 +959,9 @@ nildiff <oldFolder> <newFolder> <reportLabel> [options]
 | `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
 | `--output <path>` | レポートの出力ディレクトリ（既定: `<exe>/Reports/`）。このディレクトリの下にレポートラベルのサブフォルダが作成されます。CI/CD パイプラインでレポートを任意のパスに出力したい場合に便利です。 |
 | `--log-format <text\|json>` | ログファイルの出力形式（既定: `text`）。`json` を指定すると W3C Trace Context フィールド（`traceId`、`spanId`）付きの NDJSON（1行1 JSON オブジェクト）で出力し、SIEM、OpenTelemetry、ログ集約ツールとの連携が容易になります。コンソール出力は形式に関わらずプレーンテキストのままです。 |
+| `--open-reports` | Reports フォルダをデフォルトのファイルマネージャで開いて終了します。`--output` が同時に指定された場合、`<exe>/Reports/` の代わりにそのカスタムディレクトリを開きます。 |
+| `--open-config` | 設定ファイルのフォルダをデフォルトのファイルマネージャで開いて終了します。`--config` が同時に指定された場合、指定された設定ファイルの親ディレクトリを開きます。 |
+| `--open-logs` | Logs フォルダ（`<exe>/Logs/`）をデフォルトのファイルマネージャで開いて終了します。 |
 
 > **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`、`--ramen`、`--sushi`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は抹茶が提案されます（イースターエッグ）。`--random-spinner` で毎回サプライズテーマを楽しめます。[`config.json`](config.json) で設定したカスタム `SpinnerFrames` も上書きされます。
 
