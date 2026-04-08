@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.1] - 2026-04-09
+
 #### Changed
 
 - **Release-gate real disassembler E2E is now enforced** — CI and release workflows now add the global .NET tool directory to `PATH`, run tests with `FOLDERDIFF_RUN_E2E=true`, and treat missing/non-runnable `dotnet-ildasm` as a failure once the opt-in is enabled. This turns the non-deterministic-builds-should-still-be-`ILMatch` assertion into a blocking gate on Ubuntu, Windows, and tagged releases. Updated workflow guard tests plus the testing/developer guides. Affected: `.github/workflows/dotnet.yml`, `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`, `doc/TESTING_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`.
@@ -1205,6 +1207,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.16.1] - 2026-04-09
 
 #### 変更
 
@@ -2403,7 +2407,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.1...HEAD
+[1.16.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.3...v1.15.0
 [1.14.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.2...v1.14.3
