@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.3] - 2026-04-10
+
 #### Fixed
 
 - **Hardened plugin strict mode pre-load hash gating and reviewed HTML state embedding** — `PluginLoader` now computes and checks the DLL SHA-256 against configured trusted hashes before `LoadFromAssemblyPath`, so strict mode no longer executes untrusted plugin bytes before verification. The reviewed HTML export now embeds saved review state via Base64 + UTF-8 decode helpers instead of raw `JSON.stringify(state)` inside an inline `<script>`, preventing notes/justifications containing `</script>` from breaking out into executable script. User workflow and config format are unchanged. Affected: `Runner/PluginLoader.cs`, `Services/HtmlReport/js/diff_report_state.js`, `Services/HtmlReport/js/diff_report_export.js`, `doc/samples/diff_report.html`, `CHANGELOG.md`. Tests: `PluginLoaderTests` (2 updated, 1 new), `HtmlReportGenerateServiceTests.Security` (1 new), `diff_report.test.js` (1 new), `diff_report_extended.test.js` (1 new).
@@ -1217,6 +1219,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.16.3] - 2026-04-10
 
 #### 修正
 
@@ -2427,7 +2431,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.2...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.3...HEAD
+[1.16.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.1...v1.16.2
 [1.16.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.15.0...v1.16.0
