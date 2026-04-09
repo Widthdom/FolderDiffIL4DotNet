@@ -41,7 +41,7 @@ The tool works out of the box with default settings. To customize behavior, crea
 nildiff "/old" "/new" "label" --config /path/to/config.json
 ```
 
-Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`). For maintainer-only IL noise suppression, `--creator-il-ignore-profile buildserver-winforms` applies a predefined `ILIgnoreLineContainingStrings` profile. See the [annotated sample config](https://github.com/Widthdom/FolderDiffIL4DotNet/blob/main/doc/config.sample.jsonc) for all available settings.
+Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`). For maintainer-only IL noise suppression, `--creator` applies the predefined `buildserver-winforms` `ILIgnoreLineContainingStrings` profile. See the [annotated sample config](https://github.com/Widthdom/FolderDiffIL4DotNet/blob/main/doc/config.sample.jsonc) for all available settings.
 
 The default `config.json` location varies by OS:
 

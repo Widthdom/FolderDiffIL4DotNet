@@ -37,12 +37,18 @@ namespace FolderDiffIL4DotNet.Runner
                 builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
             }
 
-            if (opts.CreatorIlIgnoreProfile != null)
+            string? creatorProfile = opts.CreatorIlIgnoreProfile;
+            if (opts.Creator && creatorProfile == null)
+            {
+                creatorProfile = CreatorPrivilegeIlIgnoreProfiles.DefaultProfileName;
+            }
+
+            if (creatorProfile != null)
             {
                 builder.ShouldIgnoreILLinesContainingConfiguredStrings = true;
                 var mergedStrings = new List<string>(builder.ILIgnoreLineContainingStrings);
                 var seen = new HashSet<string>(mergedStrings, System.StringComparer.Ordinal);
-                foreach (var value in CreatorPrivilegeIlIgnoreProfiles.GetStringsOrThrow(opts.CreatorIlIgnoreProfile))
+                foreach (var value in CreatorPrivilegeIlIgnoreProfiles.GetStringsOrThrow(creatorProfile))
                 {
                     if (seen.Add(value))
                     {

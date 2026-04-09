@@ -25,6 +25,7 @@ namespace FolderDiffIL4DotNet
             "  --clear-cache               Interactive wizard to selectively delete IL cache files.\n" +
             "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
             "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n" +
+            "  --creator                   Apply the default maintainer IL ignore profile.\n" +
             "  --creator-il-ignore-profile <name>\n" +
             "                              Apply a maintainer-managed IL ignore profile and enable IL string filtering.\n" +
             "  --wizard                    Interactive mode: prompts for old/new folders and report label.\n" +

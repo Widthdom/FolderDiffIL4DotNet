@@ -12,6 +12,7 @@ namespace FolderDiffIL4DotNet.Runner
     /// </summary>
     internal static class CreatorPrivilegeIlIgnoreProfiles
     {
+        internal const string DefaultProfileName = "buildserver-winforms";
         private const string RESOURCE_NAME = "FolderDiffIL4DotNet.Runner.creator_il_ignore_profiles.json";
         private static readonly Lazy<IReadOnlyDictionary<string, IReadOnlyList<string>>> _profiles = new(LoadProfiles);
 

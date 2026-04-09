@@ -15,7 +15,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         private static CliOptions DefaultOpts() =>
             new(ShowHelp: false, ShowVersion: false, ShowBanner: false, NoPause: false,
                 ConfigPath: null, ThreadsOverride: null, NoIlCache: false, ClearCache: false,
-                SkipIL: false, NoTimestampWarnings: false, CreatorIlIgnoreProfile: null, PrintConfig: false, ValidateConfig: false,
+                SkipIL: false, NoTimestampWarnings: false, Creator: false, CreatorIlIgnoreProfile: null, PrintConfig: false, ValidateConfig: false,
                 DryRun: false, Coffee: false, Beer: false, Matcha: false, Whisky: false,
                 Wine: false, Ramen: false, Sushi: false, Bell: false, Wizard: false,
                 ShowCredits: false, RandomSpinner: false, MultipleSpinnersDetected: false,

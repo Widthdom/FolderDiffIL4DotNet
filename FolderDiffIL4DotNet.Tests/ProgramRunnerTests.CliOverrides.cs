@@ -380,6 +380,33 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_PrintConfigFlag_WithCreator_OutputsDefaultProfileFilters()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--creator", "--print-config" });
+
+                    Assert.Equal(0, exitCode);
+                    var output = sw.ToString();
+                    Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
+                    Assert.Contains("buildserver1_", output, StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_PrintConfigFlag_WithCustomConfigPath_ReflectsCustomValues()
         {
             var tempRoot = Path.Combine(Path.GetTempPath(), "fd-print-config-custom-" + Guid.NewGuid().ToString("N"));

@@ -24,6 +24,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ClearCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
+            Assert.False(opts.Creator);
             Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
@@ -50,6 +51,7 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(System.Array.Empty<string>());
 
             Assert.False(opts.ShowHelp);
+            Assert.False(opts.Creator);
             Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.Null(opts.ParseError);
         }
@@ -69,6 +71,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ClearCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
+            Assert.False(opts.Creator);
             Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
@@ -278,6 +281,16 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(new[] { "--no-timestamp-warnings" });
 
             Assert.True(opts.NoTimestampWarnings);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_CreatorFlag_SetsCreator()
+        {
+            var opts = CliParser.Parse(new[] { "--creator" });
+
+            Assert.True(opts.Creator);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.Null(opts.ParseError);
         }
 

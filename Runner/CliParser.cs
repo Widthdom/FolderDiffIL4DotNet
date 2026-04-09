@@ -17,6 +17,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_CLEAR_CACHE = "--clear-cache";
         private const string OPT_SKIP_IL = "--skip-il";
         private const string OPT_NO_TIMESTAMP_WARNINGS = "--no-timestamp-warnings";
+        private const string OPT_CREATOR = "--creator";
         private const string OPT_CREATOR_IL_IGNORE_PROFILE = "--creator-il-ignore-profile";
         private const string OPT_PRINT_CONFIG = "--print-config";
         private const string OPT_VALIDATE_CONFIG = "--validate-config";
@@ -50,6 +51,7 @@ namespace FolderDiffIL4DotNet.Runner
             bool noIlCache = false, clearCache = false, skipIl = false, noTimestampWarnings = false, printConfig = false, validateConfig = false, dryRun = false;
             bool coffee = false, beer = false, matcha = false, whisky = false, wine = false, ramen = false, sushi = false, bell = false, wizard = false, showCredits = false;
             bool randomSpinner = false;
+            bool creator = false;
             bool openReports = false, openConfig = false, openLogs = false;
             // Track how many distinct spinner theme flags have been seen / 何種類のスピナーテーマフラグが指定されたかを追跡
             int spinnerFlagCount = 0;
@@ -62,7 +64,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, false, false, false, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, false, false, false, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -127,6 +129,9 @@ namespace FolderDiffIL4DotNet.Runner
                         break;
                     case OPT_NO_TIMESTAMP_WARNINGS:
                         noTimestampWarnings = true;
+                        break;
+                    case OPT_CREATOR:
+                        creator = true;
                         break;
                     case OPT_CREATOR_IL_IGNORE_PROFILE:
                         if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
@@ -251,7 +256,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, creatorIlIgnoreProfile, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, openReports, openConfig, openLogs, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, creator, creatorIlIgnoreProfile, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, openReports, openConfig, openLogs, parseError);
         }
     }
 }
