@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775742188591,
+  "lastUpdate": 1775746488501,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -5208,6 +5208,102 @@ window.BENCHMARK_DATA = {
             "value": 30930117.94375,
             "unit": "ns",
             "range": "± 505795.9488808168"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "07f709fbc1041bb5a91a23b881273da859ada2d4",
+          "message": "Merge pull request #138 from Widthdom/sub\n\nAdd creator IL filter option for nildiff",
+          "timestamp": "2026-04-09T23:49:37+09:00",
+          "tree_id": "f8c075119bf07c66c09a4f50824871f8ab68ac56",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/07f709fbc1041bb5a91a23b881273da859ada2d4"
+        },
+        "date": 1775746488189,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 60512.31610342173,
+            "unit": "ns",
+            "range": "± 198.65776931279848"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 580298.449358259,
+            "unit": "ns",
+            "range": "± 1323.6293866800765"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5917825.451450893,
+            "unit": "ns",
+            "range": "± 13828.888262393428"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 74313.31939227764,
+            "unit": "ns",
+            "range": "± 172.630706730918"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 31.22578591959817,
+            "unit": "ns",
+            "range": "± 0.4561815554230006"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 62.902195715904234,
+            "unit": "ns",
+            "range": "± 2.0305236668240054"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.534337248653173,
+            "unit": "ns",
+            "range": "± 0.6562211587799673"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5218832.977678572,
+            "unit": "ns",
+            "range": "± 25363.263153409105"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 126469.34467773438,
+            "unit": "ns",
+            "range": "± 1198.9977368293448"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2616.280820746171,
+            "unit": "ns",
+            "range": "± 55.75120315960371"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 261761.45152994792,
+            "unit": "ns",
+            "range": "± 1104.4684263106517"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27175613.410416666,
+            "unit": "ns",
+            "range": "± 99229.52344324948"
           }
         ]
       }
