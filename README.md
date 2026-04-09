@@ -12,8 +12,23 @@
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-`FolderDiffIL4DotNet` is a .NET console application that compares two folders and outputs a Markdown report.
-For .NET assemblies, it compares IL while ignoring build-specific information such as `// MVID:` lines, so assemblies whose contents are effectively the same can still be judged equal.
+`FolderDiffIL4DotNet` is a .NET console application for **release validation** and **auditable folder comparison**.
+Compare two builds, isolate meaningful changes, and produce review artifacts that are ready for sign-off.
+
+For .NET assemblies, it compares **IL instead of raw binaries**, filtering out build-specific noise such as `// MVID:` lines and timestamps.
+That means functionally identical assemblies can still be judged equal even when non-deterministic builds produce different binary hashes.
+
+**What you get**
+
+- `diff_report.md` for text-based review and archival
+- `diff_report.html` for interactive browser-based sign-off
+- `audit_log.json` for SHA256-backed audit trails
+
+**Why it stands out**
+
+- **Signal over noise**: avoids false positives caused by build metadata
+- **Built for reviewers**: outputs are designed for release checks, not just raw diffs
+- **Audit-friendly by default**: generated artifacts are structured for traceability and retention
 
 Developer-focused details (architecture, CI, tests, implementation cautions):
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
@@ -786,8 +801,23 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/License-MIT-blue)
 
-`FolderDiffIL4DotNet` は、2つのフォルダを比較して Markdown レポートを出力する .NET コンソールアプリです。
-.NET アセンブリは `// MVID:` などのビルド固有情報を除外して IL 比較することで、アセンブリの中身が実質的に同じであれば同一と判断します。
+`FolderDiffIL4DotNet` は、**リリース検証**と**監査可能なフォルダ比較**のための .NET コンソールアプリです。
+2つのビルドを比較し、意味のある差分だけを抽出して、承認に使えるレビュー成果物を生成します。
+
+.NET アセンブリについては **生バイナリではなく IL を比較**し、`// MVID:` やタイムスタンプのようなビルド固有ノイズを除外します。
+そのため、非決定的ビルドでバイナリハッシュが変わっていても、機能的に同一なアセンブリは同一と判断できます。
+
+**得られる成果物**
+
+- `diff_report.md` — テキストベースのレビューと保管向け
+- `diff_report.html` — ブラウザで使えるインタラクティブ承認レポート
+- `audit_log.json` — SHA256 付きの監査ログ
+
+**このツールの強み**
+
+- **ノイズではなく本質を見る**: ビルドメタデータ由来の誤検知を抑える
+- **レビュー前提で設計**: 単なる差分一覧ではなく、リリース確認に向いた出力
+- **監査しやすい**: 生成物が追跡性と保管を前提に構造化されている
 
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
