@@ -1,0 +1,2 @@
+# Repository-local Codex config
+project_doc_fallback_filenames = ["CLAUDE.md"]
