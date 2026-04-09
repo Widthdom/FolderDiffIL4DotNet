@@ -861,6 +861,65 @@ describe('downloadReviewed', () => {
     URL.revokeObjectURL = origRevokeObjectURL;
     if (origDigest) crypto.subtle.digest = origDigest;
   });
+
+  test('encodes reviewed state before embedding it into inline script', async () => {
+    const fakeHash = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) fakeHash[i] = 255 - i;
+    const origDigest = crypto.subtle && crypto.subtle.digest;
+    if (!crypto.subtle) {
+      Object.defineProperty(globalThis, 'crypto', {
+        value: { subtle: { digest: async () => fakeHash.buffer } },
+        writable: true,
+        configurable: true,
+      });
+    } else {
+      crypto.subtle.digest = async () => fakeHash.buffer;
+    }
+    const origCreateObjectURL = URL.createObjectURL;
+    const origRevokeObjectURL = URL.revokeObjectURL;
+    const origClick = HTMLAnchorElement.prototype.click;
+    const origBlob = globalThis.Blob;
+    const createdBlobs = [];
+    globalThis.Blob = class {
+      constructor(parts, options = {}) {
+        this.parts = parts;
+        this.type = options.type || '';
+      }
+    };
+    URL.createObjectURL = blob => {
+      createdBlobs.push(blob);
+      return 'blob:reviewed-safe';
+    };
+    URL.revokeObjectURL = () => {};
+    HTMLAnchorElement.prototype.click = function() {};
+
+    loadScript({
+      storageKey: 'review-dl-safe-test',
+      reportDate: '20260102',
+      bodyHtml: `
+        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
+        <script>const __savedState__  = null;</script>
+        <!--CTRL--><button>Download</button><!--/CTRL-->
+        <input type="checkbox" id="cb_mod_1" checked />
+        <textarea id="note_1"></textarea>
+        ${filterControlsHtml()}
+      `,
+    });
+    document.getElementById('note_1').value = '</script><script>alert("xss")</script>';
+
+    await window.downloadReviewed();
+
+    const reviewedHtml = createdBlobs[0].parts.join('');
+    expect(reviewedHtml).toContain('decodeEmbeddedState(');
+    expect(reviewedHtml).not.toContain('const __savedState__  = {"');
+    expect(reviewedHtml).not.toContain('</script><script>alert("xss")</script>');
+
+    globalThis.Blob = origBlob;
+    HTMLAnchorElement.prototype.click = origClick;
+    URL.createObjectURL = origCreateObjectURL;
+    URL.revokeObjectURL = origRevokeObjectURL;
+    if (origDigest) crypto.subtle.digest = origDigest;
+  });
 });
 
 // ─── setupLazyIntersectionObserver ──────────────────────────────────────────

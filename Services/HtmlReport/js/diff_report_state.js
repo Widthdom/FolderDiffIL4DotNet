@@ -40,6 +40,49 @@
     }
   }
 
+  /**
+   * Encode review state as Base64 UTF-8 so reviewed HTML can embed it safely inside inline script.
+   * レビュー状態を Base64 UTF-8 としてエンコードし、reviewed HTML が
+   * インライン script 内へ安全に埋め込めるようにします。
+   * @param {Record<string, boolean|string>} state
+   * @returns {string}
+   */
+  function encodeEmbeddedState(state) {
+    var json = JSON.stringify(state);
+    var bytes = new TextEncoder().encode(json);
+    var binary = '';
+    var chunkSize = 32768;
+    for (var i = 0; i < bytes.length; i += chunkSize) {
+      var chunk = bytes.subarray(i, i + chunkSize);
+      var chars = new Array(chunk.length);
+      for (var j = 0; j < chunk.length; j++) {
+        chars[j] = String.fromCharCode(chunk[j]);
+      }
+      binary += chars.join('');
+    }
+    return btoa(binary);
+  }
+
+  /**
+   * Decode reviewed-state Base64 back into the saved state object.
+   * Base64 化された reviewed state を saved state オブジェクトへ復号します。
+   * @param {string} encodedState
+   * @returns {Record<string, boolean|string>|null}
+   */
+  function decodeEmbeddedState(encodedState) {
+    try {
+      var binary = atob(encodedState);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      var parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch(e) {
+      return null;
+    }
+  }
+
   /** @type {string[]} Element IDs excluded from saved state (filter controls) */
   var __filterIds__ = ['filter-diff-sha256match','filter-diff-sha256mismatch','filter-diff-ilmatch','filter-diff-ilmismatch','filter-diff-textmatch','filter-diff-textmismatch','filter-imp-high','filter-imp-medium','filter-imp-low','filter-unchecked','filter-search'];
   /**

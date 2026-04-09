@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Tests.Helpers;
@@ -130,8 +131,10 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             var result = _loader.LoadPlugins(searchPaths, enabledIds, new Version(1, 0, 0),
                 strictMode: true, trustedHashes: null);
 
-            // Assert / 検証 — plugin loading fails (either hash rejection or bad DLL format)
+            // Assert / 検証 — plugin loading is rejected before assembly load
             Assert.Empty(result);
+            Assert.Contains(_logger.Messages, m => m.Contains("rejected before load", StringComparison.Ordinal));
+            Assert.DoesNotContain(_logger.Messages, m => m.Contains("Failed to load plugin", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -151,8 +154,37 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             var result = _loader.LoadPlugins(searchPaths, enabledIds, new Version(1, 0, 0),
                 strictMode: true, trustedHashes: trustedHashes);
 
-            // Assert / 検証 — plugin loading fails (either hash not found or bad format)
+            // Assert / 検証 — plugin loading is rejected before assembly load
             Assert.Empty(result);
+            Assert.Contains(_logger.Messages, m => m.Contains("rejected before load", StringComparison.Ordinal));
+            Assert.DoesNotContain(_logger.Messages, m => m.Contains("Failed to load plugin", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public void LoadPlugins_StrictModeHashMismatch_RejectsBeforeAssemblyLoad()
+        {
+            // Arrange: invalid DLL whose hash is not in the trusted map
+            // 準備: 信頼済みハッシュマップに存在しないハッシュを持つ無効 DLL
+            var pluginDir = Path.Combine(_tempDir, "HashMismatchPlugin");
+            Directory.CreateDirectory(pluginDir);
+            var pluginBytes = new byte[] { 0x4D, 0x5A, 0x11, 0x22, 0x33, 0x44 };
+            File.WriteAllBytes(Path.Combine(pluginDir, "HashMismatchPlugin.dll"), pluginBytes);
+
+            var searchPaths = new List<string> { _tempDir };
+            var enabledIds = new HashSet<string>();
+            var trustedHashes = new Dictionary<string, string>
+            {
+                ["some-other-plugin"] = Convert.ToHexString(SHA256.HashData(new byte[] { 0x10, 0x20, 0x30 }))
+            };
+
+            // Act / 実行
+            var result = _loader.LoadPlugins(searchPaths, enabledIds, new Version(1, 0, 0),
+                strictMode: true, trustedHashes: trustedHashes);
+
+            // Assert / 検証
+            Assert.Empty(result);
+            Assert.Contains(_logger.Messages, m => m.Contains("rejected before load", StringComparison.Ordinal));
+            Assert.DoesNotContain(_logger.Messages, m => m.Contains("Failed to load plugin", StringComparison.Ordinal));
         }
 
         [Fact]
