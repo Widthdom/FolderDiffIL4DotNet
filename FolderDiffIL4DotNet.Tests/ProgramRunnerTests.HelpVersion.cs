@@ -86,6 +86,7 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString();
                 Assert.Contains("--clear-cache", output, StringComparison.Ordinal);
+                Assert.Contains("--creator-il-ignore-profile", output, StringComparison.Ordinal);
             }
             finally
             {

@@ -24,6 +24,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ClearCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
             Assert.False(opts.Coffee);
@@ -49,6 +50,7 @@ namespace FolderDiffIL4DotNet.Tests
             var opts = CliParser.Parse(System.Array.Empty<string>());
 
             Assert.False(opts.ShowHelp);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.Null(opts.ParseError);
         }
 
@@ -67,6 +69,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.False(opts.ClearCache);
             Assert.False(opts.SkipIL);
             Assert.False(opts.NoTimestampWarnings);
+            Assert.Null(opts.CreatorIlIgnoreProfile);
             Assert.False(opts.PrintConfig);
             Assert.False(opts.DryRun);
             Assert.False(opts.Coffee);
@@ -276,6 +279,37 @@ namespace FolderDiffIL4DotNet.Tests
 
             Assert.True(opts.NoTimestampWarnings);
             Assert.Null(opts.ParseError);
+        }
+
+        // -----------------------------------------------------------------------
+        // --creator-il-ignore-profile <name>
+        // -----------------------------------------------------------------------
+
+        [Fact]
+        public void ParseCliOptions_CreatorIlIgnoreProfileWithKnownName_SetsProfile()
+        {
+            var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile", "buildserver-winforms" });
+
+            Assert.Equal("buildserver-winforms", opts.CreatorIlIgnoreProfile);
+            Assert.Null(opts.ParseError);
+        }
+
+        [Fact]
+        public void ParseCliOptions_CreatorIlIgnoreProfileWithoutValue_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("--creator-il-ignore-profile", opts.ParseError, System.StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public void ParseCliOptions_CreatorIlIgnoreProfileWithUnknownName_SetsParseError()
+        {
+            var opts = CliParser.Parse(new[] { "--creator-il-ignore-profile", "missing-profile" });
+
+            Assert.NotNull(opts.ParseError);
+            Assert.Contains("buildserver-winforms", opts.ParseError, System.StringComparison.Ordinal);
         }
 
         // -----------------------------------------------------------------------

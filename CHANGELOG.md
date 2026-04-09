@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Creator-profile IL ignore injection for `nildiff`** — Added CLI option `--creator-il-ignore-profile <name>` and an embedded JSON profile catalog so maintainer-managed IL noise filters can be applied without hardcoding long string arrays into command invocations. The shipped `buildserver-winforms` profile enables `ShouldIgnoreILLinesContainingConfiguredStrings` and merges six predefined filters into `ILIgnoreLineContainingStrings`. `--print-config` now reflects supported CLI overrides as well, so this profile can be verified before a run. Affected: `Runner/CliOptions.cs`, `Runner/CliParser.cs`, `Runner/CliOverrideApplier.cs`, `Runner/CreatorPrivilegeIlIgnoreProfiles.cs`, `Runner/creator_il_ignore_profiles.json`, `Runner/ProgramRunner.HelpText.cs`, `Runner/ProgramRunner.Config.cs`, `ProgramRunner.cs`, `FolderDiffIL4DotNet.csproj`, `README.md`, `PACKAGE_README.md`, `doc/config.sample.jsonc`. Tests: `CliOptionsTests` (3 new), `CliOptionsTests.Combined` (1 updated), `CliOverrideApplierTests` (1 new), `ProgramRunnerTests.HelpVersion` (1 updated), `ProgramRunnerTests.CliOverrides` (2 new), `SpinnerThemesTests` (constructor update).
+
 ### [1.16.1] - 2026-04-09
 
 #### Changed
@@ -1207,6 +1211,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **`nildiff` に作成者プロファイル経由の IL 無視文字列注入を追加** — CLI オプション `--creator-il-ignore-profile <name>` と埋め込み JSON プロファイルカタログを追加し、長い文字列配列をコマンドラインへ直書きせずにメンテナー管理の IL ノイズフィルタを適用できるようにした。組み込み `buildserver-winforms` プロファイルは `ShouldIgnoreILLinesContainingConfiguredStrings` を有効化し、6 個の既定フィルタを `ILIgnoreLineContainingStrings` にマージする。さらに `--print-config` が対応 CLI オーバーライドも反映するようになり、実行前にこのプロファイルを確認できる。影響: `Runner/CliOptions.cs`, `Runner/CliParser.cs`, `Runner/CliOverrideApplier.cs`, `Runner/CreatorPrivilegeIlIgnoreProfiles.cs`, `Runner/creator_il_ignore_profiles.json`, `Runner/ProgramRunner.HelpText.cs`, `Runner/ProgramRunner.Config.cs`, `ProgramRunner.cs`, `FolderDiffIL4DotNet.csproj`, `README.md`, `PACKAGE_README.md`, `doc/config.sample.jsonc`。テスト: `CliOptionsTests`（3 件追加）、`CliOptionsTests.Combined`（1 件更新）、`CliOverrideApplierTests`（1 件追加）、`ProgramRunnerTests.HelpVersion`（1 件更新）、`ProgramRunnerTests.CliOverrides`（2 件追加）、`SpinnerThemesTests`（コンストラクタ更新）。
 
 ### [1.16.1] - 2026-04-09
 

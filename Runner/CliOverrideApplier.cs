@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using FolderDiffIL4DotNet.Models;
 
 namespace FolderDiffIL4DotNet.Runner
@@ -34,6 +35,22 @@ namespace FolderDiffIL4DotNet.Runner
             if (opts.NoTimestampWarnings)
             {
                 builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp = false;
+            }
+
+            if (opts.CreatorIlIgnoreProfile != null)
+            {
+                builder.ShouldIgnoreILLinesContainingConfiguredStrings = true;
+                var mergedStrings = new List<string>(builder.ILIgnoreLineContainingStrings);
+                var seen = new HashSet<string>(mergedStrings, System.StringComparer.Ordinal);
+                foreach (var value in CreatorPrivilegeIlIgnoreProfiles.GetStringsOrThrow(opts.CreatorIlIgnoreProfile))
+                {
+                    if (seen.Add(value))
+                    {
+                        mergedStrings.Add(value);
+                    }
+                }
+
+                builder.ILIgnoreLineContainingStrings = mergedStrings;
             }
 
             SpinnerThemes.Apply(builder, opts);

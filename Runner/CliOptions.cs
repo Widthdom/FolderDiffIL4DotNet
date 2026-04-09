@@ -15,6 +15,7 @@ namespace FolderDiffIL4DotNet.Runner
         bool ClearCache,
         bool SkipIL,
         bool NoTimestampWarnings,
+        string? CreatorIlIgnoreProfile,
         bool PrintConfig,
         bool ValidateConfig,
         bool DryRun,

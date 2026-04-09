@@ -319,6 +319,67 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_PrintConfigFlag_ReflectsCliOverride()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--threads", "7", "--print-config" });
+
+                    Assert.Equal(0, exitCode);
+                    Assert.Contains("\"MaxParallelism\": 7", sw.ToString(), StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_PrintConfigFlag_WithCreatorIlIgnoreProfile_OutputsMergedIlFilters()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            const string configJson = """
+                {
+                  "ShouldIgnoreILLinesContainingConfiguredStrings": false,
+                  "ILIgnoreLineContainingStrings": ["existing-filter"]
+                }
+                """;
+
+            try
+            {
+                await WithConfigFileAsync(configJson, async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--creator-il-ignore-profile", "buildserver-winforms", "--print-config" });
+
+                    Assert.Equal(0, exitCode);
+                    var output = sw.ToString();
+                    Assert.Contains("\"ShouldIgnoreILLinesContainingConfiguredStrings\": true", output, StringComparison.Ordinal);
+                    Assert.Contains("existing-filter", output, StringComparison.Ordinal);
+                    Assert.Contains("buildserver1_", output, StringComparison.Ordinal);
+                    Assert.Contains("// Code size ", output, StringComparison.Ordinal);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_PrintConfigFlag_WithCustomConfigPath_ReflectsCustomValues()
         {
             var tempRoot = Path.Combine(Path.GetTempPath(), "fd-print-config-custom-" + Guid.NewGuid().ToString("N"));

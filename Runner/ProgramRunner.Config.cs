@@ -341,11 +341,12 @@ namespace FolderDiffIL4DotNet
         /// Prints the effective configuration (after JSON load + environment variable overrides) to stdout as JSON.
         /// 有効な設定（JSON 読込 + 環境変数オーバーライド適用後）を JSON として標準出力に書き出します。
         /// </summary>
-        private async Task<int> PrintConfigAsync(string? configPath)
+        private async Task<int> PrintConfigAsync(string? configPath, CliOptions opts)
         {
             try
             {
                 var builder = await _configService.LoadConfigBuilderAsync(configPath);
+                ApplyCliOverrides(builder, opts);
                 Console.WriteLine(JsonSerializer.Serialize(builder, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
@@ -428,4 +429,3 @@ namespace FolderDiffIL4DotNet
         internal const string MULTIPLE_SPINNERS_MESSAGE = SpinnerThemes.MULTIPLE_SPINNERS_MESSAGE;
     }
 }
-

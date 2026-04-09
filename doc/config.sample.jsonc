@@ -8,8 +8,8 @@
 //
 // Environment variable overrides: prefix with FOLDERDIFF_ (e.g. FOLDERDIFF_MAXPARALLELISM=4).
 // 環境変数オーバーライド: FOLDERDIFF_ プレフィックスを使用（例: FOLDERDIFF_MAXPARALLELISM=4）。
-// CLI overrides: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings.
-// CLI オーバーライド: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings。
+// CLI overrides: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings, --creator-il-ignore-profile.
+// CLI オーバーライド: --threads, --no-il-cache, --skip-il, --no-timestamp-warnings, --creator-il-ignore-profile。
 // Use --print-config to display the effective configuration after all overrides.
 // --print-config ですべてのオーバーライド適用後の有効設定を表示できます。
 //
@@ -101,6 +101,8 @@
   // Strings shorter than 4 characters trigger a safety warning in both console output and reports.
   // 無視する文字列 — ShouldIgnoreILLinesContainingConfiguredStrings が true の場合のみ使用
   // 4 文字未満の文字列はコンソールとレポートに安全性警告を出力する。
+  // Maintainer CLI profile: --creator-il-ignore-profile buildserver-winforms
+  // メンテナー用 CLI プロファイル: --creator-il-ignore-profile buildserver-winforms
   "ILIgnoreLineContainingStrings": [],
 
   // --- File Extensions / ファイル拡張子 ---

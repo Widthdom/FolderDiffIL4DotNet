@@ -20,7 +20,7 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 "/old", "/new", "lbl",
                 "--no-pause", "--no-il-cache", "--skip-il",
-                "--no-timestamp-warnings", "--print-config", "--dry-run",
+                "--no-timestamp-warnings", "--creator-il-ignore-profile", "buildserver-winforms", "--print-config", "--dry-run",
                 "--coffee", "--bell", "--wizard",
                 "--log-format", "json",
             });
@@ -29,6 +29,7 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.True(opts.NoIlCache);
             Assert.True(opts.SkipIL);
             Assert.True(opts.NoTimestampWarnings);
+            Assert.Equal("buildserver-winforms", opts.CreatorIlIgnoreProfile);
             Assert.True(opts.PrintConfig);
             Assert.True(opts.DryRun);
             Assert.True(opts.Coffee);

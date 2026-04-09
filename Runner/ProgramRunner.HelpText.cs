@@ -25,6 +25,8 @@ namespace FolderDiffIL4DotNet
             "  --clear-cache               Interactive wizard to selectively delete IL cache files.\n" +
             "  --skip-il                   Skip IL comparison for .NET assemblies.\n" +
             "  --no-timestamp-warnings     Suppress timestamp-regression warnings.\n" +
+            "  --creator-il-ignore-profile <name>\n" +
+            "                              Apply a maintainer-managed IL ignore profile and enable IL string filtering.\n" +
             "  --wizard                    Interactive mode: prompts for old/new folders and report label.\n" +
             "                              Drag-and-drop friendly (auto-strips quotes, file:// URIs).\n" +
             "  --dry-run                   Enumerate files and show statistics without running comparison.\n" +
@@ -62,7 +64,7 @@ namespace FolderDiffIL4DotNet
             "  1  Unexpected internal error.\n\n" +
             "Tip:\n" +
             "  Use --print-config to display the effective configuration\n" +
-            "  (config.json + environment variable overrides) as JSON and exit.\n" +
+            "  (config.json + environment variable + supported CLI overrides) as JSON and exit.\n" +
             "  This is useful for verifying which settings are active before a run.";
     }
 }

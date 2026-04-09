@@ -17,6 +17,7 @@ namespace FolderDiffIL4DotNet.Runner
         private const string OPT_CLEAR_CACHE = "--clear-cache";
         private const string OPT_SKIP_IL = "--skip-il";
         private const string OPT_NO_TIMESTAMP_WARNINGS = "--no-timestamp-warnings";
+        private const string OPT_CREATOR_IL_IGNORE_PROFILE = "--creator-il-ignore-profile";
         private const string OPT_PRINT_CONFIG = "--print-config";
         private const string OPT_VALIDATE_CONFIG = "--validate-config";
         private const string OPT_DRY_RUN = "--dry-run";
@@ -54,13 +55,14 @@ namespace FolderDiffIL4DotNet.Runner
             int spinnerFlagCount = 0;
             string? configPath = null;
             int? threadsOverride = null;
+            string? creatorIlIgnoreProfile = null;
             string? logFormatOverride = null;
             string? outputDirectory = null;
             string? parseError = null;
 
             if (args == null)
             {
-                return new CliOptions(false, false, false, false, null, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, false, false, false, null);
+                return new CliOptions(false, false, false, false, null, null, false, false, false, false, null, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, null, null, false, false, false, null);
             }
 
             for (int i = 0; i < args.Length; i++)
@@ -125,6 +127,27 @@ namespace FolderDiffIL4DotNet.Runner
                         break;
                     case OPT_NO_TIMESTAMP_WARNINGS:
                         noTimestampWarnings = true;
+                        break;
+                    case OPT_CREATOR_IL_IGNORE_PROFILE:
+                        if (i + 1 < args.Length && !args[i + 1].StartsWith('-'))
+                        {
+                            creatorIlIgnoreProfile = args[++i];
+                            try
+                            {
+                                if (!CreatorPrivilegeIlIgnoreProfiles.IsKnownProfile(creatorIlIgnoreProfile))
+                                {
+                                    parseError ??= $"'{OPT_CREATOR_IL_IGNORE_PROFILE}' requires a known profile name. Got: '{creatorIlIgnoreProfile}'. Known profiles: {CreatorPrivilegeIlIgnoreProfiles.GetKnownProfilesDisplayText()}.";
+                                }
+                            }
+                            catch (System.InvalidOperationException ex)
+                            {
+                                parseError ??= $"Failed to load '{OPT_CREATOR_IL_IGNORE_PROFILE}' definitions: {ex.Message}";
+                            }
+                        }
+                        else
+                        {
+                            parseError ??= $"'{OPT_CREATOR_IL_IGNORE_PROFILE}' requires a profile name argument.";
+                        }
                         break;
                     case OPT_PRINT_CONFIG:
                         printConfig = true;
@@ -228,7 +251,7 @@ namespace FolderDiffIL4DotNet.Runner
 
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
-            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, openReports, openConfig, openLogs, parseError);
+            return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, creatorIlIgnoreProfile, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, openReports, openConfig, openLogs, parseError);
         }
     }
 }
