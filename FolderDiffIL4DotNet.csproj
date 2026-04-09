@@ -61,6 +61,7 @@
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_highlight.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_highlight.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_keyboard.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_keyboard.js" />
     <EmbeddedResource Include="Services\HtmlReport\js\diff_report_init.js" LogicalName="FolderDiffIL4DotNet.Services.HtmlReport.js.diff_report_init.js" />
+    <EmbeddedResource Include="Runner\creator_il_ignore_profiles.json" LogicalName="FolderDiffIL4DotNet.Runner.creator_il_ignore_profiles.json" />
   </ItemGroup>
 
   <ItemGroup>

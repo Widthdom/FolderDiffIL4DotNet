@@ -14,7 +14,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         private static CliOptions DefaultOpts() =>
             new(ShowHelp: false, ShowVersion: false, ShowBanner: false, NoPause: false,
                 ConfigPath: null, ThreadsOverride: null, NoIlCache: false, ClearCache: false,
-                SkipIL: false, NoTimestampWarnings: false, PrintConfig: false, ValidateConfig: false,
+                SkipIL: false, NoTimestampWarnings: false, Creator: false, CreatorIlIgnoreProfile: null, PrintConfig: false, ValidateConfig: false,
                 DryRun: false, Coffee: false, Beer: false, Matcha: false, Whisky: false,
                 Wine: false, Ramen: false, Sushi: false, Bell: false, Wizard: false,
                 ShowCredits: false, RandomSpinner: false, MultipleSpinnersDetected: false,
@@ -105,6 +105,36 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             Assert.Equal(originalIlCache, builder.EnableILCache);
             Assert.Equal(originalSkipIl, builder.SkipIL);
             Assert.Equal(originalTimestamp, builder.ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp);
+        }
+
+        [Fact]
+        public void Apply_CreatorIlIgnoreProfile_EnablesFilteringAndMergesStrings()
+        {
+            var builder = new ConfigSettingsBuilder
+            {
+                ShouldIgnoreILLinesContainingConfiguredStrings = false,
+                ILIgnoreLineContainingStrings = new System.Collections.Generic.List<string> { "existing-filter" }
+            };
+            var opts = DefaultOpts() with { CreatorIlIgnoreProfile = "buildserver-winforms" };
+
+            CliOverrideApplier.Apply(builder, opts);
+
+            Assert.True(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
+            Assert.Contains("existing-filter", builder.ILIgnoreLineContainingStrings);
+            Assert.Contains("buildserver1_", builder.ILIgnoreLineContainingStrings);
+            Assert.Contains("// Code size ", builder.ILIgnoreLineContainingStrings);
+        }
+
+        [Fact]
+        public void Apply_CreatorFlag_UsesDefaultProfile()
+        {
+            var builder = new ConfigSettingsBuilder();
+            var opts = DefaultOpts() with { Creator = true };
+
+            CliOverrideApplier.Apply(builder, opts);
+
+            Assert.True(builder.ShouldIgnoreILLinesContainingConfiguredStrings);
+            Assert.Contains("buildserver1_", builder.ILIgnoreLineContainingStrings);
         }
 
         [Fact]

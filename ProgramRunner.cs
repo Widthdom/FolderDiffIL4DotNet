@@ -93,7 +93,7 @@ namespace FolderDiffIL4DotNet
 
             if (opts.PrintConfig)
             {
-                return await PrintConfigAsync(opts.ConfigPath);
+                return await PrintConfigAsync(opts.ConfigPath, opts);
             }
 
             if (opts.ValidateConfig)
