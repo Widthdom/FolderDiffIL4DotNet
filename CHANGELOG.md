@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.2] - 2026-04-09
+
 #### Changed
 
 - **Creator-profile IL ignore injection for `nildiff`** — Added simple CLI option `--creator` for the common maintainer flow, plus advanced option `--creator-il-ignore-profile <name>`, backed by an embedded JSON profile catalog so maintainer-managed IL noise filters can be applied without hardcoding long string arrays into command invocations. The shipped `buildserver-winforms` profile enables `ShouldIgnoreILLinesContainingConfiguredStrings` and merges six predefined filters into `ILIgnoreLineContainingStrings`. `--print-config` now reflects supported CLI overrides as well, so this profile can be verified before a run. Affected: `Runner/CliOptions.cs`, `Runner/CliParser.cs`, `Runner/CliOverrideApplier.cs`, `Runner/CreatorPrivilegeIlIgnoreProfiles.cs`, `Runner/creator_il_ignore_profiles.json`, `Runner/ProgramRunner.HelpText.cs`, `README.md`, `PACKAGE_README.md`, `doc/config.sample.jsonc`. Tests: `CliOptionsTests` (5 new), `CliOptionsTests.Combined` (1 updated), `CliOverrideApplierTests` (2 new), `ProgramRunnerTests.HelpVersion` (1 updated), `ProgramRunnerTests.CliOverrides` (3 new), `SpinnerThemesTests` (constructor update).
@@ -1211,6 +1213,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.16.2] - 2026-04-09
 
 #### 変更
 
@@ -2415,7 +2419,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.2...HEAD
+[1.16.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.1...v1.16.2
 [1.16.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.0...v1.16.1
 [1.16.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.14.3...v1.15.0
