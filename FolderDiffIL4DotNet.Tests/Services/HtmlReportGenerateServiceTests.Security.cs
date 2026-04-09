@@ -1,6 +1,7 @@
 // HtmlReportGenerateServiceTests.Security.cs — URI scheme allowlist tests (partial)
 // HtmlReportGenerateServiceTests.Security.cs — URI スキーム許可リストテスト（パーシャル）
 
+using System.IO;
 using Xunit;
 using FolderDiffIL4DotNet.Services;
 
@@ -44,6 +45,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void IsAllowedUriScheme_Null_ReturnsFalse()
         {
             Assert.False(HtmlReportGenerateService.IsAllowedUriScheme(null!));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GenerateDiffReportHtml_EmbedsReviewedStateViaBase64Decoder()
+        {
+            var (oldDir, newDir, reportDir) = MakeDirs("reviewed-state-base64");
+            var config = CreateConfig();
+
+            _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config));
+
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            Assert.Contains("function encodeEmbeddedState", html);
+            Assert.Contains("function decodeEmbeddedState", html);
+            Assert.Contains("const __savedState__  = decodeEmbeddedState(", html);
+            Assert.DoesNotContain("const __savedState__  = {", html);
         }
     }
 }

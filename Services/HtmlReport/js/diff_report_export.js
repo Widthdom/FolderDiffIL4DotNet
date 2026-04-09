@@ -55,8 +55,9 @@
     applyFilters();
     syncTableWidths();
     // Embed state
+    var embeddedState = encodeEmbeddedState(state);
     html = html.replace('const __savedState__  = null;',
-      'const __savedState__  = ' + JSON.stringify(state) + ';');
+      'const __savedState__  = decodeEmbeddedState(' + JSON.stringify(embeddedState) + ');');
     // Update title
     html = html.replace('<title>diff_report</title>',
       '<title>' + slug + '_reviewed</title>');

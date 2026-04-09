@@ -1755,6 +1755,36 @@
     }
   }
 
+  function encodeEmbeddedState(state) {
+    var json = JSON.stringify(state);
+    var bytes = new TextEncoder().encode(json);
+    var binary = '';
+    var chunkSize = 32768;
+    for (var i = 0; i < bytes.length; i += chunkSize) {
+      var chunk = bytes.subarray(i, i + chunkSize);
+      var chars = new Array(chunk.length);
+      for (var j = 0; j < chunk.length; j++) {
+        chars[j] = String.fromCharCode(chunk[j]);
+      }
+      binary += chars.join('');
+    }
+    return btoa(binary);
+  }
+
+  function decodeEmbeddedState(encodedState) {
+    try {
+      var binary = atob(encodedState);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      var parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch(e) {
+      return null;
+    }
+  }
+
   // Completion celebration
   var __celebrationFired__ = false;
   function celebrateCompletion() {
@@ -2128,8 +2158,9 @@
     applyFilters();
     syncTableWidths();
     // Embed state
+    var embeddedState = encodeEmbeddedState(state);
     html = html.replace('const __savedState__  = null;',
-      'const __savedState__  = ' + JSON.stringify(state) + ';');
+      'const __savedState__  = decodeEmbeddedState(' + JSON.stringify(embeddedState) + ');');
     // Update title
     html = html.replace('<title>diff_report</title>',
       '<title>' + slug + '_reviewed</title>');

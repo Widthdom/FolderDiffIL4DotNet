@@ -115,6 +115,26 @@ describe('formatTs', () => {
   });
 });
 
+// ─── reviewed state Base64 helpers ───────────────────────────────────────────
+describe('embedded reviewed state helpers', () => {
+  test('round-trips UTF-8 and script-breaking text safely', () => {
+    loadScript();
+
+    const original = {
+      'chk-a': true,
+      'note-a': '</script><script>alert("xss")</script>',
+      'note-ja': '日本語メモ',
+    };
+
+    const encoded = window.encodeEmbeddedState(original);
+    const decoded = window.decodeEmbeddedState(encoded);
+
+    expect(typeof encoded).toBe('string');
+    expect(encoded).not.toContain('</script>');
+    expect(decoded).toEqual(original);
+  });
+});
+
 // ─── collectState ────────────────────────────────────────────────────────────
 describe('collectState', () => {
   test('collects checkbox and text input values by id', () => {

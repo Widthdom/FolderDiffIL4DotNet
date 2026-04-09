@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Hardened plugin strict mode pre-load hash gating and reviewed HTML state embedding** — `PluginLoader` now computes and checks the DLL SHA-256 against configured trusted hashes before `LoadFromAssemblyPath`, so strict mode no longer executes untrusted plugin bytes before verification. The reviewed HTML export now embeds saved review state via Base64 + UTF-8 decode helpers instead of raw `JSON.stringify(state)` inside an inline `<script>`, preventing notes/justifications containing `</script>` from breaking out into executable script. User workflow and config format are unchanged. Affected: `Runner/PluginLoader.cs`, `Services/HtmlReport/js/diff_report_state.js`, `Services/HtmlReport/js/diff_report_export.js`, `doc/samples/diff_report.html`, `CHANGELOG.md`. Tests: `PluginLoaderTests` (2 updated, 1 new), `HtmlReportGenerateServiceTests.Security` (1 new), `diff_report.test.js` (1 new), `diff_report_extended.test.js` (1 new).
+
 ### [1.16.2] - 2026-04-09
 
 #### Changed
@@ -1213,6 +1217,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **プラグイン strict mode の事前ハッシュゲートと reviewed HTML の状態埋め込みを強化** — `PluginLoader` が `LoadFromAssemblyPath` より前に DLL の SHA-256 を計算し、設定済み trusted hash と照合するようになったため、strict mode で検証前の未信頼プラグインバイト列が実行されなくなった。reviewed HTML のエクスポートも、保存済みレビュー状態をインライン `<script>` に生の `JSON.stringify(state)` で埋め込む方式から、Base64 + UTF-8 復号 helper 経由に変更し、Notes / Justification に `</script>` を含んでもスクリプトへブレークアウトできないようにした。ユーザーの操作手順と config 形式は変更なし。影響: `Runner/PluginLoader.cs`、`Services/HtmlReport/js/diff_report_state.js`、`Services/HtmlReport/js/diff_report_export.js`、`doc/samples/diff_report.html`、`CHANGELOG.md`。テスト: `PluginLoaderTests`（2 件更新、1 件追加）、`HtmlReportGenerateServiceTests.Security`（1 件追加）、`diff_report.test.js`（1 件追加）、`diff_report_extended.test.js`（1 件追加）。
 
 ### [1.16.2] - 2026-04-09
 
