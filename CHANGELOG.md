@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Default CLI spinner now uses a smoother 10-frame braille sequence** — Replaced the previous 6-frame default spinner pattern, which repeated one glyph and looked jerky in the inline progress display, with a standard 10-frame braille rotation so keep-alive updates read more clearly as continuous motion. Updated the documented default value and sample config commentary to match. Affected: `Models/ConfigSettings.cs`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs`, `FolderDiffIL4DotNet.Tests/Services/ProgressReportServiceTests.cs`, `README.md`, `doc/config.sample.jsonc`, `CHANGELOG.md`. Tests: `ConfigSettingsTests` (2 updated), `ProgressReportServiceTests` (1 updated).
+
 ### [1.16.3] - 2026-04-10
 
 #### Fixed
@@ -1219,6 +1223,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 変更
+
+- **既定 CLI スピナーを滑らかな 10 コマのブライユ列へ変更** — 進捗表示で 1 文字が重複していて回転がぎこちなく見えた従来の 6 コマ既定スピナーを、標準的な 10 コマのブライユ回転列へ差し替え、keep-alive 更新が連続した回転として見えやすくなった。あわせて README の既定値表記と設定サンプルの説明も同期した。影響: `Models/ConfigSettings.cs`、`FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs`、`FolderDiffIL4DotNet.Tests/Services/ProgressReportServiceTests.cs`、`README.md`、`doc/config.sample.jsonc`、`CHANGELOG.md`。テスト: `ConfigSettingsTests`（2 件更新）、`ProgressReportServiceTests`（1 件更新）。
 
 ### [1.16.3] - 2026-04-10
 
