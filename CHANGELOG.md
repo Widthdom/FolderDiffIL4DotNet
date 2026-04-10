@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.4] - 2026-04-11
+
 #### Changed
 
 - **Default CLI spinner now uses a smoother 10-frame braille sequence** — Replaced the previous 6-frame default spinner pattern, which repeated one glyph and looked jerky in the inline progress display, with a standard 10-frame braille rotation so keep-alive updates read more clearly as continuous motion. Updated the documented default value and sample config commentary to match. Affected: `Models/ConfigSettings.cs`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs`, `FolderDiffIL4DotNet.Tests/Services/ProgressReportServiceTests.cs`, `README.md`, `doc/config.sample.jsonc`, `CHANGELOG.md`. Tests: `ConfigSettingsTests` (2 updated), `ProgressReportServiceTests` (1 updated).
@@ -1223,6 +1225,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.16.4] - 2026-04-11
 
 #### 変更
 
@@ -2439,7 +2443,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.3...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.4...HEAD
+[1.16.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.3...v1.16.4
 [1.16.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.1...v1.16.2
 [1.16.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.0...v1.16.1
