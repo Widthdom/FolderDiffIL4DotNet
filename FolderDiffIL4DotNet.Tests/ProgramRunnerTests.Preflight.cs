@@ -588,6 +588,89 @@ namespace FolderDiffIL4DotNet.Tests
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void IsSameOrChildPath_SamePathWithTrailingSeparators_ReturnsTrue()
+        {
+            var rootPath = Path.Combine(Path.GetTempPath(), "fd-same-or-child-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(rootPath);
+
+            try
+            {
+                var candidatePath = rootPath + Path.DirectorySeparatorChar;
+                var parentPath = rootPath + Path.DirectorySeparatorChar;
+
+                Assert.True(RunPreflightValidator.IsSameOrChildPath(candidatePath, parentPath));
+            }
+            finally
+            {
+                TryDeleteDirectory(rootPath);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void IsSameOrChildPath_ChildPathUnderParent_ReturnsTrue()
+        {
+            var rootPath = Path.Combine(Path.GetTempPath(), "fd-same-or-child-" + Guid.NewGuid().ToString("N"));
+            var childPath = Path.Combine(rootPath, "nested", "child");
+            Directory.CreateDirectory(childPath);
+
+            try
+            {
+                var parentPath = rootPath + Path.DirectorySeparatorChar;
+                var candidatePath = childPath + Path.DirectorySeparatorChar;
+
+                Assert.True(RunPreflightValidator.IsSameOrChildPath(candidatePath, parentPath));
+            }
+            finally
+            {
+                TryDeleteDirectory(rootPath);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void IsSameOrChildPath_PrefixSibling_ReturnsFalse()
+        {
+            var rootPath = Path.Combine(Path.GetTempPath(), "fd-same-or-child-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(rootPath);
+
+            try
+            {
+                var candidatePath = rootPath + "-sibling";
+
+                Assert.False(RunPreflightValidator.IsSameOrChildPath(candidatePath, rootPath));
+            }
+            finally
+            {
+                TryDeleteDirectory(rootPath);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetExistingReportFolderNames_IgnoresFilesAndSortsCaseInsensitively()
+        {
+            var reportsRoot = Path.Combine(Path.GetTempPath(), "fd-report-folders-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(reportsRoot);
+
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(reportsRoot, "zeta"));
+                Directory.CreateDirectory(Path.Combine(reportsRoot, "Alpha"));
+                File.WriteAllText(Path.Combine(reportsRoot, "not-a-folder.txt"), "ignore me");
+
+                var result = RunPreflightValidator.GetExistingReportFolderNames(reportsRoot);
+
+                Assert.Equal(["Alpha", "zeta"], result);
+            }
+            finally
+            {
+                TryDeleteDirectory(reportsRoot);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void GetReportsFolderAbsolutePath_WithLoggerAndCustomDir_LogsWarningWhenOutsideBase()
         {
             // Arrange / 準備
