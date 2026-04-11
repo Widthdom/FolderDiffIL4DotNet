@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **Clarified human-review responsibility in README** — Added a bilingual note to `README.md` stating that the tool is a review aid, not a substitute for human release judgment, and that final sign-off should be confirmed against commit/PR diffs, source code, and built artifacts.
+
 #### Fixed
 
 - **Documentation/test-guide references were synchronized with the current codebase** — Updated `DEVELOPER_GUIDE.md` so the `ProgramRunner` partial-class layout includes `ProgramRunner.OpenFolder.cs`, and aligned maintainer-facing local test commands with the Release-configuration workflow used by CI and pre-commit checks. Updated `TESTING_GUIDE.md` so the network-share scope map no longer lists a phantom standalone `DiffExecutionContextNetworkTests` entry, the dependency-analysis coverage description now includes retry/cancellation/exception-context logging for `NuGetVulnerabilityService`, and local test commands consistently use Release configuration. Affected: `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`.
@@ -1241,6 +1245,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### ドキュメント
+
+- **README に人間レビュー責任の注意書きを追加** — `README.md` に、このツールはレビュー補助であって人間の最終的なリリース判断の代替ではないこと、最終承認はコミット/PR 差分・ソースコード・ビルド成果物と突き合わせて確認すべきことを明記する日英バイリンガルの注意書きを追加しました。
 
 #### 修正
 
