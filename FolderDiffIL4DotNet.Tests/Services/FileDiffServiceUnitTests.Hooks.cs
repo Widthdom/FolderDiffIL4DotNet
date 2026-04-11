@@ -124,7 +124,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Assert / 検証
             Assert.True(result);
             Assert.Single(fakeComparison.HashCalls);
-            Assert.Contains(logger.Messages, m => m.Contains("Plugin BeforeCompare hook failed"));
+            Assert.Contains(logger.Messages,
+                m => m.Contains("Plugin BeforeCompare hook 'FakeFileComparisonHook' failed", StringComparison.Ordinal)
+                    && m.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -149,7 +151,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             // Assert / 検証
             Assert.True(result);
-            Assert.Contains(logger.Messages, m => m.Contains("Plugin AfterCompare hook failed"));
+            Assert.Contains(logger.Messages,
+                m => m.Contains("Plugin AfterCompare hook 'FakeFileComparisonHook' failed", StringComparison.Ordinal)
+                    && m.Contains("InvalidOperationException", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_BeforeCompareHookThrowsOperationCanceledException_PropagatesCancellation()
+        {
+            // Arrange / 準備
+            var fakeComparison = new FakeFileComparisonService { HashResult = true };
+            var fakeIl = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+
+            var hook = new FakeFileComparisonHook
+            {
+                BeforeException = new OperationCanceledException("Hook canceled")
+            };
+
+            var service = CreateServiceWithHooks(fakeComparison, fakeIl, resultLists, logger, new[] { hook });
+
+            // Act / 実行
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.FilesAreEqualAsync("test.dll"));
+
+            // Assert / 検証
+            Assert.Empty(fakeComparison.HashCalls);
+            Assert.DoesNotContain(logger.Messages, m => m.Contains("Plugin BeforeCompare hook failed", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task FilesAreEqualAsync_AfterCompareHookThrowsOperationCanceledException_PropagatesCancellation()
+        {
+            // Arrange / 準備
+            var fakeComparison = new FakeFileComparisonService { HashResult = true };
+            var fakeIl = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+
+            var hook = new FakeFileComparisonHook
+            {
+                AfterException = new OperationCanceledException("AfterCompare canceled")
+            };
+
+            var service = CreateServiceWithHooks(fakeComparison, fakeIl, resultLists, logger, new[] { hook });
+
+            // Act / 実行
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.FilesAreEqualAsync("test.dll"));
+
+            // Assert / 検証
+            Assert.Single(fakeComparison.HashCalls);
+            Assert.DoesNotContain(logger.Messages, m => m.Contains("Plugin AfterCompare hook failed", StringComparison.Ordinal));
         }
 
         [Fact]

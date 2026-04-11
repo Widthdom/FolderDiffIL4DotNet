@@ -281,11 +281,15 @@ namespace FolderDiffIL4DotNet.Services
                         return result;
                     }
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
 #pragma warning disable CA1031 // Plugin hooks are best-effort / プラグインフックはベストエフォート
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Plugin BeforeCompare hook failed for '{fileRelativePath}': {ex.Message}",
+                        $"Plugin BeforeCompare hook '{hook.GetType().Name}' failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
                         shouldOutputMessageToConsole: false, ex);
                 }
 #pragma warning restore CA1031
@@ -316,11 +320,15 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     await hook.AfterCompareAsync(context, areEqual, cancellationToken);
                 }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
 #pragma warning disable CA1031 // Plugin hooks are best-effort / プラグインフックはベストエフォート
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Plugin AfterCompare hook failed for '{fileRelativePath}': {ex.Message}",
+                        $"Plugin AfterCompare hook '{hook.GetType().Name}' failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
                         shouldOutputMessageToConsole: false, ex);
                 }
 #pragma warning restore CA1031
