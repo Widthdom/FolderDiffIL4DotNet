@@ -54,16 +54,17 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
 
             var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
-            if (!File.Exists(cacheFileAbsolutePath))
-            {
-                return null;
-            }
-
             try
             {
+                PathValidator.ValidateAbsolutePathLengthOrThrow(cacheFileAbsolutePath);
+                if (!File.Exists(cacheFileAbsolutePath))
+                {
+                    return null;
+                }
+
                 return await File.ReadAllTextAsync(cacheFileAbsolutePath);
             }
-            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
             }
@@ -85,10 +86,12 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
             try
             {
+                PathValidator.ValidateAbsolutePathLengthOrThrow(cacheFileAbsolutePath);
+                PrepareCacheFileForOverwrite(cacheFileAbsolutePath);
                 await File.WriteAllTextAsync(cacheFileAbsolutePath, ilText);
                 EnforceQuota();
             }
-            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
             }
@@ -108,18 +111,19 @@ namespace FolderDiffIL4DotNet.Services.Caching
             var cacheFileAbsolutePath = BuildCacheFileAbsolutePath(cacheKey);
             try
             {
+                PathValidator.ValidateAbsolutePathLengthOrThrow(cacheFileAbsolutePath);
                 if (File.Exists(cacheFileAbsolutePath))
                 {
                     // Disk deletion on LRU eviction is best-effort; failure does not corrupt diff results, so we log a warning and continue.
                     // LRU 退避に伴うディスク削除は容量維持の best-effort 処理。失敗しても比較結果自体は壊れないため、warning のみで継続する。
-                    File.Delete(cacheFileAbsolutePath);
+                    DeleteCacheFile(cacheFileAbsolutePath);
                 }
             }
-            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction.",
+                    $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
@@ -246,10 +250,10 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             try
             {
-                file.Delete();
+                DeleteCacheFile(file.FullName);
                 return true;
             }
-            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogDeleteFailure(file.FullName, ex);
             }
@@ -265,7 +269,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to create IL cache directory '{cacheDirectoryAbsolutePath}': {exception.Message}",
+                $"Failed to create IL cache directory '{cacheDirectoryAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
@@ -278,7 +282,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}': {exception.Message}",
+                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
@@ -291,9 +295,30 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to delete cache file: {cacheFileAbsolutePath}",
+                $"Failed to delete cache file '{cacheFileAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
+        }
+
+        private static void PrepareCacheFileForOverwrite(string cacheFileAbsolutePath)
+        {
+            if (!File.Exists(cacheFileAbsolutePath))
+            {
+                return;
+            }
+
+            DeleteCacheFile(cacheFileAbsolutePath);
+        }
+
+        private static void DeleteCacheFile(string cacheFileAbsolutePath)
+        {
+            var attributes = File.GetAttributes(cacheFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(cacheFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(cacheFileAbsolutePath);
         }
     }
 }
