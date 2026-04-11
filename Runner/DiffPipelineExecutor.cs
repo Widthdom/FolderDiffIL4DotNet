@@ -222,7 +222,7 @@ namespace FolderDiffIL4DotNet.Runner
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Post-process action failed: {ex.Message}",
+                        $"Post-process action '{action.GetType().Name}' failed ({ex.GetType().Name}): {ex.Message}",
                         shouldOutputMessageToConsole: true, ex);
                 }
 #pragma warning restore CA1031
@@ -286,7 +286,7 @@ namespace FolderDiffIL4DotNet.Runner
             catch (Exception ex)
             {
                 logger.LogMessage(AppLogLevel.Warning,
-                    $"NuGet vulnerability enrichment failed: {ex.Message}",
+                    $"NuGet vulnerability enrichment failed ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
 #pragma warning restore CA1031

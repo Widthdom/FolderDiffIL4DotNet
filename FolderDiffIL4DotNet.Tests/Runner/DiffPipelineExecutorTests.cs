@@ -1,6 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Models;
+using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Runner;
+using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Tests.Helpers;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Runner
@@ -10,8 +19,31 @@ namespace FolderDiffIL4DotNet.Tests.Runner
     /// <see cref="DiffPipelineExecutor"/> のユニットテスト。
     /// </summary>
     [Trait("Category", "Unit")]
-    public sealed class DiffPipelineExecutorTests
+    public sealed class DiffPipelineExecutorTests : IDisposable
     {
+        private readonly string _tempRoot = Path.Combine(Path.GetTempPath(), $"DiffPipelineExecutorTests_{Guid.NewGuid():N}");
+
+        public DiffPipelineExecutorTests()
+        {
+            Directory.CreateDirectory(_tempRoot);
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                if (Directory.Exists(_tempRoot))
+                {
+                    Directory.Delete(_tempRoot, recursive: true);
+                }
+            }
+#pragma warning disable CA1031 // Cleanup is best-effort in tests / テストのクリーンアップはベストエフォート
+            catch
+            {
+            }
+#pragma warning restore CA1031
+        }
+
         [Fact]
         public void Constructor_NullLogger_ThrowsArgumentNullException()
         {
@@ -76,6 +108,67 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             var a = new DiffPipelineResult(true, false, false, 10, 2, 1, 3);
             var b = new DiffPipelineResult(false, false, false, 10, 2, 1, 3);
             Assert.NotEqual(a, b);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_WhenPostProcessActionThrows_LogsActionAndExceptionTypeButReturnsSuccess()
+        {
+            var logger = new TestLogger();
+            var executor = new DiffPipelineExecutor(logger);
+            string oldDir = Path.Combine(_tempRoot, "old");
+            string newDir = Path.Combine(_tempRoot, "new");
+            string reportDir = Path.Combine(_tempRoot, "reports");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+
+            var config = new ConfigSettingsBuilder().Build();
+            var plugin = new ThrowingPostProcessPlugin();
+
+            var result = await executor.ExecuteAsync(
+                oldDir,
+                newDir,
+                reportDir,
+                config,
+                appVersion: "1.2.3",
+                computerName: "test-host",
+                plugins: new[] { plugin });
+
+            Assert.Equal(0, result.AddedCount);
+            Assert.Equal(0, result.RemovedCount);
+            Assert.Equal(0, result.ModifiedCount);
+            Assert.Equal(0, result.UnchangedCount);
+
+            var warning = Assert.Single(logger.Entries, entry =>
+                entry.LogLevel == AppLogLevel.Warning
+                && entry.Message.Contains("Post-process action", StringComparison.Ordinal));
+            Assert.Contains(nameof(ThrowingPostProcessAction), warning.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(InvalidOperationException), warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
+        }
+
+        private sealed class ThrowingPostProcessPlugin : IPlugin
+        {
+            public PluginMetadata Metadata { get; } = new()
+            {
+                Id = "tests.throwing-postprocess",
+                DisplayName = "Throwing PostProcess Test Plugin",
+                Version = new Version(1, 0, 0),
+                MinHostVersion = new Version(0, 0, 0)
+            };
+
+            public void ConfigureServices(IServiceCollection services, IReadOnlyDictionary<string, JsonElement> pluginConfig)
+            {
+                services.AddSingleton<IPostProcessAction, ThrowingPostProcessAction>();
+            }
+        }
+
+        private sealed class ThrowingPostProcessAction : IPostProcessAction
+        {
+            public int Order => 0;
+
+            public Task ExecuteAsync(PostProcessContext context, CancellationToken cancellationToken)
+                => throw new InvalidOperationException("simulated post-process failure");
         }
     }
 }

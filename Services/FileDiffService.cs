@@ -392,7 +392,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
                             _logger.LogMessage(AppLogLevel.Warning,
-                                $"Semantic analysis failed for '{fileRelativePath}': {ex.Message}",
+                                $"Semantic analysis failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
                                 shouldOutputMessageToConsole: false, ex));
                         _semanticAnalysisCache.TryAdd(cacheKey, summary);
                     }
@@ -401,7 +401,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
                         _logger.LogMessage(AppLogLevel.Warning,
-                            $"Semantic analysis failed for '{fileRelativePath}': {ex.Message}",
+                            $"Semantic analysis failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
                             shouldOutputMessageToConsole: false, ex));
                 }
 
@@ -414,7 +414,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex)
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Method-level analysis failed for '{fileRelativePath}': {ex.Message}",
+                    $"Method-level analysis failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false, ex);
             }
 #pragma warning restore CA1031
