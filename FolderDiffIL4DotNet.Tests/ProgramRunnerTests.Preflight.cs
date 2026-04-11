@@ -553,15 +553,25 @@ namespace FolderDiffIL4DotNet.Tests
                     return;
                 }
 
-                string trimmedSystemDir = systemDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-                string? parentPath = Path.GetDirectoryName(trimmedSystemDir);
-                string directoryName = Path.GetFileName(trimmedSystemDir);
-                if (string.IsNullOrEmpty(parentPath) || string.IsNullOrEmpty(directoryName))
+                string windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                if (string.IsNullOrEmpty(windowsDir))
                 {
                     return;
                 }
 
-                safePath = Path.Combine(parentPath, directoryName + "-sibling");
+                string trimmedSystemDir = systemDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string trimmedWindowsDir = windowsDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string? windowsParentPath = Path.GetDirectoryName(trimmedWindowsDir);
+                string windowsDirectoryName = Path.GetFileName(trimmedWindowsDir);
+                string systemDirectoryName = Path.GetFileName(trimmedSystemDir);
+                if (string.IsNullOrEmpty(windowsParentPath)
+                    || string.IsNullOrEmpty(windowsDirectoryName)
+                    || string.IsNullOrEmpty(systemDirectoryName))
+                {
+                    return;
+                }
+
+                safePath = Path.Combine(windowsParentPath, windowsDirectoryName + "-sibling", systemDirectoryName);
             }
             else
             {
