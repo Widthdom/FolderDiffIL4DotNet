@@ -345,7 +345,8 @@ namespace FolderDiffIL4DotNet
                 or FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException)
             {
-                Console.Error.WriteLine(ex.Message);
+                Console.Error.WriteLine(
+                    $"Configuration validation failed for '{configPath ?? "config.json"}' ({ex.GetType().Name}): {ex.Message}");
                 return (int)ProgramExitCode.ConfigurationError;
             }
         }
@@ -367,7 +368,8 @@ namespace FolderDiffIL4DotNet
                 or FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException)
             {
-                Console.Error.WriteLine(ex.Message);
+                Console.Error.WriteLine(
+                    $"Failed to print effective configuration for '{configPath ?? "config.json"}' ({ex.GetType().Name}): {ex.Message}");
                 return (int)ProgramExitCode.ConfigurationError;
             }
         }

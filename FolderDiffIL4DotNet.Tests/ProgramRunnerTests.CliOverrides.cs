@@ -332,7 +332,9 @@ namespace FolderDiffIL4DotNet.Tests
                 var exitCode = await runner.RunAsync(["--print-config", "--config", "bad\0config.json"]);
 
                 Assert.Equal(3, exitCode);
-                Assert.NotEmpty(errorWriter.ToString());
+                var errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to print effective configuration", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("bad", errorOutput, StringComparison.Ordinal);
                 Assert.Empty(logger.Messages);
             }
             finally
@@ -355,7 +357,9 @@ namespace FolderDiffIL4DotNet.Tests
                 var exitCode = await runner.RunAsync(["--validate-config", "--config", "bad\0config.json"]);
 
                 Assert.Equal(3, exitCode);
-                Assert.NotEmpty(errorWriter.ToString());
+                var errorOutput = errorWriter.ToString();
+                Assert.Contains("Configuration validation failed", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("bad", errorOutput, StringComparison.Ordinal);
                 Assert.Empty(logger.Messages);
             }
             finally
