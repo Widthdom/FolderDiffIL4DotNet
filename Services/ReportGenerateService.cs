@@ -103,31 +103,16 @@ namespace FolderDiffIL4DotNet.Services
                     context.IlCache);
                 reportGenerated = true;
             }
-            catch (ArgumentException)
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
-                LogReportOutputFailure(diffReportAbsolutePath);
-                throw;
-            }
-            catch (IOException)
-            {
-                LogReportOutputFailure(diffReportAbsolutePath);
-                throw;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                LogReportOutputFailure(diffReportAbsolutePath);
-                throw;
-            }
-            catch (NotSupportedException)
-            {
-                LogReportOutputFailure(diffReportAbsolutePath);
+                LogReportOutputFailure(diffReportAbsolutePath, ex);
                 throw;
             }
             finally
             {
-                TrySetReportReadOnly(diffReportAbsolutePath);
                 if (reportGenerated)
                 {
+                    TrySetReportReadOnly(diffReportAbsolutePath);
                     _logger.LogMessage(AppLogLevel.Info, LOG_REPORT_GENERATION_COMPLETED, shouldOutputMessageToConsole: false);
                 }
             }
@@ -150,7 +135,7 @@ namespace FolderDiffIL4DotNet.Services
             ILCache? ilCache)
         {
             PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
-            File.Delete(diffReportAbsolutePath);
+            PrepareOutputPathForOverwrite(diffReportAbsolutePath);
 
             using var streamWriter = new StreamWriter(diffReportAbsolutePath);
             WriteReportSections(
@@ -224,8 +209,27 @@ namespace FolderDiffIL4DotNet.Services
                 new WarningsSectionWriter(),
             };
 
-        private void LogReportOutputFailure(string diffReportAbsolutePath)
-            => _logger.LogMessage(AppLogLevel.Error, $"Failed to output report to '{diffReportAbsolutePath}'", shouldOutputMessageToConsole: true);
+        private void LogReportOutputFailure(string diffReportAbsolutePath, Exception exception)
+            => _logger.LogMessage(AppLogLevel.Error,
+                $"Failed to output report to '{diffReportAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
+                shouldOutputMessageToConsole: true,
+                exception);
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
+        }
 
         private void TrySetReportReadOnly(string diffReportAbsolutePath)
         {
@@ -235,13 +239,16 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogReportProtectionWarning(ex);
+                LogReportProtectionWarning(diffReportAbsolutePath, ex);
             }
         }
 
-        private void LogReportProtectionWarning(Exception ex)
+        private void LogReportProtectionWarning(string diffReportAbsolutePath, Exception ex)
         {
-            _logger.LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+            _logger.LogMessage(AppLogLevel.Warning,
+                $"Failed to mark report as read-only: '{diffReportAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                shouldOutputMessageToConsole: true,
+                ex);
         }
 
         // ── Private static helpers used by section writers ──────────────────────

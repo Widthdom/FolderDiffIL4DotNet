@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Read-only report artifacts no longer block reruns, and output-failure logs now keep actionable context** — Re-generated `diff_report.md`, `audit_log.json`, `sbom.cdx.json`, `sbom.spdx.json`, and `*_IL.txt` files now clear a previous read-only attribute before overwrite, so rerunning the tool against the same report directory no longer fails on platforms that enforce read-only output protection. `ReportGenerateService` also now avoids emitting a misleading follow-up warning when report creation fails before the file exists, while `ReportGenerateService` and `ILTextOutputService` error logs now retain the concrete exception type plus output-path context for faster diagnosis. Affected: `Services/ReportGenerateService.cs`, `Services/AuditLogGenerateService.cs`, `Services/SbomGenerateService.cs`, `Services/ILOutput/ILTextOutputService.cs`. Tests: `ILOutputServiceTests` (2 new: `WriteFullIlTextsAsync_WhenExistingOutputsAreReadOnly_OverwritesThem`, `WriteFullIlTextsAsync_WhenWriteFails_LogsFileContextAndRethrows`), `ReportGenerateServiceTests` (2 new: `GenerateDiffReport_WhenExistingReportIsReadOnly_OverwritesIt`, `GenerateDiffReport_WhenWriteFails_DoesNotEmitReadOnlyWarningForMissingOutput`), `AuditLogGenerateServiceTests` (1 new: `GenerateAuditLog_WhenExistingAuditLogIsReadOnly_OverwritesIt`), `SbomGenerateServiceTests` (1 new: `GenerateSbom_WhenExistingFileIsReadOnly_OverwritesIt`).
+
 ### [1.16.6] - 2026-04-11
 
 #### Documentation
@@ -1263,6 +1267,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **読み取り専用化された出力物が再実行を妨げないようにし、出力失敗ログの文脈も強化** — `diff_report.md`、`audit_log.json`、`sbom.cdx.json`、`sbom.spdx.json`、`*_IL.txt` を再生成する際、既存ファイルが読み取り専用でも上書き前に属性を解除して削除するようにしたため、同じレポートフォルダへの再実行が出力保護によって失敗しなくなりました。あわせて `ReportGenerateService` は出力ファイル未生成の失敗時に誤解を招く追加 warning を出さないようにし、`ReportGenerateService` と `ILTextOutputService` の error ログは例外型と対象パスを保持するように改善しました。対象: `Services/ReportGenerateService.cs`, `Services/AuditLogGenerateService.cs`, `Services/SbomGenerateService.cs`, `Services/ILOutput/ILTextOutputService.cs`。テスト: `ILOutputServiceTests`（2件追加: `WriteFullIlTextsAsync_WhenExistingOutputsAreReadOnly_OverwritesThem`, `WriteFullIlTextsAsync_WhenWriteFails_LogsFileContextAndRethrows`）、`ReportGenerateServiceTests`（2件追加: `GenerateDiffReport_WhenExistingReportIsReadOnly_OverwritesIt`, `GenerateDiffReport_WhenWriteFails_DoesNotEmitReadOnlyWarningForMissingOutput`）、`AuditLogGenerateServiceTests`（1件追加: `GenerateAuditLog_WhenExistingAuditLogIsReadOnly_OverwritesIt`）、`SbomGenerateServiceTests`（1件追加: `GenerateSbom_WhenExistingFileIsReadOnly_OverwritesIt`）。
 
 ### [1.16.6] - 2026-04-11
 

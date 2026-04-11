@@ -65,8 +65,9 @@ namespace FolderDiffIL4DotNet.Services
                     : SerializeCycloneDx(context);
 
                 PathValidator.ValidateAbsolutePathLengthOrThrow(sbomPath);
+                PrepareOutputPathForOverwrite(sbomPath);
                 File.WriteAllText(sbomPath, json, Encoding.UTF8);
-                FileSystemUtility.TrySetReadOnly(sbomPath);
+                TrySetReadOnly(sbomPath, format);
 
                 _logger.LogMessage(AppLogLevel.Info,
                     $"SBOM generated ({format}): {sbomPath}",
@@ -76,6 +77,36 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _logger.LogMessage(AppLogLevel.Warning,
                     $"Failed to write SBOM to '{sbomPath}': {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
+            }
+        }
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
+        }
+
+        private void TrySetReadOnly(string sbomPath, Models.SbomFormat format)
+        {
+            try
+            {
+                FileSystemUtility.TrySetReadOnly(sbomPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to mark SBOM ({format}) as read-only: '{sbomPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }

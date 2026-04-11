@@ -80,8 +80,9 @@ namespace FolderDiffIL4DotNet.Services
 
                 var json = JsonSerializer.Serialize(record, jsonOptions);
                 PathValidator.ValidateAbsolutePathLengthOrThrow(auditLogPath);
+                PrepareOutputPathForOverwrite(auditLogPath);
                 File.WriteAllText(auditLogPath, json, Encoding.UTF8);
-                FileSystemUtility.TrySetReadOnly(auditLogPath);
+                TrySetReadOnly(auditLogPath);
 
                 _logger.LogMessage(AppLogLevel.Info,
                     $"Audit log generated: {auditLogPath}",
@@ -91,6 +92,36 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _logger.LogMessage(AppLogLevel.Warning,
                     $"Failed to write audit log to '{auditLogPath}': {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
+            }
+        }
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
+        }
+
+        private void TrySetReadOnly(string auditLogPath)
+        {
+            try
+            {
+                FileSystemUtility.TrySetReadOnly(auditLogPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to mark audit log as read-only: '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
