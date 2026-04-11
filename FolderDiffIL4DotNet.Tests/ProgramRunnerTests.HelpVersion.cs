@@ -2,6 +2,8 @@
 // ProgramRunnerTests.HelpVersion.cs — ヘルプ・バージョン・設定フラグの早期終了テスト（パーシャル 2/4）
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -472,7 +474,8 @@ namespace FolderDiffIL4DotNet.Tests
         public async Task RunAsync_OpenReportsFlag_ExitsZeroAndPrintsPath()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var runner = new ProgramRunner(logger, new ConfigService());
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
             Console.SetOut(sw);
@@ -485,6 +488,9 @@ namespace FolderDiffIL4DotNet.Tests
                 var output = sw.ToString();
                 Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
                 Assert.Contains("Reports", output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.True(startedProcesses[0].UseShellExecute);
+                Assert.Contains("Reports", startedProcesses[0].FileName, StringComparison.Ordinal);
                 // Logger should NOT have been initialized / ロガーは初期化されていないはず
                 Assert.Empty(logger.Messages);
             }
@@ -498,7 +504,8 @@ namespace FolderDiffIL4DotNet.Tests
         public async Task RunAsync_OpenConfigFlag_ExitsZeroAndPrintsPath()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var runner = new ProgramRunner(logger, new ConfigService());
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
             Console.SetOut(sw);
@@ -510,6 +517,8 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString();
                 Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.True(startedProcesses[0].UseShellExecute);
                 // Logger should NOT have been initialized / ロガーは初期化されていないはず
                 Assert.Empty(logger.Messages);
             }
@@ -523,7 +532,8 @@ namespace FolderDiffIL4DotNet.Tests
         public async Task RunAsync_OpenReportsFlag_WhenOutputTargetsExistingFile_ReturnsExecutionFailed()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var runner = new ProgramRunner(logger, new ConfigService());
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
             var originalError = Console.Error;
             using var errorWriter = new System.IO.StringWriter();
             string tempDir = Path.Combine(Path.GetTempPath(), $"fd-open-folder-{Guid.NewGuid():N}");
@@ -541,6 +551,7 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
                 Assert.Contains(outputFile, errorOutput, StringComparison.Ordinal);
                 Assert.Contains("IOException", errorOutput, StringComparison.Ordinal);
+                Assert.Empty(startedProcesses);
                 Assert.Empty(logger.Messages);
             }
             finally
@@ -561,7 +572,8 @@ namespace FolderDiffIL4DotNet.Tests
         public async Task RunAsync_OpenLogsFlag_ExitsZeroAndPrintsPath()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var runner = new ProgramRunner(logger, new ConfigService());
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
             Console.SetOut(sw);
@@ -574,6 +586,9 @@ namespace FolderDiffIL4DotNet.Tests
                 var output = sw.ToString();
                 Assert.Contains("Opening folder:", output, StringComparison.Ordinal);
                 Assert.Contains("Logs", output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.True(startedProcesses[0].UseShellExecute);
+                Assert.Contains("Logs", startedProcesses[0].FileName, StringComparison.Ordinal);
                 // Logger should NOT have been initialized / ロガーは初期化されていないはず
                 Assert.Empty(logger.Messages);
             }
@@ -588,7 +603,8 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-reports-" + Guid.NewGuid().ToString("N"));
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var runner = new ProgramRunner(logger, new ConfigService());
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
             Console.SetOut(sw);
@@ -602,6 +618,8 @@ namespace FolderDiffIL4DotNet.Tests
                 // Should print the custom path, not the default Reports/ path
                 // デフォルトの Reports/ パスではなく、カスタムパスが出力されるべき
                 Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
             }
             finally
             {
@@ -617,7 +635,8 @@ namespace FolderDiffIL4DotNet.Tests
             Directory.CreateDirectory(tempDir);
             var configPath = Path.Combine(tempDir, "config.json");
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var runner = new ProgramRunner(logger, new ConfigService());
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
             Console.SetOut(sw);
@@ -631,6 +650,8 @@ namespace FolderDiffIL4DotNet.Tests
                 // Should open the parent directory of the config file
                 // config ファイルの親ディレクトリを開くべき
                 Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
             }
             finally
             {
@@ -645,7 +666,8 @@ namespace FolderDiffIL4DotNet.Tests
             var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-config-rel-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var runner = new ProgramRunner(logger, new ConfigService());
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
             var origOut = Console.Out;
             var originalCurrentDirectory = Environment.CurrentDirectory;
             using var sw = new System.IO.StringWriter();
@@ -660,6 +682,8 @@ namespace FolderDiffIL4DotNet.Tests
                 var output = sw.ToString();
                 Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
                 Assert.DoesNotContain(Path.Combine(tempDir, "custom.json"), output, StringComparison.Ordinal);
+                Assert.Single(startedProcesses);
+                Assert.True(AreEquivalentDirectoryPaths(Path.GetFullPath(tempDir), startedProcesses[0].FileName));
             }
             finally
             {
@@ -692,6 +716,16 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 Console.SetOut(origOut);
             }
+        }
+
+        private static ProgramRunner CreateRunnerWithCapturedFolderOpens(TestLogger logger, List<ProcessStartInfo> startedProcesses)
+            => new(logger, new ConfigService(), startedProcesses.Add);
+
+        private static bool AreEquivalentDirectoryPaths(string expectedPath, string actualPath)
+        {
+            string normalizedExpected = Path.GetFullPath(expectedPath).Replace("/private/var/", "/var/", StringComparison.Ordinal);
+            string normalizedActual = Path.GetFullPath(actualPath).Replace("/private/var/", "/var/", StringComparison.Ordinal);
+            return string.Equals(normalizedExpected, normalizedActual, StringComparison.Ordinal);
         }
 
         // -----------------------------------------------------------------------

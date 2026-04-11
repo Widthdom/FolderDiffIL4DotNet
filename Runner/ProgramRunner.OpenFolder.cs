@@ -67,7 +67,7 @@ namespace FolderDiffIL4DotNet
                 }
 
                 Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_OPENING_FOLDER, folderPath));
-                Process.Start(new ProcessStartInfo
+                _openFolderAction(new ProcessStartInfo
                 {
                     FileName = folderPath,
                     UseShellExecute = true,
