@@ -30,6 +30,8 @@ That means functionally identical assemblies can still be judged equal even when
 - **Built for reviewers**: outputs are designed for release checks, not just raw diffs
 - **Audit-friendly by default**: generated artifacts are structured for traceability and retention
 
+> **Review responsibility:** This tool reduces review noise, but it does not guarantee zero false negatives and must not replace human release judgment. Before shipping, a human reviewer should confirm the final decision against the relevant commit/PR diff, source code, and built artifacts. Treat `ILMatch`/`Unchanged` results and a clean report as review aids, not as the sole basis for release, security, legal, or compliance approval.
+
 Developer-focused details (architecture, CI, tests, implementation cautions):
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)
 
@@ -818,6 +820,8 @@ For developer-focused details (architecture, exception handling, test setup, CI/
 - **ノイズではなく本質を見る**: ビルドメタデータ由来の誤検知を抑える
 - **レビュー前提で設計**: 単なる差分一覧ではなく、リリース確認に向いた出力
 - **監査しやすい**: 生成物が追跡性と保管を前提に構造化されている
+
+> **レビュー責任について:** このツールはレビュー時のノイズを減らしますが、偽陰性がゼロであることを保証するものではなく、人間の最終的なリリース判断を置き換えるものでもありません。出荷前には、担当者が関連するコミット/PR 差分、ソースコード、ビルド成果物を必ず確認してください。`ILMatch` / `Unchanged` 判定や「問題なし」に見えるレポートは、最終承認そのものではなく、あくまでレビュー補助として扱ってください。
 
 開発者向けの詳細（設計、CI、テスト、実装上の注意点）は以下に分離しました。
 - [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md)

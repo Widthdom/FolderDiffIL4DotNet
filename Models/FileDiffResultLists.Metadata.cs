@@ -70,7 +70,7 @@ namespace FolderDiffIL4DotNet.Models
         /// Warnings for Modified files where the new file's timestamp is older than the old file's.
         /// Modified と判定されたファイルのうち、new 側の更新日時が old 側より古いものの警告一覧。
         /// </summary>
-        public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, FileTimestampRegressionWarning> NewFileTimestampOlderThanOldWarnings { get; } = new ConcurrentDictionary<string, FileTimestampRegressionWarning>(s_relativePathKeyComparer);
 
         /// <summary>
         /// Returns <see langword="true"/> when at least one modified file has a newer-side timestamp older than the older-side.

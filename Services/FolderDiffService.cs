@@ -50,6 +50,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly ILoggerService _logger;
         private readonly IFileSystemService _fileSystem;
         private readonly IFolderDiffExecutionStrategy _executionStrategy;
+        private readonly StringComparer _pathComparer;
 
         /// <summary>
         /// Initializes a new instance of <see cref="FolderDiffService"/> with default file-system and execution-strategy implementations.
@@ -119,6 +120,7 @@ namespace FolderDiffIL4DotNet.Services
             _fileDiffService = fileDiffService;
             _fileSystem = fileSystem;
             _executionStrategy = executionStrategy ?? new FolderDiffExecutionStrategy(config, executionContext, fileDiffResultLists, fileSystem);
+            _pathComparer = DetermineRelativePathComparer(_oldFolderAbsolutePath, _newFolderAbsolutePath);
         }
 
         /// <summary>
@@ -162,7 +164,7 @@ namespace FolderDiffIL4DotNet.Services
 
                 CreateIlOutputDirectoriesIfNeeded();
 
-                var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(_fileDiffResultLists.NewFilesAbsolutePath, StringComparer.OrdinalIgnoreCase);
+                var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(_fileDiffResultLists.NewFilesAbsolutePath, _pathComparer);
                 int processedFileCount = 0;
                 if (maxParallel <= 1)
                 {
@@ -213,6 +215,64 @@ namespace FolderDiffIL4DotNet.Services
                 $"An unexpected error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.",
                 shouldOutputMessageToConsole: true,
                 exception);
+        }
+
+        private static StringComparer DetermineRelativePathComparer(string oldFolderAbsolutePath, string newFolderAbsolutePath)
+        {
+            return IsCaseInsensitiveDirectory(oldFolderAbsolutePath) && IsCaseInsensitiveDirectory(newFolderAbsolutePath)
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal;
+        }
+
+        private static bool IsCaseInsensitiveDirectory(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return true;
+            }
+
+            try
+            {
+                string fullPath = Path.GetFullPath(directoryPath);
+                if (!Directory.Exists(fullPath))
+                {
+                    return OperatingSystem.IsMacOS();
+                }
+
+                string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string? parentPath = Path.GetDirectoryName(trimmedPath);
+                string directoryName = Path.GetFileName(trimmedPath);
+                string alternateName = ToggleAsciiCase(directoryName);
+                if (string.IsNullOrEmpty(parentPath) || alternateName == directoryName)
+                {
+                    return OperatingSystem.IsMacOS();
+                }
+
+                return Directory.Exists(Path.Combine(parentPath, alternateName));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                return OperatingSystem.IsMacOS();
+            }
+        }
+
+        private static string ToggleAsciiCase(string value)
+        {
+            for (int i = 0; i < value.Length; i++)
+            {
+                char ch = value[i];
+                if (ch is >= 'a' and <= 'z')
+                {
+                    return value[..i] + char.ToUpperInvariant(ch) + value[(i + 1)..];
+                }
+
+                if (ch is >= 'A' and <= 'Z')
+                {
+                    return value[..i] + char.ToLowerInvariant(ch) + value[(i + 1)..];
+                }
+            }
+
+            return value;
         }
 
         /// <summary>

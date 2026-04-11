@@ -9,6 +9,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **Clarified human-review responsibility in README** — Added a bilingual note to `README.md` stating that the tool is a review aid, not a substitute for human release judgment, and that final sign-off should be confirmed against commit/PR diffs, source code, and built artifacts.
+
+#### Fixed
+
+- **Documentation/test-guide references were synchronized with the current codebase** — Updated `DEVELOPER_GUIDE.md` so the `ProgramRunner` partial-class layout includes `ProgramRunner.OpenFolder.cs`, and aligned maintainer-facing local test commands with the Release-configuration workflow used by CI and pre-commit checks. Updated `TESTING_GUIDE.md` so the network-share scope map no longer lists a phantom standalone `DiffExecutionContextNetworkTests` entry, the dependency-analysis coverage description now includes retry/cancellation/exception-context logging for `NuGetVulnerabilityService`, and local test commands consistently use Release configuration. Affected: `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`.
+
+- **NuGet vulnerability loading now retries cleanly after transient failures and preserves cancellation** — `NuGetVulnerabilityService` no longer leaves an empty cache behind when the vulnerability index fetch fails, so a later call can retry and recover instead of staying stuck in a permanent "no data" state. `OperationCanceledException` is now rethrown instead of being swallowed by the best-effort catch-all, and warning logs now include the concrete exception type for both top-level failures and per-page download failures. `PluginLoader` failure logs now also include the exception type to improve diagnosis of invalid or broken plugin assemblies. Affected: `Services/NuGetVulnerabilityService.cs`, `Runner/PluginLoader.cs`. Tests: `NuGetVulnerabilityServiceTests` (3 new: `CheckVulnerabilitiesAsync_WhenLoadFails_AllowsRetryOnNextCall`, `CheckVulnerabilitiesAsync_WhenCanceled_ThrowsOperationCanceledException`, `CheckVulnerabilitiesAsync_WhenPageLoadFails_LogsWarningWithExceptionTypeAndContinues`), `PluginLoaderTests` (1 updated: `LoadPlugins_InvalidDll_LogsWarningWithExceptionTypeAndReturnsEmptyList`). Test count: 1688 (+3).
+
+- **Cancellation now propagates through best-effort plugin hooks and per-page NuGet vulnerability loading** — `FileDiffService` no longer treats `OperationCanceledException` from `IFileComparisonHook.BeforeCompareAsync` / `AfterCompareAsync` as a recoverable warning, so cancellation requested by the caller or a cooperative hook now stops the file-diff flow immediately instead of being silently downgraded. Hook failure warnings now include both the hook type and exception type for easier diagnosis. `NuGetVulnerabilityService` also rethrows cancellation when an individual vulnerability page download is canceled, instead of swallowing it inside the per-page best-effort loop. Affected: `Services/FileDiffService.cs`, `Services/NuGetVulnerabilityService.cs`. Tests: `FileDiffServiceUnitTests.Hooks` (2 new: `FilesAreEqualAsync_BeforeCompareHookThrowsOperationCanceledException_PropagatesCancellation`, `FilesAreEqualAsync_AfterCompareHookThrowsOperationCanceledException_PropagatesCancellation`, 2 updated log assertions), `NuGetVulnerabilityServiceTests` (1 new: `CheckVulnerabilitiesAsync_WhenPageLoadIsCanceled_ThrowsOperationCanceledException`).
+
+- **Path matching now respects file-system case sensitivity during folder diffing** — Relative-path union counting, remaining-new-file tracking, and ignored/timestamp-warning keying no longer collapse casing-only differences on case-sensitive file systems. Existing directories are probed to choose case-sensitive vs case-insensitive matching for the current run, preventing `Foo.dll` and `foo.dll` from being merged incorrectly on Linux or case-sensitive volumes. Affected: `Services/FolderDiffExecutionStrategy.cs`, `Services/FolderDiffService.cs`, `Models/FileDiffResultLists.ComparisonResults.cs`, `Models/FileDiffResultLists.Metadata.cs`. Tests: `FolderDiffExecutionStrategyTests` (1 new), `FolderDiffServiceTests` (1 new), `FileDiffResultListsTests` (1 updated).
+
+- **`--open-config` now resolves relative config paths before opening the parent folder** — The early-exit folder-open command now derives the directory from `Path.GetFullPath(configPath)` first, so `--open-config --config custom.json` opens the current working directory instead of creating/opening a `custom.json/` folder. Affected: `Runner/ProgramRunner.OpenFolder.cs`. Tests: `ProgramRunnerTests.HelpVersion.cs` (1 new).
+
+- **Output-directory guardrails now require a real path boundary match** — Warnings for "outside app base" and "system directory" checks no longer rely on raw prefix matching. Sibling paths such as `<app-base>-sibling` or `/etc2/...` are no longer misclassified as inside the application base or a protected system directory. Affected: `Runner/RunPreflightValidator.cs`. Tests: `ProgramRunnerTests.Preflight.cs` (2 new).
+
+- **Wizard drag-and-drop path normalization now preserves file-URI authorities** — `NormalizeDragDropPath()` no longer turns `file://server/share` into the relative path `server/share`. Authority-bearing file URIs are now normalized to UNC-style paths (`//server/share`), while `file://localhost/...` continues to resolve to a local absolute path. Affected: `Runner/ProgramRunner.Wizard.cs`. Tests: `ProgramRunnerTests.Wizard.cs` (1 updated, 1 new).
+
 ### [1.16.4] - 2026-04-11
 
 #### Changed
@@ -1225,6 +1245,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### ドキュメント
+
+- **README に人間レビュー責任の注意書きを追加** — `README.md` に、このツールはレビュー補助であって人間の最終的なリリース判断の代替ではないこと、最終承認はコミット/PR 差分・ソースコード・ビルド成果物と突き合わせて確認すべきことを明記する日英バイリンガルの注意書きを追加しました。
+
+#### 修正
+
+- **ドキュメント / テストガイドの参照先を現行コードベースへ同期** — `DEVELOPER_GUIDE.md` の `ProgramRunner` partial class 構成に `ProgramRunner.OpenFolder.cs` を追加し、メンテナー向けローカルテストコマンドを CI とコミット前チェックで実際に使っている Release 構成へそろえました。`TESTING_GUIDE.md` では、ネットワーク共有スコープ表から実在しない独立エントリ扱いだった `DiffExecutionContextNetworkTests` を外し、`NuGetVulnerabilityService` の再試行・キャンセル伝播・例外型付き警告ログのカバレッジ説明を反映し、各ローカルテストコマンドも Release 構成へ統一しました。対象: `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。
+
+- **NuGet 脆弱性ロードが一時失敗後にも再試行可能になり、キャンセルも保持** — `NuGetVulnerabilityService` は脆弱性インデックス取得失敗時に空キャッシュを残さなくなり、後続呼び出しで再試行・復旧できるようになりました。これまでは一度失敗すると「データなし」状態に固定されていました。`OperationCanceledException` もベストエフォートの catch-all で握りつぶさず再スローするようにし、トップレベル失敗・ページ単位失敗の両方の警告ログに具体的な例外型を含めました。あわせて `PluginLoader` の失敗ログにも例外型を含め、破損または無効なプラグイン DLL の原因追跡を容易にしました。対象: `Services/NuGetVulnerabilityService.cs`, `Runner/PluginLoader.cs`。テスト: `NuGetVulnerabilityServiceTests`（3件追加: `CheckVulnerabilitiesAsync_WhenLoadFails_AllowsRetryOnNextCall`, `CheckVulnerabilitiesAsync_WhenCanceled_ThrowsOperationCanceledException`, `CheckVulnerabilitiesAsync_WhenPageLoadFails_LogsWarningWithExceptionTypeAndContinues`）, `PluginLoaderTests`（1件更新: `LoadPlugins_InvalidDll_LogsWarningWithExceptionTypeAndReturnsEmptyList`）。テスト件数: 1688（+3）。
+
+- **ベストエフォートのプラグインフックと NuGet 脆弱性ページ読込でもキャンセルを正しく伝播** — `FileDiffService` は `IFileComparisonHook.BeforeCompareAsync` / `AfterCompareAsync` からの `OperationCanceledException` を recoverable な Warning として握りつぶさず、そのまま上位へ伝播するようになりました。これにより、呼び出し元や協調的なフックが要求したキャンセルでファイル差分処理を即時停止できます。あわせてフック失敗ログにはフック型名と例外型名も含め、診断しやすくしました。`NuGetVulnerabilityService` でも、個別の脆弱性ページ取得がキャンセルされた場合はページ単位のベストエフォートループ内で握りつぶさず再スローするよう修正しています。対象: `Services/FileDiffService.cs`, `Services/NuGetVulnerabilityService.cs`。テスト: `FileDiffServiceUnitTests.Hooks`（2件追加: `FilesAreEqualAsync_BeforeCompareHookThrowsOperationCanceledException_PropagatesCancellation`, `FilesAreEqualAsync_AfterCompareHookThrowsOperationCanceledException_PropagatesCancellation`、ログアサーション2件更新）, `NuGetVulnerabilityServiceTests`（1件追加: `CheckVulnerabilitiesAsync_WhenPageLoadIsCanceled_ThrowsOperationCanceledException`）。
+
+- **フォルダ差分のパスマッチングがファイルシステムの大小文字規則に追従** — 相対パスの和集合件数計算、new 側未処理集合の追跡、Ignored/タイムスタンプ警告のキー管理で、大文字小文字だけが異なるパスを case-sensitive なファイルシステム上で誤って統合しないように修正しました。実行時に既存ディレクトリをプローブして、その比較実行に対して case-sensitive / case-insensitive のどちらで扱うべきかを決定し、Linux や case-sensitive ボリュームで `Foo.dll` と `foo.dll` が誤統合される問題を防ぎます。対象: `Services/FolderDiffExecutionStrategy.cs`, `Services/FolderDiffService.cs`, `Models/FileDiffResultLists.ComparisonResults.cs`, `Models/FileDiffResultLists.Metadata.cs`。テスト: `FolderDiffExecutionStrategyTests`（1件追加）, `FolderDiffServiceTests`（1件追加）, `FileDiffResultListsTests`（1件更新）。
+
+- **`--open-config` が相対 config パスを正しく絶対化してから親フォルダを開くよう修正** — 早期終了のフォルダ開放コマンドが先に `Path.GetFullPath(configPath)` を解決してから親ディレクトリを求めるようになり、`--open-config --config custom.json` が `custom.json/` フォルダを誤って作成・開くのではなく、現在の作業ディレクトリを開くようになりました。対象: `Runner/ProgramRunner.OpenFolder.cs`。テスト: `ProgramRunnerTests.HelpVersion.cs`（1件追加）。
+
+- **出力先ガードレールの判定を実際のパス境界ベースへ修正** — 「アプリベース外」と「システムディレクトリ配下」の警告が単純なプレフィックス一致に依存しないようにしました。これにより `<app-base>-sibling` や `/etc2/...` のような兄弟パスが、アプリベース配下や保護対象のシステムディレクトリ配下だと誤判定されなくなります。対象: `Runner/RunPreflightValidator.cs`。テスト: `ProgramRunnerTests.Preflight.cs`（2件追加）。
+
+- **ウィザードのドラッグ＆ドロップ正規化が file URI の authority を保持するよう修正** — `NormalizeDragDropPath()` が `file://server/share` を相対パス `server/share` へ崩さないようにしました。authority を持つ file URI は `//server/share` の UNC 風パスとして正規化し、`file://localhost/...` は従来どおりローカル絶対パスへ解決します。対象: `Runner/ProgramRunner.Wizard.cs`。テスト: `ProgramRunnerTests.Wizard.cs`（1件更新、1件追加）。
 
 ### [1.16.4] - 2026-04-11
 

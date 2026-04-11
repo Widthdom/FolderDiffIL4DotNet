@@ -483,6 +483,19 @@ namespace FolderDiffIL4DotNet.Tests
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_SiblingDirectory_LogsWarning()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var appBase = Path.GetFullPath(AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var siblingPath = appBase + "-sibling";
+
+            RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, siblingPath);
+
+            Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory"));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void WarnIfSystemDirectory_SystemPath_LogsWarning()
         {
             // Arrange / 準備
@@ -521,6 +534,54 @@ namespace FolderDiffIL4DotNet.Tests
             RunPreflightValidator.WarnIfSystemDirectory(logger, safePath);
 
             // Assert / 検証
+            Assert.Empty(logger.Messages);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_PrefixMatchOnly_NoWarning()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            string systemDir;
+            string safePath;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (string.IsNullOrEmpty(systemDir))
+                {
+                    return;
+                }
+
+                string windowsDir = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                if (string.IsNullOrEmpty(windowsDir))
+                {
+                    return;
+                }
+
+                string trimmedSystemDir = systemDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string trimmedWindowsDir = windowsDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string? windowsParentPath = Path.GetDirectoryName(trimmedWindowsDir);
+                string windowsDirectoryName = Path.GetFileName(trimmedWindowsDir);
+                string systemDirectoryName = Path.GetFileName(trimmedSystemDir);
+                if (string.IsNullOrEmpty(windowsParentPath)
+                    || string.IsNullOrEmpty(windowsDirectoryName)
+                    || string.IsNullOrEmpty(systemDirectoryName))
+                {
+                    return;
+                }
+
+                safePath = Path.Combine(windowsParentPath, windowsDirectoryName + "-sibling", systemDirectoryName);
+            }
+            else
+            {
+                systemDir = "/etc";
+                safePath = "/etc2/myreports";
+            }
+
+            Assert.False(RunPreflightValidator.IsSameOrChildPath(safePath, systemDir));
+            RunPreflightValidator.WarnIfSystemDirectory(logger, safePath);
+
             Assert.Empty(logger.Messages);
         }
 

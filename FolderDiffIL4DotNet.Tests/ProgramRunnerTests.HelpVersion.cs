@@ -600,6 +600,36 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_OpenConfigWithRelativeConfigPath_OpensCurrentDirectory()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-config-rel-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            var originalCurrentDirectory = Environment.CurrentDirectory;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            Environment.CurrentDirectory = tempDir;
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-config", "--config", "custom.json" });
+
+                Assert.Equal(0, exitCode);
+                var output = sw.ToString();
+                Assert.Contains(Path.GetFullPath(tempDir), output, StringComparison.Ordinal);
+                Assert.DoesNotContain(Path.Combine(tempDir, "custom.json"), output, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Environment.CurrentDirectory = originalCurrentDirectory;
+                Console.SetOut(origOut);
+                if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_HelpFlag_OutputContainsOpenFolderOptions()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
