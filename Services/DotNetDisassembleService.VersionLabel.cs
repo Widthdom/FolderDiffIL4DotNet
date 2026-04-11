@@ -50,6 +50,34 @@ namespace FolderDiffIL4DotNet.Services
             return null;
         }
 
+        private void CleanupTemporaryPathBestEffort(string? temporaryPath, string purpose)
+        {
+            if (string.IsNullOrWhiteSpace(temporaryPath))
+            {
+                return;
+            }
+
+            try
+            {
+                FileSystemUtility.DeleteFileSilent(temporaryPath);
+                if (File.Exists(temporaryPath) || Directory.Exists(temporaryPath))
+                {
+                    _logger.LogMessage(
+                        AppLogLevel.Warning,
+                        $"Temporary cleanup left a path behind for {purpose}: '{temporaryPath}'.",
+                        shouldOutputMessageToConsole: false);
+                }
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Temporary cleanup failed for {purpose}: '{temporaryPath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false,
+                    ex);
+            }
+        }
+
         /// <summary>
         /// Enumerates argument sets to try, based on the command type.
         /// コマンド種別に応じた試行用の引数セットを列挙します。

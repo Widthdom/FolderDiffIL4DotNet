@@ -144,6 +144,60 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(12, strategy.DetermineMaxParallel());
         }
 
+        [Fact]
+        public void CountDotNetAssemblyCandidates_DeduplicatesPaths_CountsManagedFiles_AndReportsProgress()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-strategy-dotnet-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempRoot);
+
+            try
+            {
+                string managedAssemblyPath = typeof(FolderDiffExecutionStrategy).Assembly.Location;
+                string textFilePath = Path.Combine(tempRoot, "notes.txt");
+                File.WriteAllText(textFilePath, "not a managed assembly");
+
+                var strategy = CreateStrategy(
+                    CreateConfig(),
+                    CreateExecutionContext(Path.Combine(tempRoot, "old"), Path.Combine(tempRoot, "new"), Path.Combine(tempRoot, "report")),
+                    new FileDiffResultLists(),
+                    new FakeFileSystemService());
+
+                var progressValues = new List<double>();
+
+                int count = strategy.CountDotNetAssemblyCandidates(
+                    new[] { managedAssemblyPath, managedAssemblyPath, textFilePath },
+                    new[] { textFilePath, managedAssemblyPath },
+                    progressValues.Add);
+
+                Assert.Equal(1, count);
+                Assert.Equal(new[] { 50.0, 100.0 }, progressValues);
+            }
+            finally
+            {
+                if (Directory.Exists(tempRoot))
+                {
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            }
+        }
+
+        [Fact]
+        public void CountDotNetAssemblyCandidates_EmptyInputs_ReturnsZeroWithoutReportingProgress()
+        {
+            var strategy = CreateStrategy(
+                CreateConfig(),
+                CreateExecutionContext("/virtual/old", "/virtual/new", "/virtual/report"),
+                new FileDiffResultLists(),
+                new FakeFileSystemService());
+
+            var progressValues = new List<double>();
+
+            int count = strategy.CountDotNetAssemblyCandidates(Array.Empty<string>(), Array.Empty<string>(), progressValues.Add);
+
+            Assert.Equal(0, count);
+            Assert.Empty(progressValues);
+        }
+
         private static FolderDiffExecutionStrategy CreateStrategy(
             ConfigSettings config,
             DiffExecutionContext executionContext,

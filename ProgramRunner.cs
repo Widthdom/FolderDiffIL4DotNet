@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -34,6 +35,7 @@ namespace FolderDiffIL4DotNet
 
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
+        private readonly Action<ProcessStartInfo> _openFolderAction;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ProgramRunner"/>.
@@ -42,12 +44,26 @@ namespace FolderDiffIL4DotNet
         /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
         /// <param name="configService">Service for loading configuration files. / 設定ファイル読込サービス。</param>
         public ProgramRunner(ILoggerService logger, ConfigService configService)
+            : this(logger, configService, static processStartInfo => Process.Start(processStartInfo))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="ProgramRunner"/> with a replaceable folder-open action for tests.
+        /// テスト用に差し替え可能なフォルダ開放アクション付きで <see cref="ProgramRunner"/> の新しいインスタンスを初期化します。
+        /// </summary>
+        /// <param name="logger">Logger for diagnostic output. / 診断出力用ロガー。</param>
+        /// <param name="configService">Service for loading configuration files. / 設定ファイル読込サービス。</param>
+        /// <param name="openFolderAction">Action used by `--open-*` commands to launch the folder. / `--open-*` コマンドでフォルダを起動するためのアクション。</param>
+        internal ProgramRunner(ILoggerService logger, ConfigService configService, Action<ProcessStartInfo> openFolderAction)
         {
             ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(configService);
+            ArgumentNullException.ThrowIfNull(openFolderAction);
 
             _logger = logger;
             _configService = configService;
+            _openFolderAction = openFolderAction;
         }
 
         /// <summary>

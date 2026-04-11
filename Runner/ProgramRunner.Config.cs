@@ -154,7 +154,7 @@ namespace FolderDiffIL4DotNet
                 int deleted = 0;
                 foreach (var file in filesToDelete)
                 {
-                    File.Delete(file);
+                    DeleteCacheFileForClearCache(file);
                     deleted++;
                 }
 
@@ -304,6 +304,17 @@ namespace FolderDiffIL4DotNet
             return sb.ToString();
         }
 
+        internal static void DeleteCacheFileForClearCache(string fileAbsolutePath)
+        {
+            var attributes = File.GetAttributes(fileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(fileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(fileAbsolutePath);
+        }
+
         /// <summary>
         /// Validates the configuration (JSON load + environment variable overrides + semantic validation) and reports results.
         /// 設定のバリデーション（JSON 読込 + 環境変数オーバーライド + セマンティック検証）を行い結果を報告します。
@@ -330,10 +341,12 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine("Configuration is valid.");
                 return 0;
             }
-            catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException
+                or FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException)
             {
-                Console.Error.WriteLine(ex.Message);
+                Console.Error.WriteLine(
+                    $"Configuration validation failed for '{configPath ?? "config.json"}' ({ex.GetType().Name}): {ex.Message}");
                 return (int)ProgramExitCode.ConfigurationError;
             }
         }
@@ -351,10 +364,12 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine(JsonSerializer.Serialize(builder, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
-            catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException
+                or FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException)
             {
-                Console.Error.WriteLine(ex.Message);
+                Console.Error.WriteLine(
+                    $"Failed to print effective configuration for '{configPath ?? "config.json"}' ({ex.GetType().Name}): {ex.Message}");
                 return (int)ProgramExitCode.ConfigurationError;
             }
         }
