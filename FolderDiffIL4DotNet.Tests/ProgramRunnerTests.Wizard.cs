@@ -50,9 +50,18 @@ namespace FolderDiffIL4DotNet.Tests
         [Trait("Category", "Unit")]
         public void NormalizeDragDropPath_FileUriDoubleSlash_StripsPrefix()
         {
-            // file:// URI prefix should be stripped.
-            // file:// URI プレフィックスは除去されるべき。
-            Assert.Equal("server/share", ProgramRunner.NormalizeDragDropPath("file://server/share"));
+            // file:// URI with an authority component should be preserved as a UNC-style path.
+            // authority を持つ file:// URI は UNC 風パスとして保持されるべき。
+            Assert.Equal("//server/share", ProgramRunner.NormalizeDragDropPath("file://server/share"));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void NormalizeDragDropPath_FileUriLocalhost_UsesLocalPath()
+        {
+            // file://localhost should normalize to the local absolute path, not a UNC-style path.
+            // file://localhost は UNC 風ではなくローカル絶対パスへ正規化されるべき。
+            Assert.Equal("/home/user/folder", ProgramRunner.NormalizeDragDropPath("file://localhost/home/user/folder"));
         }
 
         [Fact]

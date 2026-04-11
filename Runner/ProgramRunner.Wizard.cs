@@ -132,17 +132,23 @@ namespace FolderDiffIL4DotNet
             // 混合 D&D シナリオの不一致な先頭/末尾クォートも除去
             input = input.Trim('"', '\'');
 
-            // Strip file:// or file:/// URI prefix (some file managers produce this on D&D)
-            // file:// または file:/// URI プレフィックスを除去（一部ファイルマネージャが D&D 時に生成）
-            if (input.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
+            // Convert file:// URIs emitted by file managers into usable local/UNC-style paths.
+            // ファイルマネージャが出力する file:// URI をローカルパス/UNC 形式へ変換する。
+            if (input.StartsWith("file://", StringComparison.OrdinalIgnoreCase)
+                && Uri.TryCreate(input, UriKind.Absolute, out var fileUri)
+                && fileUri.IsFile)
             {
-                input = input[7..]; // "file:///home/..." → "/home/..." (Unix), "file:///C:/..." → "C:/..." (Windows via Path.GetFullPath)
-                // On Windows, file:///C:/path has an extra leading slash → C:/path
-                // Path.GetFullPath will normalize this correctly
-            }
-            else if (input.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
-            {
-                input = input[7..]; // "file://server/share" → "server/share"
+                if (string.IsNullOrEmpty(fileUri.Host)
+                    || fileUri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+                {
+                    input = fileUri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+                        ? NormalizeLocalhostFileUriPath(fileUri.AbsolutePath)
+                        : fileUri.LocalPath;
+                }
+                else
+                {
+                    input = $"//{fileUri.Host}{fileUri.AbsolutePath}";
+                }
             }
 
             // Unescape backslash-escaped spaces (common in Unix terminal D&D without quotes)
@@ -170,6 +176,20 @@ namespace FolderDiffIL4DotNet
             }
 
             return input.Trim();
+        }
+
+        private static string NormalizeLocalhostFileUriPath(string absolutePath)
+        {
+            if (OperatingSystem.IsWindows()
+                && absolutePath.Length >= 3
+                && absolutePath[0] == '/'
+                && char.IsAsciiLetter(absolutePath[1])
+                && absolutePath[2] == ':')
+            {
+                return absolutePath[1..];
+            }
+
+            return absolutePath;
         }
     }
 }

@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **Output-directory guardrails now require a real path boundary match** — Warnings for "outside app base" and "system directory" checks no longer rely on raw prefix matching. Sibling paths such as `<app-base>-sibling` or `/etc2/...` are no longer misclassified as inside the application base or a protected system directory. Affected: `Runner/RunPreflightValidator.cs`. Tests: `ProgramRunnerTests.Preflight.cs` (2 new).
 
+- **Wizard drag-and-drop path normalization now preserves file-URI authorities** — `NormalizeDragDropPath()` no longer turns `file://server/share` into the relative path `server/share`. Authority-bearing file URIs are now normalized to UNC-style paths (`//server/share`), while `file://localhost/...` continues to resolve to a local absolute path. Affected: `Runner/ProgramRunner.Wizard.cs`. Tests: `ProgramRunnerTests.Wizard.cs` (1 updated, 1 new).
+
 ### [1.16.4] - 2026-04-11
 
 #### Changed
@@ -1241,6 +1243,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **`--open-config` が相対 config パスを正しく絶対化してから親フォルダを開くよう修正** — 早期終了のフォルダ開放コマンドが先に `Path.GetFullPath(configPath)` を解決してから親ディレクトリを求めるようになり、`--open-config --config custom.json` が `custom.json/` フォルダを誤って作成・開くのではなく、現在の作業ディレクトリを開くようになりました。対象: `Runner/ProgramRunner.OpenFolder.cs`。テスト: `ProgramRunnerTests.HelpVersion.cs`（1件追加）。
 
 - **出力先ガードレールの判定を実際のパス境界ベースへ修正** — 「アプリベース外」と「システムディレクトリ配下」の警告が単純なプレフィックス一致に依存しないようにしました。これにより `<app-base>-sibling` や `/etc2/...` のような兄弟パスが、アプリベース配下や保護対象のシステムディレクトリ配下だと誤判定されなくなります。対象: `Runner/RunPreflightValidator.cs`。テスト: `ProgramRunnerTests.Preflight.cs`（2件追加）。
+
+- **ウィザードのドラッグ＆ドロップ正規化が file URI の authority を保持するよう修正** — `NormalizeDragDropPath()` が `file://server/share` を相対パス `server/share` へ崩さないようにしました。authority を持つ file URI は `//server/share` の UNC 風パスとして正規化し、`file://localhost/...` は従来どおりローカル絶対パスへ解決します。対象: `Runner/ProgramRunner.Wizard.cs`。テスト: `ProgramRunnerTests.Wizard.cs`（1件更新、1件追加）。
 
 ### [1.16.4] - 2026-04-11
 
