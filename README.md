@@ -179,13 +179,13 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--version` | Show the application version and exit (code `0`). |
 | `--banner` | Show the ASCII-art banner and exit (code `0`). |
 | `--credits` | Show credits and acknowledgements (easter egg). |
-| `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects [`config.json`](config.json) + all `FOLDERDIFF_*` env var overrides + supported CLI overrides such as `--threads`, `--skip-il`, and `--creator`. Use `--config <path>` to load a non-default file. Config errors exit with code `3`. |
-| `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. |
+| `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects [`config.json`](config.json) + all `FOLDERDIFF_*` env var overrides + supported CLI overrides such as `--threads`, `--skip-il`, and `--creator`. Use `--config <path>` to load a non-default file. Config errors, including malformed `--config` paths, exit with code `3`; stderr includes the failing operation, target path, and exception type. |
+| `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. Malformed `--config` paths are also classified as configuration errors (`3`) with diagnostic stderr output. |
 | `--no-pause` | Skip key-wait at process end. |
 | `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
 | `--threads <N>` | Override [`MaxParallelism`](#config-en-maxparallelism) for this run (`0` = auto). |
 | `--no-il-cache` | Disable the IL cache for this run. |
-| `--clear-cache` | Interactive wizard to selectively delete IL cache files (by tool, version, or all). |
+| `--clear-cache` | Interactive wizard to selectively delete IL cache files (by tool, version, or all). Read-only `.ilcache` files are unprotected automatically before deletion. |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
 | `--creator` | Apply the default maintainer IL ignore profile (`buildserver-winforms`). Intended for the common `nildiff <old> <new> [label] --creator` flow. |
@@ -203,9 +203,9 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
 | `--output <path>` | Output directory for reports (default: `<exe>/Reports/`). The report label subfolder is created under this directory. Useful for CI/CD pipelines that need reports written to a custom path. |
 | `--log-format <text\|json>` | Log file output format (default: `text`). `json` emits NDJSON (one JSON object per line) with W3C Trace Context fields (`traceId`, `spanId`) for SIEM, OpenTelemetry, and log aggregation tool integration. Console output remains plain text regardless. |
-| `--open-reports` | Open the Reports folder in the default file manager and exit. When `--output` is also specified, opens that custom directory instead of `<exe>/Reports/`. |
-| `--open-config` | Open the configuration folder in the default file manager and exit. When `--config` is also specified, opens the parent directory of the specified config file. |
-| `--open-logs` | Open the Logs folder (`<exe>/Logs/`) in the default file manager and exit. |
+| `--open-reports` | Open the Reports folder in the default file manager and exit. When `--output` is also specified, opens that custom directory instead of `<exe>/Reports/`. Missing directories are created automatically. If path resolution, directory creation, or launcher invocation fails, the command exits with code `4` and stderr includes the resolved target path plus the exception type. |
+| `--open-config` | Open the configuration folder in the default file manager and exit. When `--config` is also specified, opens the parent directory of the specified config file. Missing directories are created automatically; launcher/path failures exit with code `4` and include the resolved target path plus exception type on stderr. |
+| `--open-logs` | Open the Logs folder (`<exe>/Logs/`) in the default file manager and exit. Missing directories are created automatically; launcher/path failures exit with code `4` and include the resolved target path plus exception type on stderr. |
 
 > **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the tool gently suggests matcha instead (easter egg). Use `--random-spinner` for a surprise theme each run. They also override any custom `SpinnerFrames` set in [`config.json`](config.json).
 
@@ -239,8 +239,8 @@ Process exit codes:
 | `0` | Success | Normal completion, `--help`, `--version`, `--banner`, `--credits`, `--print-config`, `--validate-config` (valid) |
 | `1` | Unexpected internal error | Unclassifiable exception at application boundary |
 | `2` | Invalid arguments or input paths | Missing positional args, non-existent directories, illegal report label, preflight failures (see below) |
-| `3` | Configuration error | JSON syntax error, missing config file, semantic validation failure (`--validate-config` invalid) |
-| `4` | Execution failure | Runtime error during diff comparison or report generation |
+| `3` | Configuration error | JSON syntax error, missing config file, malformed `--config` path, semantic validation failure (`--validate-config` invalid) |
+| `4` | Execution failure | Runtime error during diff comparison or report generation, or `--open-*` launcher/path-creation failure |
 
 Before loading configuration, three preflight checks run against the reports output path (all failures produce exit code `2`):
 1. **Path length** — the constructed `Reports/<label>` path must not exceed the OS limit (260 chars on Windows without long-path opt-in, 1024 on macOS, 4096 on Linux).
@@ -536,7 +536,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-enablenugetvulnerabilitycheck">
       <td><code>EnableNuGetVulnerabilityCheck</code></td>
       <td><code>false</code></td>
-      <td>When <code>true</code>, checks NuGet package versions against the NuGet V3 vulnerability API (GitHub Advisory / NVD). Requires network access. When enabled, the dependency changes table shows a <code>Vulnerabilities</code> column with severity-labeled advisory links: active vulnerabilities in the new version are highlighted in red/orange, and vulnerabilities resolved by the update are shown with green strikethrough. Requires <code>ShouldIncludeDependencyChangesInReport</code> to be <code>true</code>.</td>
+      <td>When <code>true</code>, checks NuGet package versions against the NuGet V3 vulnerability API (GitHub Advisory / NVD). Requires network access. When enabled, the dependency changes table shows a <code>Vulnerabilities</code> column with severity-labeled advisory links: active vulnerabilities in the new version are highlighted in red/orange, and vulnerabilities resolved by the update are shown with green strikethrough. Duplicate advisory rows and duplicate vulnerability-page URLs are collapsed automatically, and empty dependency-change sets skip the API entirely. Requires <code>ShouldIncludeDependencyChangesInReport</code> to be <code>true</code>.</td>
     </tr>
     <tr id="config-en-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
@@ -977,13 +977,13 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
 | `--banner` | ASCII アートバナーを表示してコード `0` で終了します。 |
 | `--credits` | クレジットと謝辞を表示します（イースターエッグ）。 |
-| `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。[`config.json`](config.json) のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドと、`--threads`、`--skip-il`、`--creator` などの対応 CLI オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了します。 |
-| `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。 |
+| `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。[`config.json`](config.json) のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドと、`--threads`、`--skip-il`、`--creator` などの対応 CLI オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了し、不正な `--config` パスも同じく設定エラーとして扱われます。stderr には失敗した操作名・対象パス・例外種別が含まれます。 |
+| `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。不正な `--config` パスも設定エラー（`3`）として扱い、stderr に診断情報を出力します。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
 | `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り [`MaxParallelism`](#config-ja-maxparallelism) を上書きします（`0` = 自動）。 |
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
-| `--clear-cache` | IL キャッシュファイルを選択的に削除する対話ウィザードを起動します（ツール別、バージョン別、全削除）。 |
+| `--clear-cache` | IL キャッシュファイルを選択的に削除する対話ウィザードを起動します（ツール別、バージョン別、全削除）。read-only 属性付きの `.ilcache` も削除前に属性解除して処理します。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
 | `--creator` | 既定のメンテナー用 IL 無視プロファイル（`buildserver-winforms`）を適用します。想定する常用形は `nildiff <old> <new> [label] --creator` です。 |
@@ -1001,9 +1001,9 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
 | `--output <path>` | レポートの出力ディレクトリ（既定: `<exe>/Reports/`）。このディレクトリの下にレポートラベルのサブフォルダが作成されます。CI/CD パイプラインでレポートを任意のパスに出力したい場合に便利です。 |
 | `--log-format <text\|json>` | ログファイルの出力形式（既定: `text`）。`json` を指定すると W3C Trace Context フィールド（`traceId`、`spanId`）付きの NDJSON（1行1 JSON オブジェクト）で出力し、SIEM、OpenTelemetry、ログ集約ツールとの連携が容易になります。コンソール出力は形式に関わらずプレーンテキストのままです。 |
-| `--open-reports` | Reports フォルダをデフォルトのファイルマネージャで開いて終了します。`--output` が同時に指定された場合、`<exe>/Reports/` の代わりにそのカスタムディレクトリを開きます。 |
-| `--open-config` | 設定ファイルのフォルダをデフォルトのファイルマネージャで開いて終了します。`--config` が同時に指定された場合、指定された設定ファイルの親ディレクトリを開きます。 |
-| `--open-logs` | Logs フォルダ（`<exe>/Logs/`）をデフォルトのファイルマネージャで開いて終了します。 |
+| `--open-reports` | Reports フォルダをデフォルトのファイルマネージャで開いて終了します。`--output` が同時に指定された場合、`<exe>/Reports/` の代わりにそのカスタムディレクトリを開きます。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
+| `--open-config` | 設定ファイルのフォルダをデフォルトのファイルマネージャで開いて終了します。`--config` が同時に指定された場合、指定された設定ファイルの親ディレクトリを開きます。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
+| `--open-logs` | Logs フォルダ（`<exe>/Logs/`）をデフォルトのファイルマネージャで開いて終了します。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
 
 > **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`、`--ramen`、`--sushi`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は抹茶が提案されます（イースターエッグ）。`--random-spinner` で毎回サプライズテーマを楽しめます。[`config.json`](config.json) で設定したカスタム `SpinnerFrames` も上書きされます。
 
@@ -1037,8 +1037,8 @@ dotnet run -- --creator --print-config
 | `0` | 正常終了 | 通常完了、`--help`、`--version`、`--banner`、`--credits`、`--print-config`、`--validate-config`（有効時） |
 | `1` | 想定外の内部エラー | アプリケーション境界での分類不能な例外 |
 | `2` | 引数または入力パス不正 | 位置引数の不足、存在しないディレクトリ、不正なレポートラベル、プリフライト失敗（下記参照） |
-| `3` | 設定エラー | JSON 構文エラー、設定ファイル不在、セマンティック検証失敗（`--validate-config` 無効時） |
-| `4` | 実行失敗 | 差分比較またはレポート生成中のランタイムエラー |
+| `3` | 設定エラー | JSON 構文エラー、設定ファイル不在、不正な `--config` パス、セマンティック検証失敗（`--validate-config` 無効時） |
+| `4` | 実行失敗 | 差分比較またはレポート生成中のランタイムエラー、または `--open-*` のランチャー/パス生成失敗 |
 
 設定読み込みの前に、レポート出力パスに対して 3 つのプリフライトチェックを実行します（いずれの失敗も終了コード `2`）:
 1. **パス長** — 構築した `Reports/<label>` パスが OS の上限を超えていないこと（Windows 標準は 260 文字、macOS は 1024 文字、Linux は 4096 文字）。
@@ -1333,7 +1333,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-enablenugetvulnerabilitycheck">
       <td><code>EnableNuGetVulnerabilityCheck</code></td>
       <td><code>false</code></td>
-      <td><code>true</code> の場合、NuGet V3 脆弱性 API（GitHub Advisory / NVD）を使用して NuGet パッケージバージョンの既知脆弱性をチェックします。ネットワークアクセスが必要です。有効時、依存関係変更テーブルに <code>Vulnerabilities</code> 列が追加され、深刻度ラベル付きアドバイザリリンクが表示されます。新バージョンの脆弱性は赤/オレンジでハイライト、更新により解消された脆弱性は緑の取り消し線で表示されます。<code>ShouldIncludeDependencyChangesInReport</code> が <code>true</code> である必要があります。</td>
+      <td><code>true</code> の場合、NuGet V3 脆弱性 API（GitHub Advisory / NVD）を使用して NuGet パッケージバージョンの既知脆弱性をチェックします。ネットワークアクセスが必要です。有効時、依存関係変更テーブルに <code>Vulnerabilities</code> 列が追加され、深刻度ラベル付きアドバイザリリンクが表示されます。新バージョンの脆弱性は赤/オレンジでハイライト、更新により解消された脆弱性は緑の取り消し線で表示されます。重複 advisory 行や重複脆弱性ページ URL は自動的に統合され、依存関係変更が 0 件のときは API 自体を呼びません。<code>ShouldIncludeDependencyChangesInReport</code> が <code>true</code> である必要があります。</td>
     </tr>
     <tr id="config-ja-shouldincludeilcachestatsInreport">
       <td><code>ShouldIncludeILCacheStatsInReport</code></td>
