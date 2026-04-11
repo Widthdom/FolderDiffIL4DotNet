@@ -543,22 +543,33 @@ namespace FolderDiffIL4DotNet.Tests
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
 
+            string systemDir;
             string safePath;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                var systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
                 if (string.IsNullOrEmpty(systemDir))
                 {
                     return;
                 }
 
-                safePath = systemDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + "2";
+                string trimmedSystemDir = systemDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string? parentPath = Path.GetDirectoryName(trimmedSystemDir);
+                string directoryName = Path.GetFileName(trimmedSystemDir);
+                if (string.IsNullOrEmpty(parentPath) || string.IsNullOrEmpty(directoryName))
+                {
+                    return;
+                }
+
+                safePath = Path.Combine(parentPath, directoryName + "-sibling");
             }
             else
             {
+                systemDir = "/etc";
                 safePath = "/etc2/myreports";
             }
 
+            Assert.False(RunPreflightValidator.IsSameOrChildPath(safePath, systemDir));
             RunPreflightValidator.WarnIfSystemDirectory(logger, safePath);
 
             Assert.Empty(logger.Messages);
