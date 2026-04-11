@@ -85,10 +85,11 @@ namespace FolderDiffIL4DotNet.Runner
 
             // Built-in disassembler provider (.NET assemblies)
             // 組み込み逆アセンブラプロバイダ（.NET アセンブリ）
-            services.AddScoped<IDisassemblerProvider>(sp =>
-                new DotNetDisassemblerProvider(
-                    sp.GetRequiredService<IDotNetDisassembleService>(),
-                    sp.GetRequiredService<IFileComparisonService>()));
+              services.AddScoped<IDisassemblerProvider>(sp =>
+                  new DotNetDisassemblerProvider(
+                      sp.GetRequiredService<IDotNetDisassembleService>(),
+                      sp.GetRequiredService<IFileComparisonService>(),
+                      sp.GetRequiredService<ILoggerService>()));
 
             // Register services from loaded plugins / 読み込み済みプラグインからサービスを登録
             RegisterPluginServices(services, config, plugins);

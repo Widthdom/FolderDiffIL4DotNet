@@ -9,6 +9,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **`--clear-cache` now removes the read-only attribute before deleting `.ilcache` files** — Interactive cache clearing now uses the same delete semantics as the disk-cache layer, so stale read-only cache files can be removed instead of aborting the clear operation with an `UnauthorizedAccessException`. Affected: `Runner/ProgramRunner.Config.cs`. Tests: `ProgramRunnerTests.CliOverrides.cs` (1 new: `DeleteCacheFileForClearCache_ReadOnlyFile_DeletesFile`).
+
+- **`--print-config` and `--validate-config` now classify invalid config paths as configuration errors instead of letting path-format exceptions escape** — Their application-boundary catches now include `ArgumentException` and `NotSupportedException`, matching the broader config-loading flow so malformed `--config` values still return exit code 3 with stderr output. Affected: `Runner/ProgramRunner.Config.cs`. Tests: `ProgramRunnerTests.CliOverrides.cs` (2 new: `RunAsync_PrintConfigFlag_WithInvalidConfigPath_ReturnsConfigurationError`, `RunAsync_ValidateConfigFlag_WithInvalidConfigPath_ReturnsConfigurationError`).
+
+- **Duplicate vulnerability records for the same package/advisory/range are now collapsed during NuGet page parsing** — `ParseVulnerabilityPage()` now keeps only unique `PackageVulnerability` records per package so repeated advisory rows do not inflate the report UI or vulnerability counts. Affected: `Services/NuGetVulnerabilityService.cs`. Tests: `NuGetVulnerabilityServiceTests.cs` (1 new: `ParseVulnerabilityPage_DuplicateEntries_DeduplicatesPerPackage`).
+
+- **Duplicate NuGet vulnerability page URLs are now deduplicated before download** — `ParseIndexPageUrls()` now collapses repeated `@id` values case-insensitively so the same vulnerability page is not fetched multiple times when the index contains duplicates. Affected: `Services/NuGetVulnerabilityService.cs`. Tests: `NuGetVulnerabilityServiceTests.cs` (1 new: `ParseIndexPageUrls_DuplicateUrls_DeduplicatesCaseInsensitively`).
+
+- **Empty dependency-change sets now skip the NuGet vulnerability API entirely while still honouring cancellation** — `NuGetVulnerabilityService.CheckVulnerabilitiesAsync()` now performs a fast empty-input return after `ThrowIfCancellationRequested()`, avoiding unnecessary HTTP traffic and log noise when there are no dependency entries to inspect. Affected: `Services/NuGetVulnerabilityService.cs`. Tests: `NuGetVulnerabilityServiceTests.cs` (1 new: `CheckVulnerabilitiesAsync_EmptyEntries_DoesNotFetchRemoteIndex`).
+
+- **Temporary disassembler cleanup now warns when ASCII-copy or ilspy output files survive deletion** — `DotNetDisassembleService` now performs explicit best-effort cleanup checks for temporary ASCII copies and ilspy output files, and emits a warning if a temp path still exists after cleanup or if the existence probe itself fails recoverably. ilspy temp-output cleanup now also runs from `finally` blocks so read failures do not leak temp files. The main IL comparison flow is unchanged; this only improves observability of temp-file leaks. Affected: `Services/DotNetDisassembleService.cs`, `Services/DotNetDisassembleService.Streaming.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`. Tests: `DotNetDisassembleServiceTests.cs` (1 new: `CleanupTemporaryPathBestEffort_WhenDirectoryPathCannotBeDeleted_LogsWarning`).
+
+- **Built-in .NET disassembler provider now logs recoverable detection / disassembly failures before falling back** — `DotNetDisassemblerProvider` now records warning logs when managed-assembly detection fails on a candidate path or when delegated disassembly throws a non-cancellation exception, instead of returning `false` / failure metadata silently. This keeps plugin-provider fallback behavior intact while making diagnostics visible in the log file. Affected: `Services/DotNetDisassemblerProvider.cs`, `Runner/RunScopeBuilder.cs`. Tests: `DotNetDisassemblerProviderTests.cs` (2 updated: `CanHandle_WhenDetectionThrowsRecoverableException_ReturnsFalse`, `DisassembleAsync_ServiceThrows_ReturnsFailure`).
+
+- **`--open-reports` / `--open-config` / `--open-logs` now fail gracefully even when folder-path resolution or directory creation throws** — Folder-opening commands now resolve the target path, create the directory, and launch the platform file manager inside the same application-boundary exception handler, so an invalid `--output` target such as an existing file no longer bubbles an unhandled exception out of `RunAsync`. The error path now includes the target folder placeholder/path plus the exception type in stderr for faster diagnosis. Affected: `Runner/ProgramRunner.OpenFolder.cs`. Tests: `ProgramRunnerTests.HelpVersion.cs` (1 new: `RunAsync_OpenReportsFlag_WhenOutputTargetsExistingFile_ReturnsExecutionFailed`).
+
 ### [1.16.7] - 2026-04-11
 
 #### Fixed
@@ -1281,6 +1299,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **`--clear-cache` が read-only 属性付き `.ilcache` も削除できるよう修正** — 対話式キャッシュ削除は、ディスクキャッシュ層と同様に削除前に read-only 属性を解除するようになり、stale な読み取り専用キャッシュで `UnauthorizedAccessException` になって全体が中断しにくくなりました。対象: `Runner/ProgramRunner.Config.cs`。テスト: `ProgramRunnerTests.CliOverrides.cs`（1件追加: `DeleteCacheFileForClearCache_ReadOnlyFile_DeletesFile`）。
+
+- **`--print-config` / `--validate-config` が不正な config パスでも path-format 例外を漏らさず設定エラーとして返すよう修正** — これらの catch 範囲に `ArgumentException` と `NotSupportedException` を追加し、より広い設定読み込み経路と同じく malformed な `--config` 入力でも stderr を出しつつ終了コード 3 へ変換するようにしました。対象: `Runner/ProgramRunner.Config.cs`。テスト: `ProgramRunnerTests.CliOverrides.cs`（2件追加: `RunAsync_PrintConfigFlag_WithInvalidConfigPath_ReturnsConfigurationError`, `RunAsync_ValidateConfigFlag_WithInvalidConfigPath_ReturnsConfigurationError`）。
+
+- **同一パッケージ・同一 advisory・同一バージョン範囲の重複脆弱性レコードを NuGet ページ解析時に統合するよう修正** — `ParseVulnerabilityPage()` は、同じ `PackageVulnerability` が繰り返し現れても 1 件として保持するようになり、レポート UI や脆弱性件数が重複で膨らまなくなりました。対象: `Services/NuGetVulnerabilityService.cs`。テスト: `NuGetVulnerabilityServiceTests.cs`（1件追加: `ParseVulnerabilityPage_DuplicateEntries_DeduplicatesPerPackage`）。
+
+- **NuGet 脆弱性インデックス内の重複ページ URL を case-insensitive に排除してから取得するよう修正** — `ParseIndexPageUrls()` は、重複した `@id` が返ってきても同一ページを二重取得しないようになりました。対象: `Services/NuGetVulnerabilityService.cs`。テスト: `NuGetVulnerabilityServiceTests.cs`（1件追加: `ParseIndexPageUrls_DuplicateUrls_DeduplicatesCaseInsensitively`）。
+
+- **依存関係変更が 0 件のときは NuGet 脆弱性 API を呼ばず即時 return するよう修正** — `NuGetVulnerabilityService.CheckVulnerabilitiesAsync()` は、`ThrowIfCancellationRequested()` を維持したまま空入力を高速 return するようになり、チェック対象が無いケースで不要な HTTP 通信やログノイズを発生させなくなりました。対象: `Services/NuGetVulnerabilityService.cs`。テスト: `NuGetVulnerabilityServiceTests.cs`（1件追加: `CheckVulnerabilitiesAsync_EmptyEntries_DoesNotFetchRemoteIndex`）。
+
+- **逆アセンブラ一時ファイル cleanup が ASCII コピーや ilspy 出力を消し残した場合に warning を残すよう修正** — `DotNetDisassembleService` は、一時 ASCII コピーと ilspy 出力ファイルの cleanup 後に明示的な存在確認を行い、削除後もパスが残っている場合や recoverable な存在確認失敗が起きた場合に warning を出すようになりました。さらに ilspy の temp 出力は読込失敗時でも `finally` から cleanup が走るようにし、一時ファイルリークの筋も塞いでいます。IL 比較の本流は変えず、可観測性と cleanup の堅牢性だけを高めています。対象: `Services/DotNetDisassembleService.cs`, `Services/DotNetDisassembleService.Streaming.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`。テスト: `DotNetDisassembleServiceTests.cs`（1件追加: `CleanupTemporaryPathBestEffort_WhenDirectoryPathCannotBeDeleted_LogsWarning`）。
+
+- **組み込み .NET 逆アセンブラ provider が recoverable な検出失敗・逆アセンブル失敗を warning ログへ残すよう修正** — `DotNetDisassemblerProvider` は、候補パスの managed-assembly 判定失敗時や、委譲先逆アセンブルがキャンセル以外の例外で失敗した場合に、従来どおり `false` / 失敗結果へフォールバックしつつ warning を残すようになりました。これにより provider フォールバック動作は維持しながら、診断情報がログファイルに残ります。対象: `Services/DotNetDisassemblerProvider.cs`, `Runner/RunScopeBuilder.cs`。テスト: `DotNetDisassemblerProviderTests.cs`（2件更新: `CanHandle_WhenDetectionThrowsRecoverableException_ReturnsFalse`, `DisassembleAsync_ServiceThrows_ReturnsFailure`）。
+
+- **`--open-reports` / `--open-config` / `--open-logs` がパス解決やディレクトリ作成失敗でも未処理例外で落ちず、正常に終了コードへ変換されるよう修正** — フォルダ開放コマンドは、対象パスの解決・ディレクトリ作成・ファイルマネージャ起動を同じアプリ境界の例外ハンドラ内で実行するようになり、既存ファイルを `--output` に渡した場合のような異常系でも `RunAsync` から未処理例外が漏れなくなりました。失敗時の stderr には診断を速めるため対象パス（または未解決プレースホルダ）と例外種別も含めます。対象: `Runner/ProgramRunner.OpenFolder.cs`。テスト: `ProgramRunnerTests.HelpVersion.cs`（1件追加: `RunAsync_OpenReportsFlag_WhenOutputTargetsExistingFile_ReturnsExecutionFailed`）。
 
 ### [1.16.7] - 2026-04-11
 

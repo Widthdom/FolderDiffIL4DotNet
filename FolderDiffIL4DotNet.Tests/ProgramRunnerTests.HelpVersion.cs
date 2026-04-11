@@ -520,6 +520,44 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenOutputTargetsExistingFile_ReturnsExecutionFailed()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            string tempDir = Path.Combine(Path.GetTempPath(), $"fd-open-folder-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(tempDir);
+            string outputFile = Path.Combine(tempDir, "already-a-file.txt");
+            await File.WriteAllTextAsync(outputFile, "content");
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(["--open-reports", "--output", outputFile]);
+
+                Assert.Equal(4, exitCode);
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains(outputFile, errorOutput, StringComparison.Ordinal);
+                Assert.Contains("IOException", errorOutput, StringComparison.Ordinal);
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                try
+                {
+                    Directory.Delete(tempDir, recursive: true);
+                }
+                catch
+                {
+                    // Test cleanup is best-effort / テスト後片付けはベストエフォート
+                }
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_OpenLogsFlag_ExitsZeroAndPrintsPath()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");

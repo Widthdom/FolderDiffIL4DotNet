@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Core.Diagnostics;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -79,9 +80,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 ThrowOnDetect = new ArgumentException("bad path")
             };
-            var provider = CreateProvider(fileComparisonService: fakeComparison);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var provider = CreateProvider(fileComparisonService: fakeComparison, logger: logger);
 
             Assert.False(provider.CanHandle("bad\0path.dll"));
+            Assert.Contains(logger.Messages, m => m.Contains("managed-assembly detection failed", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -110,7 +113,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 ThrowOnDisassemble = new InvalidOperationException("Tool not found")
             };
-            var provider = CreateProvider(disassembleService: fakeDisassemble);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var provider = CreateProvider(disassembleService: fakeDisassemble, logger: logger);
 
             // Act / 実行
             var result = await provider.DisassembleAsync("/path/to/test.dll", CancellationToken.None);
@@ -120,6 +124,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Tool not found", result.CommandString);
             Assert.Contains("InvalidOperationException", result.CommandString);
             Assert.Contains("InvalidOperationException", result.VersionLabel);
+            Assert.Contains(logger.Messages, m => m.Contains("provider failed", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -133,11 +138,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static DotNetDisassemblerProvider CreateProvider(
             FakeDisassembleService? disassembleService = null,
-            FakeFileComparisonServiceForProvider? fileComparisonService = null)
+            FakeFileComparisonServiceForProvider? fileComparisonService = null,
+            TestLogger? logger = null)
         {
             return new DotNetDisassemblerProvider(
                 disassembleService ?? new FakeDisassembleService(),
-                fileComparisonService ?? new FakeFileComparisonServiceForProvider());
+                fileComparisonService ?? new FakeFileComparisonServiceForProvider(),
+                logger ?? new TestLogger(logFileAbsolutePath: "test.log"));
         }
 
         // ── Fakes / フェイク ──

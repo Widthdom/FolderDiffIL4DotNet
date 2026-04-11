@@ -21,15 +21,19 @@ namespace FolderDiffIL4DotNet.Services
     {
         private readonly IDotNetDisassembleService _disassembleService;
         private readonly IFileComparisonService _fileComparisonService;
+        private readonly ILoggerService _logger;
 
         internal DotNetDisassemblerProvider(
             IDotNetDisassembleService disassembleService,
-            IFileComparisonService fileComparisonService)
+            IFileComparisonService fileComparisonService,
+            ILoggerService logger)
         {
             ArgumentNullException.ThrowIfNull(disassembleService);
             ArgumentNullException.ThrowIfNull(fileComparisonService);
+            ArgumentNullException.ThrowIfNull(logger);
             _disassembleService = disassembleService;
             _fileComparisonService = fileComparisonService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -63,6 +67,11 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Built-in .NET disassembler provider skipped '{filePath}' because managed-assembly detection failed ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false,
+                    ex);
                 return false;
             }
         }
@@ -98,6 +107,11 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"Built-in .NET disassembler provider failed for '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false,
+                    ex);
                 return new DisassemblyResult
                 {
                     Success = false,

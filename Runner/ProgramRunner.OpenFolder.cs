@@ -10,7 +10,7 @@ namespace FolderDiffIL4DotNet
     public sealed partial class ProgramRunner
     {
         private const string LOG_OPENING_FOLDER = "Opening folder: {0}";
-        private const string ERROR_OPEN_FOLDER_FAILED = "Failed to open folder: {0}";
+        private const string ERROR_OPEN_FOLDER_FAILED = "Failed to open folder '{0}' ({1}): {2}";
 
         /// <summary>
         /// Handles the --open-reports, --open-config, and --open-logs commands.
@@ -25,26 +25,23 @@ namespace FolderDiffIL4DotNet
 
             if (opts.OpenReports)
             {
-                string reportsDir = !string.IsNullOrWhiteSpace(opts.OutputDirectory)
-                    ? Path.GetFullPath(opts.OutputDirectory)
-                    : Path.Combine(AppContext.BaseDirectory, "Reports");
-                result = OpenFolder(reportsDir);
+                result = OpenFolder(() => !string.IsNullOrWhiteSpace(opts.OutputDirectory)
+                    ? opts.OutputDirectory
+                    : Path.Combine(AppContext.BaseDirectory, "Reports"));
                 if (result != 0) return result;
             }
 
             if (opts.OpenConfig)
             {
-                string configDir = !string.IsNullOrWhiteSpace(opts.ConfigPath)
+                result = OpenFolder(() => !string.IsNullOrWhiteSpace(opts.ConfigPath)
                     ? Path.GetDirectoryName(Path.GetFullPath(opts.ConfigPath)) ?? AppContext.BaseDirectory
-                    : AppContext.BaseDirectory;
-                result = OpenFolder(configDir);
+                    : AppContext.BaseDirectory);
                 if (result != 0) return result;
             }
 
             if (opts.OpenLogs)
             {
-                string logsDir = Path.Combine(AppContext.BaseDirectory, "Logs");
-                result = OpenFolder(logsDir);
+                result = OpenFolder(() => Path.Combine(AppContext.BaseDirectory, "Logs"));
                 if (result != 0) return result;
             }
 
@@ -57,17 +54,19 @@ namespace FolderDiffIL4DotNet
         /// 指定フォルダをプラットフォームのデフォルトファイルマネージャで開く。
         /// フォルダが存在しない場合は作成する。
         /// </summary>
-        private int OpenFolder(string folderPath)
+        private int OpenFolder(Func<string> resolveFolderPath)
         {
-            if (!Directory.Exists(folderPath))
-            {
-                Directory.CreateDirectory(folderPath);
-            }
-
-            Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_OPENING_FOLDER, folderPath));
+            string folderPath = "(unresolved)";
 
             try
             {
+                folderPath = Path.GetFullPath(resolveFolderPath());
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_OPENING_FOLDER, folderPath));
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = folderPath,
@@ -78,7 +77,7 @@ namespace FolderDiffIL4DotNet
             #pragma warning disable CA1031 // Application boundary: catch-all for platform-specific process launch failures
             catch (Exception ex)
             {
-                Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, ex.Message));
+                Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, ex.GetType().Name, ex.Message));
                 return (int)ProgramExitCode.ExecutionFailed;
             }
             #pragma warning restore CA1031

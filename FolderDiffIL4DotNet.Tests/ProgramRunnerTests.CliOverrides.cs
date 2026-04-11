@@ -319,6 +319,72 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_PrintConfigFlag_WithInvalidConfigPath_ReturnsConfigurationError()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(["--print-config", "--config", "bad\0config.json"]);
+
+                Assert.Equal(3, exitCode);
+                Assert.NotEmpty(errorWriter.ToString());
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ValidateConfigFlag_WithInvalidConfigPath_ReturnsConfigurationError()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(["--validate-config", "--config", "bad\0config.json"]);
+
+                Assert.Equal(3, exitCode);
+                Assert.NotEmpty(errorWriter.ToString());
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+            }
+        }
+
+        [Fact]
+        public void DeleteCacheFileForClearCache_ReadOnlyFile_DeletesFile()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-clear-cache-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var cacheFile = Path.Combine(tempDir, "sample.ilcache");
+            File.WriteAllText(cacheFile, "cached");
+            File.SetAttributes(cacheFile, File.GetAttributes(cacheFile) | FileAttributes.ReadOnly);
+
+            try
+            {
+                ProgramRunner.DeleteCacheFileForClearCache(cacheFile);
+                Assert.False(File.Exists(cacheFile));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_PrintConfigFlag_ReflectsCliOverride()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");

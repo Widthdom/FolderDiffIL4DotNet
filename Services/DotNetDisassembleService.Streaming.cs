@@ -117,7 +117,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             finally
             {
-                if (tempAsciiPath != null) FileSystemUtility.DeleteFileSilent(tempAsciiPath);
+                CleanupTemporaryPathBestEffort(tempAsciiPath, "ASCII temp assembly copy");
             }
 
             return (Success: false, IlLines: null, Label: null, Error: lastError);
@@ -190,16 +190,21 @@ namespace FolderDiffIL4DotNet.Services
         /// ilspycmd reads from a temp file; other tools use the stdout lines already collected.
         /// プロセス正常終了後の IL 行を取得。ilspycmd は一時ファイルから、他ツールは収集済み stdout 行を使用。
         /// </summary>
-        private static async Task<IReadOnlyList<string>> ReadIlLinesAfterSuccessAsync(
+        private async Task<IReadOnlyList<string>> ReadIlLinesAfterSuccessAsync(
             bool isIlspy,
             (string workingDirectory, string[] args, string? tempOut) argset,
             List<string> stdoutLines)
         {
             if (isIlspy && !string.IsNullOrEmpty(argset.tempOut) && File.Exists(argset.tempOut))
             {
-                var lines = await File.ReadAllLinesAsync(argset.tempOut);
-                FileSystemUtility.DeleteFileSilent(argset.tempOut);
-                return lines;
+                try
+                {
+                    return await File.ReadAllLinesAsync(argset.tempOut);
+                }
+                finally
+                {
+                    CleanupTemporaryPathBestEffort(argset.tempOut, "ilspy temporary output");
+                }
             }
             return stdoutLines;
         }
