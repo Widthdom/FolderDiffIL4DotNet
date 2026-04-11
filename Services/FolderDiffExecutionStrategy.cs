@@ -39,6 +39,7 @@ namespace FolderDiffIL4DotNet.Services
         private readonly string _newFolderAbsolutePath;
         private readonly bool _optimizeForNetworkShares;
         private readonly HashSet<string> _ignoredExtensions;
+        private readonly StringComparer _pathComparer;
         /// <summary>
         /// Initializes a new instance of <see cref="FolderDiffExecutionStrategy"/>.
         /// <see cref="FolderDiffExecutionStrategy"/> の新しいインスタンスを初期化します。
@@ -61,6 +62,7 @@ namespace FolderDiffIL4DotNet.Services
             _newFolderAbsolutePath = executionContext.NewFolderAbsolutePath;
             _optimizeForNetworkShares = executionContext.OptimizeForNetworkShares;
             _ignoredExtensions = new HashSet<string>(_config.IgnoredExtensions ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            _pathComparer = DetermineRelativePathComparer(_oldFolderAbsolutePath, _newFolderAbsolutePath);
         }
 
         /// <inheritdoc />
@@ -91,10 +93,10 @@ namespace FolderDiffIL4DotNet.Services
         {
             var oldRelativePathSet = new HashSet<string>(
                 oldFilesAbsolutePath.Select(path => Path.GetRelativePath(_oldFolderAbsolutePath, path)),
-                StringComparer.OrdinalIgnoreCase);
+                _pathComparer);
             var newRelativePathSet = new HashSet<string>(
                 newFilesAbsolutePath.Select(path => Path.GetRelativePath(_newFolderAbsolutePath, path)),
-                StringComparer.OrdinalIgnoreCase);
+                _pathComparer);
 
             oldRelativePathSet.UnionWith(newRelativePathSet);
             return oldRelativePathSet.Count;
@@ -125,7 +127,7 @@ namespace FolderDiffIL4DotNet.Services
         {
             var distinctFiles = oldFilesAbsolutePath
                 .Concat(newFilesAbsolutePath)
-                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Distinct(_pathComparer)
                 .ToList();
 
             int total = distinctFiles.Count;
@@ -139,6 +141,64 @@ namespace FolderDiffIL4DotNet.Services
                 progressCallback?.Invoke(total > 0 ? Math.Min((double)(i + 1) * 100.0 / total, 100.0) : 100.0);
             }
             return dotNetCount;
+        }
+
+        private static StringComparer DetermineRelativePathComparer(string oldFolderAbsolutePath, string newFolderAbsolutePath)
+        {
+            return IsCaseInsensitiveDirectory(oldFolderAbsolutePath) && IsCaseInsensitiveDirectory(newFolderAbsolutePath)
+                ? StringComparer.OrdinalIgnoreCase
+                : StringComparer.Ordinal;
+        }
+
+        private static bool IsCaseInsensitiveDirectory(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return true;
+            }
+
+            try
+            {
+                string fullPath = Path.GetFullPath(directoryPath);
+                if (!Directory.Exists(fullPath))
+                {
+                    return OperatingSystem.IsMacOS();
+                }
+
+                string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                string? parentPath = Path.GetDirectoryName(trimmedPath);
+                string directoryName = Path.GetFileName(trimmedPath);
+                string alternateName = ToggleAsciiCase(directoryName);
+                if (string.IsNullOrEmpty(parentPath) || alternateName == directoryName)
+                {
+                    return OperatingSystem.IsMacOS();
+                }
+
+                return Directory.Exists(Path.Combine(parentPath, alternateName));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                return OperatingSystem.IsMacOS();
+            }
+        }
+
+        private static string ToggleAsciiCase(string value)
+        {
+            for (int i = 0; i < value.Length; i++)
+            {
+                char ch = value[i];
+                if (ch is >= 'a' and <= 'z')
+                {
+                    return value[..i] + char.ToUpperInvariant(ch) + value[(i + 1)..];
+                }
+
+                if (ch is >= 'A' and <= 'Z')
+                {
+                    return value[..i] + char.ToLowerInvariant(ch) + value[(i + 1)..];
+                }
+            }
+
+            return value;
         }
     }
 }

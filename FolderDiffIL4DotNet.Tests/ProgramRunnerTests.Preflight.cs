@@ -483,6 +483,19 @@ namespace FolderDiffIL4DotNet.Tests
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_SiblingDirectory_LogsWarning()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var appBase = Path.GetFullPath(AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var siblingPath = appBase + "-sibling";
+
+            RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, siblingPath);
+
+            Assert.Contains(logger.Messages, m => m.Contains("outside the application base directory"));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void WarnIfSystemDirectory_SystemPath_LogsWarning()
         {
             // Arrange / 準備
@@ -521,6 +534,33 @@ namespace FolderDiffIL4DotNet.Tests
             RunPreflightValidator.WarnIfSystemDirectory(logger, safePath);
 
             // Assert / 検証
+            Assert.Empty(logger.Messages);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_PrefixMatchOnly_NoWarning()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            string safePath;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                var systemDir = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (string.IsNullOrEmpty(systemDir))
+                {
+                    return;
+                }
+
+                safePath = systemDir.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + "2";
+            }
+            else
+            {
+                safePath = "/etc2/myreports";
+            }
+
+            RunPreflightValidator.WarnIfSystemDirectory(logger, safePath);
+
             Assert.Empty(logger.Messages);
         }
 

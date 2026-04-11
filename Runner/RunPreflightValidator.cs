@@ -93,7 +93,7 @@ namespace FolderDiffIL4DotNet.Runner
             var appBase = Path.GetFullPath(AppContext.BaseDirectory);
             var normalizedOutput = Path.GetFullPath(resolvedOutputPath);
 
-            if (!normalizedOutput.StartsWith(appBase, StringComparison.OrdinalIgnoreCase))
+            if (!IsSameOrChildPath(normalizedOutput, appBase))
             {
                 logger.LogMessage(AppLogLevel.Warning,
                     $"Output directory '{normalizedOutput}' is outside the application base directory '{appBase}'. Verify this is intentional.",
@@ -131,7 +131,7 @@ namespace FolderDiffIL4DotNet.Runner
                     continue;
 
                 var normalizedSysDir = Path.GetFullPath(sysDir);
-                if (normalizedOutput.StartsWith(normalizedSysDir, StringComparison.OrdinalIgnoreCase))
+                if (IsSameOrChildPath(normalizedOutput, normalizedSysDir))
                 {
                     logger.LogMessage(AppLogLevel.Warning,
                         $"Output directory '{normalizedOutput}' targets a system directory '{normalizedSysDir}'. This may be dangerous.",
@@ -140,6 +140,25 @@ namespace FolderDiffIL4DotNet.Runner
                 }
             }
         }
+
+        internal static bool IsSameOrChildPath(string candidatePath, string parentPath)
+        {
+            var comparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+            var normalizedCandidate = TrimTrailingDirectorySeparators(Path.GetFullPath(candidatePath));
+            var normalizedParent = TrimTrailingDirectorySeparators(Path.GetFullPath(parentPath));
+
+            if (string.Equals(normalizedCandidate, normalizedParent, comparison))
+            {
+                return true;
+            }
+
+            return normalizedCandidate.StartsWith(normalizedParent + Path.DirectorySeparatorChar, comparison);
+        }
+
+        private static string TrimTrailingDirectorySeparators(string path)
+            => path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
         /// <summary>
         /// Validates the old-folder, new-folder, and report-folder paths.

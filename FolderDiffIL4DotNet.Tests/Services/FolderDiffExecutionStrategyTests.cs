@@ -75,6 +75,38 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void ComputeUnionFileCount_CasingOnlyDifference_RespectsCurrentFileSystemSemantics()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-strategy-case-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+
+            try
+            {
+                var strategy = CreateStrategy(
+                    CreateConfig(),
+                    CreateExecutionContext(oldDir, newDir, Path.Combine(tempRoot, "report")),
+                    new FileDiffResultLists(),
+                    new FakeFileSystemService());
+
+                var count = strategy.ComputeUnionFileCount(
+                    new[] { Path.Combine(oldDir, "Case.txt") },
+                    new[] { Path.Combine(newDir, "case.txt") });
+
+                Assert.Equal(IsCaseInsensitiveDirectory(oldDir) ? 1 : 2, count);
+            }
+            finally
+            {
+                if (Directory.Exists(tempRoot))
+                {
+                    Directory.Delete(tempRoot, recursive: true);
+                }
+            }
+        }
+
+        [Fact]
         public void DetermineMaxParallel_WhenAutoAndNetworkOptimized_CapsByNetworkLimit()
         {
             var strategy = CreateStrategy(
@@ -132,6 +164,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
             string reportDir,
             bool optimizeForNetworkShares = false)
             => new(oldDir, newDir, reportDir, optimizeForNetworkShares, detectedNetworkOld: false, detectedNetworkNew: false);
+
+        private static bool IsCaseInsensitiveDirectory(string directoryPath)
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return true;
+            }
+
+            string fullPath = Path.GetFullPath(directoryPath);
+            string trimmedPath = fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string? parentPath = Path.GetDirectoryName(trimmedPath);
+            string directoryName = Path.GetFileName(trimmedPath);
+            if (string.IsNullOrEmpty(parentPath) || string.IsNullOrEmpty(directoryName))
+            {
+                return OperatingSystem.IsMacOS();
+            }
+
+            string alternateName = directoryName[0] switch
+            {
+                >= 'a' and <= 'z' => char.ToUpperInvariant(directoryName[0]) + directoryName[1..],
+                >= 'A' and <= 'Z' => char.ToLowerInvariant(directoryName[0]) + directoryName[1..],
+                _ => directoryName,
+            };
+
+            return alternateName != directoryName && Directory.Exists(Path.Combine(parentPath, alternateName));
+        }
 
         private sealed class FakeFileSystemService : IFileSystemService
         {

@@ -35,7 +35,7 @@ namespace FolderDiffIL4DotNet
             if (opts.OpenConfig)
             {
                 string configDir = !string.IsNullOrWhiteSpace(opts.ConfigPath)
-                    ? Path.GetFullPath(Path.GetDirectoryName(opts.ConfigPath) ?? opts.ConfigPath)
+                    ? Path.GetDirectoryName(Path.GetFullPath(opts.ConfigPath)) ?? AppContext.BaseDirectory
                     : AppContext.BaseDirectory;
                 result = OpenFolder(configDir);
                 if (result != 0) return result;

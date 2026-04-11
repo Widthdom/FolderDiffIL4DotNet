@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Path matching now respects file-system case sensitivity during folder diffing** — Relative-path union counting, remaining-new-file tracking, and ignored/timestamp-warning keying no longer collapse casing-only differences on case-sensitive file systems. Existing directories are probed to choose case-sensitive vs case-insensitive matching for the current run, preventing `Foo.dll` and `foo.dll` from being merged incorrectly on Linux or case-sensitive volumes. Affected: `Services/FolderDiffExecutionStrategy.cs`, `Services/FolderDiffService.cs`, `Models/FileDiffResultLists.ComparisonResults.cs`, `Models/FileDiffResultLists.Metadata.cs`. Tests: `FolderDiffExecutionStrategyTests` (1 new), `FolderDiffServiceTests` (1 new), `FileDiffResultListsTests` (1 updated).
+
+- **`--open-config` now resolves relative config paths before opening the parent folder** — The early-exit folder-open command now derives the directory from `Path.GetFullPath(configPath)` first, so `--open-config --config custom.json` opens the current working directory instead of creating/opening a `custom.json/` folder. Affected: `Runner/ProgramRunner.OpenFolder.cs`. Tests: `ProgramRunnerTests.HelpVersion.cs` (1 new).
+
+- **Output-directory guardrails now require a real path boundary match** — Warnings for "outside app base" and "system directory" checks no longer rely on raw prefix matching. Sibling paths such as `<app-base>-sibling` or `/etc2/...` are no longer misclassified as inside the application base or a protected system directory. Affected: `Runner/RunPreflightValidator.cs`. Tests: `ProgramRunnerTests.Preflight.cs` (2 new).
+
 ### [1.16.4] - 2026-04-11
 
 #### Changed
@@ -1225,6 +1233,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **フォルダ差分のパスマッチングがファイルシステムの大小文字規則に追従** — 相対パスの和集合件数計算、new 側未処理集合の追跡、Ignored/タイムスタンプ警告のキー管理で、大文字小文字だけが異なるパスを case-sensitive なファイルシステム上で誤って統合しないように修正しました。実行時に既存ディレクトリをプローブして、その比較実行に対して case-sensitive / case-insensitive のどちらで扱うべきかを決定し、Linux や case-sensitive ボリュームで `Foo.dll` と `foo.dll` が誤統合される問題を防ぎます。対象: `Services/FolderDiffExecutionStrategy.cs`, `Services/FolderDiffService.cs`, `Models/FileDiffResultLists.ComparisonResults.cs`, `Models/FileDiffResultLists.Metadata.cs`。テスト: `FolderDiffExecutionStrategyTests`（1件追加）, `FolderDiffServiceTests`（1件追加）, `FileDiffResultListsTests`（1件更新）。
+
+- **`--open-config` が相対 config パスを正しく絶対化してから親フォルダを開くよう修正** — 早期終了のフォルダ開放コマンドが先に `Path.GetFullPath(configPath)` を解決してから親ディレクトリを求めるようになり、`--open-config --config custom.json` が `custom.json/` フォルダを誤って作成・開くのではなく、現在の作業ディレクトリを開くようになりました。対象: `Runner/ProgramRunner.OpenFolder.cs`。テスト: `ProgramRunnerTests.HelpVersion.cs`（1件追加）。
+
+- **出力先ガードレールの判定を実際のパス境界ベースへ修正** — 「アプリベース外」と「システムディレクトリ配下」の警告が単純なプレフィックス一致に依存しないようにしました。これにより `<app-base>-sibling` や `/etc2/...` のような兄弟パスが、アプリベース配下や保護対象のシステムディレクトリ配下だと誤判定されなくなります。対象: `Runner/RunPreflightValidator.cs`。テスト: `ProgramRunnerTests.Preflight.cs`（2件追加）。
 
 ### [1.16.4] - 2026-04-11
 

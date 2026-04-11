@@ -10,6 +10,8 @@ namespace FolderDiffIL4DotNet.Models
     /// </summary>
     public sealed partial class FileDiffResultLists
     {
+        private static readonly StringComparer s_relativePathKeyComparer = StringComparer.Ordinal;
+
         // ──────────────────────────────────────────────
         // Diff detail results
         // 差分詳細結果
@@ -76,7 +78,7 @@ namespace FolderDiffIL4DotNet.Models
         /// Relative paths and folder locations (old/new) of files excluded by IgnoredExtensions.
         /// IgnoredExtensions 対象ファイルの相対パスと所在（旧/新フォルダ）情報。
         /// </summary>
-        public ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(StringComparer.OrdinalIgnoreCase);
+        public ConcurrentDictionary<string, IgnoredFileLocation> IgnoredFilesRelativePathToLocation { get; } = new ConcurrentDictionary<string, IgnoredFileLocation>(s_relativePathKeyComparer);
 
         /// <summary>
         /// Records the location info for a file matched by IgnoredExtensions.
