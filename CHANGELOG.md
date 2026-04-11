@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.6] - 2026-04-11
+
 #### Documentation
 
 - **`CLAUDE.md` now documents the full cdidx 1.3 query workflow** — Expanded the maintainer-facing code-search rules to cover full reindex requirements after history/branch changes, symbol-first query strategy (`map`, `inspect`, `definition --body`, `references`, `callers`, `callees`, `outline`), tighter scope control with `--exclude-tests` / `--path` / `--exclude-path` / `--snippet-lines`, and targeted file inspection with `files` / `excerpt`. Affected: `CLAUDE.md`.
@@ -1262,6 +1264,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.6] - 2026-04-11
+
 #### ドキュメント
 
 - **`CLAUDE.md` に cdidx 1.3 のフル検索ワークフローを反映** — メンテナー向けコード検索ルールを拡張し、履歴改変・ブランチ変更後のフル再索引要件、シンボル起点のクエリ戦略（`map`, `inspect`, `definition --body`, `references`, `callers`, `callees`, `outline`）、`--exclude-tests` / `--path` / `--exclude-path` / `--snippet-lines` による絞り込み、`files` / `excerpt` によるピンポイント確認手順を追加しました。対象: `CLAUDE.md`。
@@ -2511,7 +2515,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.5...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.6...HEAD
+[1.16.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.5...v1.16.6
 [1.16.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.4...v1.16.5
 [1.16.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.3...v1.16.4
 [1.16.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.2...v1.16.3
