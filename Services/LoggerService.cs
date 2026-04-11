@@ -162,22 +162,38 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (maxLogGenerations < 0)
                 {
-                    throw new ArgumentOutOfRangeException($"MaxLogGenerations must be a non-negative integer, but was {maxLogGenerations}.");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(maxLogGenerations),
+                        maxLogGenerations,
+                        "MaxLogGenerations must be a non-negative integer.");
                 }
                 var logFilesAbsolutePaths = Directory.GetFiles(_logDirectoryAbsolutePath, $"{LOG_FILE_PREFIX}*.log");
-                if (logFilesAbsolutePaths.Length > maxLogGenerations)
+                int filesToDelete = logFilesAbsolutePaths.Length - maxLogGenerations;
+                if (filesToDelete > 0)
                 {
-                    var oldLogFilesToDeleteAbsolutePaths = logFilesAbsolutePaths.OrderBy(f => f).Take(logFilesAbsolutePaths.Length - maxLogGenerations);
-                    foreach (var oldLogfileAbsolutePath in oldLogFilesToDeleteAbsolutePaths)
+                    foreach (var oldLogfileAbsolutePath in logFilesAbsolutePaths.OrderBy(f => f))
                     {
+                        if (filesToDelete <= 0)
+                        {
+                            break;
+                        }
+
+                        // Never delete the active log file; otherwise the cleanup log entry can recreate it.
+                        // 現在のログファイルは削除しない。削除ログの出力で再生成されてしまうため。
+                        if (string.Equals(oldLogfileAbsolutePath, _logFileAbsolutePath, StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
                         File.Delete(oldLogfileAbsolutePath);
                         LogMessage(AppLogLevel.Info, $"Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
+                        filesToDelete--;
                     }
                 }
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                LogMessage(AppLogLevel.Warning, ex.Message + ".", shouldOutputMessageToConsole: true, ex);
+                LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
             }
             catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {

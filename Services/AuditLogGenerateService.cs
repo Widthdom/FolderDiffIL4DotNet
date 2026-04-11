@@ -88,10 +88,10 @@ namespace FolderDiffIL4DotNet.Services
                     $"Audit log generated: {auditLogPath}",
                     shouldOutputMessageToConsole: true);
             }
-            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write audit log to '{auditLogPath}': {ex.Message}",
+                    $"Failed to write audit log to '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }

@@ -73,10 +73,10 @@ namespace FolderDiffIL4DotNet.Services
                     $"SBOM generated ({format}): {sbomPath}",
                     shouldOutputMessageToConsole: true);
             }
-            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write SBOM to '{sbomPath}': {ex.Message}",
+                    $"Failed to write SBOM to '{sbomPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }

@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
+using FolderDiffIL4DotNet.Core.Common;
+using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
 
@@ -67,17 +69,35 @@ namespace FolderDiffIL4DotNet.Services
             {
                 // Stream HTML chunks directly to disk to reduce peak memory usage for large reports.
                 // 大規模レポートのピークメモリ使用量を削減するため、HTML チャンクを直接ディスクにストリーム書き出しする。
+                PathValidator.ValidateAbsolutePathLengthOrThrow(htmlPath);
+                PrepareOutputPathForOverwrite(htmlPath);
                 using var writer = new StreamWriter(htmlPath, append: false, Encoding.UTF8, bufferSize: 65536);
                 WriteHtml(writer,
                     context.OldFolderAbsolutePath, context.NewFolderAbsolutePath, context.ReportsFolderAbsolutePath,
                     context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write HTML report to '{htmlPath}': {ex.Message}",
+                    $"Failed to write HTML report to '{htmlPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
+        }
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
         }
 
         // ── Build ────────────────────────────────────────────────────────────

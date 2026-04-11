@@ -349,6 +349,63 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void CleanupOldLogFiles_MaxGenerationsZero_PreservesActiveLogAndDeletesArchivedLogs()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var archived1 = Path.Combine(tempDir, "log_20240101.log");
+            var archived2 = Path.Combine(tempDir, "log_20240102.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(archived1, "a");
+            File.WriteAllText(archived2, "b");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 0);
+
+                Assert.False(File.Exists(archived1));
+                Assert.False(File.Exists(archived2));
+                Assert.True(File.Exists(active));
+                var logText = File.ReadAllText(active);
+                Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_WithNegativeGeneration_LogsSingleReadableWarningMessage()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(-1);
+
+                var logText = File.ReadAllText(active);
+                Assert.Contains("MaxLogGenerations must be a non-negative integer.", logText, StringComparison.Ordinal);
+                Assert.DoesNotContain("integer..", logText, StringComparison.Ordinal);
+                Assert.Contains("maxLogGenerations", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
         public void FormatMessage_WhitespaceOnlyMessage_ReturnsPrefixOnly()
         {
             // When message is whitespace-only, FormatMessage should return just the prefix
