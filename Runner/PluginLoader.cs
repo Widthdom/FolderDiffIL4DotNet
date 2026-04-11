@@ -47,6 +47,7 @@ namespace FolderDiffIL4DotNet.Runner
             IReadOnlyDictionary<string, string>? trustedHashes = null)
         {
             var plugins = new List<IPlugin>();
+            var processedPluginDllPaths = new HashSet<string>(GetPluginPathComparer());
 
             foreach (var searchPath in searchPaths)
             {
@@ -58,13 +59,21 @@ namespace FolderDiffIL4DotNet.Runner
                     continue;
                 }
 
-                foreach (var pluginDir in Directory.GetDirectories(searchPath))
+                foreach (var pluginDir in TryEnumeratePluginDirectories(searchPath))
                 {
                     var dirName = Path.GetFileName(pluginDir);
-                    var candidateDll = Path.Combine(pluginDir, $"{dirName}.dll");
+                    var candidateDll = Path.GetFullPath(Path.Combine(pluginDir, $"{dirName}.dll"));
 
                     if (!File.Exists(candidateDll))
                         continue;
+
+                    if (!processedPluginDllPaths.Add(candidateDll))
+                    {
+                        _logger.LogMessage(AppLogLevel.Info,
+                            $"Plugin DLL already processed from another search path, skipping duplicate: {candidateDll}",
+                            shouldOutputMessageToConsole: false);
+                        continue;
+                    }
 
                     var plugin = TryLoadPlugin(candidateDll, enabledPluginIds, hostVersion, strictMode, trustedHashes);
                     if (plugin != null)
@@ -75,6 +84,22 @@ namespace FolderDiffIL4DotNet.Runner
             }
 
             return plugins;
+        }
+
+        private IEnumerable<string> TryEnumeratePluginDirectories(string searchPath)
+        {
+            try
+            {
+                return Directory.GetDirectories(searchPath);
+            }
+            catch (Exception ex) when (ex is DirectoryNotFoundException or IOException
+                or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to enumerate plugin search path '{searchPath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
+                return Array.Empty<string>();
+            }
         }
 
         /// <summary>
@@ -239,5 +264,8 @@ namespace FolderDiffIL4DotNet.Runner
             using var stream = File.OpenRead(pluginDllPath);
             return Convert.ToHexString(SHA256.HashData(stream));
         }
+
+        private static StringComparer GetPluginPathComparer()
+            => OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
     }
 }

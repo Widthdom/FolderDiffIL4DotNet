@@ -9,6 +9,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **`CLAUDE.md` now documents the full cdidx 1.3 query workflow** — Expanded the maintainer-facing code-search rules to cover full reindex requirements after history/branch changes, symbol-first query strategy (`map`, `inspect`, `definition --body`, `references`, `callers`, `callees`, `outline`), tighter scope control with `--exclude-tests` / `--path` / `--exclude-path` / `--snippet-lines`, and targeted file inspection with `files` / `excerpt`. Affected: `CLAUDE.md`.
+
+- **Testing guide coverage notes now reflect the latest plugin and runner hardening checks** — Updated `doc/TESTING_GUIDE.md` so the scope map explicitly mentions duplicate search-path suppression for plugin loading and post-process warning logs retaining both action type and exception type. Affected: `doc/TESTING_GUIDE.md`.
+
+#### Fixed
+
+- **Plugin discovery now suppresses duplicate search-path processing and preserves richer best-effort diagnostics** — `PluginLoader` now normalizes and de-duplicates plugin DLL paths across configured search paths, preventing the same DLL from being loaded or logged multiple times when a path is repeated. Search-path directory enumeration failures are also downgraded to warning logs instead of aborting plugin discovery. In addition, `DiffPipelineExecutor` now includes the post-process action type and exception type in best-effort warning logs, and `FileDiffService` assembly semantic-analysis warnings now retain exception-type context as well. Affected: `Runner/PluginLoader.cs`, `Runner/DiffPipelineExecutor.cs`, `Services/FileDiffService.cs`. Tests: `PluginLoaderTests` (1 new: `LoadPlugins_DuplicateSearchPaths_ProcessEachPluginDllOnlyOnce`), `DiffPipelineExecutorTests` (1 new: `ExecuteAsync_WhenPostProcessActionThrows_LogsActionAndExceptionTypeButReturnsSuccess`), `FileDiffServiceUnitTests.ILComparison` (1 updated: `FilesAreEqualAsync_WhenSemanticAnalysisFails_DoesNotCrashAndRecordsNoChanges`).
+
+- **Preflight write-permission failures now log `UnauthorizedAccessException` causes before rethrowing** — `CheckReportsParentWritableOrThrow()` already logged `IOException` probe failures, but the permission-denied branch rethrew without recording the original exception even though the developer guide documented cause-specific logging for both cases. The method now logs the concrete exception type/message for `UnauthorizedAccessException` as well and preserves the original exception as the inner exception on the rethrow. Affected: `Runner/RunPreflightValidator.cs`. Tests: `ProgramRunnerTests.Preflight.cs` (updated `CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_ThrowsUnauthorizedAccessException`).
+
+- **Dependency-change analysis now surfaces best-effort parse failures in warning logs** — `DepsJsonAnalyzer` previously swallowed invalid `.deps.json` and malformed `targets` sections by returning `null` (or partial results) with no diagnostic trail from the caller side. `Analyze()` now accepts an optional error callback, `FileDiffService` forwards those failures into warning logs with the concrete exception type, and `.deps.json` report enrichment still remains best-effort. Affected: `Services/DepsJsonAnalyzer.cs`, `Services/FileDiffService.cs`. Tests: `DepsJsonAnalyzerTests` (2 new: `Analyze_InvalidJson_InvokesOnErrorCallbackAndReturnsNull`, `Analyze_InvalidTargetsSection_InvokesOnErrorCallbackButStillReturnsSummary`), `FileDiffServiceUnitTests.TextComparison.cs` (1 new: `FilesAreEqualAsync_WhenDependencyAnalysisFails_LogsWarningWithExceptionType`).
+
 ### [1.16.5] - 2026-04-11
 
 #### Documentation
@@ -1247,6 +1261,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### ドキュメント
+
+- **`CLAUDE.md` に cdidx 1.3 のフル検索ワークフローを反映** — メンテナー向けコード検索ルールを拡張し、履歴改変・ブランチ変更後のフル再索引要件、シンボル起点のクエリ戦略（`map`, `inspect`, `definition --body`, `references`, `callers`, `callees`, `outline`）、`--exclude-tests` / `--path` / `--exclude-path` / `--snippet-lines` による絞り込み、`files` / `excerpt` によるピンポイント確認手順を追加しました。対象: `CLAUDE.md`。
+
+- **テストガイドのカバレッジ説明を最新のプラグイン/Runner 強化内容へ更新** — `doc/TESTING_GUIDE.md` の scope map に、プラグイン読み込みでの重複サーチパス抑止と、ポストプロセス失敗 Warning ログへアクション型・例外型が残ることを明記しました。対象: `doc/TESTING_GUIDE.md`。
+
+#### 修正
+
+- **プラグイン探索で重複サーチパスの二重処理を抑止し、best-effort 診断も詳細化** — `PluginLoader` は設定されたサーチパス全体でプラグイン DLL パスを正規化して重複排除するようになり、同じパスが重複指定されても同一 DLL を二重に読み込んだり二重に失敗ログを出したりしなくなりました。サーチパスのディレクトリ列挙失敗も、プラグイン探索全体を中断せず Warning ログへ落として継続します。あわせて `DiffPipelineExecutor` の best-effort Warning ログはポストプロセスアクション型と例外型を含むようになり、`FileDiffService` のアセンブリセマンティック解析 Warning も例外型コンテキストを保持するよう修正しました。対象: `Runner/PluginLoader.cs`, `Runner/DiffPipelineExecutor.cs`, `Services/FileDiffService.cs`。テスト: `PluginLoaderTests`（1件追加: `LoadPlugins_DuplicateSearchPaths_ProcessEachPluginDllOnlyOnce`）, `DiffPipelineExecutorTests`（1件追加: `ExecuteAsync_WhenPostProcessActionThrows_LogsActionAndExceptionTypeButReturnsSuccess`）, `FileDiffServiceUnitTests.ILComparison`（1件更新: `FilesAreEqualAsync_WhenSemanticAnalysisFails_DoesNotCrashAndRecordsNoChanges`）。
 
 ### [1.16.5] - 2026-04-11
 

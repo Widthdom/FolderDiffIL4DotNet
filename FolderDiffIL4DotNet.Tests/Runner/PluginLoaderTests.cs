@@ -106,6 +106,27 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         }
 
         [Fact]
+        public void LoadPlugins_DuplicateSearchPaths_ProcessEachPluginDllOnlyOnce()
+        {
+            // Arrange: same search path provided twice with one invalid plugin DLL
+            // 準備: 同じサーチパスを 2 回指定し、そこに無効なプラグイン DLL を 1 つ配置
+            var pluginDir = Path.Combine(_tempDir, "DuplicatePlugin");
+            Directory.CreateDirectory(pluginDir);
+            File.WriteAllBytes(Path.Combine(pluginDir, "DuplicatePlugin.dll"), new byte[] { 0x00, 0x01, 0x02, 0x03 });
+
+            var searchPaths = new List<string> { _tempDir, _tempDir };
+            var enabledIds = new HashSet<string>();
+
+            // Act / 実行
+            var result = _loader.LoadPlugins(searchPaths, enabledIds, new Version(1, 0, 0));
+
+            // Assert / 検証
+            Assert.Empty(result);
+            Assert.Single(_logger.Entries, e => e.Message.Contains("Failed to load plugin", StringComparison.Ordinal));
+            Assert.Single(_logger.Entries, e => e.Message.Contains("skipping duplicate", StringComparison.Ordinal));
+        }
+
+        [Fact]
         public void Constructor_NullLogger_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() => new PluginLoader(null!));

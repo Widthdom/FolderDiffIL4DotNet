@@ -255,10 +255,16 @@ namespace FolderDiffIL4DotNet.Runner
             {
                 File.WriteAllBytes(probePath, Array.Empty<byte>());
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
+                logger.LogMessage(
+                    AppLogLevel.Error,
+                    $"Write-permission probe failed on '{parent}': {ex.GetType().Name}: {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    exception: ex);
                 throw new UnauthorizedAccessException(
-                    $"The reports parent directory is not writable: '{parent}'. Ensure the process has write permission.");
+                    $"The reports parent directory is not writable: '{parent}'. Ensure the process has write permission.",
+                    ex);
             }
             catch (IOException ex)
             {

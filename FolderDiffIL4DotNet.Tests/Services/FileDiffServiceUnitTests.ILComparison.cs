@@ -82,6 +82,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // No semantic changes should be recorded since analysis returned null
             // 解析が null を返したためセマンティック変更は記録されないこと
             Assert.False(resultLists.FileRelativePathToAssemblySemanticChanges.ContainsKey(relativePath));
+            var warning = Assert.Single(logger.Entries, entry =>
+                entry.LogLevel == AppLogLevel.Warning
+                && entry.Message.Contains("Semantic analysis failed", StringComparison.Ordinal));
+            Assert.NotNull(warning.Exception);
+            Assert.Contains(warning.Exception!.GetType().Name, warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]

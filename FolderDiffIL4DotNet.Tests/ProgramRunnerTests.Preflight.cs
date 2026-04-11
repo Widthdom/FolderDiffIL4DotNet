@@ -83,6 +83,8 @@ namespace FolderDiffIL4DotNet.Tests
             Directory.CreateDirectory(dir);
             try
             {
+                var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
                 // Remove write permission from the directory (read + execute only)
                 // ディレクトリから書き込み権限を削除（読み取り＋実行のみ）
 #pragma warning disable CA1416 // Unix-only API; test is skipped on Windows / Unix 専用 API; Windows ではテストがスキップされます
@@ -91,8 +93,14 @@ namespace FolderDiffIL4DotNet.Tests
 
                 // Pass a path whose parent is `dir` -- the check probes a file inside `dir`
                 // 親ディレクトリが `dir` のパスを渡す — チェックは `dir` 内のファイルを調べる
-                Assert.Throws<UnauthorizedAccessException>(() =>
-                    RunPreflightValidator.CheckReportsParentWritableOrThrow(new TestLogger(logFileAbsolutePath: "test.log"), Path.Combine(dir, "label")));
+                var exception = Assert.Throws<UnauthorizedAccessException>(() =>
+                    RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, Path.Combine(dir, "label")));
+                Assert.NotNull(exception.InnerException);
+                Assert.IsType<UnauthorizedAccessException>(exception.InnerException);
+                var logEntry = Assert.Single(logger.Entries);
+                Assert.Equal(AppLogLevel.Error, logEntry.LogLevel);
+                Assert.Contains("Write-permission probe failed", logEntry.Message, StringComparison.Ordinal);
+                Assert.IsType<UnauthorizedAccessException>(logEntry.Exception);
             }
             finally
             {
@@ -260,49 +268,6 @@ namespace FolderDiffIL4DotNet.Tests
                 var ex = Record.Exception(() =>
                     RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, Path.Combine(dir, "label")));
                 Assert.Null(ex);
-            }
-            finally
-            {
-                TryDeleteDirectory(dir);
-            }
-        }
-
-        [Fact]
-        public void CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_LogsAndThrowsIOException()
-        {
-            // On read-only filesystem mounts or certain I/O error conditions,
-            // the method must log the cause and throw IOException instead of silently returning.
-            // 読み取り専用ファイルシステムマウントや特定の I/O エラー条件で、
-            // メソッドはサイレントリターンではなく原因をログ出力し IOException をスローしなければならない。
-            //
-            // Note: this behavior is verified indirectly via the integration test
-            // RunAsync_WithInvalidReportLabel_ReturnsErrorBeforeTryingToLoadConfig.
-            // The IOException catch block now logs and re-throws instead of returning silently.
-            // IOException の catch ブロックがサイレントリターンではなくログ出力して再スローするようになった。
-            // This test validates the contract: IOException is NOT swallowed.
-            // このテストは契約を検証する: IOException は握りつぶされない。
-
-            // We cannot easily simulate IOException in a static method without a filesystem seam,
-            // so we verify the writable-parent happy path here. The read-only UnauthorizedAccessException
-            // test above confirms the permission-denied path, and the integration tests in ProgramRunner
-            // confirm the end-to-end exit code mapping for IOException.
-            // 静的メソッドでファイルシステムのシームなしに IOException をシミュレートするのは難しいため、
-            // ここでは書き込み可能な親のハッピーパスを検証する。上記の読み取り専用テストは権限拒否パスを確認し、
-            // ProgramRunner の統合テストが IOException の終了コードマッピングを確認する。
-
-            // Verify the method signature requires ILoggerService (compile-time contract check).
-            // メソッドシグネチャが ILoggerService を要求することを確認（コンパイル時の契約チェック）。
-            var logger = new TestLogger(logFileAbsolutePath: "test.log");
-            var dir = Path.Combine(Path.GetTempPath(), "fd-perm-io-" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(dir);
-            try
-            {
-                // Writable directory should not throw
-                // 書き込み可能なディレクトリでは例外が発生しないこと
-                var ex = Record.Exception(() =>
-                    RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, Path.Combine(dir, "label")));
-                Assert.Null(ex);
-                Assert.Empty(logger.Messages); // no log output for happy path / ハッピーパスではログ出力なし
             }
             finally
             {

@@ -341,5 +341,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Empty(fileComparisonService.ReadChunkCalls);
         }
 
+        [Fact]
+        public async Task FilesAreEqualAsync_WhenDependencyAnalysisFails_LogsWarningWithExceptionType()
+        {
+            const string relativePath = "app.deps.json";
+            var fileComparisonService = new FakeFileComparisonService
+            {
+                HashResult = false,
+                DotNetDetectionResult = new DotNetExecutableDetectionResult(DotNetExecutableDetectionStatus.NotDotNetExecutable),
+                TextDiffResult = false
+            };
+            var ilOutputService = new FakeILOutputService();
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            var service = CreateService(
+                fileComparisonService,
+                ilOutputService,
+                resultLists,
+                logger,
+                optimizeForNetworkShares: true,
+                configure: config =>
+                {
+                    config.TextFileExtensions = new() { ".json" };
+                    config.ShouldIncludeDependencyChangesInReport = true;
+                });
+
+            var areEqual = await service.FilesAreEqualAsync(relativePath, maxParallel: 1);
+
+            Assert.False(areEqual);
+            var warning = Assert.Single(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Dependency change analysis failed", StringComparison.Ordinal));
+            Assert.NotNull(warning.Exception);
+            Assert.Contains(warning.Exception.GetType().Name, warning.Message, StringComparison.Ordinal);
+            Assert.Empty(resultLists.FileRelativePathToDependencyChanges);
+        }
+
     }
 }

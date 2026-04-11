@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using Xunit;
@@ -147,6 +148,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void Analyze_InvalidJson_InvokesOnErrorCallbackAndReturnsNull()
+        {
+            var oldFile = CreateDepsJson("old-callback.deps.json", "not valid json");
+            var newFile = CreateDepsJson("new-callback.deps.json", @"{""libraries"":{""A/1.0.0"":{}}}");
+            Exception? captured = null;
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile, ex => captured = ex);
+
+            Assert.Null(result);
+            Assert.NotNull(captured);
+            Assert.IsAssignableFrom<JsonException>(captured);
+        }
+
+        [Fact]
         public void Analyze_MissingFile_ReturnsNull()
         {
             var newFile = CreateDepsJson("new.deps.json", @"{""libraries"":{""A/1.0.0"":{}}}");
@@ -231,6 +246,35 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.NotNull(result);
             Assert.Equal(1, result!.UpdatedCount);
+        }
+
+        [Fact]
+        public void Analyze_InvalidTargetsSection_InvokesOnErrorCallbackButStillReturnsSummary()
+        {
+            var oldFile = CreateDepsJson("old-targets.deps.json", @"{
+  ""libraries"": {
+    ""PackageA/1.0.0"": {}
+  },
+  ""targets"": {
+    "".NETCoreApp,Version=v8.0"": 123
+  }
+}");
+            var newFile = CreateDepsJson("new-targets.deps.json", @"{
+  ""libraries"": {
+    ""PackageA/2.0.0"": {}
+  },
+  ""targets"": {
+    "".NETCoreApp,Version=v8.0"": {}
+  }
+}");
+            Exception? captured = null;
+
+            var result = DepsJsonAnalyzer.Analyze(oldFile, newFile, ex => captured = ex);
+
+            Assert.NotNull(result);
+            Assert.Equal(1, result!.UpdatedCount);
+            Assert.NotNull(captured);
+            Assert.IsType<InvalidOperationException>(captured);
         }
 
         [Fact]

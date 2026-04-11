@@ -23,7 +23,7 @@ namespace FolderDiffIL4DotNet.Services
         /// 2 つの .deps.json ファイルを解析し、依存関係変更の要約を返します。
         /// 解析に失敗した場合は <see langword="null"/> を返します（ベストエフォート）。
         /// </summary>
-        public static DependencyChangeSummary? Analyze(string oldFilePath, string newFilePath)
+        public static DependencyChangeSummary? Analyze(string oldFilePath, string newFilePath, Action<Exception>? onError = null)
         {
             try
             {
@@ -55,7 +55,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
 
                 // Build reverse index: package → referencing assemblies / 逆引きインデックス構築: パッケージ → 参照アセンブリ
-                var reverseIndex = BuildReferencingAssembliesIndex(newFilePath, oldFilePath);
+                var reverseIndex = BuildReferencingAssembliesIndex(newFilePath, oldFilePath, onError);
 
                 // Classify importance and attach referencing assemblies for each entry
                 // 各エントリの重要度分類と参照アセンブリの付与
@@ -78,8 +78,9 @@ namespace FolderDiffIL4DotNet.Services
                 return new DependencyChangeSummary { Entries = entries };
             }
 #pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
-            catch
+            catch (Exception ex)
             {
+                onError?.Invoke(ex);
                 return null;
             }
 #pragma warning restore CA1031
@@ -189,11 +190,11 @@ namespace FolderDiffIL4DotNet.Services
         /// 旧ファイルと新ファイルの両方からマージします。
         /// </summary>
         internal static Dictionary<string, List<string>> BuildReferencingAssembliesIndex(
-            string newFilePath, string oldFilePath)
+            string newFilePath, string oldFilePath, Action<Exception>? onError = null)
         {
             var index = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-            CollectReferencesFromTargets(newFilePath, index);
-            CollectReferencesFromTargets(oldFilePath, index);
+            CollectReferencesFromTargets(newFilePath, index, onError);
+            CollectReferencesFromTargets(oldFilePath, index, onError);
             // Sort each list and deduplicate / 各リストをソートして重複排除
             foreach (var kv in index)
             {
@@ -209,7 +210,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Parses a single .deps.json targets section and populates the reverse index.
         /// 単一の .deps.json の targets セクションを解析し逆引きインデックスに追加します。
         /// </summary>
-        private static void CollectReferencesFromTargets(string filePath, Dictionary<string, List<string>> index)
+        private static void CollectReferencesFromTargets(string filePath, Dictionary<string, List<string>> index, Action<Exception>? onError)
         {
             try
             {
@@ -246,7 +247,10 @@ namespace FolderDiffIL4DotNet.Services
                 }
             }
 #pragma warning disable CA1031 // ベストエフォート / best-effort
-            catch { /* ignore parse failures */ }
+            catch (Exception ex)
+            {
+                onError?.Invoke(ex);
+            }
 #pragma warning restore CA1031
         }
 
