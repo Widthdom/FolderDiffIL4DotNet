@@ -14,6 +14,9 @@ dotnet tool install -g nildiff
 # Compare two folders
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
+# Or omit the label to auto-generate a high-resolution timestamp
+nildiff "/path/to/old-folder" "/path/to/new-folder" --no-pause
+
 # Interactive wizard mode
 nildiff --wizard
 
@@ -40,6 +43,8 @@ The tool works out of the box with default settings. To customize behavior, crea
 ```bash
 nildiff "/old" "/new" "label" --config /path/to/config.json
 ```
+
+When the report label is omitted, nildiff auto-generates a high-resolution timestamp label. Tokens beginning with `--` are treated as options, not report labels.
 
 Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`). For maintainer-only IL noise suppression, `--creator` applies the predefined `buildserver-winforms` `ILIgnoreLineContainingStrings` profile. See the [annotated sample config](https://github.com/Widthdom/FolderDiffIL4DotNet/blob/main/doc/config.sample.jsonc) for all available settings.
 

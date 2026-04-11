@@ -73,6 +73,18 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void CanHandle_WhenDetectionThrowsRecoverableException_ReturnsFalse()
+        {
+            var fakeComparison = new FakeFileComparisonServiceForProvider
+            {
+                ThrowOnDetect = new ArgumentException("bad path")
+            };
+            var provider = CreateProvider(fileComparisonService: fakeComparison);
+
+            Assert.False(provider.CanHandle("bad\0path.dll"));
+        }
+
+        [Fact]
         public async Task DisassembleAsync_DelegatesAndReturnsSuccess()
         {
             var fakeDisassemble = new FakeDisassembleService
@@ -106,6 +118,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Assert / 検証
             Assert.False(result.Success);
             Assert.Contains("Tool not found", result.CommandString);
+            Assert.Contains("InvalidOperationException", result.CommandString);
+            Assert.Contains("InvalidOperationException", result.VersionLabel);
         }
 
         [Fact]
@@ -160,12 +174,21 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             public DotNetExecutableDetectionResult DotNetDetectionResult { get; set; } =
                 new(DotNetExecutableDetectionStatus.NotDotNetExecutable);
+            public Exception? ThrowOnDetect { get; set; }
 
             public Task<bool> DiffFilesByHashAsync(string file1, string file2) => Task.FromResult(false);
             public Task<(bool, string?, string?)> DiffFilesByHashWithHexAsync(string file1, string file2)
                 => Task.FromResult<(bool, string?, string?)>((false, null, null));
             public Task<bool> DiffTextFilesAsync(string file1, string file2) => Task.FromResult(false);
-            public DotNetExecutableDetectionResult DetectDotNetExecutable(string path) => DotNetDetectionResult;
+            public DotNetExecutableDetectionResult DetectDotNetExecutable(string path)
+            {
+                if (ThrowOnDetect != null)
+                {
+                    throw ThrowOnDetect;
+                }
+
+                return DotNetDetectionResult;
+            }
             public bool FileExists(string path) => false;
             public long GetFileLength(string path) => 0;
             public Task<int> ReadChunkAsync(string path, long offset, Memory<byte> buffer, CancellationToken ct)

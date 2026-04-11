@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace FolderDiffIL4DotNet.Runner
 {
     /// <summary>
@@ -257,6 +260,81 @@ namespace FolderDiffIL4DotNet.Runner
             bool multipleSpinnersDetected = spinnerFlagCount > 1;
 
             return new CliOptions(showHelp, showVersion, showBanner, noPause, configPath, threadsOverride, noIlCache, clearCache, skipIl, noTimestampWarnings, creator, creatorIlIgnoreProfile, printConfig, validateConfig, dryRun, coffee, beer, matcha, whisky, wine, ramen, sushi, bell, wizard, showCredits, randomSpinner, multipleSpinnersDetected, logFormatOverride, outputDirectory, openReports, openConfig, openLogs, parseError);
+        }
+
+        /// <summary>
+        /// Extracts positional run arguments (oldFolder, newFolder, optional reportLabel) while skipping known CLI options and their values.
+        /// Tokens starting with <c>--</c> are treated as options rather than report-label candidates.
+        /// 既知の CLI オプションとその値をスキップし、位置引数（oldFolder, newFolder, 任意の reportLabel）を抽出する。
+        /// <c>--</c> で始まるトークンは reportLabel 候補ではなくオプションとして扱う。
+        /// </summary>
+        internal static string[] ExtractPositionalArguments(string[]? args)
+        {
+            if (args == null || args.Length == 0)
+            {
+                return Array.Empty<string>();
+            }
+
+            var positionalArguments = new List<string>(capacity: 3);
+            for (int i = 0; i < args.Length; i++)
+            {
+                string? arg = args[i];
+                if (arg == null)
+                {
+                    continue;
+                }
+
+                switch (arg.ToLowerInvariant())
+                {
+                    case OPT_CONFIG:
+                    case OPT_THREADS:
+                    case OPT_CREATOR_IL_IGNORE_PROFILE:
+                    case OPT_LOG_FORMAT:
+                    case OPT_OUTPUT:
+                        if (i + 1 < args.Length && args[i + 1] != null && !args[i + 1]!.StartsWith("-", StringComparison.Ordinal))
+                        {
+                            i++;
+                        }
+                        break;
+                    case OPT_HELP_LONG:
+                    case OPT_HELP_SHORT:
+                    case OPT_VERSION:
+                    case OPT_BANNER:
+                    case NO_PAUSE:
+                    case OPT_NO_IL_CACHE:
+                    case OPT_CLEAR_CACHE:
+                    case OPT_SKIP_IL:
+                    case OPT_NO_TIMESTAMP_WARNINGS:
+                    case OPT_CREATOR:
+                    case OPT_PRINT_CONFIG:
+                    case OPT_VALIDATE_CONFIG:
+                    case OPT_DRY_RUN:
+                    case OPT_COFFEE:
+                    case OPT_BEER:
+                    case OPT_MATCHA:
+                    case OPT_WHISKY:
+                    case OPT_WINE:
+                    case OPT_RAMEN:
+                    case OPT_SUSHI:
+                    case OPT_BELL:
+                    case OPT_WIZARD:
+                    case OPT_RANDOM_SPINNER:
+                    case OPT_CREDITS:
+                    case OPT_OPEN_REPORTS:
+                    case OPT_OPEN_CONFIG:
+                    case OPT_OPEN_LOGS:
+                        break;
+                    default:
+                        if (!arg.StartsWith("--", StringComparison.Ordinal)
+                            && !(arg.StartsWith("-", StringComparison.Ordinal) && arg.Length == 2))
+                        {
+                            positionalArguments.Add(arg);
+                        }
+                        break;
+                }
+            }
+
+            return positionalArguments.ToArray();
         }
     }
 }

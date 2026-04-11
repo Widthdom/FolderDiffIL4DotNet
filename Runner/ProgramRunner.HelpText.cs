@@ -7,11 +7,12 @@ namespace FolderDiffIL4DotNet
     public sealed partial class ProgramRunner
     {
         private const string HELP_TEXT =
-            "Usage: " + Constants.APP_NAME + " <oldFolder> <newFolder> <reportLabel> [options]\n\n" +
+            "Usage: " + Constants.APP_NAME + " <oldFolder> <newFolder> [reportLabel] [options]\n\n" +
             "Arguments:\n" +
             "  <oldFolder>    Absolute path to the baseline (old) folder.\n" +
             "  <newFolder>    Absolute path to the comparison (new) folder.\n" +
-            "  <reportLabel>  Label used as the subfolder name under Reports/.\n\n" +
+            "  [reportLabel]  Optional label used as the subfolder name under Reports/.\n" +
+            "                 When omitted, a high-resolution timestamp label is auto-generated.\n\n" +
             "Options:\n" +
             "  --help, -h                  Show this help message and exit.\n" +
             "  --version                   Show the application version and exit.\n" +
@@ -28,8 +29,9 @@ namespace FolderDiffIL4DotNet
             "  --creator                   Apply the default maintainer IL ignore profile.\n" +
             "  --creator-il-ignore-profile <name>\n" +
             "                              Apply a maintainer-managed IL ignore profile and enable IL string filtering.\n" +
-            "  --wizard                    Interactive mode: prompts for old/new folders and report label.\n" +
-            "                              Drag-and-drop friendly (auto-strips quotes, file:// URIs).\n" +
+            "  --wizard                    Interactive mode: prompts for old/new folders and an optional report label.\n" +
+            "                              Shows existing report folders before the label prompt; press Enter to auto-generate.\n" +
+            "                              Drag-and-drop friendly.\n" +
             "  --dry-run                   Enumerate files and show statistics without running comparison.\n" +
             "  --coffee                    Use coffee-themed spinner animation during execution.\n" +
             "  --beer                      Use beer-themed spinner animation during execution.\n" +

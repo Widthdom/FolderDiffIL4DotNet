@@ -80,17 +80,48 @@ namespace FolderDiffIL4DotNet.Services
 
                 var json = JsonSerializer.Serialize(record, jsonOptions);
                 PathValidator.ValidateAbsolutePathLengthOrThrow(auditLogPath);
+                PrepareOutputPathForOverwrite(auditLogPath);
                 File.WriteAllText(auditLogPath, json, Encoding.UTF8);
-                FileSystemUtility.TrySetReadOnly(auditLogPath);
+                TrySetReadOnly(auditLogPath);
 
                 _logger.LogMessage(AppLogLevel.Info,
                     $"Audit log generated: {auditLogPath}",
                     shouldOutputMessageToConsole: true);
             }
-            catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write audit log to '{auditLogPath}': {ex.Message}",
+                    $"Failed to write audit log to '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
+            }
+        }
+
+        private static void PrepareOutputPathForOverwrite(string outputFileAbsolutePath)
+        {
+            if (!File.Exists(outputFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(outputFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(outputFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+
+            File.Delete(outputFileAbsolutePath);
+        }
+
+        private void TrySetReadOnly(string auditLogPath)
+        {
+            try
+            {
+                FileSystemUtility.TrySetReadOnly(auditLogPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to mark audit log as read-only: '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -106,10 +137,12 @@ namespace FolderDiffIL4DotNet.Services
             var stats = _fileDiffResultLists.SummaryStatistics;
             var files = BuildFileEntries(oldFolderAbsolutePath, newFolderAbsolutePath);
 
-            var mdReportHash = ComputeFileHash(
-                Path.Combine(reportsFolderAbsolutePath, "diff_report.md"));
-            var htmlReportHash = ComputeFileHash(
-                Path.Combine(reportsFolderAbsolutePath, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+            var mdReportHash = TryComputeReportHash(
+                Path.Combine(reportsFolderAbsolutePath, "diff_report.md"),
+                "Markdown report");
+            var htmlReportHash = TryComputeReportHash(
+                Path.Combine(reportsFolderAbsolutePath, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME),
+                "HTML report");
 
             var disassemblerAvailability = _fileDiffResultLists.DisassemblerAvailability?
                 .Select(p => new AuditLogDisassemblerAvailability
@@ -152,22 +185,14 @@ namespace FolderDiffIL4DotNet.Services
             // Added ファイル（new フォルダからの相対パス）
             foreach (var absPath in _fileDiffResultLists.AddedFilesAbsolutePath)
             {
-                entries.Add(new AuditLogFileEntry
-                {
-                    RelativePath = Path.GetRelativePath(newFolderAbsolutePath, absPath),
-                    Category = CATEGORY_ADDED
-                });
+                TryAddAbsolutePathEntry(entries, newFolderAbsolutePath, absPath, CATEGORY_ADDED);
             }
 
             // Removed files (absolute paths relative to old folder)
             // Removed ファイル（old フォルダからの相対パス）
             foreach (var absPath in _fileDiffResultLists.RemovedFilesAbsolutePath)
             {
-                entries.Add(new AuditLogFileEntry
-                {
-                    RelativePath = Path.GetRelativePath(oldFolderAbsolutePath, absPath),
-                    Category = CATEGORY_REMOVED
-                });
+                TryAddAbsolutePathEntry(entries, oldFolderAbsolutePath, absPath, CATEGORY_REMOVED);
             }
 
             // Modified files
@@ -215,8 +240,47 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return entries.OrderBy(e => e.Category, StringComparer.Ordinal)
-                          .ThenBy(e => e.RelativePath, StringComparer.OrdinalIgnoreCase)
-                          .ToList();
+                           .ThenBy(e => e.RelativePath, StringComparer.OrdinalIgnoreCase)
+                           .ToList();
+        }
+
+        private void TryAddAbsolutePathEntry(
+            List<AuditLogFileEntry> entries,
+            string rootFolderAbsolutePath,
+            string fileAbsolutePath,
+            string category)
+        {
+            try
+            {
+                entries.Add(new AuditLogFileEntry
+                {
+                    RelativePath = Path.GetRelativePath(rootFolderAbsolutePath, fileAbsolutePath),
+                    Category = category
+                });
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
+        }
+
+        private string TryComputeReportHash(string filePath, string reportLabel)
+        {
+            try
+            {
+                return ComputeFileHash(filePath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return string.Empty;
+            }
         }
 
         /// <summary>

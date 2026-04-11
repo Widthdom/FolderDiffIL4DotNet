@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Plugin.Abstractions;
+using FolderDiffIL4DotNet.Core.Common;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -48,15 +49,22 @@ namespace FolderDiffIL4DotNet.Services
         {
             ArgumentNullException.ThrowIfNull(filePath);
 
-            var extension = Path.GetExtension(filePath);
-            if (!string.Equals(extension, ".dll", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(extension, ".exe", StringComparison.OrdinalIgnoreCase))
+            try
+            {
+                var extension = Path.GetExtension(filePath);
+                if (!string.Equals(extension, ".dll", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(extension, ".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                var result = _fileComparisonService.DetectDotNetExecutable(filePath);
+                return result.IsDotNetExecutable;
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 return false;
             }
-
-            var result = _fileComparisonService.DetectDotNetExecutable(filePath);
-            return result.IsDotNetExecutable;
         }
 
         /// <summary>
@@ -94,7 +102,8 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     Success = false,
                     Text = string.Empty,
-                    CommandString = $"Error: {ex.Message}"
+                    CommandString = $"Error ({ex.GetType().Name}): {ex.Message}",
+                    VersionLabel = $"Error ({ex.GetType().Name})"
                 };
             }
         }

@@ -286,6 +286,91 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Fact]
+        public void LogMessage_TextFormat_ReadOnlyExistingLogFile_AppendsWithoutThrowingOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_readonly_text.log");
+            File.WriteAllText(tempLogPath, "existing");
+            File.SetAttributes(tempLogPath, File.GetAttributes(tempLogPath) | FileAttributes.ReadOnly);
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                var ex = Record.Exception(() => logger.LogMessage(AppLogLevel.Info, "after-readonly", shouldOutputMessageToConsole: false));
+                Assert.Null(ex);
+                var logText = File.ReadAllText(tempLogPath);
+                Assert.Contains("existing", logText, StringComparison.Ordinal);
+                Assert.Contains("after-readonly", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                if (File.Exists(tempLogPath))
+                {
+                    File.SetAttributes(tempLogPath, FileAttributes.Normal);
+                }
+
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_JsonFormat_ReadOnlyExistingLogFile_AppendsWithoutThrowingOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService { Format = LogFormat.Json };
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_readonly_json.log");
+            File.WriteAllText(tempLogPath, "{\"message\":\"existing\"}" + Environment.NewLine);
+            File.SetAttributes(tempLogPath, File.GetAttributes(tempLogPath) | FileAttributes.ReadOnly);
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                var ex = Record.Exception(() => logger.LogMessage(AppLogLevel.Warning, "json-after-readonly", shouldOutputMessageToConsole: false));
+                Assert.Null(ex);
+                var lines = File.ReadAllLines(tempLogPath);
+                Assert.Equal(2, lines.Length);
+                Assert.Contains("existing", lines[0], StringComparison.Ordinal);
+                Assert.Contains("json-after-readonly", lines[1], StringComparison.Ordinal);
+            }
+            finally
+            {
+                if (File.Exists(tempLogPath))
+                {
+                    File.SetAttributes(tempLogPath, FileAttributes.Normal);
+                }
+
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_InvalidLogFilePath_DoesNotThrow()
+        {
+            var logger = new LoggerService();
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", Path.GetTempPath());
+            SetPrivateField(logger, "_logFileAbsolutePath", "\0invalid-log-path");
+
+            var ex = Record.Exception(() => logger.LogMessage(AppLogLevel.Info, "no-crash", shouldOutputMessageToConsole: false));
+
+            Assert.Null(ex);
+        }
+
         // ── Mutation-testing additions / ミューテーションテスト追加 ──────────────
 
         [Fact]
@@ -344,6 +429,140 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
             finally
             {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_MaxGenerationsZero_PreservesActiveLogAndDeletesArchivedLogs()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var archived1 = Path.Combine(tempDir, "log_20240101.log");
+            var archived2 = Path.Combine(tempDir, "log_20240102.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(archived1, "a");
+            File.WriteAllText(archived2, "b");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 0);
+
+                Assert.False(File.Exists(archived1));
+                Assert.False(File.Exists(archived2));
+                Assert.True(File.Exists(active));
+                var logText = File.ReadAllText(active);
+                Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_WithNegativeGeneration_LogsSingleReadableWarningMessage()
+        {
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(-1);
+
+                var logText = File.ReadAllText(active);
+                Assert.Contains("MaxLogGenerations must be a non-negative integer.", logText, StringComparison.Ordinal);
+                Assert.DoesNotContain("integer..", logText, StringComparison.Ordinal);
+                Assert.Contains("maxLogGenerations", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_ReadOnlyArchivedFile_DeletesItOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var archived = Path.Combine(tempDir, "log_20240101.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(archived, "archived");
+            File.WriteAllText(active, "active");
+            File.SetAttributes(archived, File.GetAttributes(archived) | FileAttributes.ReadOnly);
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 1);
+
+                Assert.False(File.Exists(archived));
+                Assert.True(File.Exists(active));
+            }
+            finally
+            {
+                if (File.Exists(archived))
+                {
+                    File.SetAttributes(archived, FileAttributes.Normal);
+                }
+
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_WhenOneDeletionFails_ContinuesDeletingOtherArchivedLogsOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var lockedArchived = Path.Combine(tempDir, "log_20240101.log");
+            var deletableArchived = Path.Combine(tempDir, "log_20240102.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(lockedArchived, "locked");
+            File.WriteAllText(deletableArchived, "delete-me");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            using var lockStream = new FileStream(lockedArchived, FileMode.Open, FileAccess.Read, FileShare.None);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 1);
+
+                Assert.True(File.Exists(lockedArchived));
+                Assert.False(File.Exists(deletableArchived));
+                Assert.True(File.Exists(active));
+                var logText = File.ReadAllText(active);
+                Assert.Contains("Failed to delete archived log file", logText, StringComparison.Ordinal);
+                Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                lockStream.Dispose();
                 TryDeleteDirectory(tempDir);
             }
         }

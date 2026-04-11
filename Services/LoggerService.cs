@@ -131,8 +131,10 @@ namespace FolderDiffIL4DotNet.Services
             // 並列差分処理時のファイル書き込み IOException を防止するため直列化。
             lock (_fileWriteLock)
             {
-                using (var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true))
+                try
                 {
+                    PrepareLogFileForAppend(_logFileAbsolutePath);
+                    using var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true);
                     if (Format == LogFormat.Json)
                     {
                         WriteJsonLogEntry(streamWriter, logLevel, message, exception);
@@ -146,6 +148,10 @@ namespace FolderDiffIL4DotNet.Services
                             streamWriter.WriteLine(exception.StackTrace);
                         }
                     }
+                }
+                catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+                {
+                    TryWriteFileLoggingFailureToConsole(_logFileAbsolutePath, ex);
                 }
             }
         }
@@ -162,27 +168,97 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (maxLogGenerations < 0)
                 {
-                    throw new ArgumentOutOfRangeException($"MaxLogGenerations must be a non-negative integer, but was {maxLogGenerations}.");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(maxLogGenerations),
+                        maxLogGenerations,
+                        "MaxLogGenerations must be a non-negative integer.");
                 }
                 var logFilesAbsolutePaths = Directory.GetFiles(_logDirectoryAbsolutePath, $"{LOG_FILE_PREFIX}*.log");
-                if (logFilesAbsolutePaths.Length > maxLogGenerations)
+                int filesToDelete = logFilesAbsolutePaths.Length - maxLogGenerations;
+                if (filesToDelete > 0)
                 {
-                    var oldLogFilesToDeleteAbsolutePaths = logFilesAbsolutePaths.OrderBy(f => f).Take(logFilesAbsolutePaths.Length - maxLogGenerations);
-                    foreach (var oldLogfileAbsolutePath in oldLogFilesToDeleteAbsolutePaths)
+                    foreach (var oldLogfileAbsolutePath in logFilesAbsolutePaths.OrderBy(f => f))
                     {
-                        File.Delete(oldLogfileAbsolutePath);
-                        LogMessage(AppLogLevel.Info, $"Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
+                        if (filesToDelete <= 0)
+                        {
+                            break;
+                        }
+
+                        // Never delete the active log file; otherwise the cleanup log entry can recreate it.
+                        // 現在のログファイルは削除しない。削除ログの出力で再生成されてしまうため。
+                        if (string.Equals(oldLogfileAbsolutePath, _logFileAbsolutePath, StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
+                        if (TryDeleteArchivedLogFile(oldLogfileAbsolutePath))
+                        {
+                            LogMessage(AppLogLevel.Info, $"Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
+                            filesToDelete--;
+                        }
                     }
                 }
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                LogMessage(AppLogLevel.Warning, ex.Message + ".", shouldOutputMessageToConsole: true, ex);
+                LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
             }
             catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
                 LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
             }
+        }
+
+        private bool TryDeleteArchivedLogFile(string oldLogfileAbsolutePath)
+        {
+            try
+            {
+                var attributes = File.GetAttributes(oldLogfileAbsolutePath);
+                if ((attributes & FileAttributes.ReadOnly) != 0)
+                {
+                    File.SetAttributes(oldLogfileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+                }
+
+                File.Delete(oldLogfileAbsolutePath);
+                return true;
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                LogMessage(AppLogLevel.Warning,
+                    $"Failed to delete archived log file '{oldLogfileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return false;
+            }
+        }
+
+        private static void PrepareLogFileForAppend(string logFileAbsolutePath)
+        {
+            if (!File.Exists(logFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(logFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(logFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+        }
+
+        private static void TryWriteFileLoggingFailureToConsole(string logFileAbsolutePath, Exception ex)
+        {
+#pragma warning disable CA1031 // Console fallback must never crash logging callers / コンソールへのフォールバックは呼び出し元を絶対に落とさない
+            try
+            {
+                Console.Error.WriteLine(
+                    $"[WRN] Failed to write log file '{logFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}");
+            }
+            catch
+            {
+                // Best-effort diagnostic fallback / ベストエフォートの診断フォールバック
+            }
+#pragma warning restore CA1031
         }
 
         /// <summary>

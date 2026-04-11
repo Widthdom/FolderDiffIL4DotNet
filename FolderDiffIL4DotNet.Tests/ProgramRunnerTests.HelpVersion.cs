@@ -35,6 +35,8 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString();
                 Assert.Contains("Usage:", output, StringComparison.Ordinal);
+                Assert.Contains("[reportLabel]", output, StringComparison.Ordinal);
+                Assert.Contains("auto-generated", output, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("--config", output, StringComparison.Ordinal);
                 Assert.Contains("--skip-il", output, StringComparison.Ordinal);
                 // Logger should NOT have been initialized (no log messages)

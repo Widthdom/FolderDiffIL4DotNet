@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
+using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -123,36 +124,61 @@ namespace FolderDiffIL4DotNet.Services
         {
             if (diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch)
             {
+                return TryReadInlineDiffIlLines(relPath, reportsFolderAbsolutePath);
+            }
+
+            return TryReadInlineDiffTextLines(relPath, oldFolderAbsolutePath, newFolderAbsolutePath);
+        }
+
+        private (string[]? oldLines, string[]? newLines) TryReadInlineDiffIlLines(string relPath, string reportsFolderAbsolutePath)
+        {
+            try
+            {
                 // ILMismatch: read IL text from the *_IL.txt files written during comparison
                 // IL text files are always written in UTF-8 by ILTextOutputService
                 // IL テキストファイルは ILTextOutputService により常に UTF-8 で書き出される
                 string ilFileName = TextSanitizer.Sanitize(relPath) + "_" + Constants.LABEL_IL + ".txt";
                 string oldILPath = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "old", ilFileName);
                 string newILPath = Path.Combine(reportsFolderAbsolutePath, Constants.LABEL_IL, "new", ilFileName);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(oldILPath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(newILPath);
                 if (!File.Exists(oldILPath) || !File.Exists(newILPath)) return (null, null); // IL text not written; skip
                 return (File.ReadAllLines(oldILPath, Encoding.UTF8), File.ReadAllLines(newILPath, Encoding.UTF8));
             }
-            else
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                // TextMismatch: read from disk with encoding auto-detection
-                // to correctly handle non-UTF-8 files (e.g. Shift_JIS Japanese text)
-                // TextMismatch: エンコーディング自動検出でディスクから読み込み
-                // 非 UTF-8 ファイル（Shift_JIS 日本語テキスト等）を正しく処理する
-                try
-                {
-                    string oldPath = Path.Combine(oldFolderAbsolutePath, relPath);
-                    string newPath = Path.Combine(newFolderAbsolutePath, relPath);
-                    var oldEncoding = EncodingDetector.DetectFileEncoding(oldPath);
-                    var newEncoding = EncodingDetector.DetectFileEncoding(newPath);
-                    return (File.ReadAllLines(oldPath, oldEncoding), File.ReadAllLines(newPath, newEncoding));
-                }
-                catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
-                {
-                    _logger.LogMessage(AppLogLevel.Warning,
-                        $"Inline diff skipped for '{relPath}': {ex.Message}",
-                        shouldOutputMessageToConsole: false, ex);
-                    return (null, null);
-                }
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Inline diff skipped for '{relPath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false, ex);
+                return (null, null);
+            }
+        }
+
+        private (string[]? oldLines, string[]? newLines) TryReadInlineDiffTextLines(
+            string relPath,
+            string oldFolderAbsolutePath,
+            string newFolderAbsolutePath)
+        {
+            // TextMismatch: read from disk with encoding auto-detection
+            // to correctly handle non-UTF-8 files (e.g. Shift_JIS Japanese text)
+            // TextMismatch: エンコーディング自動検出でディスクから読み込み
+            // 非 UTF-8 ファイル（Shift_JIS 日本語テキスト等）を正しく処理する
+            try
+            {
+                string oldPath = Path.Combine(oldFolderAbsolutePath, relPath);
+                string newPath = Path.Combine(newFolderAbsolutePath, relPath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(oldPath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(newPath);
+                var oldEncoding = EncodingDetector.DetectFileEncoding(oldPath);
+                var newEncoding = EncodingDetector.DetectFileEncoding(newPath);
+                return (File.ReadAllLines(oldPath, oldEncoding), File.ReadAllLines(newPath, newEncoding));
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Inline diff skipped for '{relPath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: false, ex);
+                return (null, null);
             }
         }
 
