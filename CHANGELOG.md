@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.5] - 2026-04-11
+
 #### Documentation
 
 - **Clarified human-review responsibility in README** — Added a bilingual note to `README.md` stating that the tool is a review aid, not a substitute for human release judgment, and that final sign-off should be confirmed against commit/PR diffs, source code, and built artifacts.
@@ -1245,6 +1247,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+### [1.16.5] - 2026-04-11
 
 #### ドキュメント
 
@@ -2483,7 +2487,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.4...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.5...HEAD
+[1.16.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.4...v1.16.5
 [1.16.4]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.3...v1.16.4
 [1.16.3]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.2...v1.16.3
 [1.16.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.1...v1.16.2
