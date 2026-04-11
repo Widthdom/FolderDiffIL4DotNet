@@ -825,6 +825,80 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_MultipleOpenFolderFlags_WithDefaultTargets_UsesReportsThenBaseThenLogs()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--open-config", "--open-logs" });
+
+                Assert.Equal(0, exitCode);
+                Assert.Equal(3, startedProcesses.Count);
+                Assert.Contains("Reports", startedProcesses[0].FileName, StringComparison.Ordinal);
+                Assert.Equal(Path.GetFullPath(AppContext.BaseDirectory), startedProcesses[1].FileName);
+                Assert.Contains("Logs", startedProcesses[2].FileName, StringComparison.Ordinal);
+
+                var output = sw.ToString();
+                Assert.Equal(3, CountOccurrences(output, "Opening folder:"));
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_MultipleOpenFolderFlags_WhenFirstLauncherFails_DoesNotAttemptLaterTargets()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-first-fail-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var configPath = Path.Combine(tempDir, "custom.json");
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                startInfo =>
+                {
+                    startedProcesses.Add(startInfo);
+                    throw new InvalidOperationException("first launch failed");
+                });
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--open-config", "--open-logs", "--output", tempDir, "--config", configPath });
+
+                Assert.Equal(4, exitCode);
+                Assert.Single(startedProcesses);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
+
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(tempDir), errorOutput, StringComparison.Ordinal);
+                Assert.Contains("InvalidOperationException", errorOutput, StringComparison.Ordinal);
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_HelpFlag_OutputContainsOpenFolderOptions()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
