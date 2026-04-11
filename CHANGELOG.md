@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.8] - 2026-04-12
+
 #### Fixed
 
 - **`--clear-cache` now removes the read-only attribute before deleting `.ilcache` files** — Interactive cache clearing now uses the same delete semantics as the disk-cache layer, so stale read-only cache files can be removed instead of aborting the clear operation with an `UnauthorizedAccessException`. Affected: `Runner/ProgramRunner.Config.cs`. Tests: `ProgramRunnerTests.CliOverrides.cs` (1 new: `DeleteCacheFileForClearCache_ReadOnlyFile_DeletesFile`).
@@ -1300,6 +1302,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.8] - 2026-04-12
+
 #### 修正
 
 - **`--clear-cache` が read-only 属性付き `.ilcache` も削除できるよう修正** — 対話式キャッシュ削除は、ディスクキャッシュ層と同様に削除前に read-only 属性を解除するようになり、stale な読み取り専用キャッシュで `UnauthorizedAccessException` になって全体が中断しにくくなりました。対象: `Runner/ProgramRunner.Config.cs`。テスト: `ProgramRunnerTests.CliOverrides.cs`（1件追加: `DeleteCacheFileForClearCache_ReadOnlyFile_DeletesFile`）。
@@ -2587,7 +2591,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.7...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.8...HEAD
+[1.16.8]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.7...v1.16.8
 [1.16.7]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.6...v1.16.7
 [1.16.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.5...v1.16.6
 [1.16.5]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.4...v1.16.5
