@@ -29,7 +29,7 @@ namespace FolderDiffIL4DotNet
             "  --creator-il-ignore-profile <name>\n" +
             "                              Apply a maintainer-managed IL ignore profile and enable IL string filtering.\n" +
             "  --wizard                    Interactive mode: prompts for old/new folders and report label.\n" +
-            "                              Drag-and-drop friendly (auto-strips quotes, file:// URIs).\n" +
+            "                              Shows existing report folders before the label prompt; drag-and-drop friendly.\n" +
             "  --dry-run                   Enumerate files and show statistics without running comparison.\n" +
             "  --coffee                    Use coffee-themed spinner animation during execution.\n" +
             "  --beer                      Use beer-themed spinner animation during execution.\n" +

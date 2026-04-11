@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
@@ -68,6 +69,15 @@ namespace FolderDiffIL4DotNet.Runner
         /// <paramref name="outputDirectory"/> が指定された場合、デフォルトの Reports/ ディレクトリの代わりにそのパスをベースとして使用する。
         /// </summary>
         internal static string GetReportsFolderAbsolutePath(string reportLabel, string? outputDirectory = null, ILoggerService? logger = null)
+            => Path.Combine(GetReportsRootDirectoryAbsolutePath(outputDirectory, logger), reportLabel);
+
+        /// <summary>
+        /// Resolves the absolute Reports root directory and creates it if needed.
+        /// Resolves to <c>&lt;exe&gt;/Reports</c> by default or to <paramref name="outputDirectory"/> when specified.
+        /// Reports ルートディレクトリの絶対パスを解決し、必要なら作成する。
+        /// 既定では <c>&lt;exe&gt;/Reports</c> を使用し、指定時は <paramref name="outputDirectory"/> を使用する。
+        /// </summary>
+        internal static string GetReportsRootDirectoryAbsolutePath(string? outputDirectory = null, ILoggerService? logger = null)
         {
             string reportsRootDirAbsolutePath;
             try
@@ -95,7 +105,59 @@ namespace FolderDiffIL4DotNet.Runner
                 WarnIfSystemDirectory(logger, reportsRootDirAbsolutePath);
             }
 
-            return Path.Combine(reportsRootDirAbsolutePath, reportLabel);
+            return reportsRootDirAbsolutePath;
+        }
+
+        /// <summary>
+        /// Returns the existing report subfolder names under the given Reports root directory.
+        /// Existing report folder names are sorted case-insensitively and files are ignored.
+        /// 指定した Reports ルートディレクトリ配下の既存レポートサブフォルダ名を返す。
+        /// 既存レポートフォルダ名は大文字小文字を区別せずにソートし、通常ファイルは無視する。
+        /// </summary>
+        internal static string[] GetExistingReportFolderNames(string reportsRootDirAbsolutePath)
+        {
+            var folderNames = Directory.GetDirectories(reportsRootDirAbsolutePath)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Select(name => name!)
+                .ToArray();
+            Array.Sort(folderNames, StringComparer.OrdinalIgnoreCase);
+            return folderNames;
+        }
+
+        /// <summary>
+        /// Writes the existing report subfolder names to standard output for copy/paste-friendly selection.
+        /// Existing names are written one per line under a root-path header.
+        /// 既存レポートサブフォルダ名を、コピーしやすいように標準出力へ一覧表示する。
+        /// ルートパス見出しの下に既存名を1行ずつ出力する。
+        /// </summary>
+        internal static void WriteExistingReportFolderNamesToConsole(string reportsRootDirAbsolutePath, ILoggerService? logger = null)
+        {
+            try
+            {
+                var folderNames = GetExistingReportFolderNames(reportsRootDirAbsolutePath);
+                Console.WriteLine($"Existing report folders under '{reportsRootDirAbsolutePath}':");
+                if (folderNames.Length == 0)
+                {
+                    Console.WriteLine("(none)");
+                }
+                else
+                {
+                    foreach (var folderName in folderNames)
+                    {
+                        Console.WriteLine(folderName);
+                    }
+                }
+
+                Console.WriteLine();
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                logger?.LogMessage(AppLogLevel.Warning,
+                    $"Failed to list existing report folders under '{reportsRootDirAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
         }
 
         /// <summary>
@@ -224,6 +286,12 @@ namespace FolderDiffIL4DotNet.Runner
             // レポートフォルダが既に存在しないことの確認
             if (Directory.Exists(reportsFolderAbsolutePath))
             {
+                var reportsRootDirAbsolutePath = Path.GetDirectoryName(reportsFolderAbsolutePath);
+                if (!string.IsNullOrWhiteSpace(reportsRootDirAbsolutePath))
+                {
+                    WriteExistingReportFolderNamesToConsole(reportsRootDirAbsolutePath, logger);
+                }
+
                 throw new ArgumentException($"The report folder already exists: {reportsFolderAbsolutePath}. Provide a different report label.");
             }
 

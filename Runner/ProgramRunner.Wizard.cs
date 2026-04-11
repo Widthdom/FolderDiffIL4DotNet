@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Runner;
+using FolderDiffIL4DotNet.Services;
 
 namespace FolderDiffIL4DotNet
 {
@@ -43,6 +45,7 @@ namespace FolderDiffIL4DotNet
             var newFolder = PromptForInput(WIZARD_PROMPT_NEW_FOLDER);
             if (newFolder == null) { Console.WriteLine(WIZARD_CANCELLED); return (int)ProgramExitCode.InvalidArguments; }
 
+            OutputExistingReportFolderSuggestions(opts.OutputDirectory);
             var reportLabel = PromptForInput(WIZARD_PROMPT_REPORT_LABEL);
             if (reportLabel == null) { Console.WriteLine(WIZARD_CANCELLED); return (int)ProgramExitCode.InvalidArguments; }
 
@@ -71,6 +74,28 @@ namespace FolderDiffIL4DotNet
             var result = await RunWithResultAsync(syntheticArgs, opts);
             OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings, result.HasILFilterWarnings);
             return (int)result.ExitCode;
+        }
+
+        /// <summary>
+        /// Writes the existing report folder names before prompting for the report label.
+        /// This makes it easier to avoid collisions and to reuse part of an existing naming scheme.
+        /// レポートラベル入力前に既存レポートフォルダ名を表示する。
+        /// 重複回避や既存命名規則の一部再利用をしやすくするため。
+        /// </summary>
+        internal void OutputExistingReportFolderSuggestions(string? outputDirectory)
+        {
+            try
+            {
+                var reportsRootDirAbsolutePath = RunPreflightValidator.GetReportsRootDirectoryAbsolutePath(outputDirectory, _logger);
+                RunPreflightValidator.WriteExistingReportFolderNamesToConsole(reportsRootDirAbsolutePath, _logger);
+            }
+            catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+            {
+                _logger.LogMessage(AppLogLevel.Warning,
+                    $"Skipped existing report-folder listing for '{outputDirectory ?? "Reports"}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+            }
         }
 
         /// <summary>
