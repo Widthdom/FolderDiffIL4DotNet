@@ -345,7 +345,8 @@ namespace FolderDiffIL4DotNet.Services
         {
             try
             {
-                var summary = DepsJsonAnalyzer.Analyze(oldPath, newPath);
+                var summary = DepsJsonAnalyzer.Analyze(oldPath, newPath,
+                    ex => LogDependencyAnalysisFailure(fileRelativePath, ex));
                 if (summary?.HasChanges == true)
                 {
                     _fileDiffResultLists.FileRelativePathToDependencyChanges[fileRelativePath] = summary;
@@ -354,9 +355,7 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
             catch (Exception ex)
             {
-                _logger.LogMessage(AppLogLevel.Warning,
-                    $"Dependency change analysis failed for '{fileRelativePath}': {ex.Message}",
-                    shouldOutputMessageToConsole: false, ex);
+                LogDependencyAnalysisFailure(fileRelativePath, ex);
             }
 #pragma warning restore CA1031
         }
@@ -444,6 +443,13 @@ namespace FolderDiffIL4DotNet.Services
                 $"An error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
                 shouldOutputMessageToConsole: true,
                 exception);
+        }
+
+        private void LogDependencyAnalysisFailure(string fileRelativePath, Exception exception)
+        {
+            _logger.LogMessage(AppLogLevel.Warning,
+                $"Dependency change analysis failed for '{fileRelativePath}' ({exception.GetType().Name}): {exception.Message}",
+                shouldOutputMessageToConsole: false, exception);
         }
 
         private void LogUnexpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)

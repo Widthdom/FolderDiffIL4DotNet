@@ -9,6 +9,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Preflight write-permission failures now log `UnauthorizedAccessException` causes before rethrowing** — `CheckReportsParentWritableOrThrow()` already logged `IOException` probe failures, but the permission-denied branch rethrew without recording the original exception even though the developer guide documented cause-specific logging for both cases. The method now logs the concrete exception type/message for `UnauthorizedAccessException` as well and preserves the original exception as the inner exception on the rethrow. Affected: `Runner/RunPreflightValidator.cs`. Tests: `ProgramRunnerTests.Preflight.cs` (updated `CheckReportsParentWritableOrThrow_WhenDirectoryIsReadOnly_ThrowsUnauthorizedAccessException`).
+
+- **Dependency-change analysis now surfaces best-effort parse failures in warning logs** — `DepsJsonAnalyzer` previously swallowed invalid `.deps.json` and malformed `targets` sections by returning `null` (or partial results) with no diagnostic trail from the caller side. `Analyze()` now accepts an optional error callback, `FileDiffService` forwards those failures into warning logs with the concrete exception type, and `.deps.json` report enrichment still remains best-effort. Affected: `Services/DepsJsonAnalyzer.cs`, `Services/FileDiffService.cs`. Tests: `DepsJsonAnalyzerTests` (2 new: `Analyze_InvalidJson_InvokesOnErrorCallbackAndReturnsNull`, `Analyze_InvalidTargetsSection_InvokesOnErrorCallbackButStillReturnsSummary`), `FileDiffServiceUnitTests.TextComparison.cs` (1 new: `FilesAreEqualAsync_WhenDependencyAnalysisFails_LogsWarningWithExceptionType`).
+
 ### [1.16.5] - 2026-04-11
 
 #### Documentation
