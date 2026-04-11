@@ -569,6 +569,49 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_OpenReportsFlag_WhenFolderLauncherThrows_ReturnsExecutionFailedWithResolvedPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-launch-fail-" + Guid.NewGuid().ToString("N"));
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            ProcessStartInfo? capturedStartInfo = null;
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                startInfo =>
+                {
+                    capturedStartInfo = startInfo;
+                    throw new InvalidOperationException("launcher failed");
+                });
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--output", tempDir });
+
+                Assert.Equal(4, exitCode);
+                Assert.NotNull(capturedStartInfo);
+                Assert.Equal(Path.GetFullPath(tempDir), capturedStartInfo!.FileName);
+                Assert.True(capturedStartInfo.UseShellExecute);
+
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(tempDir), errorOutput, StringComparison.Ordinal);
+                Assert.Contains("InvalidOperationException", errorOutput, StringComparison.Ordinal);
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, recursive: true);
+                }
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_OpenLogsFlag_ExitsZeroAndPrintsPath()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
