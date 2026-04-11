@@ -194,11 +194,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     _memoryCache.GetFileHash(fileAbsolutePath);
                 }
-                catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
+                catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to Precompute SHA256 for file '{fileAbsolutePath}'. This file will be skipped in the cache.",
+                        $"Failed to precompute SHA256 for file '{fileAbsolutePath}' ({ex.GetType().Name}). This file will be skipped in the cache.",
                         shouldOutputMessageToConsole: true,
                         ex);
                 }

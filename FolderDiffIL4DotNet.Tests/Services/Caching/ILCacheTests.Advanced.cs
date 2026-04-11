@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services.Caching
@@ -226,6 +227,20 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var result = await cache.TryGetILAsync(file, tool);
             Assert.Null(result);
             Assert.True(cache.Stats.Expired >= 1, "Expected at least 1 expired entry");
+        }
+
+        [Fact]
+        public async Task Precompute_InvalidPath_LogsWarningAndContinues()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var cache = new ILCache(ilCacheDirectoryAbsolutePath: null, logger: logger);
+            var validFile = CreateTestFile("precompute-valid.dll", "valid-content");
+
+            var ex = await Record.ExceptionAsync(() => cache.PrecomputeAsync(new[] { validFile, "bad\0path.dll" }, maxParallel: 1));
+
+            Assert.Null(ex);
+            Assert.Contains(logger.Messages, m => m.Contains("Failed to precompute SHA256", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, m => m.Contains("ArgumentException", StringComparison.Ordinal));
         }
 
         [Fact]

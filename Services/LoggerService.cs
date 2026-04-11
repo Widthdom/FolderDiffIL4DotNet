@@ -185,9 +185,11 @@ namespace FolderDiffIL4DotNet.Services
                             continue;
                         }
 
-                        File.Delete(oldLogfileAbsolutePath);
-                        LogMessage(AppLogLevel.Info, $"Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
-                        filesToDelete--;
+                        if (TryDeleteArchivedLogFile(oldLogfileAbsolutePath))
+                        {
+                            LogMessage(AppLogLevel.Info, $"Deleted old log file: {oldLogfileAbsolutePath}.", shouldOutputMessageToConsole: true);
+                            filesToDelete--;
+                        }
                     }
                 }
             }
@@ -198,6 +200,29 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
                 LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}'.", shouldOutputMessageToConsole: true, ex);
+            }
+        }
+
+        private bool TryDeleteArchivedLogFile(string oldLogfileAbsolutePath)
+        {
+            try
+            {
+                var attributes = File.GetAttributes(oldLogfileAbsolutePath);
+                if ((attributes & FileAttributes.ReadOnly) != 0)
+                {
+                    File.SetAttributes(oldLogfileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+                }
+
+                File.Delete(oldLogfileAbsolutePath);
+                return true;
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                LogMessage(AppLogLevel.Warning,
+                    $"Failed to delete archived log file '{oldLogfileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return false;
             }
         }
 

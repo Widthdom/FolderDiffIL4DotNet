@@ -406,6 +406,83 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void CleanupOldLogFiles_ReadOnlyArchivedFile_DeletesItOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var archived = Path.Combine(tempDir, "log_20240101.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(archived, "archived");
+            File.WriteAllText(active, "active");
+            File.SetAttributes(archived, File.GetAttributes(archived) | FileAttributes.ReadOnly);
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 1);
+
+                Assert.False(File.Exists(archived));
+                Assert.True(File.Exists(active));
+            }
+            finally
+            {
+                if (File.Exists(archived))
+                {
+                    File.SetAttributes(archived, FileAttributes.Normal);
+                }
+
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void CleanupOldLogFiles_WhenOneDeletionFails_ContinuesDeletingOtherArchivedLogsOnWindows()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return;
+            }
+
+            var logger = new LoggerService();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var lockedArchived = Path.Combine(tempDir, "log_20240101.log");
+            var deletableArchived = Path.Combine(tempDir, "log_20240102.log");
+            var active = Path.Combine(tempDir, "log_20991231.log");
+            File.WriteAllText(lockedArchived, "locked");
+            File.WriteAllText(deletableArchived, "delete-me");
+            File.WriteAllText(active, "active");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", active);
+
+            using var lockStream = new FileStream(lockedArchived, FileMode.Open, FileAccess.Read, FileShare.None);
+
+            try
+            {
+                logger.CleanupOldLogFiles(maxLogGenerations: 1);
+
+                Assert.True(File.Exists(lockedArchived));
+                Assert.False(File.Exists(deletableArchived));
+                Assert.True(File.Exists(active));
+                var logText = File.ReadAllText(active);
+                Assert.Contains("Failed to delete archived log file", logText, StringComparison.Ordinal);
+                Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                lockStream.Dispose();
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
         public void FormatMessage_WhitespaceOnlyMessage_ReturnsPrefixOnly()
         {
             // When message is whitespace-only, FormatMessage should return just the prefix

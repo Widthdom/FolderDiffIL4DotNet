@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Services;
 
@@ -68,9 +69,23 @@ namespace FolderDiffIL4DotNet.Runner
         /// </summary>
         internal static string GetReportsFolderAbsolutePath(string reportLabel, string? outputDirectory = null, ILoggerService? logger = null)
         {
-            string reportsRootDirAbsolutePath = !string.IsNullOrWhiteSpace(outputDirectory)
-                ? Path.GetFullPath(outputDirectory)
-                : Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
+            string reportsRootDirAbsolutePath;
+            try
+            {
+                reportsRootDirAbsolutePath = !string.IsNullOrWhiteSpace(outputDirectory)
+                    ? Path.GetFullPath(outputDirectory)
+                    : Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(reportsRootDirAbsolutePath, nameof(outputDirectory));
+                Directory.CreateDirectory(reportsRootDirAbsolutePath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                logger?.LogMessage(AppLogLevel.Error,
+                    $"Failed to resolve report output directory '{outputDirectory ?? REPORTS_ROOT_DIR_NAME}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                throw;
+            }
 
             // Warn when custom output directory escapes application base directory
             // カスタム出力ディレクトリがアプリケーションベースディレクトリ外の場合に警告
@@ -80,7 +95,6 @@ namespace FolderDiffIL4DotNet.Runner
                 WarnIfSystemDirectory(logger, reportsRootDirAbsolutePath);
             }
 
-            Directory.CreateDirectory(reportsRootDirAbsolutePath);
             return Path.Combine(reportsRootDirAbsolutePath, reportLabel);
         }
 
@@ -90,8 +104,20 @@ namespace FolderDiffIL4DotNet.Runner
         /// </summary>
         internal static void WarnIfOutputEscapesAppBase(ILoggerService logger, string resolvedOutputPath)
         {
-            var appBase = Path.GetFullPath(AppContext.BaseDirectory);
-            var normalizedOutput = Path.GetFullPath(resolvedOutputPath);
+            string appBase = Path.GetFullPath(AppContext.BaseDirectory);
+            string normalizedOutput;
+            try
+            {
+                normalizedOutput = Path.GetFullPath(resolvedOutputPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                logger.LogMessage(AppLogLevel.Warning,
+                    $"Skipped output-directory escape guardrail for '{resolvedOutputPath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return;
+            }
 
             if (!IsSameOrChildPath(normalizedOutput, appBase))
             {
@@ -107,7 +133,19 @@ namespace FolderDiffIL4DotNet.Runner
         /// </summary>
         internal static void WarnIfSystemDirectory(ILoggerService logger, string resolvedOutputPath)
         {
-            var normalizedOutput = Path.GetFullPath(resolvedOutputPath);
+            string normalizedOutput;
+            try
+            {
+                normalizedOutput = Path.GetFullPath(resolvedOutputPath);
+            }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            {
+                logger.LogMessage(AppLogLevel.Warning,
+                    $"Skipped system-directory guardrail for '{resolvedOutputPath}' ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
+                return;
+            }
 
             string[] systemDirs;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -225,8 +263,20 @@ namespace FolderDiffIL4DotNet.Runner
             {
                 return; // Skip when drive is unavailable / ドライブが利用不可の場合はスキップ
             }
+            catch (UnauthorizedAccessException)
+            {
+                return; // Skip when drive information is inaccessible / ドライブ情報にアクセスできない場合はスキップ
+            }
 
-            long availableMb = drive.AvailableFreeSpace / (1024L * 1024L);
+            long availableMb;
+            try
+            {
+                availableMb = drive.AvailableFreeSpace / (1024L * 1024L);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return; // Skip when free-space query is denied / 空き容量照会が拒否された場合はスキップ
+            }
             if (availableMb < PREFLIGHT_MIN_FREE_DISK_MEGABYTES)
             {
                 throw new IOException(

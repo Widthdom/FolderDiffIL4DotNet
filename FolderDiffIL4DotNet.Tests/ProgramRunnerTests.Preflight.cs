@@ -353,6 +353,14 @@ namespace FolderDiffIL4DotNet.Tests
             return value;
         }
 
+        private static async Task<string> InvokeResolveCacheDirectoryAsync(ProgramRunner runner, string? configPath)
+        {
+            var method = typeof(ProgramRunner).GetMethod("ResolveCacheDirectoryAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            var task = Assert.IsType<Task<string>>(method.Invoke(runner, new object?[] { configPath }));
+            return await task;
+        }
+
         private static void TryDeleteDirectory(string path)
         {
             try
@@ -570,6 +578,65 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 TryDeleteDirectory(tempDir);
             }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfOutputEscapesAppBase_WithInvalidPath_LogsWarningInsteadOfThrowing()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var ex = Record.Exception(() => RunPreflightValidator.WarnIfOutputEscapesAppBase(logger, "bad\0path"));
+
+            Assert.Null(ex);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Warning, entry.LogLevel);
+            Assert.Contains("Skipped output-directory escape guardrail", entry.Message, StringComparison.Ordinal);
+            Assert.IsType<ArgumentException>(entry.Exception);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void WarnIfSystemDirectory_WithInvalidPath_LogsWarningInsteadOfThrowing()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var ex = Record.Exception(() => RunPreflightValidator.WarnIfSystemDirectory(logger, "bad\0path"));
+
+            Assert.Null(ex);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Warning, entry.LogLevel);
+            Assert.Contains("Skipped system-directory guardrail", entry.Message, StringComparison.Ordinal);
+            Assert.IsType<ArgumentException>(entry.Exception);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void GetReportsFolderAbsolutePath_WithInvalidOutputDirectory_LogsErrorAndThrows()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            var ex = Assert.Throws<ArgumentException>(() =>
+                RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", "bad\0path", logger));
+
+            Assert.NotNull(ex);
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Error, entry.LogLevel);
+            Assert.Contains("Failed to resolve report output directory", entry.Message, StringComparison.Ordinal);
+            Assert.IsType<ArgumentException>(entry.Exception);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public async Task ResolveCacheDirectoryAsync_WhenConfigPathIsInvalid_FallsBackToDefaultDirectory()
+        {
+            var runner = new ProgramRunner(new TestLogger(logFileAbsolutePath: "test.log"), new ConfigService());
+
+            var result = await InvokeResolveCacheDirectoryAsync(runner, "bad\0config.json");
+
+            var expectedDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                Constants.APP_DATA_DIR_NAME,
+                Constants.DEFAULT_IL_CACHE_DIR_NAME);
+            Assert.Equal(expectedDir, result);
         }
     }
 }

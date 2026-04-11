@@ -182,7 +182,8 @@ namespace FolderDiffIL4DotNet
                     ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_DATA_DIR_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME)
                     : config.ILCacheDirectoryAbsolutePath;
             }
-            catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException
+                or FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException)
             {
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_DATA_DIR_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME);
