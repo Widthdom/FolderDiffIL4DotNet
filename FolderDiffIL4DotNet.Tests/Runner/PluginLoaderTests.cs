@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
-using FolderDiffIL4DotNet.Plugin.Abstractions;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
@@ -85,7 +84,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         }
 
         [Fact]
-        public void LoadPlugins_InvalidDll_LogsWarningAndReturnsEmptyList()
+        public void LoadPlugins_InvalidDll_LogsWarningWithExceptionTypeAndReturnsEmptyList()
         {
             // Arrange: directory with a DLL that isn't a valid .NET assembly
             // 準備: 有効な .NET アセンブリではない DLL を含むディレクトリ
@@ -101,7 +100,9 @@ namespace FolderDiffIL4DotNet.Tests.Runner
 
             // Assert / 検証
             Assert.Empty(result);
-            Assert.Contains(_logger.Messages, m => m.Contains("Failed to load plugin"));
+            var entry = Assert.Single(_logger.Entries, e => e.Message.Contains("Failed to load plugin", StringComparison.Ordinal));
+            Assert.NotNull(entry.Exception);
+            Assert.Contains(entry.Exception!.GetType().Name, entry.Message, StringComparison.Ordinal);
         }
 
         [Fact]
