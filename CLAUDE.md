@@ -60,7 +60,11 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 ### Code Search Rules
 
 This project uses **cdidx** for fast code search via a pre-built SQLite index (`.cdidx/codeindex.db`).
-**Query this database** instead of using `find`, `grep`, or `ls -R`.
+**Use cdidx first** instead of `find`, `grep`, or `ls -R`. Prefer the richest available interface in this order:
+
+1. cdidx MCP tools exposed by the client
+2. `cdidx` CLI
+3. Direct SQLite queries against `.cdidx/codeindex.db` only when cdidx is unavailable
 
 #### Setup
 
@@ -84,6 +88,25 @@ dotnet tool update -g cdidx
 ```
 
 If update fails, the existing version still works — just continue with it. If install fails (no .NET SDK, no network), skip to the **"Direct SQL queries"** section below — you can query `.cdidx/codeindex.db` directly with `sqlite3`, provided the database was already built.
+
+If your AI client supports MCP, prefer wiring `cdidx` as an MCP server and using its native tools. Current cdidx MCP coverage includes:
+
+- `search`, `definition`, `references`, `callers`, `callees`, `symbols`
+- `files`, `excerpt`, `map`, `analyze_symbol`, `outline`, `status`, `deps`
+- `batch_query`, `languages`, `index`, `suggest_improvement`
+
+Example MCP config snippets from the upstream README:
+
+```json
+{
+  "mcpServers": {
+    "cdidx": {
+      "command": "cdidx",
+      "args": ["mcp", "--db", ".cdidx/codeindex.db"]
+    }
+  }
+}
+```
 
 Before searching, update the index so results are accurate:
 
@@ -114,25 +137,30 @@ cdidx .   # refresh stale-file cleanup after history or branch changes
 #### Query strategy
 
 - Start with `cdidx map` to understand the directory / symbol layout before drilling into individual files.
+- Use `cdidx languages` when you need to confirm whether a language has symbol extraction and graph support before choosing between `symbols` / `references` and raw-text search.
 - Use `cdidx status --json` to verify freshness (`indexed_at`, `latest_modified`, `git_head`, `git_is_dirty`) when results look suspicious. When you already have `map --json`, read `indexed_at` / `latest_modified` as the filtered slice freshness and `workspace_indexed_at` / `workspace_latest_modified` as whole-workspace freshness.
-- Prefer `cdidx inspect "SymbolName"` first when you want a one-round-trip symbol summary with declaration, body, related symbols, call graph data, workspace freshness metadata, and graph support metadata. `inspect --json` includes `project_root`, `git_head`, and `git_is_dirty` for trust checks.
+- Prefer `cdidx inspect "SymbolName"` first when you want a one-round-trip symbol summary with declaration, body, related symbols, call graph data, workspace freshness metadata, and graph support metadata. `inspect --json` includes `project_root`, `git_head`, `git_is_dirty`, `graph_language`, `graph_supported`, and `graph_support_reason` for trust checks.
 - Use `cdidx definition "SymbolName" --body` when you need the declaration and implementation body of a specific symbol.
-- Use `cdidx references`, `cdidx callers`, and `cdidx callees` for supported graph languages before falling back to raw-text search.
+- Use `cdidx references`, `cdidx callers`, and `cdidx callees` for supported graph languages before falling back to raw-text search. Treat empty results differently from unsupported languages by checking graph support metadata when available.
 - Use `cdidx symbols` for symbol-capable languages and `cdidx outline` for single-file structure.
 - Use `cdidx search` for unsupported languages, prose, config text, log messages, or exact-string hunting.
 - Default to `--exclude-tests` unless you are explicitly investigating test behavior.
 - Narrow scope aggressively with `--path` and repeatable `--exclude-path`.
 - Use `--snippet-lines <n>` to control result size instead of opening entire files early.
-- Prefer `cdidx files` and `cdidx excerpt` to inspect candidate files before opening the full file.
+- Prefer `cdidx files --json` and `cdidx excerpt` to inspect candidate files before opening the full file. `files --json` includes per-file `checksum`, `modified`, and `indexed_at`.
 - Use `cdidx deps` for file-level dependency mapping and `cdidx deps --reverse` for impact analysis before changing shared code.
+- Use `cdidx batch_query` from MCP clients when several independent read-only queries can be answered together in one round-trip.
 - Use `--since <datetime>` on `files` or `search` when you need to bias investigation toward recently changed code.
+- Use `--fts` only when you intentionally need raw FTS5 syntax such as prefix queries.
 - Use `--count` to measure search breadth before pulling full results.
 - Use `cdidx . --dry-run` when you need to verify which files would be reindexed before a larger refresh.
+- If cdidx appears to have an extraction bug, unsupported edge case, or crash, preserve a minimal repro and use `suggest_improvement` / an upstream issue workflow instead of silently working around it.
 
 #### CLI (recommended if cdidx is available)
 
 ```bash
 cdidx map --path FolderDiffIL4DotNet/ --exclude-tests --json     # high-level codebase map
+cdidx languages --json                                           # language and graph capability matrix
 cdidx inspect "FileDiffService" --exclude-tests                  # symbol-centric deep inspection
 cdidx definition "RunPreflightValidator" --body                 # declaration + body
 cdidx references "IFileDiffService" --exclude-tests             # usage graph
@@ -146,9 +174,11 @@ cdidx deps --path FolderDiffIL4DotNet/Services --exclude-path Tests # file depen
 cdidx deps --path FolderDiffIL4DotNet/Services/FileDiffService.cs --reverse
 cdidx excerpt Services/FileDiffService.cs --start 220 --end 280 # targeted source excerpt
 cdidx files --path Services/HtmlReport/                         # indexed file listing
+cdidx files --path Services/ --json                             # file metadata with checksum/timestamps
 cdidx files --path Tests/ --since 2026-01-01T00:00:00Z         # recently changed test files
 cdidx search "warning" --path FolderDiffIL4DotNet/ --count     # count before expanding
 cdidx status --json                                             # DB freshness and stats
+cdidx search "ildasm OR ilspycmd" --fts --path FolderDiffIL4DotNet/Services
 cdidx . --dry-run                                               # preview reindex scope
 ```
 
@@ -425,98 +455,128 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 - コア差分クラス閾値（FileDiffService、FolderDiffService、FileComparisonService）: 行 >= 90%、ブランチ >= 85%
 - **コミット前に**必ず Release 構成でテストを実行し CI と同一条件を確認すること: `dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --configuration Release --nologo`。Release ビルドでは `TreatWarningsAsErrors` と完全なコード解析ルール（CA1031 等）が有効になるため、Debug ビルドでは検出できない問題を事前に捕捉できる。`dotnet` が利用不可なら明記すること。
 
-### コードベース検索ルール
+### コード検索ルール
 
-このプロジェクトは **cdidx** を使い、事前構築済みSQLiteインデックス（`.cdidx/codeindex.db`）で高速コード検索を行います。
-コードを検索する際は `find`, `grep`, `ls -R` ではなく**このデータベースを検索**してください。
+このプロジェクトでは、事前構築された SQLite インデックス（`.cdidx/codeindex.db`）を利用する **cdidx** をコード検索の第一選択とする。
+`find`、`grep`、`ls -R` より先に cdidx を使い、利用可能なインターフェースは次の優先順で選ぶこと：
+
+1. クライアントが公開している cdidx MCP ツール
+2. `cdidx` CLI
+3. cdidx 自体が利用できない場合に限り、`.cdidx/codeindex.db` への直接 SQLite クエリ
 
 #### セットアップ
 
-まず `cdidx` が利用可能か確認してください:
+まず `cdidx` が利用可能か確認する：
 
 ```bash
 cdidx --version
 ```
 
-**見つからない場合**、インストールしてください（.NET 8+ SDK必須）:
+**見つからない場合** はインストールする（.NET 8+ SDK が必要）：
 
 ```bash
-dotnet --version   # 8.x以上であること。そうでなければユーザーに.NET 8+ SDKのインストールを依頼
+dotnet --version   # 8.x 以上であること。違う場合はユーザーに .NET 8+ SDK の導入を依頼する
 dotnet tool install -g cdidx
 ```
 
-**すでにインストール済みの場合**、最新版に更新してください:
+**すでに導入済みの場合** は最新へ更新する：
 
 ```bash
 dotnet tool update -g cdidx
 ```
 
-更新に失敗しても既存バージョンはそのまま使えます。インストール自体に失敗した場合（.NET SDKがない、ネットワーク不通等）は、データベースが構築済みであれば下記の **「直接SQLクエリ」** セクションで `sqlite3` から `.cdidx/codeindex.db` を直接検索できます。
+更新に失敗しても既存バージョンはそのまま使ってよい。インストールに失敗した場合（.NET SDK 不在、ネットワーク不可など）は、下の **「直接SQLクエリ」** へ進み、既存 `.cdidx/codeindex.db` を `sqlite3` で参照する。
 
-検索を始める前に、インデックスを最新化してください:
+AI クライアントが MCP をサポートする場合は、`cdidx` を MCP サーバーとして接続し、ネイティブツールを優先する。現行の cdidx MCP ツール群は以下を含む：
+
+- `search`、`definition`、`references`、`callers`、`callees`、`symbols`
+- `files`、`excerpt`、`map`、`analyze_symbol`、`outline`、`status`、`deps`
+- `batch_query`、`languages`、`index`、`suggest_improvement`
+
+upstream README の基本設定例：
+
+```json
+{
+  "mcpServers": {
+    "cdidx": {
+      "command": "cdidx",
+      "args": ["mcp", "--db", ".cdidx/codeindex.db"]
+    }
+  }
+}
+```
+
+検索前にはインデックスを更新して鮮度を担保する：
 
 ```bash
 cdidx .   # インクリメンタル更新（未変更ファイルはスキップ）
 ```
 
-#### インデックスの最新化（cdidxが必要）
+#### インデックス鮮度の維持（cdidx 利用時）
 
-ファイルを編集したら、検索結果を正確に保つためにデータベースを更新してください:
-
-```bash
-cdidx . --files path/to/changed_file.cs   # 変更したファイルだけ更新
-cdidx . --commits HEAD                     # 直前のコミットで変更されたファイルを更新
-cdidx . --commits abc123                   # 特定のコミットハッシュも指定可能
-cdidx .                                    # フルインクリメンタル更新（未変更ファイルはスキップ）
-```
-
-`git reset`, `git rebase`, `git commit --amend`, `git switch`, `git merge` の後は、履歴やブランチ変更に伴う古いファイルの掃除も必要になるため、フル再索引を優先してください:
+ファイル編集後は、次の検索前に必要な粒度で DB を更新する：
 
 ```bash
-cdidx .   # 履歴変更・ブランチ変更後の stale file cleanup を含めて更新
+cdidx . --files path/to/changed_file.cs   # 自分が変更した特定ファイルだけ更新
+cdidx . --commits HEAD                     # 直近コミットで変わったファイルを更新
+cdidx . --commits abc123                   # 任意コミットの変更ファイルを更新
+cdidx .                                    # フルなインクリメンタル更新
 ```
 
-**ルール: ソースファイルを修正したら、次の検索の前に上記のいずれかを実行すること。**
-**ルール: 履歴改変・ブランチ切り替え・マージの後は、検索結果を信用する前に `cdidx .` をフルで実行すること。**
+`git reset`、`git rebase`、`git commit --amend`、`git switch`、`git merge` の後は、stale file の掃除も必要になるため、部分更新より `cdidx .` を優先する：
+
+```bash
+cdidx .   # 履歴変更・ブランチ切替後の stale file cleanup を含む更新
+```
+
+**ルール: ソースを変更したら、次の検索前に必ず `cdidx . --files ...` / `--commits ...` / `cdidx .` のいずれかを実行すること。**
+**ルール: 履歴改変、ブランチ切替、マージの後は、検索結果を信用する前に必ず `cdidx .` を実行すること。**
 
 #### クエリ戦略
 
-- まず `cdidx map` でディレクトリ構造や主要シンボルの地図を把握してから個別ファイルへ降りること。
-- 検索結果が怪しいときは `cdidx status --json` で `indexed_at`, `latest_modified`, `git_head`, `git_is_dirty` を確認して鮮度を判断すること。すでに `map --json` を使っている場合は、`indexed_at` / `latest_modified` を絞り込み結果の鮮度、`workspace_indexed_at` / `workspace_latest_modified` をワークスペース全体の鮮度として読むこと。
-- 1 回の問い合わせで宣言・本体・関連シンボル・コールグラフ・ワークスペース鮮度・graph 対応可否まで見たいときは、最初に `cdidx inspect "SymbolName"` を優先すること。`inspect --json` には `project_root`、`git_head`、`git_is_dirty` も含まれる。
-- 特定シンボルの宣言と実装本体が必要なときは `cdidx definition "SymbolName" --body` を使うこと。
-- 対応言語では、生テキスト検索へ落ちる前に `cdidx references`, `cdidx callers`, `cdidx callees` を優先すること。
-- シンボル対応言語では `cdidx symbols`、単一ファイルの構造把握には `cdidx outline` を使うこと。
-- `cdidx search` は、非対応言語、文章、設定値、ログ文言、完全一致文字列探索に使うこと。
-- テスト調査が目的でない限り、既定で `--exclude-tests` を付けること。
-- `--path` と繰り返し指定できる `--exclude-path` で対象範囲を早めに絞ること。
-- 結果断片の量は `--snippet-lines <n>` で調整し、初手からファイル全体を開かないこと。
-- 候補ファイル確認は、まず `cdidx files` と `cdidx excerpt` を使い、必要になってから全体を開くこと。
-- 共有コードを触る前の依存把握には `cdidx deps`、影響分析には `cdidx deps --reverse` を使うこと。
-- 最近変更された箇所を優先調査したいときは、`files` や `search` に `--since <datetime>` を付けること。
-- いきなり全文を引かず、まず `--count` で件数を確認してトークンを節約すること。
-- 大きめの再索引前に対象ファイルを確認したいときは `cdidx . --dry-run` を使うこと。
+- 全体像が欲しいときは `cdidx map` から始め、ディレクトリ構成、言語分布、主要ファイル、ホットスポットを掴む。
+- `symbols` / `references` / `callers` を使う前に、必要なら `cdidx languages` で対象言語の symbol 抽出・graph 対応状況を確認する。
+- 鮮度が怪しいときは `cdidx status --json` を見て `indexed_at`、`latest_modified`、`git_head`、`git_is_dirty` を確認する。`map --json` を使っている場合、`indexed_at` / `latest_modified` は絞り込み結果の鮮度、`workspace_indexed_at` / `workspace_latest_modified` はワークスペース全体の鮮度として読む。
+- シンボル起点で定義、近傍シンボル、参照、caller、callee、鮮度メタデータを一気に把握したいときは `cdidx inspect "SymbolName"` を優先する。`inspect --json` には `project_root`、`git_head`、`git_is_dirty` に加えて `graph_language`、`graph_supported`、`graph_support_reason` も含まれる。
+- 名前付きシンボルの宣言や本体だけ欲しいときは `cdidx definition "SymbolName" --body` を使う。
+- `references`、`callers`、`callees` は graph 対応言語で使い、0件と未対応言語を混同しないよう graph support metadata を確認する。
+- symbol 抽出対応言語の名前検索には `cdidx symbols`、1ファイルの構造把握には `cdidx outline` を使う。
+- unsupported 言語、設定ファイル、ドキュメント、ログ文言、厳密な文字列探索には `cdidx search` を使う。
+- テストを明示的に見たい場合を除き、まず `--exclude-tests` を付ける。
+- `--path` と繰り返し指定可能な `--exclude-path` で対象範囲を強く絞る。
+- 全文を開く前に、`--snippet-lines <n>` で検索結果の抜粋サイズを調整する。
+- 候補ファイルの洗い出しには `cdidx files --json` を使い、必要行だけ読むときは `cdidx excerpt` を使う。`files --json` には `checksum`、`modified`、`indexed_at` が含まれる。
+- 共有コードを変更する前に `cdidx deps` と `cdidx deps --reverse` で依存と影響範囲を確認する。
+- MCP クライアントでは、独立した読み取りクエリをまとめて投げられるなら `batch_query` を優先する。
+- 最近触られたコードに寄せたい場合は `files --since <datetime>` や `search --since <datetime>` を使う。
+- FTS5 の prefix 検索など、生の FTS 構文が本当に必要なときだけ `--fts` を使う。
+- まず件数だけ知りたい場合は `--count` を使ってから詳細を取りに行く。
+- 大きめの再インデックス前には `cdidx . --dry-run` で対象を事前確認する。
+- cdidx 自体の抽出ミス、未対応エッジケース、クラッシュを見つけたら、最小再現を残し、黙って迂回せず `suggest_improvement` か upstream issue フローにつなげる。
 
-#### CLI（cdidxが利用可能な場合に推奨）
+#### CLI（cdidx が利用可能な場合に推奨）
 
 ```bash
-cdidx map --path FolderDiffIL4DotNet/ --exclude-tests --json     # コードベース全体の地図
-cdidx inspect "FileDiffService" --exclude-tests                  # シンボル中心の詳細調査
-cdidx definition "RunPreflightValidator" --body                 # 宣言 + 実装本体
-cdidx references "IFileDiffService" --exclude-tests             # 参照箇所
-cdidx callers "FilesAreEqualAsync" --exclude-tests              # 呼び出し元
-cdidx callees "FilesAreEqualAsync" --exclude-tests              # 呼び出し先
+cdidx map --path FolderDiffIL4DotNet/ --exclude-tests --json     # コードベース全体像
+cdidx languages --json                                           # 言語ごとの symbol / graph 対応状況
+cdidx inspect "FileDiffService" --exclude-tests                  # シンボル中心の深掘り
+cdidx definition "RunPreflightValidator" --body                 # 宣言と本体
+cdidx references "IFileDiffService" --exclude-tests             # 利用箇所グラフ
+cdidx callers "FilesAreEqualAsync" --exclude-tests              # inbound call graph
+cdidx callees "FilesAreEqualAsync" --exclude-tests              # outbound call graph
 cdidx symbols "HtmlReportGenerateService" --path Services/      # 構造化シンボル検索
-cdidx outline Services/FileDiffService.cs                       # 単一ファイルの構造概要
+cdidx outline Services/FileDiffService.cs                       # 単一ファイル構造
 cdidx search "warning log" --path Services/ --snippet-lines 6   # 生テキスト検索
 cdidx search "OperationCanceledException" --path Services/ --since 2026-01-01T00:00:00Z --exclude-tests
-cdidx deps --path FolderDiffIL4DotNet/Services --exclude-path Tests # ファイル依存グラフ
+cdidx deps --path FolderDiffIL4DotNet/Services --exclude-path Tests # 依存グラフ
 cdidx deps --path FolderDiffIL4DotNet/Services/FileDiffService.cs --reverse
-cdidx excerpt Services/FileDiffService.cs --start 220 --end 280 # ピンポイント抜粋
+cdidx excerpt Services/FileDiffService.cs --start 220 --end 280 # 必要行だけ再構成
 cdidx files --path Services/HtmlReport/                         # インデックス済みファイル一覧
-cdidx files --path Tests/ --since 2026-01-01T00:00:00Z         # 最近変更されたテスト
-cdidx search "warning" --path FolderDiffIL4DotNet/ --count     # 展開前に件数確認
-cdidx status --json                                             # DB鮮度と統計
+cdidx files --path Services/ --json                             # checksum / timestamp 付きファイル情報
+cdidx files --path Tests/ --since 2026-01-01T00:00:00Z         # 最近変わったテスト
+cdidx search "warning" --path FolderDiffIL4DotNet/ --count     # 件数確認
+cdidx status --json                                             # DB 鮮度と統計
+cdidx search "ildasm OR ilspycmd" --fts --path FolderDiffIL4DotNet/Services
 cdidx . --dry-run                                               # 再索引対象の事前確認
 ```
 
