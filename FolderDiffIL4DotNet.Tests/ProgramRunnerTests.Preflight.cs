@@ -153,7 +153,7 @@ namespace FolderDiffIL4DotNet.Tests
         [Fact]
         public void ValidateRequiredArguments_TooFewArgs_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a", "b"]));
+            Assert.Throws<ArgumentException>(() => RunPreflightValidator.ValidateRequiredArguments(["a"]));
         }
 
         [Fact]
@@ -178,6 +178,34 @@ namespace FolderDiffIL4DotNet.Tests
         public void ValidateRequiredArguments_ValidArgs_DoesNotThrow()
         {
             RunPreflightValidator.ValidateRequiredArguments(["old", "new", "label"]);
+        }
+
+        [Fact]
+        public void ValidateRequiredArguments_TwoArgs_DoesNotThrow()
+        {
+            RunPreflightValidator.ValidateRequiredArguments(["old", "new"]);
+        }
+
+        [Fact]
+        public void GenerateAutomaticReportLabel_WhenTimestampAlreadyExists_AppendsNumericSuffix()
+        {
+            var reportsRoot = Path.Combine(Path.GetTempPath(), "fd-auto-label-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(reportsRoot);
+
+            try
+            {
+                var timestamp = new DateTime(2026, 4, 11, 15, 4, 5, 123, DateTimeKind.Local).AddTicks(4567);
+                var baseLabel = timestamp.ToString("yyyyMMdd_HHmmss_fffffff", System.Globalization.CultureInfo.InvariantCulture);
+                Directory.CreateDirectory(Path.Combine(reportsRoot, baseLabel));
+
+                var generated = RunPreflightValidator.GenerateAutomaticReportLabel(reportsRoot, timestamp);
+
+                Assert.Equal(baseLabel + "_01", generated);
+            }
+            finally
+            {
+                TryDeleteDirectory(reportsRoot);
+            }
         }
 
         [Fact]

@@ -40,6 +40,28 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(opts.ParseError);
         }
 
+        [Fact]
+        public void ExtractPositionalArguments_WithOptionAsThirdToken_ReturnsOnlyFolders()
+        {
+            var positionalArgs = CliParser.ExtractPositionalArguments(new[]
+            {
+                "/old", "/new", "--beer", "--dry-run",
+            });
+
+            Assert.Equal(new[] { "/old", "/new" }, positionalArgs);
+        }
+
+        [Fact]
+        public void ExtractPositionalArguments_WithExplicitLabelAndOptions_PreservesReportLabel()
+        {
+            var positionalArgs = CliParser.ExtractPositionalArguments(new[]
+            {
+                "/old", "/new", "release_20260411", "--config", "/tmp/config.json", "--beer",
+            });
+
+            Assert.Equal(new[] { "/old", "/new", "release_20260411" }, positionalArgs);
+        }
+
         // -----------------------------------------------------------------------
         // Spinner last-wins behavior
         // スピナー最後勝ち動作

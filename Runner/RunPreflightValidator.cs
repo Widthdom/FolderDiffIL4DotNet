@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -19,22 +20,27 @@ namespace FolderDiffIL4DotNet.Runner
         private const long PREFLIGHT_MIN_FREE_DISK_MEGABYTES = 100L;
         private const string ERROR_INSUFFICIENT_ARGUMENTS = "Insufficient arguments.";
         private const string ERROR_ARGUMENTS_NULL_OR_EMPTY = "One or more required arguments are null or empty.";
-        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + " <oldFolderAbsolutePath> <newFolderAbsolutePath> <reportLabel> [options]";
+        private const string ERROR_INVALID_ARGUMENTS_USAGE = "Invalid arguments. Usage: " + Constants.APP_NAME + " <oldFolderAbsolutePath> <newFolderAbsolutePath> [reportLabel] [options]";
 
         /// <summary>
-        /// Validates minimum argument requirements (at least 3 non-empty arguments).
-        /// コマンドライン引数の最低要件（3 引数・非空）を検証する。
+        /// Validates minimum argument requirements (at least 2 non-empty arguments, plus optional non-empty report label).
+        /// コマンドライン引数の最低要件（2 引数・非空、および省略可能だが指定時は非空のレポートラベル）を検証する。
         /// </summary>
         internal static void ValidateRequiredArguments(string[] args)
         {
             try
             {
-                if (args == null || args.Length < 3)
+                if (args == null || args.Length < 2)
                 {
                     throw new ArgumentException(ERROR_INSUFFICIENT_ARGUMENTS);
                 }
 
-                if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]) || string.IsNullOrWhiteSpace(args[2]))
+                if (string.IsNullOrWhiteSpace(args[0]) || string.IsNullOrWhiteSpace(args[1]))
+                {
+                    throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
+                }
+
+                if (args.Length >= 3 && string.IsNullOrWhiteSpace(args[2]))
                 {
                     throw new ArgumentException(ERROR_ARGUMENTS_NULL_OR_EMPTY);
                 }
@@ -106,6 +112,29 @@ namespace FolderDiffIL4DotNet.Runner
             }
 
             return reportsRootDirAbsolutePath;
+        }
+
+        /// <summary>
+        /// Generates a timestamp-based report label and adds a numeric suffix when a collision already exists.
+        /// Uses local time and keeps the label folder-name safe.
+        /// ローカル時刻ベースのレポートラベルを生成し、既存フォルダと衝突する場合は数値サフィックスを付与する。
+        /// フォルダ名として安全な形式を維持する。
+        /// </summary>
+        internal static string GenerateAutomaticReportLabel(string reportsRootDirAbsolutePath, DateTime? now = null)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(reportsRootDirAbsolutePath);
+
+            var timestamp = (now ?? DateTime.Now).ToString("yyyyMMdd_HHmmss_fffffff", CultureInfo.InvariantCulture);
+            var candidate = timestamp;
+            var suffix = 1;
+
+            while (Directory.Exists(Path.Combine(reportsRootDirAbsolutePath, candidate)))
+            {
+                candidate = $"{timestamp}_{suffix:D2}";
+                suffix++;
+            }
+
+            return candidate;
         }
 
         /// <summary>

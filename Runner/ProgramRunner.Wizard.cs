@@ -6,14 +6,14 @@ using FolderDiffIL4DotNet.Services;
 
 namespace FolderDiffIL4DotNet
 {
-    // Interactive wizard mode: prompts for oldFolder, newFolder, reportLabel.
-    // 対話ウィザードモード: oldFolder、newFolder、reportLabel を対話入力。
+    // Interactive wizard mode: prompts for oldFolder, newFolder, and an optional reportLabel.
+    // 対話ウィザードモード: oldFolder、newFolder、および省略可能な reportLabel を対話入力。
     public sealed partial class ProgramRunner
     {
         private const string WIZARD_HEADER = "=== FolderDiffIL4DotNet Interactive Wizard ===";
         private const string WIZARD_PROMPT_OLD_FOLDER = "Enter the path to the OLD (baseline) folder (drag & drop OK):";
         private const string WIZARD_PROMPT_NEW_FOLDER = "Enter the path to the NEW (comparison) folder (drag & drop OK):";
-        private const string WIZARD_PROMPT_REPORT_LABEL = "Enter the report label (subfolder name under Reports/):";
+        private const string WIZARD_PROMPT_REPORT_LABEL = "Enter the report label (subfolder name under Reports/, optional; press Enter to auto-generate a timestamp label):";
         private const string WIZARD_PROMPT_INDICATOR = "> ";
         private const string WIZARD_INPUT_EMPTY = "Input cannot be empty. Please try again.";
         private const string WIZARD_CONFIRM_HEADER = "--- Confirm settings ---";
@@ -21,9 +21,9 @@ namespace FolderDiffIL4DotNet
         private const string WIZARD_CANCELLED = "Wizard cancelled.";
 
         /// <summary>
-        /// Runs the interactive wizard to collect oldFolder, newFolder, and reportLabel from the user,
+        /// Runs the interactive wizard to collect oldFolder, newFolder, and an optional reportLabel from the user,
         /// then proceeds with the normal diff pipeline.
-        /// 対話ウィザードを実行して oldFolder, newFolder, reportLabel をユーザーから収集し、
+        /// 対話ウィザードを実行して oldFolder, newFolder, および省略可能な reportLabel をユーザーから収集し、
         /// 通常の差分パイプラインに進みます。
         /// </summary>
         private async Task<int> RunWizardAsync(Runner.CliOptions opts)
@@ -46,15 +46,33 @@ namespace FolderDiffIL4DotNet
             if (newFolder == null) { Console.WriteLine(WIZARD_CANCELLED); return (int)ProgramExitCode.InvalidArguments; }
 
             OutputExistingReportFolderSuggestions(opts.OutputDirectory);
-            var reportLabel = PromptForInput(WIZARD_PROMPT_REPORT_LABEL);
+            var reportLabel = PromptForOptionalInput(WIZARD_PROMPT_REPORT_LABEL);
             if (reportLabel == null) { Console.WriteLine(WIZARD_CANCELLED); return (int)ProgramExitCode.InvalidArguments; }
+
+            string? resolvedReportLabel = reportLabel;
+            if (string.IsNullOrWhiteSpace(reportLabel))
+            {
+                try
+                {
+                    var reportsRootDirAbsolutePath = RunPreflightValidator.GetReportsRootDirectoryAbsolutePath(opts.OutputDirectory, _logger);
+                    resolvedReportLabel = RunPreflightValidator.GenerateAutomaticReportLabel(reportsRootDirAbsolutePath);
+                }
+                catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+                {
+                    _logger.LogMessage(AppLogLevel.Warning,
+                        $"Failed to precompute auto-generated report label for wizard mode ({ex.GetType().Name}): {ex.Message}",
+                        shouldOutputMessageToConsole: true,
+                        ex);
+                    resolvedReportLabel = null;
+                }
+            }
 
             // Show confirmation / 確認表示
             Console.WriteLine();
             Console.WriteLine(WIZARD_CONFIRM_HEADER);
             Console.WriteLine($"  Old folder:    {oldFolder}");
             Console.WriteLine($"  New folder:    {newFolder}");
-            Console.WriteLine($"  Report label:  {reportLabel}");
+            Console.WriteLine($"  Report label:  {resolvedReportLabel ?? "(auto-generated during run)"}{(resolvedReportLabel != null && string.IsNullOrWhiteSpace(reportLabel) ? " (auto-generated)" : string.Empty)}");
             Console.Write(WIZARD_CONFIRM_PROMPT);
 
             var confirm = Console.ReadLine()?.Trim();
@@ -70,7 +88,9 @@ namespace FolderDiffIL4DotNet
 
             // Build synthetic args and delegate to normal pipeline
             // 合成引数を構築し通常パイプラインに委譲
-            var syntheticArgs = new[] { oldFolder, newFolder, reportLabel };
+            var syntheticArgs = resolvedReportLabel == null
+                ? new[] { oldFolder, newFolder }
+                : new[] { oldFolder, newFolder, resolvedReportLabel };
             var result = await RunWithResultAsync(syntheticArgs, opts);
             OutputCompletionWarnings(result.HasSha256MismatchWarnings, result.HasTimestampRegressionWarnings, result.HasILFilterWarnings);
             return (int)result.ExitCode;
@@ -127,6 +147,26 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine(WIZARD_INPUT_EMPTY);
                 Console.WriteLine();
             }
+        }
+
+        /// <summary>
+        /// Prompts the user for optional input. Returns an empty string when Enter is pressed with no content,
+        /// and null on EOF (Ctrl+D / Ctrl+Z). Path-like drag-and-drop input is normalized in the same way as required prompts.
+        /// 省略可能な入力をユーザーに要求します。空入力で Enter が押された場合は空文字列を返し、
+        /// EOF（Ctrl+D / Ctrl+Z）時は null を返します。ドラッグ＆ドロップ由来のパス風入力は必須入力と同様に正規化します。
+        /// </summary>
+        private static string? PromptForOptionalInput(string prompt)
+        {
+            Console.WriteLine(prompt);
+            Console.Write(WIZARD_PROMPT_INDICATOR);
+            var input = Console.ReadLine();
+            if (input == null)
+            {
+                return null;
+            }
+
+            input = NormalizeDragDropPath(input);
+            return input.Length == 0 ? string.Empty : Path.GetFullPath(input);
         }
 
         /// <summary>

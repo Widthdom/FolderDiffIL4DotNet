@@ -30,6 +30,7 @@ namespace FolderDiffIL4DotNet
         private const string WARNING_NEW_FILE_TIMESTAMP_OLDER_THAN_OLD = "One or more modified files in 'new' have older timestamps than the corresponding files in 'old'. See diff_report for details.";
         private const string WARNING_IL_FILTER_STRINGS_TOO_SHORT = "One or more ILIgnoreLineContainingStrings entries are very short and may inadvertently exclude legitimate IL lines. See diff_report Warnings section for details.";
         private const string TIP_PRINT_CONFIG = "Tip: Run with --print-config to display the effective configuration as JSON.";
+        private const string INFO_AUTO_GENERATED_REPORT_LABEL = "Report label was not specified. Using auto-generated label: ";
 
         private readonly ILoggerService _logger;
         private readonly ConfigService _configService;
@@ -309,13 +310,26 @@ namespace FolderDiffIL4DotNet
                     throw new ArgumentException(opts.ParseError);
                 }
 
-                RunPreflightValidator.ValidateRequiredArguments(args);
+                var positionalArgs = CliParser.ExtractPositionalArguments(args);
+                RunPreflightValidator.ValidateRequiredArguments(positionalArgs);
 
-                var oldFolderAbsolutePath = Path.GetFullPath(args[0].Trim('"'));
-                var newFolderAbsolutePath = Path.GetFullPath(args[1].Trim('"'));
-                var reportLabel = args[2];
+                var oldFolderAbsolutePath = Path.GetFullPath(positionalArgs[0].Trim('"'));
+                var newFolderAbsolutePath = Path.GetFullPath(positionalArgs[1].Trim('"'));
+                string reportsRootDirAbsolutePath = RunPreflightValidator.GetReportsRootDirectoryAbsolutePath(opts.OutputDirectory, _logger);
+                var reportLabel = positionalArgs.Length >= 3
+                    ? positionalArgs[2]
+                    : RunPreflightValidator.GenerateAutomaticReportLabel(reportsRootDirAbsolutePath);
+
+                if (positionalArgs.Length < 3)
+                {
+                    _logger.LogMessage(
+                        AppLogLevel.Info,
+                        INFO_AUTO_GENERATED_REPORT_LABEL + reportLabel,
+                        shouldOutputMessageToConsole: true);
+                }
+
                 RunPreflightValidator.ValidateReportLabel(_logger, reportLabel);
-                string reportsFolderAbsolutePath = RunPreflightValidator.GetReportsFolderAbsolutePath(reportLabel, opts.OutputDirectory, _logger);
+                string reportsFolderAbsolutePath = Path.Combine(reportsRootDirAbsolutePath, reportLabel);
                 RunPreflightValidator.ValidateRunDirectories(_logger, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);
                 return StepResult<RunArguments>.FromValue(new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath));

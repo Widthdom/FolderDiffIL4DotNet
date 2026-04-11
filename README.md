@@ -160,7 +160,7 @@ dotnet tool install --global ilspycmd
 ## Usage
 
 ```
-nildiff <oldFolder> <newFolder> <reportLabel> [options]
+nildiff <oldFolder> <newFolder> [reportLabel] [options]
 ```
 
 **Arguments:**
@@ -169,7 +169,7 @@ nildiff <oldFolder> <newFolder> <reportLabel> [options]
 |---|---|
 | `<oldFolder>` | Absolute path to the baseline (old) folder. |
 | `<newFolder>` | Absolute path to the comparison (new) folder. |
-| `<reportLabel>` | Label used as the subfolder name under `Reports/`. |
+| `[reportLabel]` | Optional label used as the subfolder name under `Reports/`. When omitted, the tool auto-generates a high-resolution timestamp label. Tokens beginning with `--` are treated as options, not labels. |
 
 **Options:**
 
@@ -188,9 +188,9 @@ nildiff <oldFolder> <newFolder> <reportLabel> [options]
 | `--clear-cache` | Interactive wizard to selectively delete IL cache files (by tool, version, or all). |
 | `--skip-il` | Skip IL comparison for .NET assemblies entirely. |
 | `--no-timestamp-warnings` | Suppress timestamp-regression warnings. |
-| `--creator` | Apply the default maintainer IL ignore profile (`buildserver-winforms`). Intended for the common `nildiff <old> <new> <label> --creator` flow. |
+| `--creator` | Apply the default maintainer IL ignore profile (`buildserver-winforms`). Intended for the common `nildiff <old> <new> [label] --creator` flow. |
 | `--creator-il-ignore-profile <name>` | Apply a maintainer-managed IL ignore profile and force [`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-en-shouldignoreillinescontainingconfiguredstrings) to `true`. The profile strings are merged into [`ILIgnoreLineContainingStrings`](#config-en-ilignorelinecontainingstrings). Current built-in profile: `buildserver-winforms`. |
-| `--wizard` | Interactive mode: prompts for old folder, new folder, and report label. Before the report-label prompt, it prints the existing report folder names under the active Reports root so you can avoid collisions or reuse part of an existing label. Drag-and-drop friendly — auto-strips surrounding quotes, `file://` URI prefixes, backslash-escaped spaces, and percent-encoded characters. |
+| `--wizard` | Interactive mode: prompts for old folder, new folder, and an optional report label. Before the report-label prompt, it prints the existing report folder names under the active Reports root so you can avoid collisions or reuse part of an existing label. Press Enter on the report-label prompt to auto-generate a high-resolution timestamp label. Drag-and-drop friendly — auto-strips surrounding quotes, `file://` URI prefixes, backslash-escaped spaces, and percent-encoded characters. |
 | `--dry-run` | Enumerate files and show statistics without running comparison. |
 | `--coffee` | Use coffee-themed spinner animation during execution (easter egg). |
 | `--beer` | Use beer-themed spinner animation during execution (easter egg). |
@@ -218,6 +218,9 @@ dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # Use a custom config file
 dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pause
+
+# Omit the report label to auto-generate a high-resolution timestamp
+dotnet run "/path/old" "/path/new" --no-pause
 
 # Inspect the effective configuration (config.json + env vars + supported CLI overrides) without running a diff
 dotnet run -- --print-config
@@ -955,7 +958,7 @@ dotnet tool install --global ilspycmd
 ## 使い方
 
 ```
-nildiff <oldFolder> <newFolder> <reportLabel> [options]
+nildiff <oldFolder> <newFolder> [reportLabel] [options]
 ```
 
 **引数:**
@@ -964,7 +967,7 @@ nildiff <oldFolder> <newFolder> <reportLabel> [options]
 |---|---|
 | `<oldFolder>` | 比較元（旧）フォルダの絶対パス。 |
 | `<newFolder>` | 比較先（新）フォルダの絶対パス。 |
-| `<reportLabel>` | `Reports/` 配下のサブフォルダ名に使うラベル。 |
+| `[reportLabel]` | `Reports/` 配下のサブフォルダ名に使う任意ラベル。省略時は高粒度のタイムスタンプラベルを自動生成します。`--` で始まるトークンはラベルではなくオプションとして扱います。 |
 
 **オプション:**
 
@@ -983,9 +986,9 @@ nildiff <oldFolder> <newFolder> <reportLabel> [options]
 | `--clear-cache` | IL キャッシュファイルを選択的に削除する対話ウィザードを起動します（ツール別、バージョン別、全削除）。 |
 | `--skip-il` | .NET アセンブリの IL 比較をまるごとスキップします。 |
 | `--no-timestamp-warnings` | タイムスタンプ逆転警告を抑制します。 |
-| `--creator` | 既定のメンテナー用 IL 無視プロファイル（`buildserver-winforms`）を適用します。想定する常用形は `nildiff <old> <new> <label> --creator` です。 |
+| `--creator` | 既定のメンテナー用 IL 無視プロファイル（`buildserver-winforms`）を適用します。想定する常用形は `nildiff <old> <new> [label] --creator` です。 |
 | `--creator-il-ignore-profile <name>` | メンテナー管理の IL 無視プロファイルを適用し、[`ShouldIgnoreILLinesContainingConfiguredStrings`](#config-ja-shouldignoreillinescontainingconfiguredstrings) を `true` に強制します。プロファイル文字列は [`ILIgnoreLineContainingStrings`](#config-ja-ilignorelinecontainingstrings) へマージされます。組み込みプロファイルは現在 `buildserver-winforms` です。 |
-| `--wizard` | 対話モード: 旧フォルダ、新フォルダ、レポートラベルを対話入力で指定します。レポートラベル入力前に、現在の Reports ルート配下にある既存レポートフォルダ名を一覧表示するため、重複回避や既存ラベルの一部再利用がしやすくなります。ドラッグ＆ドロップ対応 — 囲みクォート、`file://` URI プレフィックス、バックスラッシュエスケープされたスペース、パーセントエンコード文字を自動除去します。 |
+| `--wizard` | 対話モード: 旧フォルダ、新フォルダ、任意のレポートラベルを対話入力で指定します。レポートラベル入力前に、現在の Reports ルート配下にある既存レポートフォルダ名を一覧表示するため、重複回避や既存ラベルの一部再利用がしやすくなります。レポートラベル入力は Enter だけで空欄確定でき、その場合は高粒度のタイムスタンプラベルを自動生成します。ドラッグ＆ドロップ対応 — 囲みクォート、`file://` URI プレフィックス、バックスラッシュエスケープされたスペース、パーセントエンコード文字を自動除去します。 |
 | `--dry-run` | 比較を実行せずファイルを列挙し統計情報を表示します。 |
 | `--coffee` | 実行中にコーヒーテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--beer` | 実行中にビールテーマのスピナーアニメーションを使用します（イースターエッグ）。 |
@@ -1013,6 +1016,9 @@ dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # カスタム設定ファイルを指定
 dotnet run "/path/old" "/path/new" "label" --config /etc/my-config.json --no-pause
+
+# レポートラベルを省略して高粒度タイムスタンプを自動採番
+dotnet run "/path/old" "/path/new" --no-pause
 
 # 有効な設定（config.json ＋環境変数＋対応 CLI オーバーライド）を差分実行なしで確認
 dotnet run -- --print-config
