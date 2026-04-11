@@ -131,8 +131,10 @@ namespace FolderDiffIL4DotNet.Services
             // 並列差分処理時のファイル書き込み IOException を防止するため直列化。
             lock (_fileWriteLock)
             {
-                using (var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true))
+                try
                 {
+                    PrepareLogFileForAppend(_logFileAbsolutePath);
+                    using var streamWriter = new StreamWriter(_logFileAbsolutePath, append: true);
                     if (Format == LogFormat.Json)
                     {
                         WriteJsonLogEntry(streamWriter, logLevel, message, exception);
@@ -146,6 +148,10 @@ namespace FolderDiffIL4DotNet.Services
                             streamWriter.WriteLine(exception.StackTrace);
                         }
                     }
+                }
+                catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+                {
+                    TryWriteFileLoggingFailureToConsole(_logFileAbsolutePath, ex);
                 }
             }
         }
@@ -224,6 +230,35 @@ namespace FolderDiffIL4DotNet.Services
                     ex);
                 return false;
             }
+        }
+
+        private static void PrepareLogFileForAppend(string logFileAbsolutePath)
+        {
+            if (!File.Exists(logFileAbsolutePath))
+            {
+                return;
+            }
+
+            var attributes = File.GetAttributes(logFileAbsolutePath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+            {
+                File.SetAttributes(logFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
+            }
+        }
+
+        private static void TryWriteFileLoggingFailureToConsole(string logFileAbsolutePath, Exception ex)
+        {
+#pragma warning disable CA1031 // Console fallback must never crash logging callers / コンソールへのフォールバックは呼び出し元を絶対に落とさない
+            try
+            {
+                Console.Error.WriteLine(
+                    $"[WRN] Failed to write log file '{logFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}");
+            }
+            catch
+            {
+                // Best-effort diagnostic fallback / ベストエフォートの診断フォールバック
+            }
+#pragma warning restore CA1031
         }
 
         /// <summary>
