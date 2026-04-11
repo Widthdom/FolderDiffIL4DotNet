@@ -737,6 +737,94 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_MultipleOpenFolderFlags_OpensTargetsInDeclaredOrder()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-multi-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var configPath = Path.Combine(tempDir, "custom.json");
+            var startedProcesses = new List<ProcessStartInfo>();
+            var runner = CreateRunnerWithCapturedFolderOpens(logger, startedProcesses);
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--open-config", "--open-logs", "--output", tempDir, "--config", configPath });
+
+                Assert.Equal(0, exitCode);
+                Assert.Equal(3, startedProcesses.Count);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[1].FileName);
+                Assert.Contains("Logs", startedProcesses[2].FileName, StringComparison.Ordinal);
+                Assert.All(startedProcesses, startInfo => Assert.True(startInfo.UseShellExecute));
+
+                var output = sw.ToString();
+                Assert.Equal(3, CountOccurrences(output, "Opening folder:"));
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_MultipleOpenFolderFlags_WhenSecondLauncherFails_DoesNotOpenRemainingTargets()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-open-multi-fail-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var configPath = Path.Combine(tempDir, "custom.json");
+            var originalError = Console.Error;
+            using var errorWriter = new System.IO.StringWriter();
+            var startedProcesses = new List<ProcessStartInfo>();
+            int launchAttempt = 0;
+            var runner = new ProgramRunner(
+                logger,
+                new ConfigService(),
+                startInfo =>
+                {
+                    startedProcesses.Add(startInfo);
+                    launchAttempt++;
+                    if (launchAttempt == 2)
+                    {
+                        throw new InvalidOperationException("second launch failed");
+                    }
+                });
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[] { "--open-reports", "--open-config", "--open-logs", "--output", tempDir, "--config", configPath });
+
+                Assert.Equal(4, exitCode);
+                Assert.Equal(2, startedProcesses.Count);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[0].FileName);
+                Assert.Equal(Path.GetFullPath(tempDir), startedProcesses[1].FileName);
+
+                string errorOutput = errorWriter.ToString();
+                Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains(Path.GetFullPath(tempDir), errorOutput, StringComparison.Ordinal);
+                Assert.Contains("InvalidOperationException", errorOutput, StringComparison.Ordinal);
+                Assert.Empty(logger.Messages);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_HelpFlag_OutputContainsOpenFolderOptions()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
@@ -769,6 +857,19 @@ namespace FolderDiffIL4DotNet.Tests
             string normalizedExpected = Path.GetFullPath(expectedPath).Replace("/private/var/", "/var/", StringComparison.Ordinal);
             string normalizedActual = Path.GetFullPath(actualPath).Replace("/private/var/", "/var/", StringComparison.Ordinal);
             return string.Equals(normalizedExpected, normalizedActual, StringComparison.Ordinal);
+        }
+
+        private static int CountOccurrences(string text, string value)
+        {
+            int count = 0;
+            int index = 0;
+            while ((index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                index += value.Length;
+            }
+
+            return count;
         }
 
         // -----------------------------------------------------------------------
