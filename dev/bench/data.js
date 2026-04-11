@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775834338219,
+  "lastUpdate": 1775883249807,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -5688,6 +5688,102 @@ window.BENCHMARK_DATA = {
             "value": 28311217.672916666,
             "unit": "ns",
             "range": "± 321648.5638442343"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b492fd784da1c44bf4218a75bf3c987961ce41a2",
+          "message": "Merge pull request #142 from Widthdom/codex/review-20260411\n\nThis PR tightens several low-risk but user-visible edge cases around path handling, cancellation flow, reviewer guidance, and CI-stable test coverage.",
+          "timestamp": "2026-04-11T13:49:20+09:00",
+          "tree_id": "037ab3461d308a93587aad89428e08cd75470695",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/b492fd784da1c44bf4218a75bf3c987961ce41a2"
+        },
+        "date": 1775883249286,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61109.76863606771,
+            "unit": "ns",
+            "range": "± 121.44595319142098"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 584758.6635044643,
+            "unit": "ns",
+            "range": "± 1402.982836038662"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5894128.591145833,
+            "unit": "ns",
+            "range": "± 15886.442436135547"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 73950.99457804362,
+            "unit": "ns",
+            "range": "± 226.7112693839072"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 29.07939261198044,
+            "unit": "ns",
+            "range": "± 0.14773871223315205"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 61.6510852758701,
+            "unit": "ns",
+            "range": "± 1.0531629953898956"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 31.192019887765248,
+            "unit": "ns",
+            "range": "± 0.23872875289457685"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5223483.216145833,
+            "unit": "ns",
+            "range": "± 50145.47544220802"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 129232.22511393229,
+            "unit": "ns",
+            "range": "± 1641.952823233951"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2714.651933942522,
+            "unit": "ns",
+            "range": "± 64.52528477125486"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 258381.1427408854,
+            "unit": "ns",
+            "range": "± 1295.9660089380238"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 26863418.863839287,
+            "unit": "ns",
+            "range": "± 110095.69041903497"
           }
         ]
       }
