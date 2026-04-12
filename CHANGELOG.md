@@ -43,6 +43,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **DepsJsonAnalyzer onError callback and error path tests** — Extended `DepsJsonAnalyzerTests.cs` with: missing-file `onError` callback invocation with exception capture, successful-analysis `onError` non-invocation, invalid targets section graceful handling (no crash, still returns entries). Affected: `DepsJsonAnalyzerTests.cs` (3 new tests).
 
+#### Documentation
+
+- **DEVELOPER_GUIDE.md Core Responsibilities table updated** — Added 3 missing services to the Core Responsibilities table (EN+JA): `ProgressReportService` (console progress, phase tracking), `LoggerService` (file/console logging, trace context), `NuGetVulnerabilityService` (vulnerability API integration). These services were documented in the DI registration and mermaid diagrams but omitted from the table.
+
 ### [1.16.8] - 2026-04-12
 
 #### Fixed
@@ -1369,6 +1373,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **RunPreflightValidator エッジケーステスト** — `ProgramRunnerTests.Preflight.cs` を拡張: `CheckDiskSpaceOrThrow` 空文字列パスのスキップ、`CheckReportsParentWritableOrThrow` 空親パスのスキップと書き込みチェック成功後のプローブファイルクリーンアップ検証。影響: `ProgramRunnerTests.Preflight.cs`（3件追加）。
 
 - **DepsJsonAnalyzer onError コールバックとエラーパステスト** — `DepsJsonAnalyzerTests.cs` を拡張: ファイル不在時の `onError` コールバック呼び出しと例外キャプチャ、正常解析時の `onError` 非呼び出し、不正 targets セクションのグレースフルハンドリング（クラッシュせずエントリ返却）。影響: `DepsJsonAnalyzerTests.cs`（3件追加）。
+
+#### ドキュメント
+
+- **DEVELOPER_GUIDE.md コア責務テーブル更新** — コア責務テーブルに欠落していた3サービスを追加（EN+JA）: `ProgressReportService`（コンソール進捗、フェーズ追跡）、`LoggerService`（ファイル/コンソールログ、トレースコンテキスト）、`NuGetVulnerabilityService`（脆弱性 API 統合）。これらのサービスは DI 登録と mermaid ダイアグラムには記載済みだがテーブルから漏れていた。
 
 ### [1.16.8] - 2026-04-12
 
