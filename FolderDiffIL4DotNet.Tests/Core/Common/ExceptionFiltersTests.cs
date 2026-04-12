@@ -127,6 +127,19 @@ namespace FolderDiffIL4DotNet.Tests.Core.Common
             Assert.False(ExceptionFilters.IsPathOrFileIoRecoverable(new InvalidOperationException()));
         }
 
+        [Fact]
+        public void IsPathOrFileIoRecoverable_NotSupportedException_ReturnsTrue()
+        {
+            Assert.True(ExceptionFilters.IsPathOrFileIoRecoverable(new NotSupportedException()));
+        }
+
+        [Fact]
+        public void IsPathOrFileIoRecoverable_NullReferenceException_ReturnsFalse()
+        {
+            // Programmer errors must propagate / プログラマエラーは伝播させる
+            Assert.False(ExceptionFilters.IsPathOrFileIoRecoverable(new NullReferenceException()));
+        }
+
         // ── IsProcessExecutionRecoverable ──
 
         [Fact]
