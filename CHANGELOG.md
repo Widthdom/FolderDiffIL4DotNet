@@ -25,6 +25,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **SbomGenerateService special character and empty input tests** — New partial file `SbomGenerateServiceTests.SpecialChars.cs` covers: Unicode file paths (Japanese characters) produce valid JSON, file paths with quotes produce valid JSON, empty result lists produce valid CycloneDX and SPDX with empty component/package arrays. Affected: `SbomGenerateServiceTests.SpecialChars.cs` (4 new tests).
 
+#### Fixed
+
+- **ILOutputService catch block now logs exception details** — The catch block in `DiffDotNetAssembliesAsync` previously logged a generic error message without the exception object, making debugging harder. It now includes the exception type, message, and passes the exception to the logger. Affected: `Services/ILOutputService.cs`.
+
+- **NuGetVulnerabilityService index fetch now logs a specific warning on failure** — When the vulnerability index download fails (as opposed to individual page loads), the service now logs a warning that distinguishes the index fetch failure from per-page failures, aiding diagnostic triage. Affected: `Services/NuGetVulnerabilityService.cs`. Tests: `NuGetVulnerabilityServiceTests.cs` (2 new: `CheckVulnerabilitiesAsync_WhenIndexFetchFails_LogsIndexSpecificWarning`, `CheckVulnerabilitiesAsync_WhenIndexFetchIsCanceled_ThrowsOperationCanceledException`).
+
+- **DiffExecutionContext constructor null validation now has dedicated test coverage** — New test class `DiffExecutionContextTests` covers: `ArgumentNullException` for each of the three path parameters, IL output sub-path derivation from the reports folder, and network-share flag preservation across all combinations. Affected: `DiffExecutionContextTests.cs` (7 new tests).
+
 ### [1.16.8] - 2026-04-12
 
 #### Fixed
@@ -1333,6 +1341,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **ProgressReportService FormatPhaseElapsed エッジケース** — `ProgressReportServiceTests.cs` を拡張: `TimeSpan.Zero` で `"0.0s"` を返す、サブ秒（500ms）で `"0.5s"` を返す、ミリ秒境界の切り捨て（950ms → `"0.9s"`）、ちょうど60秒で分フォーマット（`"1m 0.0s"`）、フェーズカウンタが TotalPhases を超えても例外なし。影響: `ProgressReportServiceTests.cs`（5件追加）。
 
 - **SbomGenerateService 特殊文字・空入力テスト** — 新規パーシャルファイル `SbomGenerateServiceTests.SpecialChars.cs`: Unicode ファイルパス（日本語文字）で有効な JSON 生成、クォートを含むファイルパスで有効な JSON 生成、空結果リストで有効な CycloneDX/SPDX（空コンポーネント/パッケージ配列）生成。影響: `SbomGenerateServiceTests.SpecialChars.cs`（4件追加）。
+
+#### 修正
+
+- **ILOutputService の catch ブロックで例外詳細がログ出力されるよう修正** — `DiffDotNetAssembliesAsync` の catch ブロックで、例外オブジェクトを渡さずにエラーメッセージを出力していたのを、例外型・メッセージを含め logger に例外を渡すように変更。対象: `Services/ILOutputService.cs`。
+
+- **NuGetVulnerabilityService のインデックス取得失敗時にインデックス固有の警告を出力するよう修正** — 脆弱性インデックスのダウンロード失敗時（個別ページ取得の失敗とは異なり）、インデックス取得の失敗であることを区別する警告メッセージをログ出力するようにし、診断の切り分けを容易にしました。対象: `Services/NuGetVulnerabilityService.cs`。テスト: `NuGetVulnerabilityServiceTests.cs`（2件追加: `CheckVulnerabilitiesAsync_WhenIndexFetchFails_LogsIndexSpecificWarning`、`CheckVulnerabilitiesAsync_WhenIndexFetchIsCanceled_ThrowsOperationCanceledException`）。
+
+- **DiffExecutionContext コンストラクタの null 検証に専用テストカバレッジを追加** — 新規テストクラス `DiffExecutionContextTests`: 3つのパスパラメータ各 `ArgumentNullException`、レポートフォルダからの IL 出力サブパス導出、全組み合わせでのネットワーク共有フラグ保持。影響: `DiffExecutionContextTests.cs`（7件追加）。
 
 ### [1.16.8] - 2026-04-12
 
