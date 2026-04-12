@@ -35,6 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **ConfigService JSON error message formatting tests** — Extended `ConfigServiceTests.cs` with: `line N, position N` pattern verification for trailing-comma errors, trailing-comma hint presence in all JSON parse errors, custom config path `FileNotFoundException` with path in message. Affected: `ConfigServiceTests.cs` (3 new tests).
 
+- **ProcessHelper TryGetProcessOutputAsync tests** — Extended `ProcessHelperTests.cs` with: non-zero exit code returns null, valid command returns output, null args does not throw. Added `[Trait("Category", "Unit")]` attribute to `ProcessHelperTests` and `SystemInfoTests`. Affected: `ProcessHelperTests.cs` (3 new tests), `SystemInfoTests.cs` (2 new tests + Trait attribute).
+
 ### [1.16.8] - 2026-04-12
 
 #### Fixed
@@ -1353,6 +1355,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **DiffExecutionContext コンストラクタの null 検証に専用テストカバレッジを追加** — 新規テストクラス `DiffExecutionContextTests`: 3つのパスパラメータ各 `ArgumentNullException`、レポートフォルダからの IL 出力サブパス導出、全組み合わせでのネットワーク共有フラグ保持。影響: `DiffExecutionContextTests.cs`（7件追加）。
 
 - **ConfigService JSON エラーメッセージフォーマットテスト** — `ConfigServiceTests.cs` を拡張: トレイリングカンマエラーの `line N, position N` パターン検証、全 JSON パースエラーでのトレイリングカンマヒント存在、カスタム設定パスの `FileNotFoundException` でパスがメッセージに含まれること。影響: `ConfigServiceTests.cs`（3件追加）。
+
+- **ProcessHelper TryGetProcessOutputAsync テスト** — `ProcessHelperTests.cs` を拡張: 非ゼロ終了コードで null 返却、正常コマンドで出力返却、null 引数で例外なし。`ProcessHelperTests` と `SystemInfoTests` に `[Trait("Category", "Unit")]` 属性を追加。影響: `ProcessHelperTests.cs`（3件追加）、`SystemInfoTests.cs`（2件追加 + Trait 属性）。
 
 ### [1.16.8] - 2026-04-12
 
