@@ -41,6 +41,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **RunPreflightValidator edge case tests** — Extended `ProgramRunnerTests.Preflight.cs` with: `CheckDiskSpaceOrThrow` empty-string path skip, `CheckReportsParentWritableOrThrow` empty parent path skip and probe-file cleanup verification after successful write check. Affected: `ProgramRunnerTests.Preflight.cs` (3 new tests).
 
+- **DepsJsonAnalyzer onError callback and error path tests** — Extended `DepsJsonAnalyzerTests.cs` with: missing-file `onError` callback invocation with exception capture, successful-analysis `onError` non-invocation, invalid targets section graceful handling (no crash, still returns entries). Affected: `DepsJsonAnalyzerTests.cs` (3 new tests).
+
 ### [1.16.8] - 2026-04-12
 
 #### Fixed
@@ -1365,6 +1367,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **16件のテストクラスに `[Trait("Category", "Unit")]` を追加** — `dotnet test --filter "Category=Unit"` でのフィルタ実行を有効にする一貫したテスト分類。対象: CoreSeparationTests、ConsoleRenderCoordinatorTests、DotNetDetectorTests、FileSystemUtilityTests、PathValidatorTests、TextDifferTests、TextSanitizerTests、AssemblySemanticChangesSummaryTests、ProgramTests、DisassemblerBlacklistTests、ILCachePrefetcherTests、LoggerServiceTests、DotNetDisassemblerCacheTests、AuditLogGenerateServiceTests、ConfigServiceTests、ILCacheTests。
 
 - **RunPreflightValidator エッジケーステスト** — `ProgramRunnerTests.Preflight.cs` を拡張: `CheckDiskSpaceOrThrow` 空文字列パスのスキップ、`CheckReportsParentWritableOrThrow` 空親パスのスキップと書き込みチェック成功後のプローブファイルクリーンアップ検証。影響: `ProgramRunnerTests.Preflight.cs`（3件追加）。
+
+- **DepsJsonAnalyzer onError コールバックとエラーパステスト** — `DepsJsonAnalyzerTests.cs` を拡張: ファイル不在時の `onError` コールバック呼び出しと例外キャプチャ、正常解析時の `onError` 非呼び出し、不正 targets セクションのグレースフルハンドリング（クラッシュせずエントリ返却）。影響: `DepsJsonAnalyzerTests.cs`（3件追加）。
 
 ### [1.16.8] - 2026-04-12
 
