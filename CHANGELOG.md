@@ -33,6 +33,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **DiffExecutionContext constructor null validation now has dedicated test coverage** — New test class `DiffExecutionContextTests` covers: `ArgumentNullException` for each of the three path parameters, IL output sub-path derivation from the reports folder, and network-share flag preservation across all combinations. Affected: `DiffExecutionContextTests.cs` (7 new tests).
 
+- **ConfigService JSON error message formatting tests** — Extended `ConfigServiceTests.cs` with: `line N, position N` pattern verification for trailing-comma errors, trailing-comma hint presence in all JSON parse errors, custom config path `FileNotFoundException` with path in message. Affected: `ConfigServiceTests.cs` (3 new tests).
+
 ### [1.16.8] - 2026-04-12
 
 #### Fixed
@@ -1349,6 +1351,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **NuGetVulnerabilityService のインデックス取得失敗時にインデックス固有の警告を出力するよう修正** — 脆弱性インデックスのダウンロード失敗時（個別ページ取得の失敗とは異なり）、インデックス取得の失敗であることを区別する警告メッセージをログ出力するようにし、診断の切り分けを容易にしました。対象: `Services/NuGetVulnerabilityService.cs`。テスト: `NuGetVulnerabilityServiceTests.cs`（2件追加: `CheckVulnerabilitiesAsync_WhenIndexFetchFails_LogsIndexSpecificWarning`、`CheckVulnerabilitiesAsync_WhenIndexFetchIsCanceled_ThrowsOperationCanceledException`）。
 
 - **DiffExecutionContext コンストラクタの null 検証に専用テストカバレッジを追加** — 新規テストクラス `DiffExecutionContextTests`: 3つのパスパラメータ各 `ArgumentNullException`、レポートフォルダからの IL 出力サブパス導出、全組み合わせでのネットワーク共有フラグ保持。影響: `DiffExecutionContextTests.cs`（7件追加）。
+
+- **ConfigService JSON エラーメッセージフォーマットテスト** — `ConfigServiceTests.cs` を拡張: トレイリングカンマエラーの `line N, position N` パターン検証、全 JSON パースエラーでのトレイリングカンマヒント存在、カスタム設定パスの `FileNotFoundException` でパスがメッセージに含まれること。影響: `ConfigServiceTests.cs`（3件追加）。
 
 ### [1.16.8] - 2026-04-12
 
