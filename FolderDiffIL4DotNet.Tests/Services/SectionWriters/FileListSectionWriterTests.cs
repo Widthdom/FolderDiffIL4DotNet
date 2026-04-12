@@ -4,8 +4,8 @@ using Xunit;
 namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
 {
     /// <summary>
-    /// Unit tests for file list section writers (Added=500, Removed=600, Modified=700).
-    /// ファイル一覧セクションライター（Added=500, Removed=600, Modified=700）のユニットテスト。
+    /// Unit tests for file list section writers (Unchanged=400, Added=500, Removed=600, Modified=700).
+    /// ファイル一覧セクションライター（Unchanged=400, Added=500, Removed=600, Modified=700）のユニットテスト。
     /// </summary>
     [Trait("Category", "Unit")]
     public sealed class FileListSectionWriterTests
@@ -97,6 +97,58 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
             var ctx = SectionWriterTestBase.CreateMinimalContext();
             string output = SectionWriterTestBase.WriteToString(writer, ctx);
             Assert.Contains("Modified", output);
+        }
+
+        // ── UnchangedFilesSectionWriter (Order=400) ──
+
+        [Fact]
+        public void Unchanged_Order_Is400()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(400);
+            Assert.Equal(400, writer.Order);
+        }
+
+        [Fact]
+        public void Unchanged_IsEnabled_WhenConfigTrue()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(400);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(shouldIncludeUnchangedFiles: true);
+            Assert.True(writer.IsEnabled(ctx));
+        }
+
+        [Fact]
+        public void Unchanged_IsDisabled_WhenConfigFalse()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(400);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(shouldIncludeUnchangedFiles: false);
+            Assert.False(writer.IsEnabled(ctx));
+        }
+
+        [Fact]
+        public void Unchanged_Write_ContainsUnchangedHeader()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(400);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(shouldIncludeUnchangedFiles: true);
+            string output = SectionWriterTestBase.WriteToString(writer, ctx);
+            Assert.Contains("Unchanged", output);
+        }
+
+        [Fact]
+        public void Unchanged_Write_ContainsTableHeader()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(400);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(shouldIncludeUnchangedFiles: true);
+            string output = SectionWriterTestBase.WriteToString(writer, ctx);
+            Assert.Contains("Diff Reason", output);
+        }
+
+        [Fact]
+        public void Unchanged_Write_EmptyList_OutputsZeroCount()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(400);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(shouldIncludeUnchangedFiles: true);
+            string output = SectionWriterTestBase.WriteToString(writer, ctx);
+            Assert.Contains("(0)", output);
         }
     }
 }

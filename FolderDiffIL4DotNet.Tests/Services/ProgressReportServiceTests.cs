@@ -440,5 +440,63 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var result = method.Invoke(target, args);
             return Assert.IsType<T>(result);
         }
+
+        // ── FormatPhaseElapsed edge cases / FormatPhaseElapsed エッジケース ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatPhaseElapsed_Zero_ReturnsZeroSeconds()
+        {
+            var result = ProgressReportService.FormatPhaseElapsed(TimeSpan.Zero);
+            Assert.Equal("0.0s", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatPhaseElapsed_SubSecond_ReturnsDecimal()
+        {
+            // 500ms should display as 0.5s / 500ms は 0.5s と表示されるべき
+            var result = ProgressReportService.FormatPhaseElapsed(TimeSpan.FromMilliseconds(500));
+            Assert.Equal("0.5s", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatPhaseElapsed_MillisecondBoundary_TruncatesCorrectly()
+        {
+            // 950ms → Seconds=0, Milliseconds=950, 950/100=9 → "0.9s"
+            // 950ms → Seconds=0, Milliseconds=950, 950/100=9 → "0.9s"
+            var result = ProgressReportService.FormatPhaseElapsed(TimeSpan.FromMilliseconds(950));
+            Assert.Equal("0.9s", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatPhaseElapsed_ExactlyOneMinute_ReturnsMinutesFormat()
+        {
+            var result = ProgressReportService.FormatPhaseElapsed(TimeSpan.FromSeconds(60));
+            Assert.Equal("1m 0.0s", result);
+        }
+
+        // ── Phase counter edge cases / フェーズカウンタエッジケース ──
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void BeginPhase_ExceedsTotalPhases_DoesNotThrow()
+        {
+            // Calling BeginPhase more times than TotalPhases should not throw
+            // TotalPhases を超えて BeginPhase を呼んでも例外にならないこと
+            var logger = new TestLogger();
+            var service = new ProgressReportService(new ConfigSettingsBuilder().Build(), logger);
+            service.TotalPhases = 2;
+
+            service.BeginPhase("Phase 1");
+            service.BeginPhase("Phase 2");
+            service.BeginPhase("Phase 3"); // Exceeds TotalPhases
+
+            // Should not throw; label should show [3/2]
+            // 例外なし、ラベルは [3/2] と表示されるはず
+            service.Dispose();
+        }
     }
 }

@@ -9,6 +9,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Dedicated unit tests for four remaining section writers (Unchanged, Ignored, ILCacheStats, Warnings)** — `FileListSectionWriterTests` now also covers `UnchangedFilesSectionWriter` (Order=400) with `IsEnabled` config-dependent tests and zero-count output. New test classes: `IgnoredFilesSectionWriterTests` (Order=300, config-dependent enable/disable, empty-list early return), `ILCacheStatsSectionWriterTests` (Order=900, config+cache-null double-gate), `WarningsSectionWriterTests` (Order=1000, per-flag enable conditions, IL filter warning output). Affected: `FileListSectionWriterTests.cs` (6 new), `IgnoredFilesSectionWriterTests.cs` (4 new), `ILCacheStatsSectionWriterTests.cs` (3 new), `WarningsSectionWriterTests.cs` (7 new). Total: 20 new tests.
+
+- **HtmlReport dependency/vulnerability rendering tests** — New partial file `HtmlReportGenerateServiceTests.DependencyVuln.cs` covers: new-version vulnerability badge rendering with advisory link extraction, resolved vulnerability badge, no-vulnerability em-dash fallback, unsafe URI scheme (`javascript:`) blocking (no `<a href>`), empty advisory URL severity-label fallback, referencing assemblies comma-separated rendering, vulnerability summary suffix counts, and `IsAllowedUriScheme` Theory-based edge cases (mixed case, `data:`, `vbscript:`, `ftp:`, `file:`, empty, whitespace, non-URL). Affected: `HtmlReportGenerateServiceTests.DependencyVuln.cs` (8 Fact + 10 Theory). Total: 18 new tests.
+
+- **FileDiffService change tag classification and parallel chunk error tests** — New partial file `FileDiffServiceUnitTests.ChangeTagsAndChunkError.cs` covers: `TryClassifyChangeTags` exercised via IL mismatch with semantic analysis enabled, `ReadChunkException` during parallel text comparison triggering sequential fallback (verifies `TextDiffCalls` populated after `IOException`), empty semantic changes producing no change tags. Affected: `FileDiffServiceUnitTests.ChangeTagsAndChunkError.cs` (3 new tests).
+
+- **ConfigService environment variable edge case tests** — Extended `ConfigServiceTests.EnvVarsAndMutation.cs` with: whitespace in boolean env vars silently ignored (Theory: leading space, trailing space, padded "1"), unparsable integer values ignored (Theory: `int.MaxValue+1`, decimal, empty), negative integer applied as-is, partial boolean string matches ignored (Theory: "truee", "tr", "01", "TRUE1"). Affected: `ConfigServiceTests.EnvVarsAndMutation.cs` (4 Theory + 1 Fact). Total: 12 new tests.
+
+- **ReportGenerateService Markdown dependency/vulnerability/helper tests** — New partial file `ReportGenerateServiceTests.DependencyVulnAndHelpers.cs` covers: Markdown vulnerability column with severity warning symbol (`⚠`), resolved vulnerability strikethrough (`~~`), referencing assemblies comma-separated list, SDK version arrow backtick-wrapping (`.NET 8.0` → `.NET 9.0`), and change tag label display (`+Method`, `Signature`). Affected: `ReportGenerateServiceTests.DependencyVulnAndHelpers.cs` (5 new tests).
+
+- **ProgressReportService FormatPhaseElapsed edge cases** — Extended `ProgressReportServiceTests.cs` with: `TimeSpan.Zero` returns `"0.0s"`, sub-second (500ms) returns `"0.5s"`, millisecond boundary truncation (950ms → `"0.9s"`), exactly 60 seconds returns minute format (`"1m 0.0s"`), phase counter exceeding TotalPhases does not throw. Affected: `ProgressReportServiceTests.cs` (5 new tests).
+
+- **SbomGenerateService special character and empty input tests** — New partial file `SbomGenerateServiceTests.SpecialChars.cs` covers: Unicode file paths (Japanese characters) produce valid JSON, file paths with quotes produce valid JSON, empty result lists produce valid CycloneDX and SPDX with empty component/package arrays. Affected: `SbomGenerateServiceTests.SpecialChars.cs` (4 new tests).
+
 ### [1.16.8] - 2026-04-12
 
 #### Fixed
@@ -1301,6 +1317,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 追加
+
+- **残り4つのセクションライター（Unchanged, Ignored, ILCacheStats, Warnings）の専用ユニットテスト** — `FileListSectionWriterTests` に `UnchangedFilesSectionWriter`（Order=400）の `IsEnabled` 設定依存テストとゼロカウント出力テストを追加。新規テストクラス: `IgnoredFilesSectionWriterTests`（Order=300、設定依存の有効/無効、空リスト早期リターン）、`ILCacheStatsSectionWriterTests`（Order=900、設定+キャッシュnull の二重ゲート）、`WarningsSectionWriterTests`（Order=1000、フラグ別の有効化条件、IL フィルタ警告出力）。影響: `FileListSectionWriterTests.cs`（6件追加）、`IgnoredFilesSectionWriterTests.cs`（4件追加）、`ILCacheStatsSectionWriterTests.cs`（3件追加）、`WarningsSectionWriterTests.cs`（7件追加）。合計: 20件の新規テスト。
+
+- **HtmlReport 依存関係/脆弱性レンダリングテスト** — 新規パーシャルファイル `HtmlReportGenerateServiceTests.DependencyVuln.cs`: 新バージョン脆弱性バッジのアドバイザリリンク抽出、解消済み脆弱性バッジ、脆弱性なし時の em-dash フォールバック、危険な URI スキーム（`javascript:`）のブロック、空アドバイザリ URL 時の重要度ラベルフォールバック、参照アセンブリのカンマ区切りレンダリング、脆弱性サマリーサフィックスのカウント表示、`IsAllowedUriScheme` の Theory ベースエッジケース。影響: `HtmlReportGenerateServiceTests.DependencyVuln.cs`（Fact 8件 + Theory 10件）。合計: 18件の新規テスト。
+
+- **FileDiffService 変更タグ分類と並列チャンクエラーテスト** — 新規パーシャルファイル `FileDiffServiceUnitTests.ChangeTagsAndChunkError.cs`: IL 不一致+セマンティック分析有効時の `TryClassifyChangeTags` 実行検証、並列テキスト比較中の `ReadChunkException` による逐次フォールバック検証、空セマンティック変更での変更タグ未設定検証。影響: `FileDiffServiceUnitTests.ChangeTagsAndChunkError.cs`（3件追加）。
+
+- **ConfigService 環境変数エッジケーステスト** — `ConfigServiceTests.EnvVarsAndMutation.cs` を拡張: ブール環境変数の空白無視（Theory: 先頭空白、末尾空白、パディング付き "1"）、解析不能整数値の無視（Theory: `int.MaxValue+1`、小数、空文字列）、負の整数値はそのまま適用、ブール部分一致の無視（Theory: "truee"、"tr"、"01"、"TRUE1"）。影響: `ConfigServiceTests.EnvVarsAndMutation.cs`（Theory 4件 + Fact 1件）。合計: 12件の新規テスト。
+
+- **ReportGenerateService Markdown 依存関係/脆弱性/ヘルパーテスト** — 新規パーシャルファイル `ReportGenerateServiceTests.DependencyVulnAndHelpers.cs`: Markdown 脆弱性カラムの重要度警告シンボル（`⚠`）、解消済み脆弱性の取り消し線（`~~`）、参照アセンブリのカンマ区切りリスト、SDK バージョンアローのバッククォート分割（`.NET 8.0` → `.NET 9.0`）、変更タグラベル表示（`+Method`、`Signature`）。影響: `ReportGenerateServiceTests.DependencyVulnAndHelpers.cs`（5件追加）。
+
+- **ProgressReportService FormatPhaseElapsed エッジケース** — `ProgressReportServiceTests.cs` を拡張: `TimeSpan.Zero` で `"0.0s"` を返す、サブ秒（500ms）で `"0.5s"` を返す、ミリ秒境界の切り捨て（950ms → `"0.9s"`）、ちょうど60秒で分フォーマット（`"1m 0.0s"`）、フェーズカウンタが TotalPhases を超えても例外なし。影響: `ProgressReportServiceTests.cs`（5件追加）。
+
+- **SbomGenerateService 特殊文字・空入力テスト** — 新規パーシャルファイル `SbomGenerateServiceTests.SpecialChars.cs`: Unicode ファイルパス（日本語文字）で有効な JSON 生成、クォートを含むファイルパスで有効な JSON 生成、空結果リストで有効な CycloneDX/SPDX（空コンポーネント/パッケージ配列）生成。影響: `SbomGenerateServiceTests.SpecialChars.cs`（4件追加）。
 
 ### [1.16.8] - 2026-04-12
 
