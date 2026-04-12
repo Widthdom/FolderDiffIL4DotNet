@@ -8,6 +8,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
     /// Tests for the internal <see cref="DotNetDisassemblerCache"/> disassembler-info parsing and normalization.
     /// 内部クラス <see cref="DotNetDisassemblerCache"/> の逆アセンブラ情報解析・正規化のテスト。
     /// </summary>
+    [Trait("Category", "Unit")]
     public sealed class DotNetDisassemblerCacheTests
     {
         [Fact]

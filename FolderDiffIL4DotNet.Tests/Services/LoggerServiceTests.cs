@@ -11,6 +11,7 @@ using Xunit;
 namespace FolderDiffIL4DotNet.Tests.Services
 {
     [Collection("LoggerServiceTests NonParallel")]
+    [Trait("Category", "Unit")]
     public sealed class LoggerServiceTests
     {
         [Fact]

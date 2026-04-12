@@ -3,6 +3,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Core.Text
 {
+    [Trait("Category", "Unit")]
     public class TextSanitizerTests
     {
 
