@@ -86,6 +86,54 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task LoadConfigBuilderAsync_TrailingCommaError_MessageIncludesPositionInfo()
+        {
+            // Verify that position information (column) is included alongside line number.
+            // 行番号に加え位置情報（列）もメッセージに含まれることを確認。
+            const string json = """
+                {
+                  "MaxLogGenerations": 5,
+                }
+                """;
+            await WithConfigFileAsync(json, async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
+                Assert.IsType<JsonException>(ex.InnerException);
+                // Message should contain both line and position numbers
+                // メッセージに行番号と位置番号の両方が含まれている
+                Assert.Matches(@"line \d+, position \d+", ex.Message);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_InvalidJson_MessageIncludesTrailingCommaHint()
+        {
+            // Verify that the trailing-comma hint is appended to every JSON parse error.
+            // すべてのJSONパースエラーにトレイリングカンマのヒントが付与されることを確認。
+            await WithConfigFileAsync("{ \"Key\": }", async () =>
+            {
+                var service = new ConfigService();
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
+                Assert.IsType<JsonException>(ex.InnerException);
+                // Hint about trailing commas and comments should be present
+                // トレイリングカンマとコメントに関するヒントが存在する
+                Assert.Contains("trailing", ex.Message, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_CustomConfigPath_FileNotFound_ThrowsFileNotFoundException()
+        {
+            // Verify that specifying a non-existent custom config path throws FileNotFoundException.
+            // 存在しないカスタム設定パスを指定した場合に FileNotFoundException がスローされることを確認。
+            var service = new ConfigService();
+            var ex = await Assert.ThrowsAsync<FileNotFoundException>(
+                () => service.LoadConfigBuilderAsync("/non/existent/config.json"));
+            Assert.Contains("/non/existent/config.json", ex.Message);
+        }
+
+        [Fact]
         public async Task LoadConfigBuilderAsync_ValidJson_ReturnsDeserializedBuilder()
         {
             const string json = """

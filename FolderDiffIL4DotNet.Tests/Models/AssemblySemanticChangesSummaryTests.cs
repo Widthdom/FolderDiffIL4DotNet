@@ -8,6 +8,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
     /// Tests for <see cref="AssemblySemanticChangesSummary"/> and <see cref="MemberChangeEntry"/> model classes.
     /// <see cref="AssemblySemanticChangesSummary"/> および <see cref="MemberChangeEntry"/> モデルクラスのテスト。
     /// </summary>
+    [Trait("Category", "Unit")]
     public sealed class AssemblySemanticChangesSummaryTests
     {
         [Fact]

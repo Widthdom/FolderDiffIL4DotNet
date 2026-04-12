@@ -180,11 +180,13 @@ namespace FolderDiffIL4DotNet.Services
                 // 比較用に除外した IL テキストを *_IL.txt として保存する。
                 await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log error and re-throw on IL text output failure.
-                // IL テキスト出力に失敗した場合はエラーログを出しつつ再スロー。
-                _logger.LogMessage(AppLogLevel.Error, ERROR_FAILED_TO_OUTPUT_IL, shouldOutputMessageToConsole: true);
+                // Log error with exception details and re-throw on IL text output failure.
+                // IL テキスト出力に失敗した場合は例外詳細付きエラーログを出しつつ再スロー。
+                _logger.LogMessage(AppLogLevel.Error,
+                    $"{ERROR_FAILED_TO_OUTPUT_IL} ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true, ex);
                 throw;
             }
             return (areEqual, disassemblerLabel);

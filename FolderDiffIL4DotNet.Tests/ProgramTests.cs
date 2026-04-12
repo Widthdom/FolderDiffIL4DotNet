@@ -10,6 +10,7 @@ using Xunit;
 namespace FolderDiffIL4DotNet.Tests
 {
     [Collection("ConsoleOutput NonParallel")]
+    [Trait("Category", "Unit")]
     public sealed class ProgramTests
     {
         private static readonly string ConfigFilePath = Path.Combine(AppContext.BaseDirectory, "config.json");

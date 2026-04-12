@@ -15,6 +15,7 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
     /// Verifies that reusable utility types remain in the Core assembly and the legacy Utils namespace is not re-introduced.
     /// 再利用可能なユーティリティ型が Core アセンブリに存在し続け、レガシーの Utils 名前空間が再導入されていないことを検証します。
     /// </summary>
+    [Trait("Category", "Unit")]
     public sealed class CoreSeparationTests
     {
         // All utility types must be defined in FolderDiffIL4DotNet.Core, not in the main assembly.

@@ -10,6 +10,7 @@ using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
+    [Trait("Category", "Unit")]
     public sealed class ILCachePrefetcherTests : IDisposable
     {
         private readonly string _rootDir;

@@ -242,5 +242,90 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(defaultShouldIncludeUnchanged, builder.ShouldIncludeUnchangedFiles);
             Assert.Equal(defaultMaxParallelism, builder.MaxParallelism);
         }
+
+        // ── Env var edge cases: whitespace, overflow, partial matches ──
+        // ── 環境変数エッジケース: 空白、オーバーフロー、部分一致 ──
+
+        [Theory]
+        [InlineData(" true")]
+        [InlineData("true ")]
+        [InlineData(" 1 ")]
+        public async Task LoadConfigBuilderAsync_EnvVarBoolWithWhitespace_IsIgnored(string value)
+        {
+            // Bool parsing does NOT trim whitespace, so these should be silently ignored
+            // ブール解析は空白をトリムしないため、これらはサイレントに無視されるべき
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_SKIPIL", value) },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.False(builder.SkipIL);  // default unchanged / デフォルトのまま
+                    });
+            });
+        }
+
+        [Theory]
+        [InlineData("2147483648")]   // int.MaxValue + 1 — TryParse fails
+        [InlineData("2.5")]          // decimal — TryParse fails
+        [InlineData("")]             // empty — TryParse fails
+        public async Task LoadConfigBuilderAsync_EnvVarIntWithUnparsableValues_IsIgnored(string value)
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_MAXPARALLELISM", value) },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.Equal(0, builder.MaxParallelism);  // default / デフォルト
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarIntWithNegativeValue_IsApplied()
+        {
+            // int.TryParse succeeds for negative values — the env var IS applied
+            // int.TryParse は負の値で成功する — 環境変数は適用される
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_MAXPARALLELISM", "-99999") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.Equal(-99999, builder.MaxParallelism);
+                    });
+            });
+        }
+
+        [Theory]
+        [InlineData("truee")]
+        [InlineData("tr")]
+        [InlineData("01")]
+        [InlineData("TRUE1")]
+        public async Task LoadConfigBuilderAsync_EnvVarBoolPartialMatch_IsIgnored(string value)
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ENABLEILCACHE", value) },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.True(builder.EnableILCache);  // default unchanged / デフォルトのまま
+                    });
+            });
+        }
     }
 }
