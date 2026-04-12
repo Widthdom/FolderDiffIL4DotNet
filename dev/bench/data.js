@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1775959698025,
+  "lastUpdate": 1776032203508,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -6648,6 +6648,102 @@ window.BENCHMARK_DATA = {
             "value": 26555687.578125,
             "unit": "ns",
             "range": "± 135084.8224134663"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "758902ce049f6c49af8dbb843818664ff2a50092",
+          "message": "[codex] Harden cdidx guidance and ExceptionFilters coverage (#147)\n\n* Add cdidx v1.8.1 commands (validate, impact, --exact) to CLAUDE.md\n\nDocument the new cdidx capabilities that landed in v1.8.1 so future\nsessions can reach for them:\n- impact: transitive caller ripple BFS (with --depth)\n- validate: encoding sanity check (U+FFFD, BOM, nulls, mixed EOL)\n- search --exact: case-sensitive exact substring match bypassing FTS5\n\nBoth EN and JA sections updated to stay bilingual.\n\nCo-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>\n\n* Add FolderDiffService to CLAUDE.md partial-class examples\n\nFolderDiffService is split into 3 files (cs, DiffClassification, ILPrecompute)\nbut the \"Already-split examples\" list only enumerated 5 services. Also clarify\nthat ReportGenerateService's 11-file split is via section writers, not partial\nclass, so future readers don't hunt for partials that don't exist.\n\nCo-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>\n\n* Add missing ExceptionFilters.IsPathOrFileIoRecoverable cases\n\nTwo holes in ExceptionFiltersTests:\n- NotSupportedException: the predicate returns true but had no positive test\n- NullReferenceException: no negative test pinning that programmer errors\n  don't accidentally get swallowed by this filter\n\nFixing both locks in the contract so future edits to the or-chain can't\nsilently regress behavior for either case.\n\nCHANGELOG entries added in both EN and JA Unreleased sections for this\nchange and for the cdidx v1.8.1 CLAUDE.md doc refresh.\n\nCo-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>\n\n---------\n\nCo-authored-by: Claude Opus 4.6 (1M context) <noreply@anthropic.com>",
+          "timestamp": "2026-04-13T07:12:02+09:00",
+          "tree_id": "a579cb82476870b363e1888e9ab67695068d2f44",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/758902ce049f6c49af8dbb843818664ff2a50092"
+        },
+        "date": 1776032203276,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 63453.507958045375,
+            "unit": "ns",
+            "range": "± 116.15019613769479"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 554067.2257254465,
+            "unit": "ns",
+            "range": "± 592.6311844148581"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5860104.022836538,
+            "unit": "ns",
+            "range": "± 13955.292385373503"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 75133.06657714843,
+            "unit": "ns",
+            "range": "± 525.4743059212733"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 30.441172110182897,
+            "unit": "ns",
+            "range": "± 0.07895484009627211"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 60.55912096683796,
+            "unit": "ns",
+            "range": "± 0.49405935112598226"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 29.16133470620428,
+            "unit": "ns",
+            "range": "± 0.0519798462946752"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5108413.76171875,
+            "unit": "ns",
+            "range": "± 14812.995636226015"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 127439.08637695313,
+            "unit": "ns",
+            "range": "± 632.6983341040635"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2422.1351084391276,
+            "unit": "ns",
+            "range": "± 30.784710697618905"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 272663.71826171875,
+            "unit": "ns",
+            "range": "± 1404.9346525400586"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27435546.291666668,
+            "unit": "ns",
+            "range": "± 160531.7720240336"
           }
         ]
       }
