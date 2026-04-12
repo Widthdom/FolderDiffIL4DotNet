@@ -314,6 +314,49 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Null(ex);
         }
 
+        [Fact]
+        public void CheckDiskSpaceOrThrow_EmptyStringPath_DoesNotThrow()
+        {
+            // Empty path root returns null/empty, so the method should skip gracefully.
+            // 空パスのルートは null/empty なので、メソッドはスキップするはず。
+            var ex = Record.Exception(() => RunPreflightValidator.CheckDiskSpaceOrThrow(string.Empty));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void CheckReportsParentWritableOrThrow_EmptyParentPath_DoesNotThrow()
+        {
+            // When GetDirectoryName returns null or empty, the method should skip.
+            // GetDirectoryName が null/empty を返す場合はスキップするはず。
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var ex = Record.Exception(() =>
+                RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, "just-a-filename"));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void CheckReportsParentWritableOrThrow_WritableDirectory_ProbeFileIsCleanedUp()
+        {
+            // After a successful check, the temporary probe file should be deleted.
+            // 成功後、一時プローブファイルが削除されていること。
+            var dir = Path.Combine(Path.GetTempPath(), "fd-probe-cleanup-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(dir);
+            try
+            {
+                var logger = new TestLogger(logFileAbsolutePath: "test.log");
+                RunPreflightValidator.CheckReportsParentWritableOrThrow(logger, Path.Combine(dir, "label"));
+
+                // Verify no .tmp probe files are left behind
+                // .tmp プローブファイルが残っていないことを確認
+                var remainingTmpFiles = Directory.GetFiles(dir, "*.tmp");
+                Assert.Empty(remainingTmpFiles);
+            }
+            finally
+            {
+                TryDeleteDirectory(dir);
+            }
+        }
+
         // -----------------------------------------------------------------------
         // Shared helper methods for config file manipulation and cleanup
         // 設定ファイル操作とクリーンアップ用の共有ヘルパーメソッド
