@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.9] - 2026-04-12
+
 #### Added
 
 - **Dedicated unit tests for four remaining section writers (Unchanged, Ignored, ILCacheStats, Warnings)** — `FileListSectionWriterTests` now also covers `UnchangedFilesSectionWriter` (Order=400) with `IsEnabled` config-dependent tests and zero-count output. New test classes: `IgnoredFilesSectionWriterTests` (Order=300, config-dependent enable/disable, empty-list early return), `ILCacheStatsSectionWriterTests` (Order=900, config+cache-null double-gate), `WarningsSectionWriterTests` (Order=1000, per-flag enable conditions, IL filter warning output). Affected: `FileListSectionWriterTests.cs` (6 new), `IgnoredFilesSectionWriterTests.cs` (4 new), `ILCacheStatsSectionWriterTests.cs` (3 new), `WarningsSectionWriterTests.cs` (7 new). Total: 20 new tests.
@@ -1340,6 +1342,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.9] - 2026-04-12
+
 #### 追加
 
 - **残り4つのセクションライター（Unchanged, Ignored, ILCacheStats, Warnings）の専用ユニットテスト** — `FileListSectionWriterTests` に `UnchangedFilesSectionWriter`（Order=400）の `IsEnabled` 設定依存テストとゼロカウント出力テストを追加。新規テストクラス: `IgnoredFilesSectionWriterTests`（Order=300、設定依存の有効/無効、空リスト早期リターン）、`ILCacheStatsSectionWriterTests`（Order=900、設定+キャッシュnull の二重ゲート）、`WarningsSectionWriterTests`（Order=1000、フラグ別の有効化条件、IL フィルタ警告出力）。影響: `FileListSectionWriterTests.cs`（6件追加）、`IgnoredFilesSectionWriterTests.cs`（4件追加）、`ILCacheStatsSectionWriterTests.cs`（3件追加）、`WarningsSectionWriterTests.cs`（7件追加）。合計: 20件の新規テスト。
@@ -2667,7 +2671,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.8...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.9...HEAD
+[1.16.9]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.8...v1.16.9
 [1.16.8]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.7...v1.16.8
 [1.16.7]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.6...v1.16.7
 [1.16.6]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.5...v1.16.6
