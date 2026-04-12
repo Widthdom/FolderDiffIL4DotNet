@@ -9,6 +9,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Documentation
+
+- **CLAUDE.md updated for cdidx v1.8.1** — Documented three new commands (`validate` for encoding sanity checks, `impact` for transitive caller BFS with `--depth`, `--exact` on `search` for FTS-bypass exact substring matches) so future sessions can leverage them. Also added `FolderDiffService` (3 files) to the "Already-split examples" list and clarified that `ReportGenerateService` splits via section writers rather than partial class.
+
+#### Fixed
+
+- **`ExceptionFilters.IsPathOrFileIoRecoverable` missing test coverage** — Added `NotSupportedException_ReturnsTrue` (positive path — the predicate matches it but it wasn't asserted) and `NullReferenceException_ReturnsFalse` (negative path — ensures programmer errors propagate). Affected: `ExceptionFiltersTests.cs` (2 new tests).
+
 ### [1.16.9] - 2026-04-12
 
 #### Added
@@ -1341,6 +1349,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### ドキュメント
+
+- **cdidx v1.8.1 向けに CLAUDE.md を更新** — 新しい 3 コマンド（`validate` によるエンコーディング健全性チェック、`impact` による transitive caller BFS と `--depth`、`search --exact` による FTS5 迂回の厳密部分一致）を記載し、今後のセッションで活用できるようにしました。併せて「分割済みの例」に `FolderDiffService`（3 ファイル）を追記し、`ReportGenerateService` が partial class ではなく section writer 経由で分割されている点を明記しました。
+
+#### 修正
+
+- **`ExceptionFilters.IsPathOrFileIoRecoverable` のテストカバレッジ不足** — `NotSupportedException_ReturnsTrue`（述語で一致するがアサートされていなかった正例）と `NullReferenceException_ReturnsFalse`（プログラマエラーが伝播することを確認する負例）を追加しました。影響: `ExceptionFiltersTests.cs`（2 件追加）。
 
 ### [1.16.9] - 2026-04-12
 
