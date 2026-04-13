@@ -61,9 +61,13 @@ namespace FolderDiffIL4DotNet.Runner
             {
                 PathValidator.ValidateFolderNameOrThrow(reportLabel, nameof(reportLabel));
             }
-            catch (ArgumentException)
+            catch (ArgumentException ex)
             {
-                logger.LogMessage(AppLogLevel.Error, $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name.", shouldOutputMessageToConsole: true);
+                logger.LogMessage(
+                    AppLogLevel.Error,
+                    $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name ({ex.GetType().Name}): {ex.Message}",
+                    shouldOutputMessageToConsole: true,
+                    ex);
                 throw;
             }
         }

@@ -34,7 +34,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
-        public void LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndStackTraceToLogFile()
+        public void LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndFullExceptionDetailsToLogFile()
         {
             var logger = new LoggerService();
             var originalOut = Console.Out;
@@ -66,7 +66,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
                 var logText = File.ReadAllText(tempLogPath);
                 Assert.Contains("[ERR] failure", logText);
-                Assert.Contains(captured.StackTrace, logText);
+                Assert.Contains(captured.ToString(), logText, StringComparison.Ordinal);
                 var firstLine = Assert.IsType<string>(logText.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)[0]);
                 Assert.Matches(new Regex(@"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}\] \[ERR\] failure$", RegexOptions.CultureInvariant), firstLine);
                 var timestampText = firstLine[1..firstLine.IndexOf(']')];
@@ -626,6 +626,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Equal("INFO", root.GetProperty("level").GetString());
                 Assert.Equal("hello json", root.GetProperty("message").GetString());
                 Assert.False(root.TryGetProperty("exceptionType", out _));
+                Assert.False(root.TryGetProperty("exceptionDetail", out _));
             }
             finally
             {
@@ -659,7 +660,46 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Equal("failure", root.GetProperty("message").GetString());
                 Assert.Equal("System.InvalidOperationException", root.GetProperty("exceptionType").GetString());
                 Assert.Equal("test-error", root.GetProperty("exceptionMessage").GetString());
+                Assert.Contains("System.InvalidOperationException: test-error", root.GetProperty("exceptionDetail").GetString(), StringComparison.Ordinal);
                 Assert.True(root.TryGetProperty("stackTrace", out _));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void LogMessage_JsonFormat_IncludesInnerExceptionFields()
+        {
+            var logger = new LoggerService { Format = LogFormat.Json };
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var tempLogPath = Path.Combine(tempDir, "log_json_inner_exc.log");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+
+            try
+            {
+                Exception captured;
+                try
+                {
+                    throw new InvalidOperationException("outer-error", new IOException("inner-error"));
+                }
+                catch (Exception ex)
+                {
+                    captured = ex;
+                }
+
+                logger.LogMessage(AppLogLevel.Error, "failure", shouldOutputMessageToConsole: false, captured);
+
+                var content = File.ReadAllText(tempLogPath).Trim();
+                var doc = System.Text.Json.JsonDocument.Parse(content);
+                var root = doc.RootElement;
+
+                Assert.Equal("System.IO.IOException", root.GetProperty("innerExceptionType").GetString());
+                Assert.Equal("inner-error", root.GetProperty("innerExceptionMessage").GetString());
+                Assert.Contains(" ---> System.IO.IOException: inner-error", root.GetProperty("exceptionDetail").GetString(), StringComparison.Ordinal);
             }
             finally
             {

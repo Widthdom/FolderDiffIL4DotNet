@@ -187,6 +187,21 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public void ValidateReportLabel_InvalidLabel_LogsArgumentExceptionAndRethrows()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+
+            var exception = Assert.Throws<ArgumentException>(() =>
+                RunPreflightValidator.ValidateReportLabel(logger, "bad<name"));
+
+            var entry = Assert.Single(logger.Entries);
+            Assert.Equal(AppLogLevel.Error, entry.LogLevel);
+            Assert.Contains("invalid as a folder name", entry.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(ArgumentException), entry.Message, StringComparison.Ordinal);
+            Assert.Same(exception, entry.Exception);
+        }
+
+        [Fact]
         public void GenerateAutomaticReportLabel_WhenTimestampAlreadyExists_AppendsNumericSuffix()
         {
             var reportsRoot = Path.Combine(Path.GetTempPath(), "fd-auto-label-" + Guid.NewGuid().ToString("N"));

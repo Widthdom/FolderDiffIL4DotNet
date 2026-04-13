@@ -11,9 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Documentation
 
-- **CLAUDE.md updated for cdidx v1.8.1** — Documented three new commands (`validate` for encoding sanity checks, `impact` for transitive caller BFS with `--depth`, `--exact` on `search` for FTS-bypass exact substring matches) so future sessions can leverage them. Also added `FolderDiffService` (3 files) to the "Already-split examples" list and clarified that `ReportGenerateService` splits via section writers rather than partial class.
+- **CLAUDE.md updated for the latest cdidx workflow** — Refreshed the maintainer instructions around cdidx upgrades, MCP-native tool coverage (`impact_analysis`, `unused_symbols`, `symbol_hotspots`, `batch_query`, `validate`, `ping`, `suggest_improvement`), freshness/trust metadata, and issue-filing etiquette for cdidx bugs/ideas. Also aligned the TESTING_GUIDE rules with the current documentation strategy: keep scope/coverage guidance current instead of maintaining brittle hard-coded test totals. Affected: `CLAUDE.md`.
+
+- **README.md replacement characters removed** — Fixed two corrupted Japanese strings reported by `cdidx validate` so the CLI examples and SBOM config description render correctly again. Affected: `README.md`.
 
 #### Fixed
+
+- **LoggerService now preserves full exception details in text and JSON logs** — Text-format logs now write `exception.ToString()` instead of a bare stack trace, and JSON logs now add `exceptionDetail` plus optional `innerExceptionType` / `innerExceptionMessage` fields. This keeps exception type, message, stack, and nested-cause context available for post-run diagnostics without changing normal control flow. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests.cs` (2 updated/new: `LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndFullExceptionDetailsToLogFile`, `LogMessage_JsonFormat_IncludesInnerExceptionFields`).
+
+- **RunPreflightValidator now preserves invalid report-label exception details in error logs** — `ValidateReportLabel()` now records the thrown `ArgumentException` on the logger and includes the exception type/message in the emitted error text, so malformed `reportLabel` failures retain actionable cause data instead of a generic validation message. Affected: `Runner/RunPreflightValidator.cs`. Tests: `ProgramRunnerTests.Preflight.cs` (1 new: `ValidateReportLabel_InvalidLabel_LogsArgumentExceptionAndRethrows`).
 
 - **`ExceptionFilters.IsPathOrFileIoRecoverable` missing test coverage** — Added `NotSupportedException_ReturnsTrue` (positive path — the predicate matches it but it wasn't asserted) and `NullReferenceException_ReturnsFalse` (negative path — ensures programmer errors propagate). Affected: `ExceptionFiltersTests.cs` (2 new tests).
 
@@ -1352,9 +1358,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### ドキュメント
 
-- **cdidx v1.8.1 向けに CLAUDE.md を更新** — 新しい 3 コマンド（`validate` によるエンコーディング健全性チェック、`impact` による transitive caller BFS と `--depth`、`search --exact` による FTS5 迂回の厳密部分一致）を記載し、今後のセッションで活用できるようにしました。併せて「分割済みの例」に `FolderDiffService`（3 ファイル）を追記し、`ReportGenerateService` が partial class ではなく section writer 経由で分割されている点を明記しました。
+- **最新の cdidx ワークフローに合わせて CLAUDE.md を更新** — cdidx の更新手順、MCP ネイティブなツール群（`impact_analysis`、`unused_symbols`、`symbol_hotspots`、`batch_query`、`validate`、`ping`、`suggest_improvement` など）、鮮度・信頼性メタデータの読み方、cdidx の不具合や改善案を issue 化する際の重複確認ルールを追記しました。あわせて、`TESTING_GUIDE.md` の現行方針に合わせ、壊れやすいテスト総数の固定管理ではなく、スコープ表とカバレッジ説明を更新対象とするよう整合させました。対象: `CLAUDE.md`。
+
+- **README.md の置換文字を除去** — `cdidx validate` で検出された日本語文字化け 2 箇所を修正し、CLI 実行例と SBOM 設定説明が正しく読めるようにしました。対象: `README.md`。
 
 #### 修正
+
+- **LoggerService がテキスト/JSON ログの両方で完全な例外情報を保持するよう改善** — テキストログは生の stack trace だけでなく `exception.ToString()` 全体を書き出すようにし、JSON ログには `exceptionDetail` と任意の `innerExceptionType` / `innerExceptionMessage` を追加しました。これにより通常の制御フローは変えずに、例外型・メッセージ・スタック・ネストした原因を事後診断で追いやすくなりました。対象: `Services/LoggerService.cs`。テスト: `LoggerServiceTests.cs`（更新/追加 2 件: `LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndFullExceptionDetailsToLogFile`, `LogMessage_JsonFormat_IncludesInnerExceptionFields`）。
+
+- **RunPreflightValidator が不正なレポートラベルの例外詳細をエラーログに保持するよう改善** — `ValidateReportLabel()` がスローされた `ArgumentException` を logger にそのまま渡し、出力メッセージにも例外型と例外メッセージを含めるようにしました。これにより、不正な `reportLabel` 失敗時に汎用的な検証失敗文言だけでなく、原因の詳細を追えるようになりました。対象: `Runner/RunPreflightValidator.cs`。テスト: `ProgramRunnerTests.Preflight.cs`（1 件追加: `ValidateReportLabel_InvalidLabel_LogsArgumentExceptionAndRethrows`）。
 
 - **`ExceptionFilters.IsPathOrFileIoRecoverable` のテストカバレッジ不足** — `NotSupportedException_ReturnsTrue`（述語で一致するがアサートされていなかった正例）と `NullReferenceException_ReturnsFalse`（プログラマエラーが伝播することを確認する負例）を追加しました。影響: `ExceptionFiltersTests.cs`（2 件追加）。
 
