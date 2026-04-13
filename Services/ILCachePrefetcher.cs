@@ -98,7 +98,7 @@ namespace FolderDiffIL4DotNet.Services
                 }
                 catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
                 {
-                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}': {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                    _logger.LogMessage(AppLogLevel.Warning, $"Failed to prefetch IL cache for assembly '{dotNetAssemblyFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 }
                 finally
                 {

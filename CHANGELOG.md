@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **ILCachePrefetcher warnings now retain the exception type in the message body** — `ILCachePrefetcher` now includes the concrete recoverable exception type when per-assembly cache prefetch falls back after a path/I/O failure, keeping this warning consistent with the other hardened cache diagnostics and making text-log triage easier. Affected: `Services/ILCachePrefetcher.cs`. Tests: `ILCachePrefetcherTests.cs` (1 new: `PrefetchIlCacheAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`).
+
 - **ILCache SHA256 precompute warnings now retain the exception message** — `ILCache` now includes `ex.Message` in the recoverable warning emitted when a file-hash precompute step fails, so invalid-path and permission diagnostics are readable from the warning text itself instead of requiring the attached exception payload. Affected: `Services/Caching/ILCache.cs`. Tests: `ILCacheTests.Advanced.cs` (1 updated: `Precompute_InvalidPath_LogsWarningAndContinues`).
 
 - **ILDiskCache now rejects blank cache keys and emits richer disk-quota trim logs** — `ILDiskCache` now short-circuits `TryReadAsync` / `WriteAsync` / `Remove` when the cache key is null, empty, or whitespace and writes a readable warning instead of silently targeting the fallback `.ilcache` filename. Disk-quota trim info logs now include the cache directory plus configured `maxFiles` / `maxBytes`, making cache-churn diagnostics easier to read from text/JSON logs. Added direct disk-layer coverage for invalid cache-directory initialization, blank-key guards, and quota-trim logging, and updated the testing scope map to mention the new direct test class. Affected: `Services/Caching/ILDiskCache.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `ILDiskCacheTests.cs` (5 new: `Constructor_WhenCacheDirectoryIsInvalid_LogsWarningAndDisablesDiskLayer`, `TryReadAsync_WhenCacheKeyIsWhitespace_LogsWarningAndReturnsNull`, `WriteAsync_WhenCacheKeyIsWhitespace_LogsWarningAndSkipsWriting`, `Remove_WhenCacheKeyIsWhitespace_LogsWarningAndDoesNotThrow`, `WriteAsync_WhenQuotaTrimRemovesFiles_LogsDirectoryAndConfiguredLimits`).
@@ -1387,6 +1389,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **ILCachePrefetcher の warning が本文に例外型も保持するよう改善** — `ILCachePrefetcher` がアセンブリ単位の cache prefetch 中に回復可能なパス/I/O 失敗からフォールバックした際、warning 本文にも具体的な例外型を含めるようにしました。これにより、他の強化済みキャッシュ診断ログと粒度が揃い、テキストログだけでも切り分けしやすくなります。対象: `Services/ILCachePrefetcher.cs`。テスト: `ILCachePrefetcherTests.cs`（新規 1 件: `PrefetchIlCacheAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`）。
 
 - **ILCache の SHA256 事前計算警告が例外メッセージも保持するよう改善** — `ILCache` がファイルハッシュ事前計算中の回復可能失敗を warning として記録する際、`ex.Message` も本文へ含めるようにしました。これにより、不正パスや権限問題の切り分けを、添付された例外オブジェクトを開かなくても警告文だけで追いやすくなります。対象: `Services/Caching/ILCache.cs`。テスト: `ILCacheTests.Advanced.cs`（更新 1 件: `Precompute_InvalidPath_LogsWarningAndContinues`）。
 
