@@ -265,6 +265,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             try
             {
                 Console.SetOut(writer);
+                var expected = Record.Exception(() => Directory.GetFiles(filePath, "log_*.log"));
+                Assert.NotNull(expected);
 
                 var ex = Record.Exception(() => logger.CleanupOldLogFiles(maxLogGenerations: 1));
 
@@ -272,11 +274,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var consoleText = writer.ToString();
                 Assert.Contains("Failed to clean up old log files in", consoleText, StringComparison.Ordinal);
                 Assert.Contains(filePath, consoleText, StringComparison.Ordinal);
-                Assert.True(
-                    consoleText.Contains(nameof(DirectoryNotFoundException), StringComparison.Ordinal) ||
-                    consoleText.Contains(nameof(IOException), StringComparison.Ordinal) ||
-                    consoleText.Contains(nameof(UnauthorizedAccessException), StringComparison.Ordinal),
-                    $"Expected a recoverable I/O exception type in output, got: {consoleText}");
+                Assert.Contains(expected.GetType().Name, consoleText, StringComparison.Ordinal);
+                Assert.Contains(expected.Message, consoleText, StringComparison.Ordinal);
             }
             finally
             {
