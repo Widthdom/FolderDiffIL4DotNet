@@ -12,6 +12,7 @@ using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -155,6 +156,34 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 ClearFakeToolEnvVars("dotnet");
                 ClearFakeToolEnvVars("ilspycmd");
             }
+        }
+
+        [Fact]
+        public async Task TryCacheHitAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var ilCache = new ILCache(Path.Combine(_rootDir, "cache-hit-failure"), logger);
+            var service = new DotNetDisassembleService(CreateConfig(enableIlCache: true), ilCache, _resultLists, logger, _dotNetDisassemblerCache);
+            const string version = "9.1.0";
+            SeedDisassemblerVersionCache(Constants.ILSPY_CMD, version);
+
+            var method = typeof(DotNetDisassembleService).GetMethod("TryCacheHitAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var invalidPath = Path.Combine(_rootDir, "cache-target-dir");
+            Directory.CreateDirectory(invalidPath);
+            var task = Assert.IsAssignableFrom<Task<(bool Hit, string? IlText, string? Label)>>(
+                method.Invoke(service, ["ilspycmd", invalidPath, new[] { "-il", "sample.dll" }, false]));
+
+            var result = await task;
+
+            Assert.False(result.Hit);
+            Assert.Null(result.IlText);
+            Assert.Null(result.Label);
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to get IL from cache", warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.Exception is IOException or UnauthorizedAccessException);
+            Assert.Contains(warning.Exception!.GetType().Name, warning.Message, StringComparison.Ordinal);
         }
 
         [Theory]

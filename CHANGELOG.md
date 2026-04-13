@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **IL cache lookup warnings now retain the exception type in the message body** — `DotNetDisassembleService` now includes the concrete recoverable path/I/O exception type when an IL cache lookup fails and the code falls back to executing the disassembler, making this best-effort warning consistent with the repository's other hardened diagnostics. Affected: `Services/DotNetDisassembleService.cs`. Tests: `DotNetDisassembleServiceTests.UnitAndPrefetch.cs` (1 new: `TryCacheHitAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`).
+
 - **ASCII temp-copy warnings now retain the exception type in the message body** — `DotNetDisassembleService` now includes the concrete recoverable path/I/O exception type when creating a non-ASCII temporary assembly copy fails, keeping this best-effort warning consistent with the repository's other hardened diagnostics. Affected: `Services/DotNetDisassembleService.VersionLabel.cs`. Tests: `DotNetDisassembleServiceTests.cs` (1 new: `CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType`).
 
 - **Disassembler version-lookup warnings now retain the exception type in the message body** — `DotNetDisassemblerCache` now writes the concrete recoverable process exception type into the warning text when version probing fails, making missing-tool/PATH issues easier to diagnose from console/text logs before inspecting the attached exception payload. Affected: `Services/Caching/DotNetDisassemblerCache.cs`. Tests: `DotNetDisassemblerCacheTests.cs` (1 new: `GetDisassemblerVersionAsync_WhenVersionLookupProcessStartFails_LogsWarningWithExceptionType`).
@@ -1379,6 +1381,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **IL キャッシュ参照失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassembleService` が IL キャッシュ参照に失敗して disassembler 実行へフォールバックする際、回復可能なパス/I/O 例外の具体的な型も警告本文へ含めるようにしました。これにより、このベストエフォート警告も他の強化済み診断ログと粒度が揃います。対象: `Services/DotNetDisassembleService.cs`。テスト: `DotNetDisassembleServiceTests.UnitAndPrefetch.cs`（新規 1 件: `TryCacheHitAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`）。
 
 - **ASCII 一時コピー失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassembleService` が非 ASCII パス対策の一時アセンブリコピー作成に失敗した際、回復可能なパス/I/O 例外の具体的な型も警告本文へ含めるようにしました。これにより、このベストエフォート警告も他の強化済み診断ログと粒度が揃います。対象: `Services/DotNetDisassembleService.VersionLabel.cs`。テスト: `DotNetDisassembleServiceTests.cs`（新規 1 件: `CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType`）。
 
