@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776109773749,
+  "lastUpdate": 1776110201501,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -6840,6 +6840,102 @@ window.BENCHMARK_DATA = {
             "value": 29013480.283333335,
             "unit": "ns",
             "range": "± 323499.12908122514"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "distinct": true,
+          "id": "df7a0e92d8fe4e5b013630c3e0ff9beb98e8bdd2",
+          "message": "Bump version to 1.16.10",
+          "timestamp": "2026-04-14T04:50:49+09:00",
+          "tree_id": "e0e32e05c59602cc88472d5c2152f9c74f4f792b",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/df7a0e92d8fe4e5b013630c3e0ff9beb98e8bdd2"
+        },
+        "date": 1776110201096,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 38077.654549734936,
+            "unit": "ns",
+            "range": "± 165.81948653313586"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 377965.49379185267,
+            "unit": "ns",
+            "range": "± 1242.2708631688704"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 3947744.090401786,
+            "unit": "ns",
+            "range": "± 13114.171514695201"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 48954.56085205078,
+            "unit": "ns",
+            "range": "± 288.8791345768773"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 31.852383510271707,
+            "unit": "ns",
+            "range": "± 0.23775617893704656"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 72.43373670944801,
+            "unit": "ns",
+            "range": "± 0.3491163099336354"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 30.923708411057792,
+            "unit": "ns",
+            "range": "± 0.23633107632492112"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 4438978.554987981,
+            "unit": "ns",
+            "range": "± 34590.8729393707"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 128271.92975260416,
+            "unit": "ns",
+            "range": "± 906.1282560648324"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2685.751057761056,
+            "unit": "ns",
+            "range": "± 16.91274053925102"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 284081.02092633926,
+            "unit": "ns",
+            "range": "± 1822.2058672072858"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 37205282.785714276,
+            "unit": "ns",
+            "range": "± 204114.02628397202"
           }
         ]
       }
