@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - **CLAUDE.md updated for the latest cdidx workflow** — Refreshed the maintainer instructions around cdidx upgrades, MCP-native tool coverage (`impact_analysis`, `unused_symbols`, `symbol_hotspots`, `batch_query`, `validate`, `ping`, `suggest_improvement`), freshness/trust metadata, and issue-filing etiquette for cdidx bugs/ideas. Also aligned the TESTING_GUIDE rules with the current documentation strategy: keep scope/coverage guidance current instead of maintaining brittle hard-coded test totals. Affected: `CLAUDE.md`.
 
+- **Tracked Claude Code search policy now enforces cdidx-first usage** — Added `.claude/settings.json` to deny shell search commands such as `rg`, `grep`, `find`, and `locate` inside Claude Code so repository-local automation matches the documented cdidx-first workflow. Also documented the tracked policy in `CLAUDE.md`. Affected: `.claude/settings.json`, `CLAUDE.md`.
+
 - **README.md replacement characters removed** — Fixed two corrupted Japanese strings reported by `cdidx validate` so the CLI examples and SBOM config description render correctly again. Affected: `README.md`.
 
 #### Fixed
@@ -1359,6 +1361,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 #### ドキュメント
 
 - **最新の cdidx ワークフローに合わせて CLAUDE.md を更新** — cdidx の更新手順、MCP ネイティブなツール群（`impact_analysis`、`unused_symbols`、`symbol_hotspots`、`batch_query`、`validate`、`ping`、`suggest_improvement` など）、鮮度・信頼性メタデータの読み方、cdidx の不具合や改善案を issue 化する際の重複確認ルールを追記しました。あわせて、`TESTING_GUIDE.md` の現行方針に合わせ、壊れやすいテスト総数の固定管理ではなく、スコープ表とカバレッジ説明を更新対象とするよう整合させました。対象: `CLAUDE.md`。
+
+- **追跡対象の Claude Code 検索ポリシーで cdidx-first 運用を強制** — Claude Code 内で `rg`、`grep`、`find`、`locate` などのシェル検索コマンドを拒否する `.claude/settings.json` を追加し、リポジトリの自動化挙動を文書化済みの cdidx-first ワークフローに揃えました。あわせて、この追跡ポリシーを `CLAUDE.md` に明記しました。対象: `.claude/settings.json`, `CLAUDE.md`。
 
 - **README.md の置換文字を除去** — `cdidx validate` で検出された日本語文字化け 2 箇所を修正し、CLI 実行例と SBOM 設定説明が正しく読めるようにしました。対象: `README.md`。
 

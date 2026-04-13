@@ -62,6 +62,8 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 This project uses **cdidx** for fast code search via a pre-built SQLite index (`.cdidx/codeindex.db`).
 **Query this database** instead of using `find`, `grep`, or `ls -R`.
 
+This repository also tracks `.claude/settings.json`, which denies the common shell-based text/file search commands (`rg`, `grep`, `find`, `locate`, etc.) inside Claude Code so the tool follows the same cdidx-first workflow as this document.
+
 #### Setup
 
 First check if `cdidx` is available:
@@ -478,6 +480,8 @@ dotnet test FolderDiffIL4DotNet.Tests/FolderDiffIL4DotNet.Tests.csproj --nologo 
 
 このプロジェクトでは、事前構築された SQLite インデックス（`.cdidx/codeindex.db`）を利用する **cdidx** をコード検索の第一選択とする。
 `find`、`grep`、`ls -R` より先に **cdidx にクエリする**こと。
+
+また、このリポジトリでは `.claude/settings.json` を追跡管理し、Claude Code 内で `rg`、`grep`、`find`、`locate` などの一般的なシェル検索コマンドを拒否している。これにより、この文書の cdidx-first ワークフローをツール側でも強制する。
 
 #### セットアップ
 

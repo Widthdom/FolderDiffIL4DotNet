@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rg:*)",
+      "Bash(grep:*)",
+      "Bash(egrep:*)",
+      "Bash(fgrep:*)",
+      "Bash(zgrep:*)",
+      "Bash(rgrep:*)",
+      "Bash(ripgrep:*)",
+      "Bash(ag:*)",
+      "Bash(ack:*)",
+      "Bash(ack-grep:*)",
+      "Bash(git grep:*)",
+      "Bash(find:*)",
+      "Bash(locate:*)",
+      "Bash(mlocate:*)",
+      "Bash(mdfind:*)"
+    ]
+  }
+}
