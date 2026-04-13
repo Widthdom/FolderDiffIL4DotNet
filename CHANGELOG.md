@@ -11,9 +11,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Documentation
 
-- **CLAUDE.md updated for cdidx v1.8.1** — Documented three new commands (`validate` for encoding sanity checks, `impact` for transitive caller BFS with `--depth`, `--exact` on `search` for FTS-bypass exact substring matches) so future sessions can leverage them. Also added `FolderDiffService` (3 files) to the "Already-split examples" list and clarified that `ReportGenerateService` splits via section writers rather than partial class.
+- **CLAUDE.md updated for the latest cdidx workflow** — Refreshed the maintainer instructions around cdidx upgrades, MCP-native tool coverage (`impact_analysis`, `unused_symbols`, `symbol_hotspots`, `batch_query`, `validate`, `ping`, `suggest_improvement`), freshness/trust metadata, and issue-filing etiquette for cdidx bugs/ideas. Also aligned the TESTING_GUIDE rules with the current documentation strategy: keep scope/coverage guidance current instead of maintaining brittle hard-coded test totals. Affected: `CLAUDE.md`.
+
+- **Tracked Claude Code search policy now enforces cdidx-first usage** — Added `.claude/settings.json` to deny shell search commands such as `rg`, `grep`, `find`, and `locate` inside Claude Code so repository-local automation matches the documented cdidx-first workflow. Also documented the tracked policy in `CLAUDE.md`. Affected: `.claude/settings.json`, `CLAUDE.md`.
+
+- **README.md replacement characters removed** — Fixed two corrupted Japanese strings reported by `cdidx validate` so the CLI examples and SBOM config description render correctly again. Affected: `README.md`.
 
 #### Fixed
+
+- **LoggerService now preserves full exception details in text and JSON logs** — Text-format logs now write `exception.ToString()` instead of a bare stack trace, and JSON logs now add `exceptionDetail` plus optional `innerExceptionType` / `innerExceptionMessage` fields. This keeps exception type, message, stack, and nested-cause context available for post-run diagnostics without changing normal control flow. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests.cs` (2 updated/new: `LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndFullExceptionDetailsToLogFile`, `LogMessage_JsonFormat_IncludesInnerExceptionFields`).
+
+- **RunPreflightValidator now preserves invalid report-label exception details without double-logging** — `ValidateReportLabel()` now wraps the thrown `ArgumentException` with report-label context while keeping the original validation reason in the top-level message, and lets `CreateFailureResult()` remain the single logging point. The wrapper now avoids appending a second `(Parameter 'reportLabel')` suffix, so malformed `reportLabel` values still show actionable CLI diagnostics without duplicating the same exception in text/JSON logs. Affected: `Runner/RunPreflightValidator.cs`, `ProgramRunner.cs`. Tests: `ProgramRunnerTests.Preflight.cs` (1 updated: `ValidateReportLabel_InvalidLabel_WrapsArgumentExceptionWithContext`), `ProgramRunnerTests.cs` (1 updated: `RunAsync_WithInvalidReportLabel_ReturnsErrorBeforeTryingToLoadConfig`).
 
 - **`ExceptionFilters.IsPathOrFileIoRecoverable` missing test coverage** — Added `NotSupportedException_ReturnsTrue` (positive path — the predicate matches it but it wasn't asserted) and `NullReferenceException_ReturnsFalse` (negative path — ensures programmer errors propagate). Affected: `ExceptionFiltersTests.cs` (2 new tests).
 
@@ -1352,9 +1360,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### ドキュメント
 
-- **cdidx v1.8.1 向けに CLAUDE.md を更新** — 新しい 3 コマンド（`validate` によるエンコーディング健全性チェック、`impact` による transitive caller BFS と `--depth`、`search --exact` による FTS5 迂回の厳密部分一致）を記載し、今後のセッションで活用できるようにしました。併せて「分割済みの例」に `FolderDiffService`（3 ファイル）を追記し、`ReportGenerateService` が partial class ではなく section writer 経由で分割されている点を明記しました。
+- **最新の cdidx ワークフローに合わせて CLAUDE.md を更新** — cdidx の更新手順、MCP ネイティブなツール群（`impact_analysis`、`unused_symbols`、`symbol_hotspots`、`batch_query`、`validate`、`ping`、`suggest_improvement` など）、鮮度・信頼性メタデータの読み方、cdidx の不具合や改善案を issue 化する際の重複確認ルールを追記しました。あわせて、`TESTING_GUIDE.md` の現行方針に合わせ、壊れやすいテスト総数の固定管理ではなく、スコープ表とカバレッジ説明を更新対象とするよう整合させました。対象: `CLAUDE.md`。
+
+- **追跡対象の Claude Code 検索ポリシーで cdidx-first 運用を強制** — Claude Code 内で `rg`、`grep`、`find`、`locate` などのシェル検索コマンドを拒否する `.claude/settings.json` を追加し、リポジトリの自動化挙動を文書化済みの cdidx-first ワークフローに揃えました。あわせて、この追跡ポリシーを `CLAUDE.md` に明記しました。対象: `.claude/settings.json`, `CLAUDE.md`。
+
+- **README.md の置換文字を除去** — `cdidx validate` で検出された日本語文字化け 2 箇所を修正し、CLI 実行例と SBOM 設定説明が正しく読めるようにしました。対象: `README.md`。
 
 #### 修正
+
+- **LoggerService がテキスト/JSON ログの両方で完全な例外情報を保持するよう改善** — テキストログは生の stack trace だけでなく `exception.ToString()` 全体を書き出すようにし、JSON ログには `exceptionDetail` と任意の `innerExceptionType` / `innerExceptionMessage` を追加しました。これにより通常の制御フローは変えずに、例外型・メッセージ・スタック・ネストした原因を事後診断で追いやすくなりました。対象: `Services/LoggerService.cs`。テスト: `LoggerServiceTests.cs`（更新/追加 2 件: `LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndFullExceptionDetailsToLogFile`, `LogMessage_JsonFormat_IncludesInnerExceptionFields`）。
+
+- **RunPreflightValidator が不正なレポートラベルの例外詳細を二重ログせず保持するよう改善** — `ValidateReportLabel()` はスローされた `ArgumentException` をレポートラベル文脈付きでラップしつつ、元の検証理由をトップレベルメッセージにも残すようにしました。実際のログ出力は `CreateFailureResult()` の 1 箇所に集約し、かつ `(Parameter 'reportLabel')` 接尾辞が二重に付かないようにしたため、不正な `reportLabel` 失敗時に CLI 上で原因をすぐ確認でき、テキスト/JSON ログへ同じ例外が重複記録されることも防ぎます。対象: `Runner/RunPreflightValidator.cs`, `ProgramRunner.cs`。テスト: `ProgramRunnerTests.Preflight.cs`（1 件更新: `ValidateReportLabel_InvalidLabel_WrapsArgumentExceptionWithContext`）、`ProgramRunnerTests.cs`（1 件更新: `RunAsync_WithInvalidReportLabel_ReturnsErrorBeforeTryingToLoadConfig`）。
 
 - **`ExceptionFilters.IsPathOrFileIoRecoverable` のテストカバレッジ不足** — `NotSupportedException_ReturnsTrue`（述語で一致するがアサートされていなかった正例）と `NullReferenceException_ReturnsFalse`（プログラマエラーが伝播することを確認する負例）を追加しました。影響: `ExceptionFiltersTests.cs`（2 件追加）。
 

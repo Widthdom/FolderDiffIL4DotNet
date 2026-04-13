@@ -143,10 +143,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         streamWriter.WriteLine(
                             $"[{DateTime.Now.ToString(Constants.LOG_ENTRY_TIMESTAMP_FORMAT, CultureInfo.InvariantCulture)}] {formattedMessage}");
-                        if (exception != null)
-                        {
-                            streamWriter.WriteLine(exception.StackTrace);
-                        }
+                        WriteTextExceptionDetails(streamWriter, exception);
                     }
                 }
                 catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
@@ -289,15 +286,32 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     jsonWriter.WriteString("exceptionType", exception.GetType().FullName);
                     jsonWriter.WriteString("exceptionMessage", exception.Message);
+                    jsonWriter.WriteString("exceptionDetail", exception.ToString());
                     if (exception.StackTrace != null)
                     {
                         jsonWriter.WriteString("stackTrace", exception.StackTrace);
+                    }
+
+                    if (exception.InnerException != null)
+                    {
+                        jsonWriter.WriteString("innerExceptionType", exception.InnerException.GetType().FullName);
+                        jsonWriter.WriteString("innerExceptionMessage", exception.InnerException.Message);
                     }
                 }
                 jsonWriter.WriteEndObject();
             }
 
             writer.WriteLine(System.Text.Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        private static void WriteTextExceptionDetails(StreamWriter writer, Exception? exception)
+        {
+            if (exception == null)
+            {
+                return;
+            }
+
+            writer.WriteLine(exception.ToString());
         }
 
         private static string GetLogLevelString(AppLogLevel logLevel) => logLevel switch

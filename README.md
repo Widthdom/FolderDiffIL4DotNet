@@ -1011,7 +1011,7 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 dotnet build
 dotnet run "/Users/UserA/workspace/old" "/Users/UserA/workspace/new" "YYYYMMDD" --no-pause
 
-# スレッド数���定・IL スキップで高速差分
+# スレッド数設定・IL スキップで高速差分
 dotnet run "/path/old" "/path/new" "label" --threads 4 --skip-il --no-pause
 
 # カスタム設定ファイルを指定
@@ -1498,7 +1498,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-shouldgeneratesbom">
       <td><code>ShouldGenerateSbom</code></td>
       <td><code>false</code></td>
-      <td><code>true</code> の場合、比較対象���ォルダ内の全コンポーネントを一覧化する SBOM（ソフトウェア部品表）を生成します。出力ファイル名は <code>SbomFormat</code> に依存: <code>sbom.cdx.json</code>（CycloneDX）または <code>sbom.spdx.json</code>（SPDX）。サプライチェーンセキュリティ規制対応（大統領令 14028、EU CRA 等）に有用です。</td>
+      <td><code>true</code> の場合、比較対象フォルダ内の全コンポーネントを一覧化する SBOM（ソフトウェア部品表）を生成します。出力ファイル名は <code>SbomFormat</code> に依存: <code>sbom.cdx.json</code>（CycloneDX）または <code>sbom.spdx.json</code>（SPDX）。サプライチェーンセキュリティ規制対応（大統領令 14028、EU CRA 等）に有用です。</td>
     </tr>
     <tr id="config-ja-sbomformat">
       <td><code>SbomFormat</code></td>
