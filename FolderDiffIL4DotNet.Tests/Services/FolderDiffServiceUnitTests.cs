@@ -108,6 +108,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'enumerating files'.", StringComparison.Ordinal)
                     && entry.Message.Contains("Mode=Local-optimized", StringComparison.Ordinal)
                     && entry.Message.Contains("Failure=IOException: Too many levels of symbolic links", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("MaxParallel=", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("OldFiles=", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("UnionFiles=", StringComparison.Ordinal));
         }
 
         // When a new-side file is deleted between enumeration and comparison, FileNotFoundException
@@ -227,6 +230,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'enumerating files'.", StringComparison.Ordinal)
                     && entry.Message.Contains("Failure=UnauthorizedAccessException: access denied", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("MaxParallel=", StringComparison.Ordinal));
+            Assert.DoesNotContain(logger.Entries, entry => entry.Message.Contains("OldFiles=", StringComparison.Ordinal));
         }
 
         [Fact]

@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
-- **FolderDiffService failure logs now preserve execution phase and run context** — Expected and unexpected folder-diff failures now include the failing phase, execution mode, chosen parallelism, discovered file counts, and the concrete exception type/message in the log message itself, so console-only diagnostics stay actionable without changing classification behavior. Affected: `Services/FolderDiffService.cs`. Tests: `FolderDiffServiceUnitTests.cs` (5 updated assertions: enumeration, permission, IL output, missing parent, unexpected compare failure).
+- **FolderDiffService failure logs now preserve execution phase and known run context without placeholder values** — Expected and unexpected folder-diff failures now include the failing phase, execution mode, and any run context that is already known at that point. Early discovery failures no longer claim placeholder parallelism or zero file counts, while later failures still retain concrete counts and the exception type/message in the log message itself. Affected: `Services/FolderDiffService.cs`. Tests: `FolderDiffServiceUnitTests.cs` (5 updated assertions: enumeration, permission, IL output, missing parent, unexpected compare failure).
 
 - **TestLogger is now safe under parallel test logging** — The shared test helper now uses a thread-safe queue so parallel logging paths can capture entries without `List<T>.Add` races, and new helper tests pin concurrent capture plus callback integrity. Affected: `FolderDiffIL4DotNet.Tests/Helpers/TestLogger.cs`, `FolderDiffIL4DotNet.Tests/TestLoggerTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `TestLoggerTests.cs` (2 new: `LogMessage_ConcurrentCalls_CapturesAllEntriesWithoutLosingMessages`, `Messages_ReturnsCapturedMessagesInInsertionOrderForSequentialWrites`).
 
@@ -1372,7 +1372,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### 修正
 
-- **FolderDiffService の失敗ログに実行フェーズと実行文脈を保持するよう改善** — 想定内/想定外どちらのフォルダ差分失敗でも、失敗フェーズ、実行モード、選択された並列度、発見済みファイル件数、具体的な例外型/メッセージをログ本文へ含めるようにし、分類動作は変えずにコンソールだけでも原因を追いやすくしました。対象: `Services/FolderDiffService.cs`。テスト: `FolderDiffServiceUnitTests.cs`（5件の既存アサーション更新: 列挙失敗、権限エラー、IL 出力先 I/O、親ディレクトリ欠落、比較時の想定外失敗）。
+- **FolderDiffService の失敗ログに未確定プレースホルダを出さず、判明済みの実行文脈だけを保持するよう改善** — 想定内/想定外どちらのフォルダ差分失敗でも、失敗フェーズ、実行モード、およびその時点で確定している実行文脈だけをログ本文へ含めるようにしました。早期の discovery 失敗では仮の並列度や 0 件の件数を主張せず、後段の失敗では引き続き確定済み件数と具体的な例外型/メッセージを保持します。対象: `Services/FolderDiffService.cs`。テスト: `FolderDiffServiceUnitTests.cs`（5件の既存アサーション更新: 列挙失敗、権限エラー、IL 出力先 I/O、親ディレクトリ欠落、比較時の想定外失敗）。
 
 - **TestLogger を並列テスト下でも安全にしました** — 共有テストヘルパーの内部蓄積をスレッドセーフなキューへ変更し、並列ログ経路でも `List<T>.Add` 競合で取りこぼしたり例外化したりしないようにしました。あわせて、並列キャプチャとコールバック整合性を固定する新規ヘルパーテストを追加しました。対象: `FolderDiffIL4DotNet.Tests/Helpers/TestLogger.cs`, `FolderDiffIL4DotNet.Tests/TestLoggerTests.cs`, `doc/TESTING_GUIDE.md`。テスト: `TestLoggerTests.cs`（2件追加: `LogMessage_ConcurrentCalls_CapturesAllEntriesWithoutLosingMessages`, `Messages_ReturnsCapturedMessagesInInsertionOrderForSequentialWrites`）。
 

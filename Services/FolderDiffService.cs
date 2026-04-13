@@ -138,17 +138,19 @@ namespace FolderDiffIL4DotNet.Services
 
             var folderDiffCompleted = false;
             var currentPhase = "initializing folder diff";
-            int totalFilesRelativePathCount = 0;
-            int maxParallel = 1;
+            var discoveryCompleted = false;
+            int? totalFilesRelativePathCount = null;
+            int? maxParallel = null;
             try
             {
                 currentPhase = "enumerating files";
                 EnumerateAllFiles();
+                discoveryCompleted = true;
 
                 totalFilesRelativePathCount = _executionStrategy.ComputeUnionFileCount(
                     _fileDiffResultLists.OldFilesAbsolutePath,
                     _fileDiffResultLists.NewFilesAbsolutePath);
-                if (totalFilesRelativePathCount == 0)
+                if (totalFilesRelativePathCount.Value == 0)
                 {
                     _progressReporter.ReportProgress(100);
                     folderDiffCompleted = true;
@@ -158,14 +160,14 @@ namespace FolderDiffIL4DotNet.Services
                 currentPhase = "determining parallelism";
                 maxParallel = _executionStrategy.DetermineMaxParallel();
                 currentPhase = "logging discovery statistics";
-                LogDiscoveryStats(totalFilesRelativePathCount, maxParallel);
+                LogDiscoveryStats(totalFilesRelativePathCount.Value, maxParallel.Value);
                 currentPhase = "scanning assembly candidates";
                 ScanAssemblyCandidatesAndLog();
                 currentPhase = "validating IL filter strings";
                 ValidateILFilterStrings();
 
                 currentPhase = "precomputing IL cache";
-                await PrecomputeIlCachesAsync(maxParallel, cancellationToken);
+                await PrecomputeIlCachesAsync(maxParallel.Value, cancellationToken);
 
                 // Begin the diff classification phase so the bar restarts at 0%.
                 // 差分分類フェーズを開始し、バーが 0% から再スタートする。
@@ -176,31 +178,31 @@ namespace FolderDiffIL4DotNet.Services
 
                 var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(_fileDiffResultLists.NewFilesAbsolutePath, _pathComparer);
                 int processedFileCount = 0;
-                if (maxParallel <= 1)
+                if (maxParallel.Value <= 1)
                 {
                     currentPhase = "classifying files sequentially";
-                    processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, cancellationToken);
+                    processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount.Value, processedFileCount, cancellationToken);
                 }
                 else
                 {
                     currentPhase = "classifying files in parallel";
-                    processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, maxParallel, cancellationToken);
+                    processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount.Value, processedFileCount, maxParallel.Value, cancellationToken);
                 }
 
                 currentPhase = "processing added files";
-                ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);
+                ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount.Value);
                 folderDiffCompleted = true;
             }
             catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
                 or IOException or UnauthorizedAccessException
                 or InvalidOperationException or NotSupportedException)
             {
-                LogExpectedFolderDiffFailure(ex, currentPhase, totalFilesRelativePathCount, maxParallel);
+                LogExpectedFolderDiffFailure(ex, currentPhase, discoveryCompleted, totalFilesRelativePathCount, maxParallel);
                 throw;
             }
             catch (Exception ex)
             {
-                LogUnexpectedFolderDiffFailure(ex, currentPhase, totalFilesRelativePathCount, maxParallel);
+                LogUnexpectedFolderDiffFailure(ex, currentPhase, discoveryCompleted, totalFilesRelativePathCount, maxParallel);
                 throw;
             }
             finally
@@ -212,7 +214,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private void LogExpectedFolderDiffFailure(Exception exception, string currentPhase, int totalFilesRelativePathCount, int maxParallel)
+        private void LogExpectedFolderDiffFailure(Exception exception, string currentPhase, bool discoveryCompleted, int? totalFilesRelativePathCount, int? maxParallel)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
@@ -220,13 +222,14 @@ namespace FolderDiffIL4DotNet.Services
                     prefix: "An error occurred while diffing",
                     exception,
                     currentPhase,
+                    discoveryCompleted,
                     totalFilesRelativePathCount,
                     maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
-        private void LogUnexpectedFolderDiffFailure(Exception exception, string currentPhase, int totalFilesRelativePathCount, int maxParallel)
+        private void LogUnexpectedFolderDiffFailure(Exception exception, string currentPhase, bool discoveryCompleted, int? totalFilesRelativePathCount, int? maxParallel)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
@@ -234,19 +237,33 @@ namespace FolderDiffIL4DotNet.Services
                     prefix: "An unexpected error occurred while diffing",
                     exception,
                     currentPhase,
+                    discoveryCompleted,
                     totalFilesRelativePathCount,
                     maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
-        private string BuildFailureMessage(string prefix, Exception exception, string currentPhase, int totalFilesRelativePathCount, int maxParallel)
+        private string BuildFailureMessage(string prefix, Exception exception, string currentPhase, bool discoveryCompleted, int? totalFilesRelativePathCount, int? maxParallel)
         {
-            var oldCount = _fileDiffResultLists.OldFilesAbsolutePath.Count;
-            var newCount = _fileDiffResultLists.NewFilesAbsolutePath.Count;
-            return $"{prefix} '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}' during phase '{currentPhase}'. "
-                + $"Mode={GetExecutionModeLabel()}, MaxParallel={maxParallel}, OldFiles={oldCount}, NewFiles={newCount}, UnionFiles={totalFilesRelativePathCount}. "
-                + $"Failure={exception.GetType().Name}: {exception.Message}";
+            var message = $"{prefix} '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}' during phase '{currentPhase}'. "
+                + $"Mode={GetExecutionModeLabel()}";
+
+            if (maxParallel.HasValue)
+            {
+                message += $", MaxParallel={maxParallel.Value}";
+            }
+
+            if (discoveryCompleted)
+            {
+                message += $", OldFiles={_fileDiffResultLists.OldFilesAbsolutePath.Count}, NewFiles={_fileDiffResultLists.NewFilesAbsolutePath.Count}";
+                if (totalFilesRelativePathCount.HasValue)
+                {
+                    message += $", UnionFiles={totalFilesRelativePathCount.Value}";
+                }
+            }
+
+            return message + $". Failure={exception.GetType().Name}: {exception.Message}";
         }
 
         private static StringComparer DetermineRelativePathComparer(string oldFolderAbsolutePath, string newFolderAbsolutePath)
