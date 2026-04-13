@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Parallel text-diff fallback warnings now include the exception type in the message body** — `FileDiffService` now writes the concrete exception type into the warning text when chunk-parallel text comparison falls back to sequential comparison after recoverable path/I/O failures, making console/text-log triage easier even before inspecting the attached exception payload. Affected: `Services/FileDiffService.TextComparison.cs`. Tests: `FileDiffServiceTests.cs` (2 updated: `FilesAreEqualAsync_WhenPrimaryTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`, `FilesAreEqualAsync_WhenParallelTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`), `FileDiffServiceUnitTests.TextComparison.cs` (1 updated: `FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows`).
+
 - **IL diff failure logs now retain the exception type alongside the message** — `FileDiffService` now records the concrete exception type when IL disassembly/comparison fails with `InvalidOperationException`, aligning this path with the repository's other hardened diagnostics and making missing-disassembler failures easier to triage from text/JSON logs. Affected: `Services/FileDiffService.cs`. Tests: `FileDiffServiceUnitTests.ILComparison.cs` (1 updated: `FilesAreEqualAsync_WhenILDiffThrowsInvalidOperationException_LogsErrorAndRethrows`).
 
 - **FolderDiffService failure logs now preserve execution phase and known run context without placeholder values** — Expected and unexpected folder-diff failures now include the failing phase, execution mode, and any run context that is already known at that point. Early discovery failures no longer claim placeholder parallelism or zero file counts, while partial discovery failures still retain any concrete per-side counts already collected before the exception. Later failures continue to include concrete counts plus the exception type/message in the log message itself. Affected: `Services/FolderDiffService.cs`. Tests: `FolderDiffServiceUnitTests.cs` (5 updated assertions + 1 new test covering partial discovery failure logging).
@@ -1373,6 +1375,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **並列テキスト差分の逐次フォールバック警告が本文に例外型も含むよう改善** — `FileDiffService` が回復可能なパス/I/O 失敗のあとでチャンク並列テキスト比較から逐次比較へフォールバックする際、警告本文にも具体的な例外型を書き出すようにしました。これにより、添付された例外オブジェクトを開かなくても、コンソールやテキストログだけで切り分けしやすくなります。対象: `Services/FileDiffService.TextComparison.cs`。テスト: `FileDiffServiceTests.cs`（更新 2 件: `FilesAreEqualAsync_WhenPrimaryTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`, `FilesAreEqualAsync_WhenParallelTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`）、`FileDiffServiceUnitTests.TextComparison.cs`（更新 1 件: `FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows`）。
 
 - **IL 差分失敗ログが例外メッセージに加えて例外型も保持するよう改善** — `FileDiffService` が `InvalidOperationException` による IL 逆アセンブル/比較失敗を記録する際、具体的な例外型もログに含めるようにしました。これにより、他の強化済み診断ログと粒度が揃い、逆アセンブラ未解決時の調査がテキスト/JSON ログだけでもしやすくなります。対象: `Services/FileDiffService.cs`。テスト: `FileDiffServiceUnitTests.ILComparison.cs`（更新 1 件: `FilesAreEqualAsync_WhenILDiffThrowsInvalidOperationException_LogsErrorAndRethrows`）。
 

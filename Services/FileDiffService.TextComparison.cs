@@ -67,7 +67,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ex is ArgumentOutOfRangeException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}'. Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Parallel text diff failed for '{fileRelativePath}' ({ex.GetType().Name}). Falling back to sequential text diff.", shouldOutputMessageToConsole: true, ex);
                 return await _fileComparisonService.DiffTextFilesAsync(file1AbsolutePath, file2AbsolutePath);
             }
         }

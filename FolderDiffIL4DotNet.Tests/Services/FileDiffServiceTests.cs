@@ -94,6 +94,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
                 var warningLog = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Falling back to sequential text diff", StringComparison.Ordinal));
                 Assert.Contains("Falling back to sequential text diff", warningLog.Message);
+                Assert.Contains("IOException", warningLog.Message);
                 Assert.IsType<IOException>(warningLog.Exception);
                 Assert.Contains(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Failed to detect whether 'sample.txt' is a .NET executable", StringComparison.Ordinal));
             }
@@ -149,6 +150,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(FileDiffResultLists.DiffDetailResult.TextMismatch, resultLists.FileRelativePathToDiffDetailDictionary[fileRelativePath]);
             var warningLog = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Falling back to sequential text diff", warningLog.Message);
+            Assert.Contains("ArgumentOutOfRangeException", warningLog.Message);
             Assert.IsType<ArgumentOutOfRangeException>(warningLog.Exception);
         }
 

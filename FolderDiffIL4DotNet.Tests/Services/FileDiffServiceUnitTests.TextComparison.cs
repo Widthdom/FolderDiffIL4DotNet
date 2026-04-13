@@ -161,6 +161,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal("text access denied", exception.Message);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Falling back to sequential text diff", warning.Message);
+            Assert.Contains("UnauthorizedAccessException", warning.Message);
             Assert.IsType<UnauthorizedAccessException>(warning.Exception);
             Assert.Contains(
                 logger.Entries,
