@@ -235,6 +235,46 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenNewTreeEnumerationThrowsAfterOldTreeCompleted_LogsKnownOldFileCountOnly()
+        {
+            const string oldDir = "/virtual/old-complete-new-fails";
+            const string newDir = "/virtual/new-complete-new-fails";
+            const string reportDir = "/virtual/report-complete-new-fails";
+
+            var fileSystem = new FakeFileSystemService
+            {
+                EnumerateFilesExceptionRoot = newDir,
+                EnumerateFilesException = new UnauthorizedAccessException("new access denied")
+            };
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "known.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal));
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                CreateExecutionContext(oldDir, newDir, reportDir),
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => service.ExecuteFolderDiffAsync());
+
+            Assert.Equal("new access denied", exception.Message);
+            var logEntry = Assert.Single(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Error
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'enumerating files'.", StringComparison.Ordinal));
+            Assert.Contains("OldFiles=1", logEntry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("NewFiles=", logEntry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("UnionFiles=", logEntry.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("MaxParallel=", logEntry.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public async Task ExecuteFolderDiffAsync_ConsumesStreamingFileEnumerationAndStillFiltersIgnoredFiles()
         {
             const string oldDir = "/virtual/old-stream";

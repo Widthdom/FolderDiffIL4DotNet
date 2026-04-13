@@ -138,14 +138,14 @@ namespace FolderDiffIL4DotNet.Services
 
             var folderDiffCompleted = false;
             var currentPhase = "initializing folder diff";
-            var discoveryCompleted = false;
+            var hasEnumeratedOldFiles = false;
+            var hasEnumeratedNewFiles = false;
             int? totalFilesRelativePathCount = null;
             int? maxParallel = null;
             try
             {
                 currentPhase = "enumerating files";
-                EnumerateAllFiles();
-                discoveryCompleted = true;
+                EnumerateAllFiles(ref hasEnumeratedOldFiles, ref hasEnumeratedNewFiles);
 
                 totalFilesRelativePathCount = _executionStrategy.ComputeUnionFileCount(
                     _fileDiffResultLists.OldFilesAbsolutePath,
@@ -197,12 +197,12 @@ namespace FolderDiffIL4DotNet.Services
                 or IOException or UnauthorizedAccessException
                 or InvalidOperationException or NotSupportedException)
             {
-                LogExpectedFolderDiffFailure(ex, currentPhase, discoveryCompleted, totalFilesRelativePathCount, maxParallel);
+                LogExpectedFolderDiffFailure(ex, currentPhase, hasEnumeratedOldFiles, hasEnumeratedNewFiles, totalFilesRelativePathCount, maxParallel);
                 throw;
             }
             catch (Exception ex)
             {
-                LogUnexpectedFolderDiffFailure(ex, currentPhase, discoveryCompleted, totalFilesRelativePathCount, maxParallel);
+                LogUnexpectedFolderDiffFailure(ex, currentPhase, hasEnumeratedOldFiles, hasEnumeratedNewFiles, totalFilesRelativePathCount, maxParallel);
                 throw;
             }
             finally
@@ -214,7 +214,7 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private void LogExpectedFolderDiffFailure(Exception exception, string currentPhase, bool discoveryCompleted, int? totalFilesRelativePathCount, int? maxParallel)
+        private void LogExpectedFolderDiffFailure(Exception exception, string currentPhase, bool hasEnumeratedOldFiles, bool hasEnumeratedNewFiles, int? totalFilesRelativePathCount, int? maxParallel)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
@@ -222,14 +222,15 @@ namespace FolderDiffIL4DotNet.Services
                     prefix: "An error occurred while diffing",
                     exception,
                     currentPhase,
-                    discoveryCompleted,
+                    hasEnumeratedOldFiles,
+                    hasEnumeratedNewFiles,
                     totalFilesRelativePathCount,
                     maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
-        private void LogUnexpectedFolderDiffFailure(Exception exception, string currentPhase, bool discoveryCompleted, int? totalFilesRelativePathCount, int? maxParallel)
+        private void LogUnexpectedFolderDiffFailure(Exception exception, string currentPhase, bool hasEnumeratedOldFiles, bool hasEnumeratedNewFiles, int? totalFilesRelativePathCount, int? maxParallel)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
@@ -237,14 +238,15 @@ namespace FolderDiffIL4DotNet.Services
                     prefix: "An unexpected error occurred while diffing",
                     exception,
                     currentPhase,
-                    discoveryCompleted,
+                    hasEnumeratedOldFiles,
+                    hasEnumeratedNewFiles,
                     totalFilesRelativePathCount,
                     maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
-        private string BuildFailureMessage(string prefix, Exception exception, string currentPhase, bool discoveryCompleted, int? totalFilesRelativePathCount, int? maxParallel)
+        private string BuildFailureMessage(string prefix, Exception exception, string currentPhase, bool hasEnumeratedOldFiles, bool hasEnumeratedNewFiles, int? totalFilesRelativePathCount, int? maxParallel)
         {
             var message = $"{prefix} '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}' during phase '{currentPhase}'. "
                 + $"Mode={GetExecutionModeLabel()}";
@@ -254,13 +256,19 @@ namespace FolderDiffIL4DotNet.Services
                 message += $", MaxParallel={maxParallel.Value}";
             }
 
-            if (discoveryCompleted)
+            if (hasEnumeratedOldFiles)
             {
-                message += $", OldFiles={_fileDiffResultLists.OldFilesAbsolutePath.Count}, NewFiles={_fileDiffResultLists.NewFilesAbsolutePath.Count}";
-                if (totalFilesRelativePathCount.HasValue)
-                {
-                    message += $", UnionFiles={totalFilesRelativePathCount.Value}";
-                }
+                message += $", OldFiles={_fileDiffResultLists.OldFilesAbsolutePath.Count}";
+            }
+
+            if (hasEnumeratedNewFiles)
+            {
+                message += $", NewFiles={_fileDiffResultLists.NewFilesAbsolutePath.Count}";
+            }
+
+            if (totalFilesRelativePathCount.HasValue)
+            {
+                message += $", UnionFiles={totalFilesRelativePathCount.Value}";
             }
 
             return message + $". Failure={exception.GetType().Name}: {exception.Message}";
@@ -350,16 +358,18 @@ namespace FolderDiffIL4DotNet.Services
         /// Enumerates old/new folder files (excluding ignored extensions) into <see cref="FileDiffResultLists"/>.
         /// 無視拡張子を除いた旧・新フォルダのファイル一覧を <see cref="FileDiffResultLists"/> に格納します。
         /// </summary>
-        private void EnumerateAllFiles()
+        private void EnumerateAllFiles(ref bool hasEnumeratedOldFiles, ref bool hasEnumeratedNewFiles)
         {
             // Show a dedicated "Discovering files" phase so the user sees progress during file enumeration.
             // ファイル列挙中にユーザーへ進捗を示すため、専用の「Discovering files」フェーズを表示する。
             _progressReporter.BeginPhase(SPINNER_LABEL_DISCOVERING_FILES);
 
             _fileDiffResultLists.SetOldFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_oldFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.Old));
+            hasEnumeratedOldFiles = true;
             _progressReporter.ReportProgress(50.0);
 
             _fileDiffResultLists.SetNewFilesAbsolutePath(_executionStrategy.EnumerateIncludedFiles(_newFolderAbsolutePath, FileDiffResultLists.IgnoredFileLocation.New));
+            hasEnumeratedNewFiles = true;
             _progressReporter.ReportProgress(100.0);
         }
 
