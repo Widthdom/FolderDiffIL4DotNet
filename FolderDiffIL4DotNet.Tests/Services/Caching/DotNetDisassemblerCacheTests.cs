@@ -1,4 +1,10 @@
+using System;
+using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using FolderDiffIL4DotNet.Services.Caching;
 using Xunit;
 
@@ -29,6 +35,39 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Equal("DotnetIldasm", tuple.KindName);
             Assert.Equal("dotnet ildasm", tuple.CacheKey);
             Assert.Equal("dotnet", tuple.Executable);
+        }
+
+        [Fact]
+        public async Task GetDisassemblerVersionAsync_WhenVersionLookupProcessStartFails_LogsWarningWithExceptionType()
+        {
+            var emptyBinDir = Path.Combine(Path.GetTempPath(), "fd-disasmcache-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(emptyBinDir);
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", emptyBinDir);
+                var logger = new TestLogger(logFileAbsolutePath: "test.log");
+                var cache = new DotNetDisassemblerCache(logger);
+
+                var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => cache.GetDisassemblerVersionAsync("ilspycmd sample.dll"));
+
+                Assert.Contains("Failed to obtain version string", exception.Message, StringComparison.Ordinal);
+                Assert.Contains(
+                    logger.Entries,
+                    entry => entry.LogLevel == AppLogLevel.Warning
+                        && entry.Message.Contains("Failed to get version", StringComparison.Ordinal)
+                        && entry.Message.Contains("Win32Exception", StringComparison.Ordinal)
+                        && entry.Exception is System.ComponentModel.Win32Exception);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+                if (Directory.Exists(emptyBinDir))
+                {
+                    Directory.Delete(emptyBinDir, recursive: true);
+                }
+            }
         }
 
         private static (string KindName, string CacheKey, string Executable) InvokeGetDisassemblerInfo(string command)

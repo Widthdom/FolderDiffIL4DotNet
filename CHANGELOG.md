@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Disassembler version-lookup warnings now retain the exception type in the message body** — `DotNetDisassemblerCache` now writes the concrete recoverable process exception type into the warning text when version probing fails, making missing-tool/PATH issues easier to diagnose from console/text logs before inspecting the attached exception payload. Affected: `Services/Caching/DotNetDisassemblerCache.cs`. Tests: `DotNetDisassemblerCacheTests.cs` (1 new: `GetDisassemblerVersionAsync_WhenVersionLookupProcessStartFails_LogsWarningWithExceptionType`).
+
 - **Parallel text-diff fallback warnings now include the exception type in the message body** — `FileDiffService` now writes the concrete exception type into the warning text when chunk-parallel text comparison falls back to sequential comparison after recoverable path/I/O failures, making console/text-log triage easier even before inspecting the attached exception payload. Affected: `Services/FileDiffService.TextComparison.cs`. Tests: `FileDiffServiceTests.cs` (2 updated: `FilesAreEqualAsync_WhenPrimaryTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`, `FilesAreEqualAsync_WhenParallelTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`), `FileDiffServiceUnitTests.TextComparison.cs` (1 updated: `FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows`).
 
 - **IL diff failure logs now retain the exception type alongside the message** — `FileDiffService` now records the concrete exception type when IL disassembly/comparison fails with `InvalidOperationException`, aligning this path with the repository's other hardened diagnostics and making missing-disassembler failures easier to triage from text/JSON logs. Affected: `Services/FileDiffService.cs`. Tests: `FileDiffServiceUnitTests.ILComparison.cs` (1 updated: `FilesAreEqualAsync_WhenILDiffThrowsInvalidOperationException_LogsErrorAndRethrows`).
@@ -1375,6 +1377,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **disassembler バージョン取得失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassemblerCache` がバージョン文字列の取得に失敗した際、回復可能なプロセス実行例外の具体的な型も警告本文へ含めるようにしました。これにより、ツール未導入や PATH 設定不備を、添付された例外オブジェクトを開かなくてもコンソール/テキストログだけで切り分けしやすくなります。対象: `Services/Caching/DotNetDisassemblerCache.cs`。テスト: `DotNetDisassemblerCacheTests.cs`（新規 1 件: `GetDisassemblerVersionAsync_WhenVersionLookupProcessStartFails_LogsWarningWithExceptionType`）。
 
 - **並列テキスト差分の逐次フォールバック警告が本文に例外型も含むよう改善** — `FileDiffService` が回復可能なパス/I/O 失敗のあとでチャンク並列テキスト比較から逐次比較へフォールバックする際、警告本文にも具体的な例外型を書き出すようにしました。これにより、添付された例外オブジェクトを開かなくても、コンソールやテキストログだけで切り分けしやすくなります。対象: `Services/FileDiffService.TextComparison.cs`。テスト: `FileDiffServiceTests.cs`（更新 2 件: `FilesAreEqualAsync_WhenPrimaryTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`, `FilesAreEqualAsync_WhenParallelTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`）、`FileDiffServiceUnitTests.TextComparison.cs`（更新 1 件: `FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows`）。
 
