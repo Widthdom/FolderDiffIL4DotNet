@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Logger cleanup directory warnings now retain the exception type in the message body** — `LoggerService.CleanupOldLogFiles()` now includes the concrete recoverable I/O exception type and message when directory enumeration/cleanup fails, making this warning consistent with the more specific archived-file deletion path and easier to triage from console/text logs. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests.cs` (1 new: `CleanupOldLogFiles_WhenDirectoryPathIsActuallyAFile_LogsWarningWithExceptionTypeAndDoesNotThrow`).
+
 - **ILCachePrefetcher warnings now retain the exception type in the message body** — `ILCachePrefetcher` now includes the concrete recoverable exception type when per-assembly cache prefetch falls back after a path/I/O failure, keeping this warning consistent with the other hardened cache diagnostics and making text-log triage easier. Affected: `Services/ILCachePrefetcher.cs`. Tests: `ILCachePrefetcherTests.cs` (1 new: `PrefetchIlCacheAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`).
 
 - **ILCache SHA256 precompute warnings now retain the exception message** — `ILCache` now includes `ex.Message` in the recoverable warning emitted when a file-hash precompute step fails, so invalid-path and permission diagnostics are readable from the warning text itself instead of requiring the attached exception payload. Affected: `Services/Caching/ILCache.cs`. Tests: `ILCacheTests.Advanced.cs` (1 updated: `Precompute_InvalidPath_LogsWarningAndContinues`).
@@ -1389,6 +1391,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **Logger cleanup のディレクトリ警告が本文に例外型も保持するよう改善** — `LoggerService.CleanupOldLogFiles()` がディレクトリ列挙や cleanup に失敗した際、回復可能な I/O 例外の具体的な型とメッセージも warning 本文へ含めるようにしました。これにより、より詳細な archived-file deletion warning と粒度が揃い、console / text log だけでも切り分けしやすくなります。対象: `Services/LoggerService.cs`。テスト: `LoggerServiceTests.cs`（新規 1 件: `CleanupOldLogFiles_WhenDirectoryPathIsActuallyAFile_LogsWarningWithExceptionTypeAndDoesNotThrow`）。
 
 - **ILCachePrefetcher の warning が本文に例外型も保持するよう改善** — `ILCachePrefetcher` がアセンブリ単位の cache prefetch 中に回復可能なパス/I/O 失敗からフォールバックした際、warning 本文にも具体的な例外型を含めるようにしました。これにより、他の強化済みキャッシュ診断ログと粒度が揃い、テキストログだけでも切り分けしやすくなります。対象: `Services/ILCachePrefetcher.cs`。テスト: `ILCachePrefetcherTests.cs`（新規 1 件: `PrefetchIlCacheAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`）。
 

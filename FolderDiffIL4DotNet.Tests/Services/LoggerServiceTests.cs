@@ -249,6 +249,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Fact]
+        public void CleanupOldLogFiles_WhenDirectoryPathIsActuallyAFile_LogsWarningWithExceptionTypeAndDoesNotThrow()
+        {
+            var logger = new LoggerService();
+            var originalOut = Console.Out;
+            using var writer = new StringWriter();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var filePath = Path.Combine(tempDir, "not-a-directory.log");
+            File.WriteAllText(filePath, "x");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", filePath);
+            SetPrivateField(logger, "_logFileAbsolutePath", null);
+
+            try
+            {
+                Console.SetOut(writer);
+
+                var ex = Record.Exception(() => logger.CleanupOldLogFiles(maxLogGenerations: 1));
+
+                Assert.Null(ex);
+                var consoleText = writer.ToString();
+                Assert.Contains("Failed to clean up old log files in", consoleText, StringComparison.Ordinal);
+                Assert.Contains(filePath, consoleText, StringComparison.Ordinal);
+                Assert.True(
+                    consoleText.Contains(nameof(DirectoryNotFoundException), StringComparison.Ordinal) ||
+                    consoleText.Contains(nameof(IOException), StringComparison.Ordinal) ||
+                    consoleText.Contains(nameof(UnauthorizedAccessException), StringComparison.Ordinal),
+                    $"Expected a recoverable I/O exception type in output, got: {consoleText}");
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
         /// <summary>
         /// Verifies that concurrent LogMessage calls do not throw IOException.
         /// 並列 LogMessage 呼び出しで IOException が発生しないことを検証する。
