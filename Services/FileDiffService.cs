@@ -203,7 +203,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (InvalidOperationException ex)
                     {
-                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}'. {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
