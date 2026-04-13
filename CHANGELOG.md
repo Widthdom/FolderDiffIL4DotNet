@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.10] - 2026-04-14
+
 #### Documentation
 
 - **CLAUDE.md updated for the latest cdidx workflow** — Refreshed the maintainer instructions around cdidx upgrades, MCP-native tool coverage (`impact_analysis`, `unused_symbols`, `symbol_hotspots`, `batch_query`, `validate`, `ping`, `suggest_improvement`), freshness/trust metadata, and issue-filing etiquette for cdidx bugs/ideas. Also aligned the TESTING_GUIDE rules with the current documentation strategy: keep scope/coverage guidance current instead of maintaining brittle hard-coded test totals. Affected: `CLAUDE.md`.
@@ -1358,6 +1360,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.16.10] - 2026-04-14
+
 #### ドキュメント
 
 - **最新の cdidx ワークフローに合わせて CLAUDE.md を更新** — cdidx の更新手順、MCP ネイティブなツール群（`impact_analysis`、`unused_symbols`、`symbol_hotspots`、`batch_query`、`validate`、`ping`、`suggest_improvement` など）、鮮度・信頼性メタデータの読み方、cdidx の不具合や改善案を issue 化する際の重複確認ルールを追記しました。あわせて、`TESTING_GUIDE.md` の現行方針に合わせ、壊れやすいテスト総数の固定管理ではなく、スコープ表とカバレッジ説明を更新対象とするよう整合させました。対象: `CLAUDE.md`。
@@ -2703,7 +2707,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.9...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.10...HEAD
+[1.16.10]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.9...v1.16.10
 [1.16.9]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.8...v1.16.9
 [1.16.8]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.7...v1.16.8
 [1.16.7]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.6...v1.16.7
