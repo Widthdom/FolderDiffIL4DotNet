@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **ASCII temp-copy warnings now retain the exception type in the message body** — `DotNetDisassembleService` now includes the concrete recoverable path/I/O exception type when creating a non-ASCII temporary assembly copy fails, keeping this best-effort warning consistent with the repository's other hardened diagnostics. Affected: `Services/DotNetDisassembleService.VersionLabel.cs`. Tests: `DotNetDisassembleServiceTests.cs` (1 new: `CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType`).
+
 - **Disassembler version-lookup warnings now retain the exception type in the message body** — `DotNetDisassemblerCache` now writes the concrete recoverable process exception type into the warning text when version probing fails, making missing-tool/PATH issues easier to diagnose from console/text logs before inspecting the attached exception payload. Affected: `Services/Caching/DotNetDisassemblerCache.cs`. Tests: `DotNetDisassemblerCacheTests.cs` (1 new: `GetDisassemblerVersionAsync_WhenVersionLookupProcessStartFails_LogsWarningWithExceptionType`).
 
 - **Parallel text-diff fallback warnings now include the exception type in the message body** — `FileDiffService` now writes the concrete exception type into the warning text when chunk-parallel text comparison falls back to sequential comparison after recoverable path/I/O failures, making console/text-log triage easier even before inspecting the attached exception payload. Affected: `Services/FileDiffService.TextComparison.cs`. Tests: `FileDiffServiceTests.cs` (2 updated: `FilesAreEqualAsync_WhenPrimaryTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`, `FilesAreEqualAsync_WhenParallelTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`), `FileDiffServiceUnitTests.TextComparison.cs` (1 updated: `FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows`).
@@ -1377,6 +1379,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **ASCII 一時コピー失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassembleService` が非 ASCII パス対策の一時アセンブリコピー作成に失敗した際、回復可能なパス/I/O 例外の具体的な型も警告本文へ含めるようにしました。これにより、このベストエフォート警告も他の強化済み診断ログと粒度が揃います。対象: `Services/DotNetDisassembleService.VersionLabel.cs`。テスト: `DotNetDisassembleServiceTests.cs`（新規 1 件: `CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType`）。
 
 - **disassembler バージョン取得失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassemblerCache` がバージョン文字列の取得に失敗した際、回復可能なプロセス実行例外の具体的な型も警告本文へ含めるようにしました。これにより、ツール未導入や PATH 設定不備を、添付された例外オブジェクトを開かなくてもコンソール/テキストログだけで切り分けしやすくなります。対象: `Services/Caching/DotNetDisassemblerCache.cs`。テスト: `DotNetDisassemblerCacheTests.cs`（新規 1 件: `GetDisassemblerVersionAsync_WhenVersionLookupProcessStartFails_LogsWarningWithExceptionType`）。
 

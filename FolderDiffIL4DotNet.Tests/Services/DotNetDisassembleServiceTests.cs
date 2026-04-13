@@ -149,6 +149,28 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var invalidPath = Path.Combine(_rootDir, "壊\0れ.dll");
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CreateAsciiTempCopyIfNeeded", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var result = method.Invoke(service, [invalidPath]);
+
+            Assert.Null(result);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Failed to create ASCII temp copy", StringComparison.Ordinal)
+                    && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
+                    && entry.Exception is ArgumentException);
+        }
+
+        [Fact]
         public void BuildPrefetchCacheKeyPatterns_DotnetMuxer_IncludesCanonicalAndLegacyLabels()
         {
             // BuildPrefetchCacheKeyPatterns has been moved to ILCachePrefetcher
