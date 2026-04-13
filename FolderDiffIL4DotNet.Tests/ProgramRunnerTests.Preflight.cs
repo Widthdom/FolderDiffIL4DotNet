@@ -193,6 +193,7 @@ namespace FolderDiffIL4DotNet.Tests
                 RunPreflightValidator.ValidateReportLabel("bad<name"));
 
             Assert.Contains("provided as the third argument", exception.Message, StringComparison.Ordinal);
+            Assert.Contains("Folder name contains invalid character", exception.Message, StringComparison.Ordinal);
             Assert.Equal("reportLabel", exception.ParamName);
             var innerException = Assert.IsType<ArgumentException>(exception.InnerException);
             Assert.Contains("Folder name contains invalid character", innerException.Message, StringComparison.Ordinal);

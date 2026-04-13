@@ -64,7 +64,7 @@ namespace FolderDiffIL4DotNet.Runner
             catch (ArgumentException ex)
             {
                 throw new ArgumentException(
-                    $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name.",
+                    $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name: {ex.Message}",
                     nameof(reportLabel),
                     ex);
             }
