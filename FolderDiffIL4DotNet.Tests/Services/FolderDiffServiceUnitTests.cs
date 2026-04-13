@@ -105,7 +105,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is IOException
-                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'enumerating files'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("Mode=Local-optimized", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=IOException: Too many levels of symbolic links", StringComparison.Ordinal));
         }
 
         // When a new-side file is deleted between enumeration and comparison, FileNotFoundException
@@ -223,7 +225,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'enumerating files'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=UnauthorizedAccessException: access denied", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -309,7 +312,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'creating IL output directories'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFiles=1, NewFiles=1, UnionFiles=1", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=IOException: disk full", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -354,7 +359,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is DirectoryNotFoundException
-                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'creating IL output directories'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=DirectoryNotFoundException: parent directory missing", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -391,7 +397,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is FormatException
-                    && entry.Message.Contains($"An unexpected error occurred while diffing '{oldDir}' and '{newDir}'.", StringComparison.Ordinal));
+                    && entry.Message.Contains($"An unexpected error occurred while diffing '{oldDir}' and '{newDir}' during phase 'classifying files sequentially'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failure=FormatException: unexpected compare failure", StringComparison.Ordinal));
         }
 
         private static ConfigSettings CreateConfig(int maxParallelism, int ilPrecomputeBatchSize = ConfigSettings.DefaultILPrecomputeBatchSize) => new ConfigSettingsBuilder()

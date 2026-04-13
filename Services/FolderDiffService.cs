@@ -137,11 +137,15 @@ namespace FolderDiffIL4DotNet.Services
             ClearResultCollections();
 
             var folderDiffCompleted = false;
+            var currentPhase = "initializing folder diff";
+            int totalFilesRelativePathCount = 0;
+            int maxParallel = 1;
             try
             {
+                currentPhase = "enumerating files";
                 EnumerateAllFiles();
 
-                var totalFilesRelativePathCount = _executionStrategy.ComputeUnionFileCount(
+                totalFilesRelativePathCount = _executionStrategy.ComputeUnionFileCount(
                     _fileDiffResultLists.OldFilesAbsolutePath,
                     _fileDiffResultLists.NewFilesAbsolutePath);
                 if (totalFilesRelativePathCount == 0)
@@ -151,30 +155,39 @@ namespace FolderDiffIL4DotNet.Services
                     return;
                 }
 
-                var maxParallel = _executionStrategy.DetermineMaxParallel();
+                currentPhase = "determining parallelism";
+                maxParallel = _executionStrategy.DetermineMaxParallel();
+                currentPhase = "logging discovery statistics";
                 LogDiscoveryStats(totalFilesRelativePathCount, maxParallel);
+                currentPhase = "scanning assembly candidates";
                 ScanAssemblyCandidatesAndLog();
+                currentPhase = "validating IL filter strings";
                 ValidateILFilterStrings();
 
+                currentPhase = "precomputing IL cache";
                 await PrecomputeIlCachesAsync(maxParallel, cancellationToken);
 
                 // Begin the diff classification phase so the bar restarts at 0%.
                 // 差分分類フェーズを開始し、バーが 0% から再スタートする。
                 _progressReporter.BeginPhase(SPINNER_LABEL_FOLDER_DIFF);
 
+                currentPhase = "creating IL output directories";
                 CreateIlOutputDirectoriesIfNeeded();
 
                 var remainingNewFilesAbsolutePathHashSet = new HashSet<string>(_fileDiffResultLists.NewFilesAbsolutePath, _pathComparer);
                 int processedFileCount = 0;
                 if (maxParallel <= 1)
                 {
+                    currentPhase = "classifying files sequentially";
                     processedFileCount = await DetermineDiffsSequentiallyAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, cancellationToken);
                 }
                 else
                 {
+                    currentPhase = "classifying files in parallel";
                     processedFileCount = await DetermineDiffsInParallelAsync(remainingNewFilesAbsolutePathHashSet, totalFilesRelativePathCount, processedFileCount, maxParallel, cancellationToken);
                 }
 
+                currentPhase = "processing added files";
                 ProcessAddedFiles(remainingNewFilesAbsolutePathHashSet, processedFileCount, totalFilesRelativePathCount);
                 folderDiffCompleted = true;
             }
@@ -182,12 +195,12 @@ namespace FolderDiffIL4DotNet.Services
                 or IOException or UnauthorizedAccessException
                 or InvalidOperationException or NotSupportedException)
             {
-                LogExpectedFolderDiffFailure(ex);
+                LogExpectedFolderDiffFailure(ex, currentPhase, totalFilesRelativePathCount, maxParallel);
                 throw;
             }
             catch (Exception ex)
             {
-                LogUnexpectedFolderDiffFailure(ex);
+                LogUnexpectedFolderDiffFailure(ex, currentPhase, totalFilesRelativePathCount, maxParallel);
                 throw;
             }
             finally
@@ -199,22 +212,41 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private void LogExpectedFolderDiffFailure(Exception exception)
+        private void LogExpectedFolderDiffFailure(Exception exception, string currentPhase, int totalFilesRelativePathCount, int maxParallel)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
-                $"An error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.",
+                BuildFailureMessage(
+                    prefix: "An error occurred while diffing",
+                    exception,
+                    currentPhase,
+                    totalFilesRelativePathCount,
+                    maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
-        private void LogUnexpectedFolderDiffFailure(Exception exception)
+        private void LogUnexpectedFolderDiffFailure(Exception exception, string currentPhase, int totalFilesRelativePathCount, int maxParallel)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
-                $"An unexpected error occurred while diffing '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}'.",
+                BuildFailureMessage(
+                    prefix: "An unexpected error occurred while diffing",
+                    exception,
+                    currentPhase,
+                    totalFilesRelativePathCount,
+                    maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
+        }
+
+        private string BuildFailureMessage(string prefix, Exception exception, string currentPhase, int totalFilesRelativePathCount, int maxParallel)
+        {
+            var oldCount = _fileDiffResultLists.OldFilesAbsolutePath.Count;
+            var newCount = _fileDiffResultLists.NewFilesAbsolutePath.Count;
+            return $"{prefix} '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}' during phase '{currentPhase}'. "
+                + $"Mode={GetExecutionModeLabel()}, MaxParallel={maxParallel}, OldFiles={oldCount}, NewFiles={newCount}, UnionFiles={totalFilesRelativePathCount}. "
+                + $"Failure={exception.GetType().Name}: {exception.Message}";
         }
 
         private static StringComparer DetermineRelativePathComparer(string oldFolderAbsolutePath, string newFolderAbsolutePath)
@@ -281,10 +313,12 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private void LogExecutionMode()
         {
-            var mode = _optimizeForNetworkShares ? MODE_SERVER_NAS_OPTIMIZED : MODE_LOCAL_OPTIMIZED;
             var reason = $"manual={_config.OptimizeForNetworkShares}, auto={_config.AutoDetectNetworkShares}, oldIsNetwork={_detectedNetworkOld}, newIsNetwork={_detectedNetworkNew}";
-            _logger.LogMessage(AppLogLevel.Info, $"Execution mode: {mode} ({reason})", shouldOutputMessageToConsole: true);
+            _logger.LogMessage(AppLogLevel.Info, $"Execution mode: {GetExecutionModeLabel()} ({reason})", shouldOutputMessageToConsole: true);
         }
+
+        private string GetExecutionModeLabel()
+            => _optimizeForNetworkShares ? MODE_SERVER_NAS_OPTIMIZED : MODE_LOCAL_OPTIMIZED;
 
         /// <summary>
         /// Clears all classification results from the previous run.

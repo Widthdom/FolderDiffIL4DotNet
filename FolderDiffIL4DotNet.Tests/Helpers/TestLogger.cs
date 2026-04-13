@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using FolderDiffIL4DotNet.Services;
@@ -12,6 +13,7 @@ namespace FolderDiffIL4DotNet.Tests.Helpers
     internal sealed class TestLogger : ILoggerService
     {
         private readonly Action<TestLogEntry>? _onEntry;
+        private readonly ConcurrentQueue<TestLogEntry> _entries = new();
 
         /// <summary>
         /// Creates a TestLogger with default settings (no callback, null log file path).
@@ -47,13 +49,13 @@ namespace FolderDiffIL4DotNet.Tests.Helpers
         /// All captured log entries.
         /// キャプチャされた全ログエントリ。
         /// </summary>
-        public List<TestLogEntry> Entries { get; } = new();
+        public IReadOnlyList<TestLogEntry> Entries => _entries.ToArray();
 
         /// <summary>
         /// Convenience projection of captured messages (for simple string-based assertions).
         /// キャプチャされたメッセージの簡易プロジェクション（文字列ベースのアサーション用）。
         /// </summary>
-        public IEnumerable<string> Messages => Entries.Select(e => e.Message);
+        public IEnumerable<string> Messages => _entries.Select(e => e.Message);
 
         /// <inheritdoc />
         public void Initialize() { }
@@ -69,7 +71,7 @@ namespace FolderDiffIL4DotNet.Tests.Helpers
         public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
         {
             var entry = new TestLogEntry(logLevel, message, exception);
-            Entries.Add(entry);
+            _entries.Enqueue(entry);
             _onEntry?.Invoke(entry);
         }
     }

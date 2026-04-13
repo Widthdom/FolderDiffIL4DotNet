@@ -3,7 +3,7 @@ namespace FolderDiffIL4DotNet.Services.ReportFormatters
     /// <summary>
     /// <see cref="IReportFormatter"/> adapter for SBOM (Software Bill of Materials) generation.
     /// Delegates to <see cref="SbomGenerateService.GenerateSbom"/>.
-    /// SBOM（ソフ��ウェア部品表）生成用の <see cref="IReportFormatter"/> アダプター。
+    /// SBOM（ソフトウェア部品表）生成用の <see cref="IReportFormatter"/> アダプター。
     /// <see cref="SbomGenerateService.GenerateSbom"/> に委譲します。
     /// </summary>
     internal sealed class SbomReportFormatter : IReportFormatter

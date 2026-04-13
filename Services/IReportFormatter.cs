@@ -24,7 +24,7 @@ namespace FolderDiffIL4DotNet.Services
         /// Execution order. Formatters with lower values run first.
         /// Some formatters depend on outputs from earlier ones (e.g. audit log reads report hashes).
         /// 実行順序。値が小さいフォーマッターが先に実行されます。
-        /// 一部のフォーマッターは先行出力に依存します（例: 監査ログがレポートハ���シュを読む）。
+        /// 一部のフォーマッターは先行出力に依存します（例: 監査ログがレポートハッシュを読む）。
         /// </summary>
         int Order { get; }
 
