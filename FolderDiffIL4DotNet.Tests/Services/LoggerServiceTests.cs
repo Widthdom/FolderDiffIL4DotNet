@@ -481,6 +481,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.CleanupOldLogFiles(-1);
 
                 var logText = File.ReadAllText(active);
+                Assert.Contains("ArgumentOutOfRangeException", logText, StringComparison.Ordinal);
                 Assert.Contains("MaxLogGenerations must be a non-negative integer.", logText, StringComparison.Ordinal);
                 Assert.DoesNotContain("integer..", logText, StringComparison.Ordinal);
                 Assert.Contains("maxLogGenerations", logText, StringComparison.Ordinal);

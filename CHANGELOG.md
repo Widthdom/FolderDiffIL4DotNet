@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Logger cleanup warnings for invalid retention settings now retain the exception type** — `LoggerService.CleanupOldLogFiles()` now includes `ArgumentOutOfRangeException` in the warning text when `maxLogGenerations` is negative, making invalid log-retention configuration easier to diagnose from the text log alone. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests.cs` (1 updated: `CleanupOldLogFiles_WithNegativeGeneration_LogsSingleReadableWarningMessage`).
+
 - **IL cache lookup warnings now retain the exception type in the message body** — `DotNetDisassembleService` now includes the concrete recoverable path/I/O exception type when an IL cache lookup fails and the code falls back to executing the disassembler, making this best-effort warning consistent with the repository's other hardened diagnostics. Affected: `Services/DotNetDisassembleService.cs`. Tests: `DotNetDisassembleServiceTests.UnitAndPrefetch.cs` (1 new: `TryCacheHitAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`).
 
 - **ASCII temp-copy warnings now retain the exception type in the message body** — `DotNetDisassembleService` now includes the concrete recoverable path/I/O exception type when creating a non-ASCII temporary assembly copy fails, keeping this best-effort warning consistent with the repository's other hardened diagnostics. Affected: `Services/DotNetDisassembleService.VersionLabel.cs`. Tests: `DotNetDisassembleServiceTests.cs` (1 new: `CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType`).
@@ -1381,6 +1383,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **無効なログ保持設定に対する logger cleanup 警告が例外型も保持するよう改善** — `LoggerService.CleanupOldLogFiles()` が負の `maxLogGenerations` を受け取った場合、警告本文にも `ArgumentOutOfRangeException` を含めるようにしました。これにより、不正なログ保持設定をテキストログだけでも切り分けやすくなります。対象: `Services/LoggerService.cs`。テスト: `LoggerServiceTests.cs`（更新 1 件: `CleanupOldLogFiles_WithNegativeGeneration_LogsSingleReadableWarningMessage`）。
 
 - **IL キャッシュ参照失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassembleService` が IL キャッシュ参照に失敗して disassembler 実行へフォールバックする際、回復可能なパス/I/O 例外の具体的な型も警告本文へ含めるようにしました。これにより、このベストエフォート警告も他の強化済み診断ログと粒度が揃います。対象: `Services/DotNetDisassembleService.cs`。テスト: `DotNetDisassembleServiceTests.UnitAndPrefetch.cs`（新規 1 件: `TryCacheHitAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`）。
 
