@@ -187,18 +187,15 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
-        public void ValidateReportLabel_InvalidLabel_LogsArgumentExceptionAndRethrows()
+        public void ValidateReportLabel_InvalidLabel_WrapsArgumentExceptionWithContext()
         {
-            var logger = new TestLogger(logFileAbsolutePath: "test.log");
-
             var exception = Assert.Throws<ArgumentException>(() =>
-                RunPreflightValidator.ValidateReportLabel(logger, "bad<name"));
+                RunPreflightValidator.ValidateReportLabel("bad<name"));
 
-            var entry = Assert.Single(logger.Entries);
-            Assert.Equal(AppLogLevel.Error, entry.LogLevel);
-            Assert.Contains("invalid as a folder name", entry.Message, StringComparison.Ordinal);
-            Assert.Contains(nameof(ArgumentException), entry.Message, StringComparison.Ordinal);
-            Assert.Same(exception, entry.Exception);
+            Assert.Contains("provided as the third argument", exception.Message, StringComparison.Ordinal);
+            Assert.Equal("reportLabel", exception.ParamName);
+            var innerException = Assert.IsType<ArgumentException>(exception.InnerException);
+            Assert.Contains("Folder name contains invalid character", innerException.Message, StringComparison.Ordinal);
         }
 
         [Fact]

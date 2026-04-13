@@ -55,7 +55,7 @@ namespace FolderDiffIL4DotNet.Runner
         /// Validates that the report label is a legal folder name.
         /// レポートラベルをフォルダ名として検証する。
         /// </summary>
-        internal static void ValidateReportLabel(ILoggerService logger, string reportLabel)
+        internal static void ValidateReportLabel(string reportLabel)
         {
             try
             {
@@ -63,12 +63,10 @@ namespace FolderDiffIL4DotNet.Runner
             }
             catch (ArgumentException ex)
             {
-                logger.LogMessage(
-                    AppLogLevel.Error,
-                    $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name ({ex.GetType().Name}): {ex.Message}",
-                    shouldOutputMessageToConsole: true,
+                throw new ArgumentException(
+                    $"The value '{reportLabel}', provided as the third argument (reportLabel), is invalid as a folder name.",
+                    nameof(reportLabel),
                     ex);
-                throw;
             }
         }
 

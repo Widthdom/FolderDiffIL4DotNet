@@ -344,7 +344,7 @@ namespace FolderDiffIL4DotNet
                         shouldOutputMessageToConsole: true);
                 }
 
-                RunPreflightValidator.ValidateReportLabel(_logger, reportLabel);
+                RunPreflightValidator.ValidateReportLabel(reportLabel);
                 string reportsFolderAbsolutePath = Path.Combine(reportsRootDirAbsolutePath, reportLabel);
                 RunPreflightValidator.ValidateRunDirectories(_logger, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Info, LOG_ARGS_VALIDATION_COMPLETED, shouldOutputMessageToConsole: true);

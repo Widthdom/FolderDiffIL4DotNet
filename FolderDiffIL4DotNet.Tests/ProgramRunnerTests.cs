@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -40,7 +41,15 @@ namespace FolderDiffIL4DotNet.Tests
                     var exitCode = await runner.RunAsync(new[] { oldDir, newDir, "invalid/name", "--no-pause" });
 
                     Assert.Equal(2, exitCode);
-                    Assert.Contains(logger.Messages, message => message.Contains("provided as the third argument", StringComparison.Ordinal));
+                    Assert.Equal(
+                        1,
+                        logger.Entries.Count(entry =>
+                            entry.LogLevel == AppLogLevel.Error &&
+                            entry.Message.Contains("provided as the third argument", StringComparison.Ordinal)));
+                    var errorEntry = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
+                    Assert.Contains("provided as the third argument", errorEntry.Message, StringComparison.Ordinal);
+                    Assert.Equal("reportLabel", Assert.IsType<ArgumentException>(errorEntry.Exception).ParamName);
+                    Assert.IsType<ArgumentException>(errorEntry.Exception.InnerException);
                     Assert.DoesNotContain(logger.Messages, message => message.Contains("Config file not found", StringComparison.Ordinal));
                 });
             }
