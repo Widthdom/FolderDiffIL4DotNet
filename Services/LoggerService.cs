@@ -198,7 +198,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                LogMessage(AppLogLevel.Warning, ex.Message, shouldOutputMessageToConsole: true, ex);
+                LogMessage(AppLogLevel.Warning, $"CleanupOldLogFiles failed ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
             catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {

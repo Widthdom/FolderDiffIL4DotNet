@@ -198,7 +198,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal("no disassembler", ex.Message);
             Assert.Contains(logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains("IL diff failed", StringComparison.Ordinal));
+                    && entry.Message.Contains("IL diff failed", StringComparison.Ordinal)
+                    && entry.Message.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 
         [Fact]

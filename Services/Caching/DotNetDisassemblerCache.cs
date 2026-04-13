@@ -194,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}'): {ex.Message}",
+                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}') ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }

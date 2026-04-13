@@ -350,7 +350,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsFileIoOrOperationRecoverable(ex))
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand}: {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to get IL from cache for {dotNetAssemblyFileAbsolutePath} with command {disassembleCommand} ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                 return (false, null, null);
             }
         }

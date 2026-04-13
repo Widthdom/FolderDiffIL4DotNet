@@ -9,6 +9,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Logger cleanup warnings for invalid retention settings now retain the exception type** — `LoggerService.CleanupOldLogFiles()` now includes `ArgumentOutOfRangeException` in the warning text when `maxLogGenerations` is negative, making invalid log-retention configuration easier to diagnose from the text log alone. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests.cs` (1 updated: `CleanupOldLogFiles_WithNegativeGeneration_LogsSingleReadableWarningMessage`).
+
+- **IL cache lookup warnings now retain the exception type in the message body** — `DotNetDisassembleService` now includes the concrete recoverable path/I/O exception type when an IL cache lookup fails and the code falls back to executing the disassembler, making this best-effort warning consistent with the repository's other hardened diagnostics. Affected: `Services/DotNetDisassembleService.cs`. Tests: `DotNetDisassembleServiceTests.UnitAndPrefetch.cs` (1 new: `TryCacheHitAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`).
+
+- **ASCII temp-copy warnings now retain the exception type in the message body** — `DotNetDisassembleService` now includes the concrete recoverable path/I/O exception type when creating a non-ASCII temporary assembly copy fails, keeping this best-effort warning consistent with the repository's other hardened diagnostics. Affected: `Services/DotNetDisassembleService.VersionLabel.cs`. Tests: `DotNetDisassembleServiceTests.cs` (1 new: `CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType`).
+
+- **Disassembler version-lookup warnings now retain the exception type in the message body** — `DotNetDisassemblerCache` now writes the concrete recoverable process exception type into the warning text when version probing fails, making missing-tool/PATH issues easier to diagnose from console/text logs before inspecting the attached exception payload. Affected: `Services/Caching/DotNetDisassemblerCache.cs`. Tests: `DotNetDisassemblerCacheTests.cs` (1 new: `GetDisassemblerVersionAsync_WhenVersionLookupProcessStartFails_LogsWarningWithExceptionType`).
+
+- **Parallel text-diff fallback warnings now include the exception type in the message body** — `FileDiffService` now writes the concrete exception type into the warning text when chunk-parallel text comparison falls back to sequential comparison after recoverable path/I/O failures, making console/text-log triage easier even before inspecting the attached exception payload. Affected: `Services/FileDiffService.TextComparison.cs`. Tests: `FileDiffServiceTests.cs` (2 updated: `FilesAreEqualAsync_WhenPrimaryTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`, `FilesAreEqualAsync_WhenParallelTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`), `FileDiffServiceUnitTests.TextComparison.cs` (1 updated: `FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows`).
+
+- **IL diff failure logs now retain the exception type alongside the message** — `FileDiffService` now records the concrete exception type when IL disassembly/comparison fails with `InvalidOperationException`, aligning this path with the repository's other hardened diagnostics and making missing-disassembler failures easier to triage from text/JSON logs. Affected: `Services/FileDiffService.cs`. Tests: `FileDiffServiceUnitTests.ILComparison.cs` (1 updated: `FilesAreEqualAsync_WhenILDiffThrowsInvalidOperationException_LogsErrorAndRethrows`).
+
+- **FolderDiffService failure logs now preserve execution phase and known run context without placeholder values** — Expected and unexpected folder-diff failures now include the failing phase, execution mode, and any run context that is already known at that point. Early discovery failures no longer claim placeholder parallelism or zero file counts, while partial discovery failures still retain any concrete per-side counts already collected before the exception. Later failures continue to include concrete counts plus the exception type/message in the log message itself. Affected: `Services/FolderDiffService.cs`. Tests: `FolderDiffServiceUnitTests.cs` (5 updated assertions + 1 new test covering partial discovery failure logging).
+
+- **TestLogger is now safe under parallel test logging** — The shared test helper now uses a thread-safe queue so parallel logging paths can capture entries without `List<T>.Add` races, and new helper tests pin concurrent capture plus callback integrity. Affected: `FolderDiffIL4DotNet.Tests/Helpers/TestLogger.cs`, `FolderDiffIL4DotNet.Tests/TestLoggerTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `TestLoggerTests.cs` (2 new: `LogMessage_ConcurrentCalls_CapturesAllEntriesWithoutLosingMessages`, `Messages_ReturnsCapturedMessagesInInsertionOrderForSequentialWrites`).
+
+#### Documentation
+
+- **Removed two corrupted replacement characters surfaced by `cdidx validate`** — Fixed garbled Japanese text in report-formatter XML documentation so source comments match the current formatter architecture and `cdidx validate` no longer reports those files. Affected: `Services/IReportFormatter.cs`, `Services/ReportFormatters/SbomReportFormatter.cs`.
+
 ### [1.16.10] - 2026-04-14
 
 #### Documentation
@@ -1359,6 +1381,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **無効なログ保持設定に対する logger cleanup 警告が例外型も保持するよう改善** — `LoggerService.CleanupOldLogFiles()` が負の `maxLogGenerations` を受け取った場合、警告本文にも `ArgumentOutOfRangeException` を含めるようにしました。これにより、不正なログ保持設定をテキストログだけでも切り分けやすくなります。対象: `Services/LoggerService.cs`。テスト: `LoggerServiceTests.cs`（更新 1 件: `CleanupOldLogFiles_WithNegativeGeneration_LogsSingleReadableWarningMessage`）。
+
+- **IL キャッシュ参照失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassembleService` が IL キャッシュ参照に失敗して disassembler 実行へフォールバックする際、回復可能なパス/I/O 例外の具体的な型も警告本文へ含めるようにしました。これにより、このベストエフォート警告も他の強化済み診断ログと粒度が揃います。対象: `Services/DotNetDisassembleService.cs`。テスト: `DotNetDisassembleServiceTests.UnitAndPrefetch.cs`（新規 1 件: `TryCacheHitAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`）。
+
+- **ASCII 一時コピー失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassembleService` が非 ASCII パス対策の一時アセンブリコピー作成に失敗した際、回復可能なパス/I/O 例外の具体的な型も警告本文へ含めるようにしました。これにより、このベストエフォート警告も他の強化済み診断ログと粒度が揃います。対象: `Services/DotNetDisassembleService.VersionLabel.cs`。テスト: `DotNetDisassembleServiceTests.cs`（新規 1 件: `CreateAsciiTempCopyIfNeeded_WhenCopyThrowsRecoverableException_LogsWarningWithExceptionType`）。
+
+- **disassembler バージョン取得失敗警告が本文に例外型も保持するよう改善** — `DotNetDisassemblerCache` がバージョン文字列の取得に失敗した際、回復可能なプロセス実行例外の具体的な型も警告本文へ含めるようにしました。これにより、ツール未導入や PATH 設定不備を、添付された例外オブジェクトを開かなくてもコンソール/テキストログだけで切り分けしやすくなります。対象: `Services/Caching/DotNetDisassemblerCache.cs`。テスト: `DotNetDisassemblerCacheTests.cs`（新規 1 件: `GetDisassemblerVersionAsync_WhenVersionLookupProcessStartFails_LogsWarningWithExceptionType`）。
+
+- **並列テキスト差分の逐次フォールバック警告が本文に例外型も含むよう改善** — `FileDiffService` が回復可能なパス/I/O 失敗のあとでチャンク並列テキスト比較から逐次比較へフォールバックする際、警告本文にも具体的な例外型を書き出すようにしました。これにより、添付された例外オブジェクトを開かなくても、コンソールやテキストログだけで切り分けしやすくなります。対象: `Services/FileDiffService.TextComparison.cs`。テスト: `FileDiffServiceTests.cs`（更新 2 件: `FilesAreEqualAsync_WhenPrimaryTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`, `FilesAreEqualAsync_WhenParallelTextDiffThrows_LogsWarningAndFallsBackToSequentialDiff`）、`FileDiffServiceUnitTests.TextComparison.cs`（更新 1 件: `FilesAreEqualAsync_WhenSequentialTextCompareThrowsUnauthorizedAccessException_LogsWarningThenErrorAndRethrows`）。
+
+- **IL 差分失敗ログが例外メッセージに加えて例外型も保持するよう改善** — `FileDiffService` が `InvalidOperationException` による IL 逆アセンブル/比較失敗を記録する際、具体的な例外型もログに含めるようにしました。これにより、他の強化済み診断ログと粒度が揃い、逆アセンブラ未解決時の調査がテキスト/JSON ログだけでもしやすくなります。対象: `Services/FileDiffService.cs`。テスト: `FileDiffServiceUnitTests.ILComparison.cs`（更新 1 件: `FilesAreEqualAsync_WhenILDiffThrowsInvalidOperationException_LogsErrorAndRethrows`）。
+
+- **FolderDiffService の失敗ログに未確定プレースホルダを出さず、判明済みの実行文脈だけを保持するよう改善** — 想定内/想定外どちらのフォルダ差分失敗でも、失敗フェーズ、実行モード、およびその時点で確定している実行文脈だけをログ本文へ含めるようにしました。早期の discovery 失敗では仮の並列度や 0 件の件数を主張せず、old 側だけ列挙済みで new 側列挙中に失敗したような部分的 discovery 失敗では、判明済みの片側件数だけを保持します。後段の失敗では引き続き確定済み件数と具体的な例外型/メッセージを保持します。対象: `Services/FolderDiffService.cs`。テスト: `FolderDiffServiceUnitTests.cs`（既存アサーション 5件更新 + 部分的 discovery 失敗ログ確認 1件追加）。
+
+- **TestLogger を並列テスト下でも安全にしました** — 共有テストヘルパーの内部蓄積をスレッドセーフなキューへ変更し、並列ログ経路でも `List<T>.Add` 競合で取りこぼしたり例外化したりしないようにしました。あわせて、並列キャプチャとコールバック整合性を固定する新規ヘルパーテストを追加しました。対象: `FolderDiffIL4DotNet.Tests/Helpers/TestLogger.cs`, `FolderDiffIL4DotNet.Tests/TestLoggerTests.cs`, `doc/TESTING_GUIDE.md`。テスト: `TestLoggerTests.cs`（2件追加: `LogMessage_ConcurrentCalls_CapturesAllEntriesWithoutLosingMessages`, `Messages_ReturnsCapturedMessagesInInsertionOrderForSequentialWrites`）。
+
+#### ドキュメント
+
+- **`cdidx validate` で検出された置換文字 2 件を除去** — レポートフォーマッター関連の XML ドキュメントコメントに混入していた文字化けを修正し、現行アーキテクチャ説明とコメントを一致させました。対象: `Services/IReportFormatter.cs`, `Services/ReportFormatters/SbomReportFormatter.cs`。
 
 ### [1.16.10] - 2026-04-14
 
