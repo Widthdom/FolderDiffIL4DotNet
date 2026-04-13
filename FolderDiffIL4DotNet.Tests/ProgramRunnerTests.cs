@@ -49,9 +49,10 @@ namespace FolderDiffIL4DotNet.Tests
                     var errorEntry = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
                     Assert.Contains("provided as the third argument", errorEntry.Message, StringComparison.Ordinal);
                     Assert.Contains("invalid character", errorEntry.Message, StringComparison.Ordinal);
+                    Assert.Equal(1, errorEntry.Message.Split("(Parameter 'reportLabel')", StringSplitOptions.None).Length - 1);
                     var exception = Assert.IsType<ArgumentException>(errorEntry.Exception);
-                    Assert.Equal("reportLabel", exception.ParamName);
-                    Assert.IsType<ArgumentException>(exception.InnerException);
+                    Assert.Null(exception.ParamName);
+                    Assert.Equal("reportLabel", Assert.IsType<ArgumentException>(exception.InnerException).ParamName);
                     Assert.DoesNotContain(logger.Messages, message => message.Contains("Config file not found", StringComparison.Ordinal));
                 });
             }
