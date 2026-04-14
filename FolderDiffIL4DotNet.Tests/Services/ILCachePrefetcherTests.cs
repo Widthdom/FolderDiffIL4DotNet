@@ -6,6 +6,7 @@ using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -145,6 +146,31 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Fact]
+        public async Task PrefetchIlCacheAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var cacheDir = Path.Combine(_rootDir, "cache-failure");
+            var ilCache = new ILCache(cacheDir, logger);
+            var disassemblerCache = new DotNetDisassemblerCache(logger);
+            SeedAllCandidateDisassemblerVersions(disassemblerCache, "1.2.3");
+            var prefetcher = new ILCachePrefetcher(CreateConfig(enableIlCache: true), ilCache, logger, disassemblerCache);
+
+            var invalidAssemblyPath = Path.Combine(_rootDir, "prefetch-target-dir");
+            Directory.CreateDirectory(invalidAssemblyPath);
+
+            var exception = await Record.ExceptionAsync(() => prefetcher.PrefetchIlCacheAsync(new[] { invalidAssemblyPath }, maxParallel: 1));
+
+            Assert.Null(exception);
+            var warning = Assert.Single(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains($"Failed to prefetch IL cache for assembly '{invalidAssemblyPath}'", StringComparison.Ordinal));
+            Assert.Contains("Failed to prefetch IL cache for assembly", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(warning.Exception!.GetType().Name, warning.Message, StringComparison.Ordinal);
+            Assert.Contains(warning.Exception.Message, warning.Message, StringComparison.Ordinal);
+        }
+
         // ── Constructor validation / コンストラクタバリデーション ──────────────
 
         [Fact]
@@ -202,6 +228,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 dict[command] = version;
             }
+        }
+
+        private static void SeedAllCandidateDisassemblerVersions(DotNetDisassemblerCache cache, string version)
+        {
+            SeedDisassemblerVersionCache(cache, Constants.DOTNET_ILDASM, version);
+            SeedDisassemblerVersionCache(cache, Path.Combine(DisassemblerHelper.UserDotnetToolsDirectory, Constants.DOTNET_ILDASM), version);
+            SeedDisassemblerVersionCache(cache, $"{Constants.DOTNET_MUXER} {Constants.ILDASM_LABEL}", version);
+            SeedDisassemblerVersionCache(cache, Constants.ILSPY_CMD, version);
+            SeedDisassemblerVersionCache(cache, Path.Combine(DisassemblerHelper.UserDotnetToolsDirectory, Constants.ILSPY_CMD), version);
         }
 
         private static void WriteShellScript(string path, string version, int exitCode)

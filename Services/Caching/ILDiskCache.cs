@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -46,9 +47,14 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Reads the cache file for the given key. Returns null on miss or read failure.
         /// 指定キーのキャッシュファイルを読み込みます。未ヒットまたは読み込み失敗時は null。
         /// </summary>
-        internal async Task<string?> TryReadAsync(string cacheKey)
+        internal async Task<string?> TryReadAsync(string? cacheKey)
         {
             if (!_isEnabled)
+            {
+                return null;
+            }
+
+            if (!TryValidateCacheKey(cacheKey, "read"))
             {
                 return null;
             }
@@ -76,9 +82,14 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Writes IL text to a cache file and enforces the disk quota afterward.
         /// 指定キーのキャッシュファイルを書き込み、ディスククォータを適用します。
         /// </summary>
-        internal async Task WriteAsync(string cacheKey, string ilText)
+        internal async Task WriteAsync(string? cacheKey, string ilText)
         {
             if (!_isEnabled)
+            {
+                return;
+            }
+
+            if (!TryValidateCacheKey(cacheKey, "write"))
             {
                 return;
             }
@@ -101,9 +112,14 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Attempts to delete the cache file for the given key (best-effort).
         /// 指定キーのキャッシュファイル削除を試みます（ベストエフォート）。
         /// </summary>
-        internal void Remove(string cacheKey)
+        internal void Remove(string? cacheKey)
         {
-            if (!_isEnabled || cacheKey == null)
+            if (!_isEnabled)
+            {
+                return;
+            }
+
+            if (!TryValidateCacheKey(cacheKey, "remove"))
             {
                 return;
             }
@@ -181,6 +197,24 @@ namespace FolderDiffIL4DotNet.Services.Caching
             _isEnabled && (_maxDiskFileCount > 0 || _maxDiskBytes > 0);
 
         /// <summary>
+        /// Validates the cache key before building a disk path and logs a warning when it is blank.
+        /// ディスクパス生成前にキャッシュキーを検証し、空キーの場合は警告を記録します。
+        /// </summary>
+        private bool TryValidateCacheKey([NotNullWhen(true)] string? cacheKey, string operation)
+        {
+            if (!string.IsNullOrWhiteSpace(cacheKey))
+            {
+                return true;
+            }
+
+            _logger.LogMessage(
+                AppLogLevel.Warning,
+                $"Skipped IL disk cache {operation} because the cache key was null, empty, or whitespace.",
+                shouldOutputMessageToConsole: true);
+            return false;
+        }
+
+        /// <summary>
         /// Builds the absolute path of a cache file from a cache key.
         /// キャッシュキーからキャッシュファイルの絶対パスを生成します。
         /// </summary>
@@ -229,7 +263,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 _logger.LogMessage(
                     AppLogLevel.Info,
-                    $"Disk quota trim: removed={removed}, remain={fileCount}, bytes={totalBytes}",
+                    $"Disk quota trim: directory='{_cacheDirectoryAbsolutePath}', removed={removed}, remain={fileCount}, bytes={totalBytes}, maxFiles={_maxDiskFileCount}, maxBytes={_maxDiskBytes}",
                     shouldOutputMessageToConsole: true);
             }
         }

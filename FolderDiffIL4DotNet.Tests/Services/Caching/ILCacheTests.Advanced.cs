@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
 using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
@@ -342,8 +343,11 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var ex = await Record.ExceptionAsync(() => cache.PrecomputeAsync(new[] { validFile, "bad\0path.dll" }, maxParallel: 1));
 
             Assert.Null(ex);
-            Assert.Contains(logger.Messages, m => m.Contains("Failed to precompute SHA256", StringComparison.Ordinal));
-            Assert.Contains(logger.Messages, m => m.Contains("ArgumentException", StringComparison.Ordinal));
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to precompute SHA256", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ArgumentException", warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
+            Assert.Contains(warning.Exception.Message, warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]

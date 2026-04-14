@@ -249,6 +249,41 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Fact]
+        public void CleanupOldLogFiles_WhenDirectoryPathIsActuallyAFile_LogsWarningWithExceptionTypeAndDoesNotThrow()
+        {
+            var logger = new LoggerService();
+            var originalOut = Console.Out;
+            using var writer = new StringWriter();
+            var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+            var filePath = Path.Combine(tempDir, "not-a-directory.log");
+            File.WriteAllText(filePath, "x");
+            SetPrivateField(logger, "_logDirectoryAbsolutePath", filePath);
+            SetPrivateField(logger, "_logFileAbsolutePath", null);
+
+            try
+            {
+                Console.SetOut(writer);
+                var expected = Record.Exception(() => Directory.GetFiles(filePath, "log_*.log"));
+                Assert.NotNull(expected);
+
+                var ex = Record.Exception(() => logger.CleanupOldLogFiles(maxLogGenerations: 1));
+
+                Assert.Null(ex);
+                var consoleText = writer.ToString();
+                Assert.Contains("Failed to clean up old log files in", consoleText, StringComparison.Ordinal);
+                Assert.Contains(filePath, consoleText, StringComparison.Ordinal);
+                Assert.Contains(expected.GetType().Name, consoleText, StringComparison.Ordinal);
+                Assert.Contains(expected.Message, consoleText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                TryDeleteDirectory(tempDir);
+            }
+        }
+
         /// <summary>
         /// Verifies that concurrent LogMessage calls do not throw IOException.
         /// 並列 LogMessage 呼び出しで IOException が発生しないことを検証する。
