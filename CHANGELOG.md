@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **ILDiskCache warnings now retain cache directory and cache-key length context** — Recoverable read/write/remove failures in `ILDiskCache` now include the cache directory and cache-key length, and blank-key guard warnings now also state the target directory. This keeps disk-layer diagnostics actionable without changing cache behavior. Affected: `Services/Caching/ILDiskCache.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `ILDiskCacheTests.cs` (3 new, 3 updated).
+
 - **Plugin hook failure warnings now retain hook order and phase** — Best-effort `IFileComparisonHook` failures in `FileDiffService` now log the failing phase (`BeforeCompare` / `AfterCompare`) together with the hook order before continuing. This keeps plugin triage readable from text/JSON logs without changing the hook execution policy. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `FileDiffServiceUnitTests.Hooks.cs` (2 updated).
 
 - **FileDiffService error logs now retain the last comparison stage and run options** — Per-file failures in `FilesAreEqualAsync()` now preserve the relative path, the last completed/active comparison stage (`BeforeCompare` hooks, SHA256, IL, text, or `AfterCompare` hooks), `SkipIL`, and `MaxParallel` in the error message before the exception is rethrown. This improves text/JSON-log triage without changing file-classification behavior. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.HashAndErrorHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.TextComparison.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `FileDiffServiceUnitTests.HashAndErrorHandling.cs` (3 updated), `FileDiffServiceUnitTests.TextComparison.cs` (1 updated).
@@ -1439,6 +1441,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **README.md の置換文字を除去** — `cdidx validate` で検出された日本語文字化け 2 箇所を修正し、CLI 実行例と SBOM 設定説明が正しく読めるようにしました。対象: `README.md`。
 
 #### 修正
+
+- **ILDiskCache の warning がキャッシュディレクトリと cache key 長も保持するよう改善** — `ILDiskCache` の recoverable な read/write/remove 失敗時に、warning 本文へキャッシュディレクトリと cache key 長も含めるようにしました。あわせて、空キー防御 warning でも対象ディレクトリを明示します。キャッシュ挙動は変えず、ディスク層診断だけを追いやすくしています。対象: `Services/Caching/ILDiskCache.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `ILDiskCacheTests.cs`（新規 3 件、更新 3 件）。
 
 - **プラグインフック失敗 warning が hook order とフェーズも保持するよう改善** — `FileDiffService` がベストエフォートで継続する `IFileComparisonHook` 失敗時に、warning 本文へ失敗フェーズ（`BeforeCompare` / `AfterCompare`）と hook order も含めるようにしました。フック実行ポリシーは変えず、text/JSON ログだけでプラグイン切り分けしやすくしています。対象: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `FileDiffServiceUnitTests.Hooks.cs`（更新 2 件）。
 

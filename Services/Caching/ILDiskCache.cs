@@ -72,7 +72,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogFileOperationFailure("read", cacheFileAbsolutePath, ex);
+                LogFileOperationFailure("read", cacheKey, cacheFileAbsolutePath, ex);
             }
 
             return null;
@@ -104,7 +104,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogFileOperationFailure("write", cacheFileAbsolutePath, ex);
+                LogFileOperationFailure("write", cacheKey, cacheFileAbsolutePath, ex);
             }
         }
 
@@ -137,11 +137,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction ({ex.GetType().Name}): {ex.Message}",
-                    shouldOutputMessageToConsole: true,
-                    ex);
+                LogRemoveFailure(cacheKey, cacheFileAbsolutePath, ex);
             }
         }
 
@@ -209,7 +205,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Skipped IL disk cache {operation} because the cache key was null, empty, or whitespace.",
+                $"Skipped IL disk cache {operation} because the cache key was null, empty, or whitespace. Directory='{_cacheDirectoryAbsolutePath}'.",
                 shouldOutputMessageToConsole: true);
             return false;
         }
@@ -312,11 +308,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
         /// Logs a cache-file read/write failure.
         /// キャッシュファイル読み書き失敗をログします。
         /// </summary>
-        private void LogFileOperationFailure(string operation, string cacheFileAbsolutePath, Exception exception)
+        private void LogFileOperationFailure(string operation, string cacheKey, string cacheFileAbsolutePath, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
+                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
@@ -329,10 +325,21 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to delete cache file '{cacheFileAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
+                $"Failed to delete cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
+
+        private void LogRemoveFailure(string cacheKey, string cacheFileAbsolutePath, Exception exception)
+        {
+            _logger.LogMessage(
+                AppLogLevel.Warning,
+                $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction in directory '{_cacheDirectoryAbsolutePath}' ({DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
+                shouldOutputMessageToConsole: true,
+                exception);
+        }
+
+        private static string DescribeCacheKey(string cacheKey) => $"cacheKeyLength={cacheKey.Length}";
 
         private static void PrepareCacheFileForOverwrite(string cacheFileAbsolutePath)
         {
