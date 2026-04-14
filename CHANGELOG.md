@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Post-process action warnings now retain execution position and order** — Best-effort `IPostProcessAction` failures in `DiffPipelineExecutor` now log the failing action type together with its execution position within the ordered action list and the resolved `Order` value before continuing. This keeps plugin triage readable from text/JSON logs without changing the post-process execution policy. Affected: `Runner/DiffPipelineExecutor.cs`, `FolderDiffIL4DotNet.Tests/Runner/DiffPipelineExecutorTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `DiffPipelineExecutorTests.cs` (1 updated).
+
 - **Logger cleanup warnings now retain retention and active-log context** — `LoggerService.CleanupOldLogFiles()` now includes `MaxGenerations` and the active log path in both invalid-retention and directory-enumeration warning messages. This keeps retention triage actionable from text/JSON logs without changing cleanup behavior. Affected: `Services/LoggerService.cs`, `FolderDiffIL4DotNet.Tests/Services/LoggerServiceTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `LoggerServiceTests.cs` (2 updated).
 
 - **ILDiskCache warnings now retain cache directory and cache-key length context** — Recoverable read/write/remove failures in `ILDiskCache` now include the cache directory and cache-key length, and blank-key guard warnings now also state the target directory. This keeps disk-layer diagnostics actionable without changing cache behavior. Affected: `Services/Caching/ILDiskCache.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `ILDiskCacheTests.cs` (3 new, 3 updated).
@@ -1401,6 +1403,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **ポストプロセスアクション warning が実行位置と order を保持するよう改善** — `DiffPipelineExecutor` の best-effort `IPostProcessAction` 失敗は、処理継続前に失敗したアクション型に加えて、ソート済みアクション一覧内での実行位置と解決済み `Order` 値もログ本文へ含めるようになりました。これにより、ポストプロセス実行方針は変えずに、プラグイン切り分けを text/JSON ログだけでも行いやすくします。対象: `Runner/DiffPipelineExecutor.cs`, `FolderDiffIL4DotNet.Tests/Runner/DiffPipelineExecutorTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `DiffPipelineExecutorTests.cs`（更新 1 件）。
 
 - **FolderDiffService の IL 事前計算 warning が本文に例外型も保持するよう改善** — `FolderDiffService` が IL キャッシュ事前計算中に回復可能なパス/I/O 失敗からフォールバックした際、warning 本文にも具体的な例外型を含めるようにしました。これにより、このベストエフォート warning も他の強化済み診断ログと粒度が揃い、console / text log だけでも切り分けしやすくなります。対象: `Services/FolderDiffService.ILPrecompute.cs`。テスト: `FolderDiffServiceUnitTests.cs`（新規 1 件: `ExecuteFolderDiffAsync_WhenPrecomputeThrowsRecoverableException_LogsWarningAndContinues`）。
 

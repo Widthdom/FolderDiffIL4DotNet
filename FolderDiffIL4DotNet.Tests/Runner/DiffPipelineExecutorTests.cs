@@ -143,6 +143,8 @@ namespace FolderDiffIL4DotNet.Tests.Runner
                 entry.LogLevel == AppLogLevel.Warning
                 && entry.Message.Contains("Post-process action", StringComparison.Ordinal));
             Assert.Contains(nameof(ThrowingPostProcessAction), warning.Message, StringComparison.Ordinal);
+            Assert.Contains("position 1/1", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Order=0", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(InvalidOperationException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }
