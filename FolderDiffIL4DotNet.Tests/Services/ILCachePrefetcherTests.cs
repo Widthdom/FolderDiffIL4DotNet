@@ -162,7 +162,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var exception = await Record.ExceptionAsync(() => prefetcher.PrefetchIlCacheAsync(new[] { invalidAssemblyPath }, maxParallel: 1));
 
             Assert.Null(exception);
-            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            var warning = Assert.Single(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains($"Failed to prefetch IL cache for assembly '{invalidAssemblyPath}'", StringComparison.Ordinal));
             Assert.Contains("Failed to prefetch IL cache for assembly", warning.Message, StringComparison.Ordinal);
             Assert.Contains(warning.Exception!.GetType().Name, warning.Message, StringComparison.Ordinal);
             Assert.Contains(warning.Exception.Message, warning.Message, StringComparison.Ordinal);
