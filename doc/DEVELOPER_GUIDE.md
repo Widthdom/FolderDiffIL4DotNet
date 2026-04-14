@@ -473,7 +473,7 @@ Why this matters:
 | [`Models/SbomModels.cs`](../Models/SbomModels.cs) | SBOM data models | CycloneDX 1.5 models ([`CycloneDxBom`](../Models/SbomModels.cs), [`CycloneDxComponent`](../Models/SbomModels.cs)), SPDX 2.3 models ([`SpdxDocument`](../Models/SbomModels.cs), [`SpdxPackage`](../Models/SbomModels.cs)), [`SbomFormat`](../Models/SbomModels.cs) enum |
 | [`Services/ProgressReportService.cs`](../Services/ProgressReportService.cs) | Console progress display, phase tracking, elapsed time logging | Phase-based progress numbering (`[current/total]`), keep-alive spinner throttling, dispose-time final phase logging |
 | [`Services/LoggerService.cs`](../Services/LoggerService.cs) | File and console logging with text/JSON format support | W3C Trace Context (`traceId`/`spanId`), old log file cleanup with retention-context warnings, read-only log file handling, concurrent call safety |
-| [`Services/NuGetVulnerabilityService.cs`](../Services/NuGetVulnerabilityService.cs) | NuGet V3 vulnerability API integration | Per-session cached index/page download, per-package old/new version vulnerability checking, advisory deduplication |
+| [`Services/NuGetVulnerabilityService.cs`](../Services/NuGetVulnerabilityService.cs) | NuGet V3 vulnerability API integration | Per-session cached index/page download, per-package old/new version vulnerability checking, advisory deduplication, and warning logs that retain the index URL plus entry/package-count context on best-effort failures |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object; split into partial files: [`FileDiffResultLists.ComparisonResults.cs`](../Models/FileDiffResultLists.ComparisonResults.cs) (diff details, disassembler labels, ignored files), [`FileDiffResultLists.Metadata.cs`](../Models/FileDiffResultLists.Metadata.cs) (semantic changes, dependency changes, warnings, disassembler info) |
 
 <a id="guide-en-comparison-pipeline"></a>
@@ -1435,7 +1435,7 @@ sequenceDiagram
 | [`Models/SbomModels.cs`](../Models/SbomModels.cs) | SBOM データモデル | CycloneDX 1.5 モデル（[`CycloneDxBom`](../Models/SbomModels.cs)、[`CycloneDxComponent`](../Models/SbomModels.cs)）、SPDX 2.3 モデル（[`SpdxDocument`](../Models/SbomModels.cs)、[`SpdxPackage`](../Models/SbomModels.cs)）、[`SbomFormat`](../Models/SbomModels.cs) 列挙型 |
 | [`Services/ProgressReportService.cs`](../Services/ProgressReportService.cs) | コンソール進捗表示、フェーズ追跡、経過時間ログ | フェーズ番号付き進捗（`[current/total]`）、キープアライブスピナースロットリング、Dispose 時の最終フェーズログ |
 | [`Services/LoggerService.cs`](../Services/LoggerService.cs) | テキスト/JSON 形式のファイル/コンソールログ | W3C Trace Context（`traceId`/`spanId`）、保持設定文脈付きの古いログファイルクリーンアップ warning、読み取り専用ログファイル対応、並行呼び出し安全性 |
-| [`Services/NuGetVulnerabilityService.cs`](../Services/NuGetVulnerabilityService.cs) | NuGet V3 脆弱性 API 統合 | セッション単位キャッシュのインデックス/ページダウンロード、パッケージ別旧/新バージョン脆弱性チェック、アドバイザリ重複排除 |
+| [`Services/NuGetVulnerabilityService.cs`](../Services/NuGetVulnerabilityService.cs) | NuGet V3 脆弱性 API 統合 | セッション単位キャッシュのインデックス/ページダウンロード、パッケージ別旧/新バージョン脆弱性チェック、アドバイザリ重複排除、best-effort 失敗時に index URL と entry/package 件数も残す warning ログ |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態；partial ファイル分割: [`FileDiffResultLists.ComparisonResults.cs`](../Models/FileDiffResultLists.ComparisonResults.cs)（差分詳細、逆アセンブララベル、除外ファイル）、[`FileDiffResultLists.Metadata.cs`](../Models/FileDiffResultLists.Metadata.cs)（セマンティック変更、依存関係変更、警告、逆アセンブラ情報） |
 
 <a id="guide-ja-comparison-pipeline"></a>

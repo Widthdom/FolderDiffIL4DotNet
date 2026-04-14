@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **NuGet vulnerability warnings now retain index URL and entry counts** — `NuGetVulnerabilityService` now includes the fixed vulnerability-index URL in index-fetch warnings, and outer best-effort failure logs now retain the dependency-entry count plus distinct package count that were being evaluated. This keeps dependency-triage readable from text/JSON logs without changing vulnerability matching behavior. Affected: `Services/NuGetVulnerabilityService.cs`, `FolderDiffIL4DotNet.Tests/Services/NuGetVulnerabilityServiceTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `NuGetVulnerabilityServiceTests.cs` (1 updated).
+
 - **Audit-log warnings now retain reports-folder and root-path context** — `AuditLogGenerateService` now includes the reports folder in top-level write warnings, and skipped entry warnings now retain the root folder that was used to derive the relative path. This keeps audit-log triage readable from text/JSON logs without changing generated JSON content. Affected: `Services/AuditLogGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.PathHandling.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `AuditLogGenerateServiceTests.PathHandling.cs` (2 updated).
 
 - **SBOM warnings now retain output format and folder origin context** — `SbomGenerateService` now includes the resolved output format (`CycloneDX` / `SPDX`) in top-level write warnings, and skipped-component warnings now retain whether the path came from the old or new folder. This keeps SBOM triage readable from text/JSON logs without changing generated content. Affected: `Services/SbomGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.PathHandling.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `SbomGenerateServiceTests.PathHandling.cs` (2 updated).
@@ -1407,6 +1409,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **NuGet 脆弱性 warning が index URL と entry 件数を保持するよう改善** — `NuGetVulnerabilityService` はインデックス取得 warning に固定の脆弱性 index URL を含め、外側の best-effort failure ログには評価対象だった dependency entry 件数と distinct package 件数も残すようになりました。これにより、脆弱性マッチング動作は変えずに、依存関係切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/NuGetVulnerabilityService.cs`, `FolderDiffIL4DotNet.Tests/Services/NuGetVulnerabilityServiceTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `NuGetVulnerabilityServiceTests.cs`（更新 1 件）。
 
 - **監査ログ warning が reports folder と root path を保持するよう改善** — `AuditLogGenerateService` はトップレベルの書き込み失敗 warning に reports folder を含め、entry skip warning には相対パス算出に使った root folder も残すようになりました。これにより、生成 JSON 内容は変えずに、監査ログ切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/AuditLogGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.PathHandling.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `AuditLogGenerateServiceTests.PathHandling.cs`（更新 2 件）。
 
