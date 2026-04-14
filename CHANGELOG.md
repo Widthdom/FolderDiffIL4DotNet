@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **FileDiffService error logs now retain the last comparison stage and run options** — Per-file failures in `FilesAreEqualAsync()` now preserve the relative path, the last completed/active comparison stage (`BeforeCompare` hooks, SHA256, IL, text, or `AfterCompare` hooks), `SkipIL`, and `MaxParallel` in the error message before the exception is rethrown. This improves text/JSON-log triage without changing file-classification behavior. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.HashAndErrorHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.TextComparison.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `FileDiffServiceUnitTests.HashAndErrorHandling.cs` (3 updated), `FileDiffServiceUnitTests.TextComparison.cs` (1 updated).
+
 - **FolderDiffService IL precompute warnings now retain the exception type in the message body** — `FolderDiffService` now includes the concrete recoverable exception type when IL-cache precompute falls back after a path/I/O failure, keeping this best-effort warning aligned with the repository's other hardened diagnostics and making console/text-log triage easier. Affected: `Services/FolderDiffService.ILPrecompute.cs`. Tests: `FolderDiffServiceUnitTests.cs` (1 new: `ExecuteFolderDiffAsync_WhenPrecomputeThrowsRecoverableException_LogsWarningAndContinues`).
 
 - **Logger cleanup directory warnings now retain the exception type in the message body** — `LoggerService.CleanupOldLogFiles()` now includes the concrete recoverable I/O exception type and message when directory enumeration/cleanup fails, making this warning consistent with the more specific archived-file deletion path and easier to triage from console/text logs. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests.cs` (1 new: `CleanupOldLogFiles_WhenDirectoryPathIsActuallyAFile_LogsWarningWithExceptionTypeAndDoesNotThrow`).
@@ -1435,6 +1437,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **README.md の置換文字を除去** — `cdidx validate` で検出された日本語文字化け 2 箇所を修正し、CLI 実行例と SBOM 設定説明が正しく読めるようにしました。対象: `README.md`。
 
 #### 修正
+
+- **FileDiffService の error ログが直前の比較段階と実行オプションを保持するよう改善** — `FilesAreEqualAsync()` のファイル単位失敗時に、例外再スロー前の error メッセージへ相対パス、最後に進んでいた比較段階（`BeforeCompare` フック、SHA256、IL、text、`AfterCompare` フック）、`SkipIL`、`MaxParallel` を含めるようにしました。ファイル分類ロジックは変えず、text/JSON ログだけを診断しやすくしています。対象: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.HashAndErrorHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.TextComparison.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `FileDiffServiceUnitTests.HashAndErrorHandling.cs`（更新 3 件）, `FileDiffServiceUnitTests.TextComparison.cs`（更新 1 件）。
 
 - **LoggerService がテキスト/JSON ログの両方で完全な例外情報を保持するよう改善** — テキストログは生の stack trace だけでなく `exception.ToString()` 全体を書き出すようにし、JSON ログには `exceptionDetail` と任意の `innerExceptionType` / `innerExceptionMessage` を追加しました。これにより通常の制御フローは変えずに、例外型・メッセージ・スタック・ネストした原因を事後診断で追いやすくなりました。対象: `Services/LoggerService.cs`。テスト: `LoggerServiceTests.cs`（更新/追加 2 件: `LogMessage_WithExplicitConsoleColor_WritesFormattedMessageAndFullExceptionDetailsToLogFile`, `LogMessage_JsonFormat_IncludesInnerExceptionFields`）。
 

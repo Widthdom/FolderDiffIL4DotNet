@@ -95,7 +95,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal)
+                    && entry.Message.Contains("RelativePath='secret.bin'", StringComparison.Ordinal)
+                    && entry.Message.Contains("Stage='computing SHA256 hashes'", StringComparison.Ordinal)
+                    && entry.Message.Contains("SkipIL=False", StringComparison.Ordinal)
+                    && entry.Message.Contains("MaxParallel=1", StringComparison.Ordinal));
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 
@@ -145,7 +149,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is DirectoryNotFoundException
-                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal)
+                    && entry.Message.Contains("RelativePath='missing.bin'", StringComparison.Ordinal)
+                    && entry.Message.Contains("Stage='computing SHA256 hashes'", StringComparison.Ordinal));
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 
@@ -168,7 +174,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is FormatException
-                    && entry.Message.Contains("An unexpected error occurred while diffing", StringComparison.Ordinal));
+                    && entry.Message.Contains("An unexpected error occurred while diffing", StringComparison.Ordinal)
+                    && entry.Message.Contains("RelativePath='broken.bin'", StringComparison.Ordinal)
+                    && entry.Message.Contains("Stage='computing SHA256 hashes'", StringComparison.Ordinal));
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 
