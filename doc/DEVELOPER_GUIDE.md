@@ -781,10 +781,11 @@ Current CI behavior (`build` job — Ubuntu):
 `mutation-testing` job — Stryker:
 - Runs on `pull_request` and `workflow_dispatch` only (not on push to `main`)
 - Uses [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) to inject mutations into production code and verify tests detect them
-- Configuration is in [`stryker-config.json`](../stryker-config.json)
-- Posts the mutation score to the GitHub Actions job summary
-- Uploads the full Stryker HTML/JSON report as `StrykerReport`
-- Break threshold is `50%` — the job fails if the mutation score falls below this
+- Configuration is in [`stryker-config.json`](../stryker-config.json) with `80/60/40` high/low/break thresholds, and [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) reads that file directly so reviewer-visible score bands stay in sync with the actual mutation gate
+- Calls [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) to write `StrykerOutput/mutation-summary.md` and `mutation-summary.json` after each run so score, survivor count, and status counts are preserved alongside the raw report
+- Appends the markdown summary to the GitHub Actions job summary and mirrors the same content into a sticky bot comment on same-repository pull requests through [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js); that helper updates only marker-bearing comments owned by `github-actions[bot]`, and the PR comment step remains best-effort (`continue-on-error: true`) so visibility failures do not hide a passing mutation gate
+- Uploads per-run `StrykerSummary-*` and `StrykerReport-*` artifacts so the Actions run history doubles as the mutation-trend record
+- Break threshold is `40%` — the job fails if the mutation score falls below this
 
 `benchmark` job (manual only):
 - Runs only on `workflow_dispatch`
@@ -1741,10 +1742,11 @@ v* タグ push 時:
 `mutation-testing` ジョブ — Stryker:
 - `pull_request` と `workflow_dispatch` でのみ実行（`main` への push では実行されない）
 - [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) でプロダクションコードにミューテーションを注入し、テストが検出できるか検証する
-- 設定は [`stryker-config.json`](../stryker-config.json) に定義
-- ミューテーションスコアを GitHub Actions ジョブサマリに投稿
-- 完全な Stryker HTML/JSON レポートを `StrykerReport` としてアップロード
-- 閾値は `50%` — ミューテーションスコアがこれを下回るとジョブ失敗
+- 設定は [`stryker-config.json`](../stryker-config.json) に定義され、high/low/break 閾値は `80/60/40`。[`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) も同じファイルを直接読むので、reviewer 向け score band 表示が実際の mutation gate とずれない
+- [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) を呼び出して各 run 後に `StrykerOutput/mutation-summary.md` と `mutation-summary.json` を生成し、スコア・survivor 件数・status 件数を生レポートと並べて保存する
+- markdown 要約を GitHub Actions ジョブサマリに追記し、同一リポジトリ由来の pull request には [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js) 経由で同じ内容を sticky bot コメントとして反映する。この helper は `github-actions[bot]` 自身の marker 付きコメントだけを更新対象にする。PR コメント step は best-effort（`continue-on-error: true`）なので、可視化側の失敗で mutation gate 自体は落とさない
+- run ごとの `StrykerSummary-*` / `StrykerReport-*` artifact をアップロードし、Actions の run 履歴をそのままミューテーション推移の記録として使えるようにする
+- break 閾値は `40%` — ミューテーションスコアがこれを下回るとジョブ失敗
 
 `benchmark` ジョブ（手動のみ）:
 - `workflow_dispatch` でのみ実行

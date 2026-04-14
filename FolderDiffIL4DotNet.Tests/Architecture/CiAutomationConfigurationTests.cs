@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -121,6 +122,31 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
         }
 
         /// <summary>
+        /// Verifies that mutation testing publishes reviewer-visible summaries and per-run artifacts.
+        /// ミューテーションテストがレビューア向けサマリーと run ごとの成果物を公開することを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void DotNetWorkflow_MutationTestingPublishesSummaryArtifactsAndPrComment()
+        {
+            var workflow = File.ReadAllText(GetRepositoryFilePath(".github", "workflows", "dotnet.yml"));
+
+            Assert.Contains("Generate mutation visibility summary", workflow, StringComparison.Ordinal);
+            Assert.Contains("python3 scripts/generate-mutation-summary.py", workflow, StringComparison.Ordinal);
+            Assert.Contains("Post mutation summary to job summary", workflow, StringComparison.Ordinal);
+            Assert.Contains("Post mutation summary to pull request", workflow, StringComparison.Ordinal);
+            Assert.Contains("continue-on-error: true", workflow, StringComparison.Ordinal);
+            Assert.Contains("actions/github-script@v7", workflow, StringComparison.Ordinal);
+            Assert.Contains("issues: write", workflow, StringComparison.Ordinal);
+            Assert.Contains("require('./scripts/update-mutation-pr-comment.js')", workflow, StringComparison.Ordinal);
+            Assert.Contains("upsertMutationSummaryComment", workflow, StringComparison.Ordinal);
+            Assert.Contains("mutation-summary.md", workflow, StringComparison.Ordinal);
+            Assert.Contains("mutation-summary.json", workflow, StringComparison.Ordinal);
+            Assert.Contains("StrykerSummary-${{ github.run_number }}-${{ github.run_attempt }}", workflow, StringComparison.Ordinal);
+            Assert.Contains("StrykerReport-${{ github.run_number }}-${{ github.run_attempt }}", workflow, StringComparison.Ordinal);
+        }
+
+        /// <summary>
         /// Verifies that documentation files (CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md)
         /// reference the same coverage thresholds as the CI workflow.
         /// ドキュメント（CLAUDE.md, TESTING_GUIDE.md, DEVELOPER_GUIDE.md）が CI ワークフローと
@@ -160,6 +186,37 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
             Assert.Contains($"`{branchThreshold}%` branch", devGuide, StringComparison.Ordinal);
             Assert.Contains($"行 `{lineThreshold}%`", devGuide, StringComparison.Ordinal);
             Assert.Contains($"分岐 `{branchThreshold}%`", devGuide, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Verifies that mutation-test thresholds and visibility docs match the Stryker configuration.
+        /// ミューテーションテストの閾値と可視化ドキュメントが Stryker 設定と一致することを検証します。
+        /// </summary>
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void MutationTestingDocumentation_MatchesStrykerConfig()
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(GetRepositoryFilePath("stryker-config.json")));
+            var thresholds = document.RootElement.GetProperty("stryker-config").GetProperty("thresholds");
+            var high = thresholds.GetProperty("high").GetInt32().ToString();
+            var low = thresholds.GetProperty("low").GetInt32().ToString();
+            var @break = thresholds.GetProperty("break").GetInt32().ToString();
+
+            var summaryScript = File.ReadAllText(GetRepositoryFilePath("scripts", "generate-mutation-summary.py"));
+            Assert.Contains("load_thresholds", summaryScript, StringComparison.Ordinal);
+            Assert.Contains("stryker-config.json", summaryScript, StringComparison.Ordinal);
+            Assert.DoesNotContain("THRESHOLDS = {", summaryScript, StringComparison.Ordinal);
+
+            var testingGuide = File.ReadAllText(GetRepositoryFilePath("doc", "TESTING_GUIDE.md"));
+            Assert.Contains($"{high}/{low}/{@break} thresholds", testingGuide, StringComparison.Ordinal);
+            Assert.Contains($"{high}/{low}/{@break} 閾値", testingGuide, StringComparison.Ordinal);
+            Assert.Contains("StrykerSummary-", testingGuide, StringComparison.Ordinal);
+            Assert.Contains("StrykerReport-", testingGuide, StringComparison.Ordinal);
+
+            var devGuide = File.ReadAllText(GetRepositoryFilePath("doc", "DEVELOPER_GUIDE.md"));
+            Assert.Contains($"{high}/{low}/{@break}", devGuide, StringComparison.Ordinal);
+            Assert.Contains("StrykerSummary-", devGuide, StringComparison.Ordinal);
+            Assert.Contains("StrykerReport-", devGuide, StringComparison.Ordinal);
         }
 
         private static string GetRepositoryFilePath(params string[] segments)
