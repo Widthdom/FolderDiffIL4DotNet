@@ -38,6 +38,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Null(exception);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("CycloneDX", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }
@@ -91,6 +92,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal("good.dll", components[0].GetProperty("name").GetString());
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped SBOM component", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Folder=new", warning.Message, StringComparison.Ordinal);
         }
     }
 }

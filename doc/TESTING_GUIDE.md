@@ -77,7 +77,7 @@ Recommended starting points by change type:
 - Project-boundary or reusable-helper changes: start with [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs) and the relevant tests under [`FolderDiffIL4DotNet.Tests/Core/`](../FolderDiffIL4DotNet.Tests/Core/).
 - Report wording or section changes: start with [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs).
 - Audit log changes: start with [`AuditLogGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs).
-- SBOM generation changes: start with [`SbomGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs).
+- SBOM generation changes: start with [`SbomGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs) for format-specific output plus recoverable path/hash warning coverage.
 
 <a id="testing-en-run-tests"></a>
 ## Run Tests Locally
@@ -293,7 +293,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - プロジェクト境界や再利用 helper の変更: [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs) と [`FolderDiffIL4DotNet.Tests/Core/`](../FolderDiffIL4DotNet.Tests/Core/) 配下の対象テスト
 - レポート文言やセクション変更: [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs)
 - 監査ログ変更: [`AuditLogGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs)
-- SBOM 生成変更: [`SbomGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs)
+- SBOM 生成変更: [`SbomGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs) を起点に、形式別出力と回復可能な path/hash warning の網羅を確認
 
 <a id="testing-ja-run-tests"></a>
 ## ローカルでのテスト実行
