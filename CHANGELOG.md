@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Audit-log warnings now retain reports-folder and root-path context** — `AuditLogGenerateService` now includes the reports folder in top-level write warnings, and skipped entry warnings now retain the root folder that was used to derive the relative path. This keeps audit-log triage readable from text/JSON logs without changing generated JSON content. Affected: `Services/AuditLogGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.PathHandling.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `AuditLogGenerateServiceTests.PathHandling.cs` (2 updated).
+
 - **SBOM warnings now retain output format and folder origin context** — `SbomGenerateService` now includes the resolved output format (`CycloneDX` / `SPDX`) in top-level write warnings, and skipped-component warnings now retain whether the path came from the old or new folder. This keeps SBOM triage readable from text/JSON logs without changing generated content. Affected: `Services/SbomGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.PathHandling.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `SbomGenerateServiceTests.PathHandling.cs` (2 updated).
 
 - **Post-process action warnings now retain execution position and order** — Best-effort `IPostProcessAction` failures in `DiffPipelineExecutor` now log the failing action type together with its execution position within the ordered action list and the resolved `Order` value before continuing. This keeps plugin triage readable from text/JSON logs without changing the post-process execution policy. Affected: `Runner/DiffPipelineExecutor.cs`, `FolderDiffIL4DotNet.Tests/Runner/DiffPipelineExecutorTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `DiffPipelineExecutorTests.cs` (1 updated).
@@ -1405,6 +1407,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **監査ログ warning が reports folder と root path を保持するよう改善** — `AuditLogGenerateService` はトップレベルの書き込み失敗 warning に reports folder を含め、entry skip warning には相対パス算出に使った root folder も残すようになりました。これにより、生成 JSON 内容は変えずに、監査ログ切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/AuditLogGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.PathHandling.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `AuditLogGenerateServiceTests.PathHandling.cs`（更新 2 件）。
 
 - **SBOM warning が出力形式とフォルダ由来を保持するよう改善** — `SbomGenerateService` はトップレベルの書き込み失敗 warning に解決済み出力形式（`CycloneDX` / `SPDX`）を含め、コンポーネント skip warning にはそのパスが old/new のどちら由来かも残すようになりました。これにより、生成内容や方針は変えずに、SBOM 切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/SbomGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.PathHandling.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `SbomGenerateServiceTests.PathHandling.cs`（更新 2 件）。
 

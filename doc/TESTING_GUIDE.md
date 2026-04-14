@@ -76,7 +76,7 @@ Recommended starting points by change type:
 - IL/disassembler or cache changes: start with [`ILOutputServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs), [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs), [`DotNetDisassemblerCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/DotNetDisassemblerCacheTests.cs), [`ILDiskCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs), and [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs).
 - Project-boundary or reusable-helper changes: start with [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs) and the relevant tests under [`FolderDiffIL4DotNet.Tests/Core/`](../FolderDiffIL4DotNet.Tests/Core/).
 - Report wording or section changes: start with [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs).
-- Audit log changes: start with [`AuditLogGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs).
+- Audit log changes: start with [`AuditLogGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs) for integrity hashes plus recoverable path-handling warning coverage.
 - SBOM generation changes: start with [`SbomGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs) for format-specific output plus recoverable path/hash warning coverage.
 
 <a id="testing-en-run-tests"></a>
@@ -292,7 +292,7 @@ Workflow/config files: [`.github/workflows/dotnet.yml`](../.github/workflows/dot
 - IL/逆アセンブラ/キャッシュ変更: [`ILOutputServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.cs), [`DotNetDisassembleServiceTests`](../FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs), [`DotNetDisassemblerCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/DotNetDisassemblerCacheTests.cs), [`ILDiskCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILDiskCacheTests.cs), [`ILCacheTests`](../FolderDiffIL4DotNet.Tests/Services/Caching/ILCacheTests.cs)
 - プロジェクト境界や再利用 helper の変更: [`CoreSeparationTests`](../FolderDiffIL4DotNet.Tests/Architecture/CoreSeparationTests.cs) と [`FolderDiffIL4DotNet.Tests/Core/`](../FolderDiffIL4DotNet.Tests/Core/) 配下の対象テスト
 - レポート文言やセクション変更: [`ReportGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.cs)
-- 監査ログ変更: [`AuditLogGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs)
+- 監査ログ変更: [`AuditLogGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.cs) を起点に、integrity hash と回復可能な path-handling warning の網羅を確認
 - SBOM 生成変更: [`SbomGenerateServiceTests`](../FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.cs) を起点に、形式別出力と回復可能な path/hash warning の網羅を確認
 
 <a id="testing-ja-run-tests"></a>
