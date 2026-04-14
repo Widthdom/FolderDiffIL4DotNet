@@ -300,7 +300,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Plugin BeforeCompare hook '{hook.GetType().Name}' failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
+                        BuildHookFailureMessage("BeforeCompare", hook, fileRelativePath, ex),
                         shouldOutputMessageToConsole: false, ex);
                 }
 #pragma warning restore CA1031
@@ -339,7 +339,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Plugin AfterCompare hook '{hook.GetType().Name}' failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
+                        BuildHookFailureMessage("AfterCompare", hook, fileRelativePath, ex),
                         shouldOutputMessageToConsole: false, ex);
                 }
 #pragma warning restore CA1031
@@ -471,6 +471,9 @@ namespace FolderDiffIL4DotNet.Services
                 shouldOutputMessageToConsole: true,
                 exception);
         }
+
+        private static string BuildHookFailureMessage(string phase, IFileComparisonHook hook, string fileRelativePath, Exception exception) =>
+            $"Plugin {phase} hook '{hook.GetType().Name}' failed for '{fileRelativePath}' (Order={hook.Order}, {exception.GetType().Name}): {exception.Message}";
 
         private string BuildFileDiffFailureMessage(string prefix, string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel) =>
             $"{prefix} '{file1AbsolutePath}' and '{file2AbsolutePath}'. RelativePath='{fileRelativePath}', Stage='{comparisonStage}', SkipIL={_config.SkipIL}, MaxParallel={maxParallel}.";

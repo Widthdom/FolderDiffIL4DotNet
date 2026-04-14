@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Plugin hook failure warnings now retain hook order and phase** — Best-effort `IFileComparisonHook` failures in `FileDiffService` now log the failing phase (`BeforeCompare` / `AfterCompare`) together with the hook order before continuing. This keeps plugin triage readable from text/JSON logs without changing the hook execution policy. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `FileDiffServiceUnitTests.Hooks.cs` (2 updated).
+
 - **FileDiffService error logs now retain the last comparison stage and run options** — Per-file failures in `FilesAreEqualAsync()` now preserve the relative path, the last completed/active comparison stage (`BeforeCompare` hooks, SHA256, IL, text, or `AfterCompare` hooks), `SkipIL`, and `MaxParallel` in the error message before the exception is rethrown. This improves text/JSON-log triage without changing file-classification behavior. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.HashAndErrorHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.TextComparison.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `FileDiffServiceUnitTests.HashAndErrorHandling.cs` (3 updated), `FileDiffServiceUnitTests.TextComparison.cs` (1 updated).
 
 - **FolderDiffService IL precompute warnings now retain the exception type in the message body** — `FolderDiffService` now includes the concrete recoverable exception type when IL-cache precompute falls back after a path/I/O failure, keeping this best-effort warning aligned with the repository's other hardened diagnostics and making console/text-log triage easier. Affected: `Services/FolderDiffService.ILPrecompute.cs`. Tests: `FolderDiffServiceUnitTests.cs` (1 new: `ExecuteFolderDiffAsync_WhenPrecomputeThrowsRecoverableException_LogsWarningAndContinues`).
@@ -1437,6 +1439,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **README.md の置換文字を除去** — `cdidx validate` で検出された日本語文字化け 2 箇所を修正し、CLI 実行例と SBOM 設定説明が正しく読めるようにしました。対象: `README.md`。
 
 #### 修正
+
+- **プラグインフック失敗 warning が hook order とフェーズも保持するよう改善** — `FileDiffService` がベストエフォートで継続する `IFileComparisonHook` 失敗時に、warning 本文へ失敗フェーズ（`BeforeCompare` / `AfterCompare`）と hook order も含めるようにしました。フック実行ポリシーは変えず、text/JSON ログだけでプラグイン切り分けしやすくしています。対象: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.Hooks.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `FileDiffServiceUnitTests.Hooks.cs`（更新 2 件）。
 
 - **FileDiffService の error ログが直前の比較段階と実行オプションを保持するよう改善** — `FilesAreEqualAsync()` のファイル単位失敗時に、例外再スロー前の error メッセージへ相対パス、最後に進んでいた比較段階（`BeforeCompare` フック、SHA256、IL、text、`AfterCompare` フック）、`SkipIL`、`MaxParallel` を含めるようにしました。ファイル分類ロジックは変えず、text/JSON ログだけを診断しやすくしています。対象: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.HashAndErrorHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.TextComparison.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `FileDiffServiceUnitTests.HashAndErrorHandling.cs`（更新 3 件）, `FileDiffServiceUnitTests.TextComparison.cs`（更新 1 件）。
 

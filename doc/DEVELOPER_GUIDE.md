@@ -840,7 +840,7 @@ The application supports a plugin architecture via the [`FolderDiffIL4DotNet.Plu
 
 Plugin extension interfaces:
 - [`IPlugin`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs) — Entry point. Provides metadata and registers services via `ConfigureServices`.
-- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — Intercepts file comparison (before/after). Can override built-in comparison results.
+- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — Intercepts file comparison (before/after). Can override built-in comparison results. Best-effort hook failures are logged with phase (`BeforeCompare` / `AfterCompare`) plus hook order for triage.
 - [`IPostProcessAction`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPostProcessAction.cs) — Executes after all reports are generated (notifications, uploads, etc.).
 - [`IDisassemblerProvider`](../FolderDiffIL4DotNet.Plugin.Abstractions/IDisassemblerProvider.cs) — Provides disassembly for custom file types (Java .class via javap, etc.).
 - [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) — Adds custom sections to the Markdown report.
@@ -1800,7 +1800,7 @@ v* タグ push 時:
 
 プラグイン拡張インターフェース:
 - [`IPlugin`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs) — エントリポイント。メタデータ提供と `ConfigureServices` によるサービス登録。
-- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — ファイル比較のインターセプト（前後）。組み込み比較結果のオーバーライド可能。
+- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — ファイル比較のインターセプト（前後）。組み込み比較結果をオーバーライドできます。ベストエフォートなフック失敗は、切り分けしやすいようフェーズ（`BeforeCompare` / `AfterCompare`）と hook order 付きで warning ログに残します。
 - [`IPostProcessAction`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPostProcessAction.cs) — 全レポート生成後に実行（通知、アップロード等）。
 - [`IDisassemblerProvider`](../FolderDiffIL4DotNet.Plugin.Abstractions/IDisassemblerProvider.cs) — カスタムファイル種別の逆アセンブリ提供（javap による Java .class 等）。
 - [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) — Markdown レポートへのカスタムセクション追加。

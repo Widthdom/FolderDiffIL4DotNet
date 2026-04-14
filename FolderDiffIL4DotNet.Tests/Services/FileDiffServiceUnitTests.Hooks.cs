@@ -126,6 +126,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Single(fakeComparison.HashCalls);
             Assert.Contains(logger.Messages,
                 m => m.Contains("Plugin BeforeCompare hook 'FakeFileComparisonHook' failed", StringComparison.Ordinal)
+                    && m.Contains("Order=0", StringComparison.Ordinal)
                     && m.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 
@@ -153,6 +154,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(result);
             Assert.Contains(logger.Messages,
                 m => m.Contains("Plugin AfterCompare hook 'FakeFileComparisonHook' failed", StringComparison.Ordinal)
+                    && m.Contains("Order=0", StringComparison.Ordinal)
                     && m.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 
