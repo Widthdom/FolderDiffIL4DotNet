@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **Built-in .NET provider warnings now retain display name and extension** — `DotNetDisassemblerProvider` now includes its `DisplayName` and the target file extension in recoverable detection/disassembly warnings before falling back. This keeps plugin-provider triage readable from text/JSON logs without changing provider selection behavior. Affected: `Services/DotNetDisassemblerProvider.cs`, `FolderDiffIL4DotNet.Tests/Services/DotNetDisassemblerProviderTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `DotNetDisassemblerProviderTests.cs` (2 updated).
+
 - **HTML inline-diff warnings now retain mismatch source context** — `HtmlReportGenerateService` now tags recoverable inline-diff warnings with whether the skipped read came from `TextMismatch` source files or `ILMismatch` IL text files. This keeps HTML-report triage readable from text/JSON logs without changing generated report content. Affected: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.InlineDiff.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `HtmlReportGenerateServiceTests.InlineDiff.cs` (2 updated).
 
 - **NuGet vulnerability warnings now retain index URL and entry counts** — `NuGetVulnerabilityService` now includes the fixed vulnerability-index URL in index-fetch warnings, and outer best-effort failure logs now retain the dependency-entry count plus distinct package count that were being evaluated. This keeps dependency-triage readable from text/JSON logs without changing vulnerability matching behavior. Affected: `Services/NuGetVulnerabilityService.cs`, `FolderDiffIL4DotNet.Tests/Services/NuGetVulnerabilityServiceTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `NuGetVulnerabilityServiceTests.cs` (1 updated).
@@ -1411,6 +1413,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **組み込み .NET provider warning が表示名と拡張子を保持するよう改善** — `DotNetDisassemblerProvider` は recoverable な判定/逆アセンブル失敗 warning に、自身の `DisplayName` と対象ファイル拡張子も含めるようになりました。これにより、provider 選択動作は変えずに、プラグイン provider 切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/DotNetDisassemblerProvider.cs`, `FolderDiffIL4DotNet.Tests/Services/DotNetDisassemblerProviderTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `DotNetDisassemblerProviderTests.cs`（更新 2 件）。
 
 - **HTML inline-diff warning が mismatch 元を保持するよう改善** — `HtmlReportGenerateService` は回復可能な inline-diff warning に、その skip が `TextMismatch` の比較元テキストか `ILMismatch` の IL テキストかも含めるようになりました。これにより、HTML レポート内容は変えずに、切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.InlineDiff.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `HtmlReportGenerateServiceTests.InlineDiff.cs`（更新 2 件）。
 
