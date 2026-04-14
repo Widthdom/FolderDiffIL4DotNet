@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **FolderDiffService IL precompute warnings now retain the exception type in the message body** — `FolderDiffService` now includes the concrete recoverable exception type when IL-cache precompute falls back after a path/I/O failure, keeping this best-effort warning aligned with the repository's other hardened diagnostics and making console/text-log triage easier. Affected: `Services/FolderDiffService.ILPrecompute.cs`. Tests: `FolderDiffServiceUnitTests.cs` (1 new: `ExecuteFolderDiffAsync_WhenPrecomputeThrowsRecoverableException_LogsWarningAndContinues`).
+
 - **Logger cleanup directory warnings now retain the exception type in the message body** — `LoggerService.CleanupOldLogFiles()` now includes the concrete recoverable I/O exception type and message when directory enumeration/cleanup fails, making this warning consistent with the more specific archived-file deletion path and easier to triage from console/text logs. Affected: `Services/LoggerService.cs`. Tests: `LoggerServiceTests.cs` (1 new: `CleanupOldLogFiles_WhenDirectoryPathIsActuallyAFile_LogsWarningWithExceptionTypeAndDoesNotThrow`).
 
 - **ILCachePrefetcher warnings now retain the exception type in the message body** — `ILCachePrefetcher` now includes the concrete recoverable exception type when per-assembly cache prefetch falls back after a path/I/O failure, keeping this warning consistent with the other hardened cache diagnostics and making text-log triage easier. Affected: `Services/ILCachePrefetcher.cs`. Tests: `ILCachePrefetcherTests.cs` (1 new: `PrefetchIlCacheAsync_WhenCacheLookupThrowsRecoverableException_LogsWarningWithExceptionType`).
@@ -1391,6 +1393,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **FolderDiffService の IL 事前計算 warning が本文に例外型も保持するよう改善** — `FolderDiffService` が IL キャッシュ事前計算中に回復可能なパス/I/O 失敗からフォールバックした際、warning 本文にも具体的な例外型を含めるようにしました。これにより、このベストエフォート warning も他の強化済み診断ログと粒度が揃い、console / text log だけでも切り分けしやすくなります。対象: `Services/FolderDiffService.ILPrecompute.cs`。テスト: `FolderDiffServiceUnitTests.cs`（新規 1 件: `ExecuteFolderDiffAsync_WhenPrecomputeThrowsRecoverableException_LogsWarningAndContinues`）。
 
 - **Logger cleanup のディレクトリ警告が本文に例外型も保持するよう改善** — `LoggerService.CleanupOldLogFiles()` がディレクトリ列挙や cleanup に失敗した際、回復可能な I/O 例外の具体的な型とメッセージも warning 本文へ含めるようにしました。これにより、より詳細な archived-file deletion warning と粒度が揃い、console / text log だけでも切り分けしやすくなります。対象: `Services/LoggerService.cs`。テスト: `LoggerServiceTests.cs`（新規 1 件: `CleanupOldLogFiles_WhenDirectoryPathIsActuallyAFile_LogsWarningWithExceptionTypeAndDoesNotThrow`）。
 

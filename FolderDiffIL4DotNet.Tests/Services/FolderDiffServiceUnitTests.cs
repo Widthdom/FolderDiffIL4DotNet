@@ -71,6 +71,52 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(executionContext.IlOutputFolderAbsolutePath, Assert.Single(fileSystem.CreatedDirectories));
         }
 
+        [Fact]
+        public async Task ExecuteFolderDiffAsync_WhenPrecomputeThrowsRecoverableException_LogsWarningAndContinues()
+        {
+            const string oldDir = "/virtual/old";
+            const string newDir = "/virtual/new";
+            const string reportDir = "/virtual/report";
+
+            var fileSystem = new FakeFileSystemService();
+            fileSystem.SetFiles(oldDir, Path.Combine(oldDir, "same.txt"));
+            fileSystem.SetFiles(newDir, Path.Combine(newDir, "same.txt"));
+
+            var fileDiffService = new FakeFileDiffService(new Dictionary<string, bool>(StringComparer.Ordinal)
+            {
+                ["same.txt"] = true
+            })
+            {
+                PrecomputeException = new IOException("precompute cache unavailable")
+            };
+            var resultLists = new FileDiffResultLists();
+            var logger = new TestLogger();
+            using var progressReporter = new ProgressReportService(new ConfigSettingsBuilder().Build());
+            var executionContext = CreateExecutionContext(oldDir, newDir, reportDir);
+            var service = new FolderDiffService(
+                CreateConfig(maxParallelism: 1),
+                progressReporter,
+                executionContext,
+                fileDiffService,
+                resultLists,
+                logger,
+                fileSystem);
+
+            await service.ExecuteFolderDiffAsync();
+
+            Assert.Contains("same.txt", resultLists.UnchangedFilesRelativePath);
+            var precomputeCall = Assert.Single(fileDiffService.PrecomputeCalls);
+            Assert.Equal(2, precomputeCall.FilesAbsolutePath.Count);
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Exception is IOException ioException
+                    && string.Equals(ioException.Message, "precompute cache unavailable", StringComparison.Ordinal)
+                    && entry.Message.Contains("Failed to precompute IL related hashes", StringComparison.Ordinal)
+                    && entry.Message.Contains("IOException", StringComparison.Ordinal)
+                    && entry.Message.Contains("precompute cache unavailable", StringComparison.Ordinal));
+        }
+
         // Verify that an IOException (e.g. symlink loop ELOOP) during file enumeration is logged and rethrown
         // ファイル列挙時の IOException（例: シンボリックリンクループ ELOOP）がエラーログとともに再スローされることを確認する
         [Fact]
@@ -542,6 +588,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public Exception FilesAreEqualException { get; init; }
 
+            public Exception PrecomputeException { get; init; }
+
             public ConcurrentQueue<PrecomputeCall> PrecomputeCalls { get; } = new();
 
             public ConcurrentQueue<FilesAreEqualCall> FilesAreEqualCalls { get; } = new();
@@ -549,6 +597,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             public Task PrecomputeAsync(IEnumerable<string> filesAbsolutePath, int maxParallel, CancellationToken cancellationToken = default)
             {
                 PrecomputeCalls.Enqueue(new PrecomputeCall(filesAbsolutePath.ToArray(), maxParallel));
+                if (PrecomputeException != null)
+                {
+                    throw PrecomputeException;
+                }
+
                 return Task.CompletedTask;
             }
 
