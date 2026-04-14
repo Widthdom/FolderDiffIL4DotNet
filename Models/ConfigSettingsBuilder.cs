@@ -99,6 +99,11 @@ namespace FolderDiffIL4DotNet.Models
                 errors.Add($"InlineDiffContextLines must be 0 or greater (current value: {InlineDiffContextLines}).");
             }
 
+            if (ILCacheMaxMemoryMegabytes < 0)
+            {
+                errors.Add($"ILCacheMaxMemoryMegabytes must be 0 or greater (current value: {ILCacheMaxMemoryMegabytes}).");
+            }
+
             return new ConfigValidationResult(errors);
         }
 

@@ -156,8 +156,8 @@
     "ILCacheMaxMemoryMegabytes": {
       "type": "integer",
       "minimum": 0,
-      "default": 0,
-      "description": "Memory budget (MB) for in-memory IL cache. 0 = entry-count limit only.\nメモリ内ILキャッシュのメモリ予算（MB）。0=エントリ数制限のみ。"
+      "default": 256,
+      "description": "Memory budget (MB) for in-memory IL cache. Default is 256 MB; set 0 to restore unlimited mode (entry-count limit only).\nメモリ内ILキャッシュのメモリ予算（MB）。既定値は256 MB。0を指定すると無制限（エントリ数制限のみ）に戻ります。"
     },
     "ILPrecomputeBatchSize": {
       "type": "integer",

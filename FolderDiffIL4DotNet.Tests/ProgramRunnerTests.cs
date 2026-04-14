@@ -218,10 +218,12 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.NotNull(cache);
             var memoryCache = GetPrivateFieldValue(cache, "_memoryCache");
             var maxEntries = Assert.IsType<int>(GetPrivateFieldValue(memoryCache, "_maxEntries"));
+            var maxMemoryBytes = Assert.IsType<long>(GetPrivateFieldValue(memoryCache, "_maxMemoryBytes"));
             var timeToLive = Assert.IsType<TimeSpan>(GetPrivateFieldValue(memoryCache, "_timeToLive"));
             var statsLogInterval = Assert.IsType<TimeSpan>(GetPrivateFieldValue(cache, "_statsLogInterval"));
 
             Assert.Equal(Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT, maxEntries);
+            Assert.Equal(ConfigSettings.DefaultILCacheMaxMemoryMegabytes * 1024L * 1024L, maxMemoryBytes);
             Assert.Equal(TimeSpan.FromHours(Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS), timeToLive);
             Assert.Equal(TimeSpan.FromSeconds(Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS), statsLogInterval);
         }

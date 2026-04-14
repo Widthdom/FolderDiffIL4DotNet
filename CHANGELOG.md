@@ -9,7 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Changed
+
+- **Default in-memory IL cache budget is now bounded at 256 MB** — `ConfigSettings.DefaultILCacheMaxMemoryMegabytes` now defaults to `256` instead of `0`, so unconfigured runs keep the existing IL cache behavior but avoid unlimited memory growth during large release validations. Explicit `ILCacheMaxMemoryMegabytes: 0` still restores the previous unlimited mode. Updated `ProgramRunnerTests` to assert the wired runtime budget, refreshed `README.md`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `doc/PERFORMANCE_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, and `doc/TROUBLESHOOTING.md` to match the new default and the current 2000-entry runtime cap. Affected: `Models/ConfigSettings.ILSettings.cs`, `Models/IReadOnlyConfigSettings.cs`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.ValidationBoundary.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs`, `README.md`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `doc/PERFORMANCE_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TROUBLESHOOTING.md`. Tests: `ConfigSettingsTests.ValidationBoundary.cs` (1 updated), `ProgramRunnerTests.cs` (1 updated).
+
 #### Fixed
+
+- **`ILCacheMaxMemoryMegabytes` env override and validation now match the documented contract** — `ConfigService.ApplyEnvironmentVariableOverrides()` now honors `FOLDERDIFF_ILCACHEMAXMEMORYMEGABYTES`, so env-only/CI runs can explicitly set `0` to restore unlimited mode or choose another budget without relying on `config.json`. `ConfigSettingsBuilder.Validate()` now also rejects negative values to match the documented `minimum: 0` contract. Added regression coverage for env override, negative validation, and direct builder validation. Affected: `Services/ConfigService.cs`, `Models/ConfigSettingsBuilder.cs`, `FolderDiffIL4DotNet.Tests/Services/ConfigServiceTests.EnvVarsAndMutation.cs`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs`. Tests: `ConfigServiceTests.EnvVarsAndMutation.cs` (2 new), `ConfigSettingsTests.cs` (1 new).
 
 - **Built-in .NET provider warnings now retain display name and extension** — `DotNetDisassemblerProvider` now includes its `DisplayName` and the target file extension in recoverable detection/disassembly warnings before falling back. This keeps plugin-provider triage readable from text/JSON logs without changing provider selection behavior. Affected: `Services/DotNetDisassemblerProvider.cs`, `FolderDiffIL4DotNet.Tests/Services/DotNetDisassemblerProviderTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `DotNetDisassemblerProviderTests.cs` (2 updated).
 
@@ -58,6 +64,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **TestLogger is now safe under parallel test logging** — The shared test helper now uses a thread-safe queue so parallel logging paths can capture entries without `List<T>.Add` races, and new helper tests pin concurrent capture plus callback integrity. Affected: `FolderDiffIL4DotNet.Tests/Helpers/TestLogger.cs`, `FolderDiffIL4DotNet.Tests/TestLoggerTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `TestLoggerTests.cs` (2 new: `LogMessage_ConcurrentCalls_CapturesAllEntriesWithoutLosingMessages`, `Messages_ReturnsCapturedMessagesInInsertionOrderForSequentialWrites`).
 
 #### Documentation
+
+- **README validation constraints now list the current `>= 0` config guards** — The bilingual README validation bullets now mention both `InlineDiffContextLines >= 0` and `ILCacheMaxMemoryMegabytes >= 0`, and `ConfigSettingsTests` now pins those README bullets so the documented config contract stays aligned with `ConfigSettingsBuilder.Validate()`. Affected: `README.md`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.InlineDiffAndMutation.cs`. Tests: `ConfigSettingsTests.InlineDiffAndMutation.cs` (1 new).
 
 - **Removed two corrupted replacement characters surfaced by `cdidx validate`** — Fixed garbled Japanese text in report-formatter XML documentation so source comments match the current formatter architecture and `cdidx validate` no longer reports those files. Affected: `Services/IReportFormatter.cs`, `Services/ReportFormatters/SbomReportFormatter.cs`.
 
@@ -1412,7 +1420,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### 変更
+
+- **メモリ内 IL キャッシュ予算の既定値を 256 MB に変更** — `ConfigSettings.DefaultILCacheMaxMemoryMegabytes` の既定値を `0` から `256` に変更し、未設定の実行でも IL キャッシュ自体は維持しつつ、大規模リリース検証時の無制限なメモリ増加を避けるようにしました。従来どおり無制限に戻したい場合は `ILCacheMaxMemoryMegabytes: 0` を明示指定できます。あわせて、`ProgramRunnerTests` で実行時に配線されるメモリ予算を検証し、`README.md`、`doc/config.sample.jsonc`、`doc/config.schema.json`、`doc/PERFORMANCE_GUIDE.md`、`doc/DEVELOPER_GUIDE.md`、`doc/TROUBLESHOOTING.md` を新既定値と現行の実行時エントリ上限 `2000` に合わせて更新しました。対象: `Models/ConfigSettings.ILSettings.cs`, `Models/IReadOnlyConfigSettings.cs`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.ValidationBoundary.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.cs`, `README.md`, `doc/config.sample.jsonc`, `doc/config.schema.json`, `doc/PERFORMANCE_GUIDE.md`, `doc/DEVELOPER_GUIDE.md`, `doc/TROUBLESHOOTING.md`。テスト: `ConfigSettingsTests.ValidationBoundary.cs`（更新 1 件）, `ProgramRunnerTests.cs`（更新 1 件）。
+
 #### 修正
+
+- **`ILCacheMaxMemoryMegabytes` の環境変数 override と validation が文書契約どおりになりました** — `ConfigService.ApplyEnvironmentVariableOverrides()` が `FOLDERDIFF_ILCACHEMAXMEMORYMEGABYTES` を扱うようになり、env-only / CI 実行でも `config.json` に頼らず `0` 指定で無制限へ戻したり別予算へ調整したりできるようにしました。あわせて `ConfigSettingsBuilder.Validate()` で負数を reject し、文書化済みの `minimum: 0` 契約と実ランタイムを一致させました。環境変数 override、負数 validation、builder 直接 validation の回帰テストも追加しています。対象: `Services/ConfigService.cs`, `Models/ConfigSettingsBuilder.cs`, `FolderDiffIL4DotNet.Tests/Services/ConfigServiceTests.EnvVarsAndMutation.cs`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.cs`。テスト: `ConfigServiceTests.EnvVarsAndMutation.cs`（新規 2 件）, `ConfigSettingsTests.cs`（新規 1 件）。
 
 - **組み込み .NET provider warning が表示名と拡張子を保持するよう改善** — `DotNetDisassemblerProvider` は recoverable な判定/逆アセンブル失敗 warning に、自身の `DisplayName` と対象ファイル拡張子も含めるようになりました。これにより、provider 選択動作は変えずに、プラグイン provider 切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/DotNetDisassemblerProvider.cs`, `FolderDiffIL4DotNet.Tests/Services/DotNetDisassemblerProviderTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `DotNetDisassemblerProviderTests.cs`（更新 2 件）。
 
@@ -1453,6 +1467,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **TestLogger を並列テスト下でも安全にしました** — 共有テストヘルパーの内部蓄積をスレッドセーフなキューへ変更し、並列ログ経路でも `List<T>.Add` 競合で取りこぼしたり例外化したりしないようにしました。あわせて、並列キャプチャとコールバック整合性を固定する新規ヘルパーテストを追加しました。対象: `FolderDiffIL4DotNet.Tests/Helpers/TestLogger.cs`, `FolderDiffIL4DotNet.Tests/TestLoggerTests.cs`, `doc/TESTING_GUIDE.md`。テスト: `TestLoggerTests.cs`（2件追加: `LogMessage_ConcurrentCalls_CapturesAllEntriesWithoutLosingMessages`, `Messages_ReturnsCapturedMessagesInInsertionOrderForSequentialWrites`）。
 
 #### ドキュメント
+
+- **README の validation 制約一覧へ現行の `>= 0` ガードを追記** — 英日両方の README に `InlineDiffContextLines >= 0` と `ILCacheMaxMemoryMegabytes >= 0` を明記し、さらに `ConfigSettingsTests` でその README bullets を固定して、文書化された設定契約が `ConfigSettingsBuilder.Validate()` に追随し続けるようにしました。対象: `README.md`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.InlineDiffAndMutation.cs`。テスト: `ConfigSettingsTests.InlineDiffAndMutation.cs`（新規 1 件）。
 
 - **`cdidx validate` で検出された置換文字 2 件を除去** — レポートフォーマッター関連の XML ドキュメントコメントに混入していた文字化けを修正し、現行アーキテクチャ説明とコメントを一致させました。対象: `Services/IReportFormatter.cs`, `Services/ReportFormatters/SbomReportFormatter.cs`。
 
