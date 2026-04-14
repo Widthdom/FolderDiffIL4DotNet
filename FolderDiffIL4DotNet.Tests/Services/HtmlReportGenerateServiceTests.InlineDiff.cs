@@ -215,6 +215,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
             var entry = Assert.Single(logger.Entries, e => e.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Inline diff skipped", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("TextMismatch", entry.Message, StringComparison.Ordinal);
             Assert.Contains("ArgumentException", entry.Message, StringComparison.Ordinal);
         }
 
@@ -235,6 +236,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(File.Exists(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME)));
             var entry = Assert.Single(logger.Entries, e => e.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Inline diff skipped", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ILMismatch", entry.Message, StringComparison.Ordinal);
             Assert.Contains("ArgumentException", entry.Message, StringComparison.Ordinal);
         }
 

@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **HTML inline-diff warnings now retain mismatch source context** — `HtmlReportGenerateService` now tags recoverable inline-diff warnings with whether the skipped read came from `TextMismatch` source files or `ILMismatch` IL text files. This keeps HTML-report triage readable from text/JSON logs without changing generated report content. Affected: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.InlineDiff.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `HtmlReportGenerateServiceTests.InlineDiff.cs` (2 updated).
+
 - **NuGet vulnerability warnings now retain index URL and entry counts** — `NuGetVulnerabilityService` now includes the fixed vulnerability-index URL in index-fetch warnings, and outer best-effort failure logs now retain the dependency-entry count plus distinct package count that were being evaluated. This keeps dependency-triage readable from text/JSON logs without changing vulnerability matching behavior. Affected: `Services/NuGetVulnerabilityService.cs`, `FolderDiffIL4DotNet.Tests/Services/NuGetVulnerabilityServiceTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `NuGetVulnerabilityServiceTests.cs` (1 updated).
 
 - **Audit-log warnings now retain reports-folder and root-path context** — `AuditLogGenerateService` now includes the reports folder in top-level write warnings, and skipped entry warnings now retain the root folder that was used to derive the relative path. This keeps audit-log triage readable from text/JSON logs without changing generated JSON content. Affected: `Services/AuditLogGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.PathHandling.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `AuditLogGenerateServiceTests.PathHandling.cs` (2 updated).
@@ -1409,6 +1411,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### [Unreleased]
 
 #### 修正
+
+- **HTML inline-diff warning が mismatch 元を保持するよう改善** — `HtmlReportGenerateService` は回復可能な inline-diff warning に、その skip が `TextMismatch` の比較元テキストか `ILMismatch` の IL テキストかも含めるようになりました。これにより、HTML レポート内容は変えずに、切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/HtmlReport/HtmlReportGenerateService.DetailRows.cs`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.InlineDiff.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `HtmlReportGenerateServiceTests.InlineDiff.cs`（更新 2 件）。
 
 - **NuGet 脆弱性 warning が index URL と entry 件数を保持するよう改善** — `NuGetVulnerabilityService` はインデックス取得 warning に固定の脆弱性 index URL を含め、外側の best-effort failure ログには評価対象だった dependency entry 件数と distinct package 件数も残すようになりました。これにより、脆弱性マッチング動作は変えずに、依存関係切り分けを text/JSON ログだけでも行いやすくします。対象: `Services/NuGetVulnerabilityService.cs`, `FolderDiffIL4DotNet.Tests/Services/NuGetVulnerabilityServiceTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `NuGetVulnerabilityServiceTests.cs`（更新 1 件）。
 
