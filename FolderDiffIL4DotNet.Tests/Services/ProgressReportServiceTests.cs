@@ -67,22 +67,25 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void BuildRedirectedProgressLine_UsesLabelAndKeepAliveFormat()
         {
             var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
-            service.SetLabel("Phase1");
+            service.BeginPhase("Phase1");
 
             var result = InvokePrivate<string>(
                 service,
                 "BuildRedirectedProgressLine",
                 "50.00",
+                50.0,
                 true);
 
-            Assert.Equal("Phase1: 50.00% (processing...)", result);
+            Assert.StartsWith("Phase1: 50.00% ETA ", result, StringComparison.Ordinal);
+            Assert.Contains("(processing...)", result, StringComparison.Ordinal);
+            Assert.Matches(@".*ETA \d{2}:\d{2} \(\+\d{2} h \d{2} m\) \(processing\.\.\.\)$", result);
         }
 
         [Fact]
         public void BuildProgressBarLine_WithLabel_ContainsSpinnerAndPercentage()
         {
             var service = new ProgressReportService(new ConfigSettingsBuilder().Build());
-            service.SetLabel("Scan");
+            service.BeginPhase("Scan");
 
             var result = InvokePrivate<string>(
                 service,
@@ -93,8 +96,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Contains("Scan", result);
             Assert.Contains("25.00%", result);
+            Assert.Contains("ETA ", result);
             Assert.Contains("█", result);
             Assert.Contains("░", result);
+            Assert.Matches(@".*ETA \d{2}:\d{2} \(\+\d{2} h \d{2} m\)$", result);
         }
 
         [Fact]
@@ -110,6 +115,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 true);
 
             Assert.Contains("12.34%", result);
+            Assert.Contains("ETA --:-- (+-- h -- m)", result);
             Assert.EndsWith("⠋", result);
         }
 
@@ -127,6 +133,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 true);
 
             Assert.Contains("50.00%", result);
+            Assert.Contains("ETA --:-- (+-- h -- m)", result);
             Assert.EndsWith(">>", result);
         }
 
@@ -176,7 +183,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 false);
 
             Assert.Contains("50.00%", result);
-            Assert.EndsWith("50.00%", result.Trim());
+            Assert.EndsWith("ETA --:-- (+-- h -- m)", result.Trim(), StringComparison.Ordinal);
         }
 
         [Fact]
@@ -476,6 +483,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var result = ProgressReportService.FormatPhaseElapsed(TimeSpan.FromSeconds(60));
             Assert.Equal("1m 0.0s", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void EstimateRemaining_ZeroOrInvalidProgress_ReturnsNull()
+        {
+            Assert.Null(ProgressReportService.EstimateRemaining(TimeSpan.FromMinutes(5), 0.0));
+            Assert.Null(ProgressReportService.EstimateRemaining(TimeSpan.FromMinutes(5), -1.0));
+            Assert.Null(ProgressReportService.EstimateRemaining(TimeSpan.FromMinutes(5), double.NaN));
+            Assert.Null(ProgressReportService.EstimateRemaining(TimeSpan.FromMinutes(5), double.PositiveInfinity));
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void EstimateRemaining_CompleteProgress_ReturnsZero()
+        {
+            var remaining = ProgressReportService.EstimateRemaining(TimeSpan.FromMinutes(5), 100.0);
+            Assert.Equal(TimeSpan.Zero, remaining);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatEta_SubHourEstimate_UsesFixedWidthClockAndDuration()
+        {
+            var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
+
+            var result = ProgressReportService.FormatEta(now, TimeSpan.FromMinutes(42));
+
+            Assert.Equal("ETA 10:47 (+00 h 42 m)", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatEta_OverMaximumDuration_ClampsToNinetyNineHoursFiftyNineMinutes()
+        {
+            var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
+
+            var result = ProgressReportService.FormatEta(now, TimeSpan.FromHours(120));
+
+            Assert.Equal("ETA 14:04 (+99 h 59 m)", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatEta_WithoutEstimate_ReturnsPlaceholder()
+        {
+            var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
+
+            var result = ProgressReportService.FormatEta(now, remaining: null);
+
+            Assert.Equal("ETA --:-- (+-- h -- m)", result);
         }
 
         // ── Phase counter edge cases / フェーズカウンタエッジケース ──
