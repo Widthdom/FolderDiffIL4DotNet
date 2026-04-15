@@ -256,6 +256,7 @@ namespace FolderDiffIL4DotNet.Services
                 return null;
             }
 
+            remainingSeconds = Math.Min(remainingSeconds, TimeSpan.MaxValue.TotalSeconds);
             return TimeSpan.FromSeconds(remainingSeconds);
         }
 
@@ -276,14 +277,19 @@ namespace FolderDiffIL4DotNet.Services
                 remainingValue = TimeSpan.Zero;
             }
 
-            var roundedMinutes = (int)Math.Ceiling(remainingValue.TotalMinutes);
-            if (roundedMinutes < 0)
+            var roundedMinutesDouble = Math.Ceiling(remainingValue.TotalMinutes);
+            int roundedMinutes;
+            if (double.IsNaN(roundedMinutesDouble) || double.IsInfinity(roundedMinutesDouble) || roundedMinutesDouble <= 0.0)
             {
                 roundedMinutes = 0;
             }
-            else if (roundedMinutes > MAX_ESTIMATED_TOTAL_MINUTES)
+            else if (roundedMinutesDouble >= MAX_ESTIMATED_TOTAL_MINUTES)
             {
                 roundedMinutes = MAX_ESTIMATED_TOTAL_MINUTES;
+            }
+            else
+            {
+                roundedMinutes = (int)roundedMinutesDouble;
             }
 
             var etaClock = nowLocal.AddMinutes(roundedMinutes).ToString("HH:mm");

@@ -505,6 +505,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void EstimateRemaining_ExtremeInputs_DoNotOverflowAndCanBeClampedByFormatter()
+        {
+            var remaining = ProgressReportService.EstimateRemaining(TimeSpan.MaxValue, 0.0000001);
+
+            Assert.NotNull(remaining);
+            Assert.True(remaining.Value > TimeSpan.Zero);
+
+            var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
+            var formatted = ProgressReportService.FormatEta(now, remaining);
+            Assert.Equal("ETA 14:04 (+99 h 59 m)", formatted);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void FormatEta_SubHourEstimate_UsesFixedWidthClockAndDuration()
         {
             var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
@@ -521,6 +535,17 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
 
             var result = ProgressReportService.FormatEta(now, TimeSpan.FromHours(120));
+
+            Assert.Equal("ETA 14:04 (+99 h 59 m)", result);
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void FormatEta_TimeSpanMaxValue_ClampsToNinetyNineHoursFiftyNineMinutes()
+        {
+            var now = new DateTimeOffset(2026, 4, 16, 10, 5, 0, TimeSpan.FromHours(9));
+
+            var result = ProgressReportService.FormatEta(now, TimeSpan.MaxValue);
 
             Assert.Equal("ETA 14:04 (+99 h 59 m)", result);
         }
