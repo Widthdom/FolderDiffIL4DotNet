@@ -2,24 +2,171 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
 {
     public partial class ConfigServiceTests
     {
-        private static readonly string ConfigFilePath = Path.Combine(AppContext.BaseDirectory, "config.json");
+        [Fact]
+        public async Task LoadConfigBuilderAsync_ExplicitConfigFileMissing_ThrowsFileNotFoundException()
+        {
+            var service = new ConfigService();
+            string missingConfigPath = Path.Combine(Path.GetTempPath(), "fd-config-missing-" + Guid.NewGuid().ToString("N"), "missing.json");
+
+            var ex = await Assert.ThrowsAsync<FileNotFoundException>(() => service.LoadConfigBuilderAsync(missingConfigPath));
+            Assert.Contains(Path.GetFullPath(missingConfigPath), ex.Message, StringComparison.Ordinal);
+        }
 
         [Fact]
-        public async Task LoadConfigBuilderAsync_ConfigFileMissing_ThrowsFileNotFoundException()
+        public async Task LoadConfigBuilderAsync_DefaultUserConfigMissing_FallsBackToBundledConfig()
         {
-            await WithConfigFileAsync(content: string.Empty, async () =>
+            using var appDataScope = CreateAppDataOverrideScope();
+            var service = new ConfigService();
+
+            var builder = await service.LoadConfigBuilderAsync();
+
+            Assert.NotNull(builder);
+            Assert.Equal(5, builder.MaxLogGenerations);
+            Assert.True(builder.ShouldIncludeUnchangedFiles);
+        }
+
+        [Fact]
+        public void GetLocalApplicationDataRootAbsolutePath_WhenOverrideIsEmpty_ThrowsInvalidOperationException()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            object? originalOverride = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+
+            try
             {
-                var service = new ConfigService();
-                await Assert.ThrowsAsync<FileNotFoundException>(() => service.LoadConfigBuilderAsync());
-            }, deleteConfig: true);
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, string.Empty);
+
+                var ex = Assert.Throws<InvalidOperationException>(() => AppDataPaths.GetLocalApplicationDataRootAbsolutePath());
+                Assert.Contains("LocalApplicationData", ex.Message, StringComparison.Ordinal);
+            }
+            finally
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, originalOverride);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public void ResolveConfigFileAbsolutePath_WhenLocalApplicationDataOverrideIsEmpty_ThrowsInvalidOperationException()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            object? originalOverride = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+
+            try
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, string.Empty);
+
+                var ex = Assert.Throws<InvalidOperationException>(() => ConfigService.ResolveConfigFileAbsolutePath());
+                Assert.Contains("LocalApplicationData", ex.Message, StringComparison.Ordinal);
+            }
+            finally
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, originalOverride);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_WhenUserConfigJsonIsInvalid_AttachesResolvedUserConfigPath()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            Directory.CreateDirectory(Path.GetDirectoryName(appDataScope.UserConfigFileAbsolutePath)!);
+            await File.WriteAllTextAsync(appDataScope.UserConfigFileAbsolutePath, "{ invalid-json");
+            var service = new ConfigService();
+
+            try
+            {
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
+                Assert.Equal(
+                    Path.GetFullPath(appDataScope.UserConfigFileAbsolutePath),
+                    ConfigService.TryGetResolvedConfigFileAbsolutePath(ex));
+            }
+            finally
+            {
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_WhenBundledFallbackJsonIsInvalid_AttachesResolvedBundledConfigPath()
+        {
+            using var appDataScope = CreateAppDataOverrideScope();
+            string bundledRoot = Path.Combine(Path.GetTempPath(), "fd-bundled-config-" + Guid.NewGuid().ToString("N"));
+            string bundledConfigPath = Path.Combine(bundledRoot, "config.json");
+            Directory.CreateDirectory(bundledRoot);
+            await File.WriteAllTextAsync(bundledConfigPath, "{ invalid-json");
+            var service = new ConfigService(() => bundledConfigPath);
+
+            try
+            {
+                var ex = await Assert.ThrowsAsync<InvalidDataException>(() => service.LoadConfigBuilderAsync());
+                Assert.Equal(
+                    Path.GetFullPath(bundledConfigPath),
+                    ConfigService.TryGetResolvedConfigFileAbsolutePath(ex));
+            }
+            finally
+            {
+                TryDeleteDirectory(bundledRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task AppDataOverrideScope_WhenConcurrentScopesOverlap_SerializesAccessAndRestoresOriginalOverride()
+        {
+            object? originalOverride = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+            string firstRoot = Path.Combine(Path.GetTempPath(), "fd-appdata-scope-first-" + Guid.NewGuid().ToString("N"));
+            string secondRoot = Path.Combine(Path.GetTempPath(), "fd-appdata-scope-second-" + Guid.NewGuid().ToString("N"));
+            var secondAttemptStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var secondScopeEntered = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var releaseSecondScope = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            AppDataOverrideScope? firstScope = null;
+            try
+            {
+                firstScope = new AppDataOverrideScope(firstRoot);
+                Assert.Equal(Path.GetFullPath(firstRoot), AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY));
+
+                Task secondTask = Task.Run(async () =>
+                {
+                    secondAttemptStarted.SetResult();
+                    using var secondScope = new AppDataOverrideScope(secondRoot);
+                    secondScopeEntered.SetResult(secondScope.RootAbsolutePath);
+                    await releaseSecondScope.Task;
+                });
+
+                await secondAttemptStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                await Task.Delay(100);
+                Assert.False(secondScopeEntered.Task.IsCompleted);
+
+                firstScope.Dispose();
+                firstScope = null;
+
+                string enteredRoot = await secondScopeEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.Equal(Path.GetFullPath(secondRoot), enteredRoot);
+                Assert.Equal(Path.GetFullPath(secondRoot), AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY));
+
+                releaseSecondScope.SetResult();
+                await secondTask;
+
+                Assert.Equal(originalOverride, AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY));
+            }
+            finally
+            {
+                firstScope?.Dispose();
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, originalOverride);
+                TryDeleteDirectory(firstRoot);
+                TryDeleteDirectory(secondRoot);
+            }
         }
 
         [Fact]
@@ -380,21 +527,24 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static async Task WithConfigFileAsync(string content, Func<Task> assertion, bool deleteConfig = false)
         {
-            var backupExists = File.Exists(ConfigFilePath);
-            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
+            using var appDataScope = CreateAppDataOverrideScope();
+            string configFilePath = appDataScope.UserConfigFileAbsolutePath;
+            var backupExists = File.Exists(configFilePath);
+            var backupContent = backupExists ? await File.ReadAllTextAsync(configFilePath) : null;
 
             try
             {
                 if (deleteConfig)
                 {
-                    if (File.Exists(ConfigFilePath))
+                    if (File.Exists(configFilePath))
                     {
-                        File.Delete(ConfigFilePath);
+                        File.Delete(configFilePath);
                     }
                 }
                 else
                 {
-                    await File.WriteAllTextAsync(ConfigFilePath, content);
+                    Directory.CreateDirectory(Path.GetDirectoryName(configFilePath)!);
+                    await File.WriteAllTextAsync(configFilePath, content);
                 }
 
                 await assertion();
@@ -403,12 +553,33 @@ namespace FolderDiffIL4DotNet.Tests.Services
             {
                 if (backupExists)
                 {
-                    await File.WriteAllTextAsync(ConfigFilePath, backupContent ?? string.Empty);
+                    Directory.CreateDirectory(Path.GetDirectoryName(configFilePath)!);
+                    await File.WriteAllTextAsync(configFilePath, backupContent ?? string.Empty);
                 }
-                else if (File.Exists(ConfigFilePath))
+                else if (File.Exists(configFilePath))
                 {
-                    File.Delete(ConfigFilePath);
+                    File.Delete(configFilePath);
                 }
+
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        private static AppDataOverrideScope CreateAppDataOverrideScope()
+            => new(Path.Combine(Path.GetTempPath(), "fd-config-appdata-" + Guid.NewGuid().ToString("N")));
+
+        private static void TryDeleteDirectory(string path)
+        {
+            try
+            {
+                if (Directory.Exists(path))
+                {
+                    Directory.Delete(path, recursive: true);
+                }
+            }
+            catch
+            {
+                // ignore cleanup errors in tests / テストのクリーンアップエラーを無視
             }
         }
     }
