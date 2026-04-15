@@ -108,6 +108,16 @@ namespace FolderDiffIL4DotNet
                 return await ClearCacheAsync(opts.ConfigPath);
             }
 
+            if (opts.PrintConfig || opts.ValidateConfig)
+            {
+                var earlyConfigCommandError = GetEarlyConfigCommandArgumentError(opts);
+                if (earlyConfigCommandError != null)
+                {
+                    Console.Error.WriteLine(earlyConfigCommandError);
+                    return (int)ProgramExitCode.InvalidArguments;
+                }
+            }
+
             if (opts.PrintConfig)
             {
                 return await PrintConfigAsync(opts.ConfigPath, opts);

@@ -181,8 +181,8 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--version` | Show the application version and exit (code `0`). |
 | `--banner` | Show the ASCII-art banner and exit (code `0`). |
 | `--credits` | Show credits and acknowledgements (easter egg). |
-| `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects [`config.json`](config.json) + all `FOLDERDIFF_*` env var overrides + supported CLI overrides such as `--threads`, `--skip-il`, and `--creator`. Use `--config <path>` to load a non-default file. Config errors, including malformed `--config` paths, exit with code `3`; stderr includes the failing operation, target path, and exception type. |
-| `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. Malformed `--config` paths are also classified as configuration errors (`3`) with diagnostic stderr output. |
+| `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects [`config.json`](config.json) + all `FOLDERDIFF_*` env var overrides + supported CLI overrides such as `--threads`, `--skip-il`, and `--creator`. This command is diagnostic: it does **not** run semantic validation after applying CLI overrides, so you can inspect an otherwise invalid effective configuration. Use `--config <path>` to load a non-default file. Config-load errors, including malformed `--config` paths, exit with code `3`; invalid CLI syntax or an unknown `--creator-il-ignore-profile` still exits with code `2`. stderr includes the failing operation, target path, and exception type. |
+| `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. This command validates [`config.json`](config.json) after `FOLDERDIFF_*` environment-variable overrides, but before runtime CLI overrides such as `--threads` or `--skip-il` are applied. Useful for CI pre-flight checks. Malformed `--config` paths are classified as configuration errors (`3`), while invalid CLI syntax or an unknown `--creator-il-ignore-profile` still exits with code `2`. |
 | `--no-pause` | Skip key-wait at process end. |
 | `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
 | `--threads <N>` | Override [`MaxParallelism`](#config-en-maxparallelism) for this run (`0` = auto). |
@@ -456,6 +456,7 @@ The Diff Reason column in the Modified Files table appends the file-level max im
 
 > **Note:** The semantic summary is supplementary information. Always verify the final details in the inline IL diff.
 
+<a id="readme-en-config"></a>
 ## Configuration ([`config.json`](config.json))
 
 Place [`config.json`](config.json) next to the executable. All keys are optional; omitted keys use the code-defined defaults in [`ConfigSettings`](Models/ConfigSettings.cs). If the defaults are acceptable, this file can be just:
@@ -767,7 +768,10 @@ Rules:
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#config-en-ignoredextensions) and [`TextFileExtensions`](#config-en-textfileextensions) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
-- After loading [`config.json`](config.json), if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: [`MaxLogGenerations`](#config-en-maxloggenerations) >= `1`; [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) >= `1`; [`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`; [`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) must be less than [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes); and [`SpinnerFrames`](#config-en-spinnerframes) must contain at least one element.
+- For normal diff runs, after loading [`config.json`](config.json) and applying environment-variable plus runtime CLI overrides, if any effective value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: [`MaxLogGenerations`](#config-en-maxloggenerations) >= `1`; [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) >= `1`; [`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`; [`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) must be less than [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes); and [`SpinnerFrames`](#config-en-spinnerframes) must contain at least one element.
+- `--validate-config` validates [`config.json`](config.json) plus `FOLDERDIFF_*` environment-variable overrides before any runtime CLI overrides are applied.
+- `--print-config` prints the effective builder state after env-var and supported CLI overrides without semantic validation, so it can be used to inspect an otherwise invalid effective configuration.
+- Invalid CLI syntax for `--print-config` / `--validate-config` (unknown flags, bad `--threads` value, unknown `--creator-il-ignore-profile`) still returns exit code `2` before those commands run.
 - **JSON syntax errors** (e.g. a trailing comma after the last property or array element) are caught immediately at startup, logged to the run log file, and printed to the console in red with the line number and a hint — the run exits with code `3`. Standard JSON does not allow trailing commas: `"Key": "value",}` is invalid; remove the final comma.
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#config-en-textfileextensions).
@@ -981,8 +985,8 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--version` | アプリバージョンを表示してコード `0` で終了します。 |
 | `--banner` | ASCII アートバナーを表示してコード `0` で終了します。 |
 | `--credits` | クレジットと謝辞を表示します（イースターエッグ）。 |
-| `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。[`config.json`](config.json) のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドと、`--threads`、`--skip-il`、`--creator` などの対応 CLI オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了し、不正な `--config` パスも同じく設定エラーとして扱われます。stderr には失敗した操作名・対象パス・例外種別が含まれます。 |
-| `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。不正な `--config` パスも設定エラー（`3`）として扱い、stderr に診断情報を出力します。 |
+| `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。[`config.json`](config.json) のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドと、`--threads`、`--skip-il`、`--creator` などの対応 CLI オーバーライドを適用した最終状態を表示します。このコマンドは診断用であり、CLI オーバーライド適用後のセマンティック検証は行わないため、範囲外を含む effective config でも確認できます。`--config <path>` との組み合わせ可。設定読込エラーはコード `3` で終了し、不正な `--config` パスも同じく設定エラーとして扱われます。一方で、CLI 構文エラーや未知の `--creator-il-ignore-profile` はコード `2` です。stderr には失敗した操作名・対象パス・例外種別が含まれます。 |
+| `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。このコマンドは [`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を検証しますが、`--threads` や `--skip-il` のような実行時 CLI オーバーライドは適用前です。CI のプリフライトチェックに便利です。不正な `--config` パスは設定エラー（`3`）ですが、CLI 構文エラーや未知の `--creator-il-ignore-profile` はコード `2` です。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
 | `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り [`MaxParallelism`](#config-ja-maxparallelism) を上書きします（`0` = 自動）。 |
@@ -1255,6 +1259,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
 
 > **注:** セマンティックサマリーは補助情報です。最終確認は必ず IL インライン差分で行ってください。
 
+<a id="readme-ja-config"></a>
 ## 設定（[`config.json`](config.json)）
 
 実行ファイルと同じディレクトリに配置します。全項目省略可能で、未指定の項目は [`ConfigSettings`](Models/ConfigSettings.cs) に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
@@ -1566,7 +1571,10 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 
 補足:
 - [`IgnoredExtensions`](#config-ja-ignoredextensions) と [`TextFileExtensions`](#config-ja-textfileextensions) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
-- [`config.json`](config.json) の読み込み後、範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: [`MaxLogGenerations`](#config-ja-maxloggenerations) >= `1`、[`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) >= `1`、[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`、[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) は [`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) 未満であること、[`SpinnerFrames`](#config-ja-spinnerframes) は 1 件以上の要素を含むこと。
+- 通常の diff 実行では、[`config.json`](config.json) の読み込み後、環境変数および実行時 CLI オーバーライドを適用した実効設定に範囲外の値がある場合は、終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: [`MaxLogGenerations`](#config-ja-maxloggenerations) >= `1`、[`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) >= `1`、[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`、[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) は [`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) 未満であること、[`SpinnerFrames`](#config-ja-spinnerframes) は 1 件以上の要素を含むこと。
+- `--validate-config` は、[`config.json`](config.json) に `FOLDERDIFF_*` 環境変数オーバーライドを適用した状態を、実行時 CLI オーバーライド適用前に検証します。
+- `--print-config` は、環境変数と対応 CLI オーバーライドを適用した builder 状態を、セマンティック検証なしでそのまま出力するため、範囲外を含む effective config の診断にも使えます。
+- `--print-config` / `--validate-config` に対する CLI 構文エラー（未知フラグ、不正な `--threads` 値、未知の `--creator-il-ignore-profile`）は、各コマンド実行前に終了コード `2` で失敗します。
 - **JSON 書式エラー**（最後のプロパティや配列要素の後のトレイリングカンマなど）はアプリ起動直後に検出され、実行ログへ書き込まれてコンソールに赤字で行番号とヒントを表示し、終了コード `3` で失敗します。標準 JSON はトレイリングカンマを許容しないため、`"Key": "value",}` のように末尾のカンマがある場合は削除してください。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#config-ja-textfileextensions) に空文字（`""`）を含めてください。

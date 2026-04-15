@@ -17,8 +17,8 @@ namespace FolderDiffIL4DotNet
             "  --help, -h                  Show this help message and exit.\n" +
             "  --version                   Show the application version and exit.\n" +
             "  --banner                    Show the ASCII-art banner and exit.\n" +
-            "  --print-config              Print the effective configuration as indented JSON and exit.\n" +
-            "  --validate-config           Validate the configuration file and exit (0=valid, 3=invalid).\n" +
+            "  --print-config              Diagnostic: print env+supported CLI overrides as indented JSON without semantic validation.\n" +
+            "  --validate-config           Validate config.json + env overrides before runtime CLI overrides (0=valid, 3=invalid).\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +
             "  --config <path>             Path to config.json (default: <exe>/config.json).\n" +
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
