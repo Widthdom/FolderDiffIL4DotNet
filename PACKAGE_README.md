@@ -38,7 +38,7 @@ For .NET assemblies (`.dll`, `.exe`), nildiff compares at the **IL level** rathe
 
 ## Configuration
 
-The tool works out of the box with default settings. To customize behavior, create a `config.json` and pass it via `--config`:
+The tool works out of the box with default settings. To customize behavior, either create a user-local `config.json` in the default app-data location below or pass it via `--config`:
 
 ```bash
 nildiff "/old" "/new" "label" --config /path/to/config.json
@@ -48,14 +48,17 @@ When the report label is omitted, nildiff auto-generates a high-resolution times
 
 Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`). For maintainer-only IL noise suppression, `--creator` applies the predefined `buildserver-winforms` `ILIgnoreLineContainingStrings` profile. See the [annotated sample config](https://github.com/Widthdom/FolderDiffIL4DotNet/blob/main/doc/config.sample.jsonc) for all available settings.
 
-The default `config.json` location varies by OS:
+The default user-local `config.json` location varies by OS:
 
 | OS | Path |
 |---|---|
-| Windows | `%USERPROFILE%\.dotnet\tools\.store\nildiff\<version>\nildiff\<version>\tools\net8.0\any\config.json` |
-| macOS / Linux | `$HOME/.dotnet/tools/.store/nildiff/<version>/nildiff/<version>/tools/net8.0/any/config.json` |
+| Windows | `%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json` |
+| macOS | `~/Library/Application Support/FolderDiffIL4DotNet/config.json` |
+| Linux | `~/.local/share/FolderDiffIL4DotNet/config.json` |
 
-> **Note:** The default config in the tool store is overwritten on tool update. For persistent customization, keep your own `config.json` and use `--config`.
+> **Note:** This user-local config survives global-tool updates. If it does not exist, the tool falls back to the bundled `config.json` next to the executable.
+
+By default, reports and logs are also written under the same user-local app-data root resolved from `Environment.SpecialFolder.LocalApplicationData` (`Reports/` and `Logs/`).
 
 ## Optional: IL Disassembler
 

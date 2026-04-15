@@ -379,14 +379,16 @@ namespace FolderDiffIL4DotNet.Tests
 
         private static async Task WithMissingConfigFileAsync(Func<Task> assertion)
         {
-            var backupExists = File.Exists(ConfigFilePath);
-            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
+            using var appDataScope = CreateAppDataOverrideScope();
+            string configFilePath = appDataScope.UserConfigFileAbsolutePath;
+            var backupExists = File.Exists(configFilePath);
+            var backupContent = backupExists ? await File.ReadAllTextAsync(configFilePath) : null;
 
             try
             {
                 if (backupExists)
                 {
-                    File.Delete(ConfigFilePath);
+                    File.Delete(configFilePath);
                 }
 
                 await assertion();
@@ -395,31 +397,40 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 if (backupExists)
                 {
-                    await File.WriteAllTextAsync(ConfigFilePath, backupContent);
+                    Directory.CreateDirectory(Path.GetDirectoryName(configFilePath)!);
+                    await File.WriteAllTextAsync(configFilePath, backupContent);
                 }
+
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
         private static async Task WithConfigFileAsync(string content, Func<Task> assertion)
         {
-            var backupExists = File.Exists(ConfigFilePath);
-            var backupContent = backupExists ? await File.ReadAllTextAsync(ConfigFilePath) : null;
+            using var appDataScope = CreateAppDataOverrideScope();
+            string configFilePath = appDataScope.UserConfigFileAbsolutePath;
+            var backupExists = File.Exists(configFilePath);
+            var backupContent = backupExists ? await File.ReadAllTextAsync(configFilePath) : null;
 
             try
             {
-                await File.WriteAllTextAsync(ConfigFilePath, content);
+                Directory.CreateDirectory(Path.GetDirectoryName(configFilePath)!);
+                await File.WriteAllTextAsync(configFilePath, content);
                 await assertion();
             }
             finally
             {
                 if (backupExists)
                 {
-                    await File.WriteAllTextAsync(ConfigFilePath, backupContent ?? string.Empty);
+                    Directory.CreateDirectory(Path.GetDirectoryName(configFilePath)!);
+                    await File.WriteAllTextAsync(configFilePath, backupContent ?? string.Empty);
                 }
-                else if (File.Exists(ConfigFilePath))
+                else if (File.Exists(configFilePath))
                 {
-                    File.Delete(ConfigFilePath);
+                    File.Delete(configFilePath);
                 }
+
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
@@ -489,20 +500,22 @@ namespace FolderDiffIL4DotNet.Tests
         [Trait("Category", "Unit")]
         public void GetReportsFolderAbsolutePath_WithNullOutputDirectory_UsesDefaultReportsDir()
         {
+            using var appDataScope = CreateAppDataOverrideScope();
+
             var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", null);
 
-            Assert.Contains("Reports", result, StringComparison.Ordinal);
-            Assert.EndsWith("myLabel", result);
+            Assert.Equal(Path.Combine(appDataScope.ReportsRootAbsolutePath, "myLabel"), result);
         }
 
         [Fact]
         [Trait("Category", "Unit")]
         public void GetReportsFolderAbsolutePath_WithEmptyOutputDirectory_UsesDefaultReportsDir()
         {
+            using var appDataScope = CreateAppDataOverrideScope();
+
             var result = RunPreflightValidator.GetReportsFolderAbsolutePath("myLabel", "");
 
-            Assert.Contains("Reports", result, StringComparison.Ordinal);
-            Assert.EndsWith("myLabel", result);
+            Assert.Equal(Path.Combine(appDataScope.ReportsRootAbsolutePath, "myLabel"), result);
         }
 
         // -----------------------------------------------------------------------
@@ -797,14 +810,12 @@ namespace FolderDiffIL4DotNet.Tests
         [Trait("Category", "Unit")]
         public async Task ResolveCacheDirectoryAsync_WhenConfigPathIsInvalid_FallsBackToDefaultDirectory()
         {
+            using var appDataScope = CreateAppDataOverrideScope();
             var runner = new ProgramRunner(new TestLogger(logFileAbsolutePath: "test.log"), new ConfigService());
 
             var result = await InvokeResolveCacheDirectoryAsync(runner, "bad\0config.json");
 
-            var expectedDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                Constants.APP_DATA_DIR_NAME,
-                Constants.DEFAULT_IL_CACHE_DIR_NAME);
+            var expectedDir = Path.Combine(appDataScope.ApplicationDataRootAbsolutePath, Constants.DEFAULT_IL_CACHE_DIR_NAME);
             Assert.Equal(expectedDir, result);
         }
     }

@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Runner;
 using FolderDiffIL4DotNet.Services;
@@ -16,6 +17,7 @@ namespace FolderDiffIL4DotNet
     {
         private const string LOG_LOADING_CONFIGURATION = "Loading configuration...";
         private const string LOG_CONFIGURATION_LOADED = "Configuration loaded successfully.";
+        private const string DEFAULT_CONFIG_ERROR_TARGET = "config.json";
 
         /// <summary>
         /// Interactive wizard for selective IL cache deletion.
@@ -161,7 +163,8 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine($"Cleared {deleted} IL cache file(s) from: {cacheDir}");
                 return 0;
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 Console.Error.WriteLine($"Failed to clear IL cache: {ex.Message}");
                 return (int)ProgramExitCode.ExecutionFailed;
@@ -179,14 +182,14 @@ namespace FolderDiffIL4DotNet
                 var builder = await _configService.LoadConfigBuilderAsync(configPath);
                 var config = builder.Build();
                 return string.IsNullOrWhiteSpace(config.ILCacheDirectoryAbsolutePath)
-                    ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_DATA_DIR_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME)
+                    ? AppDataPaths.GetDefaultIlCacheDirectoryAbsolutePath()
                     : config.ILCacheDirectoryAbsolutePath;
             }
             catch (Exception ex) when (ex is ArgumentException or NotSupportedException
                 or FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException)
             {
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Common.Constants.APP_DATA_DIR_NAME, Common.Constants.DEFAULT_IL_CACHE_DIR_NAME);
+                return AppDataPaths.GetDefaultIlCacheDirectoryAbsolutePath();
             }
         }
 
@@ -343,10 +346,11 @@ namespace FolderDiffIL4DotNet
             }
             catch (Exception ex) when (ex is ArgumentException or NotSupportedException
                 or FileNotFoundException or InvalidDataException
-                or IOException or UnauthorizedAccessException)
+                or IOException or UnauthorizedAccessException
+                || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 Console.Error.WriteLine(
-                    $"Configuration validation failed for '{configPath ?? "config.json"}' ({ex.GetType().Name}): {ex.Message}");
+                    $"Configuration validation failed for '{GetConfigErrorTarget(configPath, ex)}' ({ex.GetType().Name}): {ex.Message}");
                 return (int)ProgramExitCode.ConfigurationError;
             }
         }
@@ -366,10 +370,11 @@ namespace FolderDiffIL4DotNet
             }
             catch (Exception ex) when (ex is ArgumentException or NotSupportedException
                 or FileNotFoundException or InvalidDataException
-                or IOException or UnauthorizedAccessException)
+                or IOException or UnauthorizedAccessException
+                || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 Console.Error.WriteLine(
-                    $"Failed to print effective configuration for '{configPath ?? "config.json"}' ({ex.GetType().Name}): {ex.Message}");
+                    $"Failed to print effective configuration for '{GetConfigErrorTarget(configPath, ex)}' ({ex.GetType().Name}): {ex.Message}");
                 return (int)ProgramExitCode.ConfigurationError;
             }
         }
@@ -385,12 +390,18 @@ namespace FolderDiffIL4DotNet
                 var builder = await LoadConfigBuilderAsync(configPath);
                 return StepResult<ConfigSettingsBuilder>.FromValue(builder);
             }
-            catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException
-                or IOException or UnauthorizedAccessException or NotSupportedException)
+            catch (Exception ex) when (ex is ArgumentException or FileNotFoundException or InvalidDataException
+                or IOException or UnauthorizedAccessException or NotSupportedException
+                || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 return StepResult<ConfigSettingsBuilder>.FromFailure(CreateFailureResult(ProgramExitCode.ConfigurationError, ex));
             }
         }
+
+        private static string GetConfigErrorTarget(string? configPath, Exception ex)
+            => ConfigService.TryGetResolvedConfigFileAbsolutePath(ex)
+                ?? configPath
+                ?? DEFAULT_CONFIG_ERROR_TARGET;
 
         /// <summary>
         /// Validates and builds the immutable <see cref="ConfigSettings"/> from the builder.

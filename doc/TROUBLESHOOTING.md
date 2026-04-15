@@ -188,7 +188,7 @@ This skips SHA256 precomputation and uses sequential I/O instead of parallel chu
 
 **Symptom:** The tool exits with code `3` and a configuration error message.
 
-**Cause:** Invalid JSON in [`config.json`](../config.json), or a setting value out of range.
+**Cause:** Invalid JSON in the effective [`config.json`](../config.json) (explicit `--config` path, the user-local app-data default, or the bundled fallback file), or a setting value out of range.
 
 **Solution:**
 
@@ -202,13 +202,30 @@ dotnet run -- --config /path/to/config.json --print-config
 
 3. Compare with the annotated sample: [`doc/config.sample.jsonc`](config.sample.jsonc).
 
+### "Where did my reports/logs/config go after a global-tool update?"
+
+**Symptom:** After updating `nildiff`, the default `Reports`, `Logs`, or `config.json` location is no longer where you expected.
+
+**Cause:** Current versions use the OS-standard user-local app-data root for default folders:
+
+- Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\Reports`, `%LOCALAPPDATA%\FolderDiffIL4DotNet\Logs`, `%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json`
+- macOS: `~/Library/Application Support/FolderDiffIL4DotNet/Reports`, `~/Library/Application Support/FolderDiffIL4DotNet/Logs`, `~/Library/Application Support/FolderDiffIL4DotNet/config.json`
+- Linux: `~/.local/share/FolderDiffIL4DotNet/Reports`, `~/.local/share/FolderDiffIL4DotNet/Logs`, `~/.local/share/FolderDiffIL4DotNet/config.json`
+
+**Solution:**
+
+1. Look in the user-local paths above, or use `--open-reports`, `--open-config`, or `--open-logs` to open the active default folders.
+2. Global-tool updates do **not** delete these user-local folders.
+3. Older files written to an explicit `--output` path or to legacy executable-relative defaults remain in their original location; they are not auto-migrated.
+4. If the user-local `config.json` does not exist, the tool falls back to the bundled `config.json` next to the executable for reading only.
+
 ### "Path length exceeds OS limit" (exit code 2)
 
 **Symptom:** Preflight check fails with a path-length error.
 
-**Cause:** The constructed `Reports/<label>` path exceeds the OS limit (260 chars on Windows, 1024 on macOS, 4096 on Linux).
+**Cause:** The constructed report output path (`<reports-root>/<label>`) exceeds the OS limit (260 chars on Windows, 1024 on macOS, 4096 on Linux).
 
-**Solution:** Use a shorter report label or move the working directory closer to the filesystem root. On Windows, enable long-path support:
+**Solution:** Use a shorter report label, choose a shorter `--output` path if needed, or move the working directory closer to the filesystem root. On Windows, enable long-path support:
 
 ```powershell
 # Windows 10/11 — requires admin
@@ -219,9 +236,9 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 **Symptom:** Preflight check fails with a disk-space error.
 
-**Cause:** Less than 100 MiB free on the drive that will hold the `Reports/` folder.
+**Cause:** Less than 100 MiB free on the drive that will hold the active reports root (the default user-local app-data `Reports/` directory, or the custom `--output` path).
 
-**Solution:** Free up disk space on the drive that contains the application `Reports/` folder, use a shorter report label if path length is also a factor, or move the application/workspace to a drive with more free space. The `<reportLabel>` argument is a folder name, not an output-path override.
+**Solution:** Free up disk space on the drive that contains the active reports root, use a shorter report label if path length is also a factor, or use `--output` to target a drive with more free space. The `<reportLabel>` argument is a folder name, not an output-path override.
 
 ### All files reported as "Modified" even though they are functionally identical
 
@@ -458,7 +475,7 @@ dotnet run -- /path/old /path/new label --no-il-cache --no-pause
 
 **症状:** ツールが終了コード `3` と設定エラーメッセージで終了する。
 
-**原因:** [`config.json`](../config.json) の JSON 構文が無効、または設定値が範囲外。
+**原因:** 実際に読み込まれた [`config.json`](../config.json)（明示 `--config` パス、ユーザーローカル app-data の既定パス、または同梱フォールバック）の JSON が不正、または設定値が範囲外。
 
 **解決策:**
 
@@ -472,13 +489,30 @@ dotnet run -- --config /path/to/config.json --print-config
 
 3. コメント付きサンプルと比較: [`doc/config.sample.jsonc`](config.sample.jsonc)。
 
+### 「グローバルツール更新後に reports/logs/config がどこに行ったかわからない」
+
+**症状:** `nildiff` 更新後、既定の `Reports`、`Logs`、`config.json` の場所が想定と違って見つからない。
+
+**原因:** 現在のバージョンは、既定フォルダとして OS 標準のユーザーローカル app-data ルートを使います。
+
+- Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\Reports`、`%LOCALAPPDATA%\FolderDiffIL4DotNet\Logs`、`%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json`
+- macOS: `~/Library/Application Support/FolderDiffIL4DotNet/Reports`、`~/Library/Application Support/FolderDiffIL4DotNet/Logs`、`~/Library/Application Support/FolderDiffIL4DotNet/config.json`
+- Linux: `~/.local/share/FolderDiffIL4DotNet/Reports`、`~/.local/share/FolderDiffIL4DotNet/Logs`、`~/.local/share/FolderDiffIL4DotNet/config.json`
+
+**解決策:**
+
+1. 上記パスを直接確認するか、`--open-reports`、`--open-config`、`--open-logs` で現在の既定フォルダを開いてください。
+2. グローバルツール更新で、これらのユーザーローカルフォルダ自体が削除されることはありません。
+3. 明示的な `--output` 先や、旧バージョンの実行ファイル相対既定パスへ出力された古いファイルは元の場所に残り、自動移行はされません。
+4. ユーザーローカル `config.json` が存在しない場合だけ、実行ファイル横の同梱 `config.json` を読み取り用フォールバックとして使います。
+
 ### 「パス長が OS 制限を超過」（終了コード 2）
 
 **症状:** プリフライトチェックがパス長エラーで失敗する。
 
-**原因:** 構築された `Reports/<label>` パスが OS 制限を超過（Windows: 260 文字、macOS: 1024、Linux: 4096）。
+**原因:** 構築されたレポート出力パス（`<reports-root>/<label>`）が OS 制限を超過（Windows: 260 文字、macOS: 1024、Linux: 4096）。
 
-**解決策:** より短いレポートラベルを使用するか、作業ディレクトリをファイルシステムルートに近い場所に移動。Windows では長いパスのサポートを有効化:
+**解決策:** より短いレポートラベルを使用する、必要なら `--output` でより短い出力先を選ぶ、または作業ディレクトリをファイルシステムルートに近い場所に移動。Windows では長いパスのサポートを有効化:
 
 ```powershell
 # Windows 10/11 — 管理者権限が必要
@@ -489,9 +523,9 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 **症状:** プリフライトチェックがディスク容量エラーで失敗する。
 
-**原因:** `Reports/` フォルダを保持するドライブの空き容量が 100 MiB 未満。
+**原因:** 現在のレポートルート（既定のユーザーローカル app-data `Reports/`、または `--output` で指定したパス）を保持するドライブの空き容量が 100 MiB 未満。
 
-**解決策:** アプリケーションの `Reports/` フォルダが置かれるドライブの空き容量を増やすか、パス長も問題なら短いレポートラベルを使うか、アプリケーション/ワークスペース自体を空き容量の多いドライブへ移動してください。`<reportLabel>` 引数は出力先パスではなくフォルダ名です。
+**解決策:** 現在のレポートルートがあるドライブの空き容量を確保してください。パス長も問題なら短いレポートラベルを使い、必要なら `--output` で空き容量の多いドライブへ切り替えてください。`<reportLabel>` 引数は出力先パスではなくフォルダ名です。
 
 ### 機能的に同一なのにすべてのファイルが「Modified」と報告される
 

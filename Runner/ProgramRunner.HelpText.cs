@@ -11,7 +11,8 @@ namespace FolderDiffIL4DotNet
             "Arguments:\n" +
             "  <oldFolder>    Absolute path to the baseline (old) folder.\n" +
             "  <newFolder>    Absolute path to the comparison (new) folder.\n" +
-            "  [reportLabel]  Optional label used as the subfolder name under Reports/.\n" +
+            "  [reportLabel]  Optional label used as the subfolder name under the active reports root.\n" +
+            "                 Default root is the user-local app-data Reports/ folder, or --output if specified.\n" +
             "                 When omitted, a high-resolution timestamp label is auto-generated.\n\n" +
             "Options:\n" +
             "  --help, -h                  Show this help message and exit.\n" +
@@ -20,7 +21,8 @@ namespace FolderDiffIL4DotNet
             "  --print-config              Print the effective configuration as indented JSON and exit.\n" +
             "  --validate-config           Validate the configuration file and exit (0=valid, 3=invalid).\n" +
             "  --no-pause                  Skip key-wait at process end.\n" +
-            "  --config <path>             Path to config.json (default: <exe>/config.json).\n" +
+            "  --config <path>             Path to config.json (default: user-local app-data config.json;\n" +
+            "                              falls back to bundled config.json when absent).\n" +
             "  --threads <N>               Override MaxParallelism (0 = auto).\n" +
             "  --no-il-cache               Disable the IL cache for this run.\n" +
             "  --clear-cache               Interactive wizard to selectively delete IL cache files.\n" +
@@ -43,14 +45,14 @@ namespace FolderDiffIL4DotNet
             "  --random-spinner            Randomly select a spinner theme for each run.\n" +
             "  --credits                   Show credits and acknowledgements.\n" +
             "  --bell                      Ring terminal bell when execution completes.\n" +
-            "  --output <path>             Output directory for reports (default: <exe>/Reports/).\n" +
+            "  --output <path>             Output directory for reports (default: user-local app-data Reports/).\n" +
             "  --log-format <text|json>    Log file output format (default: text).\n" +
             "                              'json' emits NDJSON lines for SIEM/log aggregation.\n" +
-            "  --open-reports              Open the Reports folder in the file manager.\n" +
+            "  --open-reports              Open the default user-local Reports folder in the file manager.\n" +
             "                              Respects --output if specified.\n" +
-            "  --open-config               Open the config folder in the file manager.\n" +
+            "  --open-config               Open the default user-local config folder in the file manager.\n" +
             "                              Respects --config if specified.\n" +
-            "  --open-logs                 Open the Logs folder in the file manager.\n\n" +
+            "  --open-logs                 Open the default user-local Logs folder in the file manager.\n\n" +
             "Environment variables (override config.json values):\n" +
             "  FOLDERDIFF_MAXPARALLELISM=<N>               Override MaxParallelism.\n" +
             "  FOLDERDIFF_ENABLEILCACHE=<true|false>       Enable/disable the IL cache.\n" +

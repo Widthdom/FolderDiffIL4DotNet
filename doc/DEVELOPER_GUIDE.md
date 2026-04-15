@@ -68,7 +68,7 @@ dotnet run -- --print-config --config /etc/cfg.json
 dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
 
-Generated during a run — see [README § Generated Artifacts](../README.md#readme-en-generated-artifacts) for the full list. In addition to those report files, an `ILCache/` directory is created under the OS-standard user-local data directory (`%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache` on Windows, `~/.local/share/FolderDiffIL4DotNet/ILCache` on macOS/Linux) when [`EnableILCache`](../Models/ConfigSettings.cs) is `true` and [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) is not configured.
+Generated during a run — see [README § Generated Artifacts](../README.md#readme-en-generated-artifacts) for the full list. By default, reports, logs, and the user-local `config.json` all live under the OS-standard user-local data directory resolved from `Environment.SpecialFolder.LocalApplicationData` (`%LOCALAPPDATA%\FolderDiffIL4DotNet\...` on Windows, `~/Library/Application Support/FolderDiffIL4DotNet/...` on macOS, `~/.local/share/FolderDiffIL4DotNet/...` on Linux). In the same root, an `ILCache/` directory is created when [`EnableILCache`](../Models/ConfigSettings.cs) is `true` and [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) is not configured.
 
 ## Partial Class File Layout
 
@@ -335,7 +335,7 @@ sequenceDiagram
     CLI->>Program: Main(args)
     Program->>Runner: RunAsync(args)
     Runner->>Runner: initialize logger and print version
-    Runner->>Runner: validate args and create Reports/<label>
+    Runner->>Runner: validate args and create <reports-root>/<label>
     Runner->>Config: LoadConfigAsync()
     Runner->>Runner: build DiffExecutionContext
     Runner->>Scope: BuildRunServiceProvider()
@@ -353,14 +353,14 @@ The diff phase returns [`FileDiffResultLists`](../Models/FileDiffResultLists.cs)
 
 1. Parse CLI options (`--help`, `--version`, `--banner`, `--credits`, `--print-config`, `--validate-config`, `--clear-cache`, `--open-reports`, `--open-config`, `--open-logs`, `--no-pause`, `--config`, `--output`, `--threads`, `--no-il-cache`, `--skip-il`, `--no-timestamp-warnings`, `--creator`, `--creator-il-ignore-profile`, spinner options, `--bell`).
 2. If `--help`, `--version`, `--banner`, or `--credits` is present, print and exit immediately with code `0` — no logger initialization occurs.
-2a. If any of `--open-reports`, `--open-config`, or `--open-logs` is present, resolve the requested targets in declaration order (reports, config, logs), create missing directories, launch the platform file manager, and exit. Path-resolution / directory-creation / launcher failures are converted to exit code `4` with stderr that includes the resolved target path (or unresolved placeholder) plus the exception type.
+2a. If any of `--open-reports`, `--open-config`, or `--open-logs` is present, resolve the requested targets in declaration order (reports, config, logs), create missing directories, launch the platform file manager, and exit. The default roots are the user-local app-data `Reports/`, config, and `Logs/` locations unless `--output` or `--config` overrides apply. Path-resolution / directory-creation / launcher failures are converted to exit code `4` with stderr that includes the resolved target path (or unresolved placeholder) plus the exception type.
 2b. If `--clear-cache` is present, run the interactive cache-deletion wizard. Read-only `.ilcache` files have their read-only attribute cleared before deletion so the clear operation uses the same semantics as the disk-cache layer.
-2c. If `--print-config` is present (optionally combined with `--config <path>`), load the effective configuration — [`config.json`](../config.json) deserialized and all `FOLDERDIFF_*` environment variable overrides applied — serialize it as indented JSON to standard output, and exit with code `0`. Config load errors, including malformed `--config` paths, exit with code `3`.
-2d. If `--validate-config` is present, load and semantically validate the configuration, print `Configuration is valid.` on success, and exit with code `0`. Invalid JSON, semantic validation failures, missing files, and malformed `--config` paths all exit with code `3`.
+2c. If `--print-config` is present (optionally combined with `--config <path>`), load the effective configuration — resolved from the explicit path or, by default, from the user-local app-data `config.json` with bundled `config.json` fallback — apply all `FOLDERDIFF_*` environment variable overrides, serialize it as indented JSON to standard output, and exit with code `0`. Config load errors, including malformed `--config` paths, exit with code `3`.
+2d. If `--validate-config` is present, load and semantically validate the configuration using that same resolution order, print `Configuration is valid.` on success, and exit with code `0`. Invalid JSON, semantic validation failures, missing files, and malformed `--config` paths all exit with code `3`.
 3. Initialize logging and print application version.
 4. Validate `old`, `new`, and `reportLabel` arguments. Unknown CLI flags surface here as exit code `2`.
-5. Create `Reports/<label>` early and fail if the label already exists.
-6. Load the config file — from the path given to `--config` if supplied, otherwise from [`AppContext.BaseDirectory`](https://learn.microsoft.com/en-us/dotnet/api/system.appcontext.basedirectory?view=net-8.0) — and deserialize it into a mutable [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs). Immediately after deserialization, [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) applies any `FOLDERDIFF_<PROPERTYNAME>` environment variable overrides (e.g. `FOLDERDIFF_MAXPARALLELISM=4`) to the builder.
+5. Create `<reports-root>/<label>` early and fail if the label already exists. The default reports root is the user-local app-data `Reports/` directory unless `--output` overrides it.
+6. Load the config file — from the path given to `--config` if supplied, otherwise by first checking the user-local app-data `config.json` and then falling back to [`AppContext.BaseDirectory`](https://learn.microsoft.com/en-us/dotnet/api/system.appcontext.basedirectory?view=net-8.0) / bundled `config.json` — and deserialize it into a mutable [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs). Immediately after deserialization, [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) applies any `FOLDERDIFF_<PROPERTYNAME>` environment variable overrides (e.g. `FOLDERDIFF_MAXPARALLELISM=4`) to the builder.
 7. Apply CLI overrides on top of the builder: `--threads` sets [`MaxParallelism`](../Models/ConfigSettingsBuilder.cs); `--no-il-cache` sets [`EnableILCache`](../Models/ConfigSettingsBuilder.cs) `= false`; `--skip-il` sets [`SkipIL`](../Models/ConfigSettingsBuilder.cs) `= true`; `--no-timestamp-warnings` sets [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettingsBuilder.cs) `= false`. Then [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) is called; if any value is out of range, the run fails with exit code `3`. Finally, [`ConfigSettingsBuilder.Build()`](../Models/ConfigSettingsBuilder.cs) produces an immutable [`ConfigSettings`](../Models/ConfigSettings.cs) instance used for the remainder of the run.
 8. Clear transient shared helpers such as [`TimestampCache`](../Services/Caching/TimestampCache.cs).
 9. Compute [`DiffExecutionContext`](../Services/DiffExecutionContext.cs), including network-share decisions.
@@ -375,7 +375,7 @@ The implementation keeps `RunAsync()` short by treating those steps as explicit 
 Failure behavior:
 - [`ProgramRunner`](../ProgramRunner.cs) now uses small typed step results at the application boundary instead of flattening every failure into one catch-all exit code.
 - Argument validation, unknown flags, and missing input paths map to exit code `2`.
-- [`ConfigService`](../Services/ConfigService.cs) failures such as missing [`config.json`](../config.json), parse failures, config-read I/O errors, or settings that fail [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) map to exit code `3`.
+- [`ConfigService`](../Services/ConfigService.cs) failures such as a missing explicit config path, both default config candidates being absent, parse failures, config-read I/O errors, or settings that fail [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) map to exit code `3`.
 - Diff execution and report-generation failures, including fatal IL comparison failures surfaced as [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0), map to exit code `4`.
 - Exit code `1` is reserved for unexpected internal errors that escape the explicit phase classification.
 - [`InvalidOperationException`](https://learn.microsoft.com/en-us/dotnet/api/system.invalidoperationexception?view=net-8.0) originating from IL comparison is treated as a fatal exception and stops the whole run.
@@ -625,7 +625,7 @@ The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed re
 <a id="guide-en-config-runtime"></a>
 ## Configuration and Runtime Modes
 
-[`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. [`config.json`](../config.json) is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults. After loading, [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) checks every setting for range constraints; if any fail, [`ConfigService`](../Services/ConfigService.cs) throws [`InvalidDataException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.invaliddataexception?view=net-8.0) with a message that lists each invalid setting, and the run exits with code `3`. Validated constraints: [`MaxLogGenerations`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) < [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs); and [`SpinnerFrames`](../Models/ConfigSettings.cs) must contain at least one element. For key-by-key descriptions, use the [README configuration table](../Models/ConfigSettings.cs).
+[`ConfigSettings`](../Models/ConfigSettings.cs) is the single source of truth for defaults. [`config.json`](../config.json) is an override file, so omitted keys keep the defaults defined in code, and `null` collection/path values are normalized back to those defaults. When `--config` is omitted, [`ConfigService`](../Services/ConfigService.cs) resolves the effective file by checking the user-local app-data `config.json` first and the bundled `config.json` next to the executable second. After loading, [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) checks every setting for range constraints; if any fail, [`ConfigService`](../Services/ConfigService.cs) throws [`InvalidDataException`](https://learn.microsoft.com/en-us/dotnet/api/system.io.invaliddataexception?view=net-8.0) with a message that lists each invalid setting, and the run exits with code `3`. Validated constraints: [`MaxLogGenerations`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) >= `1`; [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) < [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs); and [`SpinnerFrames`](../Models/ConfigSettings.cs) must contain at least one element. For key-by-key descriptions, use the [README configuration table](../Models/ConfigSettings.cs).
 
 **JSON syntax errors** (e.g. a trailing comma after the last property or array element — a common mistake) are caught by [`ConfigService`](../Services/ConfigService.cs) before validation runs. The error is logged to the run log file and printed to the console in red, including the line number and byte position from the underlying [`JsonException`](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsonexception?view=net-8.0) and a trailing-comma hint. Standard JSON does not allow trailing commas: `"Key": "value",}` is invalid — remove the final comma. The run exits with code `3`.
 
@@ -663,7 +663,7 @@ The inline diff can be suppressed in three ways, each producing a visible `diff-
 
 The edit-distance-exceeded and single-Truncated cases both render as a plain row (no `<details>` element), so the notice is visible without any click. The [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs) truncation renders *inside* the `<details>` block after a partial diff.
 
-> **ILMismatch entries** also require `ShouldOutputILText: true` (the default). [`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs) reads IL text directly from the `*_IL.txt` files produced by [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs) (under `Reports/<label>/IL/old` and `Reports/<label>/IL/new`). If [`ShouldOutputILText`](../Models/ConfigSettings.cs) is `false`, those files are not written and the inline diff is silently omitted — no `diff-skipped` notice is shown.
+> **ILMismatch entries** also require `ShouldOutputILText: true` (the default). [`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs) reads IL text directly from the `*_IL.txt` files produced by [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs) (under `<reports-root>/<label>/IL/old` and `<reports-root>/<label>/IL/new`; by default the reports root is the user-local app-data `Reports/` directory). If [`ShouldOutputILText`](../Models/ConfigSettings.cs) is `false`, those files are not written and the inline diff is silently omitted — no `diff-skipped` notice is shown.
 
 ### Runtime mode resolution
 
@@ -926,7 +926,7 @@ When a test fake (mock service) records method calls in a collection (e.g. `Read
 
 ## Debugging Tips
 
-- Start with `Logs/log_YYYYMMDD.log` for the exact failure point.
+- Start with `<app-data-root>/Logs/log_YYYYMMDD.log` for the exact failure point (for example `%LOCALAPPDATA%\FolderDiffIL4DotNet\Logs\log_YYYYMMDD.log` on Windows, `~/Library/Application Support/FolderDiffIL4DotNet/Logs/log_YYYYMMDD.log` on macOS, or `~/.local/share/FolderDiffIL4DotNet/Logs/log_YYYYMMDD.log` on Linux).
 - If the run stops during IL comparison, inspect the chosen disassembler label in logs and report output.
 - For unexpected network-mode behavior, verify both config flags and detected path classification.
 - When a result bucket looks wrong, inspect [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) population order before touching report formatting.
@@ -1034,7 +1034,7 @@ dotnet run -- --print-config --config /etc/cfg.json
 dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /etc/cfg.json --no-pause
 ```
 
-実行時に生成される主な成果物は [README § 生成物](../README.md#readme-ja-generated-artifacts) を参照してください。上記レポートファイルに加え、[`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は OS 標準のユーザーローカルデータディレクトリ配下に `ILCache/` ディレクトリが作成されます（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache`、macOS/Linux: `~/.local/share/FolderDiffIL4DotNet/ILCache`）。
+実行時に生成される主な成果物は [README § 生成物](../README.md#readme-ja-generated-artifacts) を参照してください。既定では、レポート、ログ、およびユーザーローカル `config.json` は `Environment.SpecialFolder.LocalApplicationData` から解決される OS 標準のユーザーローカルデータディレクトリ配下（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\...`、macOS: `~/Library/Application Support/FolderDiffIL4DotNet/...`、Linux: `~/.local/share/FolderDiffIL4DotNet/...`）に集約されます。同じルート配下で、[`EnableILCache`](../Models/ConfigSettings.cs) が `true` かつ [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs) 未指定時は `ILCache/` ディレクトリも作成されます。
 
 ## Partial Class ファイル構成
 
@@ -1300,7 +1300,7 @@ sequenceDiagram
     CLI->>Program: Main(args)
     Program->>Runner: RunAsync(args)
     Runner->>Runner: ロガー初期化とバージョン表示
-    Runner->>Runner: 引数検証と Reports/<label> 作成
+    Runner->>Runner: 引数検証と <reports-root>/<label> 作成
     Runner->>Config: LoadConfigAsync()
     Runner->>Runner: DiffExecutionContext 構築
     Runner->>Scope: BuildRunServiceProvider()
@@ -1318,14 +1318,14 @@ sequenceDiagram
 
 1. CLI オプション（`--help`、`--version`、`--banner`、`--credits`、`--print-config`、`--validate-config`、`--clear-cache`、`--open-reports`、`--open-config`、`--open-logs`、`--no-pause`、`--config`、`--output`、`--threads`、`--no-il-cache`、`--skip-il`、`--no-timestamp-warnings`、`--creator`、`--creator-il-ignore-profile`、各種スピナー、`--bell`）を解析します。
 2. `--help`、`--version`、`--banner`、`--credits` のいずれかがある場合は、ロガー初期化を一切行わずに即座に出力してコード `0` で終了します。
-2a. `--open-reports` / `--open-config` / `--open-logs` のいずれかがある場合は、要求されたターゲットを宣言順（reports → config → logs）で解決し、必要ならディレクトリを作成してからプラットフォームのファイルマネージャを起動し、そこで終了します。パス解決・ディレクトリ作成・ランチャー起動失敗は、解決済みターゲットパス（または未解決プレースホルダ）と例外種別付きの stderr を出して終了コード `4` に変換します。
+2a. `--open-reports` / `--open-config` / `--open-logs` のいずれかがある場合は、要求されたターゲットを宣言順（reports → config → logs）で解決し、必要ならディレクトリを作成してからプラットフォームのファイルマネージャを起動し、そこで終了します。既定のルートは、`--output` / `--config` の上書きがない限り、ユーザーローカル app-data の `Reports/`・設定ディレクトリ・`Logs/` です。パス解決・ディレクトリ作成・ランチャー起動失敗は、解決済みターゲットパス（または未解決プレースホルダ）と例外種別付きの stderr を出して終了コード `4` に変換します。
 2b. `--clear-cache` がある場合は、対話式キャッシュ削除ウィザードを実行します。read-only の `.ilcache` は削除前に属性を解除し、ディスクキャッシュ層と同じ削除セマンティクスで扱います。
-2c. `--print-config` がある場合（`--config <path>` との併用可）、有効な設定 — [`config.json`](../config.json) のデシリアライズ結果にすべての `FOLDERDIFF_*` 環境変数オーバーライドを適用したもの — をインデント付き JSON として標準出力に書き出し、終了コード `0` で終了します。設定読込エラーと不正な `--config` パスは終了コード `3` です。
-2d. `--validate-config` がある場合は、設定を読み込んでセマンティック検証まで行い、成功時は `Configuration is valid.` を出してコード `0` で終了します。不正 JSON、セマンティック検証失敗、設定ファイル不在、不正な `--config` パスはすべて終了コード `3` です。
+2c. `--print-config` がある場合（`--config <path>` との併用可）、有効な設定 — 明示パス、または既定ではユーザーローカル app-data `config.json` → 同梱 `config.json` の順で解決した設定に、すべての `FOLDERDIFF_*` 環境変数オーバーライドを適用したもの — をインデント付き JSON として標準出力に書き出し、終了コード `0` で終了します。設定読込エラーと不正な `--config` パスは終了コード `3` です。
+2d. `--validate-config` がある場合は、その同じ解決順で設定を読み込んでセマンティック検証まで行い、成功時は `Configuration is valid.` を出してコード `0` で終了します。不正 JSON、セマンティック検証失敗、設定ファイル不在、不正な `--config` パスはすべて終了コード `3` です。
 3. ログを初期化し、アプリのバージョンを表示します。
 4. `old`、`new`、`reportLabel` 引数を検証します。未知の CLI フラグはここで終了コード `2` として検出されます。
-5. `Reports/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。
-6. `--config` で指定されたパス（未指定なら [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0)）から設定ファイルを読み込み、ミュータブルな [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs) へデシリアライズします。デシリアライズ直後に [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) が `FOLDERDIFF_<PROPERTYNAME>` 環境変数オーバーライド（例: `FOLDERDIFF_MAXPARALLELISM=4`）をビルダーに適用します。
+5. `<reports-root>/<label>` を早い段階で作成し、同名が既にある場合は失敗させます。既定のレポートルートは、`--output` で上書きしない限り、ユーザーローカル app-data の `Reports/` です。
+6. `--config` で指定されたパス（未指定なら、まずユーザーローカル app-data `config.json` を探し、なければ [`AppContext.BaseDirectory`](https://learn.microsoft.com/ja-jp/dotNet/API/system.appcontext.basedirectory?view=net-8.0) の同梱 `config.json` にフォールバック）から設定ファイルを読み込み、ミュータブルな [`ConfigSettingsBuilder`](../Models/ConfigSettingsBuilder.cs) へデシリアライズします。デシリアライズ直後に [`ConfigService.ApplyEnvironmentVariableOverrides`](../Services/ConfigService.cs) が `FOLDERDIFF_<PROPERTYNAME>` 環境変数オーバーライド（例: `FOLDERDIFF_MAXPARALLELISM=4`）をビルダーに適用します。
 7. CLI オプションをビルダーに上書き適用します。`--threads` → [`MaxParallelism`](../Models/ConfigSettingsBuilder.cs)、`--no-il-cache` → [`EnableILCache`](../Models/ConfigSettingsBuilder.cs) `= false`、`--skip-il` → [`SkipIL`](../Models/ConfigSettingsBuilder.cs) `= true`、`--no-timestamp-warnings` → [`ShouldWarnWhenNewFileTimestampIsOlderThanOldFileTimestamp`](../Models/ConfigSettingsBuilder.cs) `= false`。その後 [`ConfigSettingsBuilder.Validate()`](../Models/ConfigSettingsBuilder.cs) を呼び出し、範囲外の値がある場合は終了コード `3` で失敗させます。最後に [`ConfigSettingsBuilder.Build()`](../Models/ConfigSettingsBuilder.cs) がイミュータブルな [`ConfigSettings`](../Models/ConfigSettings.cs) インスタンスを生成し、以降の実行で使用します。
 8. [`TimestampCache`](../Services/Caching/TimestampCache.cs) などの一時共有ヘルパーをクリアします。
 9. ネットワーク共有判定を含む [`DiffExecutionContext`](../Services/DiffExecutionContext.cs) を組み立てます。
@@ -1340,7 +1340,7 @@ sequenceDiagram
 失敗時の扱い:
 - [`ProgramRunner`](../ProgramRunner.cs) はアプリ境界で小さな型付き Result を使い、すべての失敗を 1 つの終了コードへ潰さないようにしています。
 - 引数検証エラー、未知フラグ、入力パス不足/不正は終了コード `2` です。
-- [`ConfigService`](../Services/ConfigService.cs) の [`config.json`](../config.json) 未検出、解析失敗、設定読込 I/O 失敗、または [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) が失敗した場合は終了コード `3` です。
+- [`ConfigService`](../Services/ConfigService.cs) の明示設定パス不在、既定設定候補の両方不在、解析失敗、設定読込 I/O 失敗、または [`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) が失敗した場合は終了コード `3` です。
 - 差分実行やレポート生成の失敗、さらに IL 比較由来の致命的な [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は終了コード `4` です。
 - 明示分類から漏れた想定外の内部エラーだけを終了コード `1` として扱います。
 - IL 比較由来の [`InvalidOperationException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.invalidoperationexception?view=net-8.0) は致命的な例外扱いとし、実行全体を止めるものとします。
@@ -1588,7 +1588,7 @@ catch (Exception ex)
 <a id="guide-ja-config-runtime"></a>
 ## 設定と実行モード
 
-既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。[`config.json`](../config.json) は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。読み込み後、[`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) で各設定値の範囲を検証します。制約違反があれば [`ConfigService`](../Services/ConfigService.cs) が全エラーを列挙した [`InvalidDataException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.invaliddataexception?view=net-8.0) をスローし、終了コード `3` で失敗します。検証対象の制約: [`MaxLogGenerations`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) < [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs)、[`SpinnerFrames`](../Models/ConfigSettings.cs) は 1 件以上の要素を含むこと。キーごとの説明は [README の設定表](../Models/ConfigSettings.cs) を参照してください。
+既定値の正本は [`ConfigSettings`](../Models/ConfigSettings.cs) です。[`config.json`](../config.json) は override 用のファイルであり、省略したキーはコード既定値を維持します。`null` を与えたコレクションやキャッシュパスも既定値へ正規化されます。`--config` 未指定時、[`ConfigService`](../Services/ConfigService.cs) はまずユーザーローカル app-data の `config.json` を解決し、存在しない場合のみ実行ファイル横の同梱 `config.json` を使います。読み込み後、[`ConfigSettings.Validate()`](../Models/ConfigSettings.cs) で各設定値の範囲を検証します。制約違反があれば [`ConfigService`](../Services/ConfigService.cs) が全エラーを列挙した [`InvalidDataException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.io.invaliddataexception?view=net-8.0) をスローし、終了コード `3` で失敗します。検証対象の制約: [`MaxLogGenerations`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) >= `1`、[`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs) < [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs)、[`SpinnerFrames`](../Models/ConfigSettings.cs) は 1 件以上の要素を含むこと。キーごとの説明は [README の設定表](../Models/ConfigSettings.cs) を参照してください。
 
 **JSON 書式エラー**（最後のプロパティや配列要素の後のトレイリングカンマなど、よくあるミス）はバリデーション実行前に [`ConfigService`](../Services/ConfigService.cs) が検出します。エラーは実行ログへ書き込まれ、コンソールには赤字で行番号・バイト位置（内部の [`JsonException`](https://learn.microsoft.com/ja-jp/dotnet/api/system.text.json.jsonexception?view=net-8.0) から取得）とトレイリングカンマへのヒントを表示します。標準 JSON はトレイリングカンマを許容しないため、`"Key": "value",}` のように末尾にカンマがある場合は削除してください。終了コードは `3` です。
 
@@ -1626,7 +1626,7 @@ catch (Exception ex)
 
 編集距離超過と単一 Truncated 行のケースはいずれも `<details>` ラッパーなしのプレーン行としてレンダリングされるため、クリック不要でメッセージが見えます。[`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs) による打ち切りは `<details>` ブロック内に部分差分の末尾として表示されます。
 
-> **ILMismatch エントリ**はさらに `ShouldOutputILText: true`（既定値）が必要です。[`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs) は [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs) が `Reports/<label>/IL/old` と `Reports/<label>/IL/new` に書き出した `*_IL.txt` ファイルを直接読み込んでインライン差分を生成します。[`ShouldOutputILText`](../Models/ConfigSettings.cs) が `false` の場合、これらのファイルは生成されずインライン差分はサイレントに省略されます（`diff-skipped` 通知は表示されません）。
+> **ILMismatch エントリ**はさらに `ShouldOutputILText: true`（既定値）が必要です。[`HtmlReportGenerateService`](../Services/HtmlReportGenerateService.cs) は [`ILTextOutputService`](../Services/ILOutput/ILTextOutputService.cs) が `<reports-root>/<label>/IL/old` と `<reports-root>/<label>/IL/new`（既定のレポートルートはユーザーローカル app-data の `Reports/`）に書き出した `*_IL.txt` ファイルを直接読み込んでインライン差分を生成します。[`ShouldOutputILText`](../Models/ConfigSettings.cs) が `false` の場合、これらのファイルは生成されずインライン差分はサイレントに省略されます（`diff-skipped` 通知は表示されません）。
 
 ### 実行モードの決定
 
@@ -1889,7 +1889,7 @@ CI ワークフローは [`.config/dotnet-tools.json`](../.config/dotnet-tools.j
 
 ## デバッグのコツ
 
-- まず `Logs/log_YYYYMMDD.log` を見て失敗箇所を特定してください。
+- まず `<app-data-root>/Logs/log_YYYYMMDD.log` を見て失敗箇所を特定してください（例: Windows は `%LOCALAPPDATA%\FolderDiffIL4DotNet\Logs\log_YYYYMMDD.log`、macOS は `~/Library/Application Support/FolderDiffIL4DotNet/Logs/log_YYYYMMDD.log`、Linux は `~/.local/share/FolderDiffIL4DotNet/Logs/log_YYYYMMDD.log`）。
 - IL 比較で停止した場合は、ログやレポートに出る逆アセンブラ表示ラベルを確認してください。
 - ネットワーク共有モードが想定外なら、設定フラグと自動判定結果の両方を確認してください。
 - バケット分類がおかしい場合は、レポート整形より前に [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) の投入順を追ってください。
