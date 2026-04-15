@@ -26,7 +26,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         [Fact]
         public void MultipleSpinnersMessage_HasExpectedContent()
         {
-            Assert.Contains("matcha", SpinnerThemes.MULTIPLE_SPINNERS_MESSAGE);
+            Assert.Equal("Let's not get too greedy. How about some matcha instead?", SpinnerThemes.MULTIPLE_SPINNERS_MESSAGE);
         }
 
         [Fact]
