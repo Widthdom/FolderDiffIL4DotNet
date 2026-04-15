@@ -209,7 +209,7 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--open-config` | Open the configuration folder in the default file manager and exit. When `--config` is also specified, opens the parent directory of the specified config file. Missing directories are created automatically; launcher/path failures exit with code `4` and include the resolved target path plus exception type on stderr. |
 | `--open-logs` | Open the Logs folder (`<exe>/Logs/`) in the default file manager and exit. Missing directories are created automatically; launcher/path failures exit with code `4` and include the resolved target path plus exception type on stderr. |
 
-> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the tool gently suggests matcha instead (easter egg). Use `--random-spinner` for a surprise theme each run. They also override any custom `SpinnerFrames` set in [`config.json`](config.json).
+> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the tool gently suggests matcha instead (easter egg). Use `--random-spinner` for a surprise theme each run. They also override any custom `SpinnerFrames` set in [`config.json`](config.json). The inline progress bar now appends a fixed-width ETA segment such as `ETA 14:32 (+00 h 12 m)` so the console layout stays stable while the spinner animates.
 
 ```bash
 dotnet build
@@ -1009,7 +1009,7 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--open-config` | 設定ファイルのフォルダをデフォルトのファイルマネージャで開いて終了します。`--config` が同時に指定された場合、指定された設定ファイルの親ディレクトリを開きます。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
 | `--open-logs` | Logs フォルダ（`<exe>/Logs/`）をデフォルトのファイルマネージャで開いて終了します。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
 
-> **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`、`--ramen`、`--sushi`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は抹茶が提案されます（イースターエッグ）。`--random-spinner` で毎回サプライズテーマを楽しめます。[`config.json`](config.json) で設定したカスタム `SpinnerFrames` も上書きされます。
+> **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`、`--ramen`、`--sushi`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は抹茶が提案されます（イースターエッグ）。`--random-spinner` で毎回サプライズテーマを楽しめます。[`config.json`](config.json) で設定したカスタム `SpinnerFrames` も上書きされます。インライン進捗バーの右端には `ETA 14:32 (+00 h 12 m)` のような固定長 ETA も表示されるため、スピナーが動いても表示幅がぶれません。
 
 ```bash
 dotnet build

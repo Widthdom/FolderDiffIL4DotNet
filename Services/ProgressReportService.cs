@@ -14,11 +14,9 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed class ProgressReportService : IDisposable
     {
-        private const string LOG_PROGRESS = "Progress: {0}%";
-        private const string LOG_PROGRESS_LABELED = "{0}: {1}%";
-        private const string LOG_PROGRESS_KEEPALIVE = LOG_PROGRESS + " (processing...)";
-        private const string LOG_PROGRESS_KEEPALIVE_LABELED = LOG_PROGRESS_LABELED + " (processing...)";
         private const int FIXED_BAR_WIDTH = 32;
+        private const int MAX_ESTIMATED_TOTAL_MINUTES = (99 * 60) + 59;
+        private const string ETA_PLACEHOLDER = "ETA --:-- (+-- h -- m)";
         private readonly string[] _keepAliveFrames;
         private readonly ILoggerService? _logger;
         private string? _lastFormattedPercentage = null;
@@ -227,11 +225,84 @@ namespace FolderDiffIL4DotNet.Services
             return $"{elapsed.TotalSeconds:F1}s";
         }
 
+        /// <summary>
+        /// Estimates the remaining time for the current progress value.
+        /// 現在の進捗率に対する残り時間を推定します。
+        /// </summary>
+        internal static TimeSpan? EstimateRemaining(TimeSpan elapsed, double percentage)
+        {
+            if (elapsed < TimeSpan.Zero ||
+                double.IsNaN(percentage) ||
+                double.IsInfinity(percentage) ||
+                percentage <= 0.0)
+            {
+                return null;
+            }
+
+            if (percentage >= 100.0)
+            {
+                return TimeSpan.Zero;
+            }
+
+            var remainingRatio = (100.0 - percentage) / percentage;
+            if (remainingRatio < 0.0 || double.IsNaN(remainingRatio) || double.IsInfinity(remainingRatio))
+            {
+                return null;
+            }
+
+            var remainingSeconds = elapsed.TotalSeconds * remainingRatio;
+            if (remainingSeconds < 0.0 || double.IsNaN(remainingSeconds) || double.IsInfinity(remainingSeconds))
+            {
+                return null;
+            }
+
+            remainingSeconds = Math.Min(remainingSeconds, TimeSpan.MaxValue.TotalSeconds);
+            return TimeSpan.FromSeconds(remainingSeconds);
+        }
+
+        /// <summary>
+        /// Formats a fixed-width ETA segment with both completion clock time and remaining duration.
+        /// 完了見込み時刻と残り時間を固定長で表す ETA セグメントをフォーマットします。
+        /// </summary>
+        internal static string FormatEta(DateTimeOffset nowLocal, TimeSpan? remaining)
+        {
+            if (!remaining.HasValue)
+            {
+                return ETA_PLACEHOLDER;
+            }
+
+            var remainingValue = remaining.Value;
+            if (remainingValue < TimeSpan.Zero)
+            {
+                remainingValue = TimeSpan.Zero;
+            }
+
+            var roundedMinutesDouble = Math.Ceiling(remainingValue.TotalMinutes);
+            int roundedMinutes;
+            if (double.IsNaN(roundedMinutesDouble) || double.IsInfinity(roundedMinutesDouble) || roundedMinutesDouble <= 0.0)
+            {
+                roundedMinutes = 0;
+            }
+            else if (roundedMinutesDouble >= MAX_ESTIMATED_TOTAL_MINUTES)
+            {
+                roundedMinutes = MAX_ESTIMATED_TOTAL_MINUTES;
+            }
+            else
+            {
+                roundedMinutes = (int)roundedMinutesDouble;
+            }
+
+            var etaClock = nowLocal.AddMinutes(roundedMinutes).ToString("HH:mm");
+            var etaHours = roundedMinutes / 60;
+            var etaMinutes = roundedMinutes % 60;
+            return $"ETA {etaClock} (+{etaHours:00} h {etaMinutes:00} m)";
+        }
+
         private void RenderProgressBar(string formattedPercentage, double percentage, bool showKeepAlive)
         {
             if (Console.IsOutputRedirected)
             {
-                WriteProgressLine(BuildRedirectedProgressLine(formattedPercentage, showKeepAlive));
+                WriteProgressLine(BuildRedirectedProgressLine(formattedPercentage, percentage, showKeepAlive));
                 _lastConsoleWriteUtc = DateTime.UtcNow;
                 return;
             }
@@ -293,32 +364,44 @@ namespace FolderDiffIL4DotNet.Services
 
             var bar = new string(barChars);
             var percentText = $"{formattedPercentage,6}%";
+            var etaText = BuildEtaText(percentage);
             var prefix = string.IsNullOrEmpty(_labelPrefix)
                 ? string.Empty
                 : _labelPrefix.PadRight(ConsoleRenderCoordinator.STATUS_LABEL_WIDTH) + " ";
             if (!string.IsNullOrEmpty(_labelPrefix))
             {
                 var spinnerSegment = $"{_keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length]} ";
-                return $"{prefix}{spinnerSegment}{bar} {percentText}";
+                return $"{prefix}{spinnerSegment}{bar} {percentText} {etaText}";
             }
             if (showKeepAlive)
             {
                 string frame = _keepAliveFrames[_keepAliveFrameIndex++ % _keepAliveFrames.Length];
-                return $"{bar} {percentText} {frame}";
+                return $"{bar} {percentText} {etaText} {frame}";
             }
-            return $"{bar} {percentText}";
+            return $"{bar} {percentText} {etaText}";
         }
 
-        private string BuildRedirectedProgressLine(string formattedPercentage, bool showKeepAlive)
+        private string BuildRedirectedProgressLine(string formattedPercentage, double percentage, bool showKeepAlive)
         {
+            var etaText = BuildEtaText(percentage);
             if (string.IsNullOrEmpty(_labelPrefix))
             {
-                var format = showKeepAlive ? LOG_PROGRESS_KEEPALIVE : LOG_PROGRESS;
-                return string.Format(format, formattedPercentage);
+                var message = $"Progress: {formattedPercentage}% {etaText}";
+                return showKeepAlive ? message + " (processing...)" : message;
             }
 
-            var labeledFormat = showKeepAlive ? LOG_PROGRESS_KEEPALIVE_LABELED : LOG_PROGRESS_LABELED;
-            return string.Format(labeledFormat, _labelPrefix, formattedPercentage);
+            var labeledMessage = $"{_labelPrefix}: {formattedPercentage}% {etaText}";
+            return showKeepAlive ? labeledMessage + " (processing...)" : labeledMessage;
+        }
+
+        private string BuildEtaText(double percentage)
+        {
+            if (_phaseStopwatch == null)
+            {
+                return ETA_PLACEHOLDER;
+            }
+
+            return FormatEta(DateTimeOffset.Now, EstimateRemaining(_phaseStopwatch.Elapsed, percentage));
         }
 
         private int GetBarWidth()
