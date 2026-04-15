@@ -71,18 +71,20 @@ namespace FolderDiffIL4DotNet.Runner
 
         /// <summary>
         /// Builds the absolute path to the report folder from the given report label.
-        /// When <paramref name="outputDirectory"/> is specified, uses it as the base instead of the default Reports/ directory.
+        /// When <paramref name="outputDirectory"/> is specified, uses it as the base instead of the default
+        /// user-local Reports/ directory.
         /// レポートラベルからレポートフォルダの絶対パスを構築する。
-        /// <paramref name="outputDirectory"/> が指定された場合、デフォルトの Reports/ ディレクトリの代わりにそのパスをベースとして使用する。
+        /// <paramref name="outputDirectory"/> が指定された場合、既定のユーザーローカル Reports/ ディレクトリの代わりにそのパスをベースとして使用する。
         /// </summary>
         internal static string GetReportsFolderAbsolutePath(string reportLabel, string? outputDirectory = null, ILoggerService? logger = null)
             => Path.Combine(GetReportsRootDirectoryAbsolutePath(outputDirectory, logger), reportLabel);
 
         /// <summary>
         /// Resolves the absolute Reports root directory and creates it if needed.
-        /// Resolves to <c>&lt;exe&gt;/Reports</c> by default or to <paramref name="outputDirectory"/> when specified.
+        /// Resolves to the user-local application data Reports directory by default or to
+        /// <paramref name="outputDirectory"/> when specified.
         /// Reports ルートディレクトリの絶対パスを解決し、必要なら作成する。
-        /// 既定では <c>&lt;exe&gt;/Reports</c> を使用し、指定時は <paramref name="outputDirectory"/> を使用する。
+        /// 既定ではユーザーローカルアプリケーションデータ配下の Reports を使用し、指定時は <paramref name="outputDirectory"/> を使用する。
         /// </summary>
         internal static string GetReportsRootDirectoryAbsolutePath(string? outputDirectory = null, ILoggerService? logger = null)
         {
@@ -91,11 +93,12 @@ namespace FolderDiffIL4DotNet.Runner
             {
                 reportsRootDirAbsolutePath = !string.IsNullOrWhiteSpace(outputDirectory)
                     ? Path.GetFullPath(outputDirectory)
-                    : Path.Combine(AppContext.BaseDirectory, REPORTS_ROOT_DIR_NAME);
+                    : AppDataPaths.GetDefaultReportsRootDirectoryAbsolutePath();
                 PathValidator.ValidateAbsolutePathLengthOrThrow(reportsRootDirAbsolutePath, nameof(outputDirectory));
                 Directory.CreateDirectory(reportsRootDirAbsolutePath);
             }
-            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex)
+                || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 logger?.LogMessage(AppLogLevel.Error,
                     $"Failed to resolve report output directory '{outputDirectory ?? REPORTS_ROOT_DIR_NAME}' ({ex.GetType().Name}): {ex.Message}",

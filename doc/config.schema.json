@@ -106,7 +106,7 @@
     "ShouldOutputILText": {
       "type": "boolean",
       "default": true,
-      "description": "Output full IL disassembly text to Reports/<label>/IL/ folder.\nIL逆アセンブリテキストをReports/<label>/IL/フォルダに出力する。"
+      "description": "Output full IL disassembly text under the active reports root in <reports-root>/<label>/IL/ (default reports root: the user-local app-data Reports directory).\nIL逆アセンブリテキストを現在のレポートルート配下の <reports-root>/<label>/IL/ に出力する（既定のレポートルートはユーザーローカル app-data の Reports ディレクトリ）。"
     },
     "ShouldIgnoreMVID": {
       "type": "boolean",

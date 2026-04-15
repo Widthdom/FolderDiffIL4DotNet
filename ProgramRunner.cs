@@ -98,6 +98,8 @@ namespace FolderDiffIL4DotNet
                 return 0;
             }
 
+            ApplyLogFormatOverride(opts);
+
             if (opts.OpenReports || opts.OpenConfig || opts.OpenLogs)
             {
                 return HandleOpenFolderCommands(opts);
@@ -169,14 +171,6 @@ namespace FolderDiffIL4DotNet
             #pragma warning disable CA1031 // Top-level application boundary classifies unexpected failures after logging.
             try
             {
-                // Apply log format before logger initialization / ロガー初期化前にログ形式を適用
-                if (opts.LogFormatOverride != null)
-                {
-                    _logger.Format = opts.LogFormatOverride.Equals("json", System.StringComparison.OrdinalIgnoreCase)
-                        ? Services.LogFormat.Json
-                        : Services.LogFormat.Text;
-                }
-
                 var appVersion = InitializeLoggerAndGetAppVersion();
                 var computerName = SystemInfo.GetComputerName();
 
@@ -230,6 +224,10 @@ namespace FolderDiffIL4DotNet
                 _logger.LogMessage(AppLogLevel.Info, LOG_APP_FINISHED, shouldOutputMessageToConsole: true, ConsoleColor.Green);
                 return ProgramRunResult.Success(completionState);
             }
+            catch (Exception ex) when (AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
+            {
+                return CreateFailureResult(ProgramExitCode.InvalidArguments, ex);
+            }
             catch (Exception ex)
             {
                 return CreateFailureResult(ProgramExitCode.UnexpectedError, ex);
@@ -246,6 +244,22 @@ namespace FolderDiffIL4DotNet
             var appVersion = SystemInfo.GetAppVersion(typeof(Program));
             _logger.LogMessage(AppLogLevel.Info, $"Application version: {appVersion}", shouldOutputMessageToConsole: true);
             return appVersion;
+        }
+
+        /// <summary>
+        /// Applies the CLI log-format override before any logger initialization happens.
+        /// CLI のログ形式上書きを、ロガー初期化前に適用します。
+        /// </summary>
+        private void ApplyLogFormatOverride(CliOptions opts)
+        {
+            if (opts.LogFormatOverride == null)
+            {
+                return;
+            }
+
+            _logger.Format = opts.LogFormatOverride.Equals("json", StringComparison.OrdinalIgnoreCase)
+                ? Services.LogFormat.Json
+                : Services.LogFormat.Text;
         }
 
         private static void OutputCompletionSummaryChart(RunCompletionState state)
@@ -361,7 +375,8 @@ namespace FolderDiffIL4DotNet
                 return StepResult<RunArguments>.FromValue(new RunArguments(oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath));
             }
             catch (Exception ex) when (ex is ArgumentException or DirectoryNotFoundException
-                or IOException or UnauthorizedAccessException)
+                or IOException or UnauthorizedAccessException
+                || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 return StepResult<RunArguments>.FromFailure(CreateFailureResult(ProgramExitCode.InvalidArguments, ex));
             }
@@ -457,7 +472,14 @@ namespace FolderDiffIL4DotNet
         private ProgramRunResult CreateFailureResult(ProgramExitCode exitCode, Exception exception)
         {
             _logger.LogMessage(AppLogLevel.Error, exception.Message, shouldOutputMessageToConsole: true, ConsoleColor.Red, exception);
-            _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
+            if (!string.IsNullOrWhiteSpace(_logger.LogFileAbsolutePath))
+            {
+                _logger.LogMessage(AppLogLevel.Info, $"Error details logged to: {_logger.LogFileAbsolutePath}", shouldOutputMessageToConsole: true);
+            }
+            else
+            {
+                _logger.LogMessage(AppLogLevel.Info, "File logging was unavailable.", shouldOutputMessageToConsole: true);
+            }
 
             if (exitCode == ProgramExitCode.ConfigurationError)
             {

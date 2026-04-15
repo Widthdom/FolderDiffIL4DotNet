@@ -55,7 +55,7 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 Release automation publishes `nildiff` to both nuget.org and GitHub Packages on each tagged release. `FolderDiffIL4DotNet.Core` and `FolderDiffIL4DotNet.Plugin.Abstractions` are mirrored to GitHub Packages only when those package directories changed, matching the existing nuget.org publish gate so normal releases do not invent GitHub-only library versions. GitHub Packages remains a best-effort mirror path after the nuget.org publish succeeds.
 
-The tool works out of the box with default settings. To customize behavior, create a `config.json` and pass it via `--config`:
+The tool works out of the box with default settings. To customize behavior, either create a user-local `config.json` in the default app-data location below or pass `--config`:
 
 ```bash
 nildiff "/old" "/new" "label" --config /path/to/config.json
@@ -67,10 +67,11 @@ The default `config.json` location varies by OS:
 
 | OS | Path |
 |---|---|
-| Windows | `%USERPROFILE%\.dotnet\tools\.store\nildiff\<version>\nildiff\<version>\tools\net8.0\any\config.json` |
-| macOS / Linux | `$HOME/.dotnet/tools/.store/nildiff/<version>/nildiff/<version>/tools/net8.0/any/config.json` |
+| Windows | `%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json` |
+| macOS | `~/Library/Application Support/FolderDiffIL4DotNet/config.json` |
+| Linux | `~/.local/share/FolderDiffIL4DotNet/config.json` |
 
-> **Note:** The default config in the tool store is overwritten on tool update. For persistent customization, keep your own `config.json` and use `--config`.
+> **Note:** When `--config` is omitted, `nildiff` first looks for the user-local `config.json` above and falls back to the bundled `config.json` only when the user-local file is absent.
 
 ### Option B: Clone and build from source
 
@@ -91,9 +92,10 @@ dotnet build
 dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 # 5. View the reports
-#    Reports/my-comparison/diff_report.md   — Markdown report
-#    Reports/my-comparison/diff_report.html — Interactive HTML report (open in browser)
-#    Reports/my-comparison/audit_log.json   — Structured audit log
+#    <app-data-root>/Reports/my-comparison/diff_report.md   — Markdown report
+#    <app-data-root>/Reports/my-comparison/diff_report.html — Interactive HTML report (open in browser)
+#    <app-data-root>/Reports/my-comparison/audit_log.json   — Structured audit log
+#    Or run: nildiff --open-reports
 ```
 
 The tool compares all files recursively. For .NET assemblies (`.dll`, `.exe`), it performs IL-level comparison that ignores build-specific differences (MVID, timestamps), so functionally identical assemblies are reported as unchanged even if binary hashes differ.
@@ -855,7 +857,7 @@ nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 リリース自動化では `nildiff` をタグごとに nuget.org と GitHub Packages の両方へ公開します。`FolderDiffIL4DotNet.Core` と `FolderDiffIL4DotNet.Plugin.Abstractions` は、そのパッケージ自体に変更があるときだけ GitHub Packages に mirror し、通常 release で GitHub Packages 側だけのライブラリ版が増えないよう nuget.org と同じ公開条件に揃えています。GitHub Packages は nuget.org 公開成功後に続く best-effort mirror 経路です。
 
-デフォルト設定のまま動作します。動作をカスタマイズするには、`config.json` を作成して `--config` で指定してください：
+デフォルト設定のまま動作します。動作をカスタマイズするには、下記のユーザーローカル app-data 配下に `config.json` を配置するか、`--config` で明示指定してください：
 
 ```bash
 nildiff "/old" "/new" "label" --config /path/to/config.json
@@ -867,10 +869,11 @@ nildiff "/old" "/new" "label" --config /path/to/config.json
 
 | OS | パス |
 |---|---|
-| Windows | `%USERPROFILE%\.dotnet\tools\.store\nildiff\<version>\nildiff\<version>\tools\net8.0\any\config.json` |
-| macOS / Linux | `$HOME/.dotnet/tools/.store/nildiff/<version>/nildiff/<version>/tools/net8.0/any/config.json` |
+| Windows | `%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json` |
+| macOS | `~/Library/Application Support/FolderDiffIL4DotNet/config.json` |
+| Linux | `~/.local/share/FolderDiffIL4DotNet/config.json` |
 
-> **注意:** ツールストア内のデフォルト config はツール更新時に上書きされます。永続的なカスタマイズには、独自の `config.json` を保持して `--config` で指定してください。
+> **注意:** `--config` を省略した場合、`nildiff` はまず上記のユーザーローカル `config.json` を探し、そのファイルが存在しない場合のみ同梱の `config.json` へフォールバックします。
 
 ### 方法 B: ソースからクローンしてビルド
 
@@ -891,9 +894,10 @@ dotnet build
 dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 # 5. レポートを確認
-#    Reports/my-comparison/diff_report.md   — Markdown レポート
-#    Reports/my-comparison/diff_report.html — インタラクティブ HTML レポート（ブラウザで開く）
-#    Reports/my-comparison/audit_log.json   — 構造化監査ログ
+#    <app-data-root>/Reports/my-comparison/diff_report.md   — Markdown レポート
+#    <app-data-root>/Reports/my-comparison/diff_report.html — インタラクティブ HTML レポート（ブラウザで開く）
+#    <app-data-root>/Reports/my-comparison/audit_log.json   — 構造化監査ログ
+#    または: nildiff --open-reports
 ```
 
 ツールはすべてのファイルを再帰的に比較します。.NET アセンブリ（`.dll`、`.exe`）に対しては、ビルド固有の差異（MVID、タイムスタンプ）を無視した IL レベルの比較を行うため、機能的に同一のアセンブリはバイナリハッシュが異なっていても「変更なし」と報告されます。

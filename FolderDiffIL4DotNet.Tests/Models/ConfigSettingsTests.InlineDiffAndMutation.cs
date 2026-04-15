@@ -190,7 +190,7 @@ namespace FolderDiffIL4DotNet.Tests.Models
             Assert.DoesNotContain("ConfigService throws", devGuide, StringComparison.Ordinal);
             Assert.DoesNotContain("ConfigService が全エラーを列挙した", devGuide, StringComparison.Ordinal);
             Assert.Contains("apply all `FOLDERDIFF_*` environment variable overrides plus supported runtime CLI overrides", devGuide, StringComparison.Ordinal);
-            Assert.Contains("semantically validate that builder before runtime CLI overrides are applied", devGuide, StringComparison.Ordinal);
+            Assert.Contains("using that same resolution order after `FOLDERDIFF_*` environment-variable overrides but before runtime CLI overrides are applied", devGuide, StringComparison.Ordinal);
             Assert.Contains("すべての `FOLDERDIFF_*` 環境変数オーバーライドと対応する実行時 CLI オーバーライドを適用した builder 状態", devGuide, StringComparison.Ordinal);
             Assert.Contains("`FOLDERDIFF_*` 環境変数オーバーライド適用後・実行時 CLI オーバーライド適用前の builder をセマンティック検証", devGuide, StringComparison.Ordinal);
             Assert.Contains("[README configuration table](../README.md#readme-en-config)", devGuide, StringComparison.Ordinal);

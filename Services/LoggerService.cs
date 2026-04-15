@@ -52,7 +52,7 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         public void Initialize()
         {
-            _logDirectoryAbsolutePath = Path.Combine(AppContext.BaseDirectory, LOGS_DIRECTORY_NAME);
+            _logDirectoryAbsolutePath = AppDataPaths.GetDefaultLogsDirectoryAbsolutePath();
 
             PathValidator.ValidateAbsolutePathLengthOrThrow(_logDirectoryAbsolutePath);
 

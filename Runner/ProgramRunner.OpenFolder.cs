@@ -1,7 +1,13 @@
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Text.Json;
+using FolderDiffIL4DotNet.Common;
+using FolderDiffIL4DotNet.Core.Common;
+using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Runner;
+using FolderDiffIL4DotNet.Services;
 
 namespace FolderDiffIL4DotNet
 {
@@ -11,6 +17,51 @@ namespace FolderDiffIL4DotNet
     {
         private const string LOG_OPENING_FOLDER = "Opening folder: {0}";
         private const string ERROR_OPEN_FOLDER_FAILED = "Failed to open folder '{0}' ({1}): {2}";
+        private const string ERROR_LOGGER_INIT_FOR_OPEN_FOLDER_FAILED = "Failed to initialize logger for folder-open command ({0}): {1}";
+
+        /// <summary>
+        /// Best-effort logger initialization for --open-* failure handling.
+        /// These commands normally exit without touching the log directory, so bootstrap logging only runs after an open-folder failure.
+        /// --open-* 失敗処理向けにロガーをベストエフォートで初期化します。
+        /// これらのコマンドは通常、ログディレクトリに触れずに終了するため、bootstrap ログはフォルダオープン失敗後にのみ実行されます。
+        /// </summary>
+        #pragma warning disable CA1031 // Best-effort bootstrap must never leak and override the original open-folder failure.
+        private bool TryInitializeLoggerForFolderOpen()
+        {
+            try
+            {
+                _logger.Initialize();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                WriteOpenFolderBootstrapError(ex);
+                return false;
+            }
+        }
+        #pragma warning restore CA1031
+
+        private void WriteOpenFolderBootstrapError(Exception ex)
+        {
+            string message = string.Format(
+                CultureInfo.InvariantCulture,
+                ERROR_LOGGER_INIT_FOR_OPEN_FOLDER_FAILED,
+                ex.GetType().Name,
+                ex.Message);
+
+            if (_logger.Format == LogFormat.Json)
+            {
+                Console.Error.WriteLine(JsonSerializer.Serialize(new
+                {
+                    level = "ERROR",
+                    message,
+                    exceptionType = ex.GetType().FullName,
+                }));
+                return;
+            }
+
+            Console.Error.WriteLine(message);
+        }
 
         /// <summary>
         /// Handles the --open-reports, --open-config, and --open-logs commands.
@@ -27,21 +78,21 @@ namespace FolderDiffIL4DotNet
             {
                 result = OpenFolder(() => !string.IsNullOrWhiteSpace(opts.OutputDirectory)
                     ? opts.OutputDirectory
-                    : Path.Combine(AppContext.BaseDirectory, "Reports"));
+                    : AppDataPaths.GetDefaultReportsRootDirectoryAbsolutePath());
                 if (result != 0) return result;
             }
 
             if (opts.OpenConfig)
             {
                 result = OpenFolder(() => !string.IsNullOrWhiteSpace(opts.ConfigPath)
-                    ? Path.GetDirectoryName(Path.GetFullPath(opts.ConfigPath)) ?? AppContext.BaseDirectory
-                    : AppContext.BaseDirectory);
+                    ? Path.GetDirectoryName(Path.GetFullPath(opts.ConfigPath)) ?? AppDataPaths.GetDefaultConfigDirectoryAbsolutePath()
+                    : AppDataPaths.GetDefaultConfigDirectoryAbsolutePath());
                 if (result != 0) return result;
             }
 
             if (opts.OpenLogs)
             {
-                result = OpenFolder(() => Path.Combine(AppContext.BaseDirectory, "Logs"));
+                result = OpenFolder(AppDataPaths.GetDefaultLogsDirectoryAbsolutePath);
                 if (result != 0) return result;
             }
 
@@ -60,11 +111,21 @@ namespace FolderDiffIL4DotNet
 
             try
             {
-                folderPath = Path.GetFullPath(resolveFolderPath());
-                if (!Directory.Exists(folderPath))
+                string rawFolderPath = resolveFolderPath();
+                if (string.IsNullOrWhiteSpace(rawFolderPath))
                 {
-                    Directory.CreateDirectory(folderPath);
+                    throw new InvalidOperationException("The target folder path resolved to an empty value.");
                 }
+
+                folderPath = Path.GetFullPath(rawFolderPath);
+                PathValidator.ValidateAbsolutePathLengthOrThrow(folderPath, nameof(resolveFolderPath));
+
+                if (File.Exists(folderPath))
+                {
+                    throw new IOException($"The target path exists as a file, not a directory: {folderPath}");
+                }
+
+                Directory.CreateDirectory(folderPath);
 
                 Console.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, LOG_OPENING_FOLDER, folderPath));
                 _openFolderAction(new ProcessStartInfo
@@ -74,9 +135,25 @@ namespace FolderDiffIL4DotNet
                 });
                 return 0;
             }
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex)
+                || ex is InvalidOperationException or NotSupportedException or PlatformNotSupportedException)
+            {
+                if (TryInitializeLoggerForFolderOpen())
+                {
+                    _logger.LogMessage(AppLogLevel.Error, string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, ex.GetType().Name, ex.Message), shouldOutputMessageToConsole: false, exception: ex);
+                }
+
+                Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, ex.GetType().Name, ex.Message));
+                return (int)ProgramExitCode.ExecutionFailed;
+            }
             #pragma warning disable CA1031 // Application boundary: catch-all for platform-specific process launch failures
             catch (Exception ex)
             {
+                if (TryInitializeLoggerForFolderOpen())
+                {
+                    _logger.LogMessage(AppLogLevel.Error, string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, ex.GetType().Name, ex.Message), shouldOutputMessageToConsole: false, exception: ex);
+                }
+
                 Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, ex.GetType().Name, ex.Message));
                 return (int)ProgramExitCode.ExecutionFailed;
             }

@@ -31,31 +31,26 @@ namespace FolderDiffIL4DotNet.Tests
             await File.WriteAllTextAsync(customConfigPath, customConfigJson);
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
+            using var appDataScope = CreateAppDataOverrideScope();
 
             try
             {
-                await WithMissingConfigFileAsync(async () =>
+                var exitCode = await runner.RunAsync(new[]
                 {
-                    // Without --config this would fail with "Config file not found".
-                    // With --config pointing to our custom file it should reach config-loaded step.
-                    // --config なしでは "Config file not found" で失敗するが、
-                    // --config でカスタムファイルを指定すれば設定読み込み段階まで到達するはず。
-                    var exitCode = await runner.RunAsync(new[]
-                    {
-                        oldDir, newDir, "lbl_cfg_" + Guid.NewGuid().ToString("N"),
-                        "--config", customConfigPath,
-                        "--no-pause"
-                    });
-
-                    // Config loaded successfully (diff may have no files = exit 0, or execution phase)
-                    // 設定読み込み成功（ファイルなし = exit 0、または実行フェーズ）
-                    Assert.NotEqual(3, exitCode);
-                    Assert.Contains(logger.Messages, m => m.Contains("Configuration loaded", StringComparison.Ordinal));
+                    oldDir, newDir, "lbl_cfg_" + Guid.NewGuid().ToString("N"),
+                    "--config", customConfigPath,
+                    "--no-pause"
                 });
+
+                // Config loaded successfully (diff may have no files = exit 0, or execution phase)
+                // 設定読み込み成功（ファイルなし = exit 0、または実行フェーズ）
+                Assert.NotEqual(3, exitCode);
+                Assert.Contains(logger.Messages, m => m.Contains("Configuration loaded", StringComparison.Ordinal));
             }
             finally
             {
                 TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
@@ -81,6 +76,36 @@ namespace FolderDiffIL4DotNet.Tests
 
                 Assert.Equal(3, exitCode);
                 Assert.Contains(logger.Messages, m => m.Contains("Config file not found", StringComparison.Ordinal));
+            }
+            finally
+            {
+                TryDeleteDirectory(tempRoot);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ConfigFlagWithTooLongPath_ReturnsConfigurationError()
+        {
+            var tempRoot = Path.Combine(Path.GetTempPath(), "fd-runner-config-long-" + Guid.NewGuid().ToString("N"));
+            var oldDir = Path.Combine(tempRoot, "old");
+            var newDir = Path.Combine(tempRoot, "new");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            string tooLongConfigPath = CreateTooLongConfigPath();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+
+            try
+            {
+                var exitCode = await runner.RunAsync(new[]
+                {
+                    oldDir, newDir, "lbl_cfg_long_" + Guid.NewGuid().ToString("N"),
+                    "--config", tooLongConfigPath,
+                    "--no-pause"
+                });
+
+                Assert.Equal(3, exitCode);
+                Assert.Contains(logger.Messages, m => m.Contains("too long", StringComparison.OrdinalIgnoreCase));
             }
             finally
             {
@@ -424,6 +449,34 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_PrintConfigFlag_WithInvalidUserLocalConfig_ShowsResolvedUserConfigPath()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            using var appDataScope = CreateAppDataOverrideScope();
+            Directory.CreateDirectory(Path.GetDirectoryName(appDataScope.UserConfigFileAbsolutePath)!);
+            await File.WriteAllTextAsync(appDataScope.UserConfigFileAbsolutePath, "{ invalid-json");
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(["--print-config"]);
+
+                Assert.Equal(3, exitCode);
+                var errorOutput = errorWriter.ToString();
+                Assert.Contains(Path.GetFullPath(appDataScope.UserConfigFileAbsolutePath), errorOutput, StringComparison.Ordinal);
+                Assert.Contains("JSON syntax error", errorOutput, StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_ValidateConfigFlag_WithInvalidThreadsValue_ReturnsInvalidArguments()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
@@ -446,6 +499,37 @@ namespace FolderDiffIL4DotNet.Tests
             finally
             {
                 Console.SetError(originalError);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ValidateConfigFlag_WithInvalidBundledFallback_ShowsResolvedBundledConfigPath()
+        {
+            var bundledRoot = Path.Combine(Path.GetTempPath(), "fd-validate-config-bundled-" + Guid.NewGuid().ToString("N"));
+            var bundledConfigPath = Path.Combine(bundledRoot, "config.json");
+            Directory.CreateDirectory(bundledRoot);
+            await File.WriteAllTextAsync(bundledConfigPath, "{ invalid-json");
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService(() => bundledConfigPath));
+            using var appDataScope = CreateAppDataOverrideScope();
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                var exitCode = await runner.RunAsync(["--validate-config"]);
+
+                Assert.Equal(3, exitCode);
+                var errorOutput = errorWriter.ToString();
+                Assert.Contains(Path.GetFullPath(bundledConfigPath), errorOutput, StringComparison.Ordinal);
+                Assert.Contains("JSON syntax error", errorOutput, StringComparison.OrdinalIgnoreCase);
+            }
+            finally
+            {
+                Console.SetError(originalError);
+                TryDeleteDirectory(bundledRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
@@ -647,39 +731,46 @@ namespace FolderDiffIL4DotNet.Tests
             await File.WriteAllTextAsync(customConfigPath, """{ "MaxLogGenerations": 12 }""");
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
+            using var appDataScope = CreateAppDataOverrideScope();
             var origOut = Console.Out;
             using var sw = new System.IO.StringWriter();
             Console.SetOut(sw);
 
             try
             {
-                await WithMissingConfigFileAsync(async () =>
-                {
-                    var exitCode = await runner.RunAsync(new[] { "--config", customConfigPath, "--print-config" });
+                var exitCode = await runner.RunAsync(new[] { "--config", customConfigPath, "--print-config" });
 
-                    Assert.Equal(0, exitCode);
-                    Assert.Contains("\"MaxLogGenerations\": 12", sw.ToString(), StringComparison.Ordinal);
-                });
+                Assert.Equal(0, exitCode);
+                Assert.Contains("\"MaxLogGenerations\": 12", sw.ToString(), StringComparison.Ordinal);
             }
             finally
             {
                 Console.SetOut(origOut);
                 TryDeleteDirectory(tempRoot);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
 
         [Fact]
-        public async Task RunAsync_PrintConfigFlag_WithMissingConfig_ReturnsConfigurationError()
+        public async Task RunAsync_PrintConfigFlag_WithMissingExplicitConfig_ReturnsConfigurationError()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
+            using var appDataScope = CreateAppDataOverrideScope();
+            string missingConfigPath = Path.Combine(Path.GetTempPath(), "fd-print-config-missing-" + Guid.NewGuid().ToString("N"), "missing.json");
 
-            await WithMissingConfigFileAsync(async () =>
+            try
             {
-                var exitCode = await runner.RunAsync(new[] { "--print-config" });
-
+                var exitCode = await runner.RunAsync(new[] { "--print-config", "--config", missingConfigPath });
                 Assert.Equal(3, exitCode);
-            });
+            }
+            finally
+            {
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
         }
+
+        private static string CreateTooLongConfigPath()
+            => Path.Combine(Path.GetTempPath(), new string('a', 5000) + ".json");
     }
 }

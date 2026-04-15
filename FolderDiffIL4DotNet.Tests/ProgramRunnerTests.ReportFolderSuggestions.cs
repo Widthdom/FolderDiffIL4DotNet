@@ -52,9 +52,11 @@ namespace FolderDiffIL4DotNet.Tests
             var newDir = Path.Combine(tempRoot, "new");
             var reportLabel = "existing_" + Guid.NewGuid().ToString("N");
             var siblingLabel = "sibling_" + Guid.NewGuid().ToString("N");
-            var reportsRoot = Path.Combine(AppContext.BaseDirectory, "Reports");
+            using var appDataScope = CreateAppDataOverrideScope();
+            var reportsRoot = appDataScope.ReportsRootAbsolutePath;
             var reportDir = Path.Combine(reportsRoot, reportLabel);
             var siblingReportDir = Path.Combine(reportsRoot, siblingLabel);
+            var missingConfigPath = Path.Combine(tempRoot, "missing-config.json");
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
             var runner = new ProgramRunner(logger, new ConfigService());
             var originalOut = Console.Out;
@@ -69,11 +71,8 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 Console.SetOut(writer);
 
-                await WithMissingConfigFileAsync(async () =>
-                {
-                    var exitCode = await runner.RunAsync(new[] { oldDir, newDir, reportLabel, "--no-pause" });
-                    Assert.Equal(2, exitCode);
-                });
+                var exitCode = await runner.RunAsync(new[] { oldDir, newDir, reportLabel, "--config", missingConfigPath, "--no-pause" });
+                Assert.Equal(2, exitCode);
 
                 var text = writer.ToString();
                 Assert.Contains($"Existing report folders under '{reportsRoot}':", text, StringComparison.Ordinal);
@@ -86,6 +85,7 @@ namespace FolderDiffIL4DotNet.Tests
                 TryDeleteDirectory(tempRoot);
                 TryDeleteDirectory(reportDir);
                 TryDeleteDirectory(siblingReportDir);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
     }

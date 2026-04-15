@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Services;
+using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -18,19 +19,50 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void Initialize_SetsLogFilePath_AndCreatesLogDirectory()
         {
             var logger = new LoggerService();
+            using var appDataScope = CreateAppDataOverrideScope();
 
-            logger.Initialize();
+            try
+            {
+                logger.Initialize();
 
-            Assert.False(string.IsNullOrWhiteSpace(logger.LogFileAbsolutePath));
-            var directory = Path.GetDirectoryName(logger.LogFileAbsolutePath);
-            Assert.False(string.IsNullOrWhiteSpace(directory));
-            Assert.True(Directory.Exists(directory));
-            var logFileName = Path.GetFileName(logger.LogFileAbsolutePath);
-            Assert.Matches(new Regex(@"^log_\d{8}\.log$", RegexOptions.CultureInvariant), logFileName);
-            var datePart = Assert.IsType<string>(logFileName)[4..^4];
-            Assert.True(
-                DateTime.TryParseExact(datePart, Constants.LOG_FILE_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
-                $"Unexpected log file date format: {logFileName}");
+                Assert.False(string.IsNullOrWhiteSpace(logger.LogFileAbsolutePath));
+                var directory = Path.GetDirectoryName(logger.LogFileAbsolutePath);
+                Assert.False(string.IsNullOrWhiteSpace(directory));
+                Assert.True(Directory.Exists(directory));
+                Assert.Equal(Path.GetFullPath(appDataScope.LogsRootAbsolutePath), directory);
+                var logFileName = Path.GetFileName(logger.LogFileAbsolutePath);
+                Assert.Matches(new Regex(@"^log_\d{8}\.log$", RegexOptions.CultureInvariant), logFileName);
+                var datePart = Assert.IsType<string>(logFileName)[4..^4];
+                Assert.True(
+                    DateTime.TryParseExact(datePart, Constants.LOG_FILE_DATE_FORMAT, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                    $"Unexpected log file date format: {logFileName}");
+            }
+            finally
+            {
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public void Initialize_WhenLocalApplicationDataOverrideIsEmpty_ThrowsInvalidOperationException()
+        {
+            var logger = new LoggerService();
+            using var appDataScope = CreateAppDataOverrideScope();
+            object? originalOverride = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+
+            try
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, string.Empty);
+
+                var ex = Assert.Throws<InvalidOperationException>(() => logger.Initialize());
+                Assert.Contains("LocalApplicationData", ex.Message, StringComparison.Ordinal);
+                Assert.Null(logger.LogFileAbsolutePath);
+            }
+            finally
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, originalOverride);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
         }
 
         [Fact]
@@ -800,10 +832,19 @@ namespace FolderDiffIL4DotNet.Tests.Services
         public void TraceId_AfterInitialization_Is32HexChars()
         {
             var logger = new LoggerService();
-            logger.Initialize();
+            using var appDataScope = CreateAppDataOverrideScope();
 
-            Assert.NotNull(logger.TraceId);
-            Assert.Matches(new Regex(@"^[0-9a-f]{32}$", RegexOptions.CultureInvariant), logger.TraceId);
+            try
+            {
+                logger.Initialize();
+
+                Assert.NotNull(logger.TraceId);
+                Assert.Matches(new Regex(@"^[0-9a-f]{32}$", RegexOptions.CultureInvariant), logger.TraceId);
+            }
+            finally
+            {
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
         }
 
         [Fact]
@@ -813,13 +854,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var tempDir = Path.Combine(Path.GetTempPath(), "fd-logger-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(tempDir);
             var tempLogPath = Path.Combine(tempDir, "log_json_trace.log");
-
-            logger.Initialize();
-            SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
-            SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
+            using var appDataScope = CreateAppDataOverrideScope();
 
             try
             {
+                logger.Initialize();
+                SetPrivateField(logger, "_logDirectoryAbsolutePath", tempDir);
+                SetPrivateField(logger, "_logFileAbsolutePath", tempLogPath);
                 logger.LogMessage(AppLogLevel.Info, "trace-test", shouldOutputMessageToConsole: false);
 
                 var content = File.ReadAllText(tempLogPath).Trim();
@@ -840,8 +881,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             finally
             {
                 TryDeleteDirectory(tempDir);
+                TryDeleteDirectory(appDataScope.RootAbsolutePath);
             }
         }
+
+        private static AppDataOverrideScope CreateAppDataOverrideScope()
+            => new(Path.Combine(Path.GetTempPath(), "fd-logger-appdata-" + Guid.NewGuid().ToString("N")));
 
         private static void SetPrivateField(object target, string fieldName, string value)
         {
