@@ -275,9 +275,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             // Verify that specifying a non-existent custom config path throws FileNotFoundException.
             // 存在しないカスタム設定パスを指定した場合に FileNotFoundException がスローされることを確認。
             var service = new ConfigService();
+            const string customConfigPath = "/non/existent/config.json";
             var ex = await Assert.ThrowsAsync<FileNotFoundException>(
-                () => service.LoadConfigBuilderAsync("/non/existent/config.json"));
-            Assert.Contains("/non/existent/config.json", ex.Message);
+                () => service.LoadConfigBuilderAsync(customConfigPath));
+            Assert.Contains(Path.GetFullPath(customConfigPath), ex.Message, StringComparison.Ordinal);
         }
 
         [Fact]
