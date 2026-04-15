@@ -84,7 +84,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var provider = CreateProvider(fileComparisonService: fakeComparison, logger: logger);
 
             Assert.False(provider.CanHandle("bad\0path.dll"));
-            Assert.Contains(logger.Messages, m => m.Contains("managed-assembly detection failed", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, m =>
+                m.Contains("managed-assembly detection failed", StringComparison.Ordinal)
+                && m.Contains(provider.DisplayName, StringComparison.Ordinal)
+                && m.Contains("Extension='.dll'", StringComparison.Ordinal));
         }
 
         [Fact]
@@ -124,7 +127,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Tool not found", result.CommandString);
             Assert.Contains("InvalidOperationException", result.CommandString);
             Assert.Contains("InvalidOperationException", result.VersionLabel);
-            Assert.Contains(logger.Messages, m => m.Contains("provider failed", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, m =>
+                m.Contains("provider", StringComparison.Ordinal)
+                && m.Contains(provider.DisplayName, StringComparison.Ordinal)
+                && m.Contains("Extension='.dll'", StringComparison.Ordinal));
         }
 
         [Fact]

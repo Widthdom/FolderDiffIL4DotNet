@@ -256,19 +256,22 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 **Symptom:** High memory usage or `OutOfMemoryException` when comparing assemblies with very large IL output.
 
-**Solution:** Reduce parallelism to limit concurrent memory usage:
+**Solution:** The default `ILCacheMaxMemoryMegabytes` is now `256`, but very large assemblies can still require extra tuning. Reduce parallelism to limit concurrent memory usage:
 
 ```bash
 dotnet run -- /path/old /path/new label --threads 2 --no-pause
 ```
 
-Or limit the text diff memory budget:
+Or tighten the IL cache and text diff memory budgets together:
 
 ```json
 {
+  "ILCacheMaxMemoryMegabytes": 128,
   "TextDiffParallelMemoryLimitMegabytes": 256
 }
 ```
+
+If you need the previous unlimited IL cache behavior on a high-RAM machine, set `"ILCacheMaxMemoryMegabytes": 0` explicitly.
 
 ### `--bell` flag does not ring the terminal bell
 
@@ -540,19 +543,22 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 
 **症状:** 非常に大きな IL 出力を持つアセンブリの比較時にメモリ使用量が高い、または `OutOfMemoryException` が発生する。
 
-**解決策:** 並列度を下げて同時メモリ使用量を制限:
+**解決策:** `ILCacheMaxMemoryMegabytes` の既定値は `256` になりましたが、非常に大きなアセンブリでは追加調整が必要な場合があります。まずは並列度を下げて同時メモリ使用量を制限:
 
 ```bash
 dotnet run -- /path/old /path/new label --threads 2 --no-pause
 ```
 
-またはテキスト差分メモリ予算を制限:
+または IL キャッシュとテキスト差分のメモリ予算を同時に絞ってください:
 
 ```json
 {
+  "ILCacheMaxMemoryMegabytes": 128,
   "TextDiffParallelMemoryLimitMegabytes": 256
 }
 ```
+
+RAM に十分余裕があり、従来どおり IL キャッシュを無制限で使いたい場合は `"ILCacheMaxMemoryMegabytes": 0` を明示指定してください。
 
 ### `--bell` フラグでターミナルベルが鳴らない
 

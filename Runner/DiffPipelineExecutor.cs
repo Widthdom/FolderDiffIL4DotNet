@@ -212,8 +212,9 @@ namespace FolderDiffIL4DotNet.Runner
                 HasSha256MismatchWarnings = pipelineResult.HasSha256MismatchWarnings
             };
 
-            foreach (var action in actions)
+            for (int actionIndex = 0; actionIndex < actions.Count; actionIndex++)
             {
+                IPostProcessAction action = actions[actionIndex];
                 try
                 {
                     await action.ExecuteAsync(context, CancellationToken.None);
@@ -222,7 +223,7 @@ namespace FolderDiffIL4DotNet.Runner
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Post-process action '{action.GetType().Name}' failed ({ex.GetType().Name}): {ex.Message}",
+                        $"Post-process action '{action.GetType().Name}' failed at position {actionIndex + 1}/{actions.Count} (Order={action.Order}, {ex.GetType().Name}): {ex.Message}",
                         shouldOutputMessageToConsole: true, ex);
                 }
 #pragma warning restore CA1031

@@ -120,10 +120,12 @@ namespace FolderDiffIL4DotNet.Services
             cancellationToken.ThrowIfCancellationRequested();
             string file1AbsolutePath = Path.Combine(_oldFolderAbsolutePath, fileRelativePath);
             string file2AbsolutePath = Path.Combine(_newFolderAbsolutePath, fileRelativePath);
+            var comparisonStage = "starting comparison";
             try
             {
                 // 0) Plugin hooks: allow plugins to override built-in comparison.
                 // 0) プラグインフック: プラグインが組み込み比較をオーバーライドできるようにする。
+                comparisonStage = "running BeforeCompare hooks";
                 var hookResult = await TryRunBeforeCompareHooksAsync(fileRelativePath, cancellationToken);
                 if (hookResult != null)
                 {
@@ -133,6 +135,7 @@ namespace FolderDiffIL4DotNet.Services
                             hookResult.AreEqual ? FileDiffResultLists.DiffDetailResult.SHA256Match : FileDiffResultLists.DiffDetailResult.SHA256Mismatch,
                             hookResult.DiffDetailLabel);
                     }
+                    comparisonStage = "running AfterCompare hooks";
                     await RunAfterCompareHooksAsync(fileRelativePath, hookResult.AreEqual, cancellationToken);
                     return hookResult.AreEqual;
                 }
@@ -141,6 +144,7 @@ namespace FolderDiffIL4DotNet.Services
                 //    Also capture computed hex hashes to seed the IL cache, avoiding redundant SHA256 recomputation.
                 // 1) SHA256: ファイルサイズや内容が完全一致する場合はここで終了。
                 //    計算済みハッシュ値を IL キャッシュに事前登録し、SHA256 の二重計算を回避する。
+                comparisonStage = "computing SHA256 hashes";
                 var (areHashEqual, hash1Hex, hash2Hex) = await _fileComparisonService.DiffFilesByHashWithHexAsync(file1AbsolutePath, file2AbsolutePath);
                 if (hash1Hex != null)
                 {
@@ -153,6 +157,7 @@ namespace FolderDiffIL4DotNet.Services
                 if (areHashEqual)
                 {
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Match);
+                    comparisonStage = "running AfterCompare hooks";
                     await RunAfterCompareHooksAsync(fileRelativePath, true, cancellationToken);
                     return true;
                 }
@@ -161,6 +166,7 @@ namespace FolderDiffIL4DotNet.Services
                 //    When SkipIL is true, skip IL comparison and fall through to text/binary comparison.
                 // 2) .NET アセンブリなら IL: IL 比較は行除外（MVID や設定文字列）などアセンブリ固有処理を伴うため別サービスに委譲。
                 //    SkipIL が true の場合は IL 比較をスキップしてテキスト/バイナリ比較に進む。
+                comparisonStage = "detecting .NET executable";
                 var dotNetDetectionResult = _config.SkipIL
                     ? default
                     : _fileComparisonService.DetectDotNetExecutable(file1AbsolutePath);
@@ -177,6 +183,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     try
                     {
+                        comparisonStage = "comparing IL";
                         var (areDotNetAssembliesEqual, disassemblerLabel) = await _ilOutputService.DiffDotNetAssembliesAsync(fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, _config.ShouldOutputILText, cancellationToken);
                         _fileDiffResultLists.RecordDiffDetail(
                             fileRelativePath,
@@ -198,6 +205,7 @@ namespace FolderDiffIL4DotNet.Services
                             TryClassifyChangeTags(fileRelativePath);
                         }
 
+                        comparisonStage = "running AfterCompare hooks";
                         await RunAfterCompareHooksAsync(fileRelativePath, areDotNetAssembliesEqual, cancellationToken);
                         return areDotNetAssembliesEqual;
                     }
@@ -213,6 +221,7 @@ namespace FolderDiffIL4DotNet.Services
                 string fileExtension = Path.GetExtension(file1AbsolutePath);
                 if (_config.TextFileExtensions.Any(configuredExtension => string.Equals(configuredExtension, fileExtension, StringComparison.OrdinalIgnoreCase)))
                 {
+                    comparisonStage = "comparing text";
                     bool areTextFilesEqual = await CompareAsTextAsync(fileRelativePath, file1AbsolutePath, file2AbsolutePath, maxParallel);
                     _fileDiffResultLists.RecordDiffDetail(fileRelativePath, areTextFilesEqual ? FileDiffResultLists.DiffDetailResult.TextMatch : FileDiffResultLists.DiffDetailResult.TextMismatch);
 
@@ -225,11 +234,13 @@ namespace FolderDiffIL4DotNet.Services
                         TryClassifyChangeTags(fileRelativePath);
                     }
 
+                    comparisonStage = "running AfterCompare hooks";
                     await RunAfterCompareHooksAsync(fileRelativePath, areTextFilesEqual, cancellationToken);
                     return areTextFilesEqual;
                 }
 
                 _fileDiffResultLists.RecordDiffDetail(fileRelativePath, FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
+                comparisonStage = "running AfterCompare hooks";
                 await RunAfterCompareHooksAsync(fileRelativePath, false, cancellationToken);
                 return false;
             }
@@ -240,12 +251,12 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ex is DirectoryNotFoundException or IOException
                 or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
             {
-                LogExpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                LogExpectedFileDiffFailure(fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel, ex);
                 throw;
             }
             catch (Exception ex)
             {
-                LogUnexpectedFileDiffFailure(file1AbsolutePath, file2AbsolutePath, ex);
+                LogUnexpectedFileDiffFailure(fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel, ex);
                 throw;
             }
         }
@@ -289,7 +300,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Plugin BeforeCompare hook '{hook.GetType().Name}' failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
+                        BuildHookFailureMessage("BeforeCompare", hook, fileRelativePath, ex),
                         shouldOutputMessageToConsole: false, ex);
                 }
 #pragma warning restore CA1031
@@ -328,7 +339,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Plugin AfterCompare hook '{hook.GetType().Name}' failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
+                        BuildHookFailureMessage("AfterCompare", hook, fileRelativePath, ex),
                         shouldOutputMessageToConsole: false, ex);
                 }
 #pragma warning restore CA1031
@@ -436,11 +447,11 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private void LogExpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)
+        private void LogExpectedFileDiffFailure(string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
-                $"An error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
+                BuildFileDiffFailureMessage("An error occurred while diffing", fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
@@ -452,14 +463,20 @@ namespace FolderDiffIL4DotNet.Services
                 shouldOutputMessageToConsole: false, exception);
         }
 
-        private void LogUnexpectedFileDiffFailure(string file1AbsolutePath, string file2AbsolutePath, Exception exception)
+        private void LogUnexpectedFileDiffFailure(string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel, Exception exception)
         {
             _logger.LogMessage(
                 AppLogLevel.Error,
-                $"An unexpected error occurred while diffing '{file1AbsolutePath}' and '{file2AbsolutePath}'.",
+                BuildFileDiffFailureMessage("An unexpected error occurred while diffing", fileRelativePath, file1AbsolutePath, file2AbsolutePath, comparisonStage, maxParallel),
                 shouldOutputMessageToConsole: true,
                 exception);
         }
+
+        private static string BuildHookFailureMessage(string phase, IFileComparisonHook hook, string fileRelativePath, Exception exception) =>
+            $"Plugin {phase} hook '{hook.GetType().Name}' failed for '{fileRelativePath}' (Order={hook.Order}, {exception.GetType().Name}): {exception.Message}";
+
+        private string BuildFileDiffFailureMessage(string prefix, string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel) =>
+            $"{prefix} '{file1AbsolutePath}' and '{file2AbsolutePath}'. RelativePath='{fileRelativePath}', Stage='{comparisonStage}', SkipIL={_config.SkipIL}, MaxParallel={maxParallel}.";
 
     }
 }

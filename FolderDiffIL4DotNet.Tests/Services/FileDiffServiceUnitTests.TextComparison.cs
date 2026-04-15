@@ -166,7 +166,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
-                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal));
+                    && entry.Message.Contains("An error occurred while diffing", StringComparison.Ordinal)
+                    && entry.Message.Contains("RelativePath='locked.txt'", StringComparison.Ordinal)
+                    && entry.Message.Contains("Stage='comparing text'", StringComparison.Ordinal)
+                    && entry.Message.Contains("MaxParallel=1", StringComparison.Ordinal));
             Assert.Empty(resultLists.FileRelativePathToDiffDetailDictionary);
         }
 

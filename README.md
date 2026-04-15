@@ -53,6 +53,8 @@ dotnet tool install -g dotnet-ildasm
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
+Release automation publishes `nildiff` to both nuget.org and GitHub Packages on each tagged release. `FolderDiffIL4DotNet.Core` and `FolderDiffIL4DotNet.Plugin.Abstractions` are mirrored to GitHub Packages only when those package directories changed, matching the existing nuget.org publish gate so normal releases do not invent GitHub-only library versions. GitHub Packages remains a best-effort mirror path after the nuget.org publish succeeds.
+
 The tool works out of the box with default settings. To customize behavior, either create a user-local `config.json` in the default app-data location below or pass `--config`:
 
 ```bash
@@ -61,7 +63,7 @@ nildiff "/old" "/new" "label" --config /path/to/config.json
 
 See [`doc/config.sample.jsonc`](doc/config.sample.jsonc) for all available settings. Individual settings can also be overridden via `FOLDERDIFF_*` environment variables (e.g. `FOLDERDIFF_MAXPARALLELISM=8`).
 
-The default user-local `config.json` location varies by OS:
+The default `config.json` location varies by OS:
 
 | OS | Path |
 |---|---|
@@ -69,7 +71,7 @@ The default user-local `config.json` location varies by OS:
 | macOS | `~/Library/Application Support/FolderDiffIL4DotNet/config.json` |
 | Linux | `~/.local/share/FolderDiffIL4DotNet/config.json` |
 
-> **Note:** This user-local config survives global-tool updates. If it does not exist, the tool falls back to the bundled `config.json` next to the executable.
+> **Note:** When `--config` is omitted, `nildiff` first looks for the user-local `config.json` above and falls back to the bundled `config.json` only when the user-local file is absent.
 
 ### Option B: Clone and build from source
 
@@ -90,9 +92,9 @@ dotnet build
 dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 # 5. View the reports
-#    <app-data-root>/FolderDiffIL4DotNet/Reports/my-comparison/diff_report.md   — Markdown report
-#    <app-data-root>/FolderDiffIL4DotNet/Reports/my-comparison/diff_report.html — Interactive HTML report (open in browser)
-#    <app-data-root>/FolderDiffIL4DotNet/Reports/my-comparison/audit_log.json   — Structured audit log
+#    <app-data-root>/Reports/my-comparison/diff_report.md   — Markdown report
+#    <app-data-root>/Reports/my-comparison/diff_report.html — Interactive HTML report (open in browser)
+#    <app-data-root>/Reports/my-comparison/audit_log.json   — Structured audit log
 #    Or run: nildiff --open-reports
 ```
 
@@ -171,7 +173,7 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 |---|---|
 | `<oldFolder>` | Absolute path to the baseline (old) folder. |
 | `<newFolder>` | Absolute path to the comparison (new) folder. |
-| `[reportLabel]` | Optional label used as the subfolder name under the active reports root (default: the OS-standard user-local app-data `Reports/` directory, or `--output` if specified). When omitted, the tool auto-generates a high-resolution timestamp label. Tokens beginning with `--` are treated as options, not labels. |
+| `[reportLabel]` | Optional label used as the subfolder name under `Reports/`. When omitted, the tool auto-generates a high-resolution timestamp label. Tokens beginning with `--` are treated as options, not labels. |
 
 **Options:**
 
@@ -184,7 +186,7 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--print-config` | Print the effective configuration as indented JSON and exit (code `0`). Reflects [`config.json`](config.json) + all `FOLDERDIFF_*` env var overrides + supported CLI overrides such as `--threads`, `--skip-il`, and `--creator`. Use `--config <path>` to load a non-default file. Config errors, including malformed `--config` paths, exit with code `3`; stderr includes the failing operation, target path, and exception type. |
 | `--validate-config` | Validate the configuration file (JSON syntax + semantic rules) and exit. Returns `0` if valid, `3` if invalid. Useful for CI pre-flight checks. Malformed `--config` paths are also classified as configuration errors (`3`) with diagnostic stderr output. |
 | `--no-pause` | Skip key-wait at process end. |
-| `--config <path>` | Load config from `<path>`. When omitted, the tool first looks for the user-local app-data config file and falls back to the bundled `config.json` next to the executable if the user-local file does not exist. |
+| `--config <path>` | Load config from `<path>` instead of the default `<exe>/config.json`. |
 | `--threads <N>` | Override [`MaxParallelism`](#config-en-maxparallelism) for this run (`0` = auto). |
 | `--no-il-cache` | Disable the IL cache for this run. |
 | `--clear-cache` | Interactive wizard to selectively delete IL cache files (by tool, version, or all). Read-only `.ilcache` files are unprotected automatically before deletion. |
@@ -203,13 +205,13 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--sushi` | Use conveyor-belt sushi spinner animation during execution (easter egg). |
 | `--random-spinner` | Randomly select a spinner theme for each run. |
 | `--bell` | Ring terminal bell (`BEL` / `\a`) when execution completes. |
-| `--output <path>` | Output directory for reports (default: the user-local app-data `Reports/` directory, e.g. `%LOCALAPPDATA%\\FolderDiffIL4DotNet\\Reports` on Windows or `~/.local/share/FolderDiffIL4DotNet/Reports` on macOS/Linux). The report label subfolder is created under this directory. Useful for CI/CD pipelines that need reports written to a custom path. |
-| `--log-format <text\|json>` | Log file output format (default: `text`). `json` emits NDJSON (one JSON object per line) with W3C Trace Context fields (`traceId`, `spanId`) for SIEM, OpenTelemetry, and log aggregation tool integration. Normal console output remains plain text; the only exception is an `--open-*` failure whose best-effort logger bootstrap also fails, in which case the bootstrap diagnostic is emitted as a single JSON object on stderr before the plain-text folder-open error. |
-| `--open-reports` | Open the Reports folder in the default file manager and exit. When `--output` is also specified, opens that custom directory instead of the default user-local app-data `Reports/` directory. Missing directories are created automatically. If path resolution, directory creation, or launcher invocation fails, the command exits with code `4` and stderr includes the resolved target path plus the exception type. |
-| `--open-config` | Open the configuration folder in the default file manager and exit. When `--config` is also specified, opens the parent directory of the specified config file. Without `--config`, this opens the default user-local app-data config directory. Missing directories are created automatically; launcher/path failures exit with code `4` and include the resolved target path plus exception type on stderr. |
-| `--open-logs` | Open the Logs folder in the default file manager and exit. The default target is the user-local app-data `Logs/` directory. Missing directories are created automatically; launcher/path failures exit with code `4` and include the resolved target path plus exception type on stderr. |
+| `--output <path>` | Output directory for reports (default: `<exe>/Reports/`). The report label subfolder is created under this directory. Useful for CI/CD pipelines that need reports written to a custom path. |
+| `--log-format <text\|json>` | Log file output format (default: `text`). `json` emits NDJSON (one JSON object per line) with W3C Trace Context fields (`traceId`, `spanId`) for SIEM, OpenTelemetry, and log aggregation tool integration. Console output remains plain text regardless. |
+| `--open-reports` | Open the Reports folder in the default file manager and exit. When `--output` is also specified, opens that custom directory instead of `<exe>/Reports/`. Missing directories are created automatically. If path resolution, directory creation, or launcher invocation fails, the command exits with code `4` and stderr includes the resolved target path plus the exception type. |
+| `--open-config` | Open the configuration folder in the default file manager and exit. When `--config` is also specified, opens the parent directory of the specified config file. Missing directories are created automatically; launcher/path failures exit with code `4` and include the resolved target path plus exception type on stderr. |
+| `--open-logs` | Open the Logs folder (`<exe>/Logs/`) in the default file manager and exit. Missing directories are created automatically; launcher/path failures exit with code `4` and include the resolved target path plus exception type on stderr. |
 
-> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the tool gently suggests matcha instead (easter egg). Use `--random-spinner` for a surprise theme each run. They also override any custom `SpinnerFrames` set in [`config.json`](config.json).
+> **Note:** The spinner options (`--coffee`, `--beer`, `--matcha`, `--whisky`, `--wine`, `--ramen`, `--sushi`) all override [`SpinnerFrames`](#config-en-spinnerframes). If multiple are specified, the tool gently suggests matcha instead (easter egg). Use `--random-spinner` for a surprise theme each run. They also override any custom `SpinnerFrames` set in [`config.json`](config.json). The inline progress bar now appends a fixed-width ETA segment such as `ETA 14:32 (+00 h 12 m)` so the console layout stays stable while the spinner animates.
 
 ```bash
 dotnet build
@@ -232,7 +234,7 @@ dotnet run -- --creator --print-config
 
 > **Tip:** When a configuration error occurs (exit code `3`), a hint is printed to stderr suggesting `--print-config` for diagnosis.
 
-Main output is written to `<reports-root>/<label>/` (by default, the user-local app-data `Reports/` directory). See [Generated Artifacts](#readme-en-generated-artifacts) for the full list.
+Main output is written to `Reports/<label>/`. See [Generated Artifacts](#readme-en-generated-artifacts) for the full list.
 
 Process exit codes:
 
@@ -245,9 +247,9 @@ Process exit codes:
 | `4` | Execution failure | Runtime error during diff comparison or report generation, or `--open-*` launcher/path-creation failure |
 
 Before loading configuration, three preflight checks run against the reports output path (all failures produce exit code `2`):
-1. **Path length** — the constructed `<reports-root>/<label>` path must not exceed the OS limit (260 chars on Windows without long-path opt-in, 1024 on macOS, 4096 on Linux). By default, `<reports-root>` is the user-local app-data `Reports/` directory, and `--output` can override it.
+1. **Path length** — the constructed `Reports/<label>` path must not exceed the OS limit (260 chars on Windows without long-path opt-in, 1024 on macOS, 4096 on Linux).
 2. **Disk space** — at least 100 MB of free space is required on the drive that will hold the reports folder. The check is best-effort and skips silently when drive information is unavailable (e.g., network shares).
-3. **Write permission** — a temporary probe file is created and deleted in the parent directory of the active reports root to verify that the process has write access before any actual output is produced. Both `UnauthorizedAccessException` and `IOException` are treated as fatal: the cause is logged with a descriptive message and the run fails immediately (fail-fast).
+3. **Write permission** — a temporary probe file is created and deleted in the `Reports/` parent directory to verify that the process has write access before any actual output is produced. Both `UnauthorizedAccessException` and `IOException` are treated as fatal: the cause is logged with a descriptive message and the run fails immediately (fail-fast).
 
 The report header includes a **Disassembler Availability** table that lists every candidate IL disassembler (`dotnet-ildasm`, `ilspycmd`) and whether it was available or unavailable in the current environment, along with its version. This helps readers understand the confidence level of IL-based comparison results at a glance.
 
@@ -458,7 +460,7 @@ The Diff Reason column in the Modified Files table appends the file-level max im
 
 ## Configuration ([`config.json`](config.json))
 
-When `--config` is not supplied, the tool first looks for a user-local config file under `Environment.SpecialFolder.LocalApplicationData` (`%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json` on Windows, `~/Library/Application Support/FolderDiffIL4DotNet/config.json` on macOS, `~/.local/share/FolderDiffIL4DotNet/config.json` on Linux). If that file does not exist, it falls back to the bundled [`config.json`](config.json) next to the executable. All keys are optional; omitted keys use the code-defined defaults in [`ConfigSettings`](Models/ConfigSettings.cs). If the defaults are acceptable, this file can be just:
+Place [`config.json`](config.json) next to the executable. All keys are optional; omitted keys use the code-defined defaults in [`ConfigSettings`](Models/ConfigSettings.cs). If the defaults are acceptable, this file can be just:
 
 ```json
 {}
@@ -548,7 +550,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-shouldoutputiltext">
       <td><code>ShouldOutputILText</code></td>
       <td><code>true</code></td>
-      <td>Outputs IL dumps under <code>&lt;reports-root&gt;/&lt;label&gt;/IL/old,new</code>. By default, <code>&lt;reports-root&gt;</code> is the user-local app-data <code>Reports/</code> directory, and <code>--output</code> can override it.</td>
+      <td>Outputs IL dumps under <code>Reports/&lt;label&gt;/IL/old,new</code>.</td>
     </tr>
     <tr id="config-en-shouldignoreillinescontainingconfiguredstrings">
       <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>
@@ -603,7 +605,7 @@ Override only the settings you want to change. For example:
     <tr id="config-en-ilcachedirectoryabsolutepath">
       <td><code>ILCacheDirectoryAbsolutePath</code></td>
       <td><code>""</code></td>
-      <td>IL cache directory. Empty = <code>%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache</code> on Windows, <code>~/Library/Application Support/FolderDiffIL4DotNet/ILCache</code> on macOS, and <code>~/.local/share/FolderDiffIL4DotNet/ILCache</code> on Linux.</td>
+      <td>IL cache directory. Empty = <code>%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache</code> on Windows, <code>~/.local/share/FolderDiffIL4DotNet/ILCache</code> on macOS/Linux.</td>
     </tr>
     <tr id="config-en-ilcachestatslogintervalseconds">
       <td><code>ILCacheStatsLogIntervalSeconds</code></td>
@@ -622,8 +624,8 @@ Override only the settings you want to change. For example:
     </tr>
     <tr id="config-en-ilcachemaxmemorymegabytes">
       <td><code>ILCacheMaxMemoryMegabytes</code></td>
-      <td><code>0</code></td>
-      <td>In-memory IL cache budget (MB). <code>&lt;=0</code> means unlimited (entry-count limit only). Set this when large assemblies cause high memory usage.</td>
+      <td><code>256</code></td>
+      <td>In-memory IL cache budget (MB). The default now caps memory at 256 MB for safer large runs; set <code>0</code> to restore unlimited mode (entry-count limit only).</td>
     </tr>
     <tr id="config-en-ilprecomputebatchsize">
       <td><code>ILPrecomputeBatchSize</code></td>
@@ -767,7 +769,7 @@ Rules:
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#config-en-ignoredextensions) and [`TextFileExtensions`](#config-en-textfileextensions) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
-- After loading [`config.json`](config.json), if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: [`MaxLogGenerations`](#config-en-maxloggenerations) >= `1`; [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) must be less than [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes); and [`SpinnerFrames`](#config-en-spinnerframes) must contain at least one element.
+- After loading [`config.json`](config.json), if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: [`MaxLogGenerations`](#config-en-maxloggenerations) >= `1`; [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) >= `1`; [`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`; [`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) must be less than [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes); and [`SpinnerFrames`](#config-en-spinnerframes) must contain at least one element.
 - **JSON syntax errors** (e.g. a trailing comma after the last property or array element) are caught immediately at startup, logged to the run log file, and printed to the console in red with the line number and a hint — the run exits with code `3`. Standard JSON does not allow trailing commas: `"Key": "value",}` is invalid; remove the final comma.
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#config-en-textfileextensions).
@@ -777,14 +779,12 @@ Notes:
 <a id="readme-en-generated-artifacts"></a>
 ## Generated Artifacts
 
-By default, reports and logs are written under the OS-standard user-local data directory resolved from `Environment.SpecialFolder.LocalApplicationData` (`%LOCALAPPDATA%\FolderDiffIL4DotNet\...` on Windows, `~/Library/Application Support/FolderDiffIL4DotNet/...` on macOS, `~/.local/share/FolderDiffIL4DotNet/...` on Linux). `--output` overrides only the report root.
-
-- `<reports-root>/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
-- `<reports-root>/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (unless [`ShouldGenerateHtmlReport`](#config-en-shouldgeneratehtmlreport) is `false`)
-- `<reports-root>/<label>/`[`audit_log.json`](doc/samples/audit_log.json) (unless [`ShouldGenerateAuditLog`](#config-en-shouldgenerateauditlog) is `false`)
-- `<reports-root>/<label>/sbom.cdx.json` or `sbom.spdx.json` (when [`ShouldGenerateSbom`](#config-en-shouldgeneratesbom) is `true`)
-- `<app-data-root>/Logs/log_YYYYMMDD.log` (for example `%LOCALAPPDATA%\FolderDiffIL4DotNet\Logs\log_YYYYMMDD.log` on Windows, `~/Library/Application Support/FolderDiffIL4DotNet/Logs/log_YYYYMMDD.log` on macOS, or `~/.local/share/FolderDiffIL4DotNet/Logs/log_YYYYMMDD.log` on Linux)
-- Optional: `<reports-root>/<label>/IL/old/*.txt`, `<reports-root>/<label>/IL/new/*.txt`
+- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
+- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html) (unless [`ShouldGenerateHtmlReport`](#config-en-shouldgeneratehtmlreport) is `false`)
+- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json) (unless [`ShouldGenerateAuditLog`](#config-en-shouldgenerateauditlog) is `false`)
+- `Reports/<label>/sbom.cdx.json` or `sbom.spdx.json` (when [`ShouldGenerateSbom`](#config-en-shouldgeneratesbom) is `true`)
+- `Logs/log_YYYYMMDD.log`
+- Optional: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
 For developer-focused details (architecture, exception handling, test setup, CI/CD, API docs), see [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md).
 
@@ -851,6 +851,8 @@ dotnet tool install -g dotnet-ildasm
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
+リリース自動化では `nildiff` をタグごとに nuget.org と GitHub Packages の両方へ公開します。`FolderDiffIL4DotNet.Core` と `FolderDiffIL4DotNet.Plugin.Abstractions` は、そのパッケージ自体に変更があるときだけ GitHub Packages に mirror し、通常 release で GitHub Packages 側だけのライブラリ版が増えないよう nuget.org と同じ公開条件に揃えています。GitHub Packages は nuget.org 公開成功後に続く best-effort mirror 経路です。
+
 デフォルト設定のまま動作します。動作をカスタマイズするには、下記のユーザーローカル app-data 配下に `config.json` を配置するか、`--config` で明示指定してください：
 
 ```bash
@@ -859,7 +861,7 @@ nildiff "/old" "/new" "label" --config /path/to/config.json
 
 利用可能な設定項目は [`doc/config.sample.jsonc`](doc/config.sample.jsonc) を参照してください。個別の設定は `FOLDERDIFF_*` 環境変数でも上書き可能です（例: `FOLDERDIFF_MAXPARALLELISM=8`）。
 
-既定のユーザーローカル `config.json` 配置場所は OS によって異なります：
+デフォルトの `config.json` の配置場所は OS によって異なります：
 
 | OS | パス |
 |---|---|
@@ -867,7 +869,7 @@ nildiff "/old" "/new" "label" --config /path/to/config.json
 | macOS | `~/Library/Application Support/FolderDiffIL4DotNet/config.json` |
 | Linux | `~/.local/share/FolderDiffIL4DotNet/config.json` |
 
-> **注意:** このユーザーローカル設定はグローバルツール更新後も残ります。存在しない場合のみ、実行ファイル横の同梱 `config.json` をフォールバックとして読み込みます。
+> **注意:** `--config` を省略した場合、`nildiff` はまず上記のユーザーローカル `config.json` を探し、そのファイルが存在しない場合のみ同梱の `config.json` へフォールバックします。
 
 ### 方法 B: ソースからクローンしてビルド
 
@@ -888,9 +890,9 @@ dotnet build
 dotnet run -- "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 
 # 5. レポートを確認
-#    <app-data-root>/FolderDiffIL4DotNet/Reports/my-comparison/diff_report.md   — Markdown レポート
-#    <app-data-root>/FolderDiffIL4DotNet/Reports/my-comparison/diff_report.html — インタラクティブ HTML レポート（ブラウザで開く）
-#    <app-data-root>/FolderDiffIL4DotNet/Reports/my-comparison/audit_log.json   — 構造化監査ログ
+#    <app-data-root>/Reports/my-comparison/diff_report.md   — Markdown レポート
+#    <app-data-root>/Reports/my-comparison/diff_report.html — インタラクティブ HTML レポート（ブラウザで開く）
+#    <app-data-root>/Reports/my-comparison/audit_log.json   — 構造化監査ログ
 #    または: nildiff --open-reports
 ```
 
@@ -973,7 +975,7 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 |---|---|
 | `<oldFolder>` | 比較元（旧）フォルダの絶対パス。 |
 | `<newFolder>` | 比較先（新）フォルダの絶対パス。 |
-| `[reportLabel]` | 現在のレポートルート配下（既定: OS 標準のユーザーローカル app-data `Reports/`、`--output` 指定時はその配下）のサブフォルダ名に使う任意ラベル。省略時は高粒度のタイムスタンプラベルを自動生成します。`--` で始まるトークンはラベルではなくオプションとして扱います。 |
+| `[reportLabel]` | `Reports/` 配下のサブフォルダ名に使う任意ラベル。省略時は高粒度のタイムスタンプラベルを自動生成します。`--` で始まるトークンはラベルではなくオプションとして扱います。 |
 
 **オプション:**
 
@@ -986,7 +988,7 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--print-config` | 有効な設定をインデント付き JSON として出力してコード `0` で終了します。[`config.json`](config.json) のデシリアライズ値に `FOLDERDIFF_*` 環境変数オーバーライドと、`--threads`、`--skip-il`、`--creator` などの対応 CLI オーバーライドを適用した最終状態を表示します。`--config <path>` との組み合わせ可。設定エラーはコード `3` で終了し、不正な `--config` パスも同じく設定エラーとして扱われます。stderr には失敗した操作名・対象パス・例外種別が含まれます。 |
 | `--validate-config` | 設定ファイルのバリデーション（JSON 構文 + セマンティックルール）を行い終了します。有効なら `0`、無効なら `3` を返します。CI のプリフライトチェックに便利です。不正な `--config` パスも設定エラー（`3`）として扱い、stderr に診断情報を出力します。 |
 | `--no-pause` | 終了時のキー待ちをスキップします。 |
-| `--config <path>` | `<path>` から設定を読み込みます。未指定時はまずユーザーローカル app-data の設定ファイルを探し、存在しない場合は実行ファイル横の同梱 `config.json` へフォールバックします。 |
+| `--config <path>` | デフォルトの `<exe>/config.json` の代わりに `<path>` から設定を読み込みます。 |
 | `--threads <N>` | 今回の実行に限り [`MaxParallelism`](#config-ja-maxparallelism) を上書きします（`0` = 自動）。 |
 | `--no-il-cache` | 今回の実行に限り IL キャッシュを無効化します。 |
 | `--clear-cache` | IL キャッシュファイルを選択的に削除する対話ウィザードを起動します（ツール別、バージョン別、全削除）。read-only 属性付きの `.ilcache` も削除前に属性解除して処理します。 |
@@ -1005,13 +1007,13 @@ nildiff <oldFolder> <newFolder> [reportLabel] [options]
 | `--sushi` | 実行中に回転寿司テーマのスピナーアニメーションを使用します（イースターエッグ）。 |
 | `--random-spinner` | 実行ごとにスピナーテーマをランダムに選択します。 |
 | `--bell` | 実行完了時にターミナルベル（`BEL` / `\a`）を鳴らします。 |
-| `--output <path>` | レポートの出力ディレクトリ（既定: ユーザーローカル app-data の `Reports/`。例: Windows は `%LOCALAPPDATA%\\FolderDiffIL4DotNet\\Reports`、macOS は `~/Library/Application Support/FolderDiffIL4DotNet/Reports`、Linux は `~/.local/share/FolderDiffIL4DotNet/Reports`）。このディレクトリの下にレポートラベルのサブフォルダが作成されます。CI/CD パイプラインでレポートを任意のパスに出力したい場合に便利です。 |
-| `--log-format <text\|json>` | ログファイルの出力形式（既定: `text`）。`json` を指定すると W3C Trace Context フィールド（`traceId`、`spanId`）付きの NDJSON（1行1 JSON オブジェクト）で出力し、SIEM、OpenTelemetry、ログ集約ツールとの連携が容易になります。通常のコンソール出力はプレーンテキストのままですが、`--open-*` の失敗時にベストエフォートのロガー bootstrap まで失敗した場合だけ、bootstrap 診断を単一の JSON オブジェクトとして stderr に出し、その後にフォルダオープン失敗のプレーンテキスト行が続きます。 |
-| `--open-reports` | Reports フォルダをデフォルトのファイルマネージャで開いて終了します。`--output` が同時に指定された場合、既定のユーザーローカル app-data `Reports/` の代わりにそのカスタムディレクトリを開きます。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
-| `--open-config` | 設定ファイルのフォルダをデフォルトのファイルマネージャで開いて終了します。`--config` が同時に指定された場合は指定ファイルの親ディレクトリ、未指定時は既定のユーザーローカル app-data 設定ディレクトリを開きます。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
-| `--open-logs` | Logs フォルダをデフォルトのファイルマネージャで開いて終了します。既定のターゲットはユーザーローカル app-data の `Logs/` ディレクトリです。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
+| `--output <path>` | レポートの出力ディレクトリ（既定: `<exe>/Reports/`）。このディレクトリの下にレポートラベルのサブフォルダが作成されます。CI/CD パイプラインでレポートを任意のパスに出力したい場合に便利です。 |
+| `--log-format <text\|json>` | ログファイルの出力形式（既定: `text`）。`json` を指定すると W3C Trace Context フィールド（`traceId`、`spanId`）付きの NDJSON（1行1 JSON オブジェクト）で出力し、SIEM、OpenTelemetry、ログ集約ツールとの連携が容易になります。コンソール出力は形式に関わらずプレーンテキストのままです。 |
+| `--open-reports` | Reports フォルダをデフォルトのファイルマネージャで開いて終了します。`--output` が同時に指定された場合、`<exe>/Reports/` の代わりにそのカスタムディレクトリを開きます。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
+| `--open-config` | 設定ファイルのフォルダをデフォルトのファイルマネージャで開いて終了します。`--config` が同時に指定された場合、指定された設定ファイルの親ディレクトリを開きます。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
+| `--open-logs` | Logs フォルダ（`<exe>/Logs/`）をデフォルトのファイルマネージャで開いて終了します。存在しないディレクトリは自動作成されます。パス解決・ディレクトリ作成・ランチャー起動に失敗した場合はコード `4` で終了し、stderr に解決済みターゲットパスと例外種別を出力します。 |
 
-> **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`、`--ramen`、`--sushi`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は抹茶が提案されます（イースターエッグ）。`--random-spinner` で毎回サプライズテーマを楽しめます。[`config.json`](config.json) で設定したカスタム `SpinnerFrames` も上書きされます。
+> **補足:** スピナーオプション（`--coffee`、`--beer`、`--matcha`、`--whisky`、`--wine`、`--ramen`、`--sushi`）はいずれも [`SpinnerFrames`](#config-ja-spinnerframes) を上書きします。複数同時に指定した場合は抹茶が提案されます（イースターエッグ）。`--random-spinner` で毎回サプライズテーマを楽しめます。[`config.json`](config.json) で設定したカスタム `SpinnerFrames` も上書きされます。インライン進捗バーの右端には `ETA 14:32 (+00 h 12 m)` のような固定長 ETA も表示されるため、スピナーが動いても表示幅がぶれません。
 
 ```bash
 dotnet build
@@ -1034,7 +1036,7 @@ dotnet run -- --creator --print-config
 
 > **ヒント:** 設定エラー（終了コード `3`）が発生した場合、診断用に `--print-config` を提案するヒントが stderr に出力されます。
 
-主な出力は `<reports-root>/<label>/` に書き込まれます（既定ではユーザーローカル app-data の `Reports/` 配下）。完全なリストは[生成物](#readme-ja-generated-artifacts)を参照してください。
+主な出力は `Reports/<label>/` に書き込まれます。完全なリストは[生成物](#readme-ja-generated-artifacts)を参照してください。
 
 プロセス終了コード:
 
@@ -1259,7 +1261,7 @@ Modified Files テーブルの Diff Reason 列では、アセンブリ セマン
 
 ## 設定（[`config.json`](config.json)）
 
-`--config` を指定しない場合、まず `Environment.SpecialFolder.LocalApplicationData` 配下の設定ファイル（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\config.json`、macOS: `~/Library/Application Support/FolderDiffIL4DotNet/config.json`、Linux: `~/.local/share/FolderDiffIL4DotNet/config.json`）を探します。そのファイルが存在しない場合は、実行ファイル横の同梱 [`config.json`](config.json) へフォールバックします。全項目省略可能で、未指定の項目は [`ConfigSettings`](Models/ConfigSettings.cs) に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
+実行ファイルと同じディレクトリに配置します。全項目省略可能で、未指定の項目は [`ConfigSettings`](Models/ConfigSettings.cs) に定義されたコード既定値を使います。既定値のままでよければ、次のように空オブジェクトだけで構いません。
 
 ```json
 {}
@@ -1349,7 +1351,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-shouldoutputiltext">
       <td><code>ShouldOutputILText</code></td>
       <td><code>true</code></td>
-      <td><code>&lt;reports-root&gt;/&lt;label&gt;/IL/old,new</code> へ IL を出力するか。既定の <code>&lt;reports-root&gt;</code> はユーザーローカル app-data の <code>Reports/</code> で、<code>--output</code> で上書きできます。</td>
+      <td><code>Reports/&lt;label&gt;/IL/old,new</code> へ IL を出力するか。</td>
     </tr>
     <tr id="config-ja-shouldignoreillinescontainingconfiguredstrings">
       <td><code>ShouldIgnoreILLinesContainingConfiguredStrings</code></td>
@@ -1404,7 +1406,7 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     <tr id="config-ja-ilcachedirectoryabsolutepath">
       <td><code>ILCacheDirectoryAbsolutePath</code></td>
       <td><code>""</code></td>
-      <td>IL キャッシュディレクトリ。空なら Windows は <code>%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache</code>、macOS は <code>~/Library/Application Support/FolderDiffIL4DotNet/ILCache</code>、Linux は <code>~/.local/share/FolderDiffIL4DotNet/ILCache</code>。</td>
+      <td>IL キャッシュディレクトリ。空なら Windows は <code>%LOCALAPPDATA%\FolderDiffIL4DotNet\ILCache</code>、macOS/Linux は <code>~/.local/share/FolderDiffIL4DotNet/ILCache</code>。</td>
     </tr>
     <tr id="config-ja-ilcachestatslogintervalseconds">
       <td><code>ILCacheStatsLogIntervalSeconds</code></td>
@@ -1423,8 +1425,8 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     </tr>
     <tr id="config-ja-ilcachemaxmemorymegabytes">
       <td><code>ILCacheMaxMemoryMegabytes</code></td>
-      <td><code>0</code></td>
-      <td>メモリ内 IL キャッシュのメモリ予算（MB）。<code>&lt;=0</code> で無制限（エントリ数上限のみ）。大きなアセンブリでメモリ使用量が高い場合に設定。</td>
+      <td><code>256</code></td>
+      <td>メモリ内 IL キャッシュのメモリ予算（MB）。既定で 256 MB に制限し、大規模実行時の安全性を上げています。従来どおり無制限（エントリ数上限のみ）に戻したい場合は <code>0</code> を明示指定してください。</td>
     </tr>
     <tr id="config-ja-ilprecomputebatchsize">
       <td><code>ILPrecomputeBatchSize</code></td>
@@ -1568,7 +1570,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 
 補足:
 - [`IgnoredExtensions`](#config-ja-ignoredextensions) と [`TextFileExtensions`](#config-ja-textfileextensions) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
-- [`config.json`](config.json) の読み込み後、範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: [`MaxLogGenerations`](#config-ja-maxloggenerations) >= `1`、[`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) は [`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) 未満であること、[`SpinnerFrames`](#config-ja-spinnerframes) は 1 件以上の要素を含むこと。
+- [`config.json`](config.json) の読み込み後、範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: [`MaxLogGenerations`](#config-ja-maxloggenerations) >= `1`、[`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) >= `1`、[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`、[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) は [`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) 未満であること、[`SpinnerFrames`](#config-ja-spinnerframes) は 1 件以上の要素を含むこと。
 - **JSON 書式エラー**（最後のプロパティや配列要素の後のトレイリングカンマなど）はアプリ起動直後に検出され、実行ログへ書き込まれてコンソールに赤字で行番号とヒントを表示し、終了コード `3` で失敗します。標準 JSON はトレイリングカンマを許容しないため、`"Key": "value",}` のように末尾のカンマがある場合は削除してください。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#config-ja-textfileextensions) に空文字（`""`）を含めてください。
@@ -1578,14 +1580,12 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 <a id="readme-ja-generated-artifacts"></a>
 ## 生成物
 
-既定では、レポートとログは `Environment.SpecialFolder.LocalApplicationData` から解決される OS 標準のユーザーローカル data ディレクトリ配下（Windows: `%LOCALAPPDATA%\FolderDiffIL4DotNet\...`、macOS: `~/Library/Application Support/FolderDiffIL4DotNet/...`、Linux: `~/.local/share/FolderDiffIL4DotNet/...`）へ出力されます。`--output` が上書きするのはレポートルートのみです。
-
-- `<reports-root>/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
-- `<reports-root>/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`ShouldGenerateHtmlReport`](#config-ja-shouldgeneratehtmlreport) が `false` の場合は生成されません）
-- `<reports-root>/<label>/`[`audit_log.json`](doc/samples/audit_log.json)（[`ShouldGenerateAuditLog`](#config-ja-shouldgenerateauditlog) が `false` の場合は生成されません）
-- `<reports-root>/<label>/sbom.cdx.json` または `sbom.spdx.json`（[`ShouldGenerateSbom`](#config-ja-shouldgeneratesbom) が `true` の場合に生成）
-- `<app-data-root>/Logs/log_YYYYMMDD.log`（例: Windows は `%LOCALAPPDATA%\FolderDiffIL4DotNet\Logs\log_YYYYMMDD.log`、macOS は `~/Library/Application Support/FolderDiffIL4DotNet/Logs/log_YYYYMMDD.log`、Linux は `~/.local/share/FolderDiffIL4DotNet/Logs/log_YYYYMMDD.log`）
-- 任意: `<reports-root>/<label>/IL/old/*.txt`, `<reports-root>/<label>/IL/new/*.txt`
+- `Reports/<label>/`[`diff_report.md`](doc/samples/diff_report.md)
+- `Reports/<label>/`[`diff_report.html`](doc/samples/diff_report.html)（[`ShouldGenerateHtmlReport`](#config-ja-shouldgeneratehtmlreport) が `false` の場合は生成されません）
+- `Reports/<label>/`[`audit_log.json`](doc/samples/audit_log.json)（[`ShouldGenerateAuditLog`](#config-ja-shouldgenerateauditlog) が `false` の場合は生成されません）
+- `Reports/<label>/sbom.cdx.json` または `sbom.spdx.json`（[`ShouldGenerateSbom`](#config-ja-shouldgeneratesbom) が `true` の場合に生成）
+- `Logs/log_YYYYMMDD.log`
+- 任意: `Reports/<label>/IL/old/*.txt`, `Reports/<label>/IL/new/*.txt`
 
 開発者向けの詳細（アーキテクチャ、例外ハンドリング、テスト設定、CI/CD、API ドキュメント）は [doc/DEVELOPER_GUIDE.md](doc/DEVELOPER_GUIDE.md) を参照してください。
 

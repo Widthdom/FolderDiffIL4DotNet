@@ -148,7 +148,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Inline diff skipped for '{relPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Inline diff skipped for '{relPath}' using IL text files (ILMismatch, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false, ex);
                 return (null, null);
             }
@@ -176,7 +176,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Inline diff skipped for '{relPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Inline diff skipped for '{relPath}' using compared text files (TextMismatch, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false, ex);
                 return (null, null);
             }

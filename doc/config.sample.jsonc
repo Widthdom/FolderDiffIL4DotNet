@@ -159,9 +159,9 @@
   // ディスクキャッシュの最大サイズ（MiB）（デフォルト: 512）
   "ILCacheMaxDiskMegabytes": 512,
 
-  // Memory budget (MB) for the in-memory IL cache. 0 = unlimited (entry-count limit only) (default: 0)
-  // メモリ内 IL キャッシュのメモリ予算（MB）。0 = 無制限（エントリ数上限のみ）（デフォルト: 0）
-  "ILCacheMaxMemoryMegabytes": 0,
+  // Memory budget (MB) for the in-memory IL cache. Default is 256; set 0 to restore unlimited mode (entry-count limit only)
+  // メモリ内 IL キャッシュのメモリ予算（MB）。デフォルトは 256。0 を指定すると無制限（エントリ数上限のみ）に戻る
+  "ILCacheMaxMemoryMegabytes": 256,
 
   // Number of files per SHA256 precompute batch (default: 2048)
   // SHA256 プリコンピュートのバッチあたりのファイル数（デフォルト: 2048）

@@ -17,15 +17,15 @@ Caches disassembled IL text in memory to avoid redundant subprocess calls.
 
 | Setting | Default | Description |
 | --- | --- | --- |
-| `ILCacheMaxMemoryMegabytes` | `0` (unlimited) | Memory budget in MB. When `0`, only entry-count limit applies. |
-| Max entries (hardcoded) | `1000` | Maximum number of cached IL text entries. |
+| `ILCacheMaxMemoryMegabytes` | `256` | Memory budget in MB. Set `0` only when you intentionally want unlimited memory mode (entry-count limit only). |
+| Max entries (runtime default) | `2000` | Maximum number of cached IL text entries in the default run scope. |
 | TTL | Configurable | Expired entries are purged lazily on access. |
 
 **Eviction strategy:** LRU (Least Recently Used). When inserting a new entry would exceed either the entry count or memory budget, the least-recently-accessed entries are evicted until both constraints are satisfied.
 
 **Memory estimation:** Each cached string costs approximately `(length * 2) + 56` bytes (UTF-16 encoding + .NET object overhead). This is tracked atomically via `Interlocked` operations.
 
-**Recommendation for large-scale runs (10,000+ files):** Set `ILCacheMaxMemoryMegabytes` to a concrete value (e.g., `512` or `1024`) to prevent unbounded memory growth. The default `0` (unlimited) is suitable for small-to-medium projects but may cause excessive memory pressure on machines with limited RAM when processing large codebases.
+**Recommendation for large-scale runs (10,000+ files):** The default `256` MB cap is the safer baseline. Increase `ILCacheMaxMemoryMegabytes` to `512` or `1024` when you want a higher cache hit rate on large-memory machines. Set `0` only when you explicitly accept unlimited memory growth.
 
 ### 2. IL Disk Cache (`ILDiskCache`)
 
@@ -121,7 +121,7 @@ The [`benchmark-regression.yml`](../.github/workflows/benchmark-regression.yml) 
 | Scenario | Recommended Settings |
 | --- | --- |
 | **Small project (< 500 files)** | Defaults work well. No tuning needed. |
-| **Medium project (500-5,000 files)** | Consider `ILCacheMaxMemoryMegabytes: 256` to cap memory. |
+| **Medium project (500-5,000 files)** | The default `ILCacheMaxMemoryMegabytes: 256` is usually sufficient. |
 | **Large project (5,000-50,000 files)** | Set `ILCacheMaxMemoryMegabytes: 512-1024`, `MaxParallelism: 8-16`, enable disk cache. |
 | **Network share source** | Set `MaxParallelism: 4-8`, enable disk cache for IL reuse across runs. |
 | **CI environment (limited RAM)** | Set `ILCacheMaxMemoryMegabytes: 128`, `MaxParallelism: 4`, `--no-il-cache` if memory is critical. |
@@ -148,15 +148,15 @@ FolderDiffIL4DotNet は数万ファイルを並列処理する可能性があり
 
 | 設定 | デフォルト | 説明 |
 | --- | --- | --- |
-| `ILCacheMaxMemoryMegabytes` | `0`（無制限） | メモリバジェット（MB）。`0` の場合はエントリ数制限のみ適用。 |
-| 最大エントリ数（ハードコード） | `1000` | キャッシュされる IL テキストエントリの最大数。 |
+| `ILCacheMaxMemoryMegabytes` | `256` | メモリバジェット（MB）。無制限（エントリ数制限のみ）に戻したい場合だけ `0` を明示指定。 |
+| 最大エントリ数（実行時既定値） | `2000` | 既定の run scope でキャッシュされる IL テキストエントリの最大数。 |
 | TTL | 設定可能 | 期限切れエントリはアクセス時に遅延パージされる。 |
 
 **エビクション戦略：** LRU（Least Recently Used）。新しいエントリの挿入でエントリ数またはメモリバジェットを超過する場合、最も最近アクセスされていないエントリから削除。
 
 **メモリ推定：** キャッシュされた文字列 1 件あたり約 `(文字数 * 2) + 56` バイト（UTF-16 + .NET オブジェクトオーバーヘッド）。`Interlocked` 操作でアトミックに追跡。
 
-**大規模実行（10,000+ ファイル）の推奨：** `ILCacheMaxMemoryMegabytes` に具体的な値（例: `512` や `1024`）を設定し、無制限なメモリ増加を防止。デフォルトの `0`（無制限）は中小規模プロジェクトには適切だが、RAM が限られたマシンで大規模コードベースを処理する場合、過度なメモリ圧迫を引き起こす可能性あり。
+**大規模実行（10,000+ ファイル）の推奨：** 既定の `256` MB 上限を安全側のベースラインとして使い、より高いヒット率が必要なら `ILCacheMaxMemoryMegabytes` を `512` や `1024` に引き上げてください。`0` は無制限増加を許容すると明示的に判断した場合だけ使ってください。
 
 ### 2. IL ディスクキャッシュ（`ILDiskCache`）
 
@@ -252,7 +252,7 @@ dotnet run -c Release --project FolderDiffIL4DotNet.Benchmarks -- --filter *Fold
 | シナリオ | 推奨設定 |
 | --- | --- |
 | **小規模プロジェクト（< 500 ファイル）** | デフォルトで十分。チューニング不要。 |
-| **中規模プロジェクト（500-5,000 ファイル）** | メモリ制限のため `ILCacheMaxMemoryMegabytes: 256` を検討。 |
+| **中規模プロジェクト（500-5,000 ファイル）** | 既定の `ILCacheMaxMemoryMegabytes: 256` で十分なことが多い。 |
 | **大規模プロジェクト（5,000-50,000 ファイル）** | `ILCacheMaxMemoryMegabytes: 512-1024`、`MaxParallelism: 8-16`、ディスクキャッシュ有効化。 |
 | **ネットワーク共有ソース** | `MaxParallelism: 4-8`、実行間の IL 再利用にディスクキャッシュ有効化。 |
 | **CI 環境（限定 RAM）** | `ILCacheMaxMemoryMegabytes: 128`、`MaxParallelism: 4`、メモリ重視なら `--no-il-cache`。 |

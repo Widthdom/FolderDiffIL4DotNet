@@ -229,6 +229,9 @@ jobs:
   mutation-testing:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -268,32 +271,47 @@ jobs:
           DOTNET_ROLL_FORWARD: Major
         run: dotnet tool run dotnet-stryker --config-file stryker-config.json --output StrykerOutput
 
-      - name: Post mutation score summary
+      - name: Generate mutation visibility summary
         if: always()
-        run: |
-          REPORT=$(find StrykerOutput -name '*.json' -path '*/reports/*' | head -1)
-          if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
-            SCORE=$(python3 -c "
-          import json, sys
-          with open('$REPORT') as f:
-              data = json.load(f)
-          score = data.get('mutationScore', data.get('files', {}).get('mutationScore', 'N/A'))
-          print(score)
-          " 2>/dev/null || echo "N/A")
-            echo "## Mutation Testing Results" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "**Mutation Score:** ${SCORE}%" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "## Mutation Testing Results" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "⚠ Could not find Stryker JSON report to extract mutation score." >> "$GITHUB_STEP_SUMMARY"
-          fi
+        run: >
+          python3 scripts/generate-mutation-summary.py
+          --output-root StrykerOutput
+          --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          --summary-artifact-name "StrykerSummary-${{ github.run_number }}-${{ github.run_attempt }}"
+          --report-artifact-name "StrykerReport-${{ github.run_number }}-${{ github.run_attempt }}"
+
+      - name: Post mutation summary to job summary
+        if: always()
+        run: cat StrykerOutput/mutation-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post mutation summary to pull request
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { upsertMutationSummaryComment } = require('./scripts/update-mutation-pr-comment.js');
+            await upsertMutationSummaryComment({
+              github,
+              context,
+              summaryPath: 'StrykerOutput/mutation-summary.md',
+            });
+
+      - name: Upload mutation visibility summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: StrykerSummary-${{ github.run_number }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          path: |
+            StrykerOutput/mutation-summary.md
+            StrykerOutput/mutation-summary.json
 
       - name: Upload mutation testing report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: StrykerReport
+          name: StrykerReport-${{ github.run_number }}-${{ github.run_attempt }}
           if-no-files-found: warn
           path: StrykerOutput/**
 

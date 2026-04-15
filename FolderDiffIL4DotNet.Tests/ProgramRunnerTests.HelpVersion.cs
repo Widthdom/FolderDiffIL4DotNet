@@ -443,6 +443,8 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(0, exitCode);
                 var output = sw.ToString();
                 Assert.Contains("FolderDiffIL4DotNet Credits", output, StringComparison.Ordinal);
+                Assert.Contains("NuGet.org", output, StringComparison.Ordinal);
+                Assert.Contains("GitHub Packages", output, StringComparison.Ordinal);
                 Assert.Contains("Signal over noise", output, StringComparison.Ordinal);
                 Assert.Contains("Core Technology", output, StringComparison.Ordinal);
                 Assert.Contains("Open Source Libraries", output, StringComparison.Ordinal);

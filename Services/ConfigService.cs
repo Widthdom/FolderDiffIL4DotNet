@@ -165,6 +165,7 @@ namespace FolderDiffIL4DotNet.Services
             TryApplyInt(P + "ILCACHESTATSLOGINTERVALSECONDS",              v => config.ILCacheStatsLogIntervalSeconds = v);
             TryApplyInt(P + "ILCACHEMAXDISKFILECOUNT",                     v => config.ILCacheMaxDiskFileCount = v);
             TryApplyInt(P + "ILCACHEMAXDISKMEGABYTES",                     v => config.ILCacheMaxDiskMegabytes = v);
+            TryApplyInt(P + "ILCACHEMAXMEMORYMEGABYTES",                   v => config.ILCacheMaxMemoryMegabytes = v);
             TryApplyInt(P + "ILPRECOMPUTEBATCHSIZE",                       v => config.ILPrecomputeBatchSize = v);
             TryApplyBool(P + "OPTIMIZEFORNETWORKSHARES",                   v => config.OptimizeForNetworkShares = v);
             TryApplyBool(P + "AUTODETECTNETWORKSHARES",                    v => config.AutoDetectNetworkShares = v);
