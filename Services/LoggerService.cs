@@ -198,11 +198,19 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                LogMessage(AppLogLevel.Warning, $"CleanupOldLogFiles failed ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                LogMessage(
+                    AppLogLevel.Warning,
+                    BuildCleanupFailureMessage("CleanupOldLogFiles failed", maxLogGenerations, ex),
+                    shouldOutputMessageToConsole: true,
+                    ex);
             }
             catch (Exception ex) when (ExceptionFilters.IsFileIoRecoverable(ex))
             {
-                LogMessage(AppLogLevel.Warning, $"Failed to clean up old log files in '{_logDirectoryAbsolutePath}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                LogMessage(
+                    AppLogLevel.Warning,
+                    BuildCleanupFailureMessage("Failed to clean up old log files", maxLogGenerations, ex),
+                    shouldOutputMessageToConsole: true,
+                    ex);
             }
         }
 
@@ -241,6 +249,12 @@ namespace FolderDiffIL4DotNet.Services
             {
                 File.SetAttributes(logFileAbsolutePath, attributes & ~FileAttributes.ReadOnly);
             }
+        }
+
+        private string BuildCleanupFailureMessage(string prefix, int maxLogGenerations, Exception exception)
+        {
+            var activeLog = string.IsNullOrWhiteSpace(_logFileAbsolutePath) ? "(none)" : _logFileAbsolutePath;
+            return $"{prefix} in '{_logDirectoryAbsolutePath}' (MaxGenerations={maxLogGenerations}, ActiveLog='{activeLog}', {exception.GetType().Name}): {exception.Message}";
         }
 
         private static void TryWriteFileLoggingFailureToConsole(string logFileAbsolutePath, Exception ex)

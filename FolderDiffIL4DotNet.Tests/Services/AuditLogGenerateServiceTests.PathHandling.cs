@@ -34,6 +34,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             Assert.Null(exception);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("reports folder", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }
@@ -80,6 +81,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.DoesNotContain(files.EnumerateArray(), file => string.Equals(file.GetProperty("relativePath").GetString(), "\0bad-added-path", StringComparison.Ordinal));
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped Added audit log entry", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"Root='{newDir}'", warning.Message, StringComparison.Ordinal);
         }
     }
 }

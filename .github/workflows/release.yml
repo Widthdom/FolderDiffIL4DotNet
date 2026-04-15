@@ -139,6 +139,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: release
     if: ${{ success() }}
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GITHUB_PACKAGES_SOURCE: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -162,9 +167,10 @@ jobs:
       - name: Check if Core has changes since previous tag
         id: core-diff
         run: |
-          # Find the previous tag (second newest v* tag by version sort)
-          # 前回タグを検索（バージョンソートで2番目に新しい v* タグ）
-          PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | head -2 | tail -1)
+          # Resolve the previous v* tag on the current first-parent release line.
+          # 現在の first-parent リリース系列上にある直前の v* タグを解決します。
+          CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')
+          PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)
           if [ -z "$PREV_TAG" ]; then
             echo "No previous tag found — treating Core as changed"
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -179,7 +185,8 @@ jobs:
       - name: Check if Plugin.Abstractions has changes since previous tag
         id: plugin-diff
         run: |
-          PREV_TAG=$(git tag --sort=-v:refname | grep '^v' | head -2 | tail -1)
+          CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')
+          PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)
           if [ -z "$PREV_TAG" ]; then
             echo "No previous tag found — treating Plugin.Abstractions as changed"
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -203,7 +210,7 @@ jobs:
         if: steps.core-diff.outputs.changed == 'true'
         run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Core.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Skip Core NuGet publish (no changes)
+      - name: Skip Core nuget.org publish (no changes)
         if: steps.core-diff.outputs.changed != 'true'
         run: echo "NuGet publish skipped — FolderDiffIL4DotNet.Core/ has no changes since the previous tag"
 
@@ -219,7 +226,7 @@ jobs:
         if: steps.plugin-diff.outputs.changed == 'true'
         run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Plugin.Abstractions.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-      - name: Skip Plugin.Abstractions NuGet publish (no changes)
+      - name: Skip Plugin.Abstractions nuget.org publish (no changes)
         if: steps.plugin-diff.outputs.changed != 'true'
         run: echo "NuGet publish skipped — FolderDiffIL4DotNet.Plugin.Abstractions/ has no changes since the previous tag"
 
@@ -231,3 +238,48 @@ jobs:
 
       - name: Publish global tool to nuget.org
         run: dotnet nuget push "nupkgs/nildiff.*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Authenticate GitHub Packages source
+        id: github-auth
+        continue-on-error: true
+        run: |
+          dotnet nuget remove source github >/dev/null 2>&1 || true
+          dotnet nuget add source "${{ env.GITHUB_PACKAGES_SOURCE }}" \
+            --name github \
+            --username "${{ github.actor }}" \
+            --password "${{ secrets.GITHUB_TOKEN }}" \
+            --store-password-in-clear-text
+
+      - name: Warn if GitHub Packages auth failed
+        if: steps.github-auth.outcome == 'failure'
+        run: echo "Warning: GitHub Packages mirror auth failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish Core to GitHub Packages
+        id: core-gpr-publish
+        if: steps.core-diff.outputs.changed == 'true' && steps.github-auth.outcome == 'success'
+        continue-on-error: true
+        run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Core.*.nupkg" --source github --skip-duplicate
+
+      - name: Warn if Core GitHub Packages mirror failed
+        if: steps.core-gpr-publish.outcome == 'failure'
+        run: echo "Warning: Core GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish Plugin.Abstractions to GitHub Packages
+        id: plugin-gpr-publish
+        if: steps.plugin-diff.outputs.changed == 'true' && steps.github-auth.outcome == 'success'
+        continue-on-error: true
+        run: dotnet nuget push "nupkgs/FolderDiffIL4DotNet.Plugin.Abstractions.*.nupkg" --source github --skip-duplicate
+
+      - name: Warn if Plugin.Abstractions GitHub Packages mirror failed
+        if: steps.plugin-gpr-publish.outcome == 'failure'
+        run: echo "Warning: Plugin.Abstractions GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish global tool to GitHub Packages
+        id: tool-gpr-publish
+        if: steps.github-auth.outcome == 'success'
+        continue-on-error: true
+        run: dotnet nuget push "nupkgs/nildiff.*.nupkg" --source github --skip-duplicate
+
+      - name: Warn if global tool GitHub Packages mirror failed
+        if: steps.tool-gpr-publish.outcome == 'failure'
+        run: echo "Warning: nildiff GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"

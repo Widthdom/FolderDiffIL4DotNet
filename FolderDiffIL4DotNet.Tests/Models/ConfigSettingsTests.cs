@@ -210,6 +210,19 @@ namespace FolderDiffIL4DotNet.Tests.Models
         }
 
         [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public void Validate_ILCacheMaxMemoryMegabytesLessThanZero_ReturnsError(int value)
+        {
+            var builder = new ConfigSettingsBuilder { ILCacheMaxMemoryMegabytes = value };
+
+            var result = builder.Validate();
+
+            Assert.False(result.IsValid);
+            Assert.Contains(result.Errors, e => e.Contains("ILCacheMaxMemoryMegabytes", StringComparison.Ordinal));
+        }
+
+        [Theory]
         [InlineData(64, 64)]   // equal
         [InlineData(128, 64)]  // chunk > threshold
         public void Validate_ChunkSizeGreaterThanOrEqualToThreshold_ReturnsError(int chunkKb, int thresholdKb)

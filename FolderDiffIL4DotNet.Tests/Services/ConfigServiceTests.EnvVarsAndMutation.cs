@@ -159,6 +159,43 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesILCacheMaxMemoryMegabytes_Zero_AppliesOverride()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ILCACHEMAXMEMORYMEGABYTES", "0") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+
+                        Assert.Equal(0, builder.ILCacheMaxMemoryMegabytes);
+                    });
+            });
+        }
+
+        [Fact]
+        public async Task LoadConfigBuilderAsync_EnvVarOverridesILCacheMaxMemoryMegabytes_Negative_ValidationCatchesIt()
+        {
+            await WithConfigFileAsync("{}", async () =>
+            {
+                await WithEnvVarsAsync(
+                    new[] { ("FOLDERDIFF_ILCACHEMAXMEMORYMEGABYTES", "-1") },
+                    async () =>
+                    {
+                        var service = new ConfigService();
+                        var builder = await service.LoadConfigBuilderAsync();
+                        var result = builder.Validate();
+
+                        Assert.Equal(-1, builder.ILCacheMaxMemoryMegabytes);
+                        Assert.False(result.IsValid);
+                        Assert.Contains(result.Errors, e => e.Contains("ILCacheMaxMemoryMegabytes", StringComparison.Ordinal));
+                    });
+            });
+        }
+
+        [Fact]
         public void ApplyEnvironmentVariableOverrides_CaseInsensitiveBool_TrueVariants()
         {
             foreach (var trueVal in new[] { "true", "TRUE", "True", "1" })

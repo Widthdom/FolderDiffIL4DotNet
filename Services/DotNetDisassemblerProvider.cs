@@ -67,9 +67,10 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
+                var extension = Path.GetExtension(filePath);
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Built-in .NET disassembler provider skipped '{filePath}' because managed-assembly detection failed ({ex.GetType().Name}): {ex.Message}",
+                    $"Built-in .NET disassembler provider '{DisplayName}' skipped '{filePath}' (Extension='{extension}') because managed-assembly detection failed ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false,
                     ex);
                 return false;
@@ -89,6 +90,7 @@ namespace FolderDiffIL4DotNet.Services
         public async Task<DisassemblyResult> DisassembleAsync(string filePath, CancellationToken cancellationToken)
         {
             ArgumentNullException.ThrowIfNull(filePath);
+            var extension = Path.GetExtension(filePath);
             try
             {
                 // Use the pair API with the same file for both old/new to get a single disassembly result.
@@ -109,7 +111,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Built-in .NET disassembler provider failed for '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Built-in .NET disassembler provider '{DisplayName}' failed for '{filePath}' (Extension='{extension}', {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false,
                     ex);
                 return new DisassemblyResult

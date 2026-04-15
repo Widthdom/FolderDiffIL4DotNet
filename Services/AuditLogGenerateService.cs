@@ -91,7 +91,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write audit log to '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to write audit log for reports folder '{context.ReportsFolderAbsolutePath}' to '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -261,7 +261,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' (Root='{rootFolderAbsolutePath}', {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }

@@ -53,6 +53,8 @@ dotnet tool install -g dotnet-ildasm
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
+Release automation publishes `nildiff` to both nuget.org and GitHub Packages on each tagged release. `FolderDiffIL4DotNet.Core` and `FolderDiffIL4DotNet.Plugin.Abstractions` are mirrored to GitHub Packages only when those package directories changed, matching the existing nuget.org publish gate so normal releases do not invent GitHub-only library versions. GitHub Packages remains a best-effort mirror path after the nuget.org publish succeeds.
+
 The tool works out of the box with default settings. To customize behavior, create a `config.json` and pass it via `--config`:
 
 ```bash
@@ -620,8 +622,8 @@ Override only the settings you want to change. For example:
     </tr>
     <tr id="config-en-ilcachemaxmemorymegabytes">
       <td><code>ILCacheMaxMemoryMegabytes</code></td>
-      <td><code>0</code></td>
-      <td>In-memory IL cache budget (MB). <code>&lt;=0</code> means unlimited (entry-count limit only). Set this when large assemblies cause high memory usage.</td>
+      <td><code>256</code></td>
+      <td>In-memory IL cache budget (MB). The default now caps memory at 256 MB for safer large runs; set <code>0</code> to restore unlimited mode (entry-count limit only).</td>
     </tr>
     <tr id="config-en-ilprecomputebatchsize">
       <td><code>ILPrecomputeBatchSize</code></td>
@@ -765,7 +767,7 @@ Rules:
 
 Notes:
 - Built-in defaults, including the full [`IgnoredExtensions`](#config-en-ignoredextensions) and [`TextFileExtensions`](#config-en-textfileextensions) lists, are defined in [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs).
-- After loading [`config.json`](config.json), if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: [`MaxLogGenerations`](#config-en-maxloggenerations) >= `1`; [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) must be less than [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes); and [`SpinnerFrames`](#config-en-spinnerframes) must contain at least one element.
+- After loading [`config.json`](config.json), if any value is out of range the run fails immediately with exit code `3` and an error message listing every invalid setting. Validated constraints: [`MaxLogGenerations`](#config-en-maxloggenerations) >= `1`; [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes) >= `1`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) >= `1`; [`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`; [`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`; [`TextDiffChunkSizeKilobytes`](#config-en-textdiffchunksizekilobytes) must be less than [`TextDiffParallelThresholdKilobytes`](#config-en-textdiffparallelthresholdkilobytes); and [`SpinnerFrames`](#config-en-spinnerframes) must contain at least one element.
 - **JSON syntax errors** (e.g. a trailing comma after the last property or array element) are caught immediately at startup, logged to the run log file, and printed to the console in red with the line number and a hint — the run exits with code `3`. Standard JSON does not allow trailing commas: `"Key": "value",}` is invalid; remove the final comma.
 - Files without extension are still compared.
 - If you want extensionless files treated as text, include empty string (`""`) in [`TextFileExtensions`](#config-en-textfileextensions).
@@ -846,6 +848,8 @@ dotnet tool install -g dotnet-ildasm
 # 3. 2つのフォルダを比較
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
+
+リリース自動化では `nildiff` をタグごとに nuget.org と GitHub Packages の両方へ公開します。`FolderDiffIL4DotNet.Core` と `FolderDiffIL4DotNet.Plugin.Abstractions` は、そのパッケージ自体に変更があるときだけ GitHub Packages に mirror し、通常 release で GitHub Packages 側だけのライブラリ版が増えないよう nuget.org と同じ公開条件に揃えています。GitHub Packages は nuget.org 公開成功後に続く best-effort mirror 経路です。
 
 デフォルト設定のまま動作します。動作をカスタマイズするには、`config.json` を作成して `--config` で指定してください：
 
@@ -1417,8 +1421,8 @@ JSON Schema ファイル（[`doc/config.schema.json`](doc/config.schema.json)）
     </tr>
     <tr id="config-ja-ilcachemaxmemorymegabytes">
       <td><code>ILCacheMaxMemoryMegabytes</code></td>
-      <td><code>0</code></td>
-      <td>メモリ内 IL キャッシュのメモリ予算（MB）。<code>&lt;=0</code> で無制限（エントリ数上限のみ）。大きなアセンブリでメモリ使用量が高い場合に設定。</td>
+      <td><code>256</code></td>
+      <td>メモリ内 IL キャッシュのメモリ予算（MB）。既定で 256 MB に制限し、大規模実行時の安全性を上げています。従来どおり無制限（エントリ数上限のみ）に戻したい場合は <code>0</code> を明示指定してください。</td>
     </tr>
     <tr id="config-ja-ilprecomputebatchsize">
       <td><code>ILPrecomputeBatchSize</code></td>
@@ -1562,7 +1566,7 @@ export FOLDERDIFF_ILCACHEDIRECTORYABSOLUTEPATH=/tmp/il-cache
 
 補足:
 - [`IgnoredExtensions`](#config-ja-ignoredextensions) と [`TextFileExtensions`](#config-ja-textfileextensions) を含む組み込み既定値の全体は [`Models/ConfigSettings.cs`](Models/ConfigSettings.cs) に定義しています。
-- [`config.json`](config.json) の読み込み後、範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: [`MaxLogGenerations`](#config-ja-maxloggenerations) >= `1`、[`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) は [`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) 未満であること、[`SpinnerFrames`](#config-ja-spinnerframes) は 1 件以上の要素を含むこと。
+- [`config.json`](config.json) の読み込み後、範囲外の値がある場合は終了コード `3` で即座に失敗し、全エラーを列挙したエラーメッセージを表示します。検証対象の制約: [`MaxLogGenerations`](#config-ja-maxloggenerations) >= `1`、[`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) >= `1`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) >= `1`、[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`、[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`、[`TextDiffChunkSizeKilobytes`](#config-ja-textdiffchunksizekilobytes) は [`TextDiffParallelThresholdKilobytes`](#config-ja-textdiffparallelthresholdkilobytes) 未満であること、[`SpinnerFrames`](#config-ja-spinnerframes) は 1 件以上の要素を含むこと。
 - **JSON 書式エラー**（最後のプロパティや配列要素の後のトレイリングカンマなど）はアプリ起動直後に検出され、実行ログへ書き込まれてコンソールに赤字で行番号とヒントを表示し、終了コード `3` で失敗します。標準 JSON はトレイリングカンマを許容しないため、`"Key": "value",}` のように末尾のカンマがある場合は削除してください。
 - 拡張子なしファイルも比較対象です。
 - 拡張子なしファイルをテキスト扱いしたい場合は [`TextFileExtensions`](#config-ja-textfileextensions) に空文字（`""`）を含めてください。

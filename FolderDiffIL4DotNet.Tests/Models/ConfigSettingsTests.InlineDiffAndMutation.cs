@@ -148,6 +148,22 @@ namespace FolderDiffIL4DotNet.Tests.Models
                 "config.sample.jsonc still contains removed property 'ILCacheMaxMemoryEntries'");
         }
 
+        [Fact]
+        [Trait("Category", "Unit")]
+        public void Readme_ValidatedConstraints_StayInSyncWithCurrentConfigValidationRules()
+        {
+            var repoRoot = FindRepoRoot();
+            var readmePath = System.IO.Path.Combine(repoRoot, "README.md");
+            Assert.True(System.IO.File.Exists(readmePath), $"README.md not found at {readmePath}");
+
+            var readme = System.IO.File.ReadAllText(readmePath);
+
+            Assert.Contains("[`InlineDiffContextLines`](#config-en-inlinediffcontextlines) >= `0`", readme, StringComparison.Ordinal);
+            Assert.Contains("[`ILCacheMaxMemoryMegabytes`](#config-en-ilcachemaxmemorymegabytes) >= `0`", readme, StringComparison.Ordinal);
+            Assert.Contains("[`InlineDiffContextLines`](#config-ja-inlinediffcontextlines) >= `0`", readme, StringComparison.Ordinal);
+            Assert.Contains("[`ILCacheMaxMemoryMegabytes`](#config-ja-ilcachemaxmemorymegabytes) >= `0`", readme, StringComparison.Ordinal);
+        }
+
         /// <summary>
         /// Verifies that ConfigSettings implements IReadOnlyConfigSettings and all interface properties are accessible.
         /// ConfigSettings が IReadOnlyConfigSettings を実装し、全インターフェースプロパティがアクセス可能であることを検証する。

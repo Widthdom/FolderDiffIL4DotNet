@@ -89,7 +89,7 @@ Large service classes are split into partial class files to keep each file focus
 | `AssemblySdkVersionReader` | [`Services/AssemblySdkVersionReader.cs`](../Services/AssemblySdkVersionReader.cs) | (single file) Extracts TargetFrameworkAttribute from .NET assemblies via System.Reflection.Metadata and formats display strings (e.g. `.NET 8.0`, `.NET 6.0` → `.NET 8.0`) |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs) (sequential/chunk-parallel text comparison, memory-budget-aware parallelism) |
 | `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs) (version/label management, tool fingerprinting, process execution, usage recording, best-effort temp cleanup warnings), [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs) (line-based streaming disassembly, avoids LOH string allocations) |
-| `DotNetDisassemblerProvider` | [`Services/DotNetDisassemblerProvider.cs`](../Services/DotNetDisassemblerProvider.cs) | (single file) Built-in `IDisassemblerProvider` implementation wrapping `IDotNetDisassembleService`. Logs recoverable detection/disassembly failures before falling back so plugin authors can provide alternative disassemblers for non-.NET file types |
+| `DotNetDisassemblerProvider` | [`Services/DotNetDisassemblerProvider.cs`](../Services/DotNetDisassemblerProvider.cs) | (single file) Built-in `IDisassemblerProvider` implementation wrapping `IDotNetDisassembleService`. Logs recoverable detection/disassembly failures with provider display name and file extension before falling back so plugin authors can provide alternative disassemblers for non-.NET file types |
 
 ## Nullable Reference Types
 
@@ -460,20 +460,20 @@ Why this matters:
 | [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | Per-tool fail-count tracking and configurable TTL blacklist | Thread-safe [`ConcurrentDictionary`](https://learn.microsoft.com/en-us/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0); TTL defaults to [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) from config |
 | [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | Public cache facade and coordinator for IL artifacts | Delegates memory/disk details to focused cache components |
 | [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | In-memory IL/SHA256 cache with LRU and TTL | Owns transient retention policy |
-| [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | Disk persistence and quota enforcement for IL cache files | Owns cache-file I/O and trimming |
+| [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | Disk persistence and quota enforcement for IL cache files | Owns cache-file I/O and trimming; recoverable warnings retain cache directory and cache-key length context |
 | [`Services/Caching/DotNetDisassemblerCache.cs`](../Services/Caching/DotNetDisassemblerCache.cs) | Disassembler version string cache | Avoids repeated process-launch overhead for version queries |
 | [`Services/Caching/TimestampCache.cs`](../Services/Caching/TimestampCache.cs) | In-memory file last-write timestamp cache | Static; cleared per run cycle to reduce I/O |
 | [`Services/ReportGenerationContext.cs`](../Services/ReportGenerationContext.cs) | Immutable parameter bag for report generation services | Eliminates parameter duplication at `ProgramRunner` boundary |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; iterates `_sectionWriters` via [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | Per-section report writing interface and context bag | 10 private nested implementations inside [`ReportGenerateService`](../Services/ReportGenerateService.cs) |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; uses CSS custom properties (`var(--color-*)`) and utility classes instead of inline styles for theme-aware rendering; supports automatic dark mode via `prefers-color-scheme`; "Download as reviewed" computes SHA256 of the reviewed HTML via Web Crypto API, embeds the hash for self-verification, downloads a companion `.sha256` verification file, and adds a "Verify integrity" button to the reviewed banner; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
-| [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | Structured JSON audit log generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) and computes SHA256 integrity hashes of `diff_report.md` / `diff_report.html`; produces [`audit_log.json`](samples/audit_log.json); skipped when [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) is `false` |
-| [`Services/SbomGenerateService.cs`](../Services/SbomGenerateService.cs) | SBOM (Software Bill of Materials) generation | Extracts component list from [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) with SHA256 hashes and diff status; outputs CycloneDX 1.5 JSON (`sbom.cdx.json`) or SPDX 2.3 JSON (`sbom.spdx.json`); skipped when [`ShouldGenerateSbom`](../Models/ConfigSettings.cs) is `false` |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | Interactive HTML review report generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) only; produces a self-contained [`diff_report.html`](samples/diff_report.html) with checkboxes, text inputs, localStorage auto-save, and download function; uses CSS custom properties (`var(--color-*)`) and utility classes instead of inline styles for theme-aware rendering; supports automatic dark mode via `prefers-color-scheme`; "Download as reviewed" computes SHA256 of the reviewed HTML via Web Crypto API, embeds the hash for self-verification, downloads a companion `.sha256` verification file, and adds a "Verify integrity" button to the reviewed banner; recoverable inline-diff warnings retain whether the skipped source was `TextMismatch` or `ILMismatch`; skipped when [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) is `false` |
+| [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | Structured JSON audit log generation | Reads [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) and computes SHA256 integrity hashes of `diff_report.md` / `diff_report.html`; produces [`audit_log.json`](samples/audit_log.json); recoverable warnings retain the reports folder and skipped-entry root path for triage; skipped when [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) is `false` |
+| [`Services/SbomGenerateService.cs`](../Services/SbomGenerateService.cs) | SBOM (Software Bill of Materials) generation | Extracts component list from [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) with SHA256 hashes and diff status; outputs CycloneDX 1.5 JSON (`sbom.cdx.json`) or SPDX 2.3 JSON (`sbom.spdx.json`); recoverable warnings retain output format plus old/new folder context for skipped components; skipped when [`ShouldGenerateSbom`](../Models/ConfigSettings.cs) is `false` |
 | [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | Audit log data models | [`AuditLogRecord`](../Models/AuditLogEntry.cs) (top-level), [`AuditLogFileEntry`](../Models/AuditLogEntry.cs) (per-file), [`AuditLogSummary`](../Models/AuditLogEntry.cs) (counts) |
 | [`Models/SbomModels.cs`](../Models/SbomModels.cs) | SBOM data models | CycloneDX 1.5 models ([`CycloneDxBom`](../Models/SbomModels.cs), [`CycloneDxComponent`](../Models/SbomModels.cs)), SPDX 2.3 models ([`SpdxDocument`](../Models/SbomModels.cs), [`SpdxPackage`](../Models/SbomModels.cs)), [`SbomFormat`](../Models/SbomModels.cs) enum |
 | [`Services/ProgressReportService.cs`](../Services/ProgressReportService.cs) | Console progress display, phase tracking, elapsed time logging | Phase-based progress numbering (`[current/total]`), keep-alive spinner throttling, dispose-time final phase logging |
-| [`Services/LoggerService.cs`](../Services/LoggerService.cs) | File and console logging with text/JSON format support | W3C Trace Context (`traceId`/`spanId`), old log file cleanup, read-only log file handling, concurrent call safety |
-| [`Services/NuGetVulnerabilityService.cs`](../Services/NuGetVulnerabilityService.cs) | NuGet V3 vulnerability API integration | Per-session cached index/page download, per-package old/new version vulnerability checking, advisory deduplication |
+| [`Services/LoggerService.cs`](../Services/LoggerService.cs) | File and console logging with text/JSON format support | W3C Trace Context (`traceId`/`spanId`), old log file cleanup with retention-context warnings, read-only log file handling, concurrent call safety |
+| [`Services/NuGetVulnerabilityService.cs`](../Services/NuGetVulnerabilityService.cs) | NuGet V3 vulnerability API integration | Per-session cached index/page download, per-package old/new version vulnerability checking, advisory deduplication, and warning logs that retain the index URL plus entry/package-count context on best-effort failures |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | Thread-safe run results and metadata | Shared aggregation object; split into partial files: [`FileDiffResultLists.ComparisonResults.cs`](../Models/FileDiffResultLists.ComparisonResults.cs) (diff details, disassembler labels, ignored files), [`FileDiffResultLists.Metadata.cs`](../Models/FileDiffResultLists.Metadata.cs) (semantic changes, dependency changes, warnings, disassembler info) |
 
 <a id="guide-en-comparison-pipeline"></a>
@@ -536,8 +536,9 @@ Rules that are easy to break:
 Per-file mechanics:
 - [`FileDiffService.FilesAreEqualAsync(...)`](../Services/FileDiffService.cs) uses the old-side absolute path for `.NET executable` detection, file extension lookup, and threshold decisions.
 - In normal execution, `.NET executable` detection, SHA256/text comparison, file length lookup, and chunk reads all go through [`IFileComparisonService`](../Services/IFileComparisonService.cs). This keeps [`FileDiffService`](../Services/FileDiffService.cs) from depending directly on the concrete comparison implementation and lets tests replace [`IFileComparisonService`](../Services/IFileComparisonService.cs) with a mock or stub. The default implementation, [`FileComparisonService`](../Services/FileComparisonService.cs), delegates those operations to [`DotNetDetector`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) and [`FileComparer`](../FolderDiffIL4DotNet.Core/IO/FileComparer.cs).
+- Expected vs. unexpected `FileDiffService` failures are both rethrown, but the error log also preserves the relative path, the last comparison stage (`BeforeCompare` hooks / SHA256 / IL / text / `AfterCompare` hooks), `SkipIL`, and `MaxParallel`. This is diagnostic context only; the classification flow is unchanged.
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) distinguishes `NotDotNetExecutable` from `Failed`; [`FileDiffService`](../Services/FileDiffService.cs) logs a warning on `Failed` before skipping the IL path.
-- [`DotNetDisassemblerProvider`](../Services/DotNetDisassemblerProvider.cs) also treats recoverable managed-assembly detection failures and delegated disassembly failures as warning-level diagnostics, then returns `false` / a failed `DisassemblyResult` so other providers or non-IL paths can continue.
+- [`DotNetDisassemblerProvider`](../Services/DotNetDisassemblerProvider.cs) also treats recoverable managed-assembly detection failures and delegated disassembly failures as warning-level diagnostics, including provider display name plus file extension, then returns `false` / a failed `DisassemblyResult` so other providers or non-IL paths can continue.
 - Once SHA256 matches, the code records `SHA256Match` and returns immediately; no IL comparison or text comparison runs after that.
 - The IL path delegates to [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs), which disassembles old/new via `DisassemblePairWithSameDisassemblerAsync(...)`, normalizes the comparison label, filters lines, optionally writes filtered IL text, and returns both equality and the disassembler label.
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) covers this boundary with the preferred tool path: it builds the same tiny class library twice with `Deterministic=false`, confirms the DLL bytes differ, and then verifies that [`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) still returns `ILMatch` after filtering.
@@ -636,15 +637,15 @@ The nested [`DiffSummaryStatistics`](../Models/FileDiffResultLists.cs) sealed re
 | IL behavior | [`ShouldOutputILText`](../Models/ConfigSettings.cs), [`ShouldIgnoreILLinesContainingConfiguredStrings`](../Models/ConfigSettings.cs), [`ILIgnoreLineContainingStrings`](../Models/ConfigSettings.cs), [`SkipIL`](../Models/ConfigSettings.cs), [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) | Controls IL normalization, artifact output, and disassembler reliability (blacklist TTL) |
 | Inline diff | [`EnableInlineDiff`](../Models/ConfigSettings.cs), [`InlineDiffContextLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs), [`InlineDiffLazyRender`](../Models/ConfigSettings.cs) | Controls inline diff rendering in the HTML report |
 | Parallelism | [`MaxParallelism`](../Models/ConfigSettings.cs), [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs), [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs), [`TextDiffParallelMemoryLimitMegabytes`](../Models/ConfigSettings.cs) | Controls CPU usage, chunk sizing, and optional memory budget for large-text comparison |
-| Cache | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | Controls IL cache lifetime, storage, and large-tree precompute batching |
+| Cache | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILCacheMaxMemoryMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | Controls IL cache lifetime, storage, in-memory budget, and large-tree precompute batching |
 | Network-share mode | [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs), [`AutoDetectNetworkShares`](../Models/ConfigSettings.cs) | Prevents high-I/O behavior on slower remote storage |
 | Report output | [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) | Controls whether the interactive HTML review report is generated alongside the Markdown report |
 | Audit log | [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) | Controls whether a structured JSON audit log with integrity hashes is generated for tamper detection |
 | Logging / UX | [`MaxLogGenerations`](../Models/ConfigSettings.cs), [`SpinnerFrames`](../Models/ConfigSettings.cs) | Controls log file retention and the console spinner animation |
 
 Additional internal defaults:
-- [`ProgramRunner`](../ProgramRunner.cs) currently applies non-configurable IL cache defaults from [`Common/Constants.cs`](../Common/Constants.cs): [`Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT`](../Common/Constants.cs) (`2000` memory entries), [`Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS`](../Common/Constants.cs) (`12` hours TTL), and [`Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS`](../Common/Constants.cs) (`60` seconds for internal stats logs). Cross-project byte/timestamp literals reused by both projects live in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs).
-- Those values are intentionally documented in code because they trade off same-day rerun reuse against unbounded memory or log growth in a short-lived console process.
+- [`ProgramRunner`](../ProgramRunner.cs) currently applies non-configurable IL cache defaults from [`Common/Constants.cs`](../Common/Constants.cs): [`Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT`](../Common/Constants.cs) (`2000` memory entries), [`Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS`](../Common/Constants.cs) (`12` hours TTL), and [`Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS`](../Common/Constants.cs) (`60` seconds for internal stats logs). Separately, [`ConfigSettings.DefaultILCacheMaxMemoryMegabytes`](../Models/ConfigSettings.ILSettings.cs) now defaults the in-memory cache budget to `256` MB, while explicit `0` still restores unlimited mode. Cross-project byte/timestamp literals reused by both projects live in [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs).
+- Those values are intentionally documented in code because they trade off same-day rerun reuse against bounded memory and log growth in a short-lived console process.
 
 ### Myers diff algorithm
 
@@ -780,10 +781,11 @@ Current CI behavior (`build` job — Ubuntu):
 `mutation-testing` job — Stryker:
 - Runs on `pull_request` and `workflow_dispatch` only (not on push to `main`)
 - Uses [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) to inject mutations into production code and verify tests detect them
-- Configuration is in [`stryker-config.json`](../stryker-config.json)
-- Posts the mutation score to the GitHub Actions job summary
-- Uploads the full Stryker HTML/JSON report as `StrykerReport`
-- Break threshold is `50%` — the job fails if the mutation score falls below this
+- Configuration is in [`stryker-config.json`](../stryker-config.json) with `80/60/40` high/low/break thresholds, and [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) reads that file directly so reviewer-visible score bands stay in sync with the actual mutation gate
+- Calls [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) to write `StrykerOutput/mutation-summary.md` and `mutation-summary.json` after each run so score, survivor count, and status counts are preserved alongside the raw report
+- Appends the markdown summary to the GitHub Actions job summary and mirrors the same content into a sticky bot comment on same-repository pull requests through [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js); that helper updates only marker-bearing comments owned by `github-actions[bot]`, and the PR comment step remains best-effort (`continue-on-error: true`) so visibility failures do not hide a passing mutation gate
+- Uploads per-run `StrykerSummary-*` and `StrykerReport-*` artifacts so the Actions run history doubles as the mutation-trend record
+- Break threshold is `40%` — the job fails if the mutation score falls below this
 
 `benchmark` job (manual only):
 - Runs only on `workflow_dispatch`
@@ -795,7 +797,9 @@ Release automation:
 - Rebuilds, reruns coverage-gated tests, regenerates DocFX output, publishes the app, and removes `*.pdb`
 - Creates zipped publish/docs artifacts plus SHA-256 checksum files
 - Creates a GitHub Release from the existing tag with generated release notes
-- After a successful release, the `nuget-publish` job packs `FolderDiffIL4DotNet.Core` and pushes to nuget.org (requires `NUGET_API_KEY` repository secret)
+- After the primary `nuget.org` publications complete, the `nuget-publish` job registers an authenticated `github` NuGet source as a best-effort step and then mirrors to GitHub Packages with `continue-on-error: true`, so a mirror outage or auth failure does not block restore, pack, or the primary registry
+- The package-diff checks resolve the previous `v*` tag on the checked-out tag's first-parent release line, so manual `workflow_dispatch` runs against an older existing tag or maintenance release still compare against the correct previous release
+- `nildiff` is mirrored on every tagged release, while `FolderDiffIL4DotNet.Core` and `FolderDiffIL4DotNet.Plugin.Abstractions` mirror only when those package directories changed, matching the nuget.org gate so normal releases do not create GitHub-only library versions
 
 Security automation:
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) analyzes both `csharp` and `actions` on `push`, `pull_request`, weekly schedule, and `workflow_dispatch`
@@ -839,8 +843,8 @@ The application supports a plugin architecture via the [`FolderDiffIL4DotNet.Plu
 
 Plugin extension interfaces:
 - [`IPlugin`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs) — Entry point. Provides metadata and registers services via `ConfigureServices`.
-- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — Intercepts file comparison (before/after). Can override built-in comparison results.
-- [`IPostProcessAction`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPostProcessAction.cs) — Executes after all reports are generated (notifications, uploads, etc.).
+- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — Intercepts file comparison (before/after). Can override built-in comparison results. Best-effort hook failures are logged with phase (`BeforeCompare` / `AfterCompare`) plus hook order for triage.
+- [`IPostProcessAction`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPostProcessAction.cs) — Executes after all reports are generated (notifications, uploads, etc.). Best-effort failures are logged with action type, execution position, and `Order` so plugin triage stays readable from text/JSON logs.
 - [`IDisassemblerProvider`](../FolderDiffIL4DotNet.Plugin.Abstractions/IDisassemblerProvider.cs) — Provides disassembly for custom file types (Java .class via javap, etc.).
 - [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) — Adds custom sections to the Markdown report.
 - [`IReportFormatter`](../Services/IReportFormatter.cs) — Adds custom report output formats.
@@ -1051,7 +1055,7 @@ dotnet run -- "/path/old" "/path/new" "label" --threads 4 --skip-il --config /et
 | `AssemblySdkVersionReader` | [`Services/AssemblySdkVersionReader.cs`](../Services/AssemblySdkVersionReader.cs) | （単一ファイル）System.Reflection.Metadata 経由で .NET アセンブリから TargetFrameworkAttribute を抽出し、表示文字列をフォーマット（例: `.NET 8.0`、`.NET 6.0` → `.NET 8.0`） |
 | `FileDiffService` | [`Services/FileDiffService.cs`](../Services/FileDiffService.cs) | [`Services/FileDiffService.TextComparison.cs`](../Services/FileDiffService.TextComparison.cs)（逐次/チャンク並列テキスト比較、メモリ予算考慮の並列度制御） |
 | `DotNetDisassembleService` | [`Services/DotNetDisassembleService.cs`](../Services/DotNetDisassembleService.cs) | [`Services/DotNetDisassembleService.VersionLabel.cs`](../Services/DotNetDisassembleService.VersionLabel.cs)（バージョン/ラベル管理、ツールフィンガープリント、プロセス実行、使用記録、一時ファイル cleanup warning）, [`Services/DotNetDisassembleService.Streaming.cs`](../Services/DotNetDisassembleService.Streaming.cs)（行単位ストリーミング逆アセンブル、LOH 文字列割り当て回避） |
-| `DotNetDisassemblerProvider` | [`Services/DotNetDisassemblerProvider.cs`](../Services/DotNetDisassemblerProvider.cs) | （単一ファイル）`IDotNetDisassembleService` をラップする組み込み `IDisassemblerProvider` 実装。recoverable な検出失敗・逆アセンブル失敗を warning に残しつつフォールバックし、プラグイン開発者が非 .NET ファイル用の代替逆アセンブラを提供可能にする |
+| `DotNetDisassemblerProvider` | [`Services/DotNetDisassemblerProvider.cs`](../Services/DotNetDisassemblerProvider.cs) | （単一ファイル）`IDotNetDisassembleService` をラップする組み込み `IDisassemblerProvider` 実装。recoverable な検出失敗・逆アセンブル失敗を provider 表示名と拡張子付き warning に残しつつフォールバックし、プラグイン開発者が非 .NET ファイル用の代替逆アセンブラを提供可能にする |
 
 ## Nullable 参照型
 
@@ -1421,20 +1425,20 @@ sequenceDiagram
 | [`Services/DisassemblerBlacklist.cs`](../Services/DisassemblerBlacklist.cs) | ツール別失敗数管理・設定可能な TTL ブラックリスト | スレッドセーフな [`ConcurrentDictionary`](https://learn.microsoft.com/ja-jp/dotnet/api/system.collections.concurrent.concurrentdictionary-2?view=net-8.0)；TTL は設定値 [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) を使用 |
 | [`Services/Caching/ILCache.cs`](../Services/Caching/ILCache.cs) | IL キャッシュの公開 API と調停 | メモリ/ディスクの詳細は専用コンポーネントへ委譲 |
 | [`Services/Caching/ILMemoryCache.cs`](../Services/Caching/ILMemoryCache.cs) | メモリ上の IL / SHA256 キャッシュ | LRU と TTL を担当 |
-| [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | IL キャッシュのディスク永続化とクォータ制御 | キャッシュファイル I/O とトリミングを担当 |
+| [`Services/Caching/ILDiskCache.cs`](../Services/Caching/ILDiskCache.cs) | IL キャッシュのディスク永続化とクォータ制御 | キャッシュファイル I/O とトリミングを担当。recoverable warning にはキャッシュディレクトリと cache key 長も残す |
 | [`Services/Caching/DotNetDisassemblerCache.cs`](../Services/Caching/DotNetDisassemblerCache.cs) | 逆アセンブラ バージョン文字列キャッシュ | バージョン取得のプロセス起動コストを回避 |
 | [`Services/Caching/TimestampCache.cs`](../Services/Caching/TimestampCache.cs) | メモリ内ファイル最終更新日時キャッシュ | 静的；実行サイクルごとにクリアし I/O を削減 |
 | [`Services/ReportGenerationContext.cs`](../Services/ReportGenerationContext.cs) | レポート生成サービス用の不変パラメータバッグ | `ProgramRunner` 境界での引数重複を排除 |
 | [`Services/ReportGenerateService.cs`](../Services/ReportGenerateService.cs) | Markdown レポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；`_sectionWriters` を [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) 経由で反復 |
 | [`Services/IReportSectionWriter.cs`](../Services/IReportSectionWriter.cs) + [`Services/ReportWriteContext.cs`](../Services/ReportWriteContext.cs) | セクション単位のレポート書き込みインターフェイスとコンテキスト | [`ReportGenerateService`](../Services/ReportGenerateService.cs) 内に 10 個のプライベートネストクラスで実装 |
-| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；インラインスタイルの代わりに CSS カスタムプロパティ（`var(--color-*)`）とユーティリティクラスを使用しテーマ対応レンダリングを実現；`prefers-color-scheme` による自動ダークモード対応；「Download as reviewed」は Web Crypto API でレビュー済み HTML の SHA256 を計算・埋め込み（自己検証用）、コンパニオン `.sha256` 検証ファイルもダウンロードし、レビュー済みバナーに「Verify integrity」ボタンを追加；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
-| [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | 構造化 JSON 監査ログ生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読み、`diff_report.md` / `diff_report.html` の SHA256 インテグリティハッシュを計算；[`audit_log.json`](samples/audit_log.json) を生成；[`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
-| [`Services/SbomGenerateService.cs`](../Services/SbomGenerateService.cs) | SBOM（ソフトウェア部品表）生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) からコンポーネント一覧を SHA256 ハッシュと差分ステータス付きで抽出；CycloneDX 1.5 JSON（`sbom.cdx.json`）または SPDX 2.3 JSON（`sbom.spdx.json`）を出力；[`ShouldGenerateSbom`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
+| [`Services/HtmlReportGenerateService.cs`](../Services/HtmlReportGenerateService.cs) | インタラクティブ HTML レビューレポート生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読むだけ；チェックボックス・テキスト入力・localStorage 自動保存・ダウンロード機能を持つ自己完結型 [`diff_report.html`](samples/diff_report.html) を生成；インラインスタイルの代わりに CSS カスタムプロパティ（`var(--color-*)`）とユーティリティクラスを使用しテーマ対応レンダリングを実現；`prefers-color-scheme` による自動ダークモード対応；「Download as reviewed」は Web Crypto API でレビュー済み HTML の SHA256 を計算・埋め込み（自己検証用）、コンパニオン `.sha256` 検証ファイルもダウンロードし、レビュー済みバナーに「Verify integrity」ボタンを追加；回復可能な inline-diff warning には skip 元が `TextMismatch` か `ILMismatch` かも残す；[`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
+| [`Services/AuditLogGenerateService.cs`](../Services/AuditLogGenerateService.cs) | 構造化 JSON 監査ログ生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) を読み、`diff_report.md` / `diff_report.html` の SHA256 インテグリティハッシュを計算；[`audit_log.json`](samples/audit_log.json) を生成；回復可能 warning には reports folder と skip された entry の root path も残す；[`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
+| [`Services/SbomGenerateService.cs`](../Services/SbomGenerateService.cs) | SBOM（ソフトウェア部品表）生成 | [`FileDiffResultLists`](../Models/FileDiffResultLists.cs) からコンポーネント一覧を SHA256 ハッシュと差分ステータス付きで抽出；CycloneDX 1.5 JSON（`sbom.cdx.json`）または SPDX 2.3 JSON（`sbom.spdx.json`）を出力；回復可能 warning には出力形式と skip されたコンポーネントの old/new 由来も残す；[`ShouldGenerateSbom`](../Models/ConfigSettings.cs) が `false` のときはスキップ |
 | [`Models/AuditLogEntry.cs`](../Models/AuditLogEntry.cs) | 監査ログデータモデル | [`AuditLogRecord`](../Models/AuditLogEntry.cs)（トップレベル）、[`AuditLogFileEntry`](../Models/AuditLogEntry.cs)（ファイル単位）、[`AuditLogSummary`](../Models/AuditLogEntry.cs)（件数集計） |
 | [`Models/SbomModels.cs`](../Models/SbomModels.cs) | SBOM データモデル | CycloneDX 1.5 モデル（[`CycloneDxBom`](../Models/SbomModels.cs)、[`CycloneDxComponent`](../Models/SbomModels.cs)）、SPDX 2.3 モデル（[`SpdxDocument`](../Models/SbomModels.cs)、[`SpdxPackage`](../Models/SbomModels.cs)）、[`SbomFormat`](../Models/SbomModels.cs) 列挙型 |
 | [`Services/ProgressReportService.cs`](../Services/ProgressReportService.cs) | コンソール進捗表示、フェーズ追跡、経過時間ログ | フェーズ番号付き進捗（`[current/total]`）、キープアライブスピナースロットリング、Dispose 時の最終フェーズログ |
-| [`Services/LoggerService.cs`](../Services/LoggerService.cs) | テキスト/JSON 形式のファイル/コンソールログ | W3C Trace Context（`traceId`/`spanId`）、古いログファイルのクリーンアップ、読み取り専用ログファイル対応、並行呼び出し安全性 |
-| [`Services/NuGetVulnerabilityService.cs`](../Services/NuGetVulnerabilityService.cs) | NuGet V3 脆弱性 API 統合 | セッション単位キャッシュのインデックス/ページダウンロード、パッケージ別旧/新バージョン脆弱性チェック、アドバイザリ重複排除 |
+| [`Services/LoggerService.cs`](../Services/LoggerService.cs) | テキスト/JSON 形式のファイル/コンソールログ | W3C Trace Context（`traceId`/`spanId`）、保持設定文脈付きの古いログファイルクリーンアップ warning、読み取り専用ログファイル対応、並行呼び出し安全性 |
+| [`Services/NuGetVulnerabilityService.cs`](../Services/NuGetVulnerabilityService.cs) | NuGet V3 脆弱性 API 統合 | セッション単位キャッシュのインデックス/ページダウンロード、パッケージ別旧/新バージョン脆弱性チェック、アドバイザリ重複排除、best-effort 失敗時に index URL と entry/package 件数も残す warning ログ |
 | [`Models/FileDiffResultLists.cs`](../Models/FileDiffResultLists.cs) | スレッドセーフな結果集約 | 実行単位の共有状態；partial ファイル分割: [`FileDiffResultLists.ComparisonResults.cs`](../Models/FileDiffResultLists.ComparisonResults.cs)（差分詳細、逆アセンブララベル、除外ファイル）、[`FileDiffResultLists.Metadata.cs`](../Models/FileDiffResultLists.Metadata.cs)（セマンティック変更、依存関係変更、警告、逆アセンブラ情報） |
 
 <a id="guide-ja-comparison-pipeline"></a>
@@ -1497,8 +1501,9 @@ flowchart TD
 ファイル単位の実装メモ:
 - [`FileDiffService.FilesAreEqualAsync(...)`](../Services/FileDiffService.cs) は、`.NET 実行可能か` の判定、拡張子判定、サイズ閾値判定の基準として old 側絶対パスを使います。
 - 通常実行時の `.NET 実行可能判定`、SHA256/テキスト比較、サイズ取得、チャンク読み出しは [`IFileComparisonService`](../Services/IFileComparisonService.cs) を通して行われます。これは、[`FileDiffService`](../Services/FileDiffService.cs) が比較処理の具体実装に直接依存せず、テストでは [`IFileComparisonService`](../Services/IFileComparisonService.cs) をモックやスタブに差し替えられるようにするためです。既定実装の [`FileComparisonService`](../Services/FileComparisonService.cs) は、これらの処理を [`DotNetDetector`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) と [`FileComparer`](../FolderDiffIL4DotNet.Core/IO/FileComparer.cs) に委譲します。
+- `FileDiffService` の想定内/想定外エラーはどちらも再スローされますが、error ログには相対パス、最後に進んでいた比較段階（`BeforeCompare` フック / SHA256 / IL / text / `AfterCompare` フック）、`SkipIL`、`MaxParallel` も残します。用途は診断のみで、分類フロー自体は変更しません。
 - [`DotNetDetector.DetectDotNetExecutable(...)`](../FolderDiffIL4DotNet.Core/Diagnostics/DotNetDetector.cs) は `NotDotNetExecutable` と `Failed` を区別します。[`FileDiffService`](../Services/FileDiffService.cs) は `Failed` の場合に warning を出して IL 経路をスキップします。
-- [`DotNetDisassemblerProvider`](../Services/DotNetDisassemblerProvider.cs) も、recoverable な managed-assembly 判定失敗や委譲先逆アセンブル失敗を warning として記録したうえで、`false` / 失敗 `DisassemblyResult` を返して他 provider や非 IL 経路へ処理を渡します。
+- [`DotNetDisassemblerProvider`](../Services/DotNetDisassemblerProvider.cs) も、recoverable な managed-assembly 判定失敗や委譲先逆アセンブル失敗を provider 表示名とファイル拡張子付き warning として記録したうえで、`false` / 失敗 `DisassemblyResult` を返して他 provider や非 IL 経路へ処理を渡します。
 - SHA256 が一致した時点で `SHA256Match` を記録して即終了し、その後に IL やテキスト比較へは進みません。
 - IL 経路は [`ILOutputService.DiffDotNetAssembliesAsync(...)`](../Services/ILOutputService.cs) に委譲され、内部で `DisassemblePairWithSameDisassemblerAsync(...)`、比較用ラベル正規化、行除外、任意の IL テキスト出力までをまとめて担当します。
 - [`RealDisassemblerE2ETests`](../FolderDiffIL4DotNet.Tests/Services/RealDisassemblerE2ETests.cs) では、この境界を推奨ツール経路付きで確認します。`Deterministic=false` の小さなクラスライブラリを 2 回ビルドして DLL バイト列が異なることを確認したうえで、[`dotnet-ildasm`](https://www.nuget.org/packages/dotnet-ildasm/) のフィルタ後 IL では `ILMatch` になることを検証します。
@@ -1595,15 +1600,15 @@ catch (Exception ex)
 | IL 関連 | [`ShouldOutputILText`](../Models/ConfigSettings.cs), [`ShouldIgnoreILLinesContainingConfiguredStrings`](../Models/ConfigSettings.cs), [`ILIgnoreLineContainingStrings`](../Models/ConfigSettings.cs), [`SkipIL`](../Models/ConfigSettings.cs), [`DisassemblerBlacklistTtlMinutes`](../Models/ConfigSettings.cs) | IL 正規化・成果物出力・逆アセンブラ信頼性（ブラックリスト TTL）の制御 |
 | インライン差分 | [`EnableInlineDiff`](../Models/ConfigSettings.cs), [`InlineDiffContextLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxDiffLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxOutputLines`](../Models/ConfigSettings.cs), [`InlineDiffMaxEditDistance`](../Models/ConfigSettings.cs), [`InlineDiffLazyRender`](../Models/ConfigSettings.cs) | HTML レポートでのインライン差分表示を制御 |
 | 並列度 | [`MaxParallelism`](../Models/ConfigSettings.cs), [`TextDiffParallelThresholdKilobytes`](../Models/ConfigSettings.cs), [`TextDiffChunkSizeKilobytes`](../Models/ConfigSettings.cs), [`TextDiffParallelMemoryLimitMegabytes`](../Models/ConfigSettings.cs) | CPU 利用、チャンク粒度、大きいテキスト比較時の任意メモリ予算を制御 |
-| キャッシュ | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | IL キャッシュの寿命、保存先、大規模ツリー向け事前計算バッチを制御 |
+| キャッシュ | [`EnableILCache`](../Models/ConfigSettings.cs), [`ILCacheDirectoryAbsolutePath`](../Models/ConfigSettings.cs), [`ILCacheStatsLogIntervalSeconds`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskFileCount`](../Models/ConfigSettings.cs), [`ILCacheMaxDiskMegabytes`](../Models/ConfigSettings.cs), [`ILCacheMaxMemoryMegabytes`](../Models/ConfigSettings.cs), [`ILPrecomputeBatchSize`](../Models/ConfigSettings.cs) | IL キャッシュの寿命、保存先、メモリ予算、大規模ツリー向け事前計算バッチを制御 |
 | ネットワーク共有向け | [`OptimizeForNetworkShares`](../Models/ConfigSettings.cs), [`AutoDetectNetworkShares`](../Models/ConfigSettings.cs) | 遅いストレージでの高 I/O 挙動抑制 |
 | レポート出力 | [`ShouldGenerateHtmlReport`](../Models/ConfigSettings.cs) | Markdown レポートと並行してインタラクティブ HTML レビューレポートを生成するかを制御 |
 | 監査ログ | [`ShouldGenerateAuditLog`](../Models/ConfigSettings.cs) | 改竄検知用のインテグリティハッシュを含む構造化 JSON 監査ログを生成するかを制御 |
 | ログ / UX | [`MaxLogGenerations`](../Models/ConfigSettings.cs), [`SpinnerFrames`](../Models/ConfigSettings.cs) | ログファイルの保持世代数とコンソールスピナーアニメーションを制御 |
 
 補足の内部既定値:
-- [`ProgramRunner`](../ProgramRunner.cs) は、[`Common/Constants.cs`](../Common/Constants.cs) で定義した IL キャッシュ内部既定値として、[`Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT`](../Common/Constants.cs)（メモリ `2000` 件）、[`Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS`](../Common/Constants.cs)（TTL `12` 時間）、[`Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS`](../Common/Constants.cs)（内部統計ログ `60` 秒）を使います。両プロジェクトで共通利用するバイト換算値と日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) にあります。
-- これらは同日中の再実行で再利用を効かせつつ、短命なコンソールプロセスとしてメモリ消費やログ肥大を抑えるため、コード側で理由付きの既定値として維持しています。
+- [`ProgramRunner`](../ProgramRunner.cs) は、[`Common/Constants.cs`](../Common/Constants.cs) で定義した IL キャッシュ内部既定値として、[`Constants.IL_CACHE_MAX_MEMORY_ENTRIES_DEFAULT`](../Common/Constants.cs)（メモリ `2000` 件）、[`Constants.IL_CACHE_TIME_TO_LIVE_DEFAULT_HOURS`](../Common/Constants.cs)（TTL `12` 時間）、[`Constants.IL_CACHE_STATS_LOG_INTERVAL_DEFAULT_SECONDS`](../Common/Constants.cs)（内部統計ログ `60` 秒）を使います。これとは別に、[`ConfigSettings.DefaultILCacheMaxMemoryMegabytes`](../Models/ConfigSettings.ILSettings.cs) はメモリ内キャッシュ予算の既定値を `256` MB とし、明示的な `0` 指定では従来どおり無制限へ戻せます。両プロジェクトで共通利用するバイト換算値と日時フォーマットは [`FolderDiffIL4DotNet.Core/Common/CoreConstants.cs`](../FolderDiffIL4DotNet.Core/Common/CoreConstants.cs) にあります。
+- これらは同日中の再実行で再利用を効かせつつ、短命なコンソールプロセスとしてメモリ消費とログ肥大を抑えるため、コード側で理由付きの既定値として維持しています。
 
 ### Myers diff algorithm
 
@@ -1739,10 +1744,11 @@ v* タグ push 時:
 `mutation-testing` ジョブ — Stryker:
 - `pull_request` と `workflow_dispatch` でのみ実行（`main` への push では実行されない）
 - [Stryker.NET](https://stryker-mutator.io/docs/stryker-net/introduction/) でプロダクションコードにミューテーションを注入し、テストが検出できるか検証する
-- 設定は [`stryker-config.json`](../stryker-config.json) に定義
-- ミューテーションスコアを GitHub Actions ジョブサマリに投稿
-- 完全な Stryker HTML/JSON レポートを `StrykerReport` としてアップロード
-- 閾値は `50%` — ミューテーションスコアがこれを下回るとジョブ失敗
+- 設定は [`stryker-config.json`](../stryker-config.json) に定義され、high/low/break 閾値は `80/60/40`。[`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) も同じファイルを直接読むので、reviewer 向け score band 表示が実際の mutation gate とずれない
+- [`scripts/generate-mutation-summary.py`](../scripts/generate-mutation-summary.py) を呼び出して各 run 後に `StrykerOutput/mutation-summary.md` と `mutation-summary.json` を生成し、スコア・survivor 件数・status 件数を生レポートと並べて保存する
+- markdown 要約を GitHub Actions ジョブサマリに追記し、同一リポジトリ由来の pull request には [`scripts/update-mutation-pr-comment.js`](../scripts/update-mutation-pr-comment.js) 経由で同じ内容を sticky bot コメントとして反映する。この helper は `github-actions[bot]` 自身の marker 付きコメントだけを更新対象にする。PR コメント step は best-effort（`continue-on-error: true`）なので、可視化側の失敗で mutation gate 自体は落とさない
+- run ごとの `StrykerSummary-*` / `StrykerReport-*` artifact をアップロードし、Actions の run 履歴をそのままミューテーション推移の記録として使えるようにする
+- break 閾値は `40%` — ミューテーションスコアがこれを下回るとジョブ失敗
 
 `benchmark` ジョブ（手動のみ）:
 - `workflow_dispatch` でのみ実行
@@ -1754,7 +1760,9 @@ v* タグ push 時:
 - 再ビルド、カバレッジゲート付き再テスト、DocFX 再生成、アプリ publish、`*.pdb` 除去まで行います
 - publish 出力 ZIP、ドキュメント ZIP、SHA-256 チェックサムを生成します
 - 既存タグから GitHub Release を作成し、自動生成リリースノートを付けます
-- リリース成功後、`nuget-publish` ジョブが `FolderDiffIL4DotNet.Core` を pack して nuget.org に push します（`NUGET_API_KEY` リポジトリシークレットが必要）
+- `nuget-publish` ジョブは本流の `nuget.org` 公開が完了した後で、認証済みの `github` NuGet source を best-effort step として登録し、その後に `continue-on-error: true` 付きで GitHub Packages へ mirror します。これにより、mirror 側の障害や認証失敗で restore / pack / 本命のレジストリ公開を止めません
+- パッケージ差分判定は checkout 済みタグの first-parent リリース系列上にある直前の `v*` タグを解決するため、古い既存タグや保守リリースを指定した `workflow_dispatch` でも正しい前回リリースとの差分で判定されます
+- `nildiff` はタグごとに mirror し、`FolderDiffIL4DotNet.Core` と `FolderDiffIL4DotNet.Plugin.Abstractions` はそのディレクトリに実変更があるときだけ mirror します。これにより、通常 release で GitHub Packages 側だけのライブラリ版が増えることを避けつつ、nuget.org と同じ公開条件を維持します
 
 セキュリティ自動化:
 - [`.github/workflows/codeql.yml`](../.github/workflows/codeql.yml) は `csharp` と `actions` を対象に、`push` / `pull_request` / 週次スケジュール / `workflow_dispatch` で解析します
@@ -1798,8 +1806,8 @@ v* タグ push 時:
 
 プラグイン拡張インターフェース:
 - [`IPlugin`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPlugin.cs) — エントリポイント。メタデータ提供と `ConfigureServices` によるサービス登録。
-- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — ファイル比較のインターセプト（前後）。組み込み比較結果のオーバーライド可能。
-- [`IPostProcessAction`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPostProcessAction.cs) — 全レポート生成後に実行（通知、アップロード等）。
+- [`IFileComparisonHook`](../FolderDiffIL4DotNet.Plugin.Abstractions/IFileComparisonHook.cs) — ファイル比較のインターセプト（前後）。組み込み比較結果をオーバーライドできます。ベストエフォートなフック失敗は、切り分けしやすいようフェーズ（`BeforeCompare` / `AfterCompare`）と hook order 付きで warning ログに残します。
+- [`IPostProcessAction`](../FolderDiffIL4DotNet.Plugin.Abstractions/IPostProcessAction.cs) — 全レポート生成後に実行（通知、アップロード等）。ベストエフォート失敗は、プラグイン切り分けしやすいようアクション型・実行位置・`Order` 付きで warning ログに残します。
 - [`IDisassemblerProvider`](../FolderDiffIL4DotNet.Plugin.Abstractions/IDisassemblerProvider.cs) — カスタムファイル種別の逆アセンブリ提供（javap による Java .class 等）。
 - [`IReportSectionWriter`](../Services/IReportSectionWriter.cs) — Markdown レポートへのカスタムセクション追加。
 - [`IReportFormatter`](../Services/IReportFormatter.cs) — カスタムレポート出力形式の追加。

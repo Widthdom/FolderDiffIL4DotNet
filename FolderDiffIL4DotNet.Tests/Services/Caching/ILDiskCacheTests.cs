@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.Caching;
@@ -65,6 +66,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Null(result);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped IL disk cache read", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(_cacheDir, warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -78,6 +80,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Empty(Directory.GetFiles(_cacheDir, "*.ilcache"));
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped IL disk cache write", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(_cacheDir, warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -91,6 +94,63 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Null(exception);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped IL disk cache remove", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(_cacheDir, warning.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task TryReadAsync_WhenCacheDirectoryBecomesInvalid_LogsCacheDirectoryAndKeyLength()
+        {
+            var logger = new TestLogger();
+            var cache = new ILDiskCache(_cacheDir, logger, maxDiskFileCount: 0, maxDiskMegabytes: 0);
+            const string cacheKey = "read-key";
+            var invalidCacheDir = Path.Combine(Path.GetPathRoot(_rootDir)!, new string('r', 5000));
+            SetPrivateField(cache, "_cacheDirectoryAbsolutePath", invalidCacheDir);
+
+            var result = await cache.TryReadAsync(cacheKey);
+
+            Assert.Null(result);
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to read IL cache file", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(invalidCacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"cacheKeyLength={cacheKey.Length}", warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
+        }
+
+        [Fact]
+        public async Task WriteAsync_WhenCacheDirectoryBecomesInvalid_LogsCacheDirectoryAndKeyLength()
+        {
+            var logger = new TestLogger();
+            var cache = new ILDiskCache(_cacheDir, logger, maxDiskFileCount: 0, maxDiskMegabytes: 0);
+            const string cacheKey = "write-key";
+            var invalidCacheDir = Path.Combine(Path.GetPathRoot(_rootDir)!, new string('w', 5000));
+            SetPrivateField(cache, "_cacheDirectoryAbsolutePath", invalidCacheDir);
+
+            await cache.WriteAsync(cacheKey, "IL-text");
+
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to write IL cache file", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(invalidCacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"cacheKeyLength={cacheKey.Length}", warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
+        }
+
+        [Fact]
+        public void Remove_WhenCacheDirectoryBecomesInvalid_LogsCacheDirectoryAndKeyLength()
+        {
+            var logger = new TestLogger();
+            var cache = new ILDiskCache(_cacheDir, logger, maxDiskFileCount: 0, maxDiskMegabytes: 0);
+            const string cacheKey = "delete-key";
+            var invalidCacheDir = Path.Combine(Path.GetPathRoot(_rootDir)!, new string('d', 5000));
+            SetPrivateField(cache, "_cacheDirectoryAbsolutePath", invalidCacheDir);
+
+            var exception = Record.Exception(() => cache.Remove(cacheKey));
+
+            Assert.Null(exception);
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to remove disk cache file", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(invalidCacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"cacheKeyLength={cacheKey.Length}", warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
         }
 
         [Fact]
@@ -110,6 +170,13 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Contains("removed=1", info.Message, StringComparison.Ordinal);
             Assert.Contains("maxFiles=1", info.Message, StringComparison.Ordinal);
             Assert.Contains("maxBytes=0", info.Message, StringComparison.Ordinal);
+        }
+
+        private static void SetPrivateField(object target, string fieldName, string value)
+        {
+            var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+            field.SetValue(target, value);
         }
     }
 }

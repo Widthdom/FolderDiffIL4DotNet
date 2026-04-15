@@ -26,7 +26,7 @@ namespace FolderDiffIL4DotNet.Models
         /// <summary>Default value for <see cref="ILCacheMaxDiskMegabytes"/>. / <see cref="ILCacheMaxDiskMegabytes"/> の既定値。</summary>
         public const int DefaultILCacheMaxDiskMegabytes = 512;
         /// <summary>Default value for <see cref="ILCacheMaxMemoryMegabytes"/>. / <see cref="ILCacheMaxMemoryMegabytes"/> の既定値。</summary>
-        public const int DefaultILCacheMaxMemoryMegabytes = 0;
+        public const int DefaultILCacheMaxMemoryMegabytes = 256;
         /// <summary>Default value for <see cref="ILPrecomputeBatchSize"/>. / <see cref="ILPrecomputeBatchSize"/> の既定値。</summary>
         public const int DefaultILPrecomputeBatchSize = 2048;
 
@@ -104,8 +104,8 @@ namespace FolderDiffIL4DotNet.Models
         public int ILCacheMaxDiskMegabytes { get; }
 
         /// <summary>
-        /// Memory budget (MB) for the in-memory IL cache. 0 means unlimited (entry-count limit only).
-        /// メモリ内 IL キャッシュのメモリ予算（MB）。0 はエントリ数上限のみで無制限。
+        /// Memory budget (MB) for the in-memory IL cache. Default is 256 MB; set 0 to restore unlimited mode (entry-count limit only).
+        /// メモリ内 IL キャッシュのメモリ予算（MB）。既定値は 256 MB。0 を指定すると従来どおり無制限（エントリ数上限のみ）に戻ります。
         /// </summary>
         public int ILCacheMaxMemoryMegabytes { get; }
 

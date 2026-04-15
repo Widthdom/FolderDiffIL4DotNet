@@ -274,6 +274,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var consoleText = writer.ToString();
                 Assert.Contains("Failed to clean up old log files in", consoleText, StringComparison.Ordinal);
                 Assert.Contains(filePath, consoleText, StringComparison.Ordinal);
+                Assert.Contains("MaxGenerations=1", consoleText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLog='(none)'", consoleText, StringComparison.Ordinal);
                 Assert.Contains(expected.GetType().Name, consoleText, StringComparison.Ordinal);
                 Assert.Contains(expected.Message, consoleText, StringComparison.Ordinal);
             }
@@ -520,6 +522,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Contains("MaxLogGenerations must be a non-negative integer.", logText, StringComparison.Ordinal);
                 Assert.DoesNotContain("integer..", logText, StringComparison.Ordinal);
                 Assert.Contains("maxLogGenerations", logText, StringComparison.Ordinal);
+                Assert.Contains("MaxGenerations=-1", logText, StringComparison.Ordinal);
+                Assert.Contains(active, logText, StringComparison.Ordinal);
             }
             finally
             {
