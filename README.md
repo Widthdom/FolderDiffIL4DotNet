@@ -53,6 +53,8 @@ dotnet tool install -g dotnet-ildasm
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
 
+Release automation publishes `nildiff` to both nuget.org and GitHub Packages on each tagged release. `FolderDiffIL4DotNet.Core` and `FolderDiffIL4DotNet.Plugin.Abstractions` are mirrored to GitHub Packages only when those package directories changed, matching the existing nuget.org publish gate so normal releases do not invent GitHub-only library versions. GitHub Packages remains a best-effort mirror path after the nuget.org publish succeeds.
+
 The tool works out of the box with default settings. To customize behavior, create a `config.json` and pass it via `--config`:
 
 ```bash
@@ -846,6 +848,8 @@ dotnet tool install -g dotnet-ildasm
 # 3. 2つのフォルダを比較
 nildiff "/path/to/old-folder" "/path/to/new-folder" "my-comparison" --no-pause
 ```
+
+リリース自動化では `nildiff` をタグごとに nuget.org と GitHub Packages の両方へ公開します。`FolderDiffIL4DotNet.Core` と `FolderDiffIL4DotNet.Plugin.Abstractions` は、そのパッケージ自体に変更があるときだけ GitHub Packages に mirror し、通常 release で GitHub Packages 側だけのライブラリ版が増えないよう nuget.org と同じ公開条件に揃えています。GitHub Packages は nuget.org 公開成功後に続く best-effort mirror 経路です。
 
 デフォルト設定のまま動作します。動作をカスタマイズするには、`config.json` を作成して `--config` で指定してください：
 
