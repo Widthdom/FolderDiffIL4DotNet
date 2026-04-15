@@ -88,10 +88,11 @@ dotnet tool install -g cdidx
 **If already installed**, update to the latest version:
 
 ```bash
-dotnet tool update -g cdidx
+# Re-run the installer to upgrade
+curl -fsSL https://raw.githubusercontent.com/Widthdom/CodeIndex/main/install.sh | bash
 ```
 
-If install fails (no network, unsupported platform), skip to the **"Direct SQL queries"** section below — you can query `.cdidx/codeindex.db` directly with `sqlite3`, provided the database was already built. If neither `cdidx` nor `sqlite3` is available, fall back to `rg` (ripgrep), `grep`, `find`, and `cat` for code search.
+If install fails (no network, unsupported platform), skip to the **"Direct SQL queries"** section below — you can query `.cdidx/codeindex.db` directly with `sqlite3`, provided the database was already built. If neither `cdidx` nor `sqlite3` is available, use the Claude Code built-in `Grep` / `Glob` tools (or your harness's equivalent) — do not fall back to shell `rg` / `grep` / `find` or a global `cdidx` in a Claude Code session, since those may be blocked by a repo-tracked deny list and bypassing them can hide stale-binary bugs.
 
 If your AI client supports MCP, prefer wiring `cdidx` as an MCP server and using its native tools. Current cdidx MCP coverage includes:
 
@@ -149,21 +150,21 @@ cdidx .   # refresh stale-file cleanup after history or branch changes
 
 - Start with `map` when you need a quick overview of languages, modules, and likely hot spots before issuing symbol or text queries.
 - Check `status --json` when freshness matters. Use `indexed_at`, `latest_modified`, `git_head`, and `git_is_dirty` to decide whether you need to re-run `cdidx .` before trusting results. If you already started with `map --json`, treat `indexed_at` / `latest_modified` there as filter-scoped freshness and `workspace_indexed_at` / `workspace_latest_modified` as the whole-workspace view.
-- Use `inspect` when you already have a candidate symbol name and want bundled definition/caller/callee/reference context in one round-trip. `inspect --json` also carries `workspace_indexed_at`, `workspace_latest_modified`, `project_root`, `git_head`, and `git_is_dirty` for trust decisions.
+- Use `inspect` when you already have a candidate symbol name and want bundled definition/caller/callee/reference context in one round-trip. Add `--exact` to match leaf-command precision — `exact` is propagated into every bundled sub-query so `inspect Run --exact` will not drag in `RunAsync` / `RunImpact`. `inspect --json` also carries `workspace_indexed_at`, `workspace_latest_modified`, `project_root`, `git_head`, and `git_is_dirty` for trust decisions.
 - Use `definition` when you need the declaration text for a named symbol, and add `--body` when the implementation body matters.
-- Use `references`, `callers`, and `callees` for symbol-aware call graph questions in Python, JavaScript/TypeScript, C#, Go, Rust, Java, Kotlin, Ruby, C/C++, PHP, Swift, Dart, Scala, Elixir, Lua, and VB.NET (18 languages). F# uses space-separated call syntax so graph queries are not supported; use `search` instead.
-- Use `symbols` for named code entities in symbol-aware languages (32 languages including Python, JavaScript/TypeScript, C#, Go, Rust, Java, Kotlin, Ruby, C/C++, PHP, Swift, Dart, Scala, F#, VB.NET, Elixir, Lua, R, Haskell, Shell, SQL, Terraform, Protobuf, GraphQL, Gradle, Makefile, Dockerfile, Zig, PowerShell, CSS/SCSS).
+- Use `references`, `callers`, and `callees` for symbol-aware call graph questions in Python, JavaScript/TypeScript, C#, Go, Rust, Java, Kotlin, Ruby, C/C++, PHP, Swift, Dart, Scala, Elixir, Lua, and VB.NET (18 languages). F# uses space-separated call syntax so graph queries are not supported; use `search` instead. Add `--exact` when you already have a precise name (e.g. resolved from `symbols --exact` / `inspect`) so `references Run` no longer pulls in `RunAsync` / `RunImpact` / etc. — same for `callers` / `callees` / `definition`.
+- Use `impact` for pre-edit ripple checks on callable symbols. When the query resolves, within the active `--lang` / `--path` / `--exclude-path` / `--exclude-tests` scope and graph-supported languages only, to a single class / struct / interface definition and no symbol-level callers exist, `impact` / MCP `impact_analysis` may return heuristic file-level dependency hints instead of a silent false negative; same-name non-callable siblings such as `namespace` or `import` definitions do not block that fallback, and pure non-callable queries return `non_callable_symbol_kind` guidance instead of an unexplained zero. To reduce noise, those hints are emitted only for files that both reference one of the target type's member names and also carry same-file structured type evidence in indexed symbol metadata such as signatures or return types, rather than raw comment/string text matches. That evidence path is Unicode-aware, so fullwidth/accented identifiers follow the same exact-match semantics as the rest of the impact resolver. The hints are still not authoritative because the current graph does not record the resolved target file/type for each call, but they are returned as normal successful output: `count` / `file_count` describe the visible returned set, while `confirmed_count` / `confirmed_file_count` stay at the symbol-level caller totals so clients can inspect `impact_mode`, `heuristic`, `hint_count`, and `truncated`. `impact --json --count` uses the same `*_count` field names as the full payload. When the scoped query resolves to multiple class-like definitions (for example partial classes or same-name definitions sharing one file), the zero-result payload explains that and suggests `deps --path <definition-path> --reverse` or a more specific member query.
+- Use `symbols` for named code entities in symbol-aware languages (32 languages including Python, JavaScript/TypeScript, C#, Go, Rust, Java, Kotlin, Ruby, C/C++, PHP, Swift, Dart, Scala, F#, VB.NET, Elixir, Lua, R, Haskell, Shell, SQL, Terraform, Protobuf, GraphQL, Gradle, Makefile, Dockerfile, Zig, PowerShell, CSS/SCSS). Add `--exact` when you already have a precise candidate list (e.g. names from a prior `inspect` / `map` / `search` result) so `Run` no longer expands to `RunAsync` / `RunImpact` — pairs cleanly with repeated `--name`.
 - Use `outline` to see the full symbol structure of a single file without reading its content.
 - Use `search` for raw text, comments, strings, or languages without structured symbol extraction such as XAML, Markdown, YAML, JSON, TOML, HTML, Vue, Svelte.
 - Add `--exclude-tests` unless you are explicitly investigating tests.
 - Add `--path <text>` and repeatable `--exclude-path <text>` before broad searches so results stay inside the relevant module.
 - Add `--snippet-lines <n>` to `search` when you need tighter JSON output before handing results to another model or tool.
-- Use `files` to discover candidate paths, then `excerpt` to fetch only the needed lines instead of opening entire files.
+- Use `files` to discover candidate paths, `find` to re-locate exact text inside known files, then `excerpt` to fetch only the needed lines instead of opening entire files.
 - If MCP is available and you need several small independent lookups, prefer `batch_query` instead of serial single-tool calls.
 - Use `deps` to understand file-level dependencies — which files reference symbols from other files. Add `--reverse` to find what depends on a given file (impact analysis).
-- Use `unused` to find potentially dead code — symbols defined but never referenced (only meaningful for graph-supported languages).
+- Use `unused` to find potentially dead code — symbols defined but never referenced (only meaningful for graph-supported languages). Results are bucketed so private/file-local candidates stay earlier than public/exported or config/reflection suspects, and returned pages use bounded overfetch plus cross-bucket diversification before `--limit` is applied so one noisy bucket is less likely to hide the rest without silently capping large `--limit` requests. The suspect bucket is reserved for public/exported properties that look config-bound or, for C#, have nearby serializer/ORM-style attributes. Unsupported `--lang` filters now return an empty page with `graph_supported=false` instead of fake unused hits. CLI JSON uses per-symbol `unused_bucket` / `unused_confidence` / `unused_reason`, MCP uses `unusedBucket` / `unusedConfidence` / `unusedReason`, and both include page-scoped `returned_bucket_counts`. Zero-result JSON pages keep the same schema (`count`, empty `symbols`, empty page counts, and graph trust metadata) instead of going silent, and `unused --json` returns that payload with exit code `0` so machine clients can consume it as a normal empty page. When `--lang` is specified, CLI JSON also includes `graph_supported` / `graph_support_reason` so AI clients can tell whether the language actually has indexed call-graph support.
 - Use `hotspots` to find the most-referenced symbols — central, high-impact code that changes may affect widely.
-- Use `impact <symbol>` to see the transitive caller ripple (BFS of callers) before modifying a widely-used symbol. Add `--depth <n>` to tune BFS depth.
 - Use `validate` to surface encoding issues in the index (U+FFFD replacement chars, stray BOMs, null bytes, mixed line endings) — especially useful before a release.
 - Use `ping` immediately after wiring MCP if you need to verify the server is reachable before depending on structured cdidx calls.
 - Use `files --since <datetime>` or `search --since <datetime>` to focus on recently modified code.
@@ -178,29 +179,32 @@ cdidx .   # refresh stale-file cleanup after history or branch changes
 cdidx map --exclude-tests --json                                 # high-level codebase map
 cdidx languages --json                                           # language and graph capability matrix
 cdidx inspect "FileDiffService" --exclude-tests                  # symbol-centric deep inspection
-cdidx definition "RunPreflightValidator" --body                 # declaration + body
-cdidx references "IFileDiffService" --exclude-tests             # usage graph
-cdidx callers "FilesAreEqualAsync" --exclude-tests              # inbound call graph
-cdidx callees "FilesAreEqualAsync" --exclude-tests              # outbound call graph
-cdidx symbols "HtmlReportGenerateService" --path Services/      # structured symbol search
-cdidx outline Services/FileDiffService.cs                       # file structure summary
-cdidx search "warning log" --path Services/ --snippet-lines 6   # raw text search
+cdidx inspect "Run" --exact --exclude-tests                      # exact bundled lookup without RunAsync/RunImpact expansion
+cdidx definition "RunPreflightValidator" --body                  # declaration + body
+cdidx references "IFileDiffService" --exclude-tests              # usage graph
+cdidx callers "FilesAreEqualAsync" --exclude-tests               # inbound call graph
+cdidx callees "FilesAreEqualAsync" --exclude-tests               # outbound call graph
+cdidx symbols "HtmlReportGenerateService" --path Services/       # structured symbol search
+cdidx symbols --name "Run" --exact --exclude-tests               # exact-name style symbol lookup
+cdidx outline Services/FileDiffService.cs                        # file structure summary
+cdidx search "warning log" --path Services/ --snippet-lines 6    # raw text search
 cdidx search "OperationCanceledException" --path Services/ --since 2026-01-01T00:00:00Z --exclude-tests
+cdidx find "warning log" --path Services/FileDiffService.cs --after 2
 cdidx deps --path Services/ --exclude-path Tests                 # file dependency graph
 cdidx deps --path Services/FileDiffService.cs --reverse          # reverse dependency analysis
-cdidx excerpt Services/FileDiffService.cs --start 220 --end 280 # targeted source excerpt
-cdidx files --path Services/HtmlReport/                         # indexed file listing
-cdidx files --path Services/ --json                             # file metadata with checksum/timestamps
+cdidx excerpt Services/FileDiffService.cs --start 220 --end 280  # targeted source excerpt
+cdidx files --path Services/HtmlReport/                          # indexed file listing
+cdidx files --path Services/ --json                              # file metadata with checksum/timestamps
 cdidx files --path FolderDiffIL4DotNet.Tests/ --since 2026-01-01T00:00:00Z  # recently changed test files
-cdidx search "warning" --path Services/ --count                 # count before expanding
-cdidx status --json                                             # DB freshness and stats
+cdidx search "warning" --path Services/ --count                  # count before expanding
+cdidx status --json                                              # DB freshness and stats
 cdidx search "ildasm OR ilspycmd" --fts --path Services/
-cdidx unused --exclude-tests                                    # find potentially dead code
-cdidx hotspots --exclude-tests                                  # find most-referenced symbols
-cdidx impact "FileDiffService" --depth 3 --exclude-tests        # transitive caller ripple before editing
-cdidx validate --path Services/ --json                          # encoding sanity check (U+FFFD, BOM, nulls)
-cdidx search "file:///" --exact --path Services/                # exact substring (no FTS tokenization)
-cdidx . --dry-run                                               # preview reindex scope
+cdidx unused --exclude-tests                                     # find potentially dead code
+cdidx hotspots --exclude-tests                                   # find most-referenced symbols
+cdidx impact "FileDiffService" --depth 3 --exclude-tests         # transitive caller ripple before editing
+cdidx validate --path Services/ --json                           # encoding sanity check (U+FFFD, BOM, nulls)
+cdidx search "file:///" --exact --path Services/                 # exact substring (no FTS tokenization)
+cdidx . --dry-run                                                # preview reindex scope
 ```
 
 #### Direct SQL queries (fallback if cdidx is unavailable)
@@ -507,10 +511,11 @@ dotnet tool install -g cdidx
 **すでに導入済みの場合** は最新へ更新する：
 
 ```bash
-dotnet tool update -g cdidx
+# インストーラーを再実行してアップグレード
+curl -fsSL https://raw.githubusercontent.com/Widthdom/CodeIndex/main/install.sh | bash
 ```
 
-インストールに失敗した場合（ネットワーク不可、未サポートプラットフォームなど）は、下の **「直接SQLクエリ」** へ進み、既存 `.cdidx/codeindex.db` を `sqlite3` で参照する。`cdidx` も `sqlite3` も利用できない場合は、`rg`（ripgrep）、`grep`、`find`、`cat` にフォールバックする。
+インストールに失敗した場合（ネットワーク不可、未サポートプラットフォームなど）は、下の **「直接SQLクエリ」** へ進み、既存 `.cdidx/codeindex.db` を `sqlite3` で参照する。`cdidx` も `sqlite3` も利用できない場合は、Claude Code 組み込みの `Grep` / `Glob` ツール（または使用ハーネスの同等機能）を使うこと。Claude Code セッション内で shell の `rg` / `grep` / `find` やグローバル `cdidx` にフォールバックしてはいけない。これらは repo 追跡の deny リストで塞がれている可能性があり、迂回すると古いバイナリ由来の不具合を隠してしまうため。
 
 AI クライアントが MCP をサポートする場合は、`cdidx` を MCP サーバーとして接続し、ネイティブツールを優先する。現行の cdidx MCP ツール群は以下を含む：
 
@@ -568,21 +573,21 @@ cdidx .   # 履歴変更・ブランチ切替後の stale file cleanup を含む
 
 - 全体像が欲しいときは `map` から始め、言語、モジュール、ホットスポットを掴む。
 - 鮮度が重要な場面では `status --json` を確認する。`indexed_at`、`latest_modified`、`git_head`、`git_is_dirty` で `cdidx .` の再実行が必要か判断する。`map --json` を使っている場合、`indexed_at` / `latest_modified` は絞り込み結果の鮮度、`workspace_indexed_at` / `workspace_latest_modified` はワークスペース全体の鮮度として読む。
-- 候補シンボル名がある場合は `inspect` を使い、定義/caller/callee/参照を1往復で取得する。`inspect --json` には `workspace_indexed_at`、`workspace_latest_modified`、`project_root`、`git_head`、`git_is_dirty` も含まれる。
+- 候補シンボル名がある場合は `inspect` を使い、定義/caller/callee/参照を1往復で取得する。leaf コマンドと同じ精度が欲しいときは `--exact` を付ける（bundle 内の sub-query にも伝播するため、`inspect Run --exact` が `RunAsync` / `RunImpact` を巻き込まない）。`inspect --json` には `workspace_indexed_at`、`workspace_latest_modified`、`project_root`、`git_head`、`git_is_dirty` も含まれる。
 - 名前付きシンボルの宣言だけ欲しいときは `definition` を使い、本体も必要なら `--body` を付ける。
-- `references`、`callers`、`callees` はシンボル認識コールグラフ対応言語で使用：Python、JavaScript/TypeScript、C#、Go、Rust、Java、Kotlin、Ruby、C/C++、PHP、Swift、Dart、Scala、Elixir、Lua、VB.NET（18言語）。F# はスペース区切り呼び出し構文のためグラフクエリ非対応 — `search` を使う。
-- `symbols` はシンボル認識言語の名前付きコードエンティティに使用（Python、JavaScript/TypeScript、C#、Go、Rust、Java、Kotlin、Ruby、C/C++、PHP、Swift、Dart、Scala、F#、VB.NET、Elixir、Lua、R、Haskell、Shell、SQL、Terraform、Protobuf、GraphQL、Gradle、Makefile、Dockerfile、Zig、PowerShell、CSS/SCSS の32言語）。
+- `references`、`callers`、`callees` はシンボル認識コールグラフ対応言語で使用：Python、JavaScript/TypeScript、C#、Go、Rust、Java、Kotlin、Ruby、C/C++、PHP、Swift、Dart、Scala、Elixir、Lua、VB.NET（18言語）。F# はスペース区切り呼び出し構文のためグラフクエリ非対応 — `search` を使う。名前が確定している場合は `--exact` を付けると、`Run` が `RunAsync` / `RunImpact` に広がらない。`definition` も同様に `--exact` をサポートする。
+- callable symbol の変更前波及確認には `impact` を使う。active な `--lang` / `--path` / `--exclude-path` / `--exclude-tests` の scope と graph-supported language の範囲で、query が単一の class / struct / interface 定義に解決され、symbol-level caller が無い場合は、`impact` / MCP `impact_analysis` が無言の 0 件ではなく heuristic な file-level dependency hint を返すことがある。同名の `namespace` や `import` など non-callable な sibling 定義はこの fallback を妨げず、pure non-callable query は `non_callable_symbol_kind` guidance を返す。ノイズを減らすため、hint は「対象型の member 名に一致する参照があり、かつ同じ file 内の indexed symbol metadata（signature や return type など）に対象型の構造化証拠がある」ファイルにだけ出し、コメントや文字列の生テキスト一致では昇格しない。この evidence path も Unicode-aware なので、全角やアクセント付き識別子でも他の exact-match と同じ意味論で扱う。ただし現行グラフは各 call の解決先 file/type を保持していないため、この hint は authoritative ではない。返却は通常の成功出力で、`count` / `file_count` は可視結果、`confirmed_count` / `confirmed_file_count` は symbol-level caller の確定件数を表すため、クライアントは `impact_mode`、`heuristic`、`hint_count`、`truncated` を見て判断する。`impact --json --count` も full payload と同じ `*_count` フィールド名を使う。scoped query が partial class や同一ファイル内の同名 class など複数の class-like 定義に解決された場合は、0 件 payload にその旨と `deps --path <definition-path> --reverse` またはより具体的な member query を試すヒントが入る。
+- `symbols` はシンボル認識言語の名前付きコードエンティティに使用（Python、JavaScript/TypeScript、C#、Go、Rust、Java、Kotlin、Ruby、C/C++、PHP、Swift、Dart、Scala、F#、VB.NET、Elixir、Lua、R、Haskell、Shell、SQL、Terraform、Protobuf、GraphQL、Gradle、Makefile、Dockerfile、Zig、PowerShell、CSS/SCSS の32言語）。`inspect` / `map` / `search` などで候補名が既に特定できている場合は `--exact` を付けると、`Run` が `RunAsync` / `RunImpact` に広がらず、渡した名前だけが返る（繰り返しの `--name` と併用可）。
 - `outline` で1ファイルの全シンボル構造を内容を読まずに把握する。
 - `search` は生テキスト、コメント、文字列、構造化シンボル抽出未対応の言語（XAML、Markdown、YAML、JSON、TOML、HTML、Vue、Svelte）に使う。
 - テストを明示的に見たい場合を除き `--exclude-tests` を付ける。
 - `--path <text>` と繰り返し指定可能な `--exclude-path <text>` で対象範囲を絞り、結果を関連モジュール内に留める。
 - `search` に `--snippet-lines <n>` を付けて、別モデルやツールへの受け渡し用に JSON 出力を絞る。
-- `files` で候補パスを発見し、`excerpt` で必要行だけ取得する（全ファイルを開かない）。
+- `files` で候補パスを発見し、既知ファイル内の再検索には `find`、必要行だけの取得には `excerpt` を使ってファイル全体を開かない。
 - MCP が使えて小さな独立クエリを複数投げたい場合は、単発呼び出しを並べるより `batch_query` を優先する。
 - `deps` でファイルレベルの依存関係を理解する。`--reverse` で逆引き（影響分析）。
-- `unused` で潜在的なデッドコードを発見する — 定義されたが参照されていないシンボル（graph 対応言語でのみ有効）。
+- `unused` で潜在的なデッドコードを発見する — 定義されたが参照されていないシンボル（graph 対応言語でのみ有効）。結果は bucket 化され、private/file-local な候補が public/exported や config/reflection suspect より前に維持される一方、返却ページは `--limit` 適用前に bounded overfetch と bucket 間の分散を行うため、ノイズの多い 1 bucket が他を隠しにくく、大きい `--limit` も暗黙に切り詰めない。suspect bucket は public/exported な property のうち config バインドされていそうなもの、または C# で近傍に serializer/ORM 系 attribute があるもの向けに予約されている。未対応言語を `--lang` で指定した場合は偽の unused hit を返さず、`graph_supported=false` 付きの空ページを返す。CLI JSON ではシンボルごとに `unused_bucket` / `unused_confidence` / `unused_reason`、MCP では `unusedBucket` / `unusedConfidence` / `unusedReason` を返し、どちらも返却ページ単位の `returned_bucket_counts` を含む。ゼロ件でも JSON schema は同じで、`count`、空の `symbols`、空の page count、graph trust metadata を返し、`unused --json` はその payload を exit code `0` で返す。`--lang` 指定時の CLI JSON には `graph_supported` / `graph_support_reason` も入るため、その言語が本当に call graph 対応かを AI クライアントが判断できる。
 - `hotspots` で最多参照シンボルを発見する — 変更が広範に影響する中心的コード。
-- `impact <symbol>` で変更前にシンボルの呼び出し側リップル（callers の BFS）を確認する。`--depth <n>` で BFS 深度を調整する。
 - `validate` でインデックス内のエンコーディング問題（U+FFFD 置換文字、BOM 残骸、null バイト、混在改行）を検出する — リリース前の健全性チェックに有用。
 - MCP 接続直後の疎通確認には `ping` を使い、構造化クエリに依存する前にサーバー到達性を確認する。
 - `files --since <datetime>` や `search --since <datetime>` で最近変更されたコードに集中する。
@@ -597,29 +602,32 @@ cdidx .   # 履歴変更・ブランチ切替後の stale file cleanup を含む
 cdidx map --exclude-tests --json                                 # コードベース全体像
 cdidx languages --json                                           # 言語ごとの symbol / graph 対応状況
 cdidx inspect "FileDiffService" --exclude-tests                  # シンボル中心の深掘り
-cdidx definition "RunPreflightValidator" --body                 # 宣言と本体
-cdidx references "IFileDiffService" --exclude-tests             # 利用箇所グラフ
-cdidx callers "FilesAreEqualAsync" --exclude-tests              # inbound call graph
-cdidx callees "FilesAreEqualAsync" --exclude-tests              # outbound call graph
-cdidx symbols "HtmlReportGenerateService" --path Services/      # 構造化シンボル検索
-cdidx outline Services/FileDiffService.cs                       # 単一ファイル構造
-cdidx search "warning log" --path Services/ --snippet-lines 6   # 生テキスト検索
+cdidx inspect "Run" --exact --exclude-tests                      # RunAsync/RunImpact を巻き込まない exact bundled lookup
+cdidx definition "RunPreflightValidator" --body                  # 宣言と本体
+cdidx references "IFileDiffService" --exclude-tests              # 利用箇所グラフ
+cdidx callers "FilesAreEqualAsync" --exclude-tests               # inbound call graph
+cdidx callees "FilesAreEqualAsync" --exclude-tests               # outbound call graph
+cdidx symbols "HtmlReportGenerateService" --path Services/       # 構造化シンボル検索
+cdidx symbols --name "Run" --exact --exclude-tests               # exact-name 相当のシンボル検索
+cdidx outline Services/FileDiffService.cs                        # 単一ファイル構造
+cdidx search "warning log" --path Services/ --snippet-lines 6    # 生テキスト検索
 cdidx search "OperationCanceledException" --path Services/ --since 2026-01-01T00:00:00Z --exclude-tests
+cdidx find "warning log" --path Services/FileDiffService.cs --after 2
 cdidx deps --path Services/ --exclude-path Tests                 # 依存グラフ
 cdidx deps --path Services/FileDiffService.cs --reverse          # 逆依存分析
-cdidx excerpt Services/FileDiffService.cs --start 220 --end 280 # 必要行だけ再構成
-cdidx files --path Services/HtmlReport/                         # インデックス済みファイル一覧
-cdidx files --path Services/ --json                             # checksum / timestamp 付きファイル情報
+cdidx excerpt Services/FileDiffService.cs --start 220 --end 280  # 必要行だけ再構成
+cdidx files --path Services/HtmlReport/                          # インデックス済みファイル一覧
+cdidx files --path Services/ --json                              # checksum / timestamp 付きファイル情報
 cdidx files --path FolderDiffIL4DotNet.Tests/ --since 2026-01-01T00:00:00Z  # 最近変わったテスト
-cdidx search "warning" --path Services/ --count                 # 件数確認
-cdidx status --json                                             # DB 鮮度と統計
+cdidx search "warning" --path Services/ --count                  # 件数確認
+cdidx status --json                                              # DB 鮮度と統計
 cdidx search "ildasm OR ilspycmd" --fts --path Services/
-cdidx unused --exclude-tests                                    # 潜在的デッドコード検出
-cdidx hotspots --exclude-tests                                  # 最多参照シンボル検出
-cdidx impact "FileDiffService" --depth 3 --exclude-tests        # 編集前の caller リップル確認
-cdidx validate --path Services/ --json                          # エンコーディング健全性チェック
-cdidx search "file:///" --exact --path Services/                # 厳密部分一致（FTS トークナイズ無効）
-cdidx . --dry-run                                               # 再索引対象の事前確認
+cdidx unused --exclude-tests                                     # 潜在的デッドコード検出
+cdidx hotspots --exclude-tests                                   # 最多参照シンボル検出
+cdidx impact "FileDiffService" --depth 3 --exclude-tests         # 編集前の caller リップル確認
+cdidx validate --path Services/ --json                           # エンコーディング健全性チェック
+cdidx search "file:///" --exact --path Services/                 # 厳密部分一致（FTS トークナイズ無効）
+cdidx . --dry-run                                                # 再索引対象の事前確認
 ```
 
 #### 直接SQLクエリ（cdidxが利用できない場合のフォールバック）

@@ -43,6 +43,9 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Contains("auto-generated", output, StringComparison.OrdinalIgnoreCase);
                 Assert.Contains("--config", output, StringComparison.Ordinal);
                 Assert.Contains("--skip-il", output, StringComparison.Ordinal);
+                Assert.Contains("env+supported CLI overrides", output, StringComparison.Ordinal);
+                Assert.Contains("without semantic validation", output, StringComparison.Ordinal);
+                Assert.Contains("config.json + env overrides before runtime CLI overrides", output, StringComparison.Ordinal);
                 // Logger should NOT have been initialized (no log messages)
                 // ロガーは初期化されていないはず（ログメッセージなし）
                 Assert.Empty(logger.Messages);

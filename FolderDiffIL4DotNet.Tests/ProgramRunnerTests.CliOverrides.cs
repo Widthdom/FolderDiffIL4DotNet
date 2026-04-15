@@ -394,6 +394,61 @@ namespace FolderDiffIL4DotNet.Tests
         }
 
         [Fact]
+        public async Task RunAsync_ValidateConfigFlag_IgnoresRuntimeCliOverridesDuringSemanticValidation()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var originalOut = Console.Out;
+            using var outputWriter = new StringWriter();
+            Console.SetOut(outputWriter);
+            var previousEnv = Environment.GetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS", "5");
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--validate-config", "--threads", "7" });
+
+                    Assert.Equal(0, exitCode);
+                    Assert.Contains("Configuration is valid.", outputWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Empty(logger.Messages);
+                });
+            }
+            finally
+            {
+                Console.SetOut(originalOut);
+                Environment.SetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS", previousEnv);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ValidateConfigFlag_WithUnknownOption_ReturnsInvalidArguments()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--validate-config", "--definitely-unknown-option" });
+
+                    Assert.Equal(2, exitCode);
+                    Assert.Contains("Unknown option", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Empty(logger.Messages);
+                });
+            }
+            finally
+            {
+                Console.SetError(originalError);
+            }
+        }
+
+        [Fact]
         public async Task RunAsync_PrintConfigFlag_WithInvalidUserLocalConfig_ShowsResolvedUserConfigPath()
         {
             var logger = new TestLogger(logFileAbsolutePath: "test.log");
@@ -418,6 +473,32 @@ namespace FolderDiffIL4DotNet.Tests
             {
                 Console.SetError(originalError);
                 TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ValidateConfigFlag_WithInvalidThreadsValue_ReturnsInvalidArguments()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--validate-config", "--threads", "notanint" });
+
+                    Assert.Equal(2, exitCode);
+                    Assert.Contains("'--threads' requires a non-negative integer", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Empty(logger.Messages);
+                });
+            }
+            finally
+            {
+                Console.SetError(originalError);
             }
         }
 
@@ -449,6 +530,32 @@ namespace FolderDiffIL4DotNet.Tests
                 Console.SetError(originalError);
                 TryDeleteDirectory(bundledRoot);
                 TryDeleteDirectory(appDataScope.RootAbsolutePath);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_ValidateConfigFlag_WithUnknownCreatorProfile_ReturnsInvalidArguments()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--validate-config", "--creator-il-ignore-profile", "nope" });
+
+                    Assert.Equal(2, exitCode);
+                    Assert.Contains("'--creator-il-ignore-profile' requires a known profile name. Got: 'nope'.", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Empty(logger.Messages);
+                });
+            }
+            finally
+            {
+                Console.SetError(originalError);
             }
         }
 
@@ -494,6 +601,61 @@ namespace FolderDiffIL4DotNet.Tests
             finally
             {
                 Console.SetOut(origOut);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_PrintConfigFlag_PrintsSemanticallyInvalidEffectiveConfigForDiagnostics()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var origOut = Console.Out;
+            using var sw = new System.IO.StringWriter();
+            Console.SetOut(sw);
+            var previousEnv = Environment.GetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS", "0");
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--print-config" });
+
+                    Assert.Equal(0, exitCode);
+                    Assert.Contains("\"MaxLogGenerations\": 0", sw.ToString(), StringComparison.Ordinal);
+                    Assert.Empty(logger.Messages);
+                });
+            }
+            finally
+            {
+                Console.SetOut(origOut);
+                Environment.SetEnvironmentVariable("FOLDERDIFF_MAXLOGGENERATIONS", previousEnv);
+            }
+        }
+
+        [Fact]
+        public async Task RunAsync_PrintConfigFlag_WithUnknownCreatorProfile_ReturnsInvalidArguments()
+        {
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var runner = new ProgramRunner(logger, new ConfigService());
+            var originalError = Console.Error;
+            using var errorWriter = new StringWriter();
+            Console.SetError(errorWriter);
+
+            try
+            {
+                await WithConfigFileAsync("{}", async () =>
+                {
+                    var exitCode = await runner.RunAsync(new[] { "--print-config", "--creator-il-ignore-profile", "nope" });
+
+                    Assert.Equal(2, exitCode);
+                    Assert.Contains("'--creator-il-ignore-profile' requires a known profile name. Got: 'nope'.", errorWriter.ToString(), StringComparison.Ordinal);
+                    Assert.Empty(logger.Messages);
+                });
+            }
+            finally
+            {
+                Console.SetError(originalError);
             }
         }
 

@@ -51,7 +51,7 @@ namespace FolderDiffIL4DotNet.Runner
         /// 複数のスピナーテーマフラグが同時指定されたときに表示するイースターエッグメッセージ。
         /// </summary>
         internal const string MULTIPLE_SPINNERS_MESSAGE =
-            "Simultaneous intake of beer and coffee is not recommended. How about some matcha instead?";
+            "Let's not get too greedy. How about some matcha instead?";
 
         // ── Theme applicators ────────────────────────────────────────────────
         // テーマ適用メソッド

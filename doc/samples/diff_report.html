@@ -409,7 +409,7 @@
     .color-removed { color: var(--color-removed); }
     .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 20em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
             --dc-refs-w: 16em;
@@ -420,7 +420,7 @@
     col.col-notes-g  { width: var(--col-notes-w); }
     col.col-status-g { width: 4.3em; }
     col.col-path-g   { width: var(--col-path-w); }
-    col.col-ts-g     { width: 28em; }
+    col.col-ts-g     { width: var(--col-ts-w); }
     col.col-diff-g   { width: var(--col-diff-w); }
     col.col-tag-g    { width: var(--col-tag-w); }
     col.col-disasm-g { width: var(--col-disasm-w); }
@@ -2718,7 +2718,7 @@
       'col-notes-g': px('--col-notes-w', 10),
       'col-status-g': 4.3 * emPx,
       'col-path-g': px('--col-path-w', 22),
-      'col-ts-g': 28 * emPx,
+        'col-ts-g': px('--col-ts-w', 20),
       'col-diff-g': px('--col-diff-w', 10.8),
       'col-tag-g': px('--col-tag-w', 14),
       'col-disasm-g': px('--col-disasm-w', 28),

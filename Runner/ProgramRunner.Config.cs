@@ -356,8 +356,10 @@ namespace FolderDiffIL4DotNet
         }
 
         /// <summary>
-        /// Prints the effective configuration (after JSON load + environment variable overrides) to stdout as JSON.
-        /// 有効な設定（JSON 読込 + 環境変数オーバーライド適用後）を JSON として標準出力に書き出します。
+        /// Prints the effective configuration (after JSON load, environment-variable overrides,
+        /// and supported CLI overrides) to stdout as JSON without semantic validation.
+        /// JSON 読込、環境変数オーバーライド、および対応する CLI オーバーライド適用後の builder 状態を、
+        /// セマンティック検証なしで JSON として標準出力に書き出します。
         /// </summary>
         private async Task<int> PrintConfigAsync(string? configPath, CliOptions opts)
         {
@@ -368,6 +370,11 @@ namespace FolderDiffIL4DotNet
                 Console.WriteLine(JsonSerializer.Serialize(builder, new JsonSerializerOptions { WriteIndented = true }));
                 return 0;
             }
+            catch (InvalidOperationException ex)
+            {
+                Console.Error.WriteLine(ex.Message);
+                return (int)ProgramExitCode.InvalidArguments;
+            }
             catch (Exception ex) when (ex is ArgumentException or NotSupportedException
                 or FileNotFoundException or InvalidDataException
                 or IOException or UnauthorizedAccessException
@@ -377,6 +384,11 @@ namespace FolderDiffIL4DotNet
                     $"Failed to print effective configuration for '{GetConfigErrorTarget(configPath, ex)}' ({ex.GetType().Name}): {ex.Message}");
                 return (int)ProgramExitCode.ConfigurationError;
             }
+        }
+
+        private static string? GetEarlyConfigCommandArgumentError(CliOptions opts)
+        {
+            return opts.ParseError;
         }
 
         /// <summary>
