@@ -88,25 +88,7 @@ namespace FolderDiffIL4DotNet.Services
             string diffLabel = diffDetail == FileDiffResultLists.DiffDetailResult.ILMismatch ? "Show IL diff" : "Show diff";
             string summary = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode(diffLabel)} (<span class=\"diff-added-cnt\">+{addedCount}</span> / <span class=\"diff-removed-cnt\">-{removedCount}</span>)</summary>";
             string diffViewHtml = BuildDiffViewHtml(diffLines);
-
-            writer.WriteLine("<tr class=\"diff-row\">");
-            writer.WriteLine($"  <td colspan=\"11\">");
-            if (config.InlineDiffLazyRender)
-            {
-                string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(diffViewHtml));
-                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
-                writer.WriteLine(summary);
-                writer.WriteLine("    </details>");
-            }
-            else
-            {
-                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
-                writer.WriteLine(summary);
-                writer.Write(diffViewHtml);
-                writer.WriteLine("    </details>");
-            }
-            writer.WriteLine("  </td>");
-            writer.WriteLine("</tr>");
+            WriteDetailRowWithOptionalLazyContent(writer, detailsId, summary, diffViewHtml, config.InlineDiffLazyRender);
         }
 
         /// <summary>
@@ -180,116 +162,6 @@ namespace FolderDiffIL4DotNet.Services
                     shouldOutputMessageToConsole: false, ex);
                 return (null, null);
             }
-        }
-
-        private void AppendAssemblySemanticChangesRow(
-            TextWriter writer,
-            int idx,
-            string assemblyPath,
-            AssemblySemanticChangesSummary summary,
-            IReadOnlyConfigSettings config,
-            string sectionPrefix = "mod")
-        {
-            int recordNo = idx + 1;
-            var contentBuilder = new StringBuilder();
-            contentBuilder.AppendLine("<div class=\"semantic-changes\">");
-
-            if (summary.Entries.Count > 0)
-            {
-                contentBuilder.AppendLine($"<p class=\"sc-caveat\">{HtmlEncode("Note: The semantic summary is supplementary information. Always verify the final details in the inline IL diff below.")}</p>");
-            }
-
-            if (summary.Entries.Count > 0)
-            {
-                contentBuilder.AppendLine("<table class=\"semantic-changes-table sc-detail\">");
-                contentBuilder.AppendLine("<colgroup>");
-                contentBuilder.AppendLine("  <col class=\"sc-col-cb-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-class-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-basetype-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-change-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-importance-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-kind-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-access-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-mods-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-type-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-name-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-rettype-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-params-g\">");
-                contentBuilder.AppendLine("  <col class=\"sc-col-body-g\">");
-                contentBuilder.AppendLine("</colgroup>");
-                contentBuilder.AppendLine("<thead><tr>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"sc-col-cb\"><input type=\"checkbox\" class=\"cb-all-detail\" onchange=\"toggleAllInDetailTable(this)\" aria-label=\"{HtmlEncode("Toggle all checkboxes")}\"></th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-class-w\">{HtmlEncode("Class")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-basetype-w\">{HtmlEncode("BaseType")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\">{HtmlEncode("Status")}</th><th scope=\"col\">{HtmlEncode("Importance")}</th><th scope=\"col\">{HtmlEncode("Kind")}</th><th scope=\"col\">{HtmlEncode("Access")}</th><th scope=\"col\">{HtmlEncode("Modifiers")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-type-w\">{HtmlEncode("Type")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-name-w\">{HtmlEncode("Name")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-rettype-w\">{HtmlEncode("ReturnType")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-params-w\">{HtmlEncode("Parameters")}</th>");
-                contentBuilder.AppendLine($"  <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--sc-body-w\">{HtmlEncode("Body")}</th>");
-                contentBuilder.AppendLine("</tr></thead>");
-                contentBuilder.AppendLine("<tbody>");
-                string prevType = "";
-                int scRowIdx = 0;
-                foreach (var e in summary.EntriesByImportance)
-                {
-                    bool isCont = e.TypeName == prevType;
-                    string classTd = !isCont ? HtmlEncode(e.TypeName) : "";
-                    string baseTypeTd = !isCont ? HtmlEncode(e.BaseType) : "";
-                    prevType = e.TypeName;
-                    string scImpAttr = $" data-sc-importance=\"{ImportanceToMarker(e.Importance)}\"";
-                    // Store typename/basetype on every row so JS can restore group headers after filtering
-                    // フィルタ後にグループヘッダーを復元できるよう、全行に typename/basetype を格納
-                    string scGroupAttrs = $" data-sc-typename=\"{HtmlEncode(e.TypeName)}\" data-sc-basetype=\"{HtmlEncode(e.BaseType)}\"";
-                    string trOpen = isCont ? $"<tr class=\"group-cont\"{scImpAttr}{scGroupAttrs}>" : $"<tr{scImpAttr}{scGroupAttrs}>";
-                    string accessTd = CodeWrapArrow(e.Access);
-                    string modifiersTd = CodeWrapArrow(e.Modifiers);
-                    string bodyTd = e.Body.Length > 0 ? $"<code>{HtmlEncode(e.Body)}</code>" : "";
-                    string cbId = $"sc_{sectionPrefix}_{idx}_{scRowIdx}";
-                    string changeMarker = ChangeToMarker(e.Change);
-                    string statusCls = ChangeToStatusClass(e.Change);
-                    string statusAttr = statusCls.Length > 0 ? $" class=\"{statusCls}\"" : "";
-                    string impMarker = ImportanceToMarker(e.Importance);
-                    string impCls = ImportanceToClass(e.Importance);
-                    string impAttr = impCls.Length > 0 ? $" class=\"{impCls}\"" : "";
-                    contentBuilder.AppendLine($"{trOpen}<td class=\"sc-col-cb\"><input type=\"checkbox\" id=\"{cbId}\" aria-label=\"{HtmlEncode("Reviewed")} #{scRowIdx + 1}\"></td><td>{classTd}</td><td>{baseTypeTd}</td><td{statusAttr}>{changeMarker}</td><td{impAttr}>{impMarker}</td><td><code>{HtmlEncode(e.MemberKind)}</code></td><td>{accessTd}</td><td>{modifiersTd}</td><td>{HtmlEncode(e.MemberType)}</td><td>{HtmlEncode(e.MemberName)}</td><td>{HtmlEncode(e.ReturnType)}</td><td>{HtmlEncode(e.Parameters)}</td><td>{bodyTd}</td></tr>");
-                    scRowIdx++;
-                }
-                contentBuilder.AppendLine("</tbody></table>");
-            }
-            else
-            {
-                contentBuilder.AppendLine($"<p>{HtmlEncode("No structural changes detected. See IL diff for implementation-level differences.")}</p>");
-            }
-
-            contentBuilder.AppendLine("</div>");
-
-            string detailsId = $"semantic_{sectionPrefix}_{idx}";
-            string highSuffix = summary.HighImportanceCount > 0
-                ? $" ({summary.HighImportanceCount} High)"
-                : "";
-            string deltaSuffix = BuildChangeDeltaSuffix(summary);
-            string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show assembly semantic changes")}{highSuffix}{deltaSuffix}</summary>";
-            string contentHtml = contentBuilder.ToString();
-
-            writer.WriteLine("<tr class=\"diff-row\">");
-            writer.WriteLine("  <td colspan=\"11\">");
-            if (config.InlineDiffLazyRender)
-            {
-                string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
-                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
-                writer.WriteLine(summaryLabel);
-                writer.WriteLine("    </details>");
-            }
-            else
-            {
-                writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\">");
-                writer.WriteLine(summaryLabel);
-                writer.Write(contentHtml);
-                writer.WriteLine("    </details>");
-            }
-            writer.WriteLine("  </td>");
-            writer.WriteLine("</tr>");
         }
 
         private void AppendDependencyChangesRow(
@@ -367,10 +239,19 @@ namespace FolderDiffIL4DotNet.Services
             string vulnSuffix = BuildVulnerabilitySummarySuffix(summary);
             string summaryLabel = $"      <summary class=\"diff-summary\">#{recordNo} {HtmlEncode("Show dependency changes")}{highSuffix}{vulnSuffix}</summary>";
             string contentHtml = contentBuilder.ToString();
+            WriteDetailRowWithOptionalLazyContent(writer, detailsId, summaryLabel, contentHtml, config.InlineDiffLazyRender);
+        }
 
+        private static void WriteDetailRowWithOptionalLazyContent(
+            TextWriter writer,
+            string detailsId,
+            string summaryLabel,
+            string contentHtml,
+            bool shouldLazyRender)
+        {
             writer.WriteLine("<tr class=\"diff-row\">");
             writer.WriteLine("  <td colspan=\"11\">");
-            if (config.InlineDiffLazyRender)
+            if (shouldLazyRender)
             {
                 string b64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(contentHtml));
                 writer.WriteLine($"    <details id=\"{HtmlEncode(detailsId)}\" data-diff-html=\"{b64}\">");
@@ -384,6 +265,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.Write(contentHtml);
                 writer.WriteLine("    </details>");
             }
+
             writer.WriteLine("  </td>");
             writer.WriteLine("</tr>");
         }
@@ -410,12 +292,6 @@ namespace FolderDiffIL4DotNet.Services
             }
             return sb.ToString();
         }
-
-        private static string ChangeToMarker(string change)
-            => change switch { "Added" => "[ + ]", "Removed" => "[ - ]", "Modified" => "[ * ]", _ => change };
-
-        private static string ChangeToStatusClass(string change)
-            => change switch { "Added" => "sc-status-added", "Removed" => "sc-status-removed", "Modified" => "sc-status-modified", _ => "" };
 
         /// <summary>
         /// Builds the HTML content for a vulnerability cell in the dependency changes table.
@@ -534,33 +410,6 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             return false;
-        }
-
-        /// <summary>
-        /// Builds the change delta suffix for the semantic changes summary label.
-        /// Returns HTML like " (<span class="color-added">+2 methods</span>, <span class="color-removed">-1 type</span>)".
-        /// セマンティック変更サマリーラベルの変更差分サフィックスを構築します。
-        /// </summary>
-        private static string BuildChangeDeltaSuffix(AssemblySemanticChangesSummary summary)
-        {
-            var parts = summary.GetChangeDeltaParts();
-            if (parts.Count == 0) return "";
-
-            var sb = new StringBuilder();
-            sb.Append(" (");
-            for (int i = 0; i < parts.Count; i++)
-            {
-                if (i > 0) sb.Append(", ");
-                var (prefix, count, kindLabel) = parts[i];
-                string cssClass = prefix switch { "+" => "color-added", "-" => "color-removed", _ => "" };
-                string text = $"{prefix}{count} {kindLabel}";
-                if (cssClass.Length > 0)
-                    sb.Append($"<span class=\"{cssClass}\">{HtmlEncode(text)}</span>");
-                else
-                    sb.Append(HtmlEncode(text));
-            }
-            sb.Append(')');
-            return sb.ToString();
         }
 
         // Vulnerability style constants / 脆弱性スタイル定数
