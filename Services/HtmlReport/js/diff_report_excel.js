@@ -157,8 +157,31 @@
    */
   function buildExcelRow(tr) {
     var cells = tr.querySelectorAll('td');
-    if (cells.length < 8) return '';
     var sec = tr.getAttribute('data-section');
+    if (sec === 'checklist') {
+      if (cells.length < 3) return '';
+      var checklistCb = cells[0].querySelector('input[type="checkbox"]');
+      var checklistId = checklistCb && checklistCb.id ? checklistCb.id : '';
+      var checklistMatch = /checklist_cb_(\d+)/.exec(checklistId);
+      var checklistNo = checklistMatch ? String(parseInt(checklistMatch[1], 10) + 1) : '';
+      var checklistChecked = checklistCb && checklistCb.checked ? '\u2713' : '';
+      var checklistItemEl = cells[1].querySelector('.checklist-item-text');
+      var checklistItem = checklistItemEl ? checklistItemEl.textContent.trim() : cells[1].textContent.trim();
+      var checklistNotesInp = cells[2].querySelector('input');
+      var checklistNotes = checklistNotesInp ? checklistNotesInp.value : '';
+
+      return '<tr><td></td><td></td>'
+        + '<td class="bd">' + esc(String(checklistNo)) + '</td>'
+        + '<td class="bd">' + esc(checklistChecked) + '</td>'
+        + '<td class="bd">' + esc(checklistItem).replace(/\r?\n/g, '<br>') + '</td>'
+        + '<td class="bd">' + esc(checklistNotes) + '</td>'
+        + '<td class="bd" style="text-align:center"></td>'
+        + '<td class="bd"></td>'
+        + '<td class="bd" style="text-align:center;max-width:280px;mso-number-format:\'\\@\'"></td>'
+        + '<td></td><td></td><td></td><td></td></tr>';
+    }
+
+    if (cells.length < 8) return '';
     // Common columns (0-7): #, Checkbox, Justification, Notes, Status, File Path, Timestamp, Diff Detail/Location
     // 共通列 (0-7): #, チェック, 理由, メモ, Status, パス, タイムスタンプ, 判定根拠/Location
     var no = cells[0].textContent.trim();
@@ -213,10 +236,11 @@
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
       'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
       'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
-      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
+      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old',
+      'checklist': 'Review Checklist'
     };
-    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
-    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3' };
+    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd', 'checklist': '#f0f0f2' };
+    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3', 'checklist': '#000' };
 
     // ── Helpers ───────────────────────────────────────────────────────────
     var COLS = 13;
@@ -238,8 +262,9 @@
     var COL_STYLES = { 6: 'width:280px' };
     var DEFAULT_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
     var IGN_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Location'];
+    var CHECKLIST_HDRS = ['#', '\u2713', 'Checklist Item', 'Notes', 'Status', 'File Path', 'Timestamp'];
     function colHeaderRow(bg, sec) {
-      var hdrs = sec === 'ign' ? IGN_HDRS : DEFAULT_HDRS;
+      var hdrs = sec === 'ign' ? IGN_HDRS : sec === 'checklist' ? CHECKLIST_HDRS : DEFAULT_HDRS;
       var r = '<tr><td></td><td></td>';
       hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
       // Pad remaining cells to maintain column count / 列数を揃えるためにパディング
@@ -365,6 +390,16 @@
       warningsHtml += emptyRow();
     });
 
+    // ── Review Checklist / レビューチェックリスト ────────────────────────
+    var checklistHtml = '';
+    var checklistRows = builtRows['checklist'] || [];
+    if (checklistRows.length > 0) {
+      checklistHtml += bannerRow((sectionNames.checklist || 'Review Checklist') + ' (' + checklistRows.length + ')', sectionTextColors.checklist || '#000', 'font-weight:bold;padding:8px');
+      checklistHtml += colHeaderRow(sectionColors.checklist || '#f0f0f2', 'checklist');
+      checklistHtml += checklistRows.join('');
+      checklistHtml += emptyRow();
+    }
+
     // ── Assemble final HTML / 最終 HTML を組み立て ────────────────────────
     // Colgroup constrains Timestamp column (index 8) — Excel ignores td width with white-space:nowrap
     // colgroup で Timestamp 列（インデックス 8）を制約 — Excel は white-space:nowrap 時に td の width を無視する
@@ -390,6 +425,7 @@
       + sectionsHtml
       + summaryHtml
       + warningsHtml
+      + checklistHtml
       + '</table>\n'
       + '</body></html>';
   }

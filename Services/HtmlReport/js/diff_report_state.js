@@ -248,9 +248,14 @@
     document.querySelectorAll('input[type="checkbox"][id^="cb_"]').forEach(function(cb) {
       saved[cb.id] = cb.checked;
     });
+    document.querySelectorAll('input[type="checkbox"][id^="checklist_cb_"]').forEach(function(cb) {
+      saved[cb.id] = cb.checked;
+    });
     var checked = 0;
     Object.keys(saved).forEach(function(k) {
-      if (k.indexOf('cb_') !== 0 || !saved[k]) return;
+      var isMainReviewCb = k.indexOf('cb_') === 0;
+      var isChecklistCb = k.indexOf('checklist_cb_') === 0;
+      if ((!isMainReviewCb && !isChecklistCb) || !saved[k]) return;
       // Exclude Unchanged/Ignored from progress count / Unchanged/Ignoredは進捗カウントから除外
       if (k.indexOf('cb_unch_') === 0 || k.indexOf('cb_ign_') === 0) return;
       checked++;

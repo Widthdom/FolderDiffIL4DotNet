@@ -194,6 +194,7 @@ describe('autoSave', () => {
     loadScript({
       bodyHtml: `
         <input type="checkbox" id="chk1" checked>
+        <input type="checkbox" id="checklist_cb_0" checked>
         <span id="save-status"></span>
       `,
     });
@@ -428,6 +429,7 @@ describe('clearAll', () => {
     window.clearAll();
 
     expect(document.getElementById('chk1').checked).toBe(false);
+    expect(document.getElementById('checklist_cb_0').checked).toBe(false);
     expect(document.getElementById('note1').value).toBe('');
     expect(localStorage.getItem('test-key')).toBeNull();
     expect(document.querySelectorAll('details[open]').length).toBe(0);
@@ -668,6 +670,25 @@ describe('updateProgress', () => {
 
     // 1 from DOM (cb_add_0 checked) + 2 from localStorage (sha256w + tsw) = 3
     expect(document.getElementById('progress-text').textContent).toBe('3 / 3 reviewed');
+  });
+
+  it('includes checklist rows in the reviewed progress count', () => {
+    loadScript({
+      totalFiles: 3,
+      totalFilesDetail: 'Added: 1 + Modified: 1 + Checklist: 1',
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+        <input type="checkbox" id="checklist_cb_0" checked>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 3 reviewed');
+    expect(document.getElementById('progress-detail').textContent).toBe('(Added: 1 + Modified: 1 + Checklist: 1)');
   });
 
   it('ignores corrupted localStorage when computing progress', () => {
@@ -1319,6 +1340,22 @@ describe('buildExcelRow', () => {
     // Should not contain checkmark
     expect(html).not.toContain('\u2713');
     expect(html).toContain('new.dll');
+  });
+
+  test('maps checklist rows into aligned Excel columns', () => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-section', 'checklist');
+    tr.innerHTML = `
+      <td><input type="checkbox" id="checklist_cb_1" checked></td>
+      <td><div class="checklist-item-text">Verify migration notes
+when schema version changes.</div></td>
+      <td><input type="text" value="Reviewed in CAB"></td>
+    `;
+
+    const html = window.buildExcelRow(tr);
+    expect(html).toContain('>2<');
+    expect(html).toContain('Verify migration notes<br>when schema version changes.');
+    expect(html).toContain('Reviewed in CAB');
   });
 });
 

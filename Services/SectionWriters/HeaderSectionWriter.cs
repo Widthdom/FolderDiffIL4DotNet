@@ -83,6 +83,7 @@ namespace FolderDiffIL4DotNet.Services
                     writer.WriteLine($"> {NOTE_MVID_SKIP}");
                     writer.WriteLine();
                 }
+
             }
         }
     }

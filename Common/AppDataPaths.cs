@@ -15,7 +15,9 @@ namespace FolderDiffIL4DotNet.Common
 
         private const string REPORTS_DIRECTORY_NAME = "Reports";
         private const string LOGS_DIRECTORY_NAME = "Logs";
+        private const string HTML_REPORT_DIRECTORY_NAME = "HtmlReport";
         private const string CONFIG_FILE_NAME = "config.json";
+        private const string HTML_REPORT_CHECKLIST_FILE_NAME = "checklist.json";
         private const string ERROR_LOCAL_APP_DATA_UNRESOLVED = "LocalApplicationData could not be resolved.";
 
         /// <summary>
@@ -70,6 +72,14 @@ namespace FolderDiffIL4DotNet.Common
         /// <summary>Gets the default user config file path. / 既定のユーザー設定ファイルパスを返します。</summary>
         internal static string GetDefaultUserConfigFileAbsolutePath()
             => Path.Combine(GetDefaultConfigDirectoryAbsolutePath(), CONFIG_FILE_NAME);
+
+        /// <summary>Gets the default HTML report settings directory. / 既定の HTML レポート設定ディレクトリを返します。</summary>
+        internal static string GetDefaultHtmlReportDirectoryAbsolutePath()
+            => Path.Combine(GetApplicationDataRootAbsolutePath(), HTML_REPORT_DIRECTORY_NAME);
+
+        /// <summary>Gets the default HTML report checklist file path. / 既定の HTML レポート用チェックリストファイルパスを返します。</summary>
+        internal static string GetDefaultHtmlReportChecklistFileAbsolutePath()
+            => Path.Combine(GetDefaultHtmlReportDirectoryAbsolutePath(), HTML_REPORT_CHECKLIST_FILE_NAME);
 
         /// <summary>Gets the bundled fallback config file path next to the executable. / 実行ファイル隣にある同梱フォールバック設定ファイルパスを返します。</summary>
         internal static string GetBundledConfigFileAbsolutePath()

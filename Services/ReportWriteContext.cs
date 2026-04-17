@@ -29,6 +29,9 @@ namespace FolderDiffIL4DotNet.Services
         /// <summary>Immutable configuration for this run. / この実行の不変設定。</summary>
         public IReadOnlyConfigSettings Config { get; init; } = null!;
 
+        /// <summary>Logger for recoverable report-generation diagnostics. / 回復可能なレポート生成診断用ロガー。</summary>
+        public ILoggerService Logger { get; init; } = null!;
+
         /// <summary>Whether any SHA256 mismatch was detected. / SHA256 不一致が検出されたかどうか。</summary>
         public bool HasSha256Mismatch { get; init; }
 

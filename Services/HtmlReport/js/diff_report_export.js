@@ -28,7 +28,7 @@
     // テーブルの inline width をクリアし reviewed ロード時に再計算させる
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
@@ -70,6 +70,8 @@
       + '; --col-tag-w: '     + curWidths['--col-tag-w']
       + '; --col-disasm-w: '  + curWidths['--col-disasm-w']
       + '; --col-sdk-w: '    + curWidths['--col-sdk-w']
+      + '; --col-checklist-item-w: '  + curWidths['--col-checklist-item-w']
+      + '; --col-checklist-notes-w: ' + curWidths['--col-checklist-notes-w']
       + '; --sc-class-w: '    + curWidths['--sc-class-w']
       + '; --sc-basetype-w: ' + curWidths['--sc-basetype-w']
       + '; --sc-type-w: '     + curWidths['--sc-type-w']
@@ -192,7 +194,7 @@
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });

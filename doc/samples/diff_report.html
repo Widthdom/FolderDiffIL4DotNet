@@ -412,7 +412,7 @@
     :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 20em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
-            --dc-refs-w: 16em;
+            --dc-refs-w: 16em; --col-checklist-item-w: 30em; --col-checklist-notes-w: 20em;
 }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
@@ -425,6 +425,9 @@
     col.col-tag-g    { width: var(--col-tag-w); }
     col.col-disasm-g { width: var(--col-disasm-w); }
     col.col-sdk-g    { width: var(--col-sdk-w); }
+    col.col-checklist-cb-g    { width: 2.2em; }
+    col.col-checklist-item-g  { width: var(--col-checklist-item-w); }
+    col.col-checklist-notes-g { width: var(--col-checklist-notes-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
@@ -459,6 +462,15 @@
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     td.col-sdk    { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; text-align: center; }
+    .checklist-table-scroll { margin: 0.5rem 0 0; }
+    table.checklist-table { margin-bottom: 0; }
+    table.checklist-table th,
+    table.checklist-table td { word-break: normal; }
+    td.col-checklist-item,
+    td.col-checklist-notes { overflow: hidden; vertical-align: top; }
+    .checklist-item-text {
+      white-space: pre-wrap; word-break: break-word; line-height: 1.45;
+    }
     /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
     table.hide-disasm col.col-disasm-g,
     table.hide-col6 col.col-diff-g,
@@ -496,6 +508,12 @@
     .btn-input-clear svg { display: block; margin: auto; }
     .filter-search-wrap.has-text .btn-input-clear { display: flex; align-items: center; justify-content: center; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    th.col-cb input[type="checkbox"],
+    td.col-cb input[type="checkbox"],
+    table.semantic-changes-table th.sc-col-cb input[type="checkbox"],
+    table.semantic-changes-table td.sc-col-cb input[type="checkbox"] {
+      display: block; margin: auto;
+    }
     /* ── Per-row copy path button ────────────────────────────────────────── */
     .btn-copy-path {
       display: inline-flex; align-items: center; justify-content: center;
@@ -1726,6 +1744,34 @@
 </tr>
 </tbody></table>
 </div>
+<h2 class="section-heading">Review Checklist (2)</h2>
+<div class="table-scroll checklist-table-scroll">
+  <table class="checklist-table">
+    <colgroup>
+      <col class="col-checklist-cb-g">
+      <col class="col-checklist-item-g">
+      <col class="col-checklist-notes-g">
+    </colgroup>
+    <thead><tr style="background:var(--color-default-bg)">
+      <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="checklist" onchange="toggleAllInSection(this)" aria-label="Toggle all checklist checkboxes"></th>
+      <th scope="col" class="th-resizable" data-col-var="--col-checklist-item-w">Checklist Item</th>
+      <th scope="col" class="th-resizable" data-col-var="--col-checklist-notes-w">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr data-section="checklist">
+        <td class="col-cb"><input type="checkbox" id="checklist_cb_0" aria-label="Checklist item #1"></td>
+        <td class="col-checklist-item"><div class="checklist-item-text">Confirm version.json and release notes are aligned.</div></td>
+        <td class="col-checklist-notes"><input type="text" id="checklist_notes_0" aria-label="Checklist notes #1"></td>
+      </tr>
+      <tr data-section="checklist">
+        <td class="col-cb"><input type="checkbox" id="checklist_cb_1" aria-label="Checklist item #2"></td>
+        <td class="col-checklist-item"><div class="checklist-item-text">Verify upgrade guide steps.
+Include rollback notes if applicable.</div></td>
+        <td class="col-checklist-notes"><input type="text" id="checklist_notes_1" aria-label="Checklist notes #2"></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 </main>
 <script>
   const __storageKey__  = 'folderdiff-release';
@@ -1738,8 +1784,8 @@
   const __finalSha256__     = null;
   // Total number of reviewable files (injected at generation time). Do not change whitespace.
   // レビュー対象ファイルの総数（生成時に注入）。空白を変更しないこと。
-  const __totalFiles__      = 23;
-  const __totalFilesDetail__ = 'Added: 1 + Removed: 1 + Modified: 15 + SHA256Warn: 1 + TsWarn: 5';
+  const __totalFiles__      = 25;
+  const __totalFilesDetail__ = 'Added: 1 + Removed: 1 + Modified: 15 + SHA256Warn: 1 + TsWarn: 5 + Checklist: 2';
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -2091,9 +2137,14 @@
     document.querySelectorAll('input[type="checkbox"][id^="cb_"]').forEach(function(cb) {
       saved[cb.id] = cb.checked;
     });
+    document.querySelectorAll('input[type="checkbox"][id^="checklist_cb_"]').forEach(function(cb) {
+      saved[cb.id] = cb.checked;
+    });
     var checked = 0;
     Object.keys(saved).forEach(function(k) {
-      if (k.indexOf('cb_') !== 0 || !saved[k]) return;
+      var isMainReviewCb = k.indexOf('cb_') === 0;
+      var isChecklistCb = k.indexOf('checklist_cb_') === 0;
+      if ((!isMainReviewCb && !isChecklistCb) || !saved[k]) return;
       // Exclude Unchanged/Ignored from progress count / Unchanged/Ignoredは進捗カウントから除外
       if (k.indexOf('cb_unch_') === 0 || k.indexOf('cb_ign_') === 0) return;
       checked++;
@@ -2135,7 +2186,7 @@
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
@@ -2173,6 +2224,8 @@
       + '; --col-tag-w: '     + curWidths['--col-tag-w']
       + '; --col-disasm-w: '  + curWidths['--col-disasm-w']
       + '; --col-sdk-w: '     + curWidths['--col-sdk-w']
+      + '; --col-checklist-item-w: '  + curWidths['--col-checklist-item-w']
+      + '; --col-checklist-notes-w: ' + curWidths['--col-checklist-notes-w']
       + '; --sc-class-w: '    + curWidths['--sc-class-w']
       + '; --sc-basetype-w: ' + curWidths['--sc-basetype-w']
       + '; --sc-type-w: '     + curWidths['--sc-type-w']
@@ -2288,7 +2341,7 @@
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
@@ -2722,7 +2775,10 @@
       'col-diff-g': px('--col-diff-w', 10.8),
       'col-tag-g': px('--col-tag-w', 14),
       'col-disasm-g': px('--col-disasm-w', 28),
-      'col-sdk-g': px('--col-sdk-w', 14)
+      'col-sdk-g': px('--col-sdk-w', 14),
+      'col-checklist-cb-g': 2.2 * emPx,
+      'col-checklist-item-g': px('--col-checklist-item-w', 30),
+      'col-checklist-notes-g': px('--col-checklist-notes-w', 20)
     };
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
       var cg = t.querySelector('colgroup');
@@ -2842,6 +2898,7 @@
   var __colVarNames__ = [
     '--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w',
     '--col-tag-w','--col-disasm-w','--col-sdk-w',
+    '--col-checklist-item-w','--col-checklist-notes-w',
     '--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w',
     '--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'
   ];
@@ -3158,8 +3215,29 @@
   }
   function buildExcelRow(tr) {
     var cells = tr.querySelectorAll('td');
-    if (cells.length < 8) return '';
     var sec = tr.getAttribute('data-section');
+    if (sec === 'checklist') {
+      if (cells.length < 3) return '';
+      var checklistCb = cells[0].querySelector('input[type="checkbox"]');
+      var checklistId = checklistCb && checklistCb.id ? checklistCb.id : '';
+      var checklistMatch = /checklist_cb_(\d+)/.exec(checklistId);
+      var checklistNo = checklistMatch ? String(parseInt(checklistMatch[1], 10) + 1) : '';
+      var checklistChecked = checklistCb && checklistCb.checked ? '\u2713' : '';
+      var checklistItemEl = cells[1].querySelector('.checklist-item-text');
+      var checklistItem = checklistItemEl ? checklistItemEl.textContent.trim() : cells[1].textContent.trim();
+      var checklistNotesInp = cells[2].querySelector('input');
+      var checklistNotes = checklistNotesInp ? checklistNotesInp.value : '';
+      return '<tr><td></td><td></td>'
+        + '<td class="bd">' + esc(String(checklistNo)) + '</td>'
+        + '<td class="bd">' + esc(checklistChecked) + '</td>'
+        + '<td class="bd">' + esc(checklistItem).replace(/\r?\n/g, '<br>') + '</td>'
+        + '<td class="bd">' + esc(checklistNotes) + '</td>'
+        + '<td class="bd" style="text-align:center"></td>'
+        + '<td class="bd"></td>'
+        + '<td class="bd" style="text-align:center;max-width:280px;mso-number-format:\'\\@\'"></td>'
+        + '<td></td><td></td><td></td><td></td></tr>';
+    }
+    if (cells.length < 8) return '';
     var no = cells[0].textContent.trim();
     var cb = cells[1].querySelector('input[type="checkbox"]');
     var checked = cb && cb.checked ? '\u2713' : '';
@@ -3206,10 +3284,11 @@
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
       'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
       'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
-      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
+      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old',
+      'checklist': 'Review Checklist'
     };
-    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
-    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3' };
+    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd', 'checklist': '#f0f0f2' };
+    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3', 'checklist': '#000' };
     var COLS = 13;
     function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
     function bannerRow(text, color, style) {
@@ -3226,8 +3305,9 @@
     var COL_STYLES = { 6: 'width:280px' };
     var DEFAULT_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
     var IGN_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Location'];
+    var CHECKLIST_HDRS = ['#', '\u2713', 'Checklist Item', 'Notes', 'Status', 'File Path', 'Timestamp'];
     function colHeaderRow(bg, sec) {
-      var hdrs = sec === 'ign' ? IGN_HDRS : DEFAULT_HDRS;
+      var hdrs = sec === 'ign' ? IGN_HDRS : sec === 'checklist' ? CHECKLIST_HDRS : DEFAULT_HDRS;
       var r = '<tr><td></td><td></td>';
       hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
       for (var j = hdrs.length + 2; j < COLS; j++) r += '<td></td>';
@@ -3337,6 +3417,14 @@
       warningsHtml += rows.join('');
       warningsHtml += emptyRow();
     });
+    var checklistHtml = '';
+    var checklistRows = builtRows['checklist'] || [];
+    if (checklistRows.length > 0) {
+      checklistHtml += bannerRow((sectionNames.checklist || 'Review Checklist') + ' (' + checklistRows.length + ')', sectionTextColors.checklist || '#000', 'font-weight:bold;padding:8px');
+      checklistHtml += colHeaderRow(sectionColors.checklist || '#f0f0f2', 'checklist');
+      checklistHtml += checklistRows.join('');
+      checklistHtml += emptyRow();
+    }
     var colgroup = '<colgroup>';
     for (var ci = 0; ci < COLS; ci++) {
       colgroup += ci === 8 ? '<col style="width:280px">' : '<col>';
@@ -3359,6 +3447,7 @@
       + sectionsHtml
       + summaryHtml
       + warningsHtml
+      + checklistHtml
       + '</table>\n'
       + '</body></html>';
   }

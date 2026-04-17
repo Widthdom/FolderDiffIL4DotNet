@@ -294,6 +294,7 @@ namespace FolderDiffIL4DotNet.Services
                 AppendILCacheStatsSection(writer, ilCache);
 
             AppendWarningsSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
+            AppendReviewChecklistSection(writer);
 
             writer.WriteLine("</main>");
         }
@@ -309,8 +310,9 @@ namespace FolderDiffIL4DotNet.Services
             int sha256WarnCount = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                 .Values.Count(r => r == FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             int tsWarnCount = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Count;
-            int totalFiles = addedCount + removedCount + modifiedCount + sha256WarnCount + tsWarnCount;
-            string totalFilesDetail = BuildTotalFilesDetail(addedCount, removedCount, modifiedCount, sha256WarnCount, tsWarnCount);
+            int checklistCount = LoadReviewChecklistItems().Count;
+            int totalFiles = addedCount + removedCount + modifiedCount + sha256WarnCount + tsWarnCount + checklistCount;
+            string totalFilesDetail = BuildTotalFilesDetail(addedCount, removedCount, modifiedCount, sha256WarnCount, tsWarnCount, checklistCount);
             AppendJs(writer, storageKey, reportDate, totalFiles, totalFilesDetail);
         }
 
@@ -322,14 +324,15 @@ namespace FolderDiffIL4DotNet.Services
         /// プログレスバーの明細文字列を構築します（例: "Added: 1 + Removed: 1 + Modified: 14"）。
         /// 件数0のセクションは省略されます。
         /// </summary>
-        private static string BuildTotalFilesDetail(int added, int removed, int modified, int sha256Warn, int tsWarn)
+        private static string BuildTotalFilesDetail(int added, int removed, int modified, int sha256Warn, int tsWarn, int checklist)
         {
-            var parts = new System.Collections.Generic.List<string>(5);
+            var parts = new System.Collections.Generic.List<string>(6);
             if (added > 0) parts.Add($"Added: {added}");
             if (removed > 0) parts.Add($"Removed: {removed}");
             if (modified > 0) parts.Add($"Modified: {modified}");
             if (sha256Warn > 0) parts.Add($"SHA256Warn: {sha256Warn}");
             if (tsWarn > 0) parts.Add($"TsWarn: {tsWarn}");
+            if (checklist > 0) parts.Add($"Checklist: {checklist}");
             return string.Join(" + ", parts);
         }
 

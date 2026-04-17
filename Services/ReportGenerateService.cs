@@ -173,6 +173,7 @@ namespace FolderDiffIL4DotNet.Services
                 ElapsedTimeString = elapsedTimeString,
                 ComputerName = computerName,
                 Config = config,
+                Logger = _logger,
                 HasSha256Mismatch = hasSha256Mismatch,
                 HasTimestampRegressionWarning = hasTimestampRegressionWarning,
                 HasILFilterWarnings = hasILFilterWarnings,

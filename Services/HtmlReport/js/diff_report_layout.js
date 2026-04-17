@@ -17,7 +17,10 @@
       'col-diff-g': px('--col-diff-w', 10.8),
       'col-tag-g': px('--col-tag-w', 14),
       'col-disasm-g': px('--col-disasm-w', 28),
-      'col-sdk-g': px('--col-sdk-w', 14)
+      'col-sdk-g': px('--col-sdk-w', 14),
+      'col-checklist-cb-g': 2.2 * emPx,
+      'col-checklist-item-g': px('--col-checklist-item-w', 30),
+      'col-checklist-notes-g': px('--col-checklist-notes-w', 20)
     };
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
       var cg = t.querySelector('colgroup');
@@ -106,6 +109,7 @@
   var __colVarNames__ = [
     '--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w',
     '--col-tag-w','--col-disasm-w','--col-sdk-w',
+    '--col-checklist-item-w','--col-checklist-notes-w',
     '--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w',
     '--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'
   ];

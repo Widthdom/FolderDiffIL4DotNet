@@ -262,6 +262,25 @@ Each run also produces **[`diff_report.html`](doc/samples/diff_report.html)** al
 
 The HTML report is a self-contained single file that opens in any browser — no server, no extensions required. It automatically switches between light and dark themes based on the browser/OS colour scheme preference (`prefers-color-scheme`), and includes a manual toggle button (Light / Dark / System) in the controls bar for overriding the system default. The theme preference is saved per report via localStorage. All user-supplied data is HTML-encoded to prevent XSS, and a Content-Security-Policy meta tag blocks external resource loading. For security implementation details (encoding strategy, CSP directives), see [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security).
 
+If the optional user-local checklist file exists, the report shows a **Review Checklist** table after the `Warnings` section. The file must be a JSON array of strings. Missing files, invalid JSON, or arrays that collapse to zero non-blank items are skipped silently in the report (invalid JSON is still written to the run log as a warning). Each string becomes one checklist row, embedded `\n` line breaks are preserved in the rendered Checklist Item cell, the header ✓ toggles only checklist rows, and those checklist checkboxes are included in the main review progress counter and progress bar denominator. The Checklist Item and Notes columns are resizable in HTML, and the last live widths are baked into the downloaded reviewed HTML as that reviewed file's initial widths. The same checklist is also emitted at the end of [`diff_report.md`](doc/samples/diff_report.md) as a non-interactive Markdown table; multiline items are rendered with `<br>` inside the checklist item cell so the table stays valid. The Excel-compatible HTML export includes the checklist as its own section and aligns it to the shared `Status` / `File Path` / `Timestamp` column layout.
+
+Default checklist file location:
+
+| OS | Path |
+|---|---|
+| Windows | `%LOCALAPPDATA%\FolderDiffIL4DotNet\HtmlReport\checklist.json` |
+| macOS | `~/Library/Application Support/FolderDiffIL4DotNet/HtmlReport/checklist.json` |
+| Linux | `~/.local/share/FolderDiffIL4DotNet/HtmlReport/checklist.json` |
+
+Example:
+
+```json
+[
+  "Confirm version.json and release notes are aligned.",
+  "Verify upgrade guide steps.\nInclude rollback notes if applicable."
+]
+```
+
 Every file entry is displayed in a table with interactive columns for sign-off:
 
 | Column | Description |
@@ -1067,6 +1086,25 @@ Markdown レポートの全サンプルは [doc/samples/diff_report.md](doc/samp
 実行のたびに [`diff_report.md`](doc/samples/diff_report.md) と並行して **[`diff_report.html`](doc/samples/diff_report.html)** も生成されます（[`config.json`](config.json) で `"ShouldGenerateHtmlReport": false` を指定すると無効化できます）。
 
 HTML レポートはブラウザで開くだけで動く自己完結ファイルです。サーバー不要、拡張機能不要。ブラウザ/OS のカラースキーム設定（`prefers-color-scheme`）に応じてライト/ダークテーマを自動切替し、コントロールバーの手動トグルボタン（Light / Dark / System）でシステム設定を上書きすることもできます。テーマ設定はレポートごとに localStorage で保存されます。ユーザー提供データはすべて HTML エンコードし XSS を防止、Content-Security-Policy メタタグにより外部リソース読み込みを遮断します。セキュリティ実装の詳細（エンコーディング方式、CSP ディレクティブ）は [doc/DEVELOPER_GUIDE.md § HTML Report Security](doc/DEVELOPER_GUIDE.md#html-report-security) を参照してください。
+
+任意のユーザーローカルチェックリストファイルが存在する場合、レポートの `Warnings` セクションの後ろに **Review Checklist** テーブルも表示されます。ファイル形式は文字列配列の JSON です。ファイルが存在しない場合、JSON が不正な場合、または空白行しかなく実質 0 件になった場合は、その領域自体を出力しません（不正 JSON は実行ログに Warning として記録されます）。各文字列が 1 行のチェック項目になり、文字列中の `\n` 改行は Checklist Item セルでそのまま表示されます。ヘッダーの ✓ はこのチェックリスト表だけを一括操作し、このチェックリストのチェック状態もメインの review progress と進捗バー母数に **含まれます**。Checklist Item 列と Notes 列は HTML 側で横幅をリサイズでき、reviewed をダウンロードした後の HTML では、その直前の幅が初期幅として埋め込まれます。同じチェックリストは [`diff_report.md`](doc/samples/diff_report.md) の末尾にも非インタラクティブな Markdown 表として出力され、複数行項目は表を壊さないよう `<br>` に変換して Checklist Item セルへ出します。Excel 互換 HTML エクスポートでも独立セクションとして出力され、共通の `Status` / `File Path` / `Timestamp` 列レイアウトに合わせて整列します。
+
+既定のチェックリストファイル配置場所:
+
+| OS | パス |
+|---|---|
+| Windows | `%LOCALAPPDATA%\FolderDiffIL4DotNet\HtmlReport\checklist.json` |
+| macOS | `~/Library/Application Support/FolderDiffIL4DotNet/HtmlReport/checklist.json` |
+| Linux | `~/.local/share/FolderDiffIL4DotNet/HtmlReport/checklist.json` |
+
+例:
+
+```json
+[
+  "version.json とリリースノートの整合を確認する。",
+  "アップグレード手順を確認する。\n必要ならロールバック手順も明記する。"
+]
+```
 
 全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 

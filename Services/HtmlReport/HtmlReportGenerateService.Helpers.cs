@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Text;
 using FolderDiffIL4DotNet.Models;
 
@@ -352,6 +354,110 @@ namespace FolderDiffIL4DotNet.Services
                 .Select(v => v.Trim())
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
+        }
+
+        private IReadOnlyList<string> LoadReviewChecklistItems()
+        {
+            string checklistFilePath;
+
+            try
+            {
+                Directory.CreateDirectory(AppDataPaths.GetDefaultHtmlReportDirectoryAbsolutePath());
+                checklistFilePath = AppDataPaths.GetDefaultHtmlReportChecklistFileAbsolutePath();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"HTML review checklist directory could not be prepared and will be skipped: {ex.GetType().Name}: {ex.Message}",
+                    shouldOutputMessageToConsole: false,
+                    ex);
+                return Array.Empty<string>();
+            }
+
+            if (!File.Exists(checklistFilePath))
+            {
+                return Array.Empty<string>();
+            }
+
+            try
+            {
+                string json = File.ReadAllText(checklistFilePath);
+                var items = JsonSerializer.Deserialize<List<string>>(json);
+                if (items == null)
+                {
+                    return Array.Empty<string>();
+                }
+
+                return items
+                    .Where(item => !string.IsNullOrWhiteSpace(item))
+                    .Select(NormalizeReviewChecklistItem)
+                    .Where(item => item.Length > 0)
+                    .ToList();
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"HTML review checklist file '{checklistFilePath}' is invalid JSON and will be skipped: {ex.Message}",
+                    shouldOutputMessageToConsole: false,
+                    ex);
+                return Array.Empty<string>();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                _logger.LogMessage(
+                    AppLogLevel.Warning,
+                    $"HTML review checklist file '{checklistFilePath}' could not be read and will be skipped: {ex.GetType().Name}: {ex.Message}",
+                    shouldOutputMessageToConsole: false,
+                    ex);
+                return Array.Empty<string>();
+            }
+        }
+
+        private static string NormalizeReviewChecklistItem(string item)
+            => item.Replace("\r\n", "\n", StringComparison.Ordinal)
+                   .Replace('\r', '\n')
+                   .Trim();
+
+        private void AppendReviewChecklistSection(TextWriter writer)
+        {
+            var items = LoadReviewChecklistItems();
+            if (items.Count == 0)
+            {
+                return;
+            }
+
+            writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("Review Checklist")} ({items.Count})</h2>");
+            writer.WriteLine("<div class=\"table-scroll checklist-table-scroll\">");
+            writer.WriteLine("  <table class=\"checklist-table\">");
+            writer.WriteLine("    <colgroup>");
+            writer.WriteLine("      <col class=\"col-checklist-cb-g\">");
+            writer.WriteLine("      <col class=\"col-checklist-item-g\">");
+            writer.WriteLine("      <col class=\"col-checklist-notes-g\">");
+            writer.WriteLine("    </colgroup>");
+            writer.WriteLine($"    <thead><tr style=\"background:{TH_BG_DEFAULT}\">");
+            writer.WriteLine($"      <th scope=\"col\" class=\"col-cb\"><input type=\"checkbox\" class=\"cb-all\" data-section=\"checklist\" onchange=\"toggleAllInSection(this)\" aria-label=\"{HtmlEncode("Toggle all checklist checkboxes")}\"></th>");
+            writer.WriteLine($"      <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-checklist-item-w\">{HtmlEncode("Checklist Item")}</th>");
+            writer.WriteLine($"      <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-checklist-notes-w\">{HtmlEncode("Notes")}</th>");
+            writer.WriteLine("    </tr></thead>");
+            writer.WriteLine("    <tbody>");
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                string checkboxId = $"checklist_cb_{i}";
+                string notesId = $"checklist_notes_{i}";
+                int recordNo = i + 1;
+                writer.WriteLine("      <tr data-section=\"checklist\">");
+                writer.WriteLine($"        <td class=\"col-cb\"><input type=\"checkbox\" id=\"{checkboxId}\" aria-label=\"{HtmlEncode($"Checklist item #{recordNo}")}\"></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-item\"><div class=\"checklist-item-text\">{HtmlEncode(items[i])}</div></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-notes\"><input type=\"text\" id=\"{notesId}\" aria-label=\"{HtmlEncode($"Checklist notes #{recordNo}")}\"></td>");
+                writer.WriteLine("      </tr>");
+            }
+
+            writer.WriteLine("    </tbody>");
+            writer.WriteLine("  </table>");
+            writer.WriteLine("</div>");
         }
 
         /// <summary>

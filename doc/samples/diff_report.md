@@ -173,3 +173,10 @@
 | `[ * ]` | src/BigModule.dll | 2026-03-15 09:10:00 → 2026-03-15 09:02:00 | `ILMismatch` `Medium` | `Possible Move`, `Possible Rename` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | src/Service.dll | 2026-03-15 09:05:00 → 2026-03-15 09:00:00 | `ILMismatch` `Low` | `BodyEdit` | `dotnet-ildasm (version: 0.12.2)` | `.NET 8.0` |
 | `[ * ]` | payload.bin | 2026-03-15 08:59:00 → 2026-03-15 08:54:00 | `SHA256Mismatch` | | | |
+
+## Review Checklist
+
+| ✓ | Checklist Item | Notes |
+|:-:|----------------|-------|
+| ☐ | Confirm version.json and release notes are aligned. | |
+| ☐ | Verify upgrade guide steps.<br>Include rollback notes if applicable. | |
