@@ -91,6 +91,20 @@ namespace FolderDiffIL4DotNet.Tests.Architecture
                 workflow);
             Assert.Contains("CURRENT_TAG=$(git describe --tags --exact-match HEAD --match 'v*')", workflow, StringComparison.Ordinal);
             Assert.Contains("PREV_TAG=$(git describe --first-parent --tags --abbrev=0 HEAD^ --match 'v*' 2>/dev/null || true)", workflow, StringComparison.Ordinal);
+            // workflow_dispatch must resolve the tag input to refs/tags/<tag_name>
+            // so that branch names (e.g. "main") fail at checkout instead of
+            // falling through into tag-assumed downstream steps.
+            // workflow_dispatch では tag 入力を refs/tags/<tag_name> に解決し、
+            // "main" のようなブランチ名が指定された場合にタグ前提の後続ステップへ
+            // 進む前に checkout 段階で失敗させます。
+            Assert.Contains(
+                "ref: ${{ inputs.tag_name && format('refs/tags/{0}', inputs.tag_name) || github.ref }}",
+                workflow,
+                StringComparison.Ordinal);
+            Assert.DoesNotContain(
+                "ref: ${{ inputs.tag_name || github.ref }}",
+                workflow,
+                StringComparison.Ordinal);
             Assert.DoesNotContain("Check if Core exists on GitHub Packages", workflow, StringComparison.Ordinal);
             Assert.DoesNotContain("Check if Plugin.Abstractions exists on GitHub Packages", workflow, StringComparison.Ordinal);
             Assert.DoesNotContain("owner_path=\"users\"", workflow, StringComparison.Ordinal);

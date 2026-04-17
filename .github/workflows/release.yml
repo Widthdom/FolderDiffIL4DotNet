@@ -22,7 +22,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tag_name || github.ref }}
+          # On workflow_dispatch, force refs/tags/<tag_name> so a branch name
+          # (e.g. "main") fails checkout instead of falling through to the
+          # tag-assumed downstream steps.
+          # workflow_dispatch では refs/tags/<tag_name> に固定し、"main" 等の
+          # ブランチ名が指定された場合にタグ前提の後続ステップへ進む前に
+          # checkout 段階で失敗させます。
+          ref: ${{ inputs.tag_name && format('refs/tags/{0}', inputs.tag_name) || github.ref }}
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -149,7 +155,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tag_name || github.ref }}
+          # See release job for rationale.
+          # release ジョブの注記を参照してください。
+          ref: ${{ inputs.tag_name && format('refs/tags/{0}', inputs.tag_name) || github.ref }}
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
