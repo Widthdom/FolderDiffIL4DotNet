@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Release workflow `workflow_dispatch` now pins the checkout to `refs/tags/<tag_name>`** — Both the `release` and `nuget-publish` jobs in `.github/workflows/release.yml` now resolve the dispatch `tag_name` input via `format('refs/tags/{0}', inputs.tag_name)`. Supplying a branch name (for example `main`) now fails at the `actions/checkout` step instead of falling through into the tag-assumed downstream logic (`git describe --tags --exact-match HEAD`, `gh release create --verify-tag`, etc.) and producing confusing late-stage failures. Tag-push triggers still fall through to `github.ref` unchanged. Affected: `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`. Tests: `CiAutomationConfigurationTests.cs` (1 updated).
+
 ### [1.17.0] - 2026-04-17
 
 #### Changed
@@ -1439,6 +1443,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### 修正
+
+- **リリースワークフローの `workflow_dispatch` は checkout を `refs/tags/<tag_name>` に固定** — `.github/workflows/release.yml` の `release` / `nuget-publish` ジョブは、dispatch 入力 `tag_name` を `format('refs/tags/{0}', inputs.tag_name)` で解決するようになりました。ブランチ名（例: `main`）が指定された場合は `actions/checkout` 段階で失敗するため、従来のようにタグ前提の後続処理（`git describe --tags --exact-match HEAD`、`gh release create --verify-tag` など）まで進んで混乱する失敗メッセージを出すことがなくなりました。タグ push 起点の実行はこれまで通り `github.ref` を利用します。対象: `.github/workflows/release.yml`、`FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`。テスト: `CiAutomationConfigurationTests.cs`（更新 1 件）。
 
 ### [1.17.0] - 2026-04-17
 
