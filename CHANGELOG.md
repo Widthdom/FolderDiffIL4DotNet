@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.17.0] - 2026-04-17
+
 #### Changed
 
 - **Config early-exit commands now reject malformed CLI syntax before reporting validation or printing configuration** — `--validate-config` and `--print-config` now fail with exit code `2` when the CLI itself is malformed (for example unknown flags, invalid `--threads` values, or unknown `--creator-il-ignore-profile` names), instead of silently producing false-green validation results or letting `print-config` crash while applying CLI overrides. The published README / developer-guide command-path docs were updated to describe that `2`/`3` split, and the `PrintConfigAsync` source comment now matches the runtime contract. Affected: `ProgramRunner.cs`, `Runner/ProgramRunner.Config.cs`, `README.md`, `doc/DEVELOPER_GUIDE.md`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.CliOverrides.cs`. Tests: `ProgramRunnerTests.CliOverrides.cs` (4 new).
@@ -1438,6 +1440,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.17.0] - 2026-04-17
+
 #### 変更
 
 - **README、developer guide、`--help` の設定バリデーション説明を、コマンド別の実行契約へ統一** — ユーザー向け README では、通常の diff 実行・`--validate-config`・`--print-config` を書き分け、通常実行は `config.json` と環境変数および実行時 CLI オーバーライドを適用した実効設定を validation し、`--validate-config` は `FOLDERDIFF_*` 環境変数オーバーライド適用後・実行時 CLI オーバーライド適用前の状態を検証し、`--print-config` は env/CLI 適用後の builder 状態をセマンティック検証なしで診断表示することを明記しました。アーキテクチャガイドの EN/JA 両方では、`Configuration and Runtime Modes` だけでなく `RunAsync` フローの 2c/2d も同じ契約へ揃え、実際の validation 入口を `ConfigSettingsBuilder.Validate()` としたうえで、validation failure は `ConfigService` ではなく ProgramRunner の設定 build ステップが `InvalidDataException` として表面化させる責務だと分かる表現へ修正しています。さらに `--help` でも同じ要点が伝わるように `ProgramRunner.HELP_TEXT` を更新しました。両文書とも `InlineDiffContextLines >= 0` と `ILCacheMaxMemoryMegabytes >= 0` を制約一覧へ含め、guide 側の「README の設定表」リンクも実際の README 設定節へ飛ぶようにしています。あわせて、古い README 文言、`ConfigSettings.Validate()` 表記、`ConfigService` が validation failure を投げると読める文言が再び混入した場合も落ちる回帰テストへ強化し、`--validate-config` / `--print-config` の現在の経路差と `--help` 文言も ProgramRunner テストで固定しました。対象: `README.md`, `doc/DEVELOPER_GUIDE.md`, `Runner/ProgramRunner.HelpText.cs`, `FolderDiffIL4DotNet.Tests/Models/ConfigSettingsTests.InlineDiffAndMutation.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.CliOverrides.cs`, `FolderDiffIL4DotNet.Tests/ProgramRunnerTests.HelpVersion.cs`。テスト: `ConfigSettingsTests.InlineDiffAndMutation.cs`（更新 1 件）、`ProgramRunnerTests.CliOverrides.cs`（追加 2 件）、`ProgramRunnerTests.HelpVersion.cs`（更新 1 件）。
@@ -2863,7 +2867,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.10...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.10...v1.17.0
 [1.16.10]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.9...v1.16.10
 [1.16.9]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.8...v1.16.9
 [1.16.8]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.7...v1.16.8
