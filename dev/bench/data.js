@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776435410749,
+  "lastUpdate": 1776440489823,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -7704,6 +7704,102 @@ window.BENCHMARK_DATA = {
             "value": 27816492.14955357,
             "unit": "ns",
             "range": "± 267730.36532785505"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "54867ecfd2df24221f9761c043ba313a2ad01c10",
+          "message": "Pin release.yml checkout ref to refs/tags/<tag_name> on workflow_dispatch (#156)\n\nWhen workflow_dispatch was invoked with a branch name (e.g. \"main\"),\nactions/checkout would silently resolve it as a branch ref and later\nsteps that assume HEAD is a release tag (git describe --tags\n--exact-match HEAD, gh release create --verify-tag, etc.) would fail\nwith confusing errors. Resolve inputs.tag_name via format('refs/tags/{0}',\ninputs.tag_name) in both the release and nuget-publish jobs so a branch\nname now fails the checkout step itself instead of reaching the\ntag-assumed downstream logic.\n\nhttps://claude.ai/code/session_01EynRk1KiNDypBTkzJgwfVT\n\nCo-authored-by: Claude <noreply@anthropic.com>",
+          "timestamp": "2026-04-18T00:36:56+09:00",
+          "tree_id": "76b151485cadf2584e379c55649becd88420972e",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/54867ecfd2df24221f9761c043ba313a2ad01c10"
+        },
+        "date": 1776440489536,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 61489.482779366626,
+            "unit": "ns",
+            "range": "± 211.82271385849305"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 567123.3402944711,
+            "unit": "ns",
+            "range": "± 2190.610211451215"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5850975.251674107,
+            "unit": "ns",
+            "range": "± 14304.54118461049"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 73355.54232352121,
+            "unit": "ns",
+            "range": "± 401.8073013735626"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 28.479084168161666,
+            "unit": "ns",
+            "range": "± 0.1129335543339213"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 60.64792213042577,
+            "unit": "ns",
+            "range": "± 0.7725140122157181"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 29.29394569993019,
+            "unit": "ns",
+            "range": "± 0.08232384439021359"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5121679.693229167,
+            "unit": "ns",
+            "range": "± 26367.737561767783"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 125873.8105093149,
+            "unit": "ns",
+            "range": "± 227.5280897495092"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2570.483839035034,
+            "unit": "ns",
+            "range": "± 30.4726130350436"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 262349.5251813616,
+            "unit": "ns",
+            "range": "± 1358.9035972057713"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 26691310.304166667,
+            "unit": "ns",
+            "range": "± 197152.06792650736"
           }
         ]
       }
