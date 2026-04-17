@@ -260,7 +260,8 @@ jobs:
 
       - name: Warn if GitHub Packages auth failed
         if: steps.github-auth.outcome == 'failure'
-        run: echo "Warning: GitHub Packages mirror auth failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Warning: GitHub Packages mirror auth failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish Core to GitHub Packages
         id: core-gpr-publish
@@ -270,7 +271,8 @@ jobs:
 
       - name: Warn if Core GitHub Packages mirror failed
         if: steps.core-gpr-publish.outcome == 'failure'
-        run: echo "Warning: Core GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Warning: Core GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish Plugin.Abstractions to GitHub Packages
         id: plugin-gpr-publish
@@ -280,7 +282,8 @@ jobs:
 
       - name: Warn if Plugin.Abstractions GitHub Packages mirror failed
         if: steps.plugin-gpr-publish.outcome == 'failure'
-        run: echo "Warning: Plugin.Abstractions GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Warning: Plugin.Abstractions GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish global tool to GitHub Packages
         id: tool-gpr-publish
@@ -290,4 +293,5 @@ jobs:
 
       - name: Warn if global tool GitHub Packages mirror failed
         if: steps.tool-gpr-publish.outcome == 'failure'
-        run: echo "Warning: nildiff GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Warning: nildiff GitHub Packages mirror failed after nuget.org publication; investigate the mirror channel separately." >> "$GITHUB_STEP_SUMMARY"
