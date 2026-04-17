@@ -1,5 +1,6 @@
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services.Caching;
+using System.Collections.Generic;
 
 namespace FolderDiffIL4DotNet.Services
 {
@@ -46,5 +47,8 @@ namespace FolderDiffIL4DotNet.Services
 
         /// <summary>Aggregated file diff results for report sections. / レポートセクション用の集約済みファイル差分結果。</summary>
         public FileDiffResultLists FileDiffResultLists { get; init; } = null!;
+
+        /// <summary>Resolved review checklist items for this report run. / このレポート実行で解決済みのレビューチェックリスト項目。</summary>
+        public IReadOnlyList<string> ReviewChecklistItems { get; init; } = [];
     }
 }

@@ -417,6 +417,7 @@ describe('clearAll', () => {
     loadScript({
       bodyHtml: `
         <input type="checkbox" id="chk1" checked>
+        <input type="checkbox" id="checklist_cb_0" checked>
         <input type="text" id="note1" value="some note">
         <details open><summary>D</summary></details>
         <span id="save-status"></span>
@@ -670,6 +671,25 @@ describe('updateProgress', () => {
 
     // 1 from DOM (cb_add_0 checked) + 2 from localStorage (sha256w + tsw) = 3
     expect(document.getElementById('progress-text').textContent).toBe('3 / 3 reviewed');
+  });
+
+  it('includes checklist rows in the progress count', () => {
+    loadScript({
+      totalFiles: 3,
+      totalFilesDetail: 'Added: 1 + Modified: 1 + Checklist: 1',
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+        <input type="checkbox" id="checklist_cb_0" checked>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 3 reviewed');
+    expect(document.getElementById('progress-detail').textContent).toBe('(Added: 1 + Modified: 1 + Checklist: 1)');
   });
 
   it('includes checklist rows in the reviewed progress count', () => {

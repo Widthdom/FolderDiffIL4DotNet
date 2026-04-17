@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -67,6 +68,7 @@ namespace FolderDiffIL4DotNet.Services
             string htmlPath = Path.Combine(context.ReportsFolderAbsolutePath, DIFF_REPORT_HTML_FILE_NAME);
             try
             {
+                var checklistItems = LoadReviewChecklistItems();
                 // Stream HTML chunks directly to disk to reduce peak memory usage for large reports.
                 // 大規模レポートのピークメモリ使用量を削減するため、HTML チャンクを直接ディスクにストリーム書き出しする。
                 PathValidator.ValidateAbsolutePathLengthOrThrow(htmlPath);
@@ -74,7 +76,7 @@ namespace FolderDiffIL4DotNet.Services
                 using var writer = new StreamWriter(htmlPath, append: false, Encoding.UTF8, bufferSize: 65536);
                 WriteHtml(writer,
                     context.OldFolderAbsolutePath, context.NewFolderAbsolutePath, context.ReportsFolderAbsolutePath,
-                    context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache);
+                    context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache, checklistItems);
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
@@ -111,7 +113,8 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             IReadOnlyConfigSettings config,
-            ILCache? ilCache)
+            ILCache? ilCache,
+            IReadOnlyList<string> checklistItems)
         {
             string label = Path.GetFileName(
                 reportsFolderAbsolutePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)) ?? "diff";
@@ -129,9 +132,9 @@ namespace FolderDiffIL4DotNet.Services
             writer.WriteLine("</div>");  // end .controls
 
             AppendMainSections(writer, oldFolderAbsolutePath, newFolderAbsolutePath,
-                reportsFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config, ilCache);
+                reportsFolderAbsolutePath, appVersion, elapsedTimeString, computerName, config, ilCache, checklistItems);
 
-            AppendProgressAndJs(writer, storageKey, reportDate);
+            AppendProgressAndJs(writer, storageKey, reportDate, checklistItems.Count);
             AppendKeyboardHelpOverlay(writer);
             writer.WriteLine("</body>");
             writer.WriteLine("</html>");
@@ -273,7 +276,8 @@ namespace FolderDiffIL4DotNet.Services
             string elapsedTimeString,
             string computerName,
             IReadOnlyConfigSettings config,
-            ILCache? ilCache)
+            ILCache? ilCache,
+            IReadOnlyList<string> checklistItems)
         {
             writer.WriteLine("<main id=\"main-content\">");
             AppendHeaderSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath,
@@ -294,7 +298,7 @@ namespace FolderDiffIL4DotNet.Services
                 AppendILCacheStatsSection(writer, ilCache);
 
             AppendWarningsSection(writer, oldFolderAbsolutePath, newFolderAbsolutePath, reportsFolderAbsolutePath, config, ilCache);
-            AppendReviewChecklistSection(writer);
+            AppendReviewChecklistSection(writer, checklistItems);
 
             writer.WriteLine("</main>");
         }
@@ -302,7 +306,7 @@ namespace FolderDiffIL4DotNet.Services
         // ── Progress bar calculation and JS injection ─────────────────────────
         // プログレスバー計算と JS 注入
 
-        private void AppendProgressAndJs(TextWriter writer, string storageKey, string reportDate)
+        private void AppendProgressAndJs(TextWriter writer, string storageKey, string reportDate, int checklistCount)
         {
             int addedCount = _fileDiffResultLists.AddedFilesAbsolutePath.Count;
             int removedCount = _fileDiffResultLists.RemovedFilesAbsolutePath.Count;
@@ -310,7 +314,6 @@ namespace FolderDiffIL4DotNet.Services
             int sha256WarnCount = _fileDiffResultLists.FileRelativePathToDiffDetailDictionary
                 .Values.Count(r => r == FileDiffResultLists.DiffDetailResult.SHA256Mismatch);
             int tsWarnCount = _fileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Count;
-            int checklistCount = LoadReviewChecklistItems().Count;
             int totalFiles = addedCount + removedCount + modifiedCount + sha256WarnCount + tsWarnCount + checklistCount;
             string totalFilesDetail = BuildTotalFilesDetail(addedCount, removedCount, modifiedCount, sha256WarnCount, tsWarnCount, checklistCount);
             AppendJs(writer, storageKey, reportDate, totalFiles, totalFilesDetail);

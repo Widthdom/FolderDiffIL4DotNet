@@ -1,10 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Text.Json;
-using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
 
 namespace FolderDiffIL4DotNet.Services
@@ -25,7 +21,7 @@ namespace FolderDiffIL4DotNet.Services
                 => context.HasSha256Mismatch
                 || context.HasTimestampRegressionWarning
                 || context.HasILFilterWarnings
-                || LoadReviewChecklistItems(context).Count > 0;
+                || context.ReviewChecklistItems.Count > 0;
 
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
@@ -119,7 +115,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                 }
 
-                var checklistItems = LoadReviewChecklistItems(ctx);
+                var checklistItems = ctx.ReviewChecklistItems;
                 if (checklistItems.Count == 0)
                 {
                     return;
@@ -135,76 +131,6 @@ namespace FolderDiffIL4DotNet.Services
                     writer.WriteLine($"| ☐ | {FormatChecklistMarkdownCell(item)} | |");
                 }
             }
-
-            private static IReadOnlyList<string> LoadReviewChecklistItems(ReportWriteContext ctx)
-            {
-                string checklistFilePath;
-
-                try
-                {
-                    Directory.CreateDirectory(AppDataPaths.GetDefaultHtmlReportDirectoryAbsolutePath());
-                    checklistFilePath = AppDataPaths.GetDefaultHtmlReportChecklistFileAbsolutePath();
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
-                {
-                    ctx.Logger.LogMessage(
-                        AppLogLevel.Warning,
-                        $"Markdown review checklist directory could not be prepared and will be skipped: {ex.GetType().Name}: {ex.Message}",
-                        shouldOutputMessageToConsole: false,
-                        ex);
-                    return Array.Empty<string>();
-                }
-
-                if (!File.Exists(checklistFilePath))
-                {
-                    return Array.Empty<string>();
-                }
-
-                try
-                {
-                    string json = File.ReadAllText(checklistFilePath);
-                    var items = JsonSerializer.Deserialize<List<string>>(json);
-                    if (items == null)
-                    {
-                        return Array.Empty<string>();
-                    }
-
-                    return items
-                        .Where(item => !string.IsNullOrWhiteSpace(item))
-                        .Select(NormalizeReviewChecklistItem)
-                        .Where(item => item.Length > 0)
-                        .ToList();
-                }
-                catch (JsonException ex)
-                {
-                    ctx.Logger.LogMessage(
-                        AppLogLevel.Warning,
-                        $"Markdown review checklist file '{checklistFilePath}' is invalid JSON and will be skipped: {ex.Message}",
-                        shouldOutputMessageToConsole: false,
-                        ex);
-                    return Array.Empty<string>();
-                }
-                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-                {
-                    ctx.Logger.LogMessage(
-                        AppLogLevel.Warning,
-                        $"Markdown review checklist file '{checklistFilePath}' could not be read and will be skipped: {ex.GetType().Name}: {ex.Message}",
-                        shouldOutputMessageToConsole: false,
-                        ex);
-                    return Array.Empty<string>();
-                }
-            }
-
-            private static string NormalizeReviewChecklistItem(string item)
-                => item.Replace("\r\n", "\n", StringComparison.Ordinal)
-                       .Replace('\r', '\n')
-                       .Trim();
-
-            private static string FormatChecklistMarkdownCell(string item)
-                => string.Join(
-                    "<br>",
-                    item.Split('\n')
-                        .Select(static line => WebUtility.HtmlEncode(line).Replace("|", "\\|", StringComparison.Ordinal)));
         }
     }
 }

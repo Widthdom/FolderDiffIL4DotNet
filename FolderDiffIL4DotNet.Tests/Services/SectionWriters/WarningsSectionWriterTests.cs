@@ -50,6 +50,18 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
         }
 
         [Fact]
+        public void IsEnabled_WhenChecklistItemsExist()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(1000);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(
+                reviewChecklistItems:
+                [
+                    "Confirm release checklist."
+                ]);
+            Assert.True(writer.IsEnabled(ctx));
+        }
+
+        [Fact]
         public void Write_WithILFilterWarnings_ContainsWarningText()
         {
             var writer = SectionWriterTestBase.GetWriterByOrder(1000);
@@ -65,6 +77,23 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
             var ctx = SectionWriterTestBase.CreateMinimalContext(hasILFilterWarnings: true);
             string output = SectionWriterTestBase.WriteToString(writer, ctx);
             Assert.Contains("ILIgnoreLineContainingStrings", output);
+        }
+
+        [Fact]
+        public void Write_WithChecklistOnly_ContainsReviewChecklistSection()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(1000);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(
+                reviewChecklistItems:
+                [
+                    "Confirm release notes.",
+                    "Verify upgrade guide.\nInclude rollback notes."
+                ]);
+            string output = SectionWriterTestBase.WriteToString(writer, ctx);
+            Assert.Contains("## Review Checklist", output);
+            Assert.Contains("| ✓ | Checklist Item | Notes |", output);
+            Assert.Contains("Confirm release notes.", output);
+            Assert.Contains("Verify upgrade guide.<br>Include rollback notes.", output);
         }
     }
 }

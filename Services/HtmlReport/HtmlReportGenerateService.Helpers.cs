@@ -420,9 +420,8 @@ namespace FolderDiffIL4DotNet.Services
                    .Replace('\r', '\n')
                    .Trim();
 
-        private void AppendReviewChecklistSection(TextWriter writer)
+        private static void AppendReviewChecklistSection(TextWriter writer, IReadOnlyList<string> items)
         {
-            var items = LoadReviewChecklistItems();
             if (items.Count == 0)
             {
                 return;

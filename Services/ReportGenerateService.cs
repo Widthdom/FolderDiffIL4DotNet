@@ -179,6 +179,7 @@ namespace FolderDiffIL4DotNet.Services
                 HasILFilterWarnings = hasILFilterWarnings,
                 IlCache = ilCache,
                 FileDiffResultLists = _fileDiffResultLists,
+                ReviewChecklistItems = LoadReviewChecklistItems(),
             };
             foreach (var sectionWriter in _sectionWriters)
             {
