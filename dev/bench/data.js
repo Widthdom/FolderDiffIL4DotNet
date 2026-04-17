@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776440618589,
+  "lastUpdate": 1776442461445,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -7896,6 +7896,102 @@ window.BENCHMARK_DATA = {
             "value": 26709321.502083335,
             "unit": "ns",
             "range": "± 160179.45677511388"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "widthdom@gmail.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "distinct": true,
+          "id": "5de2741b1acdbbe8946ae7611fc970d608726bfd",
+          "message": "Bump version to 1.17.2",
+          "timestamp": "2026-04-18T01:08:25+09:00",
+          "tree_id": "94db993d1aacd62f353e9f28fe047b35ca119a52",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/5de2741b1acdbbe8946ae7611fc970d608726bfd"
+        },
+        "date": 1776442460809,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 49379.06947544643,
+            "unit": "ns",
+            "range": "± 86.71447816070365"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 443383.8176269531,
+            "unit": "ns",
+            "range": "± 1897.2469337783841"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 4603946.534040178,
+            "unit": "ns",
+            "range": "± 6590.729942557289"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 61155.30247145433,
+            "unit": "ns",
+            "range": "± 237.83313656995617"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 22.89159001622881,
+            "unit": "ns",
+            "range": "± 0.026506636977473113"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 64.97508369959317,
+            "unit": "ns",
+            "range": "± 0.17306620198806752"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 22.510292226076125,
+            "unit": "ns",
+            "range": "± 0.024035972272841946"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 3945463.611778846,
+            "unit": "ns",
+            "range": "± 8009.460031146499"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 102164.17281668527,
+            "unit": "ns",
+            "range": "± 494.5226247572353"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 1931.5606130453257,
+            "unit": "ns",
+            "range": "± 12.84311514692792"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 217704.2026018415,
+            "unit": "ns",
+            "range": "± 1081.1213679128173"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 20818450.179166667,
+            "unit": "ns",
+            "range": "± 186100.51196537935"
           }
         ]
       }
