@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.17.2] - 2026-04-18
+
 #### Fixed
 
 - **Release workflow summary warning steps now use YAML-safe multiline `run` blocks** — `.github/workflows/release.yml` now writes the four GitHub Packages mirror warning messages through block-scalar `run: |` steps instead of single-line plain scalars containing `Warning: ...`. This fixes the workflow syntax error that GitHub reported around line 263 and keeps the post-nuget.org mirror warnings intact. Affected: `.github/workflows/release.yml`. Tests: YAML parse validation via `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/release.yml")'` (manual verification).
@@ -1450,6 +1452,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.17.2] - 2026-04-18
+
 #### 修正
 
 - **release workflow の summary warning step を YAML 安全な複数行 `run` に修正** — `.github/workflows/release.yml` の GitHub Packages mirror warning 4 箇所を、`Warning: ...` を含む single-line の plain scalar ではなく block scalar の `run: |` で書くようにしました。これにより、GitHub が 263 行付近で報告していた workflow 構文エラーを解消しつつ、nuget.org 公開後の mirror warning 自体はそのまま残します。対象: `.github/workflows/release.yml`。テスト: `ruby -e 'require "yaml"; YAML.load_file(".github/workflows/release.yml")'` による YAML parse 確認（手動検証）。
@@ -2887,7 +2891,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.1...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.2...HEAD
+[1.17.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.1...v1.17.2
 [1.17.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.0...v1.17.1
 [1.17.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.10...v1.17.0
 [1.16.10]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.9...v1.16.10
