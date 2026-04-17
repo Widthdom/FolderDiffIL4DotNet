@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.17.1] - 2026-04-18
+
 #### Fixed
 
 - **Release workflow `workflow_dispatch` now pins the checkout to `refs/tags/<tag_name>`** — Both the `release` and `nuget-publish` jobs in `.github/workflows/release.yml` now resolve the dispatch `tag_name` input via `format('refs/tags/{0}', inputs.tag_name)`. Supplying a branch name (for example `main`) now fails at the `actions/checkout` step instead of falling through into the tag-assumed downstream logic (`git describe --tags --exact-match HEAD`, `gh release create --verify-tag`, etc.) and producing confusing late-stage failures. Tag-push triggers still fall through to `github.ref` unchanged. Affected: `.github/workflows/release.yml`, `FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`. Tests: `CiAutomationConfigurationTests.cs` (1 updated).
@@ -1444,6 +1446,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.17.1] - 2026-04-18
+
 #### 修正
 
 - **リリースワークフローの `workflow_dispatch` は checkout を `refs/tags/<tag_name>` に固定** — `.github/workflows/release.yml` の `release` / `nuget-publish` ジョブは、dispatch 入力 `tag_name` を `format('refs/tags/{0}', inputs.tag_name)` で解決するようになりました。ブランチ名（例: `main`）が指定された場合は `actions/checkout` 段階で失敗するため、従来のようにタグ前提の後続処理（`git describe --tags --exact-match HEAD`、`gh release create --verify-tag` など）まで進んで混乱する失敗メッセージを出すことがなくなりました。タグ push 起点の実行はこれまで通り `github.ref` を利用します。対象: `.github/workflows/release.yml`、`FolderDiffIL4DotNet.Tests/Architecture/CiAutomationConfigurationTests.cs`。テスト: `CiAutomationConfigurationTests.cs`（更新 1 件）。
@@ -2875,7 +2879,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.1...HEAD
+[1.17.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.0...v1.17.1
 [1.17.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.10...v1.17.0
 [1.16.10]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.9...v1.16.10
 [1.16.9]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.8...v1.16.9
