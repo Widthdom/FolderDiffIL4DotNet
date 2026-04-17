@@ -30,8 +30,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Checklist Item", html);
             Assert.Contains("checklist_cb_0", html);
             Assert.Contains("checklist_notes_0", html);
+            Assert.Contains("<textarea id=\"checklist_notes_0\" class=\"checklist-notes-input\"", html);
             Assert.Contains("Toggle all checklist checkboxes", html);
             Assert.Contains("Verify migration notes\nwhen schema version changes.", html);
+            Assert.Contains("checklist-item-text-singleline", html);
+            Assert.Contains("checklist-item-text-multiline", html);
             Assert.Contains("--col-checklist-item-w", html);
             Assert.Contains("--col-checklist-notes-w", html);
         }

@@ -116,7 +116,7 @@
           }
           if (__savedState__ !== null) {
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
-            d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
+            d.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
           }
           updateProgress();
           syncHeaderCheckboxes();

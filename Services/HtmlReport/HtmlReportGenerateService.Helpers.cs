@@ -381,10 +381,13 @@ namespace FolderDiffIL4DotNet.Services
                 string checkboxId = $"checklist_cb_{i}";
                 string notesId = $"checklist_notes_{i}";
                 int recordNo = i + 1;
+                string checklistItemClass = items[i].Contains('\n', StringComparison.Ordinal)
+                    ? "checklist-item-text checklist-item-text-multiline"
+                    : "checklist-item-text checklist-item-text-singleline";
                 writer.WriteLine("      <tr data-section=\"checklist\">");
                 writer.WriteLine($"        <td class=\"col-cb\"><input type=\"checkbox\" id=\"{checkboxId}\" aria-label=\"{HtmlEncode($"Checklist item #{recordNo}")}\"></td>");
-                writer.WriteLine($"        <td class=\"col-checklist-item\"><div class=\"checklist-item-text\">{HtmlEncode(items[i])}</div></td>");
-                writer.WriteLine($"        <td class=\"col-checklist-notes\"><input type=\"text\" id=\"{notesId}\" aria-label=\"{HtmlEncode($"Checklist notes #{recordNo}")}\"></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-item\"><div class=\"{checklistItemClass}\">{HtmlEncode(items[i])}</div></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-notes\"><textarea id=\"{notesId}\" class=\"checklist-notes-input\" aria-label=\"{HtmlEncode($"Checklist notes #{recordNo}")}\"></textarea></td>");
                 writer.WriteLine("      </tr>");
             }
 

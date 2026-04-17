@@ -475,6 +475,8 @@ describe('clearAll', () => {
         <input type="checkbox" id="chk1" checked>
         <input type="checkbox" id="checklist_cb_0" checked>
         <input type="text" id="note1" value="some note">
+        <textarea id="checklist_notes_0">multi
+line note</textarea>
         <details open><summary>D</summary></details>
         <span id="save-status"></span>
       `,
@@ -488,6 +490,7 @@ describe('clearAll', () => {
     expect(document.getElementById('chk1').checked).toBe(false);
     expect(document.getElementById('checklist_cb_0').checked).toBe(false);
     expect(document.getElementById('note1').value).toBe('');
+    expect(document.getElementById('checklist_notes_0').value).toBe('');
     expect(localStorage.getItem('test-key')).toBeNull();
     expect(document.querySelectorAll('details[open]').length).toBe(0);
     expect(document.getElementById('save-status').textContent).toBe('Cleared.');
@@ -527,16 +530,18 @@ describe('DOMContentLoaded state restore', () => {
 
   test('in reviewed mode (savedState set), inputs become read-only', () => {
     loadScript({
-      savedState: { 'chk-b': false },
+      savedState: { 'chk-b': false, 'checklist_notes_b': 'restored note' },
       bodyHtml: `
         <input type="checkbox" id="chk-b">
         <input type="text" id="note-b">
+        <textarea id="checklist_notes_b"></textarea>
       `,
     });
     fireDOMContentLoaded();
 
     expect(document.getElementById('chk-b').style.pointerEvents).toBe('none');
     expect(document.getElementById('note-b').readOnly).toBe(true);
+    expect(document.getElementById('checklist_notes_b').readOnly).toBe(true);
   });
 
   test('in reviewed mode, baked column widths are not overwritten by localStorage', () => {
