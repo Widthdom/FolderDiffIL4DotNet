@@ -281,6 +281,8 @@ Example:
 ]
 ```
 
+Full sample: [doc/samples/checklist.json](doc/samples/checklist.json)
+
 Every file entry is displayed in a table with interactive columns for sign-off:
 
 | Column | Description |
@@ -1101,10 +1103,12 @@ HTML レポートはブラウザで開くだけで動く自己完結ファイル
 
 ```json
 [
-  "version.json とリリースノートの整合を確認する。",
-  "アップグレード手順を確認する。\n必要ならロールバック手順も明記する。"
+  "Confirm version.json and release notes are aligned.",
+  "Verify upgrade guide steps.\nInclude rollback notes if applicable."
 ]
 ```
+
+完全なサンプル: [doc/samples/checklist.json](doc/samples/checklist.json)
 
 全ファイルエントリが表でまとめられており、承認サインオフ用のインタラクティブな列を備えています。
 
