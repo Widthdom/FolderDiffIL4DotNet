@@ -33,7 +33,9 @@
       restoreFilterState();
     }
     initColResize();
-    restoreColumnWidths();
+    if (__savedState__ === null) {
+      restoreColumnWidths();
+    }
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();
