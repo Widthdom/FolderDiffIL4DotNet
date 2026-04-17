@@ -167,8 +167,8 @@
       var checklistChecked = checklistCb && checklistCb.checked ? '\u2713' : '';
       var checklistItemEl = cells[1].querySelector('.checklist-item-text');
       var checklistItem = checklistItemEl ? checklistItemEl.textContent.trim() : cells[1].textContent.trim();
-      var checklistNotesInp = cells[2].querySelector('input');
-      var checklistNotes = checklistNotesInp ? checklistNotesInp.value : '';
+      var checklistNotesEl = cells[2].querySelector('textarea, input');
+      var checklistNotes = checklistNotesEl ? checklistNotesEl.value : '';
 
       return '<tr><td></td><td></td>'
         + '<td class="bd">' + esc(String(checklistNo)) + '</td>'

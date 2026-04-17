@@ -1448,7 +1448,7 @@ describe('buildExcelRow', () => {
       <td><input type="checkbox" id="checklist_cb_1" checked></td>
       <td><div class="checklist-item-text">Verify migration notes
 when schema version changes.</div></td>
-      <td><input type="text" value="Reviewed in CAB"></td>
+      <td><textarea>Reviewed in CAB</textarea></td>
     `;
 
     const html = window.buildExcelRow(tr);
