@@ -178,5 +178,5 @@
 
 | ✓ | Checklist Item | Notes |
 |:-:|----------------|-------|
-| ☐ | Confirm version.json and release notes are aligned. | |
-| ☐ | Verify upgrade guide steps.<br>Include rollback notes if applicable. | |
+| [ ] | Confirm version.json and release notes are aligned. | |
+| [ ] | Verify upgrade guide steps.<br>Include rollback notes if applicable. | |

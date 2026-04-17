@@ -128,7 +128,7 @@ namespace FolderDiffIL4DotNet.Services
                 writer.WriteLine("|:-:|----------------|-------|");
                 foreach (var item in checklistItems)
                 {
-                    writer.WriteLine($"| ☐ | {FormatChecklistMarkdownCell(item)} | |");
+                    writer.WriteLine($"| [ ] | {FormatChecklistMarkdownCell(item)} | |");
                 }
             }
         }

@@ -31,7 +31,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("## Review Checklist", reportText);
             Assert.Contains("| ✓ | Checklist Item | Notes |", reportText);
-            Assert.Contains("| ☐ | Confirm version.json and release notes are aligned. | |", reportText);
+            Assert.Contains("| [ ] | Confirm version.json and release notes are aligned. | |", reportText);
             Assert.Contains("Verify upgrade guide steps.<br>Include rollback notes if applicable.", reportText);
         }
 
