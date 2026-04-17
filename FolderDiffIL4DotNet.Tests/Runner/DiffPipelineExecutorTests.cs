@@ -163,7 +163,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             configBuilder.SkipIL = true;
             var config = configBuilder.Build();
             var plugin = new ChecklistMutationPlugin(
-                appDataScope.HtmlReportChecklistFileAbsolutePath,
+                appDataScope.ReviewChecklistFileAbsolutePath,
                 ["Mutated checklist item"]);
 
             await executor.ExecuteAsync(
@@ -215,7 +215,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
         public async Task ExecuteAsync_WhenChecklistJsonIsInvalid_LogsSingleWarningAcrossMarkdownAndHtml()
         {
             using var appDataScope = CreateAppDataOverrideScope("invalid-checklist");
-            string checklistPath = appDataScope.HtmlReportChecklistFileAbsolutePath;
+            string checklistPath = appDataScope.ReviewChecklistFileAbsolutePath;
             Directory.CreateDirectory(Path.GetDirectoryName(checklistPath)!);
             File.WriteAllText(checklistPath, "{ invalid-json");
 
@@ -257,7 +257,7 @@ namespace FolderDiffIL4DotNet.Tests.Runner
 
         private static void WriteChecklistFile(AppDataOverrideScope appDataScope, params string[] items)
         {
-            string checklistPath = appDataScope.HtmlReportChecklistFileAbsolutePath;
+            string checklistPath = appDataScope.ReviewChecklistFileAbsolutePath;
             Directory.CreateDirectory(Path.GetDirectoryName(checklistPath)!);
             File.WriteAllText(checklistPath, JsonSerializer.Serialize(items));
         }

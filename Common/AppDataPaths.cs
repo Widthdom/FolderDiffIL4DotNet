@@ -4,9 +4,9 @@ using System.IO;
 namespace FolderDiffIL4DotNet.Common
 {
     /// <summary>
-    /// Resolves the application's user-local data paths for reports, logs, config, and IL cache.
+    /// Resolves the application's user-local data paths for reports, logs, config, review checklist, and IL cache.
     /// Tests can override the LocalApplicationData root via <see cref="AppContext.SetData(string, object?)"/>.
-    /// レポート、ログ、設定、IL キャッシュ向けのユーザーローカルデータパスを解決します。
+    /// レポート、ログ、設定、レビューチェックリスト、IL キャッシュ向けのユーザーローカルデータパスを解決します。
     /// テストでは <see cref="AppContext.SetData(string, object?)"/> で LocalApplicationData ルートを上書きできます。
     /// </summary>
     internal static class AppDataPaths
@@ -17,7 +17,7 @@ namespace FolderDiffIL4DotNet.Common
         private const string LOGS_DIRECTORY_NAME = "Logs";
         private const string HTML_REPORT_DIRECTORY_NAME = "HtmlReport";
         private const string CONFIG_FILE_NAME = "config.json";
-        private const string HTML_REPORT_CHECKLIST_FILE_NAME = "checklist.json";
+        private const string REVIEW_CHECKLIST_FILE_NAME = "checklist.json";
         private const string ERROR_LOCAL_APP_DATA_UNRESOLVED = "LocalApplicationData could not be resolved.";
 
         /// <summary>
@@ -77,9 +77,9 @@ namespace FolderDiffIL4DotNet.Common
         internal static string GetDefaultHtmlReportDirectoryAbsolutePath()
             => Path.Combine(GetApplicationDataRootAbsolutePath(), HTML_REPORT_DIRECTORY_NAME);
 
-        /// <summary>Gets the default HTML report checklist file path. / 既定の HTML レポート用チェックリストファイルパスを返します。</summary>
-        internal static string GetDefaultHtmlReportChecklistFileAbsolutePath()
-            => Path.Combine(GetDefaultHtmlReportDirectoryAbsolutePath(), HTML_REPORT_CHECKLIST_FILE_NAME);
+        /// <summary>Gets the default review checklist file path. / 既定のレビューチェックリストファイルパスを返します。</summary>
+        internal static string GetDefaultReviewChecklistFileAbsolutePath()
+            => Path.Combine(GetDefaultConfigDirectoryAbsolutePath(), REVIEW_CHECKLIST_FILE_NAME);
 
         /// <summary>Gets the bundled fallback config file path next to the executable. / 実行ファイル隣にある同梱フォールバック設定ファイルパスを返します。</summary>
         internal static string GetBundledConfigFileAbsolutePath()

@@ -24,7 +24,7 @@ namespace FolderDiffIL4DotNet.Services
             string checklistFilePath;
             try
             {
-                checklistFilePath = AppDataPaths.GetDefaultHtmlReportChecklistFileAbsolutePath();
+                checklistFilePath = AppDataPaths.GetDefaultReviewChecklistFileAbsolutePath();
             }
             catch (InvalidOperationException ex)
             {
