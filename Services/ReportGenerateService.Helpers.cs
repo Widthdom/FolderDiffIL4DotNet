@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text.Json;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
@@ -297,70 +296,6 @@ namespace FolderDiffIL4DotNet.Services
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
         }
-
-        private IReadOnlyList<string> LoadReviewChecklistItems()
-        {
-            string checklistFilePath;
-
-            try
-            {
-                Directory.CreateDirectory(AppDataPaths.GetDefaultHtmlReportDirectoryAbsolutePath());
-                checklistFilePath = AppDataPaths.GetDefaultHtmlReportChecklistFileAbsolutePath();
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Markdown review checklist directory could not be prepared and will be skipped: {ex.GetType().Name}: {ex.Message}",
-                    shouldOutputMessageToConsole: false,
-                    ex);
-                return Array.Empty<string>();
-            }
-
-            if (!File.Exists(checklistFilePath))
-            {
-                return Array.Empty<string>();
-            }
-
-            try
-            {
-                string json = File.ReadAllText(checklistFilePath);
-                var items = JsonSerializer.Deserialize<List<string>>(json);
-                if (items == null)
-                {
-                    return Array.Empty<string>();
-                }
-
-                return items
-                    .Where(item => !string.IsNullOrWhiteSpace(item))
-                    .Select(NormalizeReviewChecklistItem)
-                    .Where(item => item.Length > 0)
-                    .ToList();
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Markdown review checklist file '{checklistFilePath}' is invalid JSON and will be skipped: {ex.Message}",
-                    shouldOutputMessageToConsole: false,
-                    ex);
-                return Array.Empty<string>();
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                _logger.LogMessage(
-                    AppLogLevel.Warning,
-                    $"Markdown review checklist file '{checklistFilePath}' could not be read and will be skipped: {ex.GetType().Name}: {ex.Message}",
-                    shouldOutputMessageToConsole: false,
-                    ex);
-                return Array.Empty<string>();
-            }
-        }
-
-        private static string NormalizeReviewChecklistItem(string item)
-            => item.Replace("\r\n", "\n", StringComparison.Ordinal)
-                   .Replace('\r', '\n')
-                   .Trim();
 
         private static string FormatChecklistMarkdownCell(string item)
             => string.Join(

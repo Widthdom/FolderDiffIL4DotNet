@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -149,6 +150,118 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             Assert.NotNull(warning.Exception);
         }
 
+        [Fact]
+        public async Task ExecuteAsync_WhenChecklistChangesBetweenMarkdownAndHtml_UsesSingleSnapshotForBothReports()
+        {
+            using var appDataScope = CreateAppDataOverrideScope("shared-snapshot");
+            WriteChecklistFile(appDataScope, "Initial checklist item");
+
+            var logger = new TestLogger();
+            var executor = new DiffPipelineExecutor(logger);
+            var (oldDir, newDir, reportDir) = CreateRunDirectories("shared-snapshot-run");
+            var configBuilder = new ConfigSettingsBuilder();
+            configBuilder.SkipIL = true;
+            var config = configBuilder.Build();
+            var plugin = new ChecklistMutationPlugin(
+                appDataScope.HtmlReportChecklistFileAbsolutePath,
+                ["Mutated checklist item"]);
+
+            await executor.ExecuteAsync(
+                oldDir,
+                newDir,
+                reportDir,
+                config,
+                appVersion: "1.2.3",
+                computerName: "test-host",
+                plugins: [plugin]);
+
+            var markdown = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
+            var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
+
+            Assert.Contains("Initial checklist item", markdown, StringComparison.Ordinal);
+            Assert.DoesNotContain("Mutated checklist item", markdown, StringComparison.Ordinal);
+            Assert.Contains("Initial checklist item", html, StringComparison.Ordinal);
+            Assert.DoesNotContain("Mutated checklist item", html, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_WhenChecklistFileIsMissing_SkipsSilentlyWithoutCreatingHtmlReportDirectory()
+        {
+            using var appDataScope = CreateAppDataOverrideScope("missing-checklist");
+
+            var logger = new TestLogger();
+            var executor = new DiffPipelineExecutor(logger);
+            var (oldDir, newDir, reportDir) = CreateRunDirectories("missing-checklist-run");
+            var configBuilder = new ConfigSettingsBuilder();
+            configBuilder.SkipIL = true;
+            var config = configBuilder.Build();
+
+            await executor.ExecuteAsync(
+                oldDir,
+                newDir,
+                reportDir,
+                config,
+                appVersion: "1.2.3",
+                computerName: "test-host");
+
+            string htmlReportSettingsDirectory = Path.Combine(appDataScope.ApplicationDataRootAbsolutePath, "HtmlReport");
+            Assert.False(Directory.Exists(htmlReportSettingsDirectory));
+            Assert.DoesNotContain(
+                logger.Entries,
+                entry => entry.Message.Contains("Review checklist", StringComparison.Ordinal));
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_WhenChecklistJsonIsInvalid_LogsSingleWarningAcrossMarkdownAndHtml()
+        {
+            using var appDataScope = CreateAppDataOverrideScope("invalid-checklist");
+            string checklistPath = appDataScope.HtmlReportChecklistFileAbsolutePath;
+            Directory.CreateDirectory(Path.GetDirectoryName(checklistPath)!);
+            File.WriteAllText(checklistPath, "{ invalid-json");
+
+            var logger = new TestLogger();
+            var executor = new DiffPipelineExecutor(logger);
+            var (oldDir, newDir, reportDir) = CreateRunDirectories("invalid-checklist-run");
+            var configBuilder = new ConfigSettingsBuilder();
+            configBuilder.SkipIL = true;
+            var config = configBuilder.Build();
+
+            await executor.ExecuteAsync(
+                oldDir,
+                newDir,
+                reportDir,
+                config,
+                appVersion: "1.2.3",
+                computerName: "test-host");
+
+            var warning = Assert.Single(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Review checklist file", StringComparison.Ordinal));
+            Assert.Contains("invalid JSON", warning.Message, StringComparison.Ordinal);
+        }
+
+        private (string OldDir, string NewDir, string ReportDir) CreateRunDirectories(string name)
+        {
+            string oldDir = Path.Combine(_tempRoot, name, "old");
+            string newDir = Path.Combine(_tempRoot, name, "new");
+            string reportDir = Path.Combine(_tempRoot, name, "reports");
+            Directory.CreateDirectory(oldDir);
+            Directory.CreateDirectory(newDir);
+            Directory.CreateDirectory(reportDir);
+            return (oldDir, newDir, reportDir);
+        }
+
+        private static AppDataOverrideScope CreateAppDataOverrideScope(string name)
+            => new(Path.Combine(Path.GetTempPath(), "fd-pipeline-appdata-" + name + "-" + Guid.NewGuid().ToString("N")));
+
+        private static void WriteChecklistFile(AppDataOverrideScope appDataScope, params string[] items)
+        {
+            string checklistPath = appDataScope.HtmlReportChecklistFileAbsolutePath;
+            Directory.CreateDirectory(Path.GetDirectoryName(checklistPath)!);
+            File.WriteAllText(checklistPath, JsonSerializer.Serialize(items));
+        }
+
         private sealed class ThrowingPostProcessPlugin : IPlugin
         {
             public PluginMetadata Metadata { get; } = new()
@@ -171,6 +284,55 @@ namespace FolderDiffIL4DotNet.Tests.Runner
 
             public Task ExecuteAsync(PostProcessContext context, CancellationToken cancellationToken)
                 => throw new InvalidOperationException("simulated post-process failure");
+        }
+
+        private sealed class ChecklistMutationPlugin : IPlugin
+        {
+            private readonly string _checklistFilePath;
+            private readonly IReadOnlyList<string> _replacementItems;
+
+            public ChecklistMutationPlugin(string checklistFilePath, IReadOnlyList<string> replacementItems)
+            {
+                _checklistFilePath = checklistFilePath;
+                _replacementItems = replacementItems;
+            }
+
+            public PluginMetadata Metadata { get; } = new()
+            {
+                Id = "tests.checklist-mutation",
+                DisplayName = "Checklist Mutation Test Plugin",
+                Version = new Version(1, 0, 0),
+                MinHostVersion = new Version(0, 0, 0)
+            };
+
+            public void ConfigureServices(IServiceCollection services, IReadOnlyDictionary<string, JsonElement> pluginConfig)
+            {
+                services.AddSingleton<IReportFormatter>(new ChecklistMutationFormatter(_checklistFilePath, _replacementItems));
+            }
+        }
+
+        private sealed class ChecklistMutationFormatter : IReportFormatter
+        {
+            private readonly string _checklistFilePath;
+            private readonly IReadOnlyList<string> _replacementItems;
+
+            public ChecklistMutationFormatter(string checklistFilePath, IReadOnlyList<string> replacementItems)
+            {
+                _checklistFilePath = checklistFilePath;
+                _replacementItems = replacementItems;
+            }
+
+            public string FormatId => "test-checklist-mutation";
+
+            public int Order => 150;
+
+            public bool IsEnabled(ReportGenerationContext context) => true;
+
+            public void Generate(ReportGenerationContext context)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(_checklistFilePath)!);
+                File.WriteAllText(_checklistFilePath, JsonSerializer.Serialize(_replacementItems));
+            }
         }
     }
 }

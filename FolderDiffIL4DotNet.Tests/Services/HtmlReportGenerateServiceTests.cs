@@ -582,10 +582,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         private static ReportGenerationContext CreateReportContext(
             string oldDir, string newDir, string reportDir,
-            ConfigSettings config, ILCache? ilCache = null)
+            ConfigSettings config, ILCache? ilCache = null, IReadOnlyList<string>? reviewChecklistItems = null)
             => new(oldDir, newDir, reportDir,
                 appVersion: "1.0", elapsedTimeString: "0h 0m 1.0s",
-                computerName: "test-host", config, ilCache);
+                computerName: "test-host", config, ilCache, reviewChecklistItems);
     }
 }
-

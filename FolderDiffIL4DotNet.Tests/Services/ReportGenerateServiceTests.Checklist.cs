@@ -1,7 +1,6 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
-using FolderDiffIL4DotNet.Tests.Helpers;
 using Xunit;
 
 namespace FolderDiffIL4DotNet.Tests.Services
@@ -15,19 +14,19 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void GenerateDiffReport_WithChecklistFile_WritesReviewChecklistTable()
         {
-            using var appDataScope = CreateAppDataOverrideScope();
             var oldDir = Path.Combine(_rootDir, "old-checklist");
             var newDir = Path.Combine(_rootDir, "new-checklist");
             var reportDir = Path.Combine(_rootDir, "report-checklist");
             Directory.CreateDirectory(oldDir);
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
-            WriteChecklistFile(
-                appDataScope,
+            var checklistItems = new List<string>
+            {
                 "Confirm version.json and release notes are aligned.",
-                "Verify upgrade guide steps.\nInclude rollback notes if applicable.");
+                "Verify upgrade guide steps.\nInclude rollback notes if applicable."
+            };
 
-            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, CreateConfig(), reviewChecklistItems: checklistItems));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.Contains("## Review Checklist", reportText);
@@ -39,7 +38,6 @@ namespace FolderDiffIL4DotNet.Tests.Services
         [Fact]
         public void GenerateDiffReport_WhenChecklistFileMissing_OmitsReviewChecklistTable()
         {
-            using var appDataScope = CreateAppDataOverrideScope();
             var oldDir = Path.Combine(_rootDir, "old-checklist-missing");
             var newDir = Path.Combine(_rootDir, "new-checklist-missing");
             var reportDir = Path.Combine(_rootDir, "report-checklist-missing");
@@ -47,21 +45,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Directory.CreateDirectory(newDir);
             Directory.CreateDirectory(reportDir);
 
-            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, CreateConfig()));
+            _service.GenerateDiffReport(CreateReportContext(oldDir, newDir, reportDir, CreateConfig(), reviewChecklistItems: Array.Empty<string>()));
 
             var reportText = File.ReadAllText(Path.Combine(reportDir, "diff_report.md"));
             Assert.DoesNotContain("## Review Checklist", reportText);
             Assert.DoesNotContain("| ✓ | Checklist Item | Notes |", reportText);
-        }
-
-        private static AppDataOverrideScope CreateAppDataOverrideScope()
-            => new(Path.Combine(Path.GetTempPath(), "fd-report-appdata-" + Guid.NewGuid().ToString("N")));
-
-        private static void WriteChecklistFile(AppDataOverrideScope appDataScope, params string[] items)
-        {
-            string checklistPath = appDataScope.HtmlReportChecklistFileAbsolutePath;
-            Directory.CreateDirectory(Path.GetDirectoryName(checklistPath)!);
-            File.WriteAllText(checklistPath, JsonSerializer.Serialize(items));
         }
     }
 }

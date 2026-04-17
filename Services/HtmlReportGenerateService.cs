@@ -68,7 +68,6 @@ namespace FolderDiffIL4DotNet.Services
             string htmlPath = Path.Combine(context.ReportsFolderAbsolutePath, DIFF_REPORT_HTML_FILE_NAME);
             try
             {
-                var checklistItems = LoadReviewChecklistItems();
                 // Stream HTML chunks directly to disk to reduce peak memory usage for large reports.
                 // 大規模レポートのピークメモリ使用量を削減するため、HTML チャンクを直接ディスクにストリーム書き出しする。
                 PathValidator.ValidateAbsolutePathLengthOrThrow(htmlPath);
@@ -76,7 +75,7 @@ namespace FolderDiffIL4DotNet.Services
                 using var writer = new StreamWriter(htmlPath, append: false, Encoding.UTF8, bufferSize: 65536);
                 WriteHtml(writer,
                     context.OldFolderAbsolutePath, context.NewFolderAbsolutePath, context.ReportsFolderAbsolutePath,
-                    context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache, checklistItems);
+                    context.AppVersion, context.ElapsedTimeString, context.ComputerName, context.Config, context.IlCache, context.ReviewChecklistItems);
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
