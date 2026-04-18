@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.18.0] - 2026-04-18
+
 #### Changed
 
 - **Markdown and HTML review reports can now render a user-local custom checklist at the end of the report** — `diff_report.html`, Excel-compatible HTML export, and `diff_report.md` now look for `%LOCALAPPDATA%/FolderDiffIL4DotNet/checklist.json` on Windows (equivalent user-local app-data paths on macOS/Linux), treat it as a JSON array of strings, and render a `Review Checklist` table after the `Warnings` section when at least one non-blank item exists. The HTML checklist supports per-row notes, header-level ✓ bulk toggle, multiline checklist item text, resizable Checklist Item / Notes columns, and reviewed-download width baking; checklist rows are also included in the main review progress counter and progress bar denominator, and `clearAll()` resets checklist checkboxes together with the main review state. The downloaded reviewed HTML reuses the last live checklist column widths as its initial widths. The Markdown report emits the same checklist as a non-interactive table at the end of the report, uses Markdown-style unchecked boxes (`[ ]`) in the checklist column, and preserves multiline items via `<br>` inside the checklist cell, while the Excel-compatible export aligns checklist rows with the shared `Status` / `File Path` / `Timestamp` column layout. Missing or empty files skip the section; invalid JSON is logged as a warning and also skipped. Affected: `Common/AppDataPaths.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_layout.js`, `Services/HtmlReport/js/diff_report_export.js`, `Services/HtmlReport/js/diff_report_excel.js`, `Services/HtmlReport/js/diff_report_state.js`, `Services/SectionWriters/WarningsSectionWriter.cs`, `Services/ReportWriteContext.cs`, `Services/ReportGenerateService.cs`, `README.md`, `doc/samples/diff_report.html`, `doc/samples/diff_report.md`, `JsTests/diff_report.test.js`, `FolderDiffIL4DotNet.Tests/AppDataOverrideScope.cs`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.Checklist.cs`, `FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.Checklist.cs`, `FolderDiffIL4DotNet.Tests/Services/GoldenFileSnapshotTests.cs`, `FolderDiffIL4DotNet.Tests/Services/SectionWriters/SectionWriterTestBase.cs`. Tests: `HtmlReportGenerateServiceTests.Checklist.cs` (3 new), `ReportGenerateServiceTests.Checklist.cs` (2 new), `diff_report.test.js` (3 new/updated).
@@ -1476,6 +1478,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.18.0] - 2026-04-18
+
 #### 変更
 
 - **Markdown / HTML レビューレポートの末尾にユーザーローカルなカスタムチェックリストを出せるようにした** — `diff_report.html`、Excel 互換 HTML エクスポート、`diff_report.md` が Windows では `%LOCALAPPDATA%/FolderDiffIL4DotNet/checklist.json`（macOS/Linux では同等のユーザーローカル app-data 配下）を参照し、文字列配列 JSON として読み込んで、1 件以上の非空項目がある場合だけ `Warnings` セクションの後ろに `Review Checklist` テーブルを描画するようにしました。HTML のチェックリスト表は行ごとの Notes 入力、ヘッダー ✓ による一括チェック、改行入りチェック項目テキスト、Checklist Item / Notes 列のリサイズ、reviewed ダウンロード時の列幅焼き込みに対応し、チェックリスト行はメインの review progress / 進捗バー母数にも含まれ、`clearAll()` でも main review state と一緒に解除されます。ダウンロード済み reviewed HTML は最後に調整した checklist 列幅を初期幅として引き継ぎます。Markdown レポートでも同じチェックリストを末尾の非インタラクティブ表として出し、チェック列には Markdown らしい未チェック記法 `[ ]` を使い、複数行項目はチェック項目セル内で `<br>` に変換して保持します。Excel 互換エクスポートでも独立セクションとして出力し、共通の `Status` / `File Path` / `Timestamp` 列レイアウトに合わせて整列します。ファイルが無い場合や空の場合は領域ごと省略し、不正 JSON は Warning をログに残したうえでスキップします。対象: `Common/AppDataPaths.cs`, `Services/HtmlReport/HtmlReportGenerateService.Helpers.cs`, `Services/HtmlReport/diff_report.css`, `Services/HtmlReport/js/diff_report_layout.js`, `Services/HtmlReport/js/diff_report_export.js`, `Services/HtmlReport/js/diff_report_excel.js`, `Services/HtmlReport/js/diff_report_state.js`, `Services/SectionWriters/WarningsSectionWriter.cs`, `Services/ReportWriteContext.cs`, `Services/ReportGenerateService.cs`, `README.md`, `doc/samples/diff_report.html`, `doc/samples/diff_report.md`, `JsTests/diff_report.test.js`, `FolderDiffIL4DotNet.Tests/AppDataOverrideScope.cs`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.Checklist.cs`, `FolderDiffIL4DotNet.Tests/Services/ReportGenerateServiceTests.Checklist.cs`, `FolderDiffIL4DotNet.Tests/Services/GoldenFileSnapshotTests.cs`, `FolderDiffIL4DotNet.Tests/Services/SectionWriters/SectionWriterTestBase.cs`。テスト: `HtmlReportGenerateServiceTests.Checklist.cs`（3 件追加）、`ReportGenerateServiceTests.Checklist.cs`（2 件追加）、`diff_report.test.js`（3 件追加 / 更新）。
@@ -2939,7 +2943,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.2...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.0...HEAD
+[1.18.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.2...v1.18.0
 [1.17.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.1...v1.17.2
 [1.17.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.0...v1.17.1
 [1.17.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.16.10...v1.17.0
