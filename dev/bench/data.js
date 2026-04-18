@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776442461445,
+  "lastUpdate": 1776487674429,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -7992,6 +7992,102 @@ window.BENCHMARK_DATA = {
             "value": 20818450.179166667,
             "unit": "ns",
             "range": "± 186100.51196537935"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c053d729f16169e420be5a36c0e8a77f38c9d965",
+          "message": "Merge pull request #157 from Widthdom/work\n\nAdd configurable review checklist report support",
+          "timestamp": "2026-04-18T13:42:34+09:00",
+          "tree_id": "8eeca411a978099ee978ae351338cb28f5e494cc",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/c053d729f16169e420be5a36c0e8a77f38c9d965"
+        },
+        "date": 1776487674193,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62609.955322265625,
+            "unit": "ns",
+            "range": "± 330.28204195471557"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 585953.1299525669,
+            "unit": "ns",
+            "range": "± 8629.453125909746"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 6021828.208705357,
+            "unit": "ns",
+            "range": "± 23557.822435403297"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 76384.59992327009,
+            "unit": "ns",
+            "range": "± 243.31038146641365"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 31.628221221764882,
+            "unit": "ns",
+            "range": "± 0.29991505914523425"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 69.42976700105974,
+            "unit": "ns",
+            "range": "± 3.2950844974344577"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 32.16863123008183,
+            "unit": "ns",
+            "range": "± 0.23473064677007352"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5378908.139322917,
+            "unit": "ns",
+            "range": "± 19090.946580800057"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 130096.79045410156,
+            "unit": "ns",
+            "range": "± 1596.8657701162226"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2910.8411643981935,
+            "unit": "ns",
+            "range": "± 52.32284999680347"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 268701.3257486979,
+            "unit": "ns",
+            "range": "± 1549.4236506045788"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 28646208.37723214,
+            "unit": "ns",
+            "range": "± 250762.32494268668"
           }
         ]
       }
