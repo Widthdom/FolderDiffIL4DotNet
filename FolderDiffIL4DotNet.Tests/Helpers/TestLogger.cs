@@ -70,7 +70,7 @@ namespace FolderDiffIL4DotNet.Tests.Helpers
         /// <inheritdoc />
         public void LogMessage(AppLogLevel logLevel, string message, bool shouldOutputMessageToConsole, ConsoleColor? consoleForegroundColor, Exception? exception = null)
         {
-            var entry = new TestLogEntry(logLevel, message, exception);
+            var entry = new TestLogEntry(logLevel, message, shouldOutputMessageToConsole, exception);
             _entries.Enqueue(entry);
             _onEntry?.Invoke(entry);
         }
@@ -80,5 +80,5 @@ namespace FolderDiffIL4DotNet.Tests.Helpers
     /// Represents a single log entry captured during testing.
     /// テスト中にキャプチャされた単一のログエントリを表す。
     /// </summary>
-    internal sealed record TestLogEntry(AppLogLevel LogLevel, string Message, Exception? Exception);
+    internal sealed record TestLogEntry(AppLogLevel LogLevel, string Message, bool ShouldOutputMessageToConsole, Exception? Exception);
 }

@@ -549,15 +549,18 @@ describe('DOMContentLoaded state restore', () => {
       savedState: { 'chk-width': true },
       bodyHtml: '<input type="checkbox" id="chk-width">',
     });
+    document.documentElement.style.setProperty('--col-ts-w', '26em');
     document.documentElement.style.setProperty('--col-checklist-item-w', '33em');
     document.documentElement.style.setProperty('--col-checklist-notes-w', '21em');
     localStorage.setItem('test-key-colwidths', JSON.stringify({
+      '--col-ts-w': '99em',
       '--col-checklist-item-w': '99em',
       '--col-checklist-notes-w': '88em',
     }));
 
     fireDOMContentLoaded();
 
+    expect(document.documentElement.style.getPropertyValue('--col-ts-w')).toBe('26em');
     expect(document.documentElement.style.getPropertyValue('--col-checklist-item-w')).toBe('33em');
     expect(document.documentElement.style.getPropertyValue('--col-checklist-notes-w')).toBe('21em');
   });
@@ -1452,9 +1455,16 @@ when schema version changes.</div></td>
     `;
 
     const html = window.buildExcelRow(tr);
-    expect(html).toContain('>2<');
-    expect(html).toContain('Verify migration notes<br>when schema version changes.');
-    expect(html).toContain('Reviewed in CAB');
+    const tbody = document.createElement('tbody');
+    tbody.innerHTML = html;
+    const cells = tbody.querySelectorAll('td');
+    expect(cells).toHaveLength(13);
+    expect(cells[7].textContent).toBe('');
+    expect(cells[8].textContent).toBe('\u2713');
+    expect(cells[9].innerHTML).toBe('Verify migration notes<br>when schema version changes.');
+    expect(cells[10].textContent).toBe('Reviewed in CAB');
+    expect(cells[11].textContent).toBe('');
+    expect(cells[12].textContent).toBe('');
   });
 });
 

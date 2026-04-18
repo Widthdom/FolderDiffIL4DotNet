@@ -161,24 +161,18 @@
     if (sec === 'checklist') {
       if (cells.length < 3) return '';
       var checklistCb = cells[0].querySelector('input[type="checkbox"]');
-      var checklistId = checklistCb && checklistCb.id ? checklistCb.id : '';
-      var checklistMatch = /checklist_cb_(\d+)/.exec(checklistId);
-      var checklistNo = checklistMatch ? String(parseInt(checklistMatch[1], 10) + 1) : '';
       var checklistChecked = checklistCb && checklistCb.checked ? '\u2713' : '';
       var checklistItemEl = cells[1].querySelector('.checklist-item-text');
       var checklistItem = checklistItemEl ? checklistItemEl.textContent.trim() : cells[1].textContent.trim();
       var checklistNotesEl = cells[2].querySelector('textarea, input');
       var checklistNotes = checklistNotesEl ? checklistNotesEl.value : '';
 
-      return '<tr><td></td><td></td>'
-        + '<td class="bd">' + esc(String(checklistNo)) + '</td>'
+      return '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td>'
+        + '<td></td>'
         + '<td class="bd">' + esc(checklistChecked) + '</td>'
         + '<td class="bd">' + esc(checklistItem).replace(/\r?\n/g, '<br>') + '</td>'
-        + '<td class="bd">' + esc(checklistNotes) + '</td>'
-        + '<td class="bd" style="text-align:center"></td>'
-        + '<td class="bd"></td>'
-        + '<td class="bd" style="text-align:center;max-width:280px;mso-number-format:\'\\@\'"></td>'
-        + '<td></td><td></td><td></td><td></td></tr>';
+        + '<td class="bd">' + esc(checklistNotes).replace(/\r?\n/g, '<br>') + '</td>'
+        + '<td></td><td></td></tr>';
     }
 
     if (cells.length < 8) return '';
@@ -244,45 +238,58 @@
 
     // ── Helpers ───────────────────────────────────────────────────────────
     var COLS = 13;
+    function padCells(count) {
+      var r = '';
+      for (var i = 0; i < count; i++) r += '<td></td>';
+      return r;
+    }
     function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
-    function bannerRow(text, color, style) {
+    function bannerRowAt(offset, text, color, style) {
       var s = style || '';
-      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
+      var r = '<tr>' + padCells(offset) + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = offset + 1; i < COLS; i++) r += '<td></td>';
+      return r + '</tr>';
     }
-    var PAD7 = '<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
-    function bannerRow7(text, color, style) {
-      var s = style || '';
-      var r = '<tr>' + PAD7 + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 8; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
-    }
+    function bannerRow(text, color, style) { return bannerRowAt(1, text, color, style); }
+    var PAD7 = padCells(7);
+    var PAD8 = padCells(8);
+    function bannerRow7(text, color, style) { return bannerRowAt(7, text, color, style); }
+    function bannerRow8(text, color, style) { return bannerRowAt(8, text, color, style); }
 
     // Per-section column headers: Ignored uses "Location" and omits trailing columns
     // セクション別列ヘッダー: Ignored は "Location" を使用し末尾列を省略
     var COL_STYLES = { 6: 'width:280px' };
     var DEFAULT_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
     var IGN_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Location'];
-    var CHECKLIST_HDRS = ['#', '\u2713', 'Checklist Item', 'Notes', 'Status', 'File Path', 'Timestamp'];
-    function colHeaderRow(bg, sec) {
+    var CHECKLIST_HDRS = ['', '\u2713', 'Checklist Item', 'Notes'];
+    function colHeaderRow(bg, sec, offset) {
+      var colOffset = typeof offset === 'number' ? offset : 2;
       var hdrs = sec === 'ign' ? IGN_HDRS : sec === 'checklist' ? CHECKLIST_HDRS : DEFAULT_HDRS;
-      var r = '<tr><td></td><td></td>';
-      hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
+      var r = '<tr>' + padCells(colOffset);
+      hdrs.forEach(function(h, i) {
+        var style = 'background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '');
+        if (sec === 'checklist' && i === 0) {
+          r += '<td></td>';
+          return;
+        }
+        r += '<td class="bd" style="' + style + '">' + esc(h) + '</td>';
+      });
       // Pad remaining cells to maintain column count / 列数を揃えるためにパディング
-      for (var j = hdrs.length + 2; j < COLS; j++) r += '<td></td>';
+      for (var j = hdrs.length + colOffset; j < COLS; j++) r += '<td></td>';
       return r + '</tr>';
     }
 
     // ── Header info from DOM / DOM からのヘッダー情報 ─────────────────────
     // Value cell spans remaining columns (colspan) to avoid inflating Timestamp column width
     // 値セルは残りの列に colspan で広がり、Timestamp 列幅の肥大化を防止
-    var SPAN = COLS - 8; // columns remaining after PAD7 + label = 5
+    var HEADER_SPAN = COLS - 9; // columns remaining after PAD8 + label = 4
     var headerHtml = '';
     document.querySelectorAll('.header-card').forEach(function(card) {
       var label = card.querySelector('.header-card-label');
       var value = card.querySelector('.header-card-value');
       if (label && value) {
-        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
+        headerHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
           + '</tr>';
       }
     });
@@ -290,8 +297,8 @@
       var label = hp.querySelector('.header-path-label');
       var value = hp.querySelector('.header-path-value');
       if (label && value) {
-        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
+        headerHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
           + '</tr>';
       }
     });
@@ -300,25 +307,25 @@
     var legendHtml = '';
     function legendKeyValueRows(items) {
       items.forEach(function(row) {
-        legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td></tr>';
+        legendHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td></tr>';
       });
     }
-    legendHtml += bannerRow7('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['SHA256Match / SHA256Mismatch', 'Byte-for-byte match / mismatch (SHA256)'],
       ['ILMatch / ILMismatch', 'IL (Intermediate Language) match / mismatch'],
       ['TextMatch / TextMismatch', 'Text-based match / mismatch']
     ]);
     legendHtml += emptyRow();
-    legendHtml += bannerRow7('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
       ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
       ['Low', 'Low-impact change: body-only modification, internal/private member addition']
     ]);
     legendHtml += emptyRow();
-    legendHtml += bannerRow7('Legend \u2014 Estimated Change', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Estimated Change', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['+Method', 'New method added'], ['-Method', 'Method removed'],
       ['+Type', 'New type added'], ['-Type', 'Type removed'],
@@ -394,8 +401,8 @@
     var checklistHtml = '';
     var checklistRows = builtRows['checklist'] || [];
     if (checklistRows.length > 0) {
-      checklistHtml += bannerRow((sectionNames.checklist || 'Review Checklist') + ' (' + checklistRows.length + ')', sectionTextColors.checklist || '#000', 'font-weight:bold;padding:8px');
-      checklistHtml += colHeaderRow(sectionColors.checklist || '#f0f0f2', 'checklist');
+      checklistHtml += bannerRow8((sectionNames.checklist || 'Review Checklist') + ' (' + checklistRows.length + ')', sectionTextColors.checklist || '#000', 'font-weight:bold;padding:8px');
+      checklistHtml += colHeaderRow(sectionColors.checklist || '#f0f0f2', 'checklist', 7);
       checklistHtml += checklistRows.join('');
       checklistHtml += emptyRow();
     }

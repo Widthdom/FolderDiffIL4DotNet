@@ -724,6 +724,29 @@ describe('buildExcelFramework', () => {
     expect(result).toContain('SHA256Mismatch');
     expect(result).toContain('timestamps older');
   });
+
+  test('shifts header and legend rows one column further right, and renders checklist as a 4-column block offset by 7 columns', () => {
+    loadScript({
+      bodyHtml: `
+        <div class="header-card"><span class="header-card-label">App Version</span><span class="header-card-value">1.14.0</span></div>
+        ${filterControlsHtml()}
+      `,
+    });
+    const builtRows = {
+      unch: [],
+      add: [],
+      rem: [],
+      mod: [],
+      checklist: ['<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="bd">\u2713</td><td class="bd">Checklist item</td><td class="bd">Notes</td><td></td><td></td></tr>'],
+    };
+    const result = window.buildExcelFramework(builtRows);
+
+    expect(result).toContain('<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="bd" style="font-weight:bold;background:#f0f0f2">App Version</td>');
+    expect(result).toContain('<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td style="color:#000;font-weight:bold;padding:8px">Legend \u2014 Diff Detail</td>');
+    expect(result).toContain('<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td style="color:#000;font-weight:bold;padding:8px">Review Checklist (1)</td>');
+    expect(result).toContain('<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="bd" style="background:#f0f0f2;font-weight:bold">\u2713</td><td class="bd" style="background:#f0f0f2;font-weight:bold">Checklist Item</td><td class="bd" style="background:#f0f0f2;font-weight:bold">Notes</td><td></td><td></td></tr>');
+    expect(result).not.toContain('Review Checklist (1)</td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="bd" style="background:#f0f0f2;font-weight:bold">#</td>');
+  });
 });
 
 describe('downloadExcelCompatibleHtml', () => {
@@ -833,7 +856,19 @@ describe('downloadReviewed', () => {
     }
     const origCreateObjectURL = URL.createObjectURL;
     const origRevokeObjectURL = URL.revokeObjectURL;
-    URL.createObjectURL = () => 'blob:reviewed';
+    const origClick = HTMLAnchorElement.prototype.click;
+    const origBlob = globalThis.Blob;
+    const createdBlobs = [];
+    globalThis.Blob = class {
+      constructor(parts, options = {}) {
+        this.parts = parts;
+        this.type = options.type || '';
+      }
+    };
+    URL.createObjectURL = blob => {
+      createdBlobs.push(blob);
+      return 'blob:reviewed';
+    };
     URL.revokeObjectURL = () => {};
     let downloadedFiles = [];
     HTMLAnchorElement.prototype.click = function() {
@@ -844,19 +879,23 @@ describe('downloadReviewed', () => {
       storageKey: 'review-dl-test',
       reportDate: '20260101',
       bodyHtml: `
-        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
+        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 24em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
         <!--CTRL--><button>Download</button><!--/CTRL-->
         <input type="checkbox" id="cb_mod_1" checked />
         <input type="text" id="note_1" value="ok" />
         ${filterControlsHtml()}
       `,
     });
+    document.documentElement.style.setProperty('--col-ts-w', '27em');
 
     await window.downloadReviewed();
     // Should have triggered at least one download / 少なくとも1つのダウンロードがトリガーされるはず
     expect(downloadedFiles.length).toBeGreaterThanOrEqual(1);
     expect(downloadedFiles[0]).toContain('reviewed.html');
+    expect(createdBlobs[0].parts.join('')).toContain('--col-ts-w: 27em;');
 
+    globalThis.Blob = origBlob;
+    HTMLAnchorElement.prototype.click = origClick;
     URL.createObjectURL = origCreateObjectURL;
     URL.revokeObjectURL = origRevokeObjectURL;
     if (origDigest) crypto.subtle.digest = origDigest;
@@ -897,7 +936,7 @@ describe('downloadReviewed', () => {
       storageKey: 'review-dl-safe-test',
       reportDate: '20260102',
       bodyHtml: `
-        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
+        <style>:root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 24em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em; --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em; --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em; --dc-refs-w: 16em; }</style>
         <script>const __savedState__  = null;</script>
         <!--CTRL--><button>Download</button><!--/CTRL-->
         <input type="checkbox" id="cb_mod_1" checked />
@@ -905,6 +944,7 @@ describe('downloadReviewed', () => {
         ${filterControlsHtml()}
       `,
     });
+    document.documentElement.style.removeProperty('--col-ts-w');
     document.getElementById('note_1').value = '</script><script>alert("xss")</script>';
 
     await window.downloadReviewed();
@@ -913,6 +953,7 @@ describe('downloadReviewed', () => {
     expect(reviewedHtml).toContain('decodeEmbeddedState(');
     expect(reviewedHtml).not.toContain('const __savedState__  = {"');
     expect(reviewedHtml).not.toContain('</script><script>alert("xss")</script>');
+    expect(reviewedHtml).toContain('--col-ts-w: 24em;');
 
     globalThis.Blob = origBlob;
     HTMLAnchorElement.prototype.click = origClick;

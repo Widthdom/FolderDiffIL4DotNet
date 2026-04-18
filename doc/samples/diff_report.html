@@ -410,7 +410,7 @@
     .color-removed { color: var(--color-removed); }
     .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 20em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 24em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
             --dc-refs-w: 16em; --col-checklist-item-w: 30em; --col-checklist-notes-w: 20em;
@@ -476,10 +476,10 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .checklist-item-text-multiline {
-      white-space: pre-wrap; word-break: break-word;
+      white-space: pre; word-break: normal;
     }
     .checklist-notes-input {
-      width: 100%; min-height: 4.8em; max-height: 10.5em;
+      display: block; width: 100%; min-height: 1.45em; max-height: 10.5em;
       border: 0; padding: 4px 6px; font-size: 12px;
       background: transparent; outline: none; box-shadow: none;
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
@@ -2202,7 +2202,7 @@ Include rollback notes if applicable.</div></td>
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-ts-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
@@ -2236,6 +2236,7 @@ Include rollback notes if applicable.</div></td>
       ':root { --col-reason-w: '  + curWidths['--col-reason-w']
       + '; --col-notes-w: '   + curWidths['--col-notes-w']
       + '; --col-path-w: '    + curWidths['--col-path-w']
+      + '; --col-ts-w: '      + curWidths['--col-ts-w']
       + '; --col-diff-w: '    + curWidths['--col-diff-w']
       + '; --col-tag-w: '     + curWidths['--col-tag-w']
       + '; --col-disasm-w: '  + curWidths['--col-disasm-w']
@@ -2357,7 +2358,7 @@ Include rollback notes if applicable.</div></td>
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-ts-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
@@ -2912,7 +2913,7 @@ Include rollback notes if applicable.</div></td>
   }
 
   var __colVarNames__ = [
-    '--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w',
+    '--col-reason-w','--col-notes-w','--col-path-w','--col-ts-w','--col-diff-w',
     '--col-tag-w','--col-disasm-w','--col-sdk-w',
     '--col-checklist-item-w','--col-checklist-notes-w',
     '--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w',
@@ -3238,23 +3239,17 @@ Include rollback notes if applicable.</div></td>
     if (sec === 'checklist') {
       if (cells.length < 3) return '';
       var checklistCb = cells[0].querySelector('input[type="checkbox"]');
-      var checklistId = checklistCb && checklistCb.id ? checklistCb.id : '';
-      var checklistMatch = /checklist_cb_(\d+)/.exec(checklistId);
-      var checklistNo = checklistMatch ? String(parseInt(checklistMatch[1], 10) + 1) : '';
       var checklistChecked = checklistCb && checklistCb.checked ? '\u2713' : '';
       var checklistItemEl = cells[1].querySelector('.checklist-item-text');
       var checklistItem = checklistItemEl ? checklistItemEl.textContent.trim() : cells[1].textContent.trim();
-      var checklistNotesInp = cells[2].querySelector('input');
-      var checklistNotes = checklistNotesInp ? checklistNotesInp.value : '';
-      return '<tr><td></td><td></td>'
-        + '<td class="bd">' + esc(String(checklistNo)) + '</td>'
+      var checklistNotesEl = cells[2].querySelector('textarea, input');
+      var checklistNotes = checklistNotesEl ? checklistNotesEl.value : '';
+      return '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td>'
+        + '<td></td>'
         + '<td class="bd">' + esc(checklistChecked) + '</td>'
         + '<td class="bd">' + esc(checklistItem).replace(/\r?\n/g, '<br>') + '</td>'
-        + '<td class="bd">' + esc(checklistNotes) + '</td>'
-        + '<td class="bd" style="text-align:center"></td>'
-        + '<td class="bd"></td>'
-        + '<td class="bd" style="text-align:center;max-width:280px;mso-number-format:\'\\@\'"></td>'
-        + '<td></td><td></td><td></td><td></td></tr>';
+        + '<td class="bd">' + esc(checklistNotes).replace(/\r?\n/g, '<br>') + '</td>'
+        + '<td></td><td></td></tr>';
     }
     if (cells.length < 8) return '';
     var no = cells[0].textContent.trim();
@@ -3309,37 +3304,49 @@ Include rollback notes if applicable.</div></td>
     var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd', 'checklist': '#f0f0f2' };
     var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3', 'checklist': '#000' };
     var COLS = 13;
+    function padCells(count) {
+      var r = '';
+      for (var i = 0; i < count; i++) r += '<td></td>';
+      return r;
+    }
     function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
-    function bannerRow(text, color, style) {
+    function bannerRowAt(offset, text, color, style) {
       var s = style || '';
-      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
+      var r = '<tr>' + padCells(offset) + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = offset + 1; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
     }
-    var PAD7 = '<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
-    function bannerRow7(text, color, style) {
-      var s = style || '';
-      var r = '<tr>' + PAD7 + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 8; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
-    }
+    function bannerRow(text, color, style) { return bannerRowAt(1, text, color, style); }
+    var PAD7 = padCells(7);
+    var PAD8 = padCells(8);
+    function bannerRow7(text, color, style) { return bannerRowAt(7, text, color, style); }
+    function bannerRow8(text, color, style) { return bannerRowAt(8, text, color, style); }
     var COL_STYLES = { 6: 'width:280px' };
     var DEFAULT_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
     var IGN_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Location'];
-    var CHECKLIST_HDRS = ['#', '\u2713', 'Checklist Item', 'Notes', 'Status', 'File Path', 'Timestamp'];
-    function colHeaderRow(bg, sec) {
+    var CHECKLIST_HDRS = ['', '\u2713', 'Checklist Item', 'Notes'];
+    function colHeaderRow(bg, sec, offset) {
+      var colOffset = typeof offset === 'number' ? offset : 2;
       var hdrs = sec === 'ign' ? IGN_HDRS : sec === 'checklist' ? CHECKLIST_HDRS : DEFAULT_HDRS;
-      var r = '<tr><td></td><td></td>';
-      hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
-      for (var j = hdrs.length + 2; j < COLS; j++) r += '<td></td>';
+      var r = '<tr>' + padCells(colOffset);
+      hdrs.forEach(function(h, i) {
+        var style = 'background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '');
+        if (sec === 'checklist' && i === 0) {
+          r += '<td></td>';
+          return;
+        }
+        r += '<td class="bd" style="' + style + '">' + esc(h) + '</td>';
+      });
+      for (var j = hdrs.length + colOffset; j < COLS; j++) r += '<td></td>';
       return r + '</tr>';
     }
-    var SPAN = COLS - 8;
+    var HEADER_SPAN = COLS - 9;
     var headerHtml = '';
     document.querySelectorAll('.header-card').forEach(function(card) {
       var label = card.querySelector('.header-card-label');
       var value = card.querySelector('.header-card-value');
       if (label && value) {
-        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
+        headerHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
           + '</tr>';
       }
     });
@@ -3347,33 +3354,33 @@ Include rollback notes if applicable.</div></td>
       var label = hp.querySelector('.header-path-label');
       var value = hp.querySelector('.header-path-value');
       if (label && value) {
-        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
+        headerHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
           + '</tr>';
       }
     });
     var legendHtml = '';
     function legendKeyValueRows(items) {
       items.forEach(function(row) {
-        legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td></tr>';
+        legendHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td></tr>';
       });
     }
-    legendHtml += bannerRow7('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['SHA256Match / SHA256Mismatch', 'Byte-for-byte match / mismatch (SHA256)'],
       ['ILMatch / ILMismatch', 'IL (Intermediate Language) match / mismatch'],
       ['TextMatch / TextMismatch', 'Text-based match / mismatch']
     ]);
     legendHtml += emptyRow();
-    legendHtml += bannerRow7('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
       ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
       ['Low', 'Low-impact change: body-only modification, internal/private member addition']
     ]);
     legendHtml += emptyRow();
-    legendHtml += bannerRow7('Legend \u2014 Estimated Change', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Estimated Change', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['+Method', 'New method added'], ['-Method', 'Method removed'],
       ['+Type', 'New type added'], ['-Type', 'Type removed'],
@@ -3439,8 +3446,8 @@ Include rollback notes if applicable.</div></td>
     var checklistHtml = '';
     var checklistRows = builtRows['checklist'] || [];
     if (checklistRows.length > 0) {
-      checklistHtml += bannerRow((sectionNames.checklist || 'Review Checklist') + ' (' + checklistRows.length + ')', sectionTextColors.checklist || '#000', 'font-weight:bold;padding:8px');
-      checklistHtml += colHeaderRow(sectionColors.checklist || '#f0f0f2', 'checklist');
+      checklistHtml += bannerRow8((sectionNames.checklist || 'Review Checklist') + ' (' + checklistRows.length + ')', sectionTextColors.checklist || '#000', 'font-weight:bold;padding:8px');
+      checklistHtml += colHeaderRow(sectionColors.checklist || '#f0f0f2', 'checklist', 7);
       checklistHtml += checklistRows.join('');
       checklistHtml += emptyRow();
     }

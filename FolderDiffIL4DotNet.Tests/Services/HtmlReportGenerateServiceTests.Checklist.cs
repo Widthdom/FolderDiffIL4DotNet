@@ -35,8 +35,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Verify migration notes\nwhen schema version changes.", html);
             Assert.Contains("checklist-item-text-singleline", html);
             Assert.Contains("checklist-item-text-multiline", html);
+            Assert.Contains(".checklist-item-text-multiline {\n      white-space: pre; word-break: normal;", html);
             Assert.Contains("--col-checklist-item-w", html);
             Assert.Contains("--col-checklist-notes-w", html);
+            Assert.Contains("display: block; width: 100%; min-height: 1.45em; max-height: 10.5em;", html);
         }
 
         [Fact]
