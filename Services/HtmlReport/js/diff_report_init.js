@@ -17,7 +17,7 @@
         if (__filterIds__.indexOf(cb.id) >= 0) return; // keep filter controls interactive / フィルタコントロールは操作可能に
         cb.style.pointerEvents='none'; cb.style.cursor='default';
       });
-      document.querySelectorAll('input[type="text"]').forEach(function(inp){
+      document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){
         if (inp.id === 'filter-search') return; // keep search interactive / 検索は操作可能に
         inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text';
       });
@@ -33,7 +33,9 @@
       restoreFilterState();
     }
     initColResize();
-    restoreColumnWidths();
+    if (__savedState__ === null) {
+      restoreColumnWidths();
+    }
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();

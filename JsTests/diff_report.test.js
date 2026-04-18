@@ -66,6 +66,16 @@ function loadScript(options = {}) {
   document.documentElement.innerHTML = '<head><title>diff_report</title></head><body></body>';
   document.body.innerHTML = bodyHtml;
   localStorage.clear();
+  window.__fdDomContentLoadedHandlers__ = [];
+
+  const originalAddEventListener = document.addEventListener.bind(document);
+  document.addEventListener = function(type, listener, ...rest) {
+    if (type === 'DOMContentLoaded') {
+      window.__fdDomContentLoadedHandlers__.push(listener);
+      return;
+    }
+    return originalAddEventListener(type, listener, ...rest);
+  };
 
   // Polyfill scrollIntoView for jsdom (not implemented)
   // jsdom 未実装の scrollIntoView をポリフィル
@@ -91,7 +101,11 @@ function loadScript(options = {}) {
   // attach to the global (window) object rather than a function scope.
   // 間接 eval でグローバル（window）オブジェクトに宣言を付与する。
   const indirectEval = eval;
-  indirectEval(js);
+  try {
+    indirectEval(js);
+  } finally {
+    document.addEventListener = originalAddEventListener;
+  }
 }
 
 /**
@@ -99,7 +113,9 @@ function loadScript(options = {}) {
  * document 上で DOMContentLoaded を発火する。
  */
 function fireDOMContentLoaded() {
-  document.dispatchEvent(new Event('DOMContentLoaded'));
+  (window.__fdDomContentLoadedHandlers__ || []).forEach(function(listener) {
+    listener.call(document, new Event('DOMContentLoaded'));
+  });
 }
 
 // ─── formatTs ────────────────────────────────────────────────────────────────
@@ -194,6 +210,7 @@ describe('autoSave', () => {
     loadScript({
       bodyHtml: `
         <input type="checkbox" id="chk1" checked>
+        <input type="checkbox" id="checklist_cb_0" checked>
         <span id="save-status"></span>
       `,
     });
@@ -293,6 +310,46 @@ describe('applyFilters', () => {
     const rows = document.querySelectorAll('tr[data-section]');
     expect(rows[0].classList.contains('filter-hidden')).toBe(false);
     expect(rows[1].classList.contains('filter-hidden')).toBe(true);
+  });
+
+  test('search filter keeps checklist rows visible so progress denominator stays actionable', () => {
+    loadScript({
+      totalFiles: 2,
+      totalFilesDetail: 'Modified: 1 + Checklist: 1',
+      bodyHtml: `
+        <input type="checkbox" id="filter-imp-high" checked>
+        <input type="checkbox" id="filter-imp-medium" checked>
+        <input type="checkbox" id="filter-imp-low" checked>
+        <input type="checkbox" id="filter-diff-sha256match" checked>
+        <input type="checkbox" id="filter-diff-sha256mismatch" checked>
+        <input type="checkbox" id="filter-diff-ilmatch" checked>
+        <input type="checkbox" id="filter-diff-ilmismatch" checked>
+        <input type="checkbox" id="filter-diff-textmatch" checked>
+        <input type="checkbox" id="filter-diff-textmismatch" checked>
+        <input type="checkbox" id="filter-unchecked">
+        <input type="text" id="filter-search" value="myapp">
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <span id="save-status"></span>
+        <table><tbody>
+          <tr data-section="modified">
+            <td><input type="checkbox" id="cb_mod_0" checked></td>
+            <td><span class="path-text">src/MyApp.dll</span></td>
+          </tr>
+          <tr data-section="checklist">
+            <td><input type="checkbox" id="checklist_cb_0" checked></td>
+            <td><div class="checklist-item-text">Confirm release notes.</div></td>
+          </tr>
+        </tbody></table>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    const rows = document.querySelectorAll('tr[data-section]');
+    expect(rows[0].classList.contains('filter-hidden')).toBe(false);
+    expect(rows[1].classList.contains('filter-hidden')).toBe(false);
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 2 reviewed');
   });
 
   test('unchecked-only filter shows only unchecked rows', () => {
@@ -416,7 +473,10 @@ describe('clearAll', () => {
     loadScript({
       bodyHtml: `
         <input type="checkbox" id="chk1" checked>
+        <input type="checkbox" id="checklist_cb_0" checked>
         <input type="text" id="note1" value="some note">
+        <textarea id="checklist_notes_0">multi
+line note</textarea>
         <details open><summary>D</summary></details>
         <span id="save-status"></span>
       `,
@@ -428,7 +488,9 @@ describe('clearAll', () => {
     window.clearAll();
 
     expect(document.getElementById('chk1').checked).toBe(false);
+    expect(document.getElementById('checklist_cb_0').checked).toBe(false);
     expect(document.getElementById('note1').value).toBe('');
+    expect(document.getElementById('checklist_notes_0').value).toBe('');
     expect(localStorage.getItem('test-key')).toBeNull();
     expect(document.querySelectorAll('details[open]').length).toBe(0);
     expect(document.getElementById('save-status').textContent).toBe('Cleared.');
@@ -468,16 +530,39 @@ describe('DOMContentLoaded state restore', () => {
 
   test('in reviewed mode (savedState set), inputs become read-only', () => {
     loadScript({
-      savedState: { 'chk-b': false },
+      savedState: { 'chk-b': false, 'checklist_notes_b': 'restored note' },
       bodyHtml: `
         <input type="checkbox" id="chk-b">
         <input type="text" id="note-b">
+        <textarea id="checklist_notes_b"></textarea>
       `,
     });
     fireDOMContentLoaded();
 
     expect(document.getElementById('chk-b').style.pointerEvents).toBe('none');
     expect(document.getElementById('note-b').readOnly).toBe(true);
+    expect(document.getElementById('checklist_notes_b').readOnly).toBe(true);
+  });
+
+  test('in reviewed mode, baked column widths are not overwritten by localStorage', () => {
+    loadScript({
+      savedState: { 'chk-width': true },
+      bodyHtml: '<input type="checkbox" id="chk-width">',
+    });
+    document.documentElement.style.setProperty('--col-ts-w', '26em');
+    document.documentElement.style.setProperty('--col-checklist-item-w', '33em');
+    document.documentElement.style.setProperty('--col-checklist-notes-w', '21em');
+    localStorage.setItem('test-key-colwidths', JSON.stringify({
+      '--col-ts-w': '99em',
+      '--col-checklist-item-w': '99em',
+      '--col-checklist-notes-w': '88em',
+    }));
+
+    fireDOMContentLoaded();
+
+    expect(document.documentElement.style.getPropertyValue('--col-ts-w')).toBe('26em');
+    expect(document.documentElement.style.getPropertyValue('--col-checklist-item-w')).toBe('33em');
+    expect(document.documentElement.style.getPropertyValue('--col-checklist-notes-w')).toBe('21em');
   });
 
   test('restores state from localStorage when no savedState', () => {
@@ -668,6 +753,44 @@ describe('updateProgress', () => {
 
     // 1 from DOM (cb_add_0 checked) + 2 from localStorage (sha256w + tsw) = 3
     expect(document.getElementById('progress-text').textContent).toBe('3 / 3 reviewed');
+  });
+
+  it('includes checklist rows in the progress count', () => {
+    loadScript({
+      totalFiles: 3,
+      totalFilesDetail: 'Added: 1 + Modified: 1 + Checklist: 1',
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+        <input type="checkbox" id="checklist_cb_0" checked>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 3 reviewed');
+    expect(document.getElementById('progress-detail').textContent).toBe('(Added: 1 + Modified: 1 + Checklist: 1)');
+  });
+
+  it('includes checklist rows in the reviewed progress count', () => {
+    loadScript({
+      totalFiles: 3,
+      totalFilesDetail: 'Added: 1 + Modified: 1 + Checklist: 1',
+      bodyHtml: `
+        <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <span id="progress-text"></span>
+        <span id="progress-detail"></span>
+        <input type="checkbox" id="cb_add_0" checked>
+        <input type="checkbox" id="cb_mod_0">
+        <input type="checkbox" id="checklist_cb_0" checked>
+      `,
+    });
+    fireDOMContentLoaded();
+
+    expect(document.getElementById('progress-text').textContent).toBe('2 / 3 reviewed');
+    expect(document.getElementById('progress-detail').textContent).toBe('(Added: 1 + Modified: 1 + Checklist: 1)');
   });
 
   it('ignores corrupted localStorage when computing progress', () => {
@@ -1319,6 +1442,29 @@ describe('buildExcelRow', () => {
     // Should not contain checkmark
     expect(html).not.toContain('\u2713');
     expect(html).toContain('new.dll');
+  });
+
+  test('maps checklist rows into aligned Excel columns', () => {
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-section', 'checklist');
+    tr.innerHTML = `
+      <td><input type="checkbox" id="checklist_cb_1" checked></td>
+      <td><div class="checklist-item-text">Verify migration notes
+when schema version changes.</div></td>
+      <td><textarea>Reviewed in CAB</textarea></td>
+    `;
+
+    const html = window.buildExcelRow(tr);
+    const tbody = document.createElement('tbody');
+    tbody.innerHTML = html;
+    const cells = tbody.querySelectorAll('td');
+    expect(cells).toHaveLength(13);
+    expect(cells[7].textContent).toBe('');
+    expect(cells[8].textContent).toBe('\u2713');
+    expect(cells[9].innerHTML).toBe('Verify migration notes<br>when schema version changes.');
+    expect(cells[10].textContent).toBe('Reviewed in CAB');
+    expect(cells[11].textContent).toBe('');
+    expect(cells[12].textContent).toBe('');
   });
 });
 

@@ -71,9 +71,12 @@
       }
       // Search filter
       if (show && searchText) {
-        var pathEl = tr.querySelector('.path-text');
-        var pathText = pathEl ? pathEl.textContent.toLowerCase() : '';
-        if (pathText.indexOf(searchText) < 0) show = false;
+        var section = tr.getAttribute('data-section');
+        if (section !== 'checklist') {
+          var pathEl = tr.querySelector('.path-text');
+          var pathText = pathEl ? pathEl.textContent.toLowerCase() : '';
+          if (pathText.indexOf(searchText) < 0) show = false;
+        }
       }
       if (show) {
         tr.classList.remove('filter-hidden');

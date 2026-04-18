@@ -140,7 +140,7 @@ namespace FolderDiffIL4DotNet.Runner
             return elapsedTimeString;
         }
 
-        private static void GenerateReports(
+        private void GenerateReports(
             IServiceProvider scopedProvider,
             DiffExecutionContext executionContext,
             string appVersion,
@@ -154,6 +154,7 @@ namespace FolderDiffIL4DotNet.Runner
             progressReporter.BeginPhase(PHASE_LABEL_GENERATING_REPORTS);
 
             var ilCache = scopedProvider.GetService<ILCache>();
+            var reviewChecklistItems = ReviewChecklistLoader.Load(_logger);
             var reportContext = new ReportGenerationContext(
                 executionContext.OldFolderAbsolutePath,
                 executionContext.NewFolderAbsolutePath,
@@ -162,7 +163,8 @@ namespace FolderDiffIL4DotNet.Runner
                 elapsedTimeString,
                 computerName,
                 config,
-                ilCache);
+                ilCache,
+                reviewChecklistItems);
 
             // Execute all registered report formatters in order.
             // 登録済みの全レポートフォーマッターを順序通りに実行する。

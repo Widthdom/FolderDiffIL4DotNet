@@ -19,7 +19,8 @@
       outline: 2px solid var(--color-accent);
       outline-offset: 2px;
     }
-    input[type="text"]:focus-visible {
+    input[type="text"]:focus-visible,
+    textarea:focus-visible {
       outline: 2px solid var(--color-accent);
       outline-offset: -1px;
     }
@@ -556,10 +557,10 @@
     .color-removed { color: var(--color-removed); }
     .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 20em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 24em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
-            --dc-refs-w: 16em;
+            --dc-refs-w: 16em; --col-checklist-item-w: 30em; --col-checklist-notes-w: 20em;
 }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
@@ -572,6 +573,9 @@
     col.col-tag-g    { width: var(--col-tag-w); }
     col.col-disasm-g { width: var(--col-disasm-w); }
     col.col-sdk-g    { width: var(--col-sdk-w); }
+    col.col-checklist-cb-g    { width: 2.2em; }
+    col.col-checklist-item-g  { width: var(--col-checklist-item-w); }
+    col.col-checklist-notes-g { width: var(--col-checklist-notes-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
@@ -606,6 +610,29 @@
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     td.col-sdk    { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; text-align: center; }
+    .checklist-table-scroll { margin: 0.5rem 0 0; }
+    table.checklist-table { margin-bottom: 0; }
+    table.checklist-table th,
+    table.checklist-table td { word-break: normal; }
+    td.col-checklist-item,
+    td.col-checklist-notes { overflow: hidden; vertical-align: middle; }
+    .checklist-item-text {
+      line-height: 1.45;
+    }
+    .checklist-item-text-singleline {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .checklist-item-text-multiline {
+      white-space: pre; word-break: normal;
+    }
+    .checklist-notes-input {
+      display: block; width: 100%; min-height: 1.45em; max-height: 10.5em;
+      border: 0; padding: 4px 6px; font-size: 12px;
+      background: transparent; outline: none; box-shadow: none;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      font-family: inherit; color: inherit; resize: vertical;
+      overflow-x: hidden; overflow-y: auto; line-height: 1.45;
+    }
     /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
     table.hide-disasm col.col-disasm-g,
     table.hide-col6 col.col-diff-g,
@@ -629,7 +656,8 @@
       background: transparent; outline: none; box-shadow: none;
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
       font-family: inherit; color: inherit; }
-    td input[type="text"]:focus {
+    td input[type="text"]:focus,
+    td textarea:focus {
       background: var(--color-surface-input-focus); outline: 1px solid var(--color-text-faint); }
     .btn-input-clear {
       position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
@@ -640,6 +668,12 @@
     .btn-input-clear svg { display: block; margin: auto; }
     .filter-search-wrap.has-text .btn-input-clear { display: flex; align-items: center; justify-content: center; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    th.col-cb input[type="checkbox"],
+    td.col-cb input[type="checkbox"],
+    table.semantic-changes-table th.sc-col-cb input[type="checkbox"],
+    table.semantic-changes-table td.sc-col-cb input[type="checkbox"] {
+      display: block; margin: auto;
+    }
     /* ── Per-row copy path button ────────────────────────────────────────── */
     .btn-copy-path {
       display: inline-flex; align-items: center; justify-content: center;
@@ -839,7 +873,7 @@
       button, .filter-search-wrap, .btn-input-clear,
       .kb-help, .btn-tooltip { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }
-      input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
+      input[type="text"], textarea { border: none !important; outline: none !important; box-shadow: none !important; }
       /* Remove sticky positioning / スティッキー配置を解除 */
       .controls, .reviewed-banner { position: static !important; }
       /* Expand all details elements / 全details要素を展開 */

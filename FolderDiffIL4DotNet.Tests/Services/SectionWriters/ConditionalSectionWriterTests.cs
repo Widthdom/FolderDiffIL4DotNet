@@ -122,6 +122,18 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
         }
 
         [Fact]
+        public void Warnings_IsEnabled_WhenChecklistItemsExist()
+        {
+            var writer = SectionWriterTestBase.GetWriterByOrder(1000);
+            var ctx = SectionWriterTestBase.CreateMinimalContext(
+                reviewChecklistItems:
+                [
+                    "Confirm release notes."
+                ]);
+            Assert.True(writer.IsEnabled(ctx));
+        }
+
+        [Fact]
         public void Warnings_Write_ContainsILFilterWarningText()
         {
             var writer = SectionWriterTestBase.GetWriterByOrder(1000);

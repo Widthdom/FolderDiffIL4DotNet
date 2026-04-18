@@ -1,5 +1,6 @@
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 
@@ -33,7 +34,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
             bool hasILFilterWarnings = false,
             bool shouldIncludeIgnoredFiles = false,
             bool shouldIncludeUnchangedFiles = false,
-            bool shouldIncludeILCacheStats = false)
+            bool shouldIncludeILCacheStats = false,
+            IReadOnlyList<string>? reviewChecklistItems = null)
         {
             var builder = new ConfigSettingsBuilder
             {
@@ -56,11 +58,13 @@ namespace FolderDiffIL4DotNet.Tests.Services.SectionWriters
                 ElapsedTimeString = "0h 0m 1.0s",
                 ComputerName = "TESTPC",
                 Config = builder.Build(),
+                Logger = new LoggerService(),
                 HasSha256Mismatch = hasSha256Mismatch,
                 HasTimestampRegressionWarning = hasTimestampRegressionWarning,
                 HasILFilterWarnings = hasILFilterWarnings,
                 IlCache = null,
-                FileDiffResultLists = fileDiffResultLists
+                FileDiffResultLists = fileDiffResultLists,
+                ReviewChecklistItems = reviewChecklistItems ?? []
             };
         }
 

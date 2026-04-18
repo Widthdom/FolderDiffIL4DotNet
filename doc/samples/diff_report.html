@@ -27,7 +27,8 @@
       outline: 2px solid var(--color-accent);
       outline-offset: 2px;
     }
-    input[type="text"]:focus-visible {
+    input[type="text"]:focus-visible,
+    textarea:focus-visible {
       outline: 2px solid var(--color-accent);
       outline-offset: -1px;
     }
@@ -409,10 +410,10 @@
     .color-removed { color: var(--color-removed); }
     .color-modified { color: var(--color-modified); }
     /* ── Column width CSS variables ──────────────────────────────────────── */
-    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 20em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
+    :root { --col-reason-w: 10em; --col-notes-w: 10em; --col-path-w: 22em; --col-ts-w: 24em; --col-diff-w: 10.8em; --col-tag-w: 14em; --col-disasm-w: 28em; --col-sdk-w: 14em;
             --sc-class-w: 14em; --sc-basetype-w: 16em; --sc-type-w: 12em;
             --sc-name-w: 10em; --sc-rettype-w: 12em; --sc-params-w: 18em; --sc-body-w: 5em;
-            --dc-refs-w: 16em;
+            --dc-refs-w: 16em; --col-checklist-item-w: 30em; --col-checklist-notes-w: 20em;
 }
     col.col-no-g     { width: 3.2em; }
     col.col-cb-g     { width: 2.2em; }
@@ -425,6 +426,9 @@
     col.col-tag-g    { width: var(--col-tag-w); }
     col.col-disasm-g { width: var(--col-disasm-w); }
     col.col-sdk-g    { width: var(--col-sdk-w); }
+    col.col-checklist-cb-g    { width: 2.2em; }
+    col.col-checklist-item-g  { width: var(--col-checklist-item-w); }
+    col.col-checklist-notes-g { width: var(--col-checklist-notes-w); }
     /* ── Data tables ─────────────────────────────────────────────────────── */
     .table-scroll { overflow-x: auto; margin-bottom: 1.2rem; }
     table { border-collapse: collapse; width: 100%; margin-bottom: 1.2rem; }
@@ -459,6 +463,29 @@
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; }
     td.col-sdk    { white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 12px; text-align: center; }
+    .checklist-table-scroll { margin: 0.5rem 0 0; }
+    table.checklist-table { margin-bottom: 0; }
+    table.checklist-table th,
+    table.checklist-table td { word-break: normal; }
+    td.col-checklist-item,
+    td.col-checklist-notes { overflow: hidden; vertical-align: middle; }
+    .checklist-item-text {
+      line-height: 1.45;
+    }
+    .checklist-item-text-singleline {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .checklist-item-text-multiline {
+      white-space: pre; word-break: normal;
+    }
+    .checklist-notes-input {
+      display: block; width: 100%; min-height: 1.45em; max-height: 10.5em;
+      border: 0; padding: 4px 6px; font-size: 12px;
+      background: transparent; outline: none; box-shadow: none;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      font-family: inherit; color: inherit; resize: vertical;
+      overflow-x: hidden; overflow-y: auto; line-height: 1.45;
+    }
     /* ── Hidden columns — kept in DOM for cross-table width sync stability  */
     table.hide-disasm col.col-disasm-g,
     table.hide-col6 col.col-diff-g,
@@ -485,7 +512,8 @@
       background: transparent; outline: none; box-shadow: none;
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
       font-family: inherit; color: inherit; }
-    td input[type="text"]:focus {
+    td input[type="text"]:focus,
+    td textarea:focus {
       background: var(--color-surface-input-focus); outline: 1px solid var(--color-text-faint); }
     .btn-input-clear {
       position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
@@ -496,6 +524,12 @@
     .btn-input-clear svg { display: block; margin: auto; }
     .filter-search-wrap.has-text .btn-input-clear { display: flex; align-items: center; justify-content: center; }
     input[type="checkbox"] { width: 1.1em; height: 1.1em; cursor: pointer; }
+    th.col-cb input[type="checkbox"],
+    td.col-cb input[type="checkbox"],
+    table.semantic-changes-table th.sc-col-cb input[type="checkbox"],
+    table.semantic-changes-table td.sc-col-cb input[type="checkbox"] {
+      display: block; margin: auto;
+    }
     /* ── Per-row copy path button ────────────────────────────────────────── */
     .btn-copy-path {
       display: inline-flex; align-items: center; justify-content: center;
@@ -735,7 +769,7 @@
       button, .filter-search-wrap, .btn-input-clear,
       .kb-help, .btn-tooltip { display: none !important; }
       input[type="checkbox"] { pointer-events: none; }
-      input[type="text"] { border: none !important; outline: none !important; box-shadow: none !important; }
+      input[type="text"], textarea { border: none !important; outline: none !important; box-shadow: none !important; }
       .controls, .reviewed-banner { position: static !important; }
       details { display: block !important; }
       details > summary { display: none !important; }
@@ -1726,6 +1760,34 @@
 </tr>
 </tbody></table>
 </div>
+<h2 class="section-heading">Review Checklist (2)</h2>
+<div class="table-scroll checklist-table-scroll">
+  <table class="checklist-table">
+    <colgroup>
+      <col class="col-checklist-cb-g">
+      <col class="col-checklist-item-g">
+      <col class="col-checklist-notes-g">
+    </colgroup>
+    <thead><tr style="background:var(--color-default-bg)">
+      <th scope="col" class="col-cb"><input type="checkbox" class="cb-all" data-section="checklist" onchange="toggleAllInSection(this)" aria-label="Toggle all checklist checkboxes"></th>
+      <th scope="col" class="th-resizable" data-col-var="--col-checklist-item-w">Checklist Item</th>
+      <th scope="col" class="th-resizable" data-col-var="--col-checklist-notes-w">Notes</th>
+    </tr></thead>
+    <tbody>
+      <tr data-section="checklist">
+        <td class="col-cb"><input type="checkbox" id="checklist_cb_0" aria-label="Checklist item #1"></td>
+        <td class="col-checklist-item"><div class="checklist-item-text checklist-item-text-singleline">Confirm version.json and release notes are aligned.</div></td>
+        <td class="col-checklist-notes"><textarea id="checklist_notes_0" class="checklist-notes-input" aria-label="Checklist notes #1"></textarea></td>
+      </tr>
+      <tr data-section="checklist">
+        <td class="col-cb"><input type="checkbox" id="checklist_cb_1" aria-label="Checklist item #2"></td>
+        <td class="col-checklist-item"><div class="checklist-item-text checklist-item-text-multiline">Verify upgrade guide steps.
+Include rollback notes if applicable.</div></td>
+        <td class="col-checklist-notes"><textarea id="checklist_notes_1" class="checklist-notes-input" aria-label="Checklist notes #2"></textarea></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 </main>
 <script>
   const __storageKey__  = 'folderdiff-release';
@@ -1738,8 +1800,8 @@
   const __finalSha256__     = null;
   // Total number of reviewable files (injected at generation time). Do not change whitespace.
   // レビュー対象ファイルの総数（生成時に注入）。空白を変更しないこと。
-  const __totalFiles__      = 23;
-  const __totalFilesDetail__ = 'Added: 1 + Removed: 1 + Modified: 15 + SHA256Warn: 1 + TsWarn: 5';
+  const __totalFiles__      = 25;
+  const __totalFilesDetail__ = 'Added: 1 + Removed: 1 + Modified: 15 + SHA256Warn: 1 + TsWarn: 5 + Checklist: 2';
 
   function formatTs(d) {
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
@@ -1902,7 +1964,7 @@
         if (__filterIds__.indexOf(cb.id) >= 0) return;
         cb.style.pointerEvents='none'; cb.style.cursor='default';
       });
-      document.querySelectorAll('input[type="text"]').forEach(function(inp){
+      document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){
         if (inp.id === 'filter-search') return;
         inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text';
       });
@@ -1915,7 +1977,7 @@
     }
     if (__savedState__ === null) { restoreFilterState(); }
     initColResize();
-    restoreColumnWidths();
+    if (__savedState__ === null) { restoreColumnWidths(); }
     syncTableWidths();
     syncScTableWidths();
     syncFilterRowHeight();
@@ -2091,9 +2153,14 @@
     document.querySelectorAll('input[type="checkbox"][id^="cb_"]').forEach(function(cb) {
       saved[cb.id] = cb.checked;
     });
+    document.querySelectorAll('input[type="checkbox"][id^="checklist_cb_"]').forEach(function(cb) {
+      saved[cb.id] = cb.checked;
+    });
     var checked = 0;
     Object.keys(saved).forEach(function(k) {
-      if (k.indexOf('cb_') !== 0 || !saved[k]) return;
+      var isMainReviewCb = k.indexOf('cb_') === 0;
+      var isChecklistCb = k.indexOf('checklist_cb_') === 0;
+      if ((!isMainReviewCb && !isChecklistCb) || !saved[k]) return;
       // Exclude Unchanged/Ignored from progress count / Unchanged/Ignoredは進捗カウントから除外
       if (k.indexOf('cb_unch_') === 0 || k.indexOf('cb_ign_') === 0) return;
       checked++;
@@ -2135,7 +2202,7 @@
     // 2b. Clear inline table widths so syncTableWidths recalculates on reviewed load
     document.querySelectorAll('table[style]').forEach(function(t){ t.style.removeProperty('width'); });
     // 3. Capture current effective column widths to bake into reviewed HTML as defaults
-    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
+    var colVarNames = ['--col-reason-w','--col-notes-w','--col-path-w','--col-ts-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'];
     var cs = getComputedStyle(root);
     var curWidths = {};
     colVarNames.forEach(function(v){ curWidths[v] = (root.style.getPropertyValue(v) || cs.getPropertyValue(v)).trim(); });
@@ -2169,10 +2236,13 @@
       ':root { --col-reason-w: '  + curWidths['--col-reason-w']
       + '; --col-notes-w: '   + curWidths['--col-notes-w']
       + '; --col-path-w: '    + curWidths['--col-path-w']
+      + '; --col-ts-w: '      + curWidths['--col-ts-w']
       + '; --col-diff-w: '    + curWidths['--col-diff-w']
       + '; --col-tag-w: '     + curWidths['--col-tag-w']
       + '; --col-disasm-w: '  + curWidths['--col-disasm-w']
       + '; --col-sdk-w: '     + curWidths['--col-sdk-w']
+      + '; --col-checklist-item-w: '  + curWidths['--col-checklist-item-w']
+      + '; --col-checklist-notes-w: ' + curWidths['--col-checklist-notes-w']
       + '; --sc-class-w: '    + curWidths['--sc-class-w']
       + '; --sc-basetype-w: ' + curWidths['--sc-basetype-w']
       + '; --sc-type-w: '     + curWidths['--sc-type-w']
@@ -2288,7 +2358,7 @@
     document.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.value=''; });
     // Reset column widths to defaults
     var root = document.documentElement;
-    ['--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
+    ['--col-reason-w','--col-notes-w','--col-path-w','--col-ts-w','--col-diff-w','--col-tag-w','--col-disasm-w','--col-sdk-w','--col-checklist-item-w','--col-checklist-notes-w','--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w','--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'].forEach(function(v){ root.style.removeProperty(v); });
     syncTableWidths();
     // Close all open diff/IL-diff details
     document.querySelectorAll('details[open]').forEach(function(d){ d.removeAttribute('open'); });
@@ -2617,7 +2687,7 @@
           }
           if (__savedState__ !== null) {
             d.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ cb.style.pointerEvents='none'; cb.style.cursor='default'; });
-            d.querySelectorAll('input[type="text"]').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
+            d.querySelectorAll('input[type="text"], textarea').forEach(function(inp){ inp.readOnly=true; inp.style.cursor='text'; inp.style.userSelect='text'; });
           }
           updateProgress();
           syncHeaderCheckboxes();
@@ -2718,11 +2788,14 @@
       'col-notes-g': px('--col-notes-w', 10),
       'col-status-g': 4.3 * emPx,
       'col-path-g': px('--col-path-w', 22),
-        'col-ts-g': px('--col-ts-w', 20),
+        'col-ts-g': px('--col-ts-w', 24),
       'col-diff-g': px('--col-diff-w', 10.8),
       'col-tag-g': px('--col-tag-w', 14),
       'col-disasm-g': px('--col-disasm-w', 28),
-      'col-sdk-g': px('--col-sdk-w', 14)
+      'col-sdk-g': px('--col-sdk-w', 14),
+      'col-checklist-cb-g': 2.2 * emPx,
+      'col-checklist-item-g': px('--col-checklist-item-w', 30),
+      'col-checklist-notes-g': px('--col-checklist-notes-w', 20)
     };
     document.querySelectorAll('table:not(.stat-table):not(.diff-table):not(.semantic-changes-table):not(.legend-table):not(.il-ignore-table)').forEach(function(t) {
       var cg = t.querySelector('colgroup');
@@ -2840,8 +2913,9 @@
   }
 
   var __colVarNames__ = [
-    '--col-reason-w','--col-notes-w','--col-path-w','--col-diff-w',
+    '--col-reason-w','--col-notes-w','--col-path-w','--col-ts-w','--col-diff-w',
     '--col-tag-w','--col-disasm-w','--col-sdk-w',
+    '--col-checklist-item-w','--col-checklist-notes-w',
     '--sc-class-w','--sc-basetype-w','--sc-type-w','--sc-name-w',
     '--sc-rettype-w','--sc-params-w','--sc-body-w','--dc-refs-w'
   ];
@@ -2939,9 +3013,12 @@
       }
       // Search filter
       if (show && searchText) {
-        var pathEl = tr.querySelector('.path-text');
-        var pathText = pathEl ? pathEl.textContent.toLowerCase() : '';
-        if (pathText.indexOf(searchText) < 0) show = false;
+        var section = tr.getAttribute('data-section');
+        if (section !== 'checklist') {
+          var pathEl = tr.querySelector('.path-text');
+          var pathText = pathEl ? pathEl.textContent.toLowerCase() : '';
+          if (pathText.indexOf(searchText) < 0) show = false;
+        }
       }
       if (show) {
         tr.classList.remove('filter-hidden');
@@ -3158,8 +3235,23 @@
   }
   function buildExcelRow(tr) {
     var cells = tr.querySelectorAll('td');
-    if (cells.length < 8) return '';
     var sec = tr.getAttribute('data-section');
+    if (sec === 'checklist') {
+      if (cells.length < 3) return '';
+      var checklistCb = cells[0].querySelector('input[type="checkbox"]');
+      var checklistChecked = checklistCb && checklistCb.checked ? '\u2713' : '';
+      var checklistItemEl = cells[1].querySelector('.checklist-item-text');
+      var checklistItem = checklistItemEl ? checklistItemEl.textContent.trim() : cells[1].textContent.trim();
+      var checklistNotesEl = cells[2].querySelector('textarea, input');
+      var checklistNotes = checklistNotesEl ? checklistNotesEl.value : '';
+      return '<tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td>'
+        + '<td></td>'
+        + '<td class="bd">' + esc(checklistChecked) + '</td>'
+        + '<td class="bd">' + esc(checklistItem).replace(/\r?\n/g, '<br>') + '</td>'
+        + '<td class="bd">' + esc(checklistNotes).replace(/\r?\n/g, '<br>') + '</td>'
+        + '<td></td><td></td></tr>';
+    }
+    if (cells.length < 8) return '';
     var no = cells[0].textContent.trim();
     var cb = cells[1].querySelector('input[type="checkbox"]');
     var checked = cb && cb.checked ? '\u2713' : '';
@@ -3206,41 +3298,55 @@
       'ign': '[ x ] Ignored Files', 'unch': '[ = ] Unchanged Files',
       'add': '[ + ] Added Files', 'rem': '[ - ] Removed Files', 'mod': '[ * ] Modified Files',
       'sha256w': '[ ! ] Modified Files \u2014 SHA256Mismatch: binary diff only \u2014 not a .NET assembly and not a recognized text file',
-      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old'
+      'tsw': '[ ! ] Modified Files \u2014 new file timestamps older than old',
+      'checklist': 'Review Checklist'
     };
-    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd' };
-    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3' };
+    var sectionColors = { 'ign': '#f0f0f2', 'unch': '#f0f0f2', 'add': '#e6ffed', 'rem': '#ffeef0', 'mod': '#e3f2fd', 'sha256w': '#e3f2fd', 'tsw': '#e3f2fd', 'checklist': '#f0f0f2' };
+    var sectionTextColors = { 'ign': '#000', 'unch': '#000', 'add': '#22863a', 'rem': '#b31d28', 'mod': '#0051c3', 'sha256w': '#0051c3', 'tsw': '#0051c3', 'checklist': '#000' };
     var COLS = 13;
+    function padCells(count) {
+      var r = '';
+      for (var i = 0; i < count; i++) r += '<td></td>';
+      return r;
+    }
     function emptyRow() { var r = '<tr>'; for (var i = 0; i < COLS; i++) r += '<td></td>'; return r + '</tr>'; }
-    function bannerRow(text, color, style) {
+    function bannerRowAt(offset, text, color, style) {
       var s = style || '';
-      var r = '<tr><td></td><td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 2; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
+      var r = '<tr>' + padCells(offset) + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
+      for (var i = offset + 1; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
     }
-    var PAD7 = '<td></td><td></td><td></td><td></td><td></td><td></td><td></td>';
-    function bannerRow7(text, color, style) {
-      var s = style || '';
-      var r = '<tr>' + PAD7 + '<td style="color:' + color + ';' + s + '">' + esc(text) + '</td>';
-      for (var i = 8; i < COLS; i++) r += '<td></td>'; return r + '</tr>';
-    }
+    function bannerRow(text, color, style) { return bannerRowAt(1, text, color, style); }
+    var PAD7 = padCells(7);
+    var PAD8 = padCells(8);
+    function bannerRow7(text, color, style) { return bannerRowAt(7, text, color, style); }
+    function bannerRow8(text, color, style) { return bannerRowAt(8, text, color, style); }
     var COL_STYLES = { 6: 'width:280px' };
     var DEFAULT_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Diff Reason', 'Estimated Change', 'Disassembler', '.NET SDK'];
     var IGN_HDRS = ['#', '\u2713', 'Justification', 'Notes', 'Status', 'File Path', 'Timestamp', 'Location'];
-    function colHeaderRow(bg, sec) {
-      var hdrs = sec === 'ign' ? IGN_HDRS : DEFAULT_HDRS;
-      var r = '<tr><td></td><td></td>';
-      hdrs.forEach(function(h, i) { r += '<td class="bd" style="background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '') + '">' + esc(h) + '</td>'; });
-      for (var j = hdrs.length + 2; j < COLS; j++) r += '<td></td>';
+    var CHECKLIST_HDRS = ['', '\u2713', 'Checklist Item', 'Notes'];
+    function colHeaderRow(bg, sec, offset) {
+      var colOffset = typeof offset === 'number' ? offset : 2;
+      var hdrs = sec === 'ign' ? IGN_HDRS : sec === 'checklist' ? CHECKLIST_HDRS : DEFAULT_HDRS;
+      var r = '<tr>' + padCells(colOffset);
+      hdrs.forEach(function(h, i) {
+        var style = 'background:' + bg + ';font-weight:bold' + (COL_STYLES[i] ? ';' + COL_STYLES[i] : '');
+        if (sec === 'checklist' && i === 0) {
+          r += '<td></td>';
+          return;
+        }
+        r += '<td class="bd" style="' + style + '">' + esc(h) + '</td>';
+      });
+      for (var j = hdrs.length + colOffset; j < COLS; j++) r += '<td></td>';
       return r + '</tr>';
     }
-    var SPAN = COLS - 8;
+    var HEADER_SPAN = COLS - 9;
     var headerHtml = '';
     document.querySelectorAll('.header-card').forEach(function(card) {
       var label = card.querySelector('.header-card-label');
       var value = card.querySelector('.header-card-value');
       if (label && value) {
-        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
+        headerHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
           + '</tr>';
       }
     });
@@ -3248,33 +3354,33 @@
       var label = hp.querySelector('.header-path-label');
       var value = hp.querySelector('.header-path-value');
       if (label && value) {
-        headerHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
+        headerHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(label.textContent.trim()) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(value.textContent.trim()) + '</td>'
           + '</tr>';
       }
     });
     var legendHtml = '';
     function legendKeyValueRows(items) {
       items.forEach(function(row) {
-        legendHtml += '<tr>' + PAD7 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td>'
-          + '<td colspan="' + SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td></tr>';
+        legendHtml += '<tr>' + PAD8 + '<td class="bd" style="font-weight:bold;background:#f0f0f2">' + esc(row[0]) + '</td>'
+          + '<td colspan="' + HEADER_SPAN + '" style="border-top:1px solid #ccc;border-bottom:1px solid #ccc">' + esc(row[1]) + '</td></tr>';
       });
     }
-    legendHtml += bannerRow7('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Diff Detail', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['SHA256Match / SHA256Mismatch', 'Byte-for-byte match / mismatch (SHA256)'],
       ['ILMatch / ILMismatch', 'IL (Intermediate Language) match / mismatch'],
       ['TextMatch / TextMismatch', 'Text-based match / mismatch']
     ]);
     legendHtml += emptyRow();
-    legendHtml += bannerRow7('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Change Importance', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['High', 'Breaking change candidate: public/protected API removal, access narrowing, return-type / parameter / member-type change'],
       ['Medium', 'Notable change: public/protected member addition, modifier change, access widening, internal removal'],
       ['Low', 'Low-impact change: body-only modification, internal/private member addition']
     ]);
     legendHtml += emptyRow();
-    legendHtml += bannerRow7('Legend \u2014 Estimated Change', '#000', 'font-weight:bold;padding:8px');
+    legendHtml += bannerRow8('Legend \u2014 Estimated Change', '#000', 'font-weight:bold;padding:8px');
     legendKeyValueRows([
       ['+Method', 'New method added'], ['-Method', 'Method removed'],
       ['+Type', 'New type added'], ['-Type', 'Type removed'],
@@ -3337,6 +3443,14 @@
       warningsHtml += rows.join('');
       warningsHtml += emptyRow();
     });
+    var checklistHtml = '';
+    var checklistRows = builtRows['checklist'] || [];
+    if (checklistRows.length > 0) {
+      checklistHtml += bannerRow8((sectionNames.checklist || 'Review Checklist') + ' (' + checklistRows.length + ')', sectionTextColors.checklist || '#000', 'font-weight:bold;padding:8px');
+      checklistHtml += colHeaderRow(sectionColors.checklist || '#f0f0f2', 'checklist', 7);
+      checklistHtml += checklistRows.join('');
+      checklistHtml += emptyRow();
+    }
     var colgroup = '<colgroup>';
     for (var ci = 0; ci < COLS; ci++) {
       colgroup += ci === 8 ? '<col style="width:280px">' : '<col>';
@@ -3359,6 +3473,7 @@
       + sectionsHtml
       + summaryHtml
       + warningsHtml
+      + checklistHtml
       + '</table>\n'
       + '</body></html>';
   }

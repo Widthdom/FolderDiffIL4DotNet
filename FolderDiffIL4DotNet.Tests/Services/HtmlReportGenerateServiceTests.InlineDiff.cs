@@ -331,9 +331,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     computerName: "test-host", config, ilCache: null));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("--col-ts-w: 20em;", html);
+            Assert.Contains("--col-ts-w: 24em;", html);
             Assert.Contains("col.col-ts-g     { width: var(--col-ts-w); }", html);
-            Assert.Contains("'col-ts-g': px('--col-ts-w', 20),", html);
+            Assert.Contains("'col-ts-g': px('--col-ts-w', 24),", html);
         }
     }
 }

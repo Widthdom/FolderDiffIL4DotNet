@@ -47,6 +47,9 @@ namespace FolderDiffIL4DotNet.Tests.Helpers
         internal string UserConfigFileAbsolutePath
             => Path.Combine(ApplicationDataRootAbsolutePath, "config.json");
 
+        internal string ReviewChecklistFileAbsolutePath
+            => Path.Combine(ApplicationDataRootAbsolutePath, "checklist.json");
+
         public void Dispose()
         {
             if (_disposed)

@@ -17,16 +17,26 @@ namespace FolderDiffIL4DotNet.Services
         {
             public int Order => 1000;
 
-            public bool IsEnabled(ReportWriteContext context) => context.HasSha256Mismatch || context.HasTimestampRegressionWarning || context.HasILFilterWarnings;
+            public bool IsEnabled(ReportWriteContext context)
+                => context.HasSha256Mismatch
+                || context.HasTimestampRegressionWarning
+                || context.HasILFilterWarnings
+                || context.ReviewChecklistItems.Count > 0;
 
             public void Write(StreamWriter writer, ReportWriteContext ctx)
             {
-                writer.WriteLine(REPORT_SECTION_WARNINGS);
+                bool wroteWarnings = false;
 
                 // SHA256Mismatch warning + detail table (grouped together)
                 // SHA256Mismatch 警告 + 詳細テーブル（まとめて配置）
                 if (ctx.HasSha256Mismatch)
                 {
+                    if (!wroteWarnings)
+                    {
+                        writer.WriteLine(REPORT_SECTION_WARNINGS);
+                        wroteWarnings = true;
+                    }
+
                     var sha256Files = ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary
                         .Where(kv => kv.Value == FileDiffResultLists.DiffDetailResult.SHA256Mismatch)
                         .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
@@ -56,6 +66,12 @@ namespace FolderDiffIL4DotNet.Services
                 // IL フィルタ文字列検証警告
                 if (ctx.HasILFilterWarnings)
                 {
+                    if (!wroteWarnings)
+                    {
+                        writer.WriteLine(REPORT_SECTION_WARNINGS);
+                        wroteWarnings = true;
+                    }
+
                     writer.WriteLine();
                     var filterWarnings = ctx.FileDiffResultLists.ILFilterWarnings.OrderBy(w => w, StringComparer.Ordinal).ToList();
                     writer.WriteLine($"### [ ! ] IL filter validation warnings ({filterWarnings.Count})");
@@ -70,6 +86,12 @@ namespace FolderDiffIL4DotNet.Services
                 // タイムスタンプ逆行 警告 + 詳細テーブル（まとめて配置）
                 if (ctx.HasTimestampRegressionWarning)
                 {
+                    if (!wroteWarnings)
+                    {
+                        writer.WriteLine(REPORT_SECTION_WARNINGS);
+                        wroteWarnings = true;
+                    }
+
                     writer.WriteLine();
                     var tsWarnings = ctx.FileDiffResultLists.NewFileTimestampOlderThanOldWarnings.Values
                         .OrderBy(entry => ctx.FileDiffResultLists.FileRelativePathToDiffDetailDictionary.TryGetValue(entry.FileRelativePath, out var d) ? GetModifiedSortOrder(d) : 3)
@@ -91,6 +113,22 @@ namespace FolderDiffIL4DotNet.Services
                         string tsCol = $"{warning.OldTimestamp}{REPORT_TIMESTAMP_ARROW}{warning.NewTimestamp}";
                         writer.WriteLine($"| `{REPORT_MARKER_MODIFIED}` | {fileRelativePath} | {tsCol} | {diffDetailDisplay} | {tagDisplay} | {disasmDisplay} | {sdkDisplay} |");
                     }
+                }
+
+                var checklistItems = ctx.ReviewChecklistItems;
+                if (checklistItems.Count == 0)
+                {
+                    return;
+                }
+
+                writer.WriteLine();
+                writer.WriteLine("## Review Checklist");
+                writer.WriteLine();
+                writer.WriteLine("| ✓ | Checklist Item | Notes |");
+                writer.WriteLine("|:-:|----------------|-------|");
+                foreach (var item in checklistItems)
+                {
+                    writer.WriteLine($"| [ ] | {FormatChecklistMarkdownCell(item)} | |");
                 }
             }
         }

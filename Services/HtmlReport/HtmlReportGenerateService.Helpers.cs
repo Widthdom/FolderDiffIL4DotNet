@@ -354,6 +354,48 @@ namespace FolderDiffIL4DotNet.Services
                 .ToList();
         }
 
+        private static void AppendReviewChecklistSection(TextWriter writer, IReadOnlyList<string> items)
+        {
+            if (items.Count == 0)
+            {
+                return;
+            }
+
+            writer.WriteLine($"<h2 class=\"section-heading\">{HtmlEncode("Review Checklist")} ({items.Count})</h2>");
+            writer.WriteLine("<div class=\"table-scroll checklist-table-scroll\">");
+            writer.WriteLine("  <table class=\"checklist-table\">");
+            writer.WriteLine("    <colgroup>");
+            writer.WriteLine("      <col class=\"col-checklist-cb-g\">");
+            writer.WriteLine("      <col class=\"col-checklist-item-g\">");
+            writer.WriteLine("      <col class=\"col-checklist-notes-g\">");
+            writer.WriteLine("    </colgroup>");
+            writer.WriteLine($"    <thead><tr style=\"background:{TH_BG_DEFAULT}\">");
+            writer.WriteLine($"      <th scope=\"col\" class=\"col-cb\"><input type=\"checkbox\" class=\"cb-all\" data-section=\"checklist\" onchange=\"toggleAllInSection(this)\" aria-label=\"{HtmlEncode("Toggle all checklist checkboxes")}\"></th>");
+            writer.WriteLine($"      <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-checklist-item-w\">{HtmlEncode("Checklist Item")}</th>");
+            writer.WriteLine($"      <th scope=\"col\" class=\"th-resizable\" data-col-var=\"--col-checklist-notes-w\">{HtmlEncode("Notes")}</th>");
+            writer.WriteLine("    </tr></thead>");
+            writer.WriteLine("    <tbody>");
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                string checkboxId = $"checklist_cb_{i}";
+                string notesId = $"checklist_notes_{i}";
+                int recordNo = i + 1;
+                string checklistItemClass = items[i].Contains('\n', StringComparison.Ordinal)
+                    ? "checklist-item-text checklist-item-text-multiline"
+                    : "checklist-item-text checklist-item-text-singleline";
+                writer.WriteLine("      <tr data-section=\"checklist\">");
+                writer.WriteLine($"        <td class=\"col-cb\"><input type=\"checkbox\" id=\"{checkboxId}\" aria-label=\"{HtmlEncode($"Checklist item #{recordNo}")}\"></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-item\"><div class=\"{checklistItemClass}\">{HtmlEncode(items[i])}</div></td>");
+                writer.WriteLine($"        <td class=\"col-checklist-notes\"><textarea id=\"{notesId}\" class=\"checklist-notes-input\" aria-label=\"{HtmlEncode($"Checklist notes #{recordNo}")}\"></textarea></td>");
+                writer.WriteLine("      </tr>");
+            }
+
+            writer.WriteLine("    </tbody>");
+            writer.WriteLine("  </table>");
+            writer.WriteLine("</div>");
+        }
+
         /// <summary>
         /// Appends the Disassembler Availability section as a standalone rounded block.
         /// 逆アセンブラ利用可否を独立した角丸セクションとして追加します。

@@ -96,11 +96,12 @@ namespace FolderDiffIL4DotNet.Services
                     context.AppVersion,
                     context.ElapsedTimeString,
                     context.ComputerName,
-                    context.Config,
-                    hasSha256Mismatch,
-                    hasTimestampRegressionWarning,
-                    hasILFilterWarnings,
-                    context.IlCache);
+                context.Config,
+                hasSha256Mismatch,
+                hasTimestampRegressionWarning,
+                hasILFilterWarnings,
+                context.IlCache,
+                context.ReviewChecklistItems);
                 reportGenerated = true;
             }
             catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
@@ -132,7 +133,8 @@ namespace FolderDiffIL4DotNet.Services
             bool hasSha256Mismatch,
             bool hasTimestampRegressionWarning,
             bool hasILFilterWarnings,
-            ILCache? ilCache)
+            ILCache? ilCache,
+            IReadOnlyList<string> reviewChecklistItems)
         {
             PathValidator.ValidateAbsolutePathLengthOrThrow(diffReportAbsolutePath);
             PrepareOutputPathForOverwrite(diffReportAbsolutePath);
@@ -149,7 +151,8 @@ namespace FolderDiffIL4DotNet.Services
                 hasSha256Mismatch,
                 hasTimestampRegressionWarning,
                 hasILFilterWarnings,
-                ilCache);
+                ilCache,
+                reviewChecklistItems);
         }
 
         private void WriteReportSections(
@@ -163,7 +166,8 @@ namespace FolderDiffIL4DotNet.Services
             bool hasSha256Mismatch,
             bool hasTimestampRegressionWarning,
             bool hasILFilterWarnings,
-            ILCache? ilCache)
+            ILCache? ilCache,
+            IReadOnlyList<string> reviewChecklistItems)
         {
             var context = new ReportWriteContext
             {
@@ -173,11 +177,13 @@ namespace FolderDiffIL4DotNet.Services
                 ElapsedTimeString = elapsedTimeString,
                 ComputerName = computerName,
                 Config = config,
+                Logger = _logger,
                 HasSha256Mismatch = hasSha256Mismatch,
                 HasTimestampRegressionWarning = hasTimestampRegressionWarning,
                 HasILFilterWarnings = hasILFilterWarnings,
                 IlCache = ilCache,
                 FileDiffResultLists = _fileDiffResultLists,
+                ReviewChecklistItems = reviewChecklistItems,
             };
             foreach (var sectionWriter in _sectionWriters)
             {

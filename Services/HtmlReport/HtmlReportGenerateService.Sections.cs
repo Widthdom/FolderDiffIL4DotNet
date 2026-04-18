@@ -75,6 +75,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 writer.WriteLine($"<div class=\"header-path\"><div class=\"header-path-label\">{HtmlEncode("IL Diff Note")}</div><div class=\"header-path-value\">{HtmlEncode("Lines starting with")} <code>{HtmlEncode(Constants.IL_MVID_LINE_PREFIX)}</code> {HtmlEncode("are auto-ignored (Module Version ID metadata).")}</div></div>");
             }
+
             writer.WriteLine("</div>"); // report-header
         }
 

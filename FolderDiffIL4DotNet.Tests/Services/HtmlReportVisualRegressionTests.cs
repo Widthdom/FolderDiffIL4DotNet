@@ -155,6 +155,13 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void HtmlReport_CentersTableCheckboxesVertically()
+        {
+            Assert.Contains("th.col-cb input[type=\"checkbox\"]", _generatedHtml);
+            Assert.Contains("display: block; margin: auto;", _generatedHtml);
+        }
+
+        [Fact]
         public void HtmlReport_ContainsFilterControls()
         {
             // Filter zone for diff-detail/importance/search filtering

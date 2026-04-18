@@ -70,6 +70,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "## Summary",
                 "## IL Cache Stats",
                 "## Warnings",
+                "## Review Checklist",
             };
 
             foreach (var section in expectedSections)
@@ -248,6 +249,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 "## Summary",
                 "## IL Cache Stats",
                 "## Warnings",
+                "## Review Checklist",
             };
 
             int lastIdx = -1;

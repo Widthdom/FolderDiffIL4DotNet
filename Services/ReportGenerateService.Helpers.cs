@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
@@ -295,6 +296,12 @@ namespace FolderDiffIL4DotNet.Services
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
         }
+
+        private static string FormatChecklistMarkdownCell(string item)
+            => string.Join(
+                "<br>",
+                item.Split('\n')
+                    .Select(static line => WebUtility.HtmlEncode(line).Replace("|", "\\|", StringComparison.Ordinal)));
 
         /// <summary>
         /// Writes the Disassembler Availability table to the Markdown report header.
