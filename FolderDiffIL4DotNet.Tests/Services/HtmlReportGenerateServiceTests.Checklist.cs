@@ -26,19 +26,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
             _service.GenerateDiffReportHtml(CreateReportContext(oldDir, newDir, reportDir, config, reviewChecklistItems: checklistItems));
 
             var html = File.ReadAllText(Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME));
-            Assert.Contains("Review Checklist", html);
-            Assert.Contains("Checklist Item", html);
-            Assert.Contains("checklist_cb_0", html);
-            Assert.Contains("checklist_notes_0", html);
-            Assert.Contains("<textarea id=\"checklist_notes_0\" class=\"checklist-notes-input\"", html);
-            Assert.Contains("Toggle all checklist checkboxes", html);
-            Assert.Contains("Verify migration notes\nwhen schema version changes.", html);
-            Assert.Contains("checklist-item-text-singleline", html);
-            Assert.Contains("checklist-item-text-multiline", html);
-            Assert.Contains(".checklist-item-text-multiline {\n      white-space: pre; word-break: normal;", html);
-            Assert.Contains("--col-checklist-item-w", html);
-            Assert.Contains("--col-checklist-notes-w", html);
-            Assert.Contains("display: block; width: 100%; min-height: 1.45em; max-height: 10.5em;", html);
+            var normalizedHtml = html.Replace("\r\n", "\n", StringComparison.Ordinal);
+            Assert.Contains("Review Checklist", normalizedHtml);
+            Assert.Contains("Checklist Item", normalizedHtml);
+            Assert.Contains("checklist_cb_0", normalizedHtml);
+            Assert.Contains("checklist_notes_0", normalizedHtml);
+            Assert.Contains("<textarea id=\"checklist_notes_0\" class=\"checklist-notes-input\"", normalizedHtml);
+            Assert.Contains("Toggle all checklist checkboxes", normalizedHtml);
+            Assert.Contains("Verify migration notes\nwhen schema version changes.", normalizedHtml);
+            Assert.Contains("checklist-item-text-singleline", normalizedHtml);
+            Assert.Contains("checklist-item-text-multiline", normalizedHtml);
+            Assert.Contains(".checklist-item-text-multiline {\n      white-space: pre; word-break: normal;", normalizedHtml);
+            Assert.Contains("--col-checklist-item-w", normalizedHtml);
+            Assert.Contains("--col-checklist-notes-w", normalizedHtml);
+            Assert.Contains("display: block; width: 100%; min-height: 1.45em; max-height: 10.5em;", normalizedHtml);
         }
 
         [Fact]
