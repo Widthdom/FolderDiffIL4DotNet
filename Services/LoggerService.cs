@@ -230,7 +230,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogMessage(AppLogLevel.Warning,
-                    $"Failed to delete archived log file '{oldLogfileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to delete archived log file '{oldLogfileAbsolutePath}' while keeping active log '{_logFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return false;

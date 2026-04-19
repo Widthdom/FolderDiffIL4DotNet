@@ -631,6 +631,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.True(File.Exists(active));
                 var logText = File.ReadAllText(active);
                 Assert.Contains("Failed to delete archived log file", logText, StringComparison.Ordinal);
+                Assert.Contains(active, logText, StringComparison.Ordinal);
                 Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
             }
             finally
