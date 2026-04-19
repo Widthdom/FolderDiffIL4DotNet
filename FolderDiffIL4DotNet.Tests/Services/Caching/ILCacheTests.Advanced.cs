@@ -345,6 +345,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Null(ex);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to precompute SHA256", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("TotalFiles=2", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("MaxParallel=1", warning.Message, StringComparison.Ordinal);
             Assert.Contains("ArgumentException", warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
             Assert.Contains(warning.Exception.Message, warning.Message, StringComparison.Ordinal);

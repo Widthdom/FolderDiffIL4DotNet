@@ -198,7 +198,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to precompute SHA256 for file '{fileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}. This file will be skipped in the cache.",
+                        $"Failed to precompute SHA256 for file '{fileAbsolutePath}' (TotalFiles={files.Count}, MaxParallel={maxParallel}, {ex.GetType().Name}): {ex.Message}. This file will be skipped in the cache.",
                         shouldOutputMessageToConsole: true,
                         ex);
                 }
