@@ -106,7 +106,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
-                LogReportOutputFailure(diffReportAbsolutePath, ex);
+                LogReportOutputFailure(context.ReportsFolderAbsolutePath, diffReportAbsolutePath, ex);
                 throw;
             }
             finally

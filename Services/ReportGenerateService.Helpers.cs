@@ -17,9 +17,9 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed partial class ReportGenerateService
     {
-        private void LogReportOutputFailure(string diffReportAbsolutePath, Exception exception)
+        private void LogReportOutputFailure(string reportsFolderAbsolutePath, string diffReportAbsolutePath, Exception exception)
             => _logger.LogMessage(AppLogLevel.Error,
-                $"Failed to output report to '{diffReportAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
+                $"Failed to output report for reports folder '{reportsFolderAbsolutePath}' to '{diffReportAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
 

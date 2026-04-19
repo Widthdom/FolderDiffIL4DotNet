@@ -66,6 +66,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     CreateConfig(), ilCache: null)));
 
             var error = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
+            Assert.Contains("reports folder", error.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
             Assert.Contains(reportDir, error.Message, StringComparison.Ordinal);
             Assert.Same(exception, error.Exception);
