@@ -80,7 +80,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write HTML report to '{htmlPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to write HTML report for reports folder '{context.ReportsFolderAbsolutePath}' to '{htmlPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
