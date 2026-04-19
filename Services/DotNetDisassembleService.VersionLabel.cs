@@ -34,18 +34,19 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private string? CreateAsciiTempCopyIfNeeded(string dotNetAssemblyFileAbsolutePath)
         {
+            string? tempAsciiPath = null;
             try
             {
                 if (!string.IsNullOrEmpty(dotNetAssemblyFileAbsolutePath) && TextSanitizer.ContainsNonAscii(dotNetAssemblyFileAbsolutePath))
                 {
-                    var tempAsciiPath = Path.Combine(Path.GetTempPath(), $"ildasm_input_{Guid.NewGuid():N}.dll");
+                    tempAsciiPath = Path.Combine(Path.GetTempPath(), $"ildasm_input_{Guid.NewGuid():N}.dll");
                     File.Copy(dotNetAssemblyFileAbsolutePath, tempAsciiPath, overwrite: true);
                     return tempAsciiPath;
                 }
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' at '{tempAsciiPath ?? "(not allocated)"}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
             return null;
         }

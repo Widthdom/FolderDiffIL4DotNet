@@ -166,6 +166,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Failed to create ASCII temp copy", StringComparison.Ordinal)
+                    && entry.Message.Contains("ildasm_input_", StringComparison.Ordinal)
                     && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
                     && entry.Exception is ArgumentException);
         }
