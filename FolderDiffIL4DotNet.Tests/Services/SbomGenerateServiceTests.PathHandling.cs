@@ -96,6 +96,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to compute SBOM SHA256", warning.Message, StringComparison.Ordinal);
             Assert.Contains("(Removed)", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(removedPath, warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
