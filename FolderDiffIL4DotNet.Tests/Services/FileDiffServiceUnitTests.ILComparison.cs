@@ -87,6 +87,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 && entry.Message.Contains("Semantic analysis failed", StringComparison.Ordinal));
             Assert.NotNull(warning.Exception);
             Assert.Contains(warning.Exception!.GetType().Name, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Old='/virtual/old/assembly.dll'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("New='/virtual/new/assembly.dll'", warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
