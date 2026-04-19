@@ -63,6 +63,29 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateAuditLog_WhenHtmlReportHashReadFails_LogsWarningAndStillWritesAuditLog()
+        {
+            var logger = new TestLogger();
+            var service = new AuditLogGenerateService(_resultLists, logger);
+            var (oldDir, newDir, reportDir) = MakeDirs("locked-html-report-hash");
+            var htmlReportPath = Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME);
+            File.WriteAllText(htmlReportPath, "<html>locked-report</html>");
+
+            using var lockStream = new FileStream(htmlReportPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+            var exception = Record.Exception(() => service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir)));
+
+            Assert.Null(exception);
+            var auditLogPath = Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME);
+            Assert.True(File.Exists(auditLogPath));
+            var doc = JsonDocument.Parse(File.ReadAllText(auditLogPath));
+            Assert.Equal(string.Empty, doc.RootElement.GetProperty("htmlReportSha256").GetString());
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to compute HTML report SHA256", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"ReportsFolder='{reportDir}'", warning.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void GenerateAuditLog_WhenAddedPathIsInvalid_SkipsBadEntryAndStillWritesAuditLog()
         {
             var logger = new TestLogger();
