@@ -113,6 +113,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped Added audit log entry", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{newDir}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
@@ -138,6 +139,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped Removed audit log entry", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{oldDir}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }

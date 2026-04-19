@@ -263,9 +263,21 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' (Root='{rootFolderAbsolutePath}', {ex.GetType().Name}): {ex.Message}",
+                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' (Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(fileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
+            }
+        }
+
+        private static string DescribePathRootedState(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
             }
         }
 
