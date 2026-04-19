@@ -139,10 +139,12 @@ namespace FolderDiffIL4DotNet.Services
 
             var mdReportHash = TryComputeReportHash(
                 Path.Combine(reportsFolderAbsolutePath, "diff_report.md"),
-                "Markdown report");
+                "Markdown report",
+                reportsFolderAbsolutePath);
             var htmlReportHash = TryComputeReportHash(
                 Path.Combine(reportsFolderAbsolutePath, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME),
-                "HTML report");
+                "HTML report",
+                reportsFolderAbsolutePath);
 
             var disassemblerAvailability = _fileDiffResultLists.DisassemblerAvailability?
                 .Select(p => new AuditLogDisassemblerAvailability
@@ -267,7 +269,10 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private string TryComputeReportHash(string filePath, string reportLabel)
+        private string TryComputeReportHash(
+            string filePath,
+            string reportLabel,
+            string reportsFolderAbsolutePath)
         {
             try
             {
@@ -276,7 +281,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' (ReportsFolder='{reportsFolderAbsolutePath}', {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return string.Empty;
