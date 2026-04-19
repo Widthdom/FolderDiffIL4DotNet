@@ -76,7 +76,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write SBOM ({format}) to '{sbomPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to write SBOM ({format}) for reports folder '{context.ReportsFolderAbsolutePath}' to '{sbomPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }

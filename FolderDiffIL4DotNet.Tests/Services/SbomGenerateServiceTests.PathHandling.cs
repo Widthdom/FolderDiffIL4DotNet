@@ -39,6 +39,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Null(exception);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("CycloneDX", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("reports folder", warning.Message, StringComparison.Ordinal);
             Assert.Contains(SbomGenerateService.CYCLONEDX_FILE_NAME, warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
