@@ -260,7 +260,7 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 var relativePath = Path.GetRelativePath(rootFolderAbsolutePath, fileAbsolutePath);
-                components.Add(CreateComponentInfo(relativePath, status, folder, string.Empty, fileAbsolutePath));
+                components.Add(CreateComponentInfo(relativePath, status, folder, string.Empty, fileAbsolutePath, rootFolderAbsolutePath));
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
@@ -280,7 +280,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 var fileAbsolutePath = Path.Combine(rootFolderAbsolutePath, relativePath);
                 var normalizedFileAbsolutePath = Path.GetFullPath(fileAbsolutePath);
-                components.Add(CreateComponentInfo(relativePath, status, folder, diffDetail, normalizedFileAbsolutePath));
+                components.Add(CreateComponentInfo(relativePath, status, folder, diffDetail, normalizedFileAbsolutePath, rootFolderAbsolutePath));
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
@@ -293,17 +293,18 @@ namespace FolderDiffIL4DotNet.Services
             string status,
             string folder,
             string diffDetail,
-            string fileAbsolutePath)
+            string fileAbsolutePath,
+            string rootFolderAbsolutePath)
             => new()
             {
                 RelativePath = relativePath,
                 Status = status,
                 Folder = folder,
                 DiffDetail = diffDetail,
-                Sha256 = TryComputeFileHash(fileAbsolutePath, relativePath, status)
+                Sha256 = TryComputeFileHash(fileAbsolutePath, relativePath, status, rootFolderAbsolutePath)
             };
 
-        private string TryComputeFileHash(string filePath, string relativePath, string status)
+        private string TryComputeFileHash(string filePath, string relativePath, string status, string rootFolderAbsolutePath)
         {
             try
             {
@@ -312,7 +313,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}) at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}, Root='{rootFolderAbsolutePath}') at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return string.Empty;
