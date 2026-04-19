@@ -93,6 +93,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped SBOM component", warning.Message, StringComparison.Ordinal);
             Assert.Contains("Folder=new", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"Root='{newDir}'", warning.Message, StringComparison.Ordinal);
         }
     }
 }

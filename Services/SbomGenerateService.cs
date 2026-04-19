@@ -264,7 +264,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogSkippedComponent(status, folder, fileAbsolutePath, ex);
+                LogSkippedComponent(status, folder, rootFolderAbsolutePath, fileAbsolutePath, ex);
             }
         }
 
@@ -284,7 +284,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogSkippedComponent(status, folder, relativePath, ex);
+                LogSkippedComponent(status, folder, rootFolderAbsolutePath, relativePath, ex);
             }
         }
 
@@ -319,10 +319,10 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private void LogSkippedComponent(string status, string folder, string path, Exception ex)
+        private void LogSkippedComponent(string status, string folder, string rootFolderAbsolutePath, string path, Exception ex)
         {
             _logger.LogMessage(AppLogLevel.Warning,
-                $"Skipped SBOM component '{path}' ({status}, Folder={folder}) ({ex.GetType().Name}): {ex.Message}",
+                $"Skipped SBOM component '{path}' ({status}, Folder={folder}, Root='{rootFolderAbsolutePath}') ({ex.GetType().Name}): {ex.Message}",
                 shouldOutputMessageToConsole: true,
                 ex);
         }
