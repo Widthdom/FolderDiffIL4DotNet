@@ -70,6 +70,33 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void GenerateSbom_WhenRemovedComponentHashReadFails_LogsWarningAndStillWritesSbom()
+        {
+            var logger = new TestLogger();
+            var service = new SbomGenerateService(_resultLists, logger);
+            var (oldDir, newDir, reportDir) = MakeDirs("locked-removed-component-hash");
+            var removedPath = Path.Combine(oldDir, "removed.dll");
+            File.WriteAllText(removedPath, "removed-content");
+            _resultLists.AddRemovedFileAbsolutePath(removedPath);
+
+            using var lockStream = new FileStream(removedPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+            var exception = Record.Exception(() =>
+                service.GenerateSbom(CreateReportContext(oldDir, newDir, reportDir, shouldGenerateSbom: true, sbomFormat: "CycloneDX")));
+
+            Assert.Null(exception);
+            var sbomPath = Path.Combine(reportDir, SbomGenerateService.CYCLONEDX_FILE_NAME);
+            Assert.True(File.Exists(sbomPath));
+            var doc = JsonDocument.Parse(File.ReadAllText(sbomPath));
+            var component = doc.RootElement.GetProperty("components")[0];
+            var hashes = component.GetProperty("hashes");
+            Assert.Equal(0, hashes.GetArrayLength());
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to compute SBOM SHA256", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("(Removed)", warning.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void GenerateSbom_WhenModifiedRelativePathIsInvalid_SkipsBadComponentAndStillWritesSbom()
         {
             var logger = new TestLogger();
