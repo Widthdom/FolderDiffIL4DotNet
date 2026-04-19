@@ -201,6 +201,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Message.Contains("IL diff failed", StringComparison.Ordinal)
+                    && entry.Message.Contains("Old='", StringComparison.Ordinal)
+                    && entry.Message.Contains("New='", StringComparison.Ordinal)
                     && entry.Message.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 
