@@ -91,6 +91,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
                 var error = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
                 Assert.Contains("lib/app.dll", error.Message, StringComparison.Ordinal);
+                Assert.Contains("OldRoot=", error.Message, StringComparison.Ordinal);
+                Assert.Contains("NewRoot=", error.Message, StringComparison.Ordinal);
                 Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
                 Assert.NotNull(error.Exception);
                 Assert.Same(exception, error.Exception);

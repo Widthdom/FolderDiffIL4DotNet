@@ -71,7 +71,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             catch (Exception ex)
             {
                 _logger.LogMessage(AppLogLevel.Error,
-                    $"{ERROR_FAILED_TO_OUTPUT_IL_TEXT} File='{fileRelativePath}', Old='{oldILFileAbsolutePath}', New='{newILFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"{ERROR_FAILED_TO_OUTPUT_IL_TEXT} File='{fileRelativePath}', OldRoot='{_ilOldFolderAbsolutePath}', NewRoot='{_ilNewFolderAbsolutePath}', Old='{oldILFileAbsolutePath}', New='{newILFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 throw;
