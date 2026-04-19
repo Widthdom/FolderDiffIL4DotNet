@@ -99,6 +99,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Failed to compute SBOM SHA256", warning.Message, StringComparison.Ordinal);
             Assert.Contains("(Removed)", warning.Message, StringComparison.Ordinal);
             Assert.Contains(removedPath, warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.ShouldOutputMessageToConsole);
         }
 
         [Fact]
