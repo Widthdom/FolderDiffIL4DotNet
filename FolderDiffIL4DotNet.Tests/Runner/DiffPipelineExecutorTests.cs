@@ -239,8 +239,10 @@ namespace FolderDiffIL4DotNet.Tests.Runner
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Review checklist file", StringComparison.Ordinal));
             Assert.Contains("invalid JSON", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(JsonException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
+
 
         private (string OldDir, string NewDir, string ReportDir) CreateRunDirectories(string name)
         {

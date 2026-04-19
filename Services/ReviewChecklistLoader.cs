@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist path could not be resolved and will be skipped: {ex.Message}",
+                    $"Review checklist path could not be resolved and will be skipped ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
@@ -60,7 +60,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist file '{checklistFilePath}' is invalid JSON and will be skipped: {ex.Message}",
+                    $"Review checklist file '{checklistFilePath}' is invalid JSON and will be skipped ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
