@@ -113,7 +113,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 if (reportGenerated)
                 {
-                    TrySetReportReadOnly(diffReportAbsolutePath);
+                    TrySetReportReadOnly(context.ReportsFolderAbsolutePath, diffReportAbsolutePath);
                     _logger.LogMessage(AppLogLevel.Info, LOG_REPORT_GENERATION_COMPLETED, shouldOutputMessageToConsole: false);
                 }
             }

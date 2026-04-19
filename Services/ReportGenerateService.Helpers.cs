@@ -39,7 +39,7 @@ namespace FolderDiffIL4DotNet.Services
             File.Delete(outputFileAbsolutePath);
         }
 
-        private void TrySetReportReadOnly(string diffReportAbsolutePath)
+        private void TrySetReportReadOnly(string reportsFolderAbsolutePath, string diffReportAbsolutePath)
         {
             try
             {
@@ -47,14 +47,14 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogReportProtectionWarning(diffReportAbsolutePath, ex);
+                LogReportProtectionWarning(reportsFolderAbsolutePath, diffReportAbsolutePath, ex);
             }
         }
 
-        private void LogReportProtectionWarning(string diffReportAbsolutePath, Exception ex)
+        private void LogReportProtectionWarning(string reportsFolderAbsolutePath, string diffReportAbsolutePath, Exception ex)
         {
             _logger.LogMessage(AppLogLevel.Warning,
-                $"Failed to mark report as read-only: '{diffReportAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                $"Failed to mark report as read-only for reports folder '{reportsFolderAbsolutePath}': '{diffReportAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
                 shouldOutputMessageToConsole: true,
                 ex);
         }
