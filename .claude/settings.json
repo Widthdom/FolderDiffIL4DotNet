@@ -1,4 +1,14 @@
 {
+  "mcpServers": {
+    "cdidx": {
+      "command": "cdidx",
+      "args": [
+        "mcp",
+        "--db",
+        ".cdidx/codeindex.db"
+      ]
+    }
+  },
   "permissions": {
     "deny": [
       "Bash(rg:*)",

@@ -32,6 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Documentation
 
+- **CLAUDE.md and Claude settings now track the upstream `cdidx` v1.12.0 workflow more closely** — The repository guidance now documents the current `cdidx` upgrade paths, newer query-strategy guidance (`status --json`, `--exact-substring`, SQL graph caveats, field/property extraction, hotspot/unused nuances, incremental CI hooks), and `.claude/settings.json` now wires the `cdidx` MCP server directly alongside the existing shell-search deny list. Affected: `CLAUDE.md`, `.claude/settings.json`. Tests: not run (documentation/config only).
 - **Developer guide architecture tables now include `ReviewChecklistLoader` and the run-scoped checklist snapshot responsibility** — Both the EN and JA sections now document that `DiffPipelineExecutor` resolves the optional review checklist once per run and that `ReviewChecklistLoader` normalizes and shares the user-local `checklist.json` snapshot from the config directory across Markdown/HTML generation. Affected: `doc/DEVELOPER_GUIDE.md`.
 - **Added a standalone sample checklist JSON aligned with the report samples** — The repository now includes [`doc/samples/checklist.json`](doc/samples/checklist.json) using the same two review checklist items shown in the Markdown/HTML report samples, and the README now links to that sample from the checklist configuration section. Affected: `doc/samples/checklist.json`, `README.md`.
 
@@ -1501,6 +1502,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### ドキュメント
 
+- **`CLAUDE.md` と Claude 設定を upstream `cdidx` v1.12.0 の運用へ近づけた** — リポジトリ内ガイダンスに、現行の `cdidx` 更新経路、より新しい検索戦略（`status --json`、`--exact-substring`、SQL graph 制約、field/property 抽出、`hotspots` / `unused` の注意点、CI 向け incremental 更新）を反映し、`.claude/settings.json` でも既存の shell 検索 deny list と並べて `cdidx` MCP サーバーを直接配線しました。対象: `CLAUDE.md`, `.claude/settings.json`。テスト: 未実行（ドキュメント/設定のみ）。
 - **開発者ガイドの構成表に `ReviewChecklistLoader` と run 単位 checklist snapshot 責務を反映** — EN/JA 両方の表で、`DiffPipelineExecutor` が任意の review checklist を run ごとに 1 回だけ解決すること、および `ReviewChecklistLoader` が config ディレクトリ直下のユーザーローカル `checklist.json` snapshot を正規化して Markdown / HTML 間で共有することを明記しました。対象: `doc/DEVELOPER_GUIDE.md`。
 - **レポートサンプルと揃えた standalone の checklist JSON サンプルを追加** — リポジトリに [`doc/samples/checklist.json`](doc/samples/checklist.json) を追加し、Markdown / HTML レポート sample と同じ 2 件の review checklist 項目を収録しました。README の checklist 設定説明からもこの sample へ辿れるようにしています。対象: `doc/samples/checklist.json`, `README.md`。
 
