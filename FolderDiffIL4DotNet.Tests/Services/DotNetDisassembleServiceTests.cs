@@ -174,6 +174,29 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void CleanupTemporaryPathBestEffort_WhenPathIsInvalid_LogsFailureWithPathState()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var invalidPath = Path.Combine(_rootDir, "temp\0fail");
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CleanupTemporaryPathBestEffort", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, [invalidPath, "unit test"]);
+
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Temporary cleanup failed", StringComparison.Ordinal)
+                    && entry.Message.Contains("File=False", StringComparison.Ordinal)
+                    && entry.Message.Contains("Directory=False", StringComparison.Ordinal)
+                    && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
+                    && entry.Exception is ArgumentException);
+        }
+
+        [Fact]
         public void BuildPrefetchCacheKeyPatterns_DotnetMuxer_IncludesCanonicalAndLegacyLabels()
         {
             // BuildPrefetchCacheKeyPatterns has been moved to ILCachePrefetcher

@@ -73,9 +73,11 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
+                bool existsAsFile = File.Exists(temporaryPath);
+                bool existsAsDirectory = Directory.Exists(temporaryPath);
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Temporary cleanup failed for {purpose}: '{temporaryPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Temporary cleanup failed for {purpose}: '{temporaryPath}' (File={existsAsFile}, Directory={existsAsDirectory}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false,
                     ex);
             }
