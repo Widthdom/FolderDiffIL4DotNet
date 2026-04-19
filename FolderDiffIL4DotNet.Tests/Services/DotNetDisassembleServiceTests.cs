@@ -144,7 +144,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             method.Invoke(service, [tempDirectory, "unit test"]);
 
-            Assert.Contains(logger.Messages, m => m.Contains("Temporary cleanup left a path behind", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, m => m.Contains("Temporary cleanup left a path behind", StringComparison.Ordinal)
+                && m.Contains("File=False", StringComparison.Ordinal)
+                && m.Contains("Directory=True", StringComparison.Ordinal));
             Assert.True(Directory.Exists(tempDirectory));
         }
 

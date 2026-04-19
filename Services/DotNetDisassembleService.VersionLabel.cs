@@ -63,9 +63,11 @@ namespace FolderDiffIL4DotNet.Services
                 FileSystemUtility.DeleteFileSilent(temporaryPath);
                 if (File.Exists(temporaryPath) || Directory.Exists(temporaryPath))
                 {
+                    bool existsAsFile = File.Exists(temporaryPath);
+                    bool existsAsDirectory = Directory.Exists(temporaryPath);
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Temporary cleanup left a path behind for {purpose}: '{temporaryPath}'.",
+                        $"Temporary cleanup left a path behind for {purpose}: '{temporaryPath}' (File={existsAsFile}, Directory={existsAsDirectory}).",
                         shouldOutputMessageToConsole: false);
                 }
             }
