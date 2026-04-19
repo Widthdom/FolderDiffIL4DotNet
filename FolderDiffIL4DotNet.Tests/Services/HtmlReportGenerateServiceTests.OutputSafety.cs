@@ -57,6 +57,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME, warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
+            Assert.True(warning.ShouldOutputMessageToConsole);
         }
     }
 }
