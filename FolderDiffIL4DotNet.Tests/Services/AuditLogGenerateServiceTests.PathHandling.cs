@@ -138,6 +138,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Skipped Removed audit log entry", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{oldDir}'", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.ShouldOutputMessageToConsole);
         }
     }
 }
