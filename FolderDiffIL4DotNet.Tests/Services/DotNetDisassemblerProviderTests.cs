@@ -87,7 +87,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(logger.Messages, m =>
                 m.Contains("managed-assembly detection failed", StringComparison.Ordinal)
                 && m.Contains(provider.DisplayName, StringComparison.Ordinal)
-                && m.Contains("Extension='.dll'", StringComparison.Ordinal));
+                && m.Contains("Extension='.dll'", StringComparison.Ordinal)
+                && m.Contains("File=False", StringComparison.Ordinal)
+                && m.Contains("Directory=False", StringComparison.Ordinal));
         }
 
         [Fact]
