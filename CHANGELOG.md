@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **IL output rethrow logs now retain relative and absolute comparison paths** — `ILOutputService` now includes the file relative path plus the resolved old/new absolute file paths when IL text output fails and the exception is rethrown. This keeps sidecar IL-output triage actionable without changing comparison behavior. Affected: `Services/ILOutputService.cs`, `FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.Precompute.cs`. Tests: `DiffDotNetAssembliesAsync_WhenIlTextOutputFails_LogsRelativeAndAbsolutePaths` (added).
 - **.NET detection skip warnings now retain both comparison paths and the exception type** — `FileDiffService` now includes the resolved old/new absolute paths plus the recoverable detection exception type when managed-assembly detection fails and IL diff is skipped. This keeps IL-skip triage actionable without changing comparison behavior. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.ILComparison.cs`. Tests: `FilesAreEqualAsync_WhenDotNetDetectionFails_LogsWarningAndSkipsIL` (updated).
 
 ### [1.18.0] - 2026-04-18
@@ -1510,6 +1511,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 #### Fixed
 
+- **IL 出力の再スロー error が相対/絶対の比較パスを保持するよう改善** — `ILOutputService` は、IL テキスト出力が失敗して例外を再スローする際、対象ファイルの相対パスと解決済みの old/new 絶対パスを error に含めるようになりました。比較ロジックは変えずに、付随する IL 出力失敗の切り分けをしやすくします。影響: `Services/ILOutputService.cs`, `FolderDiffIL4DotNet.Tests/Services/ILOutputServiceTests.Precompute.cs`。テスト: `DiffDotNetAssembliesAsync_WhenIlTextOutputFails_LogsRelativeAndAbsolutePaths`（追加）。
 - **.NET 判定スキップ警告が比較元/比較先パスと例外型を保持するよう改善** — `FileDiffService` は、マネージドアセンブリ判定が回復可能失敗になって IL 差分をスキップする際、解決済みの old/new 絶対パスと検出例外の型名を warning に含めるようになりました。比較ロジックは変えずに、IL スキップの切り分けをしやすくします。影響: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.ILComparison.cs`。テスト: `FilesAreEqualAsync_WhenDotNetDetectionFails_LogsWarningAndSkipsIL`（更新）。
 
 ### [1.18.0] - 2026-04-18
