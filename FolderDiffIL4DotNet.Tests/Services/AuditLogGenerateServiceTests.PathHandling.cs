@@ -84,6 +84,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(string.Empty, doc.RootElement.GetProperty("htmlReportSha256").GetString());
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to compute HTML report SHA256", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(htmlReportPath, warning.Message, StringComparison.Ordinal);
             Assert.Contains($"ReportsFolder='{reportDir}'", warning.Message, StringComparison.Ordinal);
         }
 
