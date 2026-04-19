@@ -145,7 +145,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Warning
-                    && entry.Message.Contains("Failed to detect", StringComparison.Ordinal));
+                    && entry.Message.Contains("Failed to detect", StringComparison.Ordinal)
+                    && entry.Message.Contains("Old='/virtual/old/detect-fail.dll'", StringComparison.Ordinal)
+                    && entry.Message.Contains("New='/virtual/new/detect-fail.dll'", StringComparison.Ordinal)
+                    && entry.Message.Contains(nameof(IOException), StringComparison.Ordinal));
         }
 
         [Fact]

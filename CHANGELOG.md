@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **.NET detection skip warnings now retain both comparison paths and the exception type** — `FileDiffService` now includes the resolved old/new absolute paths plus the recoverable detection exception type when managed-assembly detection fails and IL diff is skipped. This keeps IL-skip triage actionable without changing comparison behavior. Affected: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.ILComparison.cs`. Tests: `FilesAreEqualAsync_WhenDotNetDetectionFails_LogsWarningAndSkipsIL` (updated).
+
 ### [1.18.0] - 2026-04-18
 
 #### Changed
@@ -1503,6 +1507,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Fixed
+
+- **.NET 判定スキップ警告が比較元/比較先パスと例外型を保持するよう改善** — `FileDiffService` は、マネージドアセンブリ判定が回復可能失敗になって IL 差分をスキップする際、解決済みの old/new 絶対パスと検出例外の型名を warning に含めるようになりました。比較ロジックは変えずに、IL スキップの切り分けをしやすくします。影響: `Services/FileDiffService.cs`, `FolderDiffIL4DotNet.Tests/Services/FileDiffServiceUnitTests.ILComparison.cs`。テスト: `FilesAreEqualAsync_WhenDotNetDetectionFails_LogsWarningAndSkipsIL`（更新）。
 
 ### [1.18.0] - 2026-04-18
 
