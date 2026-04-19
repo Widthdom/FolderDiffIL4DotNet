@@ -82,7 +82,7 @@ namespace FolderDiffIL4DotNet.Services
                 PathValidator.ValidateAbsolutePathLengthOrThrow(auditLogPath);
                 PrepareOutputPathForOverwrite(auditLogPath);
                 File.WriteAllText(auditLogPath, json, Encoding.UTF8);
-                TrySetReadOnly(auditLogPath);
+                TrySetReadOnly(context.ReportsFolderAbsolutePath, auditLogPath);
 
                 _logger.LogMessage(AppLogLevel.Info,
                     $"Audit log generated: {auditLogPath}",
@@ -112,7 +112,7 @@ namespace FolderDiffIL4DotNet.Services
             File.Delete(outputFileAbsolutePath);
         }
 
-        private void TrySetReadOnly(string auditLogPath)
+        private void TrySetReadOnly(string reportsFolderAbsolutePath, string auditLogPath)
         {
             try
             {
@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark audit log as read-only: '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark audit log as read-only for reports folder '{reportsFolderAbsolutePath}': '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }

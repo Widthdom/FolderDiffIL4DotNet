@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
@@ -138,6 +139,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Skipped Removed audit log entry", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{oldDir}'", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.ShouldOutputMessageToConsole);
+        }
+
+        [Fact]
+        public void TrySetReadOnly_WhenPathFails_LogsReportsFolderContext()
+        {
+            var logger = new TestLogger();
+            var service = new AuditLogGenerateService(_resultLists, logger);
+            var method = typeof(AuditLogGenerateService).GetMethod("TrySetReadOnly", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, ["/tmp/reports", "\0bad-audit-log"]);
+
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("reports folder '/tmp/reports'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Failed to mark audit log as read-only", warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
     }
