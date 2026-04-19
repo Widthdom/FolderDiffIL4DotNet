@@ -65,8 +65,8 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
 
                 // Set read-only attribute
                 // 読み取り専用属性の設定
-                TrySetReadOnly(oldILFileAbsolutePath);
-                TrySetReadOnly(newILFileAbsolutePath);
+                TrySetReadOnly(fileRelativePath, oldILFileAbsolutePath);
+                TrySetReadOnly(fileRelativePath, newILFileAbsolutePath);
             }
             catch (Exception ex)
             {
@@ -94,7 +94,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             File.Delete(outputFileAbsolutePath);
         }
 
-        private void TrySetReadOnly(string outputFileAbsolutePath)
+        private void TrySetReadOnly(string fileRelativePath, string outputFileAbsolutePath)
         {
             try
             {
@@ -103,7 +103,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark IL text output as read-only: '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark IL text output as read-only for '{fileRelativePath}': '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }

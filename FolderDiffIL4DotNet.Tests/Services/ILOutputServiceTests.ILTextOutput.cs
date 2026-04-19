@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Services.ILOutput;
@@ -93,6 +94,40 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
                 Assert.NotNull(error.Exception);
                 Assert.Same(exception, error.Exception);
+            }
+            finally
+            {
+                TryDeleteDirectory(rootDir);
+            }
+        }
+
+        [Fact]
+        public void TrySetReadOnly_WhenPathFails_LogsSourceFileContext()
+        {
+            var rootDir = Path.Combine(Path.GetTempPath(), "fd-iltext-tests-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(rootDir);
+
+            try
+            {
+                var context = new DiffExecutionContext(
+                    Path.Combine(rootDir, "old"),
+                    Path.Combine(rootDir, "new"),
+                    Path.Combine(rootDir, "reports"),
+                    optimizeForNetworkShares: false,
+                    detectedNetworkOld: false,
+                    detectedNetworkNew: false);
+                var logger = new TestLogger();
+                var service = new ILTextOutputService(context, logger);
+                var method = typeof(ILTextOutputService).GetMethod("TrySetReadOnly", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.NotNull(method);
+
+                method.Invoke(service, ["lib/app.dll", "\0bad-il-output"]);
+
+                var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+                Assert.Contains("lib/app.dll", warning.Message, StringComparison.Ordinal);
+                Assert.Contains("Failed to mark IL text output as read-only", warning.Message, StringComparison.Ordinal);
+                Assert.NotNull(warning.Exception);
+                Assert.True(warning.ShouldOutputMessageToConsole);
             }
             finally
             {
