@@ -174,7 +174,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable. Skipping IL diff.",
+                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable at '{file1AbsolutePath}'. Skipping IL diff.",
                         shouldOutputMessageToConsole: true,
                         dotNetDetectionResult.Exception);
                 }

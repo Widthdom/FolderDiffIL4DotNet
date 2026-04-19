@@ -96,7 +96,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Contains("Falling back to sequential text diff", warningLog.Message);
                 Assert.Contains("IOException", warningLog.Message);
                 Assert.IsType<IOException>(warningLog.Exception);
-                Assert.Contains(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning && entry.Message.Contains("Failed to detect whether 'sample.txt' is a .NET executable", StringComparison.Ordinal));
+                Assert.Contains(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Failed to detect whether 'sample.txt' is a .NET executable", StringComparison.Ordinal)
+                    && entry.Message.Contains($"'{Path.Combine(oldDir, fileRelativePath)}'", StringComparison.Ordinal));
             }
             finally
             {
