@@ -30,6 +30,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Review checklist path could not be resolved", StringComparison.Ordinal));
+            Assert.Contains(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("OverridePresent=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(InvalidOperationException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }

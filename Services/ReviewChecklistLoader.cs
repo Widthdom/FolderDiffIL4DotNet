@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist path could not be resolved and will be skipped ({ex.GetType().Name}): {ex.Message}",
+                    $"Review checklist path could not be resolved and will be skipped (OverrideKey='{AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY}', OverridePresent={AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY) != null}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
