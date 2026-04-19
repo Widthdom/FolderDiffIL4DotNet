@@ -148,6 +148,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("reports folder '/tmp/reports'", warning.Message, StringComparison.Ordinal);
             Assert.Contains("CycloneDX", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=False", warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
