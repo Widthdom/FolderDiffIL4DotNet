@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Threading.Tasks;
 using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Models;
@@ -199,6 +200,38 @@ namespace FolderDiffIL4DotNet.Tests.Services
         {
             var prefetcher = CreatePrefetcher(enableIlCache: true);
             Assert.Equal(0, prefetcher.IlCacheHits);
+        }
+
+        [Fact]
+        public async Task BuildDisassemblerVersionListAsync_WhenVersionLookupFails_LogsExceptionContextAndSkips()
+        {
+            var emptyBinDir = Path.Combine(_rootDir, "empty-bin-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(emptyBinDir);
+            var oldPath = Environment.GetEnvironmentVariable("PATH");
+
+            try
+            {
+                Environment.SetEnvironmentVariable("PATH", emptyBinDir);
+                var logger = new TestLogger(logFileAbsolutePath: "test.log");
+                var cache = new DotNetDisassemblerCache(logger);
+                var prefetcher = new ILCachePrefetcher(CreateConfig(enableIlCache: true), ilCache: null, logger, cache);
+                var method = typeof(ILCachePrefetcher).GetMethod("BuildDisassemblerVersionListAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.NotNull(method);
+
+                var task = Assert.IsAssignableFrom<Task>(method.Invoke(prefetcher, null));
+                await task;
+
+                Assert.Contains(
+                    logger.Entries,
+                    entry => entry.LogLevel == AppLogLevel.Warning
+                        && entry.Message.Contains("Failed to get version for disassemble command", StringComparison.Ordinal)
+                        && entry.Message.Contains(nameof(InvalidOperationException), StringComparison.Ordinal)
+                        && entry.Message.Contains("Skipping.", StringComparison.Ordinal));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("PATH", oldPath);
+            }
         }
 
         // ── Helpers / ヘルパー ──────────────────────────────────────────────────
