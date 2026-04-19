@@ -107,5 +107,28 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Skipped Added audit log entry", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{newDir}'", warning.Message, StringComparison.Ordinal);
         }
+
+        [Fact]
+        public void GenerateAuditLog_WhenRemovedPathIsInvalid_SkipsBadEntryAndStillWritesAuditLog()
+        {
+            var logger = new TestLogger();
+            var service = new AuditLogGenerateService(_resultLists, logger);
+            var (oldDir, newDir, reportDir) = MakeDirs("invalid-removed-entry");
+            _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "gone.txt"));
+            _resultLists.AddRemovedFileAbsolutePath("\0bad-removed-path");
+
+            var exception = Record.Exception(() => service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir)));
+
+            Assert.Null(exception);
+            var auditLogPath = Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME);
+            Assert.True(File.Exists(auditLogPath));
+            var doc = JsonDocument.Parse(File.ReadAllText(auditLogPath));
+            var files = doc.RootElement.GetProperty("files");
+            Assert.Contains(files.EnumerateArray(), file => file.GetProperty("relativePath").GetString() == "gone.txt");
+            Assert.DoesNotContain(files.EnumerateArray(), file => string.Equals(file.GetProperty("relativePath").GetString(), "\0bad-removed-path", StringComparison.Ordinal));
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Skipped Removed audit log entry", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"Root='{oldDir}'", warning.Message, StringComparison.Ordinal);
+        }
     }
 }
