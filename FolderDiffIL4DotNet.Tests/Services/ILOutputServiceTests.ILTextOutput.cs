@@ -128,6 +128,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
                 Assert.Contains("lib/app.dll", warning.Message, StringComparison.Ordinal);
                 Assert.Contains("Failed to mark IL text output as read-only", warning.Message, StringComparison.Ordinal);
+                Assert.Contains("UnknownSide", warning.Message, StringComparison.Ordinal);
+                Assert.Contains("OutputRoot=''", warning.Message, StringComparison.Ordinal);
                 Assert.NotNull(warning.Exception);
                 Assert.True(warning.ShouldOutputMessageToConsole);
             }

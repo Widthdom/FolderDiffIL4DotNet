@@ -102,11 +102,27 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
+                var (side, outputRoot) = DescribeOutputSide(outputFileAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark IL text output as read-only for '{fileRelativePath}': '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark IL text output as read-only for '{fileRelativePath}' ({side}, OutputRoot='{outputRoot}'): '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
+        }
+
+        private (string Side, string OutputRoot) DescribeOutputSide(string outputFileAbsolutePath)
+        {
+            if (outputFileAbsolutePath.StartsWith(_ilOldFolderAbsolutePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return ("Old", _ilOldFolderAbsolutePath);
+            }
+
+            if (outputFileAbsolutePath.StartsWith(_ilNewFolderAbsolutePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return ("New", _ilNewFolderAbsolutePath);
+            }
+
+            return ("UnknownSide", string.Empty);
         }
     }
 }
