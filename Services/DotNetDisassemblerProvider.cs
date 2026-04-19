@@ -68,15 +68,25 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 var extension = Path.GetExtension(filePath);
-                bool existsAsFile = File.Exists(filePath);
-                bool existsAsDirectory = Directory.Exists(filePath);
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Built-in .NET disassembler provider '{DisplayName}' skipped '{filePath}' (Extension='{extension}', File={existsAsFile}, Directory={existsAsDirectory}) because managed-assembly detection failed ({ex.GetType().Name}): {ex.Message}",
+                    $"Built-in .NET disassembler provider '{DisplayName}' skipped '{filePath}' (Extension='{extension}', {DescribePathStateForDiagnostics(filePath, ex)}) because managed-assembly detection failed ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false,
                     ex);
                 return false;
             }
+        }
+
+        private static string DescribePathStateForDiagnostics(string path, Exception? exception)
+        {
+            bool existsAsFile = File.Exists(path);
+            bool existsAsDirectory = Directory.Exists(path);
+            if (existsAsFile || existsAsDirectory || exception == null)
+            {
+                return $"File={existsAsFile}, Directory={existsAsDirectory}";
+            }
+
+            return "File=Unknown, Directory=Unknown";
         }
 
         /// <summary>

@@ -88,8 +88,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 m.Contains("managed-assembly detection failed", StringComparison.Ordinal)
                 && m.Contains(provider.DisplayName, StringComparison.Ordinal)
                 && m.Contains("Extension='.dll'", StringComparison.Ordinal)
-                && m.Contains("File=False", StringComparison.Ordinal)
-                && m.Contains("Directory=False", StringComparison.Ordinal));
+                && m.Contains("File=Unknown", StringComparison.Ordinal)
+                && m.Contains("Directory=Unknown", StringComparison.Ordinal));
         }
 
         [Fact]

@@ -63,24 +63,32 @@ namespace FolderDiffIL4DotNet.Services
                 FileSystemUtility.DeleteFileSilent(temporaryPath);
                 if (File.Exists(temporaryPath) || Directory.Exists(temporaryPath))
                 {
-                    bool existsAsFile = File.Exists(temporaryPath);
-                    bool existsAsDirectory = Directory.Exists(temporaryPath);
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Temporary cleanup left a path behind for {purpose}: '{temporaryPath}' (File={existsAsFile}, Directory={existsAsDirectory}).",
+                        $"Temporary cleanup left a path behind for {purpose}: '{temporaryPath}' ({DescribePathStateForDiagnostics(temporaryPath)}).",
                         shouldOutputMessageToConsole: false);
                 }
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                bool existsAsFile = File.Exists(temporaryPath);
-                bool existsAsDirectory = Directory.Exists(temporaryPath);
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Temporary cleanup failed for {purpose}: '{temporaryPath}' (File={existsAsFile}, Directory={existsAsDirectory}, {ex.GetType().Name}): {ex.Message}",
+                    $"Temporary cleanup failed for {purpose}: '{temporaryPath}' ({DescribePathStateForDiagnostics(temporaryPath, ex)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false,
                     ex);
             }
+        }
+
+        private static string DescribePathStateForDiagnostics(string path, Exception? exception = null)
+        {
+            bool existsAsFile = File.Exists(path);
+            bool existsAsDirectory = Directory.Exists(path);
+            if (existsAsFile || existsAsDirectory || exception == null)
+            {
+                return $"File={existsAsFile}, Directory={existsAsDirectory}";
+            }
+
+            return "File=Unknown, Directory=Unknown";
         }
 
         /// <summary>

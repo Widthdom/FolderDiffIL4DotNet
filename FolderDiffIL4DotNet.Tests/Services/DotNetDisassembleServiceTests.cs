@@ -190,8 +190,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Temporary cleanup failed", StringComparison.Ordinal)
-                    && entry.Message.Contains("File=False", StringComparison.Ordinal)
-                    && entry.Message.Contains("Directory=False", StringComparison.Ordinal)
+                    && entry.Message.Contains("File=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("Directory=Unknown", StringComparison.Ordinal)
                     && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
                     && entry.Exception is ArgumentException);
         }
