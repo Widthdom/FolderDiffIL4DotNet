@@ -69,7 +69,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist file '{checklistFilePath}' could not be read and will be skipped: {ex.GetType().Name}: {ex.Message}",
+                    $"Review checklist file '{checklistFilePath}' could not be read and will be skipped ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
