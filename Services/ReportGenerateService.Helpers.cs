@@ -54,9 +54,21 @@ namespace FolderDiffIL4DotNet.Services
         private void LogReportProtectionWarning(string reportsFolderAbsolutePath, string diffReportAbsolutePath, Exception ex)
         {
             _logger.LogMessage(AppLogLevel.Warning,
-                $"Failed to mark report as read-only for reports folder '{reportsFolderAbsolutePath}': '{diffReportAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                $"Failed to mark report as read-only for reports folder '{reportsFolderAbsolutePath}': '{diffReportAbsolutePath}' (IsPathRooted={DescribePathRootedState(diffReportAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                 shouldOutputMessageToConsole: true,
                 ex);
+        }
+
+        private static string DescribePathRootedState(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
+            }
         }
 
         private static string GetIgnoredFileLocationLabel(FileDiffResultLists.IgnoredFileLocation location)
