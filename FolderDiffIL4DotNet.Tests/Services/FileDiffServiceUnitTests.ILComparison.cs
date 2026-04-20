@@ -85,10 +85,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry =>
                 entry.LogLevel == AppLogLevel.Warning
                 && entry.Message.Contains("Semantic analysis failed", StringComparison.Ordinal));
+            var expectedOldPath = Path.Combine("/virtual/old", relativePath);
+            var expectedNewPath = Path.Combine("/virtual/new", relativePath);
             Assert.NotNull(warning.Exception);
             Assert.Contains(warning.Exception!.GetType().Name, warning.Message, StringComparison.Ordinal);
-            Assert.Contains("Old='/virtual/old/assembly.dll'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("New='/virtual/new/assembly.dll'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"Old='{expectedOldPath}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"New='{expectedNewPath}'", warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -142,12 +144,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Mismatch,
                 resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
             Assert.Empty(ilOutputService.DiffCalls);
+            var expectedOldPath = Path.Combine("/virtual/old", relativePath);
+            var expectedNewPath = Path.Combine("/virtual/new", relativePath);
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Failed to detect", StringComparison.Ordinal)
-                    && entry.Message.Contains("Old='/virtual/old/detect-fail.dll'", StringComparison.Ordinal)
-                    && entry.Message.Contains("New='/virtual/new/detect-fail.dll'", StringComparison.Ordinal)
+                    && entry.Message.Contains($"Old='{expectedOldPath}'", StringComparison.Ordinal)
+                    && entry.Message.Contains($"New='{expectedNewPath}'", StringComparison.Ordinal)
                     && entry.Message.Contains(nameof(IOException), StringComparison.Ordinal));
         }
 

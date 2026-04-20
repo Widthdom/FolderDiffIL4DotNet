@@ -86,10 +86,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 service.DiffDotNetAssembliesAsync("lib/app.dll", "/virtual/old", "/virtual/new", shouldOutputIlText: true));
 
             var error = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
+            var expectedOldPath = Path.Combine("/virtual/old", "lib/app.dll");
+            var expectedNewPath = Path.Combine("/virtual/new", "lib/app.dll");
             Assert.Contains("Failed to output IL", error.Message, StringComparison.Ordinal);
             Assert.Contains("lib/app.dll", error.Message, StringComparison.Ordinal);
-            Assert.Contains("Old='/virtual/old/lib/app.dll'", error.Message, StringComparison.Ordinal);
-            Assert.Contains("New='/virtual/new/lib/app.dll'", error.Message, StringComparison.Ordinal);
+            Assert.Contains($"Old='{expectedOldPath}'", error.Message, StringComparison.Ordinal);
+            Assert.Contains($"New='{expectedNewPath}'", error.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
             Assert.Same(exception, error.Exception);
         }

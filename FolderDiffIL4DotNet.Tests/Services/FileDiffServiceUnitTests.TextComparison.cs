@@ -377,10 +377,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Dependency change analysis failed", StringComparison.Ordinal));
+            var expectedOldPath = Path.Combine("/virtual/old", relativePath);
+            var expectedNewPath = Path.Combine("/virtual/new", relativePath);
             Assert.NotNull(warning.Exception);
             Assert.Contains(warning.Exception.GetType().Name, warning.Message, StringComparison.Ordinal);
-            Assert.Contains("Old='/virtual/old/app.deps.json'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("New='/virtual/new/app.deps.json'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"Old='{expectedOldPath}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"New='{expectedNewPath}'", warning.Message, StringComparison.Ordinal);
             Assert.Empty(resultLists.FileRelativePathToDependencyChanges);
         }
 
