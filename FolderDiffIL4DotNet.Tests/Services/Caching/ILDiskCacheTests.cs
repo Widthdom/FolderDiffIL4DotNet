@@ -51,6 +51,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Null(exception);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to create IL cache directory", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }
@@ -67,6 +68,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped IL disk cache read", warning.Message, StringComparison.Ordinal);
             Assert.Contains(_cacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("DirectoryIsPathRooted=True", warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -81,6 +83,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped IL disk cache write", warning.Message, StringComparison.Ordinal);
             Assert.Contains(_cacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("DirectoryIsPathRooted=True", warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -95,6 +98,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped IL disk cache remove", warning.Message, StringComparison.Ordinal);
             Assert.Contains(_cacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("DirectoryIsPathRooted=True", warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -112,6 +116,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to read IL cache file", warning.Message, StringComparison.Ordinal);
             Assert.Contains(invalidCacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("CacheDirectoryIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("CacheFileIsPathRooted=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"cacheKeyLength={cacheKey.Length}", warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }
@@ -130,6 +136,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to write IL cache file", warning.Message, StringComparison.Ordinal);
             Assert.Contains(invalidCacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("CacheDirectoryIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("CacheFileIsPathRooted=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"cacheKeyLength={cacheKey.Length}", warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }
@@ -149,6 +157,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to remove disk cache file", warning.Message, StringComparison.Ordinal);
             Assert.Contains(invalidCacheDir, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("CacheDirectoryIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("CacheFileIsPathRooted=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"cacheKeyLength={cacheKey.Length}", warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }
