@@ -325,7 +325,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}, Root='{rootFolderAbsolutePath}') at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}, Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(filePath)}) at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return string.Empty;
