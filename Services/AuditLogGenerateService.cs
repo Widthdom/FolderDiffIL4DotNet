@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark audit log as read-only for reports folder '{reportsFolderAbsolutePath}': '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark audit log as read-only for reports folder '{reportsFolderAbsolutePath}': '{auditLogPath}' (IsPathRooted={DescribePathRootedState(auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
