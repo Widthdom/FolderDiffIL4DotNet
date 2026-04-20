@@ -42,6 +42,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("CycloneDX", warning.Message, StringComparison.Ordinal);
             Assert.Contains("reports folder", warning.Message, StringComparison.Ordinal);
             Assert.Contains(SbomGenerateService.CYCLONEDX_FILE_NAME, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
             Assert.True(warning.ShouldOutputMessageToConsole);

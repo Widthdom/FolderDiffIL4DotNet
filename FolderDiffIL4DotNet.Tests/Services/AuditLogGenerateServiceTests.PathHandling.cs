@@ -37,6 +37,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("reports folder", warning.Message, StringComparison.Ordinal);
             Assert.Contains(AuditLogGenerateService.AUDIT_LOG_FILE_NAME, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
             Assert.True(warning.ShouldOutputMessageToConsole);
