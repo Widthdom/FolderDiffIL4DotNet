@@ -130,6 +130,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(inspected);
         }
 
+        [Theory]
+        [InlineData("dotnet-ildasm", "CommandIsPathRooted=False", "CommandLooksPathLike=False")]
+        [InlineData("/tmp/dotnet-ildasm", "CommandIsPathRooted=True", "CommandLooksPathLike=True")]
+        public void BuildStartDisassemblerToolWarning_IncludesCommandShapeContext(string command, string expectedRooted, string expectedPathLike)
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildStartDisassemblerToolWarning", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var message = Assert.IsType<string>(method.Invoke(null, [command, new System.ComponentModel.Win32Exception("missing tool")]));
+
+            Assert.Contains("Failed to start disassembler tool", message, StringComparison.Ordinal);
+            Assert.Contains(command, message, StringComparison.Ordinal);
+            Assert.Contains(expectedRooted, message, StringComparison.Ordinal);
+            Assert.Contains(expectedPathLike, message, StringComparison.Ordinal);
+            Assert.Contains("missing tool", message, StringComparison.Ordinal);
+        }
+
         [Fact]
         public void CleanupTemporaryPathBestEffort_WhenDirectoryPathCannotBeDeleted_LogsWarning()
         {
@@ -144,7 +161,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             method.Invoke(service, [tempDirectory, "unit test"]);
 
-            Assert.Contains(logger.Messages, m => m.Contains("Temporary cleanup left a path behind", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, m => m.Contains("Temporary cleanup left a path behind", StringComparison.Ordinal)
+                && m.Contains("File=False", StringComparison.Ordinal)
+                && m.Contains("Directory=True", StringComparison.Ordinal));
             Assert.True(Directory.Exists(tempDirectory));
         }
 
@@ -166,6 +185,32 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Failed to create ASCII temp copy", StringComparison.Ordinal)
+                    && entry.Message.Contains("ildasm_input_", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceIsPathRooted=", StringComparison.Ordinal)
+                    && entry.Message.Contains("TempIsPathRooted=", StringComparison.Ordinal)
+                    && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
+                    && entry.Exception is ArgumentException);
+        }
+
+        [Fact]
+        public void CleanupTemporaryPathBestEffort_WhenPathIsInvalid_LogsFailureWithPathState()
+        {
+            var config = CreateConfig(enableIlCache: false);
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var service = new DotNetDisassembleService(config, ilCache: null, _resultLists, logger, _dotNetDisassemblerCache);
+            var invalidPath = Path.Combine(_rootDir, "temp\0fail");
+
+            var method = typeof(DotNetDisassembleService).GetMethod("CleanupTemporaryPathBestEffort", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, [invalidPath, "unit test"]);
+
+            Assert.Contains(
+                logger.Entries,
+                entry => entry.LogLevel == AppLogLevel.Warning
+                    && entry.Message.Contains("Temporary cleanup failed", StringComparison.Ordinal)
+                    && entry.Message.Contains("File=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("Directory=Unknown", StringComparison.Ordinal)
                     && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
                     && entry.Exception is ArgumentException);
         }

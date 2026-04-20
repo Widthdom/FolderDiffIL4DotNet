@@ -67,7 +67,7 @@ namespace FolderDiffIL4DotNet.Services
                 PathValidator.ValidateAbsolutePathLengthOrThrow(sbomPath);
                 PrepareOutputPathForOverwrite(sbomPath);
                 File.WriteAllText(sbomPath, json, Encoding.UTF8);
-                TrySetReadOnly(sbomPath, format);
+                TrySetReadOnly(context.ReportsFolderAbsolutePath, sbomPath, format);
 
                 _logger.LogMessage(AppLogLevel.Info,
                     $"SBOM generated ({format}): {sbomPath}",
@@ -76,7 +76,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write SBOM ({format}) to '{sbomPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to write SBOM ({format}) for reports folder '{context.ReportsFolderAbsolutePath}' to '{sbomPath}' (IsPathRooted={DescribePathRootedState(sbomPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -97,7 +97,7 @@ namespace FolderDiffIL4DotNet.Services
             File.Delete(outputFileAbsolutePath);
         }
 
-        private void TrySetReadOnly(string sbomPath, Models.SbomFormat format)
+        private void TrySetReadOnly(string reportsFolderAbsolutePath, string sbomPath, Models.SbomFormat format)
         {
             try
             {
@@ -106,8 +106,20 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark SBOM ({format}) as read-only: '{sbomPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark SBOM ({format}) as read-only for reports folder '{reportsFolderAbsolutePath}': '{sbomPath}' (IsPathRooted={DescribePathRootedState(sbomPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
+            }
+        }
+
+        private static string DescribePathRootedState(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
             }
         }
 
@@ -260,11 +272,11 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 var relativePath = Path.GetRelativePath(rootFolderAbsolutePath, fileAbsolutePath);
-                components.Add(CreateComponentInfo(relativePath, status, folder, string.Empty, fileAbsolutePath));
+                components.Add(CreateComponentInfo(relativePath, status, folder, string.Empty, fileAbsolutePath, rootFolderAbsolutePath));
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogSkippedComponent(status, folder, fileAbsolutePath, ex);
+                LogSkippedComponent(status, folder, rootFolderAbsolutePath, fileAbsolutePath, ex);
             }
         }
 
@@ -280,11 +292,11 @@ namespace FolderDiffIL4DotNet.Services
             {
                 var fileAbsolutePath = Path.Combine(rootFolderAbsolutePath, relativePath);
                 var normalizedFileAbsolutePath = Path.GetFullPath(fileAbsolutePath);
-                components.Add(CreateComponentInfo(relativePath, status, folder, diffDetail, normalizedFileAbsolutePath));
+                components.Add(CreateComponentInfo(relativePath, status, folder, diffDetail, normalizedFileAbsolutePath, rootFolderAbsolutePath));
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogSkippedComponent(status, folder, relativePath, ex);
+                LogSkippedComponent(status, folder, rootFolderAbsolutePath, relativePath, ex);
             }
         }
 
@@ -293,17 +305,18 @@ namespace FolderDiffIL4DotNet.Services
             string status,
             string folder,
             string diffDetail,
-            string fileAbsolutePath)
+            string fileAbsolutePath,
+            string rootFolderAbsolutePath)
             => new()
             {
                 RelativePath = relativePath,
                 Status = status,
                 Folder = folder,
                 DiffDetail = diffDetail,
-                Sha256 = TryComputeFileHash(fileAbsolutePath, relativePath, status)
+                Sha256 = TryComputeFileHash(fileAbsolutePath, relativePath, status, rootFolderAbsolutePath)
             };
 
-        private string TryComputeFileHash(string filePath, string relativePath, string status)
+        private string TryComputeFileHash(string filePath, string relativePath, string status, string rootFolderAbsolutePath)
         {
             try
             {
@@ -312,17 +325,17 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}) at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}, Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(filePath)}) at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return string.Empty;
             }
         }
 
-        private void LogSkippedComponent(string status, string folder, string path, Exception ex)
+        private void LogSkippedComponent(string status, string folder, string rootFolderAbsolutePath, string path, Exception ex)
         {
             _logger.LogMessage(AppLogLevel.Warning,
-                $"Skipped SBOM component '{path}' ({status}, Folder={folder}) ({ex.GetType().Name}): {ex.Message}",
+                $"Skipped SBOM component '{path}' ({status}, Folder={folder}, Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(path)}) ({ex.GetType().Name}): {ex.Message}",
                 shouldOutputMessageToConsole: true,
                 ex);
         }

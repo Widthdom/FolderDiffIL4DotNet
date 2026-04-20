@@ -205,12 +205,13 @@ namespace FolderDiffIL4DotNet.Services
                     var version = await _dotNetDisassemblerCache.GetDisassemblerVersionAsync(versionQueryLabel);
                     result.Add((candidateCommand, version));
                 }
-                catch (InvalidOperationException)
+                catch (InvalidOperationException ex)
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to get version for disassemble command '{candidateCommand}' (candidate: '{candidateCommand}'). Skipping.",
-                        shouldOutputMessageToConsole: true);
+                        $"Failed to get version for disassemble command '{candidateCommand}' (candidate: '{candidateCommand}', {ex.GetType().Name}): {ex.Message}. Skipping.",
+                        shouldOutputMessageToConsole: true,
+                        ex);
                 }
             }
             return result;

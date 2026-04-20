@@ -34,18 +34,19 @@ namespace FolderDiffIL4DotNet.Services
         /// </summary>
         private string? CreateAsciiTempCopyIfNeeded(string dotNetAssemblyFileAbsolutePath)
         {
+            string? tempAsciiPath = null;
             try
             {
                 if (!string.IsNullOrEmpty(dotNetAssemblyFileAbsolutePath) && TextSanitizer.ContainsNonAscii(dotNetAssemblyFileAbsolutePath))
                 {
-                    var tempAsciiPath = Path.Combine(Path.GetTempPath(), $"ildasm_input_{Guid.NewGuid():N}.dll");
+                    tempAsciiPath = Path.Combine(Path.GetTempPath(), $"ildasm_input_{Guid.NewGuid():N}.dll");
                     File.Copy(dotNetAssemblyFileAbsolutePath, tempAsciiPath, overwrite: true);
                     return tempAsciiPath;
                 }
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' at '{tempAsciiPath ?? "(not allocated)"}' (SourceIsPathRooted={DescribePathRootedState(dotNetAssemblyFileAbsolutePath)}, TempIsPathRooted={DescribePathRootedState(tempAsciiPath)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
             return null;
         }
@@ -64,7 +65,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Temporary cleanup left a path behind for {purpose}: '{temporaryPath}'.",
+                        $"Temporary cleanup left a path behind for {purpose}: '{temporaryPath}' ({DescribePathStateForDiagnostics(temporaryPath)}).",
                         shouldOutputMessageToConsole: false);
                 }
             }
@@ -72,10 +73,48 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Temporary cleanup failed for {purpose}: '{temporaryPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Temporary cleanup failed for {purpose}: '{temporaryPath}' ({DescribePathStateForDiagnostics(temporaryPath, ex)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false,
                     ex);
             }
+        }
+
+        private static string DescribePathRootedState(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return "Unknown";
+            }
+
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
+            }
+        }
+
+        private static string BuildStartDisassemblerToolWarning(string candidateDisassembleCommand, Exception exception)
+            => $"Failed to start disassembler tool '{candidateDisassembleCommand}' (CommandIsPathRooted={DescribePathRootedState(candidateDisassembleCommand)}, CommandLooksPathLike={LooksLikePath(candidateDisassembleCommand)}): {exception.Message}. Ensure the tool is installed and its directory is in PATH.";
+
+        private static bool LooksLikePath(string? command)
+            => !string.IsNullOrWhiteSpace(command)
+                && (Path.IsPathRooted(command)
+                    || command.Contains(Path.DirectorySeparatorChar, StringComparison.Ordinal)
+                    || command.Contains(Path.AltDirectorySeparatorChar, StringComparison.Ordinal));
+
+        private static string DescribePathStateForDiagnostics(string path, Exception? exception = null)
+        {
+            bool existsAsFile = File.Exists(path);
+            bool existsAsDirectory = Directory.Exists(path);
+            if (existsAsFile || existsAsDirectory || exception == null)
+            {
+                return $"File={existsAsFile}, Directory={existsAsDirectory}";
+            }
+
+            return "File=Unknown, Directory=Unknown";
         }
 
         /// <summary>

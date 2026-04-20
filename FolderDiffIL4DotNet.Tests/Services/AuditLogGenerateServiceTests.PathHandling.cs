@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
@@ -35,8 +36,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Null(exception);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("reports folder", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(AuditLogGenerateService.AUDIT_LOG_FILE_NAME, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
+            Assert.True(warning.ShouldOutputMessageToConsole);
         }
 
         [Fact]
@@ -59,6 +63,36 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(string.Empty, doc.RootElement.GetProperty("reportSha256").GetString());
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to compute Markdown report SHA256", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(markdownReportPath, warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"ReportsFolder='{reportDir}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.ShouldOutputMessageToConsole);
+        }
+
+        [Fact]
+        public void GenerateAuditLog_WhenHtmlReportHashReadFails_LogsWarningAndStillWritesAuditLog()
+        {
+            var logger = new TestLogger();
+            var service = new AuditLogGenerateService(_resultLists, logger);
+            var (oldDir, newDir, reportDir) = MakeDirs("locked-html-report-hash");
+            var htmlReportPath = Path.Combine(reportDir, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME);
+            File.WriteAllText(htmlReportPath, "<html>locked-report</html>");
+
+            using var lockStream = new FileStream(htmlReportPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+            var exception = Record.Exception(() => service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir)));
+
+            Assert.Null(exception);
+            var auditLogPath = Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME);
+            Assert.True(File.Exists(auditLogPath));
+            var doc = JsonDocument.Parse(File.ReadAllText(auditLogPath));
+            Assert.Equal(string.Empty, doc.RootElement.GetProperty("htmlReportSha256").GetString());
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Failed to compute HTML report SHA256", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(htmlReportPath, warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"ReportsFolder='{reportDir}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.ShouldOutputMessageToConsole);
         }
 
         [Fact]
@@ -82,6 +116,53 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped Added audit log entry", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{newDir}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.ShouldOutputMessageToConsole);
+        }
+
+        [Fact]
+        public void GenerateAuditLog_WhenRemovedPathIsInvalid_SkipsBadEntryAndStillWritesAuditLog()
+        {
+            var logger = new TestLogger();
+            var service = new AuditLogGenerateService(_resultLists, logger);
+            var (oldDir, newDir, reportDir) = MakeDirs("invalid-removed-entry");
+            _resultLists.AddRemovedFileAbsolutePath(Path.Combine(oldDir, "gone.txt"));
+            _resultLists.AddRemovedFileAbsolutePath("\0bad-removed-path");
+
+            var exception = Record.Exception(() => service.GenerateAuditLog(CreateReportContext(oldDir, newDir, reportDir)));
+
+            Assert.Null(exception);
+            var auditLogPath = Path.Combine(reportDir, AuditLogGenerateService.AUDIT_LOG_FILE_NAME);
+            Assert.True(File.Exists(auditLogPath));
+            var doc = JsonDocument.Parse(File.ReadAllText(auditLogPath));
+            var files = doc.RootElement.GetProperty("files");
+            Assert.Contains(files.EnumerateArray(), file => file.GetProperty("relativePath").GetString() == "gone.txt");
+            Assert.DoesNotContain(files.EnumerateArray(), file => string.Equals(file.GetProperty("relativePath").GetString(), "\0bad-removed-path", StringComparison.Ordinal));
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("Skipped Removed audit log entry", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"Root='{oldDir}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.ShouldOutputMessageToConsole);
+        }
+
+        [Fact]
+        public void TrySetReadOnly_WhenPathFails_LogsReportsFolderContext()
+        {
+            var logger = new TestLogger();
+            var service = new AuditLogGenerateService(_resultLists, logger);
+            var method = typeof(AuditLogGenerateService).GetMethod("TrySetReadOnly", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, ["/tmp/reports", "\0bad-audit-log"]);
+
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("reports folder '/tmp/reports'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("Failed to mark audit log as read-only", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=False", warning.Message, StringComparison.Ordinal);
+            Assert.NotNull(warning.Exception);
+            Assert.True(warning.ShouldOutputMessageToConsole);
         }
     }
 }

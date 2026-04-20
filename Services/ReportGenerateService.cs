@@ -106,14 +106,14 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
             {
-                LogReportOutputFailure(diffReportAbsolutePath, ex);
+                LogReportOutputFailure(context.ReportsFolderAbsolutePath, diffReportAbsolutePath, ex);
                 throw;
             }
             finally
             {
                 if (reportGenerated)
                 {
-                    TrySetReportReadOnly(diffReportAbsolutePath);
+                    TrySetReportReadOnly(context.ReportsFolderAbsolutePath, diffReportAbsolutePath);
                     _logger.LogMessage(AppLogLevel.Info, LOG_REPORT_GENERATION_COMPLETED, shouldOutputMessageToConsole: false);
                 }
             }

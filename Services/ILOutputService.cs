@@ -183,7 +183,7 @@ namespace FolderDiffIL4DotNet.Services
                 // Log error with exception details and re-throw on IL text output failure.
                 // IL テキスト出力に失敗した場合は例外詳細付きエラーログを出しつつ再スロー。
                 _logger.LogMessage(AppLogLevel.Error,
-                    $"{ERROR_FAILED_TO_OUTPUT_IL} ({ex.GetType().Name}): {ex.Message}",
+                    $"{ERROR_FAILED_TO_OUTPUT_IL} for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
                 throw;
             }

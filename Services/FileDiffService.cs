@@ -174,7 +174,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     _logger.LogMessage(
                         AppLogLevel.Warning,
-                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable. Skipping IL diff.",
+                        $"Failed to detect whether '{fileRelativePath}' is a .NET executable (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {dotNetDetectionResult.Exception?.GetType().Name ?? "UnknownException"}). Skipping IL diff.",
                         shouldOutputMessageToConsole: true,
                         dotNetDetectionResult.Exception);
                 }
@@ -211,7 +211,7 @@ namespace FolderDiffIL4DotNet.Services
                     }
                     catch (InvalidOperationException ex)
                     {
-                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                        _logger.LogMessage(AppLogLevel.Error, $"IL diff failed for '{fileRelativePath}' (Old='{file1AbsolutePath}', New='{file2AbsolutePath}', {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
                         throw;
                     }
                 }
@@ -357,7 +357,7 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 var summary = DepsJsonAnalyzer.Analyze(oldPath, newPath,
-                    ex => LogDependencyAnalysisFailure(fileRelativePath, ex));
+                    ex => LogDependencyAnalysisFailure(fileRelativePath, oldPath, newPath, ex));
                 if (summary?.HasChanges == true)
                 {
                     _fileDiffResultLists.FileRelativePathToDependencyChanges[fileRelativePath] = summary;
@@ -366,7 +366,7 @@ namespace FolderDiffIL4DotNet.Services
 #pragma warning disable CA1031 // ベストエフォート解析のため全例外をキャッチ / Catch-all for best-effort analysis
             catch (Exception ex)
             {
-                LogDependencyAnalysisFailure(fileRelativePath, ex);
+                LogDependencyAnalysisFailure(fileRelativePath, oldPath, newPath, ex);
             }
 #pragma warning restore CA1031
         }
@@ -403,7 +403,7 @@ namespace FolderDiffIL4DotNet.Services
                     {
                         summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
                             _logger.LogMessage(AppLogLevel.Warning,
-                                $"Semantic analysis failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
+                                BuildAssemblySemanticAnalysisFailureMessage(fileRelativePath, oldPath, newPath, ex),
                                 shouldOutputMessageToConsole: false, ex));
                         _semanticAnalysisCache.TryAdd(cacheKey, summary);
                     }
@@ -412,7 +412,7 @@ namespace FolderDiffIL4DotNet.Services
                 {
                     summary = AssemblyMethodAnalyzer.Analyze(oldPath, newPath, onError: ex =>
                         _logger.LogMessage(AppLogLevel.Warning,
-                            $"Semantic analysis failed for '{fileRelativePath}' ({ex.GetType().Name}): {ex.Message}",
+                            BuildAssemblySemanticAnalysisFailureMessage(fileRelativePath, oldPath, newPath, ex),
                             shouldOutputMessageToConsole: false, ex));
                 }
 
@@ -456,10 +456,10 @@ namespace FolderDiffIL4DotNet.Services
                 exception);
         }
 
-        private void LogDependencyAnalysisFailure(string fileRelativePath, Exception exception)
+        private void LogDependencyAnalysisFailure(string fileRelativePath, string oldPath, string newPath, Exception exception)
         {
             _logger.LogMessage(AppLogLevel.Warning,
-                $"Dependency change analysis failed for '{fileRelativePath}' ({exception.GetType().Name}): {exception.Message}",
+                BuildDependencyAnalysisFailureMessage(fileRelativePath, oldPath, newPath, exception),
                 shouldOutputMessageToConsole: false, exception);
         }
 
@@ -474,6 +474,12 @@ namespace FolderDiffIL4DotNet.Services
 
         private static string BuildHookFailureMessage(string phase, IFileComparisonHook hook, string fileRelativePath, Exception exception) =>
             $"Plugin {phase} hook '{hook.GetType().Name}' failed for '{fileRelativePath}' (Order={hook.Order}, {exception.GetType().Name}): {exception.Message}";
+
+        private static string BuildDependencyAnalysisFailureMessage(string fileRelativePath, string oldPath, string newPath, Exception exception) =>
+            $"Dependency change analysis failed for '{fileRelativePath}'. Old='{oldPath}', New='{newPath}' ({exception.GetType().Name}): {exception.Message}";
+
+        private static string BuildAssemblySemanticAnalysisFailureMessage(string fileRelativePath, string oldPath, string newPath, Exception exception) =>
+            $"Semantic analysis failed for '{fileRelativePath}'. Old='{oldPath}', New='{newPath}' ({exception.GetType().Name}): {exception.Message}";
 
         private string BuildFileDiffFailureMessage(string prefix, string fileRelativePath, string file1AbsolutePath, string file2AbsolutePath, string comparisonStage, int maxParallel) =>
             $"{prefix} '{file1AbsolutePath}' and '{file2AbsolutePath}'. RelativePath='{fileRelativePath}', Stage='{comparisonStage}', SkipIL={_config.SkipIL}, MaxParallel={maxParallel}.";

@@ -82,7 +82,7 @@ namespace FolderDiffIL4DotNet.Services
                 PathValidator.ValidateAbsolutePathLengthOrThrow(auditLogPath);
                 PrepareOutputPathForOverwrite(auditLogPath);
                 File.WriteAllText(auditLogPath, json, Encoding.UTF8);
-                TrySetReadOnly(auditLogPath);
+                TrySetReadOnly(context.ReportsFolderAbsolutePath, auditLogPath);
 
                 _logger.LogMessage(AppLogLevel.Info,
                     $"Audit log generated: {auditLogPath}",
@@ -91,7 +91,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write audit log for reports folder '{context.ReportsFolderAbsolutePath}' to '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to write audit log for reports folder '{context.ReportsFolderAbsolutePath}' to '{auditLogPath}' (IsPathRooted={DescribePathRootedState(auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -112,7 +112,7 @@ namespace FolderDiffIL4DotNet.Services
             File.Delete(outputFileAbsolutePath);
         }
 
-        private void TrySetReadOnly(string auditLogPath)
+        private void TrySetReadOnly(string reportsFolderAbsolutePath, string auditLogPath)
         {
             try
             {
@@ -121,7 +121,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark audit log as read-only: '{auditLogPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark audit log as read-only for reports folder '{reportsFolderAbsolutePath}': '{auditLogPath}' (IsPathRooted={DescribePathRootedState(auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -139,10 +139,12 @@ namespace FolderDiffIL4DotNet.Services
 
             var mdReportHash = TryComputeReportHash(
                 Path.Combine(reportsFolderAbsolutePath, "diff_report.md"),
-                "Markdown report");
+                "Markdown report",
+                reportsFolderAbsolutePath);
             var htmlReportHash = TryComputeReportHash(
                 Path.Combine(reportsFolderAbsolutePath, HtmlReportGenerateService.DIFF_REPORT_HTML_FILE_NAME),
-                "HTML report");
+                "HTML report",
+                reportsFolderAbsolutePath);
 
             var disassemblerAvailability = _fileDiffResultLists.DisassemblerAvailability?
                 .Select(p => new AuditLogDisassemblerAvailability
@@ -261,13 +263,28 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' (Root='{rootFolderAbsolutePath}', {ex.GetType().Name}): {ex.Message}",
+                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' (Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(fileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
         }
 
-        private string TryComputeReportHash(string filePath, string reportLabel)
+        private static string DescribePathRootedState(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
+            }
+        }
+
+        private string TryComputeReportHash(
+            string filePath,
+            string reportLabel,
+            string reportsFolderAbsolutePath)
         {
             try
             {
@@ -276,7 +293,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' (ReportsFolder='{reportsFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(filePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return string.Empty;

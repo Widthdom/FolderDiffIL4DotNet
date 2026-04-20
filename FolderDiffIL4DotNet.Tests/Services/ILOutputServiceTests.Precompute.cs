@@ -57,10 +57,55 @@ namespace FolderDiffIL4DotNet.Tests.Services
             }
         }
 
+        [Fact]
+        public async Task DiffDotNetAssembliesAsync_WhenIlTextOutputFails_LogsRelativeAndAbsolutePaths()
+        {
+            var config = new ConfigSettingsBuilder
+            {
+                ShouldIgnoreMVID = true,
+                IgnoredExtensions = new(),
+                TextFileExtensions = new()
+            }.Build();
+            var logger = new TestLogger(logFileAbsolutePath: "test.log");
+            var executionContext = new DiffExecutionContext(
+                oldFolderAbsolutePath: "/tmp/fd-iloutput-old",
+                newFolderAbsolutePath: "/tmp/fd-iloutput-new",
+                reportsFolderAbsolutePath: "/tmp/fd-iloutput-report",
+                optimizeForNetworkShares: false,
+                detectedNetworkOld: false,
+                detectedNetworkNew: false);
+            var service = new ILOutputService(
+                config,
+                executionContext,
+                new ThrowingIlTextOutputService(),
+                new SuccessfulDisassembleService(),
+                ilCache: null,
+                logger);
+
+            var exception = await Assert.ThrowsAsync<DirectoryNotFoundException>(() =>
+                service.DiffDotNetAssembliesAsync("lib/app.dll", "/virtual/old", "/virtual/new", shouldOutputIlText: true));
+
+            var error = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
+            var expectedOldPath = Path.Combine("/virtual/old", "lib/app.dll");
+            var expectedNewPath = Path.Combine("/virtual/new", "lib/app.dll");
+            Assert.Contains("Failed to output IL", error.Message, StringComparison.Ordinal);
+            Assert.Contains("lib/app.dll", error.Message, StringComparison.Ordinal);
+            Assert.Contains($"Old='{expectedOldPath}'", error.Message, StringComparison.Ordinal);
+            Assert.Contains($"New='{expectedNewPath}'", error.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
+            Assert.Same(exception, error.Exception);
+        }
+
         private sealed class NoOpIlTextOutputService : IILTextOutputService
         {
             public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
                 => Task.CompletedTask;
+        }
+
+        private sealed class ThrowingIlTextOutputService : IILTextOutputService
+        {
+            public Task WriteFullIlTextsAsync(string fileRelativePath, IEnumerable<string> il1LinesMvidExcluded, IEnumerable<string> il2LinesMvidExcluded)
+                => throw new DirectoryNotFoundException("missing IL output folder");
         }
 
         private sealed class ThrowingPrefetchDisassembleService : IDotNetDisassembleService
@@ -75,6 +120,20 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
             public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
                 => throw new ArgumentException("bad path");
+        }
+
+        private sealed class SuccessfulDisassembleService : IDotNetDisassembleService
+        {
+            public Task<(string oldIlText, string oldCommandString, string newIlText, string newCommandString)> DisassemblePairWithSameDisassemblerAsync(
+                string oldPath, string newPath, CancellationToken cancellationToken = default)
+                => Task.FromResult<(string, string, string, string)>((string.Empty, string.Empty, string.Empty, string.Empty));
+
+            public Task<(IReadOnlyList<string> oldIlLines, string oldCommandString, IReadOnlyList<string> newIlLines, string newCommandString)> DisassemblePairAsLinesWithSameDisassemblerAsync(
+                string oldPath, string newPath, CancellationToken cancellationToken = default)
+                => Task.FromResult<(IReadOnlyList<string>, string, IReadOnlyList<string>, string)>((new[] { "same-il" }, "dotnet ildasm old.dll (version: 1.0.0)", new[] { "different-il" }, "dotnet ildasm new.dll (version: 1.0.0)"));
+
+            public Task PrefetchIlCacheAsync(IEnumerable<string> paths, int maxParallel, CancellationToken cancellationToken = default)
+                => Task.CompletedTask;
         }
     }
 }

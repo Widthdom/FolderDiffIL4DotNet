@@ -17,9 +17,9 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     public sealed partial class ReportGenerateService
     {
-        private void LogReportOutputFailure(string diffReportAbsolutePath, Exception exception)
+        private void LogReportOutputFailure(string reportsFolderAbsolutePath, string diffReportAbsolutePath, Exception exception)
             => _logger.LogMessage(AppLogLevel.Error,
-                $"Failed to output report to '{diffReportAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
+                $"Failed to output report for reports folder '{reportsFolderAbsolutePath}' to '{diffReportAbsolutePath}' ({exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
 
@@ -39,7 +39,7 @@ namespace FolderDiffIL4DotNet.Services
             File.Delete(outputFileAbsolutePath);
         }
 
-        private void TrySetReportReadOnly(string diffReportAbsolutePath)
+        private void TrySetReportReadOnly(string reportsFolderAbsolutePath, string diffReportAbsolutePath)
         {
             try
             {
@@ -47,16 +47,28 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                LogReportProtectionWarning(diffReportAbsolutePath, ex);
+                LogReportProtectionWarning(reportsFolderAbsolutePath, diffReportAbsolutePath, ex);
             }
         }
 
-        private void LogReportProtectionWarning(string diffReportAbsolutePath, Exception ex)
+        private void LogReportProtectionWarning(string reportsFolderAbsolutePath, string diffReportAbsolutePath, Exception ex)
         {
             _logger.LogMessage(AppLogLevel.Warning,
-                $"Failed to mark report as read-only: '{diffReportAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                $"Failed to mark report as read-only for reports folder '{reportsFolderAbsolutePath}': '{diffReportAbsolutePath}' (IsPathRooted={DescribePathRootedState(diffReportAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                 shouldOutputMessageToConsole: true,
                 ex);
+        }
+
+        private static string DescribePathRootedState(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
+            }
         }
 
         private static string GetIgnoredFileLocationLabel(FileDiffResultLists.IgnoredFileLocation location)

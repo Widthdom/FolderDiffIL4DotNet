@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist path could not be resolved and will be skipped: {ex.Message}",
+                    $"Review checklist path could not be resolved and will be skipped (OverrideKey='{AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY}', OverridePresent={AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY) != null}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
@@ -60,7 +60,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist file '{checklistFilePath}' is invalid JSON and will be skipped: {ex.Message}",
+                    $"Review checklist file '{checklistFilePath}' is invalid JSON and will be skipped (IsPathRooted={DescribePathRootedState(checklistFilePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
@@ -69,10 +69,22 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist file '{checklistFilePath}' could not be read and will be skipped: {ex.GetType().Name}: {ex.Message}",
+                    $"Review checklist file '{checklistFilePath}' could not be read and will be skipped (IsPathRooted={DescribePathRootedState(checklistFilePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
+            }
+        }
+
+        private static string DescribePathRootedState(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
             }
         }
 

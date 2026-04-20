@@ -85,8 +85,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry =>
                 entry.LogLevel == AppLogLevel.Warning
                 && entry.Message.Contains("Semantic analysis failed", StringComparison.Ordinal));
+            var expectedOldPath = Path.Combine("/virtual/old", relativePath);
+            var expectedNewPath = Path.Combine("/virtual/new", relativePath);
             Assert.NotNull(warning.Exception);
             Assert.Contains(warning.Exception!.GetType().Name, warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"Old='{expectedOldPath}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains($"New='{expectedNewPath}'", warning.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -140,10 +144,15 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Equal(FileDiffResultLists.DiffDetailResult.SHA256Mismatch,
                 resultLists.FileRelativePathToDiffDetailDictionary[relativePath]);
             Assert.Empty(ilOutputService.DiffCalls);
+            var expectedOldPath = Path.Combine("/virtual/old", relativePath);
+            var expectedNewPath = Path.Combine("/virtual/new", relativePath);
             Assert.Contains(
                 logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Warning
-                    && entry.Message.Contains("Failed to detect", StringComparison.Ordinal));
+                    && entry.Message.Contains("Failed to detect", StringComparison.Ordinal)
+                    && entry.Message.Contains($"Old='{expectedOldPath}'", StringComparison.Ordinal)
+                    && entry.Message.Contains($"New='{expectedNewPath}'", StringComparison.Ordinal)
+                    && entry.Message.Contains(nameof(IOException), StringComparison.Ordinal));
         }
 
         [Fact]
@@ -199,6 +208,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(logger.Entries,
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Message.Contains("IL diff failed", StringComparison.Ordinal)
+                    && entry.Message.Contains("Old='", StringComparison.Ordinal)
+                    && entry.Message.Contains("New='", StringComparison.Ordinal)
                     && entry.Message.Contains("InvalidOperationException", StringComparison.Ordinal));
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using FolderDiffIL4DotNet.Models;
 using FolderDiffIL4DotNet.Services;
 using FolderDiffIL4DotNet.Tests.Helpers;
@@ -66,10 +67,29 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     CreateConfig(), ilCache: null)));
 
             var error = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Error);
+            Assert.Contains("reports folder", error.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
             Assert.Contains(reportDir, error.Message, StringComparison.Ordinal);
             Assert.Same(exception, error.Exception);
             Assert.DoesNotContain(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+        }
+
+        [Fact]
+        public void LogReportProtectionWarning_IncludesReportsFolderContext()
+        {
+            var logger = new TestLogger();
+            var service = new ReportGenerateService(_resultLists, logger, ReportGenerateService.CreateBuiltInSectionWriters());
+            var method = typeof(ReportGenerateService).GetMethod("LogReportProtectionWarning", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            method.Invoke(service, ["/tmp/reports", "/tmp/reports/diff_report.md", new ArgumentException("bad path")]);
+
+            var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
+            Assert.Contains("reports folder '/tmp/reports'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("diff_report.md", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
+            Assert.True(warning.ShouldOutputMessageToConsole);
         }
     }
 }

@@ -306,8 +306,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 var consoleText = writer.ToString();
                 Assert.Contains("Failed to clean up old log files in", consoleText, StringComparison.Ordinal);
                 Assert.Contains(filePath, consoleText, StringComparison.Ordinal);
+                Assert.Contains("DirectoryIsPathRooted=True", consoleText, StringComparison.Ordinal);
                 Assert.Contains("MaxGenerations=1", consoleText, StringComparison.Ordinal);
                 Assert.Contains("ActiveLog='(none)'", consoleText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLogIsPathRooted=Unknown", consoleText, StringComparison.Ordinal);
                 Assert.Contains(expected.GetType().Name, consoleText, StringComparison.Ordinal);
                 Assert.Contains(expected.Message, consoleText, StringComparison.Ordinal);
             }
@@ -631,6 +633,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.True(File.Exists(active));
                 var logText = File.ReadAllText(active);
                 Assert.Contains("Failed to delete archived log file", logText, StringComparison.Ordinal);
+                Assert.Contains(active, logText, StringComparison.Ordinal);
+                Assert.Contains("ArchivedLogIsPathRooted=True", logText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLogIsPathRooted=True", logText, StringComparison.Ordinal);
                 Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
             }
             finally
