@@ -335,7 +335,7 @@ namespace FolderDiffIL4DotNet.Services
         private void LogSkippedComponent(string status, string folder, string rootFolderAbsolutePath, string path, Exception ex)
         {
             _logger.LogMessage(AppLogLevel.Warning,
-                $"Skipped SBOM component '{path}' ({status}, Folder={folder}, Root='{rootFolderAbsolutePath}') ({ex.GetType().Name}): {ex.Message}",
+                $"Skipped SBOM component '{path}' ({status}, Folder={folder}, Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(path)}) ({ex.GetType().Name}): {ex.Message}",
                 shouldOutputMessageToConsole: true,
                 ex);
         }
