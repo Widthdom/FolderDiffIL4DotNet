@@ -293,7 +293,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' (ReportsFolder='{reportsFolderAbsolutePath}', {ex.GetType().Name}): {ex.Message}",
+                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' (ReportsFolder='{reportsFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(filePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return string.Empty;
