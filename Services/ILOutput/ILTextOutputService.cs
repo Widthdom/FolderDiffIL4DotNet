@@ -104,7 +104,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             {
                 var (side, outputRoot) = DescribeOutputSide(outputFileAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark IL text output as read-only for '{fileRelativePath}' ({side}, OutputRoot='{outputRoot}'): '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark IL text output as read-only for '{fileRelativePath}' ({side}, OutputRoot='{outputRoot}', IsPathRooted={DescribePathRootedState(outputFileAbsolutePath)}): '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
@@ -123,6 +123,18 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             }
 
             return ("UnknownSide", string.Empty);
+        }
+
+        private static string DescribePathRootedState(string path)
+        {
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
+            }
         }
     }
 }
