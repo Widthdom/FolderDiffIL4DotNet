@@ -130,6 +130,23 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.True(inspected);
         }
 
+        [Theory]
+        [InlineData("dotnet-ildasm", "CommandIsPathRooted=False", "CommandLooksPathLike=False")]
+        [InlineData("/tmp/dotnet-ildasm", "CommandIsPathRooted=True", "CommandLooksPathLike=True")]
+        public void BuildStartDisassemblerToolWarning_IncludesCommandShapeContext(string command, string expectedRooted, string expectedPathLike)
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildStartDisassemblerToolWarning", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var message = Assert.IsType<string>(method.Invoke(null, [command, new System.ComponentModel.Win32Exception("missing tool")]));
+
+            Assert.Contains("Failed to start disassembler tool", message, StringComparison.Ordinal);
+            Assert.Contains(command, message, StringComparison.Ordinal);
+            Assert.Contains(expectedRooted, message, StringComparison.Ordinal);
+            Assert.Contains(expectedPathLike, message, StringComparison.Ordinal);
+            Assert.Contains("missing tool", message, StringComparison.Ordinal);
+        }
+
         [Fact]
         public void CleanupTemporaryPathBestEffort_WhenDirectoryPathCannotBeDeleted_LogsWarning()
         {
