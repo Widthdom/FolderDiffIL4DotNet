@@ -57,10 +57,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("could not be read and will be skipped", StringComparison.Ordinal));
             Assert.Contains($"'{checklistPath}'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
             Assert.DoesNotContain($": {nameof(UnauthorizedAccessException)}:", warning.Message, StringComparison.Ordinal);
             Assert.True(
-                warning.Message.Contains($"({nameof(UnauthorizedAccessException)}):", StringComparison.Ordinal)
-                || warning.Message.Contains($"({nameof(IOException)}):", StringComparison.Ordinal));
+                warning.Message.Contains($", {nameof(UnauthorizedAccessException)}):", StringComparison.Ordinal)
+                || warning.Message.Contains($", {nameof(IOException)}):", StringComparison.Ordinal));
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
     }
