@@ -46,7 +46,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' at '{tempAsciiPath ?? "(not allocated)"}' ({ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' at '{tempAsciiPath ?? "(not allocated)"}' (SourceIsPathRooted={DescribePathRootedState(dotNetAssemblyFileAbsolutePath)}, TempIsPathRooted={DescribePathRootedState(tempAsciiPath)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
             return null;
         }
@@ -76,6 +76,23 @@ namespace FolderDiffIL4DotNet.Services
                     $"Temporary cleanup failed for {purpose}: '{temporaryPath}' ({DescribePathStateForDiagnostics(temporaryPath, ex)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false,
                     ex);
+            }
+        }
+
+        private static string DescribePathRootedState(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return "Unknown";
+            }
+
+            try
+            {
+                return Path.IsPathRooted(path).ToString();
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return "Unknown";
             }
         }
 

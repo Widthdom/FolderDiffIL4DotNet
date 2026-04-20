@@ -184,6 +184,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Failed to get IL from cache", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"assembly '{invalidPath}'", warning.Message, StringComparison.Ordinal);
             Assert.Contains("command 'ilspycmd'", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("AssemblyIsPathRooted=", warning.Message, StringComparison.Ordinal);
             Assert.True(warning.Exception is IOException or UnauthorizedAccessException);
             Assert.Contains(warning.Exception!.GetType().Name, warning.Message, StringComparison.Ordinal);
         }
