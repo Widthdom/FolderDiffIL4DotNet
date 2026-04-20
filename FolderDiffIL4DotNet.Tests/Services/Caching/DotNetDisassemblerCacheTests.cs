@@ -57,6 +57,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
                     logger.Entries,
                     entry => entry.LogLevel == AppLogLevel.Warning
                         && entry.Message.Contains("Failed to get version", StringComparison.Ordinal)
+                        && entry.Message.Contains("ExecutableIsPathRooted=False", StringComparison.Ordinal)
+                        && entry.Message.Contains("ExecutableLooksPathLike=False", StringComparison.Ordinal)
                         && entry.Message.Contains("args='--version'", StringComparison.Ordinal)
                         && entry.Message.Contains("Win32Exception", StringComparison.Ordinal)
                         && entry.Exception is System.ComponentModel.Win32Exception);
