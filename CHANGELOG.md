@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.18.1] - 2026-04-21
+
 #### Fixed
 
 - **Report write warnings now retain rooted-state context** — `SbomGenerateService`, `AuditLogGenerateService`, and `HtmlReportGenerateService` now record whether the failing output path looked rooted when top-level report writes hit recoverable path/I/O failures. This makes relative-vs-absolute output path mistakes easier to spot across platforms without changing generated artifacts. Affected: `Services/SbomGenerateService.cs`, `Services/AuditLogGenerateService.cs`, `Services/HtmlReportGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.PathHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.PathHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.OutputSafety.cs`. Tests: `GenerateSbom_WhenReportPathIsInvalid_LogsWarningAndDoesNotThrow`, `GenerateAuditLog_WhenReportPathIsInvalid_LogsWarningAndDoesNotThrow`, `GenerateDiffReportHtml_WhenReportPathIsInvalid_LogsWarningAndDoesNotThrow` (updated).
@@ -1529,6 +1531,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+### [1.18.1] - 2026-04-21
+
 #### Fixed
 
 - **レポート書き込み warning が rooted 状態を保持するよう改善** — `SbomGenerateService`, `AuditLogGenerateService`, `HtmlReportGenerateService` は、トップレベルのレポート書き込みが回復可能な path/I/O 失敗になった際、出力先パスが rooted に見えたかどうかを warning に含めるようになりました。生成物の内容は変えずに、relative/absolute 出力パス取り違えをクロスプラットフォームで見抜きやすくします。影響: `Services/SbomGenerateService.cs`, `Services/AuditLogGenerateService.cs`, `Services/HtmlReportGenerateService.cs`, `FolderDiffIL4DotNet.Tests/Services/SbomGenerateServiceTests.PathHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/AuditLogGenerateServiceTests.PathHandling.cs`, `FolderDiffIL4DotNet.Tests/Services/HtmlReportGenerateServiceTests.OutputSafety.cs`。テスト: `GenerateSbom_WhenReportPathIsInvalid_LogsWarningAndDoesNotThrow`, `GenerateAuditLog_WhenReportPathIsInvalid_LogsWarningAndDoesNotThrow`, `GenerateDiffReportHtml_WhenReportPathIsInvalid_LogsWarningAndDoesNotThrow`（更新）。
@@ -3045,7 +3049,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - `FolderDiffIL4DotNet` の初回リリース。フォルダ比較、Markdown レポート出力、`.NET` アセンブリの IL 比較、キャッシュ、設定読込、進捗表示、ログ出力を含みます。
 
-[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.0...HEAD
+[Unreleased]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.1...HEAD
+[1.18.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.18.0...v1.18.1
 [1.18.0]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.2...v1.18.0
 [1.17.2]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.1...v1.17.2
 [1.17.1]: https://github.com/Widthdom/FolderDiffIL4DotNet/compare/v1.17.0...v1.17.1
