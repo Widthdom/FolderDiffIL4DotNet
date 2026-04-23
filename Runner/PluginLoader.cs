@@ -178,7 +178,7 @@ namespace FolderDiffIL4DotNet.Runner
             catch (Exception ex)
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to load plugin from '{pluginDllPath}': {ex.GetType().Name}: {ex.Message}",
+                    $"Failed to load plugin from '{pluginDllPath}' ({PathShapeDiagnostics.DescribeState("PluginDllPath", pluginDllPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
                 return null;
             }

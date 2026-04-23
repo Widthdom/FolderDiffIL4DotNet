@@ -124,6 +124,8 @@ namespace FolderDiffIL4DotNet.Tests.Runner
             Assert.Empty(result);
             var entry = Assert.Single(_logger.Entries, e => e.Message.Contains("Failed to load plugin", StringComparison.Ordinal));
             Assert.NotNull(entry.Exception);
+            Assert.Contains("PluginDllPathIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("PluginDllPathLooksPathLike=True", entry.Message, StringComparison.Ordinal);
             Assert.Contains(entry.Exception!.GetType().Name, entry.Message, StringComparison.Ordinal);
         }
 
