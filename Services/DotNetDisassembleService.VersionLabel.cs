@@ -97,13 +97,7 @@ namespace FolderDiffIL4DotNet.Services
         }
 
         private static string BuildStartDisassemblerToolWarning(string candidateDisassembleCommand, Exception exception)
-            => $"Failed to start disassembler tool '{candidateDisassembleCommand}' (CommandIsPathRooted={DescribePathRootedState(candidateDisassembleCommand)}, CommandLooksPathLike={LooksLikePath(candidateDisassembleCommand)}): {exception.Message}. Ensure the tool is installed and its directory is in PATH.";
-
-        private static bool LooksLikePath(string? command)
-            => !string.IsNullOrWhiteSpace(command)
-                && (Path.IsPathRooted(command)
-                    || command.Contains(Path.DirectorySeparatorChar, StringComparison.Ordinal)
-                    || command.Contains(Path.AltDirectorySeparatorChar, StringComparison.Ordinal));
+            => $"Failed to start disassembler tool '{candidateDisassembleCommand}' (CommandIsPathRooted={DescribePathRootedState(candidateDisassembleCommand)}, CommandLooksPathLike={PathShapeDiagnostics.LooksLikePath(candidateDisassembleCommand)}): {exception.Message}. Ensure the tool is installed and its directory is in PATH.";
 
         private static string DescribePathStateForDiagnostics(string path, Exception? exception = null)
         {
