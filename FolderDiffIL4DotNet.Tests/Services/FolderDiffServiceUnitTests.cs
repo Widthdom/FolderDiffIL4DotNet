@@ -451,6 +451,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is DirectoryNotFoundException
                     && entry.Message.Contains($"An error occurred while diffing '{oldDir}' and '{newDir}' during phase 'creating IL output directories'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFolderIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFolderLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewFolderIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewFolderLooksPathLike=True", StringComparison.Ordinal)
                     && entry.Message.Contains("Failure=DirectoryNotFoundException: parent directory missing", StringComparison.Ordinal));
         }
 
@@ -489,6 +493,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 entry => entry.LogLevel == AppLogLevel.Error
                     && entry.Exception is FormatException
                     && entry.Message.Contains($"An unexpected error occurred while diffing '{oldDir}' and '{newDir}' during phase 'classifying files sequentially'.", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFolderIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("OldFolderLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewFolderIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("NewFolderLooksPathLike=True", StringComparison.Ordinal)
                     && entry.Message.Contains("Failure=FormatException: unexpected compare failure", StringComparison.Ordinal));
         }
 

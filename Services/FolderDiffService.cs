@@ -249,7 +249,9 @@ namespace FolderDiffIL4DotNet.Services
         private string BuildFailureMessage(string prefix, Exception exception, string currentPhase, bool hasEnumeratedOldFiles, bool hasEnumeratedNewFiles, int? totalFilesRelativePathCount, int? maxParallel)
         {
             var message = $"{prefix} '{_oldFolderAbsolutePath}' and '{_newFolderAbsolutePath}' during phase '{currentPhase}'. "
-                + $"Mode={GetExecutionModeLabel()}";
+                + $"Mode={GetExecutionModeLabel()}, "
+                + $"{PathShapeDiagnostics.DescribeState("OldFolder", _oldFolderAbsolutePath)}, "
+                + $"{PathShapeDiagnostics.DescribeState("NewFolder", _newFolderAbsolutePath)}";
 
             if (maxParallel.HasValue)
             {
