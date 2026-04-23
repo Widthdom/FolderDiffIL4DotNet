@@ -51,8 +51,8 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.Null(exception);
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to create IL cache directory", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("CacheDirectoryIsPathRooted=True", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("CacheDirectoryLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("CacheDirectoryIsPathRooted=Unknown", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("CacheDirectoryLooksPathLike=False", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
         }

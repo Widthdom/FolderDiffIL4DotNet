@@ -22,6 +22,11 @@ namespace FolderDiffIL4DotNet.Common
                 return "Unknown";
             }
 
+            if (pathOrCommand.IndexOf('\0') >= 0)
+            {
+                return "Unknown";
+            }
+
             try
             {
                 return Path.IsPathRooted(pathOrCommand).ToString();
@@ -41,6 +46,11 @@ namespace FolderDiffIL4DotNet.Common
         internal static bool LooksLikePath(string? pathOrCommand)
         {
             if (string.IsNullOrWhiteSpace(pathOrCommand))
+            {
+                return false;
+            }
+
+            if (pathOrCommand.IndexOf('\0') >= 0)
             {
                 return false;
             }

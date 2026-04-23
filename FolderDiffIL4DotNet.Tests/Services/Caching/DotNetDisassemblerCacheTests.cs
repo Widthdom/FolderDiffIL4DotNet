@@ -86,7 +86,7 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
         {
             var diagnostic = PathShapeDiagnostics.DescribeState("Executable", "bad\0tool");
 
-            Assert.Contains("ExecutableIsPathRooted=", diagnostic, StringComparison.Ordinal);
+            Assert.Contains("ExecutableIsPathRooted=Unknown", diagnostic, StringComparison.Ordinal);
             Assert.Contains("ExecutableLooksPathLike=False", diagnostic, StringComparison.Ordinal);
         }
 

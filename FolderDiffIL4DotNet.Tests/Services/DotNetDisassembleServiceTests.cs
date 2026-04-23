@@ -156,9 +156,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var message = Assert.IsType<string>(method.Invoke(null, ["bad\0tool", new System.ComponentModel.Win32Exception("missing tool")]));
 
             Assert.Contains("Failed to start disassembler tool", message, StringComparison.Ordinal);
-            Assert.True(
-                message.Contains("CommandIsPathRooted=Unknown", StringComparison.Ordinal)
-                || message.Contains("CommandIsPathRooted=False", StringComparison.Ordinal));
+            Assert.Contains("CommandIsPathRooted=Unknown", message, StringComparison.Ordinal);
             Assert.Contains("CommandLooksPathLike=False", message, StringComparison.Ordinal);
             Assert.Contains("missing tool", message, StringComparison.Ordinal);
         }
@@ -202,8 +200,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Failed to create ASCII temp copy", StringComparison.Ordinal)
                     && entry.Message.Contains("ildasm_input_", StringComparison.Ordinal)
-                    && entry.Message.Contains("SourceIsPathRooted=True", StringComparison.Ordinal)
-                    && entry.Message.Contains("SourceLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceIsPathRooted=Unknown", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceLooksPathLike=False", StringComparison.Ordinal)
                     && entry.Message.Contains("TempIsPathRooted=True", StringComparison.Ordinal)
                     && entry.Message.Contains("TempLooksPathLike=True", StringComparison.Ordinal)
                     && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
