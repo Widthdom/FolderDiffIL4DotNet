@@ -30,7 +30,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist path could not be resolved and will be skipped (OverrideKey='{AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY}', OverridePresent={AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY) != null}, {ex.GetType().Name}): {ex.Message}",
+                    $"Review checklist path could not be resolved and will be skipped ({DescribeOverrideState()}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
@@ -80,5 +80,12 @@ namespace FolderDiffIL4DotNet.Services
             => item.Replace("\r\n", "\n", StringComparison.Ordinal)
                    .Replace('\r', '\n')
                    .Trim();
+
+        private static string DescribeOverrideState()
+        {
+            object? overrideValue = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+            string overrideValueType = overrideValue?.GetType().Name ?? "null";
+            return $"OverrideKey='{AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY}', OverridePresent={overrideValue != null}, OverrideValueType={overrideValueType}";
+        }
     }
 }

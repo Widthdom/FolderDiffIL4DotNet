@@ -32,6 +32,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     && entry.Message.Contains("Review checklist path could not be resolved", StringComparison.Ordinal));
             Assert.Contains(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, warning.Message, StringComparison.Ordinal);
             Assert.Contains("OverridePresent=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("OverrideValueType=String", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(InvalidOperationException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
@@ -55,6 +56,7 @@ namespace FolderDiffIL4DotNet.Tests.Services
                         && entry.Message.Contains("Review checklist path could not be resolved", StringComparison.Ordinal));
                 Assert.Contains(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, warning.Message, StringComparison.Ordinal);
                 Assert.Contains("OverridePresent=True", warning.Message, StringComparison.Ordinal);
+                Assert.Contains("OverrideValueType=String", warning.Message, StringComparison.Ordinal);
                 Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
                 Assert.True(warning.ShouldOutputMessageToConsole);
             }
