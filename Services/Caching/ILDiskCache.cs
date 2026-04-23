@@ -205,7 +205,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
 
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Skipped IL disk cache {operation} because the cache key was null, empty, or whitespace. Directory='{_cacheDirectoryAbsolutePath}' (DirectoryIsPathRooted={DescribePathRootedState(_cacheDirectoryAbsolutePath)}).",
+                $"Skipped IL disk cache {operation} because the cache key was null, empty, or whitespace. Directory='{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("Directory", _cacheDirectoryAbsolutePath)}).",
                 shouldOutputMessageToConsole: true);
             return false;
         }
@@ -299,7 +299,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to create IL cache directory '{cacheDirectoryAbsolutePath}' (IsPathRooted={DescribePathRootedState(cacheDirectoryAbsolutePath)}, {exception.GetType().Name}): {exception.Message}",
+                $"Failed to create IL cache directory '{cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheDirectory", cacheDirectoryAbsolutePath)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
@@ -312,7 +312,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' (CacheFileIsPathRooted={DescribePathRootedState(cacheFileAbsolutePath)}, CacheDirectoryIsPathRooted={DescribePathRootedState(_cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
+                $"Failed to {operation} IL cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
@@ -325,7 +325,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to delete cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' (CacheFileIsPathRooted={DescribePathRootedState(cacheFileAbsolutePath)}, CacheDirectoryIsPathRooted={DescribePathRootedState(_cacheDirectoryAbsolutePath)}, {exception.GetType().Name}): {exception.Message}",
+                $"Failed to delete cache file '{cacheFileAbsolutePath}' in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
@@ -334,29 +334,12 @@ namespace FolderDiffIL4DotNet.Services.Caching
         {
             _logger.LogMessage(
                 AppLogLevel.Warning,
-                $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction in directory '{_cacheDirectoryAbsolutePath}' (CacheFileIsPathRooted={DescribePathRootedState(cacheFileAbsolutePath)}, CacheDirectoryIsPathRooted={DescribePathRootedState(_cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
+                $"Failed to remove disk cache file '{cacheFileAbsolutePath}' during LRU eviction in directory '{_cacheDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("CacheFile", cacheFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("CacheDirectory", _cacheDirectoryAbsolutePath)}, {DescribeCacheKey(cacheKey)}, {exception.GetType().Name}): {exception.Message}",
                 shouldOutputMessageToConsole: true,
                 exception);
         }
 
         private static string DescribeCacheKey(string cacheKey) => $"cacheKeyLength={cacheKey.Length}";
-
-        private static string DescribePathRootedState(string? path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return "Unknown";
-            }
-
-            try
-            {
-                return Path.IsPathRooted(path).ToString();
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
-            {
-                return "Unknown";
-            }
-        }
 
         private static void PrepareCacheFileForOverwrite(string cacheFileAbsolutePath)
         {

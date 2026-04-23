@@ -307,9 +307,11 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Contains("Failed to clean up old log files in", consoleText, StringComparison.Ordinal);
                 Assert.Contains(filePath, consoleText, StringComparison.Ordinal);
                 Assert.Contains("DirectoryIsPathRooted=True", consoleText, StringComparison.Ordinal);
+                Assert.Contains("DirectoryLooksPathLike=True", consoleText, StringComparison.Ordinal);
                 Assert.Contains("MaxGenerations=1", consoleText, StringComparison.Ordinal);
                 Assert.Contains("ActiveLog='(none)'", consoleText, StringComparison.Ordinal);
                 Assert.Contains("ActiveLogIsPathRooted=Unknown", consoleText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLogLooksPathLike=False", consoleText, StringComparison.Ordinal);
                 Assert.Contains(expected.GetType().Name, consoleText, StringComparison.Ordinal);
                 Assert.Contains(expected.Message, consoleText, StringComparison.Ordinal);
             }
@@ -635,13 +637,42 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Contains("Failed to delete archived log file", logText, StringComparison.Ordinal);
                 Assert.Contains(active, logText, StringComparison.Ordinal);
                 Assert.Contains("ArchivedLogIsPathRooted=True", logText, StringComparison.Ordinal);
+                Assert.Contains("ArchivedLogLooksPathLike=True", logText, StringComparison.Ordinal);
                 Assert.Contains("ActiveLogIsPathRooted=True", logText, StringComparison.Ordinal);
+                Assert.Contains("ActiveLogLooksPathLike=True", logText, StringComparison.Ordinal);
                 Assert.Contains("Deleted old log file", logText, StringComparison.Ordinal);
             }
             finally
             {
                 lockStream.Dispose();
                 TryDeleteDirectory(tempDir);
+            }
+        }
+
+        [Fact]
+        public void TryWriteFileLoggingFailureToConsole_LogsPathLikeDiagnostics()
+        {
+            var originalError = Console.Error;
+            using var writer = new StringWriter();
+            var method = typeof(LoggerService).GetMethod("TryWriteFileLoggingFailureToConsole", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            const string relativeLogPath = "logs/relative-log.log";
+
+            try
+            {
+                Console.SetError(writer);
+                method.Invoke(null, [relativeLogPath, new InvalidOperationException("write failed")]);
+
+                var errorText = writer.ToString();
+                Assert.Contains($"Failed to write log file '{relativeLogPath}'", errorText, StringComparison.Ordinal);
+                Assert.Contains("LogFileIsPathRooted=False", errorText, StringComparison.Ordinal);
+                Assert.Contains("LogFileLooksPathLike=True", errorText, StringComparison.Ordinal);
+                Assert.Contains(nameof(InvalidOperationException), errorText, StringComparison.Ordinal);
+                Assert.Contains("write failed", errorText, StringComparison.Ordinal);
+            }
+            finally
+            {
+                Console.SetError(originalError);
             }
         }
 

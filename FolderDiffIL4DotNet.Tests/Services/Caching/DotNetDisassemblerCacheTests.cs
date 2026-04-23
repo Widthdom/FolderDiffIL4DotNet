@@ -81,6 +81,15 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             Assert.False(looksLikePath);
         }
 
+        [Fact]
+        public void PathShapeDiagnostics_DescribeState_WhenCommandContainsInvalidChars_DowngradesRootedAndPathLikeFlags()
+        {
+            var diagnostic = PathShapeDiagnostics.DescribeState("Executable", "bad\0tool");
+
+            Assert.Contains("ExecutableIsPathRooted=Unknown", diagnostic, StringComparison.Ordinal);
+            Assert.Contains("ExecutableLooksPathLike=False", diagnostic, StringComparison.Ordinal);
+        }
+
         private static (string KindName, string CacheKey, string Executable) InvokeGetDisassemblerInfo(string command)
         {
             var method = typeof(DotNetDisassemblerCache).GetMethod("GetDisassemblerInfo", BindingFlags.Static | BindingFlags.NonPublic);

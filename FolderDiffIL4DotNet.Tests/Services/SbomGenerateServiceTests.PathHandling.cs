@@ -42,7 +42,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("CycloneDX", warning.Message, StringComparison.Ordinal);
             Assert.Contains("reports folder", warning.Message, StringComparison.Ordinal);
             Assert.Contains(SbomGenerateService.CYCLONEDX_FILE_NAME, warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("SbomPathIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("SbomPathLooksPathLike=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
             Assert.True(warning.ShouldOutputMessageToConsole);
@@ -73,7 +76,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Failed to compute SBOM SHA256", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{newDir}'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ComponentPathIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ComponentPathLooksPathLike=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains(addedPath, warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
@@ -104,7 +110,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Failed to compute SBOM SHA256", warning.Message, StringComparison.Ordinal);
             Assert.Contains("(Removed", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{oldDir}'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ComponentPathIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ComponentPathLooksPathLike=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains(removedPath, warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
@@ -134,7 +143,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Skipped SBOM component", warning.Message, StringComparison.Ordinal);
             Assert.Contains("Folder=new", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{newDir}'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ComponentPathIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ComponentPathLooksPathLike=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
@@ -152,7 +164,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("reports folder '/tmp/reports'", warning.Message, StringComparison.Ordinal);
             Assert.Contains("CycloneDX", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=False", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("SbomPathIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("SbomPathLooksPathLike=", warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }

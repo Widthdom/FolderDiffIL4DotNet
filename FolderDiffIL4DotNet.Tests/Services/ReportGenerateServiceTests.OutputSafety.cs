@@ -70,6 +70,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("reports folder", error.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
             Assert.Contains(reportDir, error.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", error.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=True", error.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathIsPathRooted=True", error.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathLooksPathLike=True", error.Message, StringComparison.Ordinal);
             Assert.Same(exception, error.Exception);
             Assert.DoesNotContain(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
         }
@@ -87,7 +91,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("reports folder '/tmp/reports'", warning.Message, StringComparison.Ordinal);
             Assert.Contains("diff_report.md", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathLooksPathLike=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }

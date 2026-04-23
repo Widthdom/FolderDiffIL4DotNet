@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
@@ -80,7 +81,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write HTML report for reports folder '{context.ReportsFolderAbsolutePath}' to '{htmlPath}' (IsPathRooted={DescribePathRootedState(htmlPath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Failed to write HTML report for reports folder '{context.ReportsFolderAbsolutePath}' to '{htmlPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", context.ReportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("HtmlPath", htmlPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -99,18 +100,6 @@ namespace FolderDiffIL4DotNet.Services
             }
 
             File.Delete(outputFileAbsolutePath);
-        }
-
-        private static string DescribePathRootedState(string path)
-        {
-            try
-            {
-                return Path.IsPathRooted(path).ToString();
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
-            {
-                return "Unknown";
-            }
         }
 
         // ── Build ────────────────────────────────────────────────────────────

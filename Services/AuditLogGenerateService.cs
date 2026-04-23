@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
@@ -91,7 +92,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write audit log for reports folder '{context.ReportsFolderAbsolutePath}' to '{auditLogPath}' (IsPathRooted={DescribePathRootedState(auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Failed to write audit log for reports folder '{context.ReportsFolderAbsolutePath}' to '{auditLogPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", context.ReportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("AuditLogPath", auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -121,7 +122,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark audit log as read-only for reports folder '{reportsFolderAbsolutePath}': '{auditLogPath}' (IsPathRooted={DescribePathRootedState(auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark audit log as read-only for reports folder '{reportsFolderAbsolutePath}': '{auditLogPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("AuditLogPath", auditLogPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -263,21 +264,9 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' (Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(fileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Skipped {category} audit log entry for '{fileAbsolutePath}' (Root='{rootFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("Root", rootFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("EntryPath", fileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
-            }
-        }
-
-        private static string DescribePathRootedState(string path)
-        {
-            try
-            {
-                return Path.IsPathRooted(path).ToString();
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
-            {
-                return "Unknown";
             }
         }
 
@@ -293,7 +282,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' (ReportsFolder='{reportsFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(filePath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Failed to compute {reportLabel} SHA256 for '{filePath}' (ReportsFolder='{reportsFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("ReportPath", filePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return string.Empty;
