@@ -60,7 +60,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Review checklist file '{checklistFilePath}' is invalid JSON and will be skipped ({PathShapeDiagnostics.DescribeState("ChecklistFile", checklistFilePath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Review checklist file '{checklistFilePath}' is invalid JSON and will be skipped ({PathShapeDiagnostics.DescribeState("ChecklistFile", checklistFilePath)}, {DescribeJsonErrorLocation(ex)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return Array.Empty<string>();
@@ -87,5 +87,8 @@ namespace FolderDiffIL4DotNet.Services
             string overrideValueType = overrideValue?.GetType().Name ?? "null";
             return $"OverrideKey='{AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY}', OverridePresent={overrideValue != null}, OverrideValueType={overrideValueType}";
         }
+
+        private static string DescribeJsonErrorLocation(JsonException exception) =>
+            $"LineNumber={(exception.LineNumber?.ToString() ?? "Unknown")}, BytePositionInLine={(exception.BytePositionInLine?.ToString() ?? "Unknown")}";
     }
 }
