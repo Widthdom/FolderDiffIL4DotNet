@@ -225,7 +225,7 @@ namespace FolderDiffIL4DotNet.Runner
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        $"Post-process action '{action.GetType().Name}' failed at position {actionIndex + 1}/{actions.Count} (Order={action.Order}, {ex.GetType().Name}): {ex.Message}",
+                        $"Post-process action '{action.GetType().Name}' failed at position {actionIndex + 1}/{actions.Count} (Order={action.Order}, ReportsFolder='{context.ReportsFolderAbsolutePath}', Added={context.AddedCount}, Removed={context.RemovedCount}, Modified={context.ModifiedCount}, Unchanged={context.UnchangedCount}, {ex.GetType().Name}): {ex.Message}",
                         shouldOutputMessageToConsole: true, ex);
                 }
 #pragma warning restore CA1031
