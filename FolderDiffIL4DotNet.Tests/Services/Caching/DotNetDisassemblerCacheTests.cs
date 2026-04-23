@@ -73,6 +73,14 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             }
         }
 
+        [Fact]
+        public void PathShapeDiagnostics_LooksLikePath_WhenCommandContainsInvalidChars_ReturnsFalseInsteadOfThrowing()
+        {
+            var looksLikePath = PathShapeDiagnostics.LooksLikePath("bad\0tool");
+
+            Assert.False(looksLikePath);
+        }
+
         private static (string KindName, string CacheKey, string Executable) InvokeGetDisassemblerInfo(string command)
         {
             var method = typeof(DotNetDisassemblerCache).GetMethod("GetDisassemblerInfo", BindingFlags.Static | BindingFlags.NonPublic);

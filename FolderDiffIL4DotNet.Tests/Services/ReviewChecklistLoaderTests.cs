@@ -38,6 +38,34 @@ namespace FolderDiffIL4DotNet.Tests.Services
 
         [Fact]
         [Trait("Category", "Unit")]
+        public void Load_WhenChecklistPathOverrideIsMalformed_LogsWarningAndReturnsEmpty()
+        {
+            object? originalOverride = AppContext.GetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY);
+            try
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, "\0review-checklist");
+                var logger = new TestLogger();
+
+                var items = ReviewChecklistLoader.Load(logger);
+
+                Assert.Empty(items);
+                var warning = Assert.Single(
+                    logger.Entries,
+                    entry => entry.LogLevel == AppLogLevel.Warning
+                        && entry.Message.Contains("Review checklist path could not be resolved", StringComparison.Ordinal));
+                Assert.Contains(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, warning.Message, StringComparison.Ordinal);
+                Assert.Contains("OverridePresent=True", warning.Message, StringComparison.Ordinal);
+                Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
+                Assert.True(warning.ShouldOutputMessageToConsole);
+            }
+            finally
+            {
+                AppContext.SetData(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, originalOverride);
+            }
+        }
+
+        [Fact]
+        [Trait("Category", "Unit")]
         public void Load_WhenChecklistPathIsUnreadable_LogsWarningWithConsistentExceptionFormatAndReturnsEmpty()
         {
             using var appDataScope = new AppDataOverrideScope(

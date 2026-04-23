@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Fixed
+
+- **Optional review-checklist loading and disassembler path-shape diagnostics now avoid malformed-path regressions** — `ReviewChecklistLoader` now treats malformed `LocalApplicationData` overrides as recoverable checklist-path resolution failures, logs the exception type, and skips the optional checklist instead of aborting report generation. `DotNetDisassemblerCache` and `DotNetDisassembleService` now share a single app-local `PathShapeDiagnostics` helper so path-shape warning formatting keeps working even when command strings contain invalid path characters. Affected: `Common/PathShapeDiagnostics.cs`, `Services/ReviewChecklistLoader.cs`, `Services/Caching/DotNetDisassemblerCache.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`, `FolderDiffIL4DotNet.Tests/Services/ReviewChecklistLoaderTests.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/DotNetDisassemblerCacheTests.cs`, `FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`. Tests: `Load_WhenChecklistPathOverrideIsMalformed_LogsWarningAndReturnsEmpty`, `PathShapeDiagnostics_LooksLikePath_WhenCommandContainsInvalidChars_ReturnsFalseInsteadOfThrowing`, `BuildStartDisassemblerToolWarning_WhenCommandContainsInvalidChars_DowngradesPathShapeContextWithoutThrowing` (added, 3 tests).
+
 ### [1.18.1] - 2026-04-21
 
 #### Fixed
@@ -1530,6 +1534,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Fixed
+
+- **任意のレビューチェックリスト読込と逆アセンブラ path-shape 診断が不正パスで壊れないよう改善** — `ReviewChecklistLoader` は、不正な `LocalApplicationData` override を回復可能な checklist-path 解決失敗として扱い、例外型を warning に残したうえで optional なチェックリストをスキップし、レポート生成全体は中断しないようになりました。`DotNetDisassemblerCache` と `DotNetDisassembleService` は、アプリ本体内の共通 helper `PathShapeDiagnostics` を使うようになり、無効なパス文字を含むコマンド文字列でも path-shape warning の整形が続行されます。影響: `Common/PathShapeDiagnostics.cs`, `Services/ReviewChecklistLoader.cs`, `Services/Caching/DotNetDisassemblerCache.cs`, `Services/DotNetDisassembleService.VersionLabel.cs`, `FolderDiffIL4DotNet.Tests/Services/ReviewChecklistLoaderTests.cs`, `FolderDiffIL4DotNet.Tests/Services/Caching/DotNetDisassemblerCacheTests.cs`, `FolderDiffIL4DotNet.Tests/Services/DotNetDisassembleServiceTests.cs`, `doc/DEVELOPER_GUIDE.md`, `doc/TESTING_GUIDE.md`。テスト: `Load_WhenChecklistPathOverrideIsMalformed_LogsWarningAndReturnsEmpty`, `PathShapeDiagnostics_LooksLikePath_WhenCommandContainsInvalidChars_ReturnsFalseInsteadOfThrowing`, `BuildStartDisassemblerToolWarning_WhenCommandContainsInvalidChars_DowngradesPathShapeContextWithoutThrowing`（追加 3 件）。
 
 ### [1.18.1] - 2026-04-21
 

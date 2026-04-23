@@ -148,6 +148,22 @@ namespace FolderDiffIL4DotNet.Tests.Services
         }
 
         [Fact]
+        public void BuildStartDisassemblerToolWarning_WhenCommandContainsInvalidChars_DowngradesPathShapeContextWithoutThrowing()
+        {
+            var method = typeof(DotNetDisassembleService).GetMethod("BuildStartDisassemblerToolWarning", BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+
+            var message = Assert.IsType<string>(method.Invoke(null, ["bad\0tool", new System.ComponentModel.Win32Exception("missing tool")]));
+
+            Assert.Contains("Failed to start disassembler tool", message, StringComparison.Ordinal);
+            Assert.True(
+                message.Contains("CommandIsPathRooted=Unknown", StringComparison.Ordinal)
+                || message.Contains("CommandIsPathRooted=False", StringComparison.Ordinal));
+            Assert.Contains("CommandLooksPathLike=False", message, StringComparison.Ordinal);
+            Assert.Contains("missing tool", message, StringComparison.Ordinal);
+        }
+
+        [Fact]
         public void CleanupTemporaryPathBestEffort_WhenDirectoryPathCannotBeDeleted_LogsWarning()
         {
             var config = CreateConfig(enableIlCache: false);

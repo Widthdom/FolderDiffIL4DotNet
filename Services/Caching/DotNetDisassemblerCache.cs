@@ -194,7 +194,7 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}', ExecutableIsPathRooted={DescribePathRootedState(disassemblerExe)}, ExecutableLooksPathLike={LooksLikePath(disassemblerExe)}, args='{string.Join(" ", args)}') ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}', ExecutableIsPathRooted={DescribePathRootedState(disassemblerExe)}, ExecutableLooksPathLike={PathShapeDiagnostics.LooksLikePath(disassemblerExe)}, args='{string.Join(" ", args)}') ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
@@ -218,10 +218,5 @@ namespace FolderDiffIL4DotNet.Services.Caching
             }
         }
 
-        private static bool LooksLikePath(string? command)
-            => !string.IsNullOrWhiteSpace(command)
-                && (Path.IsPathRooted(command)
-                    || command.Contains(Path.DirectorySeparatorChar, StringComparison.Ordinal)
-                    || command.Contains(Path.AltDirectorySeparatorChar, StringComparison.Ordinal));
     }
 }

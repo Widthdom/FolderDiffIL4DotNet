@@ -440,6 +440,7 @@ Why this matters:
 | [`Runner/DiffPipelineExecutor.cs`](../Runner/DiffPipelineExecutor.cs) | Diff execution pipeline and report generation | Builds scoped DI container, runs diff, resolves the optional review-checklist snapshot once per run, then generates Markdown/HTML/audit-log reports |
 | [`Runner/DryRunExecutor.cs`](../Runner/DryRunExecutor.cs) | `--dry-run` pre-execution preview | Enumerates files, counts union/assembly candidates, shows extension breakdown without running comparison |
 | [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) | Reusable console/diagnostics/IO/text helpers | No folder-diff domain logic |
+| [`Common/PathShapeDiagnostics.cs`](../Common/PathShapeDiagnostics.cs) | App-local path-shape diagnostics helper | Shared by warning/error formatting that needs a safe "looks like a path" check without promoting app-specific diagnostics helpers into Core |
 | [`FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs`](../FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs) | File encoding auto-detection (BOM, UTF-8 validation, ANSI fallback) | Used by inline diff to correctly read non-UTF-8 files (e.g. Shift_JIS); requires `System.Text.Encoding.CodePages` |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | Immutable run paths and network-mode decisions | No mutable state |
 | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | Folder-diff orchestration and result routing | Owns progress and added/removed routing |
@@ -1408,6 +1409,7 @@ sequenceDiagram
 | [`Runner/DiffPipelineExecutor.cs`](../Runner/DiffPipelineExecutor.cs) | 差分実行パイプラインとレポート生成 | スコープ付き DI コンテナ構築・差分実行・任意の review checklist snapshot の run ごと 1 回解決・Markdown/HTML/監査ログの全レポート生成 |
 | [`Runner/DryRunExecutor.cs`](../Runner/DryRunExecutor.cs) | `--dry-run` 事前プレビュー | ファイル列挙・ユニオン数/アセンブリ候補数算出・拡張子内訳表示を比較実行なしで行う |
 | [`FolderDiffIL4DotNet.Core/`](../FolderDiffIL4DotNet.Core/) | 再利用可能な console / diagnostics / I/O / text helper | フォルダ差分ドメインのポリシーを持たない |
+| [`Common/PathShapeDiagnostics.cs`](../Common/PathShapeDiagnostics.cs) | アプリ本体ローカルの path-shape 診断 helper | app 固有の診断 helper を Core へ昇格させず、warning/error 整形で「パスっぽいか」を安全に共有判定するために使う |
 | [`FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs`](../FolderDiffIL4DotNet.Core/Text/EncodingDetector.cs) | ファイルエンコーディング自動検出（BOM・UTF-8 検証・ANSI フォールバック） | インライン差分で非 UTF-8 ファイル（Shift_JIS 等）を正しく読むために使用；`System.Text.Encoding.CodePages` が必要 |
 | [`Services/DiffExecutionContext.cs`](../Services/DiffExecutionContext.cs) | 実行固有パスとネットワークモードの保持 | 可変状態を持たない |
 | [`Services/FolderDiffService.cs`](../Services/FolderDiffService.cs) | フォルダ差分全体の調停と結果振り分け | 進捗と Added/Removed もここ |

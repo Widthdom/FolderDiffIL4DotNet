@@ -26,7 +26,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 checklistFilePath = AppDataPaths.GetDefaultReviewChecklistFileAbsolutePath();
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or NotSupportedException)
             {
                 logger.LogMessage(
                     AppLogLevel.Warning,
