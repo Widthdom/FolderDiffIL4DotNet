@@ -230,7 +230,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 LogMessage(AppLogLevel.Warning,
-                    $"Failed to delete archived log file '{oldLogfileAbsolutePath}' while keeping active log '{_logFileAbsolutePath}' (ArchivedLogIsPathRooted={DescribePathRootedState(oldLogfileAbsolutePath)}, ActiveLogIsPathRooted={DescribePathRootedState(_logFileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Failed to delete archived log file '{oldLogfileAbsolutePath}' while keeping active log '{_logFileAbsolutePath}' ({PathShapeDiagnostics.DescribeState("ArchivedLog", oldLogfileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("ActiveLog", _logFileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return false;
@@ -254,24 +254,7 @@ namespace FolderDiffIL4DotNet.Services
         private string BuildCleanupFailureMessage(string prefix, int maxLogGenerations, Exception exception)
         {
             var activeLog = string.IsNullOrWhiteSpace(_logFileAbsolutePath) ? "(none)" : _logFileAbsolutePath;
-            return $"{prefix} in '{_logDirectoryAbsolutePath}' (DirectoryIsPathRooted={DescribePathRootedState(_logDirectoryAbsolutePath)}, MaxGenerations={maxLogGenerations}, ActiveLog='{activeLog}', ActiveLogIsPathRooted={DescribePathRootedState(_logFileAbsolutePath)}, {exception.GetType().Name}): {exception.Message}";
-        }
-
-        private static string DescribePathRootedState(string? path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return "Unknown";
-            }
-
-            try
-            {
-                return Path.IsPathRooted(path).ToString();
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
-            {
-                return "Unknown";
-            }
+            return $"{prefix} in '{_logDirectoryAbsolutePath}' ({PathShapeDiagnostics.DescribeState("Directory", _logDirectoryAbsolutePath)}, MaxGenerations={maxLogGenerations}, ActiveLog='{activeLog}', {PathShapeDiagnostics.DescribeState("ActiveLog", _logFileAbsolutePath)}, {exception.GetType().Name}): {exception.Message}";
         }
 
         private static void TryWriteFileLoggingFailureToConsole(string logFileAbsolutePath, Exception ex)
@@ -280,7 +263,7 @@ namespace FolderDiffIL4DotNet.Services
             try
             {
                 Console.Error.WriteLine(
-                    $"[WRN] Failed to write log file '{logFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}");
+                    $"[WRN] Failed to write log file '{logFileAbsolutePath}' ({PathShapeDiagnostics.DescribeState("LogFile", logFileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}");
             }
             catch
             {

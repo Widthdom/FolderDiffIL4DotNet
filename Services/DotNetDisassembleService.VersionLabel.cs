@@ -46,7 +46,7 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
-                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' at '{tempAsciiPath ?? "(not allocated)"}' (SourceIsPathRooted={DescribePathRootedState(dotNetAssemblyFileAbsolutePath)}, TempIsPathRooted={DescribePathRootedState(tempAsciiPath)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
+                _logger.LogMessage(AppLogLevel.Warning, $"Failed to create ASCII temp copy for '{dotNetAssemblyFileAbsolutePath}' at '{tempAsciiPath ?? "(not allocated)"}' ({PathShapeDiagnostics.DescribeState("Source", dotNetAssemblyFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("Temp", tempAsciiPath)}, {ex.GetType().Name}): {ex.Message}", shouldOutputMessageToConsole: true, ex);
             }
             return null;
         }
@@ -79,25 +79,8 @@ namespace FolderDiffIL4DotNet.Services
             }
         }
 
-        private static string DescribePathRootedState(string? path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return "Unknown";
-            }
-
-            try
-            {
-                return Path.IsPathRooted(path).ToString();
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
-            {
-                return "Unknown";
-            }
-        }
-
         private static string BuildStartDisassemblerToolWarning(string candidateDisassembleCommand, Exception exception)
-            => $"Failed to start disassembler tool '{candidateDisassembleCommand}' (CommandIsPathRooted={DescribePathRootedState(candidateDisassembleCommand)}, CommandLooksPathLike={PathShapeDiagnostics.LooksLikePath(candidateDisassembleCommand)}): {exception.Message}. Ensure the tool is installed and its directory is in PATH.";
+            => $"Failed to start disassembler tool '{candidateDisassembleCommand}' ({PathShapeDiagnostics.DescribeState("Command", candidateDisassembleCommand)}): {exception.Message}. Ensure the tool is installed and its directory is in PATH.";
 
         private static string DescribePathStateForDiagnostics(string path, Exception? exception = null)
         {
@@ -105,10 +88,10 @@ namespace FolderDiffIL4DotNet.Services
             bool existsAsDirectory = Directory.Exists(path);
             if (existsAsFile || existsAsDirectory || exception == null)
             {
-                return $"File={existsAsFile}, Directory={existsAsDirectory}";
+                return $"{PathShapeDiagnostics.DescribeState("Path", path)}, File={existsAsFile}, Directory={existsAsDirectory}";
             }
 
-            return "File=Unknown, Directory=Unknown";
+            return $"{PathShapeDiagnostics.DescribeState("Path", path)}, File=Unknown, Directory=Unknown";
         }
 
         /// <summary>

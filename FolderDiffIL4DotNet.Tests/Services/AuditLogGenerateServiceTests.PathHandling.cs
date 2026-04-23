@@ -37,7 +37,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("reports folder", warning.Message, StringComparison.Ordinal);
             Assert.Contains(AuditLogGenerateService.AUDIT_LOG_FILE_NAME, warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("AuditLogPathIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("AuditLogPathLooksPathLike=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
             Assert.True(warning.ShouldOutputMessageToConsole);
@@ -65,7 +68,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Failed to compute Markdown report SHA256", warning.Message, StringComparison.Ordinal);
             Assert.Contains(markdownReportPath, warning.Message, StringComparison.Ordinal);
             Assert.Contains($"ReportsFolder='{reportDir}'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathLooksPathLike=True", warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
 
@@ -91,7 +97,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("Failed to compute HTML report SHA256", warning.Message, StringComparison.Ordinal);
             Assert.Contains(htmlReportPath, warning.Message, StringComparison.Ordinal);
             Assert.Contains($"ReportsFolder='{reportDir}'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathLooksPathLike=True", warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
 
@@ -116,7 +125,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped Added audit log entry", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{newDir}'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("EntryPathIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("EntryPathLooksPathLike=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
@@ -142,7 +154,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Skipped Removed audit log entry", warning.Message, StringComparison.Ordinal);
             Assert.Contains($"Root='{oldDir}'", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("RootLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("EntryPathIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("EntryPathLooksPathLike=", warning.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(ArgumentException), warning.Message, StringComparison.Ordinal);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }
@@ -160,7 +175,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var warning = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
             Assert.Contains("reports folder '/tmp/reports'", warning.Message, StringComparison.Ordinal);
             Assert.Contains("Failed to mark audit log as read-only", warning.Message, StringComparison.Ordinal);
-            Assert.Contains("IsPathRooted=False", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("AuditLogPathIsPathRooted=", warning.Message, StringComparison.Ordinal);
+            Assert.Contains("AuditLogPathLooksPathLike=", warning.Message, StringComparison.Ordinal);
             Assert.NotNull(warning.Exception);
             Assert.True(warning.ShouldOutputMessageToConsole);
         }

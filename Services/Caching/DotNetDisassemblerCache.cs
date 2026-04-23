@@ -194,28 +194,11 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}', ExecutableIsPathRooted={DescribePathRootedState(disassemblerExe)}, ExecutableLooksPathLike={PathShapeDiagnostics.LooksLikePath(disassemblerExe)}, args='{string.Join(" ", args)}') ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to get version ({nameof(disassemblerVersionCacheKey)}='{disassemblerVersionCacheKey}', {nameof(disassemblerExe)}='{disassemblerExe}', {PathShapeDiagnostics.DescribeState("Executable", disassemblerExe)}, args='{string.Join(" ", args)}') ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
             return null;
-        }
-
-        private static string DescribePathRootedState(string? path)
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                return "Unknown";
-            }
-
-            try
-            {
-                return Path.IsPathRooted(path).ToString();
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
-            {
-                return "Unknown";
-            }
         }
 
     }

@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using FolderDiffIL4DotNet.Common;
 using FolderDiffIL4DotNet.Core.Common;
 using FolderDiffIL4DotNet.Core.IO;
 using FolderDiffIL4DotNet.Models;
@@ -76,7 +77,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to write SBOM ({format}) for reports folder '{context.ReportsFolderAbsolutePath}' to '{sbomPath}' (IsPathRooted={DescribePathRootedState(sbomPath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Failed to write SBOM ({format}) for reports folder '{context.ReportsFolderAbsolutePath}' to '{sbomPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", context.ReportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("SbomPath", sbomPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
             }
         }
@@ -106,20 +107,8 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark SBOM ({format}) as read-only for reports folder '{reportsFolderAbsolutePath}': '{sbomPath}' (IsPathRooted={DescribePathRootedState(sbomPath)}, {ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark SBOM ({format}) as read-only for reports folder '{reportsFolderAbsolutePath}': '{sbomPath}' ({PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("SbomPath", sbomPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true, ex);
-            }
-        }
-
-        private static string DescribePathRootedState(string path)
-        {
-            try
-            {
-                return Path.IsPathRooted(path).ToString();
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
-            {
-                return "Unknown";
             }
         }
 
@@ -325,7 +314,7 @@ namespace FolderDiffIL4DotNet.Services
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}, Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(filePath)}) at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to compute SBOM SHA256 for '{relativePath}' ({status}, Root='{rootFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("Root", rootFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("ComponentPath", filePath)}) at '{filePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return string.Empty;
@@ -335,7 +324,7 @@ namespace FolderDiffIL4DotNet.Services
         private void LogSkippedComponent(string status, string folder, string rootFolderAbsolutePath, string path, Exception ex)
         {
             _logger.LogMessage(AppLogLevel.Warning,
-                $"Skipped SBOM component '{path}' ({status}, Folder={folder}, Root='{rootFolderAbsolutePath}', IsPathRooted={DescribePathRootedState(path)}) ({ex.GetType().Name}): {ex.Message}",
+                $"Skipped SBOM component '{path}' ({status}, Folder={folder}, Root='{rootFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("Root", rootFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("ComponentPath", path)}) ({ex.GetType().Name}): {ex.Message}",
                 shouldOutputMessageToConsole: true,
                 ex);
         }

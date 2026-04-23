@@ -71,7 +71,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             catch (Exception ex)
             {
                 _logger.LogMessage(AppLogLevel.Error,
-                    $"{ERROR_FAILED_TO_OUTPUT_IL_TEXT} File='{fileRelativePath}', OldRoot='{_ilOldFolderAbsolutePath}', NewRoot='{_ilNewFolderAbsolutePath}', Old='{oldILFileAbsolutePath}', New='{newILFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"{ERROR_FAILED_TO_OUTPUT_IL_TEXT} File='{fileRelativePath}', OldRoot='{_ilOldFolderAbsolutePath}', NewRoot='{_ilNewFolderAbsolutePath}', Old='{oldILFileAbsolutePath}', New='{newILFileAbsolutePath}' ({PathShapeDiagnostics.DescribeState("OldRoot", _ilOldFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("NewRoot", _ilNewFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldOutput", oldILFileAbsolutePath)}, {PathShapeDiagnostics.DescribeState("NewOutput", newILFileAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 throw;
@@ -104,7 +104,7 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             {
                 var (side, outputRoot) = DescribeOutputSide(outputFileAbsolutePath);
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Failed to mark IL text output as read-only for '{fileRelativePath}' ({side}, OutputRoot='{outputRoot}', IsPathRooted={DescribePathRootedState(outputFileAbsolutePath)}): '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to mark IL text output as read-only for '{fileRelativePath}' ({side}, OutputRoot='{outputRoot}', {PathShapeDiagnostics.DescribeState("OutputRoot", outputRoot)}, {PathShapeDiagnostics.DescribeState("OutputPath", outputFileAbsolutePath)}): '{outputFileAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
@@ -123,18 +123,6 @@ namespace FolderDiffIL4DotNet.Services.ILOutput
             }
 
             return ("UnknownSide", string.Empty);
-        }
-
-        private static string DescribePathRootedState(string path)
-        {
-            try
-            {
-                return Path.IsPathRooted(path).ToString();
-            }
-            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
-            {
-                return "Unknown";
-            }
         }
     }
 }

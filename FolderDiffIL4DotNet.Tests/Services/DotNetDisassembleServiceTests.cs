@@ -202,8 +202,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 entry => entry.LogLevel == AppLogLevel.Warning
                     && entry.Message.Contains("Failed to create ASCII temp copy", StringComparison.Ordinal)
                     && entry.Message.Contains("ildasm_input_", StringComparison.Ordinal)
-                    && entry.Message.Contains("SourceIsPathRooted=", StringComparison.Ordinal)
-                    && entry.Message.Contains("TempIsPathRooted=", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("SourceLooksPathLike=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("TempIsPathRooted=True", StringComparison.Ordinal)
+                    && entry.Message.Contains("TempLooksPathLike=True", StringComparison.Ordinal)
                     && entry.Message.Contains("ArgumentException", StringComparison.Ordinal)
                     && entry.Exception is ArgumentException);
         }
