@@ -16,7 +16,7 @@ namespace FolderDiffIL4DotNet
     public sealed partial class ProgramRunner
     {
         private const string LOG_OPENING_FOLDER = "Opening folder: {0}";
-        private const string ERROR_OPEN_FOLDER_FAILED = "Failed to open folder '{0}' during stage '{1}' ({2}): {3}";
+        private const string ERROR_OPEN_FOLDER_FAILED = "Failed to open folder '{0}' during stage '{1}' ({2}, {3}): {4}";
         private const string ERROR_LOGGER_INIT_FOR_OPEN_FOLDER_FAILED = "Failed to initialize logger for folder-open command ({0}): {1}";
 
         /// <summary>
@@ -144,10 +144,10 @@ namespace FolderDiffIL4DotNet
             {
                 if (TryInitializeLoggerForFolderOpen())
                 {
-                    _logger.LogMessage(AppLogLevel.Error, string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, ex.Message), shouldOutputMessageToConsole: false, exception: ex);
+                    _logger.LogMessage(AppLogLevel.Error, string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, PathShapeDiagnostics.DescribeState("TargetPath", folderPath), ex.Message), shouldOutputMessageToConsole: false, exception: ex);
                 }
 
-                Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, ex.Message));
+                Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, PathShapeDiagnostics.DescribeState("TargetPath", folderPath), ex.Message));
                 return (int)ProgramExitCode.ExecutionFailed;
             }
             #pragma warning disable CA1031 // Application boundary: catch-all for platform-specific process launch failures
@@ -155,10 +155,10 @@ namespace FolderDiffIL4DotNet
             {
                 if (TryInitializeLoggerForFolderOpen())
                 {
-                    _logger.LogMessage(AppLogLevel.Error, string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, ex.Message), shouldOutputMessageToConsole: false, exception: ex);
+                    _logger.LogMessage(AppLogLevel.Error, string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, PathShapeDiagnostics.DescribeState("TargetPath", folderPath), ex.Message), shouldOutputMessageToConsole: false, exception: ex);
                 }
 
-                Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, ex.Message));
+                Console.Error.WriteLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, ERROR_OPEN_FOLDER_FAILED, folderPath, openStage, ex.GetType().Name, PathShapeDiagnostics.DescribeState("TargetPath", folderPath), ex.Message));
                 return (int)ProgramExitCode.ExecutionFailed;
             }
             #pragma warning restore CA1031
