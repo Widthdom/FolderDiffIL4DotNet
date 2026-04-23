@@ -586,11 +586,13 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Equal(4, exitCode);
                 string errorOutput = errorWriter.ToString();
                 Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("during stage 'validating target path'", errorOutput, StringComparison.Ordinal);
                 Assert.Contains(outputFile, errorOutput, StringComparison.Ordinal);
                 Assert.Contains("IOException", errorOutput, StringComparison.Ordinal);
                 Assert.Empty(startedProcesses);
                 var loggedMessage = Assert.Single(logger.Messages);
                 Assert.Contains("Failed to open folder", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("during stage 'validating target path'", loggedMessage, StringComparison.Ordinal);
             }
             finally
             {
@@ -635,10 +637,12 @@ namespace FolderDiffIL4DotNet.Tests
 
                 string errorOutput = errorWriter.ToString();
                 Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", errorOutput, StringComparison.Ordinal);
                 Assert.Contains(Path.GetFullPath(tempDir), errorOutput, StringComparison.Ordinal);
                 Assert.Contains("InvalidOperationException", errorOutput, StringComparison.Ordinal);
                 var loggedMessage = Assert.Single(logger.Messages);
                 Assert.Contains("Failed to open folder", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", loggedMessage, StringComparison.Ordinal);
             }
             finally
             {
@@ -998,6 +1002,7 @@ namespace FolderDiffIL4DotNet.Tests
                 Assert.Contains("UnauthorizedAccessException", root.GetProperty("message").GetString(), StringComparison.Ordinal);
                 Assert.Contains(typeof(UnauthorizedAccessException).FullName, root.GetProperty("exceptionType").GetString(), StringComparison.Ordinal);
                 Assert.Contains("Failed to open folder", errorLines[1], StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", errorLines[1], StringComparison.Ordinal);
                 Assert.Contains(Path.GetFullPath(appDataScope.ReportsRootAbsolutePath), errorLines[1], StringComparison.Ordinal);
             }
             finally
@@ -1136,10 +1141,12 @@ namespace FolderDiffIL4DotNet.Tests
 
                 string errorOutput = errorWriter.ToString();
                 Assert.Contains("Failed to open folder", errorOutput, StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", errorOutput, StringComparison.Ordinal);
                 Assert.Contains(Path.GetFullPath(tempDir), errorOutput, StringComparison.Ordinal);
                 Assert.Contains("InvalidOperationException", errorOutput, StringComparison.Ordinal);
                 var loggedMessage = Assert.Single(logger.Messages);
                 Assert.Contains("Failed to open folder", loggedMessage, StringComparison.Ordinal);
+                Assert.Contains("during stage 'launching file manager'", loggedMessage, StringComparison.Ordinal);
             }
             finally
             {
