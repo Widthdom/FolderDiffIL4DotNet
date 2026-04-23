@@ -300,7 +300,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        BuildHookFailureMessage("BeforeCompare", hook, fileRelativePath, ex),
+                        BuildHookFailureMessage("BeforeCompare", hook, fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, ex),
                         shouldOutputMessageToConsole: false, ex);
                 }
 #pragma warning restore CA1031
@@ -339,7 +339,7 @@ namespace FolderDiffIL4DotNet.Services
                 catch (Exception ex)
                 {
                     _logger.LogMessage(AppLogLevel.Warning,
-                        BuildHookFailureMessage("AfterCompare", hook, fileRelativePath, ex),
+                        BuildHookFailureMessage("AfterCompare", hook, fileRelativePath, _oldFolderAbsolutePath, _newFolderAbsolutePath, ex),
                         shouldOutputMessageToConsole: false, ex);
                 }
 #pragma warning restore CA1031
@@ -472,8 +472,8 @@ namespace FolderDiffIL4DotNet.Services
                 exception);
         }
 
-        private static string BuildHookFailureMessage(string phase, IFileComparisonHook hook, string fileRelativePath, Exception exception) =>
-            $"Plugin {phase} hook '{hook.GetType().Name}' failed for '{fileRelativePath}' (Order={hook.Order}, {exception.GetType().Name}): {exception.Message}";
+        private static string BuildHookFailureMessage(string phase, IFileComparisonHook hook, string fileRelativePath, string oldFolderAbsolutePath, string newFolderAbsolutePath, Exception exception) =>
+            $"Plugin {phase} hook '{hook.GetType().Name}' failed for '{fileRelativePath}' (Order={hook.Order}, OldRoot='{oldFolderAbsolutePath}', NewRoot='{newFolderAbsolutePath}', {exception.GetType().Name}): {exception.Message}";
 
         private static string BuildDependencyAnalysisFailureMessage(string fileRelativePath, string oldPath, string newPath, Exception exception) =>
             $"Dependency change analysis failed for '{fileRelativePath}'. Old='{oldPath}', New='{newPath}' ({exception.GetType().Name}): {exception.Message}";
