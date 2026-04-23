@@ -93,6 +93,14 @@ namespace FolderDiffIL4DotNet.Tests.Services
                 Assert.Contains("lib/app.dll", error.Message, StringComparison.Ordinal);
                 Assert.Contains("OldRoot=", error.Message, StringComparison.Ordinal);
                 Assert.Contains("NewRoot=", error.Message, StringComparison.Ordinal);
+                Assert.Contains("OldRootIsPathRooted=True", error.Message, StringComparison.Ordinal);
+                Assert.Contains("OldRootLooksPathLike=True", error.Message, StringComparison.Ordinal);
+                Assert.Contains("NewRootIsPathRooted=True", error.Message, StringComparison.Ordinal);
+                Assert.Contains("NewRootLooksPathLike=True", error.Message, StringComparison.Ordinal);
+                Assert.Contains("OldOutputIsPathRooted=True", error.Message, StringComparison.Ordinal);
+                Assert.Contains("OldOutputLooksPathLike=True", error.Message, StringComparison.Ordinal);
+                Assert.Contains("NewOutputIsPathRooted=True", error.Message, StringComparison.Ordinal);
+                Assert.Contains("NewOutputLooksPathLike=True", error.Message, StringComparison.Ordinal);
                 Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
                 Assert.NotNull(error.Exception);
                 Assert.Same(exception, error.Exception);

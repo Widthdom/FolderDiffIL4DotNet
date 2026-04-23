@@ -70,6 +70,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains("reports folder", error.Message, StringComparison.Ordinal);
             Assert.Contains(nameof(DirectoryNotFoundException), error.Message, StringComparison.Ordinal);
             Assert.Contains(reportDir, error.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", error.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderLooksPathLike=True", error.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathIsPathRooted=True", error.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportPathLooksPathLike=True", error.Message, StringComparison.Ordinal);
             Assert.Same(exception, error.Exception);
             Assert.DoesNotContain(logger.Entries, entry => entry.LogLevel == AppLogLevel.Warning);
         }
