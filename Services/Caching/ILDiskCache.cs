@@ -259,9 +259,22 @@ namespace FolderDiffIL4DotNet.Services.Caching
             {
                 _logger.LogMessage(
                     AppLogLevel.Info,
-                    $"Disk quota trim: directory='{_cacheDirectoryAbsolutePath}', removed={removed}, remain={fileCount}, bytes={totalBytes}, maxFiles={_maxDiskFileCount}, maxBytes={_maxDiskBytes}",
+                    $"Disk quota trim: directory='{_cacheDirectoryAbsolutePath}', trigger={DescribeQuotaTrigger(orderedFiles.Count, initialTotalBytes)}, beforeFiles={orderedFiles.Count}, beforeBytes={initialTotalBytes}, removed={removed}, remain={fileCount}, bytes={totalBytes}, maxFiles={_maxDiskFileCount}, maxBytes={_maxDiskBytes}",
                     shouldOutputMessageToConsole: true);
             }
+        }
+
+        private string DescribeQuotaTrigger(int fileCount, long totalBytes)
+        {
+            bool exceededFiles = _maxDiskFileCount > 0 && fileCount > _maxDiskFileCount;
+            bool exceededBytes = _maxDiskBytes > 0 && totalBytes > _maxDiskBytes;
+            return (exceededFiles, exceededBytes) switch
+            {
+                (true, true) => "count+bytes",
+                (true, false) => "count",
+                (false, true) => "bytes",
+                _ => "unknown"
+            };
         }
 
         /// <summary>

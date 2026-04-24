@@ -216,6 +216,12 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var entry = Assert.Single(logger.Entries, e => e.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Inline diff skipped", entry.Message, StringComparison.Ordinal);
             Assert.Contains("TextMismatch", entry.Message, StringComparison.Ordinal);
+            Assert.Contains($"OldRoot='{oldDir}'", entry.Message, StringComparison.Ordinal);
+            Assert.Contains($"NewRoot='{newDir}'", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OldRootIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("NewRootIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OldPathIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("NewPathIsPathRooted=", entry.Message, StringComparison.Ordinal);
             Assert.Contains("ArgumentException", entry.Message, StringComparison.Ordinal);
         }
 
@@ -237,6 +243,10 @@ namespace FolderDiffIL4DotNet.Tests.Services
             var entry = Assert.Single(logger.Entries, e => e.LogLevel == AppLogLevel.Warning);
             Assert.Contains("Inline diff skipped", entry.Message, StringComparison.Ordinal);
             Assert.Contains("ILMismatch", entry.Message, StringComparison.Ordinal);
+            Assert.Contains($"ReportsFolder='{reportDir}'", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ReportsFolderIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("OldILIsPathRooted=True", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("NewILIsPathRooted=True", entry.Message, StringComparison.Ordinal);
             Assert.Contains("ArgumentException", entry.Message, StringComparison.Ordinal);
         }
 

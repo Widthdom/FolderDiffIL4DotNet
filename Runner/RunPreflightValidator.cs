@@ -88,12 +88,15 @@ namespace FolderDiffIL4DotNet.Runner
         /// </summary>
         internal static string GetReportsRootDirectoryAbsolutePath(string? outputDirectory = null, ILoggerService? logger = null)
         {
+            string requestedOutput = outputDirectory ?? REPORTS_ROOT_DIR_NAME;
+            string resolvedCandidate = requestedOutput;
             string reportsRootDirAbsolutePath;
             try
             {
                 reportsRootDirAbsolutePath = !string.IsNullOrWhiteSpace(outputDirectory)
                     ? Path.GetFullPath(outputDirectory)
                     : AppDataPaths.GetDefaultReportsRootDirectoryAbsolutePath();
+                resolvedCandidate = reportsRootDirAbsolutePath;
                 PathValidator.ValidateAbsolutePathLengthOrThrow(reportsRootDirAbsolutePath, nameof(outputDirectory));
                 Directory.CreateDirectory(reportsRootDirAbsolutePath);
             }
@@ -101,7 +104,7 @@ namespace FolderDiffIL4DotNet.Runner
                 || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 logger?.LogMessage(AppLogLevel.Error,
-                    $"Failed to resolve report output directory '{outputDirectory ?? REPORTS_ROOT_DIR_NAME}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to resolve report output directory '{requestedOutput}' (ResolvedCandidate='{resolvedCandidate}', {PathShapeDiagnostics.DescribeState("RequestedOutput", requestedOutput)}, {PathShapeDiagnostics.DescribeState("ResolvedCandidate", resolvedCandidate)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 throw;
@@ -187,7 +190,7 @@ namespace FolderDiffIL4DotNet.Runner
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 logger?.LogMessage(AppLogLevel.Warning,
-                    $"Failed to list existing report folders under '{reportsRootDirAbsolutePath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to list existing report folders under '{reportsRootDirAbsolutePath}' ({PathShapeDiagnostics.DescribeState("ReportsRoot", reportsRootDirAbsolutePath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
             }
@@ -208,7 +211,7 @@ namespace FolderDiffIL4DotNet.Runner
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 logger.LogMessage(AppLogLevel.Warning,
-                    $"Skipped output-directory escape guardrail for '{resolvedOutputPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Skipped output-directory escape guardrail for '{resolvedOutputPath}' ({PathShapeDiagnostics.DescribeState("Output", resolvedOutputPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return;
@@ -217,7 +220,7 @@ namespace FolderDiffIL4DotNet.Runner
             if (!IsSameOrChildPath(normalizedOutput, appBase))
             {
                 logger.LogMessage(AppLogLevel.Warning,
-                    $"Output directory '{normalizedOutput}' is outside the application base directory '{appBase}'. Verify this is intentional.",
+                    $"Output directory '{normalizedOutput}' is outside the application base directory '{appBase}'. Verify this is intentional. ({PathShapeDiagnostics.DescribeState("Output", normalizedOutput)}, {PathShapeDiagnostics.DescribeState("AppBase", appBase)})",
                     shouldOutputMessageToConsole: true);
             }
         }
@@ -236,7 +239,7 @@ namespace FolderDiffIL4DotNet.Runner
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 logger.LogMessage(AppLogLevel.Warning,
-                    $"Skipped system-directory guardrail for '{resolvedOutputPath}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Skipped system-directory guardrail for '{resolvedOutputPath}' ({PathShapeDiagnostics.DescribeState("Output", resolvedOutputPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 return;
@@ -267,7 +270,7 @@ namespace FolderDiffIL4DotNet.Runner
                 if (IsSameOrChildPath(normalizedOutput, normalizedSysDir))
                 {
                     logger.LogMessage(AppLogLevel.Warning,
-                        $"Output directory '{normalizedOutput}' targets a system directory '{normalizedSysDir}'. This may be dangerous.",
+                        $"Output directory '{normalizedOutput}' targets a system directory '{normalizedSysDir}'. This may be dangerous. ({PathShapeDiagnostics.DescribeState("Output", normalizedOutput)}, {PathShapeDiagnostics.DescribeState("SystemDir", normalizedSysDir)})",
                         shouldOutputMessageToConsole: true);
                     return;
                 }

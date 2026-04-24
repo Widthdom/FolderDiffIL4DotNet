@@ -123,7 +123,7 @@ namespace FolderDiffIL4DotNet.Services
             {
                 _logger.LogMessage(
                     AppLogLevel.Warning,
-                    $"Built-in .NET disassembler provider '{DisplayName}' failed for '{filePath}' (Extension='{extension}', {ex.GetType().Name}): {ex.Message}",
+                    $"Built-in .NET disassembler provider '{DisplayName}' failed for '{filePath}' (Extension='{extension}', {DescribePathStateForDiagnostics(filePath, ex)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false,
                     ex);
                 return new DisassemblyResult

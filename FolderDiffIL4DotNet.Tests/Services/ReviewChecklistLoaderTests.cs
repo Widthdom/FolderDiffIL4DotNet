@@ -89,6 +89,8 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains($"'{checklistPath}'", warning.Message, StringComparison.Ordinal);
             Assert.Contains("ChecklistFileIsPathRooted=True", warning.Message, StringComparison.Ordinal);
             Assert.Contains("ChecklistFileLooksPathLike=True", warning.Message, StringComparison.Ordinal);
+            Assert.Contains(AppDataPaths.LOCAL_APP_DATA_OVERRIDE_KEY, warning.Message, StringComparison.Ordinal);
+            Assert.Contains("OverridePresent=True", warning.Message, StringComparison.Ordinal);
             Assert.DoesNotContain($": {nameof(UnauthorizedAccessException)}:", warning.Message, StringComparison.Ordinal);
             Assert.True(
                 warning.Message.Contains($", {nameof(UnauthorizedAccessException)}):", StringComparison.Ordinal)

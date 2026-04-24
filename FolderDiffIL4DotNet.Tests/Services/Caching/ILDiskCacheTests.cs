@@ -189,9 +189,49 @@ namespace FolderDiffIL4DotNet.Tests.Services.Caching
             var info = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Info);
             Assert.Contains("Disk quota trim: directory='", info.Message, StringComparison.Ordinal);
             Assert.Contains(_cacheDir, info.Message, StringComparison.Ordinal);
+            Assert.Contains("trigger=count", info.Message, StringComparison.Ordinal);
+            Assert.Contains("beforeFiles=2", info.Message, StringComparison.Ordinal);
             Assert.Contains("removed=1", info.Message, StringComparison.Ordinal);
             Assert.Contains("maxFiles=1", info.Message, StringComparison.Ordinal);
             Assert.Contains("maxBytes=0", info.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task WriteAsync_WhenQuotaTrimTriggeredByBytes_LogsBytesTrigger()
+        {
+            var logger = new TestLogger();
+            var cache = new ILDiskCache(_cacheDir, logger, maxDiskFileCount: 10, maxDiskMegabytes: 1);
+            string payload = new string('B', 700_000);
+
+            await cache.WriteAsync("bytes-1", payload);
+            await Task.Delay(50);
+            await cache.WriteAsync("bytes-2", payload);
+
+            Assert.Single(Directory.GetFiles(_cacheDir, "*.ilcache"));
+            var info = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Info);
+            Assert.Contains("trigger=bytes", info.Message, StringComparison.Ordinal);
+            Assert.Contains("beforeFiles=2", info.Message, StringComparison.Ordinal);
+            Assert.Contains("maxFiles=10", info.Message, StringComparison.Ordinal);
+            Assert.Contains("maxBytes=1048576", info.Message, StringComparison.Ordinal);
+        }
+
+        [Fact]
+        public async Task WriteAsync_WhenQuotaTrimTriggeredByCountAndBytes_LogsCombinedTrigger()
+        {
+            var logger = new TestLogger();
+            var cache = new ILDiskCache(_cacheDir, logger, maxDiskFileCount: 1, maxDiskMegabytes: 1);
+            string payload = new string('C', 700_000);
+
+            await cache.WriteAsync("combo-1", payload);
+            await Task.Delay(50);
+            await cache.WriteAsync("combo-2", payload);
+
+            Assert.Single(Directory.GetFiles(_cacheDir, "*.ilcache"));
+            var info = Assert.Single(logger.Entries, entry => entry.LogLevel == AppLogLevel.Info);
+            Assert.Contains("trigger=count+bytes", info.Message, StringComparison.Ordinal);
+            Assert.Contains("beforeFiles=2", info.Message, StringComparison.Ordinal);
+            Assert.Contains("maxFiles=1", info.Message, StringComparison.Ordinal);
+            Assert.Contains("maxBytes=1048576", info.Message, StringComparison.Ordinal);
         }
 
         private static void SetPrivateField(object target, string fieldName, string value)
