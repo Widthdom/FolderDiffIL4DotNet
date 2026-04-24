@@ -824,6 +824,8 @@ namespace FolderDiffIL4DotNet.Tests
             var entry = Assert.Single(logger.Entries);
             Assert.Equal(AppLogLevel.Error, entry.LogLevel);
             Assert.Contains("Failed to resolve report output directory", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("RequestedOutputIsPathRooted=", entry.Message, StringComparison.Ordinal);
+            Assert.Contains("ResolvedCandidate='bad", entry.Message, StringComparison.Ordinal);
             Assert.IsType<ArgumentException>(entry.Exception);
         }
 

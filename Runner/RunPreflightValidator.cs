@@ -88,12 +88,15 @@ namespace FolderDiffIL4DotNet.Runner
         /// </summary>
         internal static string GetReportsRootDirectoryAbsolutePath(string? outputDirectory = null, ILoggerService? logger = null)
         {
+            string requestedOutput = outputDirectory ?? REPORTS_ROOT_DIR_NAME;
+            string resolvedCandidate = requestedOutput;
             string reportsRootDirAbsolutePath;
             try
             {
                 reportsRootDirAbsolutePath = !string.IsNullOrWhiteSpace(outputDirectory)
                     ? Path.GetFullPath(outputDirectory)
                     : AppDataPaths.GetDefaultReportsRootDirectoryAbsolutePath();
+                resolvedCandidate = reportsRootDirAbsolutePath;
                 PathValidator.ValidateAbsolutePathLengthOrThrow(reportsRootDirAbsolutePath, nameof(outputDirectory));
                 Directory.CreateDirectory(reportsRootDirAbsolutePath);
             }
@@ -101,7 +104,7 @@ namespace FolderDiffIL4DotNet.Runner
                 || AppDataPaths.IsLocalApplicationDataResolutionFailure(ex))
             {
                 logger?.LogMessage(AppLogLevel.Error,
-                    $"Failed to resolve report output directory '{outputDirectory ?? REPORTS_ROOT_DIR_NAME}' ({ex.GetType().Name}): {ex.Message}",
+                    $"Failed to resolve report output directory '{requestedOutput}' (ResolvedCandidate='{resolvedCandidate}', {PathShapeDiagnostics.DescribeState("RequestedOutput", requestedOutput)}, {PathShapeDiagnostics.DescribeState("ResolvedCandidate", resolvedCandidate)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: true,
                     ex);
                 throw;

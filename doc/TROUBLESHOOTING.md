@@ -238,6 +238,7 @@ dotnet run -- --config /path/to/config.json --print-config
 1. Reconfirm the intended output root and whether `--output` was provided explicitly.
 2. If the path itself is malformed, the warning now includes `Output...`, `AppBase...`, or `SystemDir...` path-shape diagnostics to separate invalid-path issues from a legitimate but unusual location.
 3. If the location is intentional, you can keep using it; these warnings are advisory and do not block execution by themselves.
+4. If resolving the reports root fails before any guardrail can run, the error log now also includes `RequestedOutput...` and `ResolvedCandidate...` diagnostics so you can see whether the failure happened before or after path normalization.
 
 ### "Path length exceeds OS limit" (exit code 2)
 
@@ -545,6 +546,7 @@ dotnet run -- --config /path/to/config.json --print-config
 1. 想定している出力ルートと、`--output` を明示指定したかを再確認してください。
 2. パス自体が不正な場合、warning には `Output...`、`AppBase...`、`SystemDir...` の path-shape 診断も含まれるようになりました。単なる変則的な保存先なのか、不正パスなのかを切り分けやすくなります。
 3. 保存先が意図どおりなら、そのまま使って構いません。これらの warning は助言であり、それ自体では実行を止めません。
+4. reports root の解決自体が guardrail 実行前に失敗した場合、error ログには `RequestedOutput...` と `ResolvedCandidate...` 診断も入るようになりました。正規化前に失敗したのか、正規化後のパスで失敗したのかを見分けやすくなります。
 
 ### 「パス長が OS 制限を超過」（終了コード 2）
 
