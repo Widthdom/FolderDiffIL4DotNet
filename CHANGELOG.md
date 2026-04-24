@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### [Unreleased]
 
+#### Added
+
+- **Dedicated `PathShapeDiagnostics` test class** — the `PathShapeDiagnostics.DescribeRootedState`, `LooksLikePath`, and `DescribeState` helper was exercised only indirectly through downstream warning tests. Added a focused unit test class so the contract (null/empty/whitespace/embedded-NUL downgrade to `Unknown`/`False`, absolute/relative/separator-containing path behavior, label-prefixed `DescribeState` output) is pinned directly. This helper sits underneath every PathShape-enriched warning (audit log, SBOM, report writers, cache layers, disassembler launcher, logger cleanup, preflight validator, plugin loader, open-folder commands, IL text writer) so a regression here silently weakens every downstream diagnostic. Affected: `FolderDiffIL4DotNet.Tests/Common/PathShapeDiagnosticsTests.cs`, `doc/TESTING_GUIDE.md`. Tests: `PathShapeDiagnosticsTests` (new class, 17 tests).
+
 #### Fixed
 
 - **ConfigService now stamps the resolved config path when deserialization returns null** — `ConfigService.LoadConfigBuilderAsync` used to throw a bare `InvalidDataException` with a misleading "JSON syntax error" message when the JSON was syntactically valid but deserialized to null (e.g. a literal `null` payload). The exception is now stamped with the resolved config path so `ConfigService.TryGetResolvedConfigFileAbsolutePath` can surface it in downstream error reporting, and the message now reads "deserialization returned null" so it no longer falsely blames a syntax error. `doc/TROUBLESHOOTING.md` ("Configuration load/parse error") now documents the new message and how to use the stamped path. Affected: `Services/ConfigService.cs`, `FolderDiffIL4DotNet.Tests/Services/ConfigServiceTests.cs`, `doc/TROUBLESHOOTING.md`. Tests: `LoadConfigBuilderAsync_WhenJsonDeserializesToNull_ThrowsInvalidDataExceptionAndStampsResolvedPath` (new, 1 test).
@@ -1561,6 +1565,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 形式は [Keep a Changelog](https://keepachangelog.com/ja/1.1.0/)、バージョン管理は [Semantic Versioning](https://semver.org/lang/ja/) に準拠します。
 
 ### [Unreleased]
+
+#### Added
+
+- **`PathShapeDiagnostics` 専用テストクラスを追加** — `PathShapeDiagnostics.DescribeRootedState`／`LooksLikePath`／`DescribeState` は従来、各下流 warning テスト経由で間接的にしか検証されていませんでした。専用ユニットテストクラスを追加し、null/空文字/空白/埋め込み NUL の `Unknown`/`False` ダウングレード、絶対パス/相対パス/区切り文字を含む文字列の挙動、ラベル接頭辞付き `DescribeState` の出力フォーマットを直接 pin するようにしました。この helper は、監査ログ、SBOM、レポート出力、キャッシュ層、逆アセンブラ起動、logger cleanup、プリフライト、プラグインローダ、open-folder、IL テキスト出力など、PathShape 付き warning すべての土台なので、ここが退行すると下流の診断がまとめて弱くなります。影響: `FolderDiffIL4DotNet.Tests/Common/PathShapeDiagnosticsTests.cs`, `doc/TESTING_GUIDE.md`。テスト: `PathShapeDiagnosticsTests`（新規クラス、17 件）。
 
 #### Fixed
 
