@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1776997999569,
+  "lastUpdate": 1777016058890,
   "repoUrl": "https://github.com/Widthdom/FolderDiffIL4DotNet",
   "entries": {
     "FolderDiffIL4DotNet Performance": [
@@ -8664,6 +8664,102 @@ window.BENCHMARK_DATA = {
             "value": 28190564.3125,
             "unit": "ns",
             "range": "± 213099.63601766506"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "125688807+Widthdom@users.noreply.github.com",
+            "name": "Widthdom",
+            "username": "Widthdom"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3635a1bb53b810d161cc844408d864223347e34b",
+          "message": "Merge pull request #163 from Widthdom/codex/exception-hardening-origin-main-20260424\n\nHarden exception diagnostics across diff and preflight flows",
+          "timestamp": "2026-04-24T16:28:32+09:00",
+          "tree_id": "d8b7258dd0252e063a72501181584742815273d3",
+          "url": "https://github.com/Widthdom/FolderDiffIL4DotNet/commit/3635a1bb53b810d161cc844408d864223347e34b"
+        },
+        "date": 1777016058641,
+        "tool": "benchmarkdotnet",
+        "benches": [
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_100",
+            "value": 62633.39275251116,
+            "unit": "ns",
+            "range": "± 173.0044941516311"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_1000",
+            "value": 560726.9024135044,
+            "unit": "ns",
+            "range": "± 800.5758405206936"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.EnumerateFiles_10000",
+            "value": 5842808.994419643,
+            "unit": "ns",
+            "range": "± 13781.43246755411"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.FolderDiffBenchmarks.HashCompare_SmallFile",
+            "value": 75854.78172419622,
+            "unit": "ns",
+            "range": "± 180.24010967999322"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_ShortPath",
+            "value": 29.32389872807723,
+            "unit": "ns",
+            "range": "± 0.06093563592734608"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_LongPath",
+            "value": 60.6638953260013,
+            "unit": "ns",
+            "range": "± 0.46809581085941177"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.Sanitize_UnicodePath",
+            "value": 29.086300109113967,
+            "unit": "ns",
+            "range": "± 0.06001480003803382"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_IdenticalLargeFile",
+            "value": 5108410.113839285,
+            "unit": "ns",
+            "range": "± 13896.857614740655"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.ILComparisonBenchmarks.TextDiffer_CompletelyDifferentSmallFiles",
+            "value": 128009.98615373884,
+            "unit": "ns",
+            "range": "± 878.2340046963983"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.SmallFile_5Changes",
+            "value": 2425.278435927171,
+            "unit": "ns",
+            "range": "± 12.755990875962882"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.MediumFile_20Changes",
+            "value": 270745.0739746094,
+            "unit": "ns",
+            "range": "± 1126.2431260080496"
+          },
+          {
+            "name": "FolderDiffIL4DotNet.Benchmarks.TextDifferBenchmarks.LargeFile_10Changes",
+            "value": 27409496.114583332,
+            "unit": "ns",
+            "range": "± 214950.4314143666"
           }
         ]
       }
