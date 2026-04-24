@@ -207,9 +207,9 @@ dotnet run -- --print-config
 dotnet run -- --config /path/to/config.json --print-config
 ```
 
-3. If the error says "deserialization returned null", the file was syntactically valid JSON but produced no settings object (for example the file contents are just `null` or an empty array). Replace the payload with a proper JSON object (`{}` at minimum) — the error message now includes the resolved config file path so you can open the exact file that was loaded without having to infer whether it came from `--config`, the user-local app-data default, or the bundled fallback.
+3. If the error says "deserialization returned null", the file was syntactically valid JSON but produced no settings object (for example the file contents are just the literal `null`). Replace the payload with a proper JSON object (`{}` at minimum) — the error message now includes the resolved config file path so you can open the exact file that was loaded without having to infer whether it came from `--config`, the user-local app-data default, or the bundled fallback.
 
-3. Compare with the annotated sample: [`doc/config.sample.jsonc`](config.sample.jsonc).
+4. Compare with the annotated sample: [`doc/config.sample.jsonc`](config.sample.jsonc).
 
 ### "Where did my reports/logs/config go after a global-tool update?"
 
@@ -518,7 +518,7 @@ dotnet run -- --config /path/to/config.json --print-config
 ```
 
 3. コメント付きサンプルと比較: [`doc/config.sample.jsonc`](config.sample.jsonc)。
-4. メッセージが "deserialization returned null" を含む場合、JSON 構文自体は正しいものの、設定オブジェクトが得られない内容（たとえばファイルが `null` リテラルや空配列だけ）になっています。最低でも `{}` を含む正しい JSON オブジェクトに置き換えてください。このエラーメッセージには解決済み config ファイルの絶対パスも付くので、`--config`／ユーザーローカル既定／同梱フォールバックのどれが読まれたのかを追いかけることなく対象ファイルを開けます。
+4. メッセージが "deserialization returned null" を含む場合、JSON 構文自体は正しいものの、設定オブジェクトが得られない内容（たとえばファイルが `null` リテラルだけ）になっています。最低でも `{}` を含む正しい JSON オブジェクトに置き換えてください。このエラーメッセージには解決済み config ファイルの絶対パスも付くので、`--config`／ユーザーローカル既定／同梱フォールバックのどれが読まれたのかを追いかけることなく対象ファイルを開けます。
 
 ### 「グローバルツール更新後に reports/logs/config がどこに行ったかわからない」
 
