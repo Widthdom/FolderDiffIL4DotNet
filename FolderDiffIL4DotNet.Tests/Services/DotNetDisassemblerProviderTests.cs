@@ -132,7 +132,9 @@ namespace FolderDiffIL4DotNet.Tests.Services
             Assert.Contains(logger.Messages, m =>
                 m.Contains("provider", StringComparison.Ordinal)
                 && m.Contains(provider.DisplayName, StringComparison.Ordinal)
-                && m.Contains("Extension='.dll'", StringComparison.Ordinal));
+                && m.Contains("Extension='.dll'", StringComparison.Ordinal)
+                && m.Contains("File=Unknown", StringComparison.Ordinal)
+                && m.Contains("Directory=Unknown", StringComparison.Ordinal));
         }
 
         [Fact]
