@@ -252,9 +252,19 @@ namespace FolderDiffIL4DotNet.Services
                     catch (OperationCanceledException)
                     {
                         // Timeout — kill the process / タイムアウト — プロセスを強制終了
-#pragma warning disable CA1031 // best-effort process kill / ベストエフォートのプロセス強制終了
-                        try { process.Kill(entireProcessTree: true); } catch { /* best effort / ベストエフォート */ }
-#pragma warning restore CA1031
+                        try
+                        {
+                            process.Kill(entireProcessTree: true);
+                        }
+                        catch (Exception ex) when (ex is InvalidOperationException
+                            or NotSupportedException
+                            or System.ComponentModel.Win32Exception)
+                        {
+                            // Process already exited, not supported by platform, or native kill failed —
+                            // the caller still reports the timeout as the effective error below.
+                            // プロセスが既に終了、プラットフォーム非対応、ネイティブ kill 失敗 —
+                            // いずれも下の TimeoutException を実効エラーとして返すのでベストエフォート。
+                        }
                         return (ExitCode: int.MinValue, StdoutLines: null, Stderr: null,
                             Error: new TimeoutException($"Disassembler process '{disassembleCommand}' timed out after {timeoutSeconds} seconds. To increase the limit, set DisassemblerTimeoutSeconds in config.json (current: {timeoutSeconds})."));
                     }

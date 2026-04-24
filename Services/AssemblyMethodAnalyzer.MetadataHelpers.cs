@@ -18,6 +18,22 @@ namespace FolderDiffIL4DotNet.Services
     /// </summary>
     internal static partial class AssemblyMethodAnalyzer
     {
+        // Shared filter for best-effort metadata/signature decoding: lets known
+        // malformed-metadata failure modes fall through to a typed fallback, but
+        // keeps programmer errors (NullReferenceException, OutOfMemoryException, ...)
+        // propagating to the outer Analyze catch-all so they are not silently swallowed.
+        // メタデータ/シグネチャデコードのベストエフォート用共通フィルタ。既知の不正メタデータ
+        // 起因の失敗だけ型付きフォールバックへ落とし、プログラマエラー系は外側の Analyze
+        // の catch-all へ伝播させてサイレント吸収を避ける。
+        private static bool IsMetadataDecodeRecoverable(Exception ex)
+            => ex is BadImageFormatException
+                or InvalidOperationException
+                or ArgumentException
+                or NotSupportedException
+                or OverflowException
+                or IndexOutOfRangeException;
+
+
         // ── Internal snapshot data ──────────────────────────────────────────
 
         private sealed class MethodDetail
@@ -212,13 +228,11 @@ namespace FolderDiffIL4DotNet.Services
                 string parameters = string.Join(", ", signature.ParameterTypes);
                 return $"{typeName}::{methodName}({parameters}) : {signature.ReturnType}";
             }
-#pragma warning disable CA1031 // シグネチャデコード失敗時のフォールバック / Fallback when signature decoding fails
-            catch
+            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
             {
                 var sigBytes = reader.GetBlobBytes(methodDef.Signature);
                 return $"{typeName}::{methodName}(#{Convert.ToHexString(sigBytes)})";
             }
-#pragma warning restore CA1031
         }
 
         /// <summary>
@@ -270,12 +284,10 @@ namespace FolderDiffIL4DotNet.Services
 
                 return (signature.ReturnType, string.Join(", ", parts));
             }
-#pragma warning disable CA1031
-            catch
+            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
             {
                 return ("", "");
             }
-#pragma warning restore CA1031
         }
 
         /// <summary>Extract the declared type of a property (without accessor info). / プロパティの宣言型を抽出（アクセサ情報なし）。</summary>
@@ -288,12 +300,10 @@ namespace FolderDiffIL4DotNet.Services
                 var signature = decoder.DecodeMethodSignature(ref sigBlobReader);
                 return signature.ReturnType;
             }
-#pragma warning disable CA1031
-            catch
+            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
             {
                 return "";
             }
-#pragma warning restore CA1031
         }
 
         /// <summary>Build property details: ": Type { get; set; }".</summary>
@@ -317,12 +327,10 @@ namespace FolderDiffIL4DotNet.Services
 
                 return $": {propType}{accessorInfo}";
             }
-#pragma warning disable CA1031
-            catch
+            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
             {
                 return "";
             }
-#pragma warning restore CA1031
         }
 
         /// <summary>Build field details: ": Type" or ": Type = defaultValue".</summary>
@@ -343,12 +351,10 @@ namespace FolderDiffIL4DotNet.Services
 
                 return result;
             }
-#pragma warning disable CA1031
-            catch
+            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
             {
                 return "";
             }
-#pragma warning restore CA1031
         }
 
         private static string GetPropertyAccess(MetadataReader reader, PropertyDefinition propDef)

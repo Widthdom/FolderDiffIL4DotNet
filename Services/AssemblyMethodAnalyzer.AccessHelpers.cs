@@ -215,12 +215,10 @@ namespace FolderDiffIL4DotNet.Services
                 var sigReader = reader.GetBlobReader(spec.Signature);
                 return new SignatureDecoder<string, GenericContext?>(typeProvider, reader, genericContext: null).DecodeType(ref sigReader);
             }
-#pragma warning disable CA1031 // ベストエフォートの型仕様デコード / Best-effort type specification decode
-            catch
+            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
             {
                 return "";
             }
-#pragma warning restore CA1031
         }
 
         /// <summary>Extract non-access modifiers from method attributes (static, abstract, virtual, sealed, override, etc.).</summary>
@@ -274,12 +272,10 @@ namespace FolderDiffIL4DotNet.Services
                 var body = peReader.GetMethodBody(methodDef.RelativeVirtualAddress);
                 return body.GetILBytes() ?? [];
             }
-#pragma warning disable CA1031 // ベストエフォートの IL バイト読み取り / Best-effort IL body read
-            catch
+            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
             {
                 return [];
             }
-#pragma warning restore CA1031
         }
 
         private static string ReadConstantValue(MetadataReader reader, ConstantHandle handle)
@@ -309,12 +305,10 @@ namespace FolderDiffIL4DotNet.Services
                     _ => ""
                 };
             }
-#pragma warning disable CA1031
-            catch
+            catch (Exception ex) when (IsMetadataDecodeRecoverable(ex))
             {
                 return "";
             }
-#pragma warning restore CA1031
         }
     }
 }

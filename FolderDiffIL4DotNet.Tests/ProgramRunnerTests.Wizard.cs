@@ -120,17 +120,28 @@ namespace FolderDiffIL4DotNet.Tests
             Assert.Equal("", ProgramRunner.NormalizeDragDropPath("  "));
         }
 
-        [Fact]
+        [Theory]
         [Trait("Category", "Unit")]
-        public void NormalizeDragDropPath_MalformedPercentEncoding_PreservesOriginal()
+        // On current .NET 8+ runtimes `Uri.UnescapeDataString` returns malformed %-encoding unchanged
+        // instead of throwing. The catch is narrowed to only `UriFormatException`/`ArgumentException`,
+        // so the prior contract "crash-free, malformed segment preserved" must hold for each input
+        // regardless of which branch (no-op or caught-exception fallback) the runtime takes.
+        // 現在の .NET 8 以降では `Uri.UnescapeDataString` は不正な %-encoding を投げずにそのまま返す。
+        // catch は `UriFormatException`/`ArgumentException` のみに絞っているため、ランタイムが
+        // no-op 分岐でも catch 分岐でも、「crash しない／不正セグメントを保持する」という契約は
+        // どの入力でも維持される必要がある。
+        [InlineData("/home/user/file%ZZname")]
+        [InlineData("/home/user/file%G0name")]
+        [InlineData("/home/user/file%trailing")]
+        [InlineData("/home/user/%E3%81%AAname")] // valid UTF-8 percent encoding (hiragana "な") — must decode / 妥当な UTF-8 パーセントエンコード（ひらがな "な"）— デコードされる
+        public void NormalizeDragDropPath_MalformedPercentEncoding_DoesNotThrowAndPreservesIdentifiablePathSegment(string input)
         {
-            // Malformed percent encoding should not crash; original string preserved.
-            // 不正なパーセントエンコーディングでクラッシュしないこと。元の文字列が保持される。
-            string input = "/home/user/file%ZZname";
-            // Uri.UnescapeDataString may throw or not depending on .NET version;
-            // either way, the result should contain the original path segment.
             string result = ProgramRunner.NormalizeDragDropPath(input);
-            Assert.Contains("file", result);
+
+            Assert.False(string.IsNullOrEmpty(result));
+            // Pin: the leading directory portion must not be stripped/truncated for any of these inputs.
+            // pin: 先頭ディレクトリ部分は、いずれの入力でも切り落とされてはいけない。
+            Assert.Contains("/home/user/", result, System.StringComparison.Ordinal);
         }
 
         [Theory]

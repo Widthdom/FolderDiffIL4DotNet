@@ -2,6 +2,7 @@ using System;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using FolderDiffIL4DotNet.Services;
@@ -569,6 +570,57 @@ namespace FolderDiffIL4DotNet.Tests.Services
                     }
                 }
             }
+        }
+
+        [Theory]
+        [Trait("Category", "Unit")]
+        // Documented System.Reflection.Metadata failure modes — must be recoverable so
+        // the signature-decoder fallbacks keep returning the "(#hex)" / empty-string
+        // fallbacks instead of failing the whole analysis.
+        // System.Reflection.Metadata が出す可能性のある失敗モード — シグネチャデコーダ
+        // のフォールバックが丸ごと失敗しないよう、これらは回復可能と扱う必要がある。
+        [InlineData(typeof(BadImageFormatException))]
+        [InlineData(typeof(InvalidOperationException))]
+        [InlineData(typeof(ArgumentException))]
+        [InlineData(typeof(ArgumentOutOfRangeException))] // subclass of ArgumentException / ArgumentException のサブクラス
+        [InlineData(typeof(NotSupportedException))]
+        [InlineData(typeof(OverflowException))]
+        [InlineData(typeof(IndexOutOfRangeException))]
+        public void IsMetadataDecodeRecoverable_ReturnsTrue_ForKnownMetadataDecodeFailureTypes(Type exceptionType)
+        {
+            bool matched = InvokeIsMetadataDecodeRecoverable((Exception)Activator.CreateInstance(exceptionType)!);
+
+            Assert.True(matched, $"Expected IsMetadataDecodeRecoverable to accept {exceptionType.Name}.");
+        }
+
+        [Theory]
+        [Trait("Category", "Unit")]
+        // Programmer errors and unrecoverable runtime failures must NOT be swallowed by the
+        // narrow filter; they have to propagate so the outer Analyze catch-all can invoke
+        // onError with the real exception rather than hiding it as a hex-string fallback.
+        // プログラマエラーや回復不能系は、narrow フィルタで握り潰してはならない。外側の
+        // Analyze の catch-all で onError を介してそのまま surface させる。
+        [InlineData(typeof(NullReferenceException))]
+        [InlineData(typeof(StackOverflowException))]
+        [InlineData(typeof(OutOfMemoryException))]
+        [InlineData(typeof(AccessViolationException))]
+        [InlineData(typeof(OperationCanceledException))]
+        public void IsMetadataDecodeRecoverable_ReturnsFalse_ForNonMetadataFailureTypes(Type exceptionType)
+        {
+            bool matched = InvokeIsMetadataDecodeRecoverable((Exception)Activator.CreateInstance(exceptionType)!);
+
+            Assert.False(matched, $"Expected IsMetadataDecodeRecoverable to reject {exceptionType.Name}.");
+        }
+
+        private static bool InvokeIsMetadataDecodeRecoverable(Exception exception)
+        {
+            var method = typeof(AssemblyMethodAnalyzer).GetMethod(
+                "IsMetadataDecodeRecoverable",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.NotNull(method);
+            var result = method.Invoke(null, [exception]);
+            Assert.IsType<bool>(result);
+            return (bool)result!;
         }
 
         [Fact]

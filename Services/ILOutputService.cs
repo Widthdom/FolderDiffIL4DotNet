@@ -178,7 +178,7 @@ namespace FolderDiffIL4DotNet.Services
                 // 比較用に除外した IL テキストを *_IL.txt として保存する。
                 await _ilTextOutputService.WriteFullIlTextsAsync(fileRelativePath, il1LinesExcluded, il2LinesExcluded);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
                 // Log error with exception details and re-throw on IL text output failure.
                 // IL テキスト出力に失敗した場合は例外詳細付きエラーログを出しつつ再スロー。
