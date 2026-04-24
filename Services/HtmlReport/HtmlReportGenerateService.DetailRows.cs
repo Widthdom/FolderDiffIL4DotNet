@@ -129,8 +129,11 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
+                string ilFileName = TextSanitizer.Sanitize(relPath) + "_" + Constants.LABEL_IL + ".txt";
+                string oldILPath = BuildInlineDiffDiagnosticPath(reportsFolderAbsolutePath, Constants.LABEL_IL, "old", ilFileName);
+                string newILPath = BuildInlineDiffDiagnosticPath(reportsFolderAbsolutePath, Constants.LABEL_IL, "new", ilFileName);
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Inline diff skipped for '{relPath}' using IL text files (ILMismatch, {ex.GetType().Name}): {ex.Message}",
+                    $"Inline diff skipped for '{relPath}' using IL text files (ILMismatch, ReportsFolder='{reportsFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("ReportsFolder", reportsFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldIL", oldILPath)}, {PathShapeDiagnostics.DescribeState("NewIL", newILPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false, ex);
                 return (null, null);
             }
@@ -157,10 +160,24 @@ namespace FolderDiffIL4DotNet.Services
             }
             catch (Exception ex) when (ExceptionFilters.IsPathOrFileIoRecoverable(ex))
             {
+                string oldPath = BuildInlineDiffDiagnosticPath(oldFolderAbsolutePath, relPath);
+                string newPath = BuildInlineDiffDiagnosticPath(newFolderAbsolutePath, relPath);
                 _logger.LogMessage(AppLogLevel.Warning,
-                    $"Inline diff skipped for '{relPath}' using compared text files (TextMismatch, {ex.GetType().Name}): {ex.Message}",
+                    $"Inline diff skipped for '{relPath}' using compared text files (TextMismatch, OldRoot='{oldFolderAbsolutePath}', NewRoot='{newFolderAbsolutePath}', {PathShapeDiagnostics.DescribeState("OldRoot", oldFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("NewRoot", newFolderAbsolutePath)}, {PathShapeDiagnostics.DescribeState("OldPath", oldPath)}, {PathShapeDiagnostics.DescribeState("NewPath", newPath)}, {ex.GetType().Name}): {ex.Message}",
                     shouldOutputMessageToConsole: false, ex);
                 return (null, null);
+            }
+        }
+
+        private static string BuildInlineDiffDiagnosticPath(params string[] segments)
+        {
+            try
+            {
+                return Path.Combine(segments);
+            }
+            catch (Exception ex) when (ex is ArgumentException or ArgumentNullException or NotSupportedException)
+            {
+                return string.Join(" | ", segments.Where(segment => !string.IsNullOrEmpty(segment)));
             }
         }
 
